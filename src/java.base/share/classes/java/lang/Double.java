@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import java.lang.invoke.ConstantRef;
+
 import jdk.internal.math.FloatingDecimal;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -46,7 +48,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Double extends Number implements Comparable<Double> {
+public final class Double extends Number implements Comparable<Double>, ConstantRef<Double> {
     /**
      * A constant holding the positive infinity of type
      * {@code double}. It is equal to the value returned by

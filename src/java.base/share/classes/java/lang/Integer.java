@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.lang.annotation.Native;
+import java.lang.invoke.ConstantRef;
 import java.util.Objects;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.misc.VM;
@@ -56,7 +57,7 @@ import static java.lang.String.UTF16;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Integer extends Number implements Comparable<Integer> {
+public final class Integer extends Number implements Comparable<Integer>, ConstantRef<Integer> {
     /**
      * A constant holding the minimum value an {@code int} can
      * have, -2<sup>31</sup>.

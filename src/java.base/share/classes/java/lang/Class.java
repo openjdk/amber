@@ -65,13 +65,13 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.misc.Unsafe;
-import jdk.internal.misc.VM;
 import jdk.internal.module.Resources;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.ConstantPool;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.reflect.ReflectionFactory;
 import jdk.internal.vm.annotation.ForceInline;
+import sun.invoke.util.Wrapper;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ClassRepository;
@@ -251,6 +251,29 @@ public final class Class<T> implements java.io.Serializable,
                 sb.append("[]");
 
             return sb.toString();
+        }
+    }
+
+    /**
+     * Produces a bytecode descriptor representation of the class.
+     * <p>
+     * Note that this is not a strict inverse of {@link #forName};
+     * two distinct classes which share a common name but have different class loaders
+     * will appear identical when viewed within descriptor strings.
+     * <p>
+     * This method is included for the benefit of applications that must
+     * generate bytecode.
+     *
+     * @return the bytecode type descriptor representation
+     */
+    public String toDescriptorString() {
+        if (isPrimitive())
+            return new String(new char[] {Wrapper.forPrimitiveType(this).basicTypeChar()});
+        else if (isArray()) {
+            return "[" + componentType.toDescriptorString();
+        }
+        else {
+            return "L" + getName().replace('.', '/') + ";";
         }
     }
 

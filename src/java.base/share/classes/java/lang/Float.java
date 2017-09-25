@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import java.lang.invoke.ConstantRef;
+
 import jdk.internal.math.FloatingDecimal;
 import jdk.internal.HotSpotIntrinsicCandidate;
 
@@ -45,7 +47,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Float extends Number implements Comparable<Float> {
+public final class Float extends Number implements Comparable<Float>, ConstantRef<Float> {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by
