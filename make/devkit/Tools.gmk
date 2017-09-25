@@ -121,13 +121,13 @@ else
 endif
 
 # Define directories
-RESULT := $(OUTPUTDIR)/result
-BUILDDIR := $(OUTPUTDIR)/$(HOST)/$(TARGET)
+RESULT := $(OUTPUT_ROOT)/result
+BUILDDIR := $(OUTPUT_ROOT)/$(HOST)/$(TARGET)
 PREFIX := $(RESULT)/$(HOST)
 TARGETDIR := $(PREFIX)/$(TARGET)
 SYSROOT := $(TARGETDIR)/sysroot
-DOWNLOAD := $(OUTPUTDIR)/download
-SRCDIR := $(OUTPUTDIR)/src
+DOWNLOAD := $(OUTPUT_ROOT)/download
+SRCDIR := $(OUTPUT_ROOT)/src
 
 # Marker file for unpacking rpms
 rpms := $(SYSROOT)/rpms_unpacked

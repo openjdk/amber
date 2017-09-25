@@ -206,16 +206,8 @@ AC_DEFUN_ONCE([JDKOPT_SETUP_JDK_OPTIONS],
   # Choose cacerts source file
   AC_ARG_WITH(cacerts-file, [AS_HELP_STRING([--with-cacerts-file],
       [specify alternative cacerts file])])
-  AC_MSG_CHECKING([for cacerts file])
-  if test "x$with_cacerts_file" == x; then
-    AC_MSG_RESULT([default])
-  else
+  if test "x$with_cacerts_file" != x; then
     CACERTS_FILE=$with_cacerts_file
-    if test ! -f "$CACERTS_FILE"; then
-      AC_MSG_RESULT([fail])
-      AC_MSG_ERROR([Specified cacerts file "$CACERTS_FILE" does not exist])
-    fi
-    AC_MSG_RESULT([$CACERTS_FILE])
   fi
   AC_SUBST(CACERTS_FILE)
 

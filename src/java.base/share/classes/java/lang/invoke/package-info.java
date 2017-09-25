@@ -50,7 +50,11 @@
  * current version of that specification.
  *
  * Each occurrence of an {@code invokedynamic} instruction is called a <em>dynamic call site</em>.
+ * Each occurrence of an {@code CONSTANT_ConstantDynamic} constant pool entry is called a <em>dynamic constant</em>.
+ *
  * <h2><a id="indyinsn"></a>{@code invokedynamic} instructions</h2>
+ * Bytecode may contain <em>dynamic call sites</em> equipped with
+ * bootstrap methods which perform their resolution.
  * A dynamic call site is originally in an unlinked state.  In this state, there is
  * no target method for the call site to invoke.
  * <p>
@@ -63,25 +67,72 @@
  * <p>
  * Each {@code invokedynamic} instruction statically specifies its own
  * bootstrap method as a constant pool reference.
- * The constant pool reference also specifies the call site's name and type descriptor,
- * just like {@code invokevirtual} and the other invoke instructions.
+ * The constant pool reference also specifies the call site's name and method type descriptor,
+ * just like {@code invokestatic} and the other invoke instructions.
+ *
+ * <h2><a id="condycon"></a>constants with tag {@code CONSTANT_ConstantDynamic}</h2>
+ * The constant pool may contain constants tagged {@code CONSTANT_ConstantDynamic},
+ * equipped with bootstrap methods which perform their resolution.
+ * Such a <em>dynamic constant</em> is originally in an unresolved state.
+ * Before the JVM can evaluate a dynamic constant, it must first be <em>resolved</em>.
+ * Dynamic constant resolution is accomplished by calling a <em>bootstrap method</em>
+ * which is given the static information content of the constant,
+ * and which must produce a value of the constant's statically declared type.
  * <p>
- * Linking starts with resolving the constant pool entry for the
- * bootstrap method, and resolving a {@link java.lang.invoke.MethodType MethodType} object for
- * the type descriptor of the dynamic call site.
+ * Each {@code CONSTANT_ConstantDynamic} constant statically specifies its own
+ * bootstrap method as a constant pool reference.
+ * The constant pool reference also specifies the constant's name and field type descriptor,
+ * just like {@code getstatic} and the other field reference instructions.
+ * (Roughly speaking, a dynamic constant is to a dynamic call descriptor
+ * as a {@code CONSTANT_Fieldref} is to a {@code CONSTANT_Methodref}.)
+ *
+ * <h2><a id="bsm"></a>execution of bootstrap methods</h2>
+ * Linking a dynamic call site or dynamic constant
+ * starts with resolving constants from the constant pool for the
+ * following items:
+ * <ul>
+ * <li>the bootstrap method, either a {@code CONSTANT_MethodHandle}
+ * or a {@code CONSTANT_ConstantDynamic} entry</li>
+ * <li>if linking a dynamic call site, the {@code MethodType} derived from
+ * type component of the {@code CONSTANT_NameAndType} descriptor of the call</li>
+ * <li>if linking a dynamic constant, the {@code Class} derived from
+ * type component of the {@code CONSTANT_NameAndType} descriptor of the constant</li>
+ * </ul>
  * This resolution process may trigger class loading.
  * It may therefore throw an error if a class fails to load.
  * This error becomes the abnormal termination of the dynamic
- * call site execution.
+ * call site execution or dynamic constant evaluation.
  * Linkage does not trigger class initialization.
+ * Static arguments, if any, are resolved in the following phase.
+ * (Note that static arguments can themselves be dynamic constants.)
  * <p>
- * The bootstrap method is invoked on at least three values:
+ * The arity of the bootstrap method determines its invocation for linkage.
+ * If the bootstrap method accepts at least three parameters, or if it
+ * is a variable-arity method handle, the linkage information is <em>pushed</em>
+ * into the bootstrap method, by invoking it on these values:
+ * <ul>
+ * <li>a {@code MethodHandles.Lookup}, which is a lookup object on the <em>caller class</em>
+ * in which dynamic call site or constant occurs </li>
+ * <li>a {@code String}, the method or constant name mentioned in the call site or constant </li>
+ * <li>a {@code MethodType}, the resolved type descriptor of the call site, if it is a dynamic call site </li>
+ * <li>a {@code Class}, the resolved type descriptor of the constant, if it is a dynamic constant </li>
+ * <li>optionally, any number of additional static arguments taken from the constant pool </li>
+ * </ul>
+ * In this case the static arguments are resolved before the bootstrap method
+ * is invoked.  If this resolution causes exceptions they are processed without
+ * calling the bootstrap method.
+ * <p>
+ * If the bootstrap method accepts two parameters, and it is <em>not</em>
+ * a variable-arity method handle, then the linkage information is presented
+ * to the bootstrap method by a API which allows it to <em>pull</em> the static arguments.
+ * This allows the bootstrap logic the ability to order the resolution of constants and catch
+ * linkage exceptions.  For this mode of linkage, the bootstrap method is
+ * is invoked on just two values:
  * <ul>
  * <li>a {@code MethodHandles.Lookup}, a lookup object on the <em>caller class</em>
- *     in which dynamic call site occurs </li>
- * <li>a {@code String}, the method name mentioned in the call site </li>
- * <li>a {@code MethodType}, the resolved type descriptor of the call </li>
- * <li>optionally, any number of additional static arguments taken from the constant pool </li>
+ * (as in the "push" mode) </li>
+ * <li>a {@link java.lang.invoke.BootstrapCallInfo BootstrapCallInfo} object
+ * describing the linkage parameters of the dynamic call site or constant </li>
  * </ul>
  * <p>
  * In all cases, bootstrap method invocation is as if by
@@ -101,16 +152,25 @@
  * On success the call site then becomes permanently linked to the dynamic call
  * site.
  * <p>
- * If an exception, {@code E} say, occurs when linking the call site then the
+ * For a {@code ConstantDynamic} constant, the result returned from the
+ * bootstrap method must be convertible (by the same conversions as
+ * {@linkplain java.lang.invoke.MethodHandle#asType a method handle transformed by {@code asType}})
+ * to the statically declared type of the {@code ConstantDynamic} constant.
+ * On success the constant then becomes permanently linked to the
+ * converted result of the bootstrap method.
+ * <p>
+ * If an exception, {@code E} say, occurs when linking the call site or constant then the
  * linkage fails and terminates abnormally. {@code E} is rethrown if the type of
  * {@code E} is {@code Error} or a subclass, otherwise a
  * {@code BootstrapMethodError} that wraps {@code E} is thrown.
  * If this happens, the same {@code Error} or subclass will the thrown for all
- * subsequent attempts to execute the dynamic call site.
+ * subsequent attempts to execute the dynamic call site or load the dynamic constant.
  * <h2>timing of linkage</h2>
  * A dynamic call site is linked just before its first execution.
+ * A dynamic constant is linked just before the first time it is used
+ * (by pushing on the stack or linking it as a bootstrap method parameter).
  * The bootstrap method call implementing the linkage occurs within
- * a thread that is attempting a first execution.
+ * a thread that is attempting a first execution or first use.
  * <p>
  * If there are several such threads, the bootstrap method may be
  * invoked in several threads concurrently.
@@ -128,9 +188,10 @@
  * the instructions.
  * <p>
  * If several threads simultaneously execute a bootstrap method for a single dynamic
- * call site, the JVM must choose one {@code CallSite} object and install it visibly to
+ * call site or constant, the JVM must choose one bootstrap method result and install it visibly to
  * all threads.  Any other bootstrap method calls are allowed to complete, but their
- * results are ignored, and their dynamic call site invocations proceed with the originally
+ * results are ignored, and their dynamic call site invocations
+ * or constant loads proceed with the originally
  * chosen target object.
 
  * <p style="font-size:smaller;">
@@ -186,6 +247,7 @@
  *     <li><code>CallSite bootstrap(Lookup caller, String name, MethodType type, Object... args)</code>
  *     <li><code>CallSite bootstrap(Object... args)</code>
  *     <li><code>CallSite bootstrap(Object caller, Object... nameAndTypeWithArgs)</code>
+ *     <li><code>CallSite bootstrap(Lookup caller, BootstrapCallInfo bsci)</code>
  *     </ul></td></tr>
  * <tr><th scope="row" style="font-weight:normal; vertical-align:top">0</th><td>
  *     <ul style="list-style:none; padding-left: 0; margin:0">
@@ -203,10 +265,20 @@
  * </tbody>
  * </table>
  * The last example assumes that the extra arguments are of type
- * {@code String} and {@code Integer} (or {@code int}), respectively.
+ * {@code CONSTANT_String} and {@code CONSTANT_Integer}, respectively.
  * The second-to-last example assumes that all extra arguments are of type
- * {@code String}.
+ * {@code CONSTANT_String}.
  * The other examples work with all types of extra arguments.
+ * <p>
+ * The fourth example (which is the only example that does
+ * <em>not</em> use variable arity <em>and</em> takes two arguments)
+ * is the normal signature under which a "pull" mode bootstrap method
+ * is invoked.  For such a bootstrap method, the two parameters may
+ * also be {@code Object}, since that is a supertype of {@code Lookup}
+ * and {@link java.lang.invoke.BootstrapCallInfo BootstrapCallInfo}.
+ * See {@linkplain java.lang.invoke.BootstrapCallInfo BootstrapCallInfo}
+ * the documentation for that interface} for further notes about the
+ * relation between the two modes of bootstrap method invocation.
  * <p>
  * As noted above, the actual method type of the bootstrap method can vary.
  * For example, the fourth argument could be {@code MethodHandle},
@@ -218,12 +290,27 @@
  * (If a string constant were passed instead, by badly generated code, that cast would then fail,
  * resulting in a {@code BootstrapMethodError}.)
  * <p>
- * Note that, as a consequence of the above rules, the bootstrap method may accept a primitive
- * argument, if it can be represented by a constant pool entry.
+ * Since dynamic constants can be provided as static arguments to bootstrap
+ * methods, there are no limitations on the types of bootstrap arguments.
  * However, arguments of type {@code boolean}, {@code byte}, {@code short}, or {@code char}
- * cannot be created for bootstrap methods, since such constants cannot be directly
- * represented in the constant pool, and the invocation of the bootstrap method will
+ * cannot be <em>directly</em> supplied by {@code CONSTANT_Integer}
+ * constant pool entries, since the {@code asType} conversions do
  * not perform the necessary narrowing primitive conversions.
+ * <p>
+ * In the above examples, the return type is always {@code CallSite},
+ * but that is not a necessary feature of bootstrap methods.
+ * In the case of a dynamic call site, the only requirement is that
+ * the value returned by the bootstrap method must be convertible
+ * (using the {@code asType} conversions) to {@code CallSite}, which
+ * means the bootstrap method return type might be {@code Object} or
+ * {@code ConstantCallSite}
+ * In the case of a dynamic constant, the result of the bootstrap
+ * method must be convertible to the type of the constant, as
+ * represented by its field type descriptor.  For example, if the
+ * dynamic constant has a field type descriptor of {@code "C"}
+ * ({@code char}) then the bootstrap method return type could be
+ * {@code Object}, {@code Character}, or {@code char}, but not
+ * {@code int} or {@code Integer}.
  * <p>
  * Extra bootstrap method arguments are intended to allow language implementors
  * to safely and compactly encode metadata.
