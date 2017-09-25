@@ -1155,7 +1155,7 @@ public class Gen extends JCTree.Visitor {
             List<JCCase> l = cases;
             for (int i = 0; i < labels.length; i++) {
                 if (l.head.pat != null) {
-                    int val = ((Number)l.head.pat.type.constValue()).intValue();
+                    int val = ((Number)l.head.constExpression().type.constValue()).intValue();
                     labels[i] = val;
                     if (val < lo) lo = val;
                     if (hi < val) hi = val;

@@ -1,0 +1,37 @@
+BindingsTest2.java:15:21: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:16:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:19:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:23:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:25:35: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:26:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:29:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:34:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:36:38: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:37:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:40:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:41:13: compiler.err.cant.resolve.location: kindname.variable, i, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:44:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:45:13: compiler.err.cant.resolve.location: kindname.variable, s2, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:50:21: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:52:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:56:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:60:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:61:13: compiler.err.cant.resolve.location: kindname.variable, x1, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:65:13: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:69:35: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:71:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:75:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:76:13: compiler.err.cant.resolve.location: kindname.variable, i, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:80:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:81:13: compiler.err.cant.resolve.location: kindname.variable, s1, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:86:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:87:13: compiler.err.cant.resolve.location: kindname.variable, s1, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:89:38: compiler.err.match.binding.exists.with.different.type
+BindingsTest2.java:91:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:95:13: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:96:13: compiler.err.cant.resolve.location: kindname.variable, i, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:100:45: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:103:45: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:108:40: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+BindingsTest2.java:111:40: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, BindingsTest2, null)
+36 errors

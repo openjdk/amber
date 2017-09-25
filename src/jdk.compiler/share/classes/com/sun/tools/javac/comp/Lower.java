@@ -51,10 +51,11 @@ import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
+import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+
 
 /** This pass translates away some syntactic sugar: inner classes,
  *  class literals, assertions, foreach loops, etc.
@@ -3387,21 +3388,23 @@ public class Lower extends TreeTranslator {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        Type selsuper = types.supertype(tree.selector.type);
-        boolean enumSwitch = selsuper != null &&
-            (tree.selector.type.tsym.flags() & ENUM) != 0;
-        boolean stringSwitch = selsuper != null &&
-            types.isSameType(tree.selector.type, syms.stringType);
-        Type target = enumSwitch ? tree.selector.type :
-            (stringSwitch? syms.stringType : syms.intType);
+        Type target;
+        switch (tree.kind) {
+            case ENUM: target = tree.selector.type; break;
+            case STRING: target = syms.stringType; break;
+            case ORDINARY: target = syms.intType; break;
+            default:
+                Assert.error("Should not get here, kind: " + tree.kind);
+                throw new InternalError();
+        }
         tree.selector = translate(tree.selector, target);
         tree.cases = translateCases(tree.cases);
-        if (enumSwitch) {
-            result = visitEnumSwitch(tree);
-        } else if (stringSwitch) {
-            result = visitStringSwitch(tree);
-        } else {
-            result = tree;
+        switch (tree.kind) {
+            case ENUM: result = visitEnumSwitch(tree); break;
+            case STRING: result = visitStringSwitch(tree); break;
+            case ORDINARY: result = tree; break;
+            default:
+                Assert.error("Should not get here, kind: " + tree.kind);
         }
     }
 
@@ -3419,7 +3422,7 @@ public class Lower extends TreeTranslator {
         ListBuffer<JCCase> cases = new ListBuffer<>();
         for (JCCase c : tree.cases) {
             if (c.pat != null) {
-                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pat);
+                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.constExpression());
                 JCLiteral pat = map.forConstant(label);
                 cases.append(make.Case(pat, c.stats));
             } else {
@@ -3427,6 +3430,7 @@ public class Lower extends TreeTranslator {
             }
         }
         JCSwitch enumSwitch = make.Switch(selector, cases.toList());
+        enumSwitch.kind = SwitchKind.ORDINARY;
         patchTargets(enumSwitch, tree, enumSwitch);
         return enumSwitch;
     }
@@ -3490,7 +3494,7 @@ public class Lower extends TreeTranslator {
 
             int casePosition = 0;
             for(JCCase oneCase : caseList) {
-                JCExpression expression = oneCase.getExpression();
+                JCExpression expression = oneCase.constExpression();
 
                 if (expression != null) { // expression for a "default" case is null
                     String labelExpr = (String) expression.type.constValue();
@@ -3554,6 +3558,7 @@ public class Lower extends TreeTranslator {
                                                        List.nil()).setType(syms.intType);
             JCSwitch switch1 = make.Switch(hashCodeCall,
                                         caseBuffer.toList());
+            switch1.kind = SwitchKind.ORDINARY;
             for(Map.Entry<Integer, Set<String>> entry : hashToString.entrySet()) {
                 int hashCode = entry.getKey();
                 Set<String> stringsWithHashCode = entry.getValue();
@@ -3588,18 +3593,19 @@ public class Lower extends TreeTranslator {
 
             ListBuffer<JCCase> lb = new ListBuffer<>();
             JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
+            switch2.kind = SwitchKind.ORDINARY;
             for(JCCase oneCase : caseList ) {
                 // Rewire up old unlabeled break statements to the
                 // replacement switch being created.
                 patchTargets(oneCase, tree, switch2);
 
-                boolean isDefault = (oneCase.getExpression() == null);
+                boolean isDefault = (oneCase.constExpression() == null);
                 JCExpression caseExpr;
                 if (isDefault)
                     caseExpr = null;
                 else {
                     caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.
-                                                                                                getExpression()).
+                                                                                                constExpression()).
                                                                     type.constValue()));
                 }
 

@@ -234,6 +234,23 @@ public class Pretty extends JCTree.Visitor {
         printExprs(trees, ", ");
     }
 
+
+    /** Derived visitor method: print pattern.
+     */
+
+    public void printPattern(JCTree tree) throws IOException {
+        printExpr(tree);
+    }
+
+    public <T extends JCTree> void printPatterns(List<T> trees) throws IOException {
+        if (trees.nonEmpty()) {
+            printPattern(trees.head);
+            for (List<T> l = trees.tail; l.nonEmpty(); l = l.tail) {
+                print(", ");
+                printPattern(l.head);
+            }
+        }
+    }
     /** Derived visitor method: print list of statements, each on a separate line.
      */
     public void printStats(List<? extends JCTree> trees) throws IOException {
@@ -828,6 +845,29 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
+    public void visitVariablePattern(JCVariablePattern patt) {
+        try {
+            if (patt.vartype == null) {
+                print("var ");
+                print(patt.name);
+            } else {
+                printExpr(patt.vartype);
+                print(" ");
+                print(patt.name);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitConstantPattern(JCConstantPattern patt) {
+        try {
+            print(patt.value);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void visitSynchronized(JCSynchronized tree) {
         try {
             print("synchronized ");
@@ -1224,6 +1264,18 @@ public class Pretty extends JCTree.Visitor {
             printExpr(tree.expr, TreeInfo.ordPrec);
             print(" instanceof ");
             printExpr(tree.clazz, TreeInfo.ordPrec + 1);
+            close(prec, TreeInfo.ordPrec);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitPatternTest(JCMatches tree) {
+        try {
+            open(prec, TreeInfo.ordPrec);
+            printExpr(tree.expr, TreeInfo.ordPrec);
+            print(" matches ");
+            printPattern(tree.pattern);
             close(prec, TreeInfo.ordPrec);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

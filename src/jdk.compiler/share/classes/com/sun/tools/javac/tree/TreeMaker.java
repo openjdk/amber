@@ -28,7 +28,6 @@ package com.sun.tools.javac.tree;
 import java.util.Iterator;
 
 import com.sun.source.tree.ModuleTree.ModuleKind;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
@@ -272,7 +271,11 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCase Case(JCExpression pat, List<JCStatement> stats) {
+    public JCCase Case(JCExpression expr, List<JCStatement> stats) {
+        return Case(expr != null ? ConstantPattern(expr) : null, stats);
+    }
+
+    public JCCase Case(JCPattern pat, List<JCStatement> stats) {
         JCCase tree = new JCCase(pat, stats);
         tree.pos = pos;
         return tree;
@@ -429,6 +432,24 @@ public class TreeMaker implements JCTree.Factory {
 
     public JCInstanceOf TypeTest(JCExpression expr, JCTree clazz) {
         JCInstanceOf tree = new JCInstanceOf(expr, clazz);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCMatches PatternTest(JCExpression expr, JCPattern patt) {
+        JCMatches tree = new JCMatches(expr, patt);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCVariablePattern VariablePattern(Name name, JCExpression vartype) {
+        JCVariablePattern tree = new JCVariablePattern(name, null, vartype);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCConstantPattern ConstantPattern(JCExpression cexp) {
+        JCConstantPattern tree = new JCConstantPattern(cexp);
         tree.pos = pos;
         return tree;
     }

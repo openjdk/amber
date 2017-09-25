@@ -1,0 +1,4 @@
+PatternVariablesAreFinal.java:10:13: compiler.err.pattern.binding.may.not.be.assigned: s
+PatternVariablesAreFinal.java:14:29: compiler.err.pattern.binding.may.not.be.assigned: i
+PatternVariablesAreFinal.java:20:29: compiler.err.pattern.binding.may.not.be.assigned: s
+3 errors

@@ -293,6 +293,20 @@ public class TreeScanner extends Visitor {
         scan(tree.clazz);
     }
 
+    public void visitPatternTest(JCMatches tree) {
+        scan(tree.expr);
+        scan(tree.pattern);
+    }
+
+    public void visitVariablePattern(JCVariablePattern tree) {
+        if (tree.vartype != null)
+            scan(tree.vartype);
+    }
+
+    public void visitConstantPattern(JCConstantPattern tree) {
+        scan(tree.value);
+    }
+
     public void visitIndexed(JCArrayAccess tree) {
         scan(tree.indexed);
         scan(tree.index);

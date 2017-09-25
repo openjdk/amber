@@ -342,7 +342,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      */
     @Override
     public R visitCase(CaseTree node, P p) {
-        R r = scan(node.getExpression(), p);
+        R r = scan(node.getPattern(), p);
         r = scanAndReduce(node.getStatements(), p, r);
         return r;
     }
@@ -652,6 +652,44 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
         R r = scan(node.getExpression(), p);
         r = scanAndReduce(node.getType(), p, r);
         return r;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
+    public R visitMatches(MatchesTree node, P p) {
+        R r = scan(node.getExpression(), p);
+        r = scanAndReduce(node.getPattern(), p, r);
+        return r;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    @Override
+    public R visitVariablePattern(VariablePatternTree node, P p) {
+        return scan(node.getType(), p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    @Override
+    public R visitConstantPattern(ConstantPatternTree node, P p) {
+        return scan(node.getValue(), p);
     }
 
     /**

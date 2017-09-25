@@ -313,6 +313,11 @@ public class Flags {
      */
     public static final long ANONCONSTR_BASED = 1L<<57;
 
+    /**
+     * Flag to indicate the given variable is a match binding variable.
+     */
+    public static final long MATCH_BINDING = 1L<<57;
+
     /** Modifier masks.
      */
     public static final int

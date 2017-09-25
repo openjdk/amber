@@ -26,7 +26,6 @@
 package com.sun.tools.javac.tree;
 
 import com.sun.source.tree.*;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -146,7 +145,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCase(CaseTree node, P p) {
         JCCase t = (JCCase) node;
-        JCExpression pat = copy(t.pat, p);
+        JCPattern pat = copy(t.pat, p);
         List<JCStatement> stats = copy(t.stats, p);
         return M.at(t.pos).Case(pat, stats);
     }
@@ -469,6 +468,29 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         return M.at(t.pos).TypeTest(expr, clazz);
     }
 
+    @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitMatches(MatchesTree node, P p) {
+        JCMatches t = (JCMatches) node;
+        JCExpression expr = copy(t.expr, p);
+        JCPattern pattern = copy(t.pattern, p);
+        return M.at(t.pos).PatternTest(expr, pattern);
+    }
+
+
+    @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitVariablePattern(VariablePatternTree node, P p) {
+        JCVariablePattern t = (JCVariablePattern) node;
+        JCExpression vartype = copy(t.vartype, p);
+        return M.at(t.pos).VariablePattern(t.name, vartype);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitConstantPattern(ConstantPatternTree node, P p) {
+        JCConstantPattern t = (JCConstantPattern)node;
+        JCExpression value = copy(t.value, p);
+        return M.at(t.pos).ConstantPattern(value);
+    }
+    
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitUnary(UnaryTree node, P p) {
         JCUnary t = (JCUnary) node;

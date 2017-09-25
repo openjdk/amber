@@ -1,0 +1,5 @@
+FlowAnalysisAndConstantPatterns2.java:15:13: compiler.err.duplicate.case.label
+FlowAnalysisAndConstantPatterns2.java:20:13: compiler.err.duplicate.case.label
+FlowAnalysisAndConstantPatterns2.java:25:13: compiler.err.duplicate.case.label
+FlowAnalysisAndConstantPatterns2.java:32:13: compiler.err.duplicate.case.label
+4 errors

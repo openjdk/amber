@@ -258,6 +258,30 @@ public interface TreeVisitor<R,P> {
     R visitLiteral(LiteralTree node, P p);
 
     /**
+     * Visits a MatchesTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitMatches(MatchesTree node, P p);
+
+    /**
+     * Visits an VariablePattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitVariablePattern(VariablePatternTree node, P p);
+
+    /**
+     * Visits a ConstantPattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitConstantPattern(ConstantPatternTree node, P p);
+
+    /**
      * Visits a MethodTree node.
      * @param node the node being visited
      * @param p a parameter value

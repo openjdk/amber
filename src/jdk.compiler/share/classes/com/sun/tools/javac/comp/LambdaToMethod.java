@@ -65,6 +65,7 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
@@ -635,6 +636,7 @@ public class LambdaToMethod extends TreeTranslator {
             cases.add(make.Case(make.Literal(entry.getKey()), stmts));
         }
         JCSwitch sw = make.Switch(deserGetter("getImplMethodName", syms.stringType), cases.toList());
+        sw.kind = SwitchKind.STRING;
         for (JCBreak br : breaks) {
             br.target = sw;
         }

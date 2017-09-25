@@ -1,0 +1,8 @@
+SwitchFallThrough2.java:36:41: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, SwitchFallThrough2, null)
+SwitchFallThrough2.java:40:41: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, SwitchFallThrough2, null)
+SwitchFallThrough2.java:41:48: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, SwitchFallThrough2, null)
+SwitchFallThrough2.java:46:18: compiler.err.match.binding.exists.with.different.type
+SwitchFallThrough2.java:46:47: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, SwitchFallThrough2, null)
+SwitchFallThrough2.java:36:13: compiler.err.pattern.dominated
+SwitchFallThrough2.java:51:13: compiler.err.pattern.dominated
+7 errors

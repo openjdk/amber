@@ -32,7 +32,7 @@ import java.util.List;
  *
  * For example:
  * <pre>
- *   case <em>expression</em> :
+ *   case <em>pattern</em> :
  *       <em>statements</em>
  *
  *   default :
@@ -48,10 +48,20 @@ import java.util.List;
 public interface CaseTree extends Tree {
     /**
      * Returns the expression for the case, or
-     * {@code null} if this is the default case.
+     * {@code null} if this is the default case
+     * or this case covers a non-constant pattern.
      * @return the expression for the case, or null
+     * @deprecated use {@link #getPattern()}
      */
+    @Deprecated
     ExpressionTree getExpression();
+
+    /**
+     * Returns the pattern for the case, or
+     * {@code null} if this is the default case.
+     * @return the pattern for the case, or null
+     */
+    PatternTree getPattern();
 
     /**
      * Returns the statements labeled by the case.

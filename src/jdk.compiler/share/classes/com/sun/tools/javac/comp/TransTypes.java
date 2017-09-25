@@ -617,6 +617,19 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
+    public void visitPatternTest(JCMatches tree) {
+        tree.expr = translate(tree.expr, null);
+        tree.pattern = translate(tree.pattern, null);
+        result = tree;
+    }
+
+    public void visitVariablePattern(JCVariablePattern tree) {
+        if (tree.vartype != null) {
+            tree.vartype = translate(tree.vartype, null);
+        }
+        result = tree;
+    }
+    
     public void visitSynchronized(JCSynchronized tree) {
         tree.lock = translate(tree.lock, erasure(tree.lock.type));
         tree.body = translate(tree.body);

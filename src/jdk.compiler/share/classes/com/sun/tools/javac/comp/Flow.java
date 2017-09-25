@@ -40,6 +40,7 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
@@ -248,6 +249,23 @@ public class Flow {
             LambdaFlowAnalyzer flowAnalyzer = new LambdaFlowAnalyzer();
             flowAnalyzer.analyzeTree(env, that, make);
             return flowAnalyzer.inferredThrownTypes;
+        } finally {
+            log.popDiagnosticHandler(diagHandler);
+        }
+    }
+
+    public void aliveAfterCase(Env<AttrContext> env, JCCase that, TreeMaker make) {
+        //we need to disable diagnostics temporarily; the problem is that if
+        //a lambda expression contains e.g. an unreachable statement, an error
+        //message will be reported and will cause compilation to skip the flow analyis
+        //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
+        //related errors, which will allow for more errors to be detected
+        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
+        try {
+            CaseAliveAnalyzer analyzer = new CaseAliveAnalyzer();
+
+            analyzer.analyzeTree(env, that.stats, make);
+            that.alive = analyzer.isAlive();
         } finally {
             log.popDiagnosticHandler(diagHandler);
         }
@@ -592,31 +610,113 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
-            ListBuffer<PendingExit> prevPendingExits = pendingExits;
-            pendingExits = new ListBuffer<>();
-            scan(tree.selector);
-            boolean hasDefault = false;
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                alive = true;
-                JCCase c = l.head;
-                if (c.pat == null)
-                    hasDefault = true;
-                else
-                    scan(c.pat);
-                scanStats(c.stats);
-                // Warn about fall-through if lint switch fallthrough enabled.
-                if (alive &&
-                    lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
-                    c.stats.nonEmpty() && l.tail.nonEmpty())
-                    log.warning(Lint.LintCategory.FALLTHROUGH,
-                                l.tail.head.pos(),
-                                Warnings.PossibleFallThroughIntoCase);
+            if (tree.kind == SwitchKind.MATCHING) {
+                visitMatchingSwitch(tree);
+            } else {
+                visitLegacySwitch(tree);
             }
-            if (!hasDefault) {
-                alive = true;
-            }
-            alive |= resolveBreaks(tree, prevPendingExits);
         }
+            // where
+            private void visitMatchingSwitch(JCSwitch tree) {
+                ListBuffer<PendingExit> prevPendingExits = pendingExits;
+                pendingExits = new ListBuffer<>();
+                scan(tree.selector);
+                boolean aliveInAnyArm = false;
+                boolean hasDefault = false;
+                for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                    JCCase c = l.head;
+                    if (patternDominated(tree.cases, c)) {
+                        log.error(c, Errors.PatternDominated);
+                    }
+                    alive = true;
+                    if (c.pat != null)
+                        scan(c.pat);
+                    else
+                        hasDefault = true;
+                    scanStats(c.stats);
+                    aliveInAnyArm |= alive;
+                }
+                alive = aliveInAnyArm || !hasDefault;
+                alive |= resolveBreaks(tree, prevPendingExits);
+            }
+            //where:
+                private boolean patternDominated(List<JCCase> clauses, JCCase aClause) {
+                    // TODO: This needs to evolve as we add more support for other pattern kinds.
+                    for (List<JCCase> l = clauses; l.nonEmpty(); l = l.tail) {
+                        JCCase c = l.head;
+                        if (c == aClause)
+                            break;
+                        if (c.pat == null) {
+                            // default clause must be the last
+                            return l.nonEmpty();
+                        } else {
+                            switch (c.pat.getTag()) {
+                                case VARIABLEPATTERN: {
+                                    JCVariablePattern vpatt = (JCVariablePattern)c.pat;
+                                    if (vpatt.vartype == null) {
+                                        if (aClause.pat != null)
+                                            return true;
+                                    } else {
+                                        if (aClause.pat != null) {
+                                            switch (aClause.pat.getTag()) {
+                                                case VARIABLEPATTERN:
+                                                    JCVariablePattern currentPattern = (JCVariablePattern)aClause.pat;
+                                                    if (currentPattern.vartype != null) {
+                                                        if (types.isAssignable(currentPattern.vartype.type, vpatt.type))
+                                                            return true;
+                                                    }
+                                                    break;
+                                                case CONSTANTPATTERN:
+                                                    JCConstantPattern constantPattern = (JCConstantPattern) aClause.pat;
+                                                    if (constantPattern.type.constValue()==null) {
+                                                        return false; // null pattern is not dominated by a type test pattern
+                                                    } else if (types.isAssignable(constantPattern.type, vpatt.type)) {
+                                                        return true;
+                                                    }
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                case CONSTANTPATTERN: {
+                                    break;  // does not dominate any other pattern.
+                                }
+                                default: {
+                                    Assert.check(false);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+            private void visitLegacySwitch(JCSwitch tree) {
+                ListBuffer<PendingExit> prevPendingExits = pendingExits;
+                pendingExits = new ListBuffer<>();
+                scan(tree.selector);
+                boolean hasDefault = false;
+                for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                    alive = true;
+                    JCCase c = l.head;
+                    if (c.pat == null)
+                        hasDefault = true;
+                    else
+                        scan(c.constExpression());
+                    scanStats(c.stats);
+                    // Warn about fall-through if lint switch fallthrough enabled.
+                    if (alive &&
+                        lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
+                        c.stats.nonEmpty() && l.tail.nonEmpty())
+                        log.warning(Lint.LintCategory.FALLTHROUGH,
+                                    l.tail.head.pos(),
+                                    Warnings.PossibleFallThroughIntoCase);
+                }
+                if (!hasDefault) {
+                    alive = true;
+                }
+                alive |= resolveBreaks(tree, prevPendingExits);
+            }
 
         public void visitTry(JCTry tree) {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
@@ -748,12 +848,15 @@ public class Flow {
             analyzeTree(env, env.tree, make);
         }
         public void analyzeTree(Env<AttrContext> env, JCTree tree, TreeMaker make) {
+            analyzeTree(env, List.of(tree), make);
+        }
+        public void analyzeTree(Env<AttrContext> env, List<? extends JCTree> trees, TreeMaker make) {
             try {
                 attrEnv = env;
                 Flow.this.make = make;
                 pendingExits = new ListBuffer<>();
                 alive = true;
-                scan(tree);
+                scan(trees);
             } finally {
                 pendingExits = null;
                 Flow.this.make = null;
@@ -1364,6 +1467,19 @@ public class Flow {
     }
 
     /**
+     * TODO
+     */
+    class CaseAliveAnalyzer extends AliveAnalyzer {
+        @Override
+        public void visitClassDef(JCClassDecl tree) {
+            //skip
+        }
+        public boolean isAlive() {
+            return super.alive;
+        }
+    }
+
+    /**
      * Specialized pass that performs DA/DU on a lambda
      */
     class LambdaAssignAnalyzer extends AssignAnalyzer {
@@ -1560,7 +1676,7 @@ public class Flow {
          */
         protected boolean trackable(VarSymbol sym) {
             return
-                sym.pos >= startPos &&
+                sym.pos >= startPos && ((sym.flags() & MATCH_BINDING) == 0) &&
                 ((sym.owner.kind == MTH ||
                 isFinalUninitializedField(sym)));
         }
@@ -2493,6 +2609,11 @@ public class Flow {
             // Do nothing for modules
         }
 
+        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
+        public void visitTypeTestPattern(JCVariablePattern tree) {
+            // Do nothing
+        }
+
     /**************************************************************************
      * main method
      *************************************************************************/
@@ -2683,6 +2804,11 @@ public class Flow {
 
         public void visitModuleDef(JCModuleDecl tree) {
             // Do nothing for modules
+        }
+
+        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
+        public void visitTypeTestPattern(JCVariablePattern tree) {
+            // Do nothing
         }
 
     /**************************************************************************

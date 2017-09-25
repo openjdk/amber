@@ -1,0 +1,19 @@
+(o __matches 1)
+o __matches 1
+o
+1
+1
+(o __matches var s)
+o __matches var s
+o
+var s
+(o __matches String s)
+o __matches String s
+o
+String s
+String
+1
+1
+String s
+String
+var s
