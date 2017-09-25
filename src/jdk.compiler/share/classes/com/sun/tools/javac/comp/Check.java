@@ -136,6 +136,7 @@ public class Check {
 
         Target target = Target.instance(context);
         syntheticNameChar = target.syntheticNameChar();
+        syntheticEnumNameStr = target.syntheticEnumNameStr();
 
         profile = Profile.instance(context);
 
@@ -179,6 +180,10 @@ public class Check {
     /** Character for synthetic names
      */
     char syntheticNameChar;
+
+    /** String for synthetic enum names
+     */
+    String syntheticEnumNameStr;
 
     /** A table mapping flat names of all compiled classes for each module in this run
      *  to their symbols; maintained from outside.
@@ -397,16 +402,19 @@ public class Check {
      *  @param name          The class name.
      *  @param s             The enclosing scope.
      */
-    boolean checkUniqueClassName(DiagnosticPosition pos, Name name, Scope s) {
+    boolean checkUniqueClassName(JCClassDecl tree, Name name, Scope s) {
+        if ((tree.mods.flags & Flags.ENUM_CONSTANT_CLASS) != 0) {
+            return true;
+        }
         for (Symbol sym : s.getSymbolsByName(name, NON_RECURSIVE)) {
             if (sym.kind == TYP && sym.name != names.error) {
-                duplicateError(pos, sym);
+                duplicateError(tree.pos(), sym);
                 return false;
             }
         }
         for (Symbol sym = s.owner; sym != null; sym = sym.owner) {
             if (sym.kind == TYP && sym.name == name && sym.name != names.error) {
-                duplicateError(pos, sym);
+                duplicateError(tree.pos(), sym);
                 return true;
             }
         }
@@ -426,17 +434,21 @@ public class Check {
      *    enclClass is the flat name of the enclosing class,
      *    classname is the simple name of the local class
      */
-    Name localClassName(ClassSymbol c) {
+    Name localClassName(ClassSymbol c, long flags) {
         Name enclFlatname = c.owner.enclClass().flatname;
         String enclFlatnameStr = enclFlatname.toString();
         Pair<Name, Name> key = new Pair<>(enclFlatname, c.name);
         Integer index = localClassNameIndexes.get(key);
-        for (int i = (index == null) ? 1 : index; ; i++) {
-            Name flatname = names.fromString(enclFlatnameStr
-                    + syntheticNameChar + i + c.name);
-            if (getCompiled(c.packge().modle, flatname) == null) {
-                localClassNameIndexes.put(key, i + 1);
-                return flatname;
+        if ((flags & Flags.ENUM_CONSTANT_CLASS) != 0) {
+            return names.fromString(enclFlatnameStr + syntheticEnumNameStr + c.name);
+        } else {
+            for (int i = (index == null) ? 1 : index; ; i++) {
+                Name flatname = names.fromString(enclFlatnameStr
+                        + syntheticNameChar + i + c.name);
+                if (getCompiled(c.packge().modle, flatname) == null) {
+                    localClassNameIndexes.put(key, i + 1);
+                    return flatname;
+                }
             }
         }
     }
@@ -1199,7 +1211,12 @@ public class Check {
             if ((flags & ENUM) != 0) {
                 // enums can't be declared abstract or final
                 mask &= ~(ABSTRACT | FINAL);
-                implicit |= implicitEnumFinalFlag(tree);
+                if ((flags & ENUM_CONSTANT_CLASS) != 0) {
+                    mask |= PUBLIC;
+                }
+                implicit |= (flags & ENUM_CONSTANT_CLASS) != 0 ?
+                        PUBLIC :
+                        implicitEnumFinalFlag(tree);
             }
             // Imply STRICTFP if owner has STRICTFP set.
             implicit |= sym.owner.flags_field & STRICTFP;

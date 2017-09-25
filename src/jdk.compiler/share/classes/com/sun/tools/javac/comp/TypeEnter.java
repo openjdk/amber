@@ -887,7 +887,7 @@ public class TypeEnter implements Completer {
                 boolean based = false;
                 boolean addConstructor = true;
                 JCNewClass nc = null;
-                if (sym.name.isEmpty()) {
+                if (sym.name.isEmpty() || (sym.flags() & ENUM_CONSTANT_CLASS) != 0) {
                     nc = (JCNewClass)env.next.tree;
                     if (nc.constructor != null) {
                         addConstructor = nc.constructor.kind != ERR;
@@ -1025,8 +1025,12 @@ public class TypeEnter implements Completer {
             (types.supertype(c.type).tsym == syms.enumSym)) {
             // constructors of true enums are private
             flags = (flags & ~AccessFlags) | PRIVATE | GENERATEDCONSTR;
-        } else
+        } else {
             flags |= (c.flags() & AccessFlags) | GENERATEDCONSTR;
+            if ((c.flags() & ENUM) != 0) {
+                flags &= ~PUBLIC;
+            }
+        }
         if (c.name.isEmpty()) {
             flags |= ANONCONSTR;
         }

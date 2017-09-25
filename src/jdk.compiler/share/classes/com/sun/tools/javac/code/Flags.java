@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -313,6 +313,11 @@ public class Flags {
      */
     public static final long ANONCONSTR_BASED = 1L<<57;
 
+    /**
+     * Flag to indicate enum constant class
+     */
+    public static final long ENUM_CONSTANT_CLASS = 1L<<57;
+
     /** Modifier masks.
      */
     public static final int
@@ -427,7 +432,8 @@ public class Flags {
         SYSTEM_MODULE(Flags.SYSTEM_MODULE),
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
-        HAS_RESOURCE(Flags.HAS_RESOURCE);
+        HAS_RESOURCE(Flags.HAS_RESOURCE),
+        ENUM_CONSTANT_CLASS(Flags.ENUM_CONSTANT_CLASS);
 
         Flag(long flag) {
             this.value = flag;

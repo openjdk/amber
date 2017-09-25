@@ -3451,6 +3451,8 @@ public class JavacParser implements Parser {
         accept(ENUM);
         Name name = ident();
 
+        List<JCTypeParameter> typarams = typeParametersOpt();
+
         List<JCExpression> implementing = List.nil();
         if (token.kind == IMPLEMENTS) {
             nextToken();
@@ -3460,7 +3462,7 @@ public class JavacParser implements Parser {
         List<JCTree> defs = enumBody(name);
         mods.flags |= Flags.ENUM;
         JCClassDecl result = toP(F.at(pos).
-            ClassDef(mods, name, List.nil(),
+            ClassDef(mods, name, typarams,
                      null, implementing, defs));
         attach(result, dc);
         return result;
@@ -3513,26 +3515,34 @@ public class JavacParser implements Parser {
         int pos = token.pos;
         List<JCAnnotation> annotations = annotationsOpt(Tag.ANNOTATION);
         JCModifiers mods = F.at(annotations.isEmpty() ? Position.NOPOS : pos).Modifiers(flags, annotations);
-        List<JCExpression> typeArgs = typeArgumentsOpt();
+        List<JCExpression> typeArgsConstr = typeArgumentsOpt();
         int identPos = token.pos;
         Name name = ident();
         int createPos = token.pos;
+        List<JCExpression> typeArgsConstant = (token.kind == LT) ?
+             typeArguments(false) : List.nil();
         List<JCExpression> args = (token.kind == LPAREN)
             ? arguments() : List.nil();
         JCClassDecl body = null;
         if (token.kind == LBRACE) {
-            JCModifiers mods1 = F.at(Position.NOPOS).Modifiers(Flags.ENUM);
+            JCModifiers mods1 = F.at(Position.NOPOS).Modifiers(Flags.PUBLIC | Flags.ENUM | Flags.ENUM_CONSTANT_CLASS);
             List<JCTree> defs = classOrInterfaceBody(names.empty, false);
-            body = toP(F.at(identPos).AnonymousClassDef(mods1, defs));
+            body = toP(F.at(identPos).ClassDef(mods1, name, List.nil(), null, List.nil(), defs));
         }
         if (args.isEmpty() && body == null)
             createPos = identPos;
-        JCIdent ident = F.at(identPos).Ident(enumName);
-        JCNewClass create = F.at(createPos).NewClass(null, typeArgs, ident, args, body);
+        JCExpression clazz = F.at(identPos).Ident(enumName);
+        if (typeArgsConstant.nonEmpty()) {
+            clazz = F.at(identPos).TypeApply(clazz, typeArgsConstant);
+        }
+        JCNewClass create = F.at(createPos).NewClass(null, typeArgsConstr, clazz, args, body);
         if (createPos != identPos)
             storeEnd(create, S.prevToken().endPos);
-        ident = F.at(identPos).Ident(enumName);
-        JCTree result = toP(F.at(pos).VarDef(mods, name, ident, create));
+        JCExpression vartype = F.at(identPos).Ident(enumName);
+        if (typeArgsConstant.nonEmpty()) {
+            vartype = F.at(identPos).TypeApply(vartype, typeArgsConstant);
+        }
+        JCTree result = toP(F.at(pos).VarDef(mods, name, vartype, create));
         attach(result, dc);
         return result;
     }

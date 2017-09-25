@@ -645,7 +645,7 @@ public class Lower extends TreeTranslator {
         if (flatname != null) {
             c.flatname = flatname;
         } else {
-            c.flatname = chk.localClassName(c);
+            c.flatname = chk.localClassName(c, flags);
         }
         c.sourcefile = owner.sourcefile;
         c.completer = Completer.NULL_COMPLETER;

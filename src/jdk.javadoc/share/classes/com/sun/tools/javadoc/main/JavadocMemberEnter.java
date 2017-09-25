@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.comp.MemberEnter;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.Context;
 
 import static com.sun.tools.javac.code.Flags.*;
@@ -201,6 +202,12 @@ public class JavadocMemberEnter extends MemberEnter {
                 default:
                     maybeConstantExpr = false;
             }
+        }
+
+        @Override
+        public void visitNewClass(JCNewClass that) {
+            maybeConstantExpr = that.def != null &&
+                    (that.def.mods.flags & ENUM_CONSTANT_CLASS) != 0;
         }
     }
 }
