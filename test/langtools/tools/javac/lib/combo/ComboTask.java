@@ -412,6 +412,10 @@ public class ComboTask {
         protected ComboTemplateSource(String name, String template, Resolver resolver) {
             super(URI.create("myfo:/" + env.info().comboCount + "/" + name + ".java"), Kind.SOURCE);
             source = ComboParameter.expandTemplate(template, pname -> resolveParameter(pname, resolver));
+//             DEBUG
+//            System.err.println();
+//            System.err.println("code expanded to:");
+//            System.err.println(source);
         }
 
         @Override

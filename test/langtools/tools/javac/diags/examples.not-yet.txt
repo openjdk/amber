@@ -152,3 +152,14 @@ compiler.err.duplicate.module.on.path
 compiler.err.locn.module-info.not.allowed.on.patch.path
 compiler.misc.cant.resolve.modules
 compiler.misc.file.does.not.contain.module
+
+#constant folding
+compiler.err.initializer.must.be.constant
+compiler.err.method.handle.not.suitable.indy
+compiler.err.intrinsics.ldc.must.have.constant.arg
+compiler.err.intrinsics.indy.must.have.constant.arg
+compiler.err.wrong.number.of.dynamic.args.indy
+compiler.err.type.mismatch.dynamic.arg
+compiler.err.reflective.error
+compiler.err.intrinsics.indy.must.have.constant.arg
+compiler.err.invocation.name.cannot.be.empty

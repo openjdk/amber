@@ -1,0 +1,2 @@
+ReflectiveErrorTest.java:11:56: compiler.err.reflective.error: ofDescriptor, java.lang.invoke.MethodTypeRef
+1 error

@@ -25,7 +25,9 @@
 
 package com.sun.tools.javac.jvm;
 
+
 import com.sun.tools.javac.tree.TreeInfo.PosKind;
+import com.sun.tools.javac.code.Symbol.VarSymbol.ConstantKind;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
@@ -33,10 +35,12 @@ import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.*;
+import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.*;
 
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
+import com.sun.tools.javac.comp.ConstablesVisitor.SpecialConstantsHelper.SpecialConstant;
 import com.sun.tools.javac.jvm.Code.*;
 import com.sun.tools.javac.jvm.Items.*;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
@@ -127,6 +131,10 @@ public class Gen extends JCTree.Visitor {
         debugCode = options.isSet("debug.code");
         allowBetterNullChecks = target.hasObjects();
         pool = new Pool(types);
+        doConstantFold = options.isSet("doConstantFold");
+        if (doConstantFold) {
+            specialConstUtils = new SpecialConstantUtils(context);
+        }
 
         // ignore cldc because we cannot have both stackmap formats
         this.stackMap = StackMapFormat.JSR202;
@@ -140,6 +148,7 @@ public class Gen extends JCTree.Visitor {
     private final boolean genCrt;
     private final boolean debugCode;
     private final boolean allowBetterNullChecks;
+    private final boolean doConstantFold;
 
     /** Code buffer, set by genMethod.
      */
@@ -438,7 +447,7 @@ public class Gen extends JCTree.Visitor {
                         initCode.append(init);
                         endPosTable.replaceTree(vdef, init);
                         initTAs.addAll(getAndRemoveNonFieldTAs(sym));
-                    } else if (sym.getConstValue() == null) {
+                    } else if (pool.varSymNeedsInitializer(sym)) {
                         // Initialize class (static) variables only if
                         // they are not compile-time constants.
                         JCStatement init = make.at(vdef.pos).
@@ -807,11 +816,45 @@ public class Gen extends JCTree.Visitor {
     public Item genExpr(JCTree tree, Type pt) {
         Type prevPt = this.pt;
         try {
-            if (tree.type.constValue() != null) {
+            Object constVal = tree.type.constValue(env.enclClass.sym, syms);
+            /* X.class is special cased in the compiler, the logic below means that if a constant value
+             * possibly from a special constant is not a class symbol, which is how X.class is represented
+             * as a special constant, or if it is a class symbol but the target type is not java.lang.Class
+             * then we want to call the constValue method telling it that it's being invoked from code
+             * generation. If there is a special constant on the other side and that special constant
+             * is supposed to be ldc'ed then we will get a value != null, in other case no ldc will
+             * be generated
+             */
+            if (!(tree.hasTag(SELECT) && ((JCFieldAccess)tree).name == names._class)) {
+                constVal = foldableValueForType(tree.type);
+            }
+            if (constVal == null && doConstantFold && specialConstUtils.isIntrinsicsLDCInvocation(tree)) {
+                log.error(tree.pos(), Errors.IntrinsicsLdcMustHaveConstantArg);
+                nerrs++;
+            }
+            if (constVal != null) {
                 // Short circuit any expressions which are constants
                 tree.accept(classReferenceVisitor);
-                checkStringConstant(tree.pos(), tree.type.constValue());
-                result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                checkStringConstant(tree.pos(), constVal);
+                if (!doConstantFold) {
+                    result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                } else {
+                    if (constVal instanceof ClassSymbol &&
+                            ((ClassSymbol)constVal).type.isPrimitiveOrVoid()) {
+                        Type t = ((ClassSymbol)constVal).type;
+                        Symbol f = rs.resolveInternalField(tree, attrEnv, types.boxedClass(t).type, names.TYPE);
+                        result = items.makeStaticItem(f);
+                    } else {
+                        Object convertedConstant = specialConstUtils.convertConstant(tree, attrEnv, constVal, env.enclClass.sym.packge().modle);
+                        if (specialConstUtils.isPrimitiveClassRef(constVal)) {
+                            result = items.makeStaticItem((Symbol)convertedConstant);
+                        } else {
+                            result = items.makeImmediateItem(tree.type, convertedConstant);
+                        }
+                    }
+                }
+            } else if (doConstantFold && specialConstUtils.isIntrinsicsIndy(tree)) {
+                generateIndy((JCMethodInvocation)tree);
             } else {
                 this.pt = pt;
                 tree.accept(this);
@@ -824,6 +867,96 @@ public class Gen extends JCTree.Visitor {
         } finally {
             this.pt = prevPt;
         }
+    }
+
+    private SpecialConstantUtils specialConstUtils;
+
+    void generateIndy(JCMethodInvocation tree) {
+        // the first argument is an indy descriptor
+        Pool.MethodHandle mHandle = getIndyMHandle(tree);
+        if (mHandle == null) {
+            // nothing to do, the indy is erroneous, so let's try to finish as nicely as possible
+            code.state.stacksize++; // just to avoid a compiler crash
+        } else {
+            List<JCExpression> tmpArgs = tree.args;
+            Object constant = tmpArgs.head.type.constValue(env.enclClass.sym, syms);
+            tmpArgs = tmpArgs.tail;
+            String invocationName = (String)tmpArgs.head.type.constValue();
+            // now we can skip the first argument and focus on the rest which is an Object[]
+            tmpArgs = tmpArgs.tail;
+            ListBuffer<Type> arguments = new ListBuffer<>();
+            for (JCExpression tmpArg : tmpArgs) {
+                    arguments.add(tmpArg.type);
+                    genExpr(tmpArg, tmpArg.type).load();
+            }
+            // Convert BSM args
+            Object[] bsmArgs = (Object[])specialConstUtils.invokeReflectiveMethod(specialConstUtils.bootstrapSpecifierClass, constant, "arguments");
+            Object[] convertedBsmArgs = specialConstUtils.convertConstants(tree, attrEnv, bsmArgs, env.enclClass.sym.packge().modle, true);
+            MethodType mType = new MethodType(arguments.toList(), tree.type, List.nil(), syms.methodClass);
+            Item item = items.makeDynamicItem(new DynamicMethodSymbol(
+                    names.fromString(invocationName),
+                    syms.noSymbol,
+                    mHandle.refKind,
+                    (MethodSymbol)mHandle.refSym,
+                    mType,
+                    convertedBsmArgs));
+            result = item.invoke();
+        }
+    }
+
+    /* returns the internal method handle for the given indy invocation.
+     * Returns null if any error is found.
+     */
+    Pool.MethodHandle getIndyMHandle(JCMethodInvocation tree) {
+        // the first argument is an indy descriptor
+        List<JCExpression> tmpArgs = tree.args;
+        Object constant = tmpArgs.head.type.constValue(env.enclClass.sym, syms);
+        if (constant == null) {
+            log.error(tree.args.head.pos(), Errors.IntrinsicsIndyMustHaveConstantArg);
+            nerrs++;
+        }
+        tmpArgs = tmpArgs.tail;
+        String invocationName = (String)tmpArgs.head.type.constValue();
+        if (invocationName == null) {
+            log.error(tmpArgs.head.pos(), Errors.IntrinsicsIndyMustHaveConstantArg);
+            nerrs++;
+            return null;
+        }
+        if (invocationName.isEmpty()) {
+            log.error(tmpArgs.head.pos(), Errors.InvocationNameCannotBeEmpty);
+            nerrs++;
+            return null;
+        }
+        if (constant != null) {
+            Object mh = specialConstUtils.invokeReflectiveMethod(specialConstUtils.bootstrapSpecifierClass, constant, "method");
+            Pool.MethodHandle mHandle = (Pool.MethodHandle)specialConstUtils
+                    .convertConstant(tree, attrEnv, mh, env.enclClass.sym.packge().modle);
+            boolean correct = false;
+            if (mHandle.refKind == 6 || mHandle.refKind == 8) {
+                MethodSymbol ms = (MethodSymbol)mHandle.refSym;
+                MethodType mt = (MethodType)ms.type;
+                correct = (mt.argtypes.size() >= 3 &&
+                    mt.argtypes.head.tsym == syms.methodHandlesLookupType.tsym &&
+                    mt.argtypes.tail.head.tsym == syms.stringType.tsym &&
+                    mt.argtypes.tail.tail.head.tsym == syms.methodTypeType.tsym);
+            }
+            if (!correct) {
+                log.error(tree.args.head.pos(), Errors.MethodHandleNotSuitableIndy(mHandle.refSym.type));
+                nerrs++;
+            } else {
+                return mHandle;
+            }
+        }
+        return null;
+    }
+
+    private Object foldableValueForType(Type type) {
+        Object val = type.constValue();
+        if (val instanceof SpecialConstant) {
+            SpecialConstant sc = (SpecialConstant)val;
+            val = sc.generateLDC() ? sc.getConstantValue(env.enclClass.sym) : null;
+        }
+        return val;
     }
 
     /** Derived visitor method: generate code for a list of method arguments.
@@ -1009,8 +1142,11 @@ public class Gen extends JCTree.Visitor {
         VarSymbol v = tree.sym;
         code.newLocal(v);
         if (tree.init != null) {
-            checkStringConstant(tree.init.pos(), v.getConstValue());
-            if (v.getConstValue() == null || varDebugInfo) {
+            Object constValue = v.getConstValue(env.enclClass.sym, syms);
+            checkStringConstant(tree.init.pos(), constValue);
+            if (constValue == null ||
+                    varDebugInfo ||
+                    shouldGenerateInit(v, constValue)) {
                 Assert.check(letExprDepth != 0 || code.state.stacksize == 0);
                 genExpr(tree.init, v.erasure(types)).load();
                 items.makeLocalItem(v).store();
@@ -1018,6 +1154,14 @@ public class Gen extends JCTree.Visitor {
             }
         }
         checkDimension(tree.pos(), v.type);
+    }
+
+    private boolean shouldGenerateInit(VarSymbol v, Object constValue) {
+        SpecialConstant sc = v.getConstKind() == ConstantKind.PARTIAL ? (SpecialConstant)v.getConstValue() : null;
+        return doConstantFold &&
+                    constValue != null &&
+                    v.getConstKind() == ConstantKind.PARTIAL &&
+                    !sc.generateLDC();
     }
 
     public void visitSkip(JCSkip tree) {
@@ -1817,7 +1961,7 @@ public class Gen extends JCTree.Visitor {
                 l instanceof LocalItem &&
                 tree.lhs.type.getTag().isSubRangeOf(INT) &&
                 tree.rhs.type.getTag().isSubRangeOf(INT) &&
-                tree.rhs.type.constValue() != null) {
+                tree.rhs.type.hasIntrinsicConstValue()) {
                 int ival = ((Number) tree.rhs.type.constValue()).intValue();
                 if (tree.hasTag(MINUS_ASG)) ival = -ival;
                 ((LocalItem)l).incr(ival);
@@ -2042,10 +2186,10 @@ public class Gen extends JCTree.Visitor {
                 res = items.makeMemberItem(sym, true);
             }
             result = res;
+        } else if (isInvokeDynamic(sym) || isLambdaCondy(sym)) {
+            result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && sym.owner.kind == MTH) {
             result = items.makeLocalItem((VarSymbol)sym);
-        } else if (isInvokeDynamic(sym)) {
-            result = items.makeDynamicItem(sym);
         } else if ((sym.flags() & STATIC) != 0) {
             if (!isAccessSuper(env.enclMethod))
                 sym = binaryQualifier(sym, env.enclClass.type);
@@ -2060,11 +2204,13 @@ public class Gen extends JCTree.Visitor {
     public void visitSelect(JCFieldAccess tree) {
         Symbol sym = tree.sym;
 
-        if (tree.name == names._class) {
-            code.emitLdc(makeRef(tree.pos(), tree.selected.type));
-            result = items.makeStackItem(pt);
-            return;
-       }
+        if (!doConstantFold) {
+            if (tree.name == names._class) {
+                code.emitLdc(makeRef(tree.pos(), tree.selected.type));
+                result = items.makeStackItem(pt);
+                return;
+            }
+        }
 
         Symbol ssym = TreeInfo.symbol(tree.selected);
 
@@ -2080,7 +2226,7 @@ public class Gen extends JCTree.Visitor {
             ? items.makeSuperItem()
             : genExpr(tree.selected, tree.selected.type);
 
-        if (sym.kind == VAR && ((VarSymbol) sym).getConstValue() != null) {
+        if (sym.kind == VAR && ((VarSymbol) sym).getConstValue(env.enclClass.sym, syms) != null) {
             // We are seeing a variable that is constant but its selecting
             // expression is not.
             if ((sym.flags() & STATIC) != 0) {
@@ -2092,7 +2238,7 @@ public class Gen extends JCTree.Visitor {
                 genNullCheck(tree.selected);
             }
             result = items.
-                makeImmediateItem(sym.type, ((VarSymbol) sym).getConstValue());
+                makeImmediateItem(sym.type, ((VarSymbol) sym).getConstValue(env.enclClass.sym, syms));
         } else {
             if (isInvokeDynamic(sym)) {
                 result = items.makeDynamicItem(sym);
@@ -2122,6 +2268,12 @@ public class Gen extends JCTree.Visitor {
 
     public boolean isInvokeDynamic(Symbol sym) {
         return sym.kind == MTH && ((MethodSymbol)sym).isDynamic();
+    }
+
+    public boolean isLambdaCondy(Symbol sym) {
+        return sym.kind == VAR &&
+                sym instanceof DynamicFieldSymbol &&
+                ((DynamicFieldSymbol)sym).isDynamic();
     }
 
     public void visitLiteral(JCLiteral tree) {

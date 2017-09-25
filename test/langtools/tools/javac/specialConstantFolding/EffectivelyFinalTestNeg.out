@@ -1,0 +1,6 @@
+EffectivelyFinalTestNeg.java:20:28: compiler.err.intrinsics.ldc.must.have.constant.arg
+EffectivelyFinalTestNeg.java:25:28: compiler.err.intrinsics.ldc.must.have.constant.arg
+EffectivelyFinalTestNeg.java:33:30: compiler.err.intrinsics.ldc.must.have.constant.arg
+EffectivelyFinalTestNeg.java:41:36: compiler.err.intrinsics.ldc.must.have.constant.arg
+EffectivelyFinalTestNeg.java:51:30: compiler.err.intrinsics.ldc.must.have.constant.arg
+5 errors

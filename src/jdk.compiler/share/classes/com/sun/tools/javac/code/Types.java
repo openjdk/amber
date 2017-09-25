@@ -58,6 +58,7 @@ import static com.sun.tools.javac.code.Symbol.*;
 import static com.sun.tools.javac.code.Type.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.jvm.ClassFile.externalize;
+
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 /**
@@ -99,6 +100,8 @@ public class Types {
     private final FunctionDescriptorLookupError functionDescriptorLookupError;
 
     public final Warner noWarnings;
+    private final boolean doConstantFold;
+    private final SpecialConstantUtils specialConstUtils;
 
     // <editor-fold defaultstate="collapsed" desc="Instantiating">
     public static Types instance(Context context) {
@@ -123,6 +126,9 @@ public class Types {
         diags = JCDiagnostic.Factory.instance(context);
         functionDescriptorLookupError = new FunctionDescriptorLookupError();
         noWarnings = new Warner(null);
+        Options options = Options.instance(context);
+        doConstantFold = options.isSet("doConstantFold");
+        specialConstUtils = new SpecialConstantUtils(context);
     }
     // </editor-fold>
 
@@ -1016,6 +1022,9 @@ public class Types {
      *   (v) is native.
     */
    public boolean isSignaturePolymorphic(MethodSymbol msym) {
+       if (doConstantFold && specialConstUtils.isIntrinsicsIndy(msym)) {
+           return true;
+       }
        List<Type> argtypes = msym.type.getParameterTypes();
        return (msym.flags_field & NATIVE) != 0 &&
               (msym.owner == syms.methodHandleType.tsym || msym.owner == syms.varHandleType.tsym) &&
@@ -2059,7 +2068,7 @@ public class Types {
     public boolean isAssignable(Type t, Type s, Warner warn) {
         if (t.hasTag(ERROR))
             return true;
-        if (t.getTag().isSubRangeOf(INT) && t.constValue() != null) {
+        if (t.getTag().isSubRangeOf(INT) && t.hasIntrinsicConstValue()) {
             int value = ((Number)t.constValue()).intValue();
             switch (s.getTag()) {
             case BYTE:
@@ -4034,6 +4043,22 @@ public class Types {
         return syms.enterClass(syms.java_base, syms.boxedName[t.getTag().ordinal()]);
     }
 
+    public ClassSymbol boxedClass(String descriptor) {
+        switch (descriptor) {
+            case "I": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.INT.ordinal()]);
+            case "J": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.LONG.ordinal()]);
+            case "S": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.SHORT.ordinal()]);
+            case "B": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BYTE.ordinal()]);
+            case "C": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.CHAR.ordinal()]);
+            case "F": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.FLOAT.ordinal()]);
+            case "D": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.DOUBLE.ordinal()]);
+            case "Z": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BOOLEAN.ordinal()]);
+            case "V": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.VOID.ordinal()]);
+            default:
+                throw new AssertionError("invalid primitive descriptor " + descriptor);
+        }
+    }
+
     /**
      * Return the boxed type if 't' is primitive, otherwise return 't' itself.
      */
@@ -4174,11 +4199,16 @@ public class Types {
         if (!currentA.isEmpty() || !currentT.isEmpty() || !currentS.isEmpty())
             return erasure(t); // some "rare" type involved
 
-        if (captured)
-            return new ClassType(cls.getEnclosingType(), S, cls.tsym,
-                                 cls.getMetadata());
-        else
+        if (captured) {
+            Type result = new ClassType(cls.getEnclosingType(), S, cls.tsym, cls.getMetadata());
+            Object cvalue = cls.constValue();
+            if (doConstantFold && cvalue != null) {
+                result = result.constType(cvalue);
+            }
+            return result;
+        } else {
             return t;
+        }
     }
     // where
         public List<Type> freshTypeVariables(List<Type> types) {

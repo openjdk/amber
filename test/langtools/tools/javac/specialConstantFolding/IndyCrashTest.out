@@ -1,0 +1,2 @@
+IndyCrashTest.java:26:58: compiler.err.method.handle.not.suitable.indy: ()java.lang.invoke.CallSite
+1 error

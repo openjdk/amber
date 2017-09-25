@@ -1,0 +1,9 @@
+DontCompileIfSymbolCantBeFoundTest.java:12:63: compiler.err.cant.resolve.location.args: kindname.method, noSuchMethod, , , (compiler.misc.location: kindname.class, DontCompileIfSymbolCantBeFoundTest, null)
+DontCompileIfSymbolCantBeFoundTest.java:13:61: compiler.err.cant.resolve.location.args: kindname.method, noSuchMethod, , , (compiler.misc.location: kindname.class, DontCompileIfSymbolCantBeFoundTest, null)
+DontCompileIfSymbolCantBeFoundTest.java:14:44: compiler.err.cant.apply.symbol: kindname.method, specialMethodHandle, java.lang.invoke.ClassDescriptor,java.lang.String,java.lang.invoke.MethodTypeDescriptor, java.lang.invoke.ClassDescriptor,java.lang.String,java.lang.invoke.MethodTypeDescriptor,java.lang.invoke.ClassDescriptor, kindname.class, java.lang.invoke.Constables, (compiler.misc.arg.length.mismatch)
+DontCompileIfSymbolCantBeFoundTest.java:16:73: compiler.err.cant.resolve: VAR, noSuchField
+DontCompileIfSymbolCantBeFoundTest.java:17:61: compiler.err.cant.resolve: VAR, noSuchField
+DontCompileIfSymbolCantBeFoundTest.java:18:61: compiler.err.cant.resolve: VAR, noSuchField
+DontCompileIfSymbolCantBeFoundTest.java:19:73: compiler.err.cant.resolve: VAR, noSuchField
+DontCompileIfSymbolCantBeFoundTest.java:21:82: compiler.err.cant.apply.symbol: kindname.constructor, DontCompileIfSymbolCantBeFoundTest, compiler.misc.no.args, java.lang.String, kindname.class, DontCompileIfSymbolCantBeFoundTest, (compiler.misc.arg.length.mismatch)
+8 errors

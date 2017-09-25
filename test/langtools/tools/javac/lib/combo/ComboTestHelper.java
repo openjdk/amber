@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,7 +44,7 @@ import java.util.function.Supplier;
  * or more 'dimensions' - each of which represent a different axis of the test space. For instance,
  * if we wanted to test class/interface declaration, one dimension could be the keyword used for
  * the declaration (i.e. 'class' vs. 'interface') while another dimension could be the class/interface
- * modifiers (i.e. 'public', 'pachake-private' etc.). A combo test consists in running a test instance
+ * modifiers (i.e. 'public', 'package-private' etc.). A combo test consists in running a test instance
  * for each point in the test space; that is, for any combination of the combo test dimension:
  * <p>
  * 'public' 'class'
@@ -130,7 +130,7 @@ public class ComboTestHelper<X extends ComboInstance<X>> {
 
     /**
      * Adds a new dimension to this combo test, with a given name, an array of values and a
-     * coresponding setter to be called in order to set the dimension value on the combo test instance
+     * corresponding setter to be called in order to set the dimension value on the combo test instance
      * (before test execution).
      */
     @SuppressWarnings("unchecked")
