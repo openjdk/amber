@@ -1007,7 +1007,7 @@ enum {
     JVM_CONSTANT_NameAndType,
     JVM_CONSTANT_MethodHandle           = 15,  // JSR 292
     JVM_CONSTANT_MethodType             = 16,  // JSR 292
-    //JVM_CONSTANT_(unused)             = 17,  // JSR 292 early drafts only
+    JVM_CONSTANT_ConstantDynamic        = 17,  // JSR 292 early drafts only
     JVM_CONSTANT_InvokeDynamic          = 18,  // JSR 292
     JVM_CONSTANT_ExternalMax            = 18   // Last tag found in classfiles
 };
