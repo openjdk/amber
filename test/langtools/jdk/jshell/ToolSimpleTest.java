@@ -740,4 +740,26 @@ public class ToolSimpleTest extends ReplToolTesting {
                 (a) -> assertCommandOutputContains(a, "1234", "==> 1234")
         );
     }
+
+    @Test
+    public void testIntersection() {
+        test(
+                (a) -> assertCommandOutputContains(a, "<Z extends Runnable&CharSequence> Z get1() { return null; }", "get1()"),
+                (a) -> assertCommandOutputContains(a, "var g1 = get1()", "g1"),
+                (a) -> assertCommand(a, "/vars g1", "|    CharSequence&Runnable g1 = null"),
+                (a) -> assertCommandOutputContains(a, "<Z extends Number&CharSequence> Z get2() { return null; }", "get2()"),
+                (a) -> assertCommandOutputContains(a, "var g2 = get2()", "g2"),
+                (a) -> assertCommand(a, "/vars g2", "|    Number&CharSequence g2 = null")
+        );
+    }
+
+    @Test
+    public void testAnonymous() {
+        test(
+                (a) -> assertCommandOutputContains(a, "var r1 = new Object() {}", "r1"),
+                (a) -> assertCommandOutputContains(a, "/vars r1", "|    <anonymous class extending Object> r1 = "),
+                (a) -> assertCommandOutputContains(a, "var r2 = new Runnable() { public void run() { } }", "r2"),
+                (a) -> assertCommandOutputContains(a, "/vars r2", "|    <anonymous class implementing Runnable> r2 = ")
+        );
+    }
 }

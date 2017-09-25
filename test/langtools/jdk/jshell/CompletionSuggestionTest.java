@@ -645,6 +645,22 @@ public class CompletionSuggestionTest extends KullaTesting {
         assertCompletion("Foo.m(new Baz<>(|", true, "str");
     }
 
+    public void testIntersection() {
+        assertEval("<Z extends Runnable & CharSequence> Z get() { return null; }");
+        assertEval("var v = get();");
+        assertCompletionIncludesExcludes("v.|", true, Set.of("run()", "length()"), Set.of());
+        assertCompletion("Runnable r = |", true, "get()", "v");
+        assertCompletion("CharSequence r = |", true, "get()", "v");
+        assertCompletion("Number r = |", true);
+    }
+
+    public void testAnonymous() {
+        assertEval("var v = new Runnable() { public void run() { } public int length() { return 0; } };");
+        assertCompletionIncludesExcludes("v.|", true, Set.of("run()", "length()"), Set.of());
+        assertCompletion("Runnable r = |", true, "v");
+        assertCompletion("CharSequence r = |", true);
+    }
+
     @BeforeMethod
     public void setUp() {
         super.setUp();

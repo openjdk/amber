@@ -337,4 +337,30 @@ public class VariablesTest extends KullaTesting {
         assertEquals(unr.get(0), "class undefined");
         assertVariables(variable("undefined", "d"));
     }
+
+    public void lvti() {
+        assertEval("var d = 234;", "234");
+        assertEval("class Test<T> { T[][] get() { return null; } }", added(VALID));
+        assertEval("Test<? extends String> test() { return new Test<>(); }", added(VALID));
+        assertEval("var t = test().get();", added(VALID));
+        assertEval("<Z extends Runnable & CharSequence> Z get1() { return null; }", added(VALID));
+        assertEval("var i1 = get1();", added(VALID));
+        assertEval("void t1() { i1.run(); i1.length(); }", added(VALID));
+        assertEval("i1 = 1;", DiagCheck.DIAG_ERROR, DiagCheck.DIAG_OK, ste(MAIN_SNIPPET, NONEXISTENT, REJECTED, false, null));
+        assertEval("<Z extends Number & CharSequence> Z get2() { return null; }", added(VALID));
+        assertEval("var i2 = get2();", added(VALID));
+        assertEval("void t2() { i2.length(); }", added(VALID));
+        assertEval("var r1 = new Runnable() { public void run() { } public String get() { return \"good\"; } };", added(VALID));
+        assertEval("Runnable r2 = r1;");
+        assertEval("r1.get()", "\"good\"");
+        assertEval("var v = r1.get();", "\"good\"");
+        assertEval("var r3 = new java.util.ArrayList<String>(42) { public String get() { return \"good\"; } };", added(VALID));
+        assertEval("r3.get()", "\"good\"");
+        assertEval("class O { public class Inner { public String test() { return \"good\"; } } }");
+        assertEval("var r4 = new O().new Inner() { public String get() { return \"good\"; } };");
+        assertEval("r4.get()", "\"good\"");
+        assertEval("class O2 { public class Inner { public Inner(int i) { } public String test() { return \"good\"; } } }");
+        assertEval("var r5 = new O2().new Inner(1) { public String get() { return \"good\"; } };");
+        assertEval("r5.get()", "\"good\"");
+    }
 }
