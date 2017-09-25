@@ -265,9 +265,9 @@
  * </tbody>
  * </table>
  * The last example assumes that the extra arguments are of type
- * {@code CONSTANT_String} and {@code CONSTANT_Integer}, respectively.
+ * {@code String} and {@code Integer} (or {@code int}), respectively.
  * The second-to-last example assumes that all extra arguments are of type
- * {@code CONSTANT_String}.
+ * {@code String}.
  * The other examples work with all types of extra arguments.
  * <p>
  * The fourth example (which is the only example that does
