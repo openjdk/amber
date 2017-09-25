@@ -101,6 +101,9 @@ public class TransTypes extends TreeTranslator {
         allowGraphInference = source.allowGraphInference();
         annotate = Annotate.instance(context);
         attr = Attr.instance(context);
+        Options options = Options.instance(context);
+        doConstantFold = options.isSet("doConstantFold");
+        specialConstantUtils = new SpecialConstantUtils(context);
     }
 
     /** A hashtable mapping bridge methods to the pair of methods they bridge.
