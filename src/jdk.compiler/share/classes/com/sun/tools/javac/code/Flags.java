@@ -316,7 +316,7 @@ public class Flags {
     /**
      * Flag to indicate enum constant class
      */
-    public static final long ENUM_CONSTANT_CLASS = 1L<<57;
+    public static final long ENUM_CONSTANT_CLASS = 1L<<58;
 
     /** Modifier masks.
      */
