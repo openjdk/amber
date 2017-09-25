@@ -158,6 +158,7 @@ public class Attr extends JCTree.Visitor {
         allowLambda = source.allowLambda();
         allowDefaultMethods = source.allowDefaultMethods();
         allowStaticInterfaceMethods = source.allowStaticInterfaceMethods();
+        allowShadowingOfLambdaParameters = source.allowShadowingOfLambdaParameters();
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
 
@@ -200,6 +201,11 @@ public class Attr extends JCTree.Visitor {
      * Switch: allow strings in switch?
      */
     boolean allowStringsInSwitch;
+
+    /**
+     * Switch: allow shadowing of lambda parameters?
+     */
+    boolean allowShadowingOfLambdaParameters;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -1155,6 +1161,12 @@ public class Attr extends JCTree.Visitor {
                 }
             }
             result = tree.type = v.type;
+            if (tree.name == names.underscore) {
+                WriteableScope enclScope = enter.enterScope(env);
+                if (enclScope != null) {
+                    enclScope.remove(tree.sym);
+                }
+            }
         }
         finally {
             chk.setLint(prevLint);
@@ -1172,7 +1184,7 @@ public class Attr extends JCTree.Visitor {
             // created BLOCK-method.
             Symbol fakeOwner =
                 new MethodSymbol(tree.flags | BLOCK |
-                    env.info.scope.owner.flags() & STRICTFP, names.empty, null,
+                    env.info.scope.owner.flags() & STRICTFP, names.empty, syms.blockScopeMethodType,
                     env.info.scope.owner);
             final Env<AttrContext> localEnv =
                 env.dup(tree, env.info.dup(env.info.scope.dupUnshared(fakeOwner)));
@@ -2799,10 +2811,11 @@ public class Attr extends JCTree.Visitor {
         public Env<AttrContext> lambdaEnv(JCLambda that, Env<AttrContext> env) {
             Env<AttrContext> lambdaEnv;
             Symbol owner = env.info.scope.owner;
+            ClassSymbol enclClass = owner.enclClass();
+            Symbol newScopeOwner = null;
             if (owner.kind == VAR && owner.owner.kind == TYP) {
                 //field initializer
-                ClassSymbol enclClass = owner.enclClass();
-                Symbol newScopeOwner = env.info.scope.owner;
+                newScopeOwner = env.info.scope.owner;
                 /* if the field isn't static, then we can get the first constructor
                  * and use it as the owner of the environment. This is what
                  * LTM code is doing to look for type annotations so we are fine.
@@ -2827,6 +2840,16 @@ public class Attr extends JCTree.Visitor {
                     }
                     newScopeOwner = clinit;
                 }
+            } else {
+                if (allowShadowingOfLambdaParameters) {
+                    newScopeOwner = new MethodSymbol(
+                        HYPOTHETICAL,
+                        names.empty,
+                        syms.lambdaScopeMethodType,
+                        owner);
+                }
+            }
+            if (newScopeOwner != null) {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dupUnshared(newScopeOwner)));
             } else {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dup()));

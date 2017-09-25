@@ -1,0 +1,4 @@
+UnderscoreInMethodsTest.java:10:23: compiler.err.underscore.as.identifier.in.method
+UnderscoreInMethodsTest.java:14:23: compiler.err.underscore.as.identifier.in.method
+UnderscoreInMethodsTest.java:16:32: compiler.err.underscore.not.allowed
+3 errors

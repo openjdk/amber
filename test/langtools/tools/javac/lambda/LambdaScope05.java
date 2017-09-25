@@ -2,7 +2,8 @@
  * @test /nodynamiccopyright/
  * @bug 8015648
  * @summary Duplicate variable in lambda causes javac crash
- * @compile/fail/ref=LambdaScope05.out -XDrawDiagnostics LambdaScope05.java
+ * @compile/fail/ref=LambdaScope05_Source9.out -source 9 -Xlint:-options -XDrawDiagnostics LambdaScope05.java
+ * @compile -source 10 -Xlint:-options -XDrawDiagnostics LambdaScope05.java
  */
 
 class LambdaScope05 {

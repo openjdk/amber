@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -191,6 +191,7 @@ public class Names {
     public final Name module_info;
     public final Name package_info;
     public final Name requireNonNull;
+    public final Name underscore;
 
     // lambda-related
     public final Name lambda;
@@ -353,6 +354,7 @@ public class Names {
         module_info = fromString("module-info");
         package_info = fromString("package-info");
         requireNonNull = fromString("requireNonNull");
+        underscore = fromString("_");
 
         //lambda-related
         lambda = fromString("lambda$");

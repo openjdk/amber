@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -149,6 +149,9 @@ public class ClassWriter extends ClassFile {
     /** Access to files. */
     private final JavaFileManager fileManager;
 
+    /** The symbol table. */
+    private final Symtab syms;
+
     /** Sole signature generator */
     private final CWSignatureGenerator signatureGen;
 
@@ -187,6 +190,8 @@ public class ClassWriter extends ClassFile {
 
         emitSourceFile = options.isUnset(G_CUSTOM) ||
                             options.isSet(G_CUSTOM, "source");
+
+        syms = Symtab.instance(context);
 
         String modifierFlags = options.get("debug.dumpmodifiers");
         if (modifierFlags != null) {
@@ -551,7 +556,7 @@ public class ClassWriter extends ClassFile {
         int alenIdx = writeAttr(attributeName);
         ClassSymbol enclClass = c.owner.enclClass();
         MethodSymbol enclMethod =
-            (c.owner.type == null // local to init block
+            (c.owner.type == syms.blockScopeMethodType // local to init block
              || c.owner.kind != MTH) // or member init
             ? null
             : (MethodSymbol)c.owner;

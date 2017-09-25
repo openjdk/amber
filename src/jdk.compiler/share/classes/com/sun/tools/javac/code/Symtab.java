@@ -151,6 +151,14 @@ public class Symtab {
     /** The builtin type of all methods. */
     public final ClassSymbol methodClass;
 
+    /** A common method type for all those method symbols owning a lambda scope.
+     */
+    public final MethodType lambdaScopeMethodType;
+
+    /** A common method type for all those method symbols owning a block scope.
+     */
+    public final MethodType blockScopeMethodType;
+
     /** A symbol for the java.base module.
      */
     public final ModuleSymbol java_base;
@@ -443,6 +451,9 @@ public class Symtab {
         // the builtin class of all methods
         methodClass = new ClassSymbol(PUBLIC|ACYCLIC, names.Method, noSymbol);
         methodClass.members_field = new Scope.ErrorScope(boundClass);
+
+        lambdaScopeMethodType = new MethodType(List.nil(), voidType, List.nil(), methodClass);
+        blockScopeMethodType = new MethodType(List.nil(), voidType, List.nil(), methodClass);
 
         // Create class to hold all predefined constants and operations.
         predefClass = new ClassSymbol(PUBLIC|ACYCLIC, names.empty, rootPackage);

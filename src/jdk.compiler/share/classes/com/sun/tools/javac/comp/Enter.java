@@ -473,9 +473,11 @@ public class Enter extends JCTree.Visitor {
             // which contains this class in a non-static context
             // (its "enclosing instance class"), provided such a class exists.
             Symbol owner1 = owner;
+            owner1 = skipLambdaOwner(owner1);
             while (owner1.kind.matches(KindSelector.VAL_MTH) &&
                    (owner1.flags_field & STATIC) == 0) {
                 owner1 = owner1.owner;
+                owner1 = skipLambdaOwner(owner1);
             }
             if (owner1.kind == TYP) {
                 ct.setEnclosingType(owner1.type);
@@ -508,6 +510,13 @@ public class Enter extends JCTree.Visitor {
                                                         Env<AttrContext> env) {
             return env.toplevel.sourcefile.isNameCompatible(c.name.toString(),
                                                             JavaFileObject.Kind.SOURCE);
+        }
+
+        private Symbol skipLambdaOwner(Symbol currentOwner) {
+            while (currentOwner.type == syms.lambdaScopeMethodType) {
+                currentOwner = currentOwner.owner;
+            }
+            return currentOwner;
         }
 
     /** Complain about a duplicate class. */

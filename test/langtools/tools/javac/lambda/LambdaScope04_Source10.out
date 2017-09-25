@@ -1,0 +1,3 @@
+LambdaScope04.java:110:28: compiler.err.unreported.exception.implicit.close: java.lang.Exception, local
+LambdaScope04.java:118:28: compiler.err.unreported.exception.implicit.close: java.lang.Exception, local
+2 errors
