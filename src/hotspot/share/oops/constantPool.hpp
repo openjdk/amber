@@ -295,11 +295,6 @@ class ConstantPool : public Metadata {
     *int_at_addr(which) = ref_index;
   }
 
-  void constant_dynamic_at_put(int which, int bootstrap_specifier_index, int name_and_type_index) {
-    tag_at_put(which, JVM_CONSTANT_ConstantDynamic);
-    *int_at_addr(which) = ((jint) name_and_type_index<<16) | bootstrap_specifier_index;
-  }
-
   void invoke_dynamic_at_put(int which, int bootstrap_specifier_index, int name_and_type_index) {
     tag_at_put(which, JVM_CONSTANT_InvokeDynamic);
     *int_at_addr(which) = ((jint) name_and_type_index<<16) | bootstrap_specifier_index;
@@ -557,13 +552,11 @@ class ConstantPool : public Metadata {
   }
 
   int invoke_dynamic_name_and_type_ref_index_at(int which) {
-    assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+    assert(tag_at(which).is_invoke_dynamic(), "Corrupted constant pool");
     return extract_high_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_bootstrap_specifier_index(int which) {
-    assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+    assert(tag_at(which).value() == JVM_CONSTANT_InvokeDynamic, "Corrupted constant pool");
     return extract_low_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_operand_base(int which) {
@@ -613,7 +606,7 @@ class ConstantPool : public Metadata {
   }
 #endif //ASSERT
 
-  // layout of InvokeDynamic and ConstantDynamic bootstrap method specifier (in second part of operands array):
+  // layout of InvokeDynamic bootstrap method specifier (in second part of operands array):
   enum {
          _indy_bsm_offset  = 0,  // CONSTANT_MethodHandle bsm
          _indy_argc_offset = 1,  // u2 argc
@@ -659,15 +652,14 @@ class ConstantPool : public Metadata {
   // Shrink the operands array to a smaller array with new_len length
   void shrink_operands(int new_len, TRAPS);
 
+
   int invoke_dynamic_bootstrap_method_ref_index_at(int which) {
-    assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+    assert(tag_at(which).is_invoke_dynamic(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     return operands()->at(op_base + _indy_bsm_offset);
   }
   int invoke_dynamic_argument_count_at(int which) {
-    assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+    assert(tag_at(which).is_invoke_dynamic(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     int argc = operands()->at(op_base + _indy_argc_offset);
     DEBUG_ONLY(int end_offset = op_base + _indy_argv_offset + argc;
@@ -737,41 +729,25 @@ class ConstantPool : public Metadata {
   enum { _no_index_sentinel = -1, _possible_index_sentinel = -2 };
  public:
 
-  BasicType basic_type_for_constant_at(int which);
-
   // Resolve late bound constants.
   oop resolve_constant_at(int index, TRAPS) {
     constantPoolHandle h_this(THREAD, this);
-    return resolve_constant_at_impl(h_this, index, _no_index_sentinel, NULL, THREAD);
+    return resolve_constant_at_impl(h_this, index, _no_index_sentinel, THREAD);
   }
 
   oop resolve_cached_constant_at(int cache_index, TRAPS) {
     constantPoolHandle h_this(THREAD, this);
-    return resolve_constant_at_impl(h_this, _no_index_sentinel, cache_index, NULL, THREAD);
+    return resolve_constant_at_impl(h_this, _no_index_sentinel, cache_index, THREAD);
   }
 
   oop resolve_possibly_cached_constant_at(int pool_index, TRAPS) {
     constantPoolHandle h_this(THREAD, this);
-    return resolve_constant_at_impl(h_this, pool_index, _possible_index_sentinel, NULL, THREAD);
-  }
-
-  oop find_cached_constant_at(int pool_index, bool& found_it, TRAPS) {
-    constantPoolHandle h_this(THREAD, this);
-    return resolve_constant_at_impl(h_this, pool_index, _possible_index_sentinel, &found_it, THREAD);
+    return resolve_constant_at_impl(h_this, pool_index, _possible_index_sentinel, THREAD);
   }
 
   oop resolve_bootstrap_specifier_at(int index, TRAPS) {
     constantPoolHandle h_this(THREAD, this);
     return resolve_bootstrap_specifier_at_impl(h_this, index, THREAD);
-  }
-
-  void copy_bootstrap_arguments_at(int index,
-                                   int start_arg, int end_arg,
-                                   objArrayHandle info, int pos,
-                                   bool must_resolve, Handle if_not_available, TRAPS) {
-    constantPoolHandle h_this(THREAD, this);
-    copy_bootstrap_arguments_at_impl(h_this, index, start_arg, end_arg,
-                                     info, pos, must_resolve, if_not_available, THREAD);
   }
 
   // Klass name matches name at offset
@@ -855,7 +831,6 @@ class ConstantPool : public Metadata {
 
   Symbol* impl_name_ref_at(int which, bool uncached);
   Symbol* impl_signature_ref_at(int which, bool uncached);
-
   int       impl_klass_ref_index_at(int which, bool uncached);
   int       impl_name_and_type_ref_index_at(int which, bool uncached);
   constantTag impl_tag_ref_at(int which, bool uncached);
@@ -885,13 +860,8 @@ class ConstantPool : public Metadata {
   // Resolve string constants (to prevent allocation during compilation)
   static void resolve_string_constants_impl(const constantPoolHandle& this_cp, TRAPS);
 
-  static oop resolve_constant_at_impl(const constantPoolHandle& this_cp, int index, int cache_index,
-                                      bool* status_return, TRAPS);
+  static oop resolve_constant_at_impl(const constantPoolHandle& this_cp, int index, int cache_index, TRAPS);
   static oop resolve_bootstrap_specifier_at_impl(const constantPoolHandle& this_cp, int index, TRAPS);
-  static void copy_bootstrap_arguments_at_impl(const constantPoolHandle& this_cp, int index,
-                                               int start_arg, int end_arg,
-                                               objArrayHandle info, int pos,
-                                               bool must_resolve, Handle if_not_available, TRAPS);
 
   // Exception handling
   static void throw_resolution_error(const constantPoolHandle& this_cp, int which, TRAPS);

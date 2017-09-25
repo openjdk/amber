@@ -101,10 +101,8 @@ public class MethodHandles {
      * <p>
      * For any given caller class {@code C}, the lookup object returned by this call
      * has equivalent capabilities to any lookup object
-     * supplied by the JVM to the
-     * <a href="package-summary.html#bsm">bootstrap method</a> of an
-     * <a href="package-summary.html#indyinsn">invokedynamic instruction</a> or
-     * <a href="package-summary.html#condycon">dynamic constant</a>
+     * supplied by the JVM to the bootstrap method of an
+     * <a href="package-summary.html#indyinsn">invokedynamic instruction</a>
      * executing in the same caller class {@code C}.
      * @return a lookup object for the caller of this method, with private access
      */

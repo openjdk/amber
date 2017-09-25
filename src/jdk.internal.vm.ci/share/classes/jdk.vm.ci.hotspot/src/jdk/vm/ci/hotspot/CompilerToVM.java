@@ -237,8 +237,6 @@ final class CompilerToVM {
      */
     native HotSpotResolvedJavaMethodImpl lookupMethodInPool(HotSpotConstantPool constantPool, int cpi, byte opcode);
 
-    // TODO resolving ConstantDynamic
-
     /**
      * Ensures that the type referenced by the specified {@code JVM_CONSTANT_InvokeDynamic} entry at
      * index {@code cpi} in {@code constantPool} is loaded and initialized.

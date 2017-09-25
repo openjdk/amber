@@ -56,10 +56,6 @@ BasicType constantTag::basic_type() const {
     case JVM_CONSTANT_MethodType :
     case JVM_CONSTANT_MethodTypeInError :
       return T_OBJECT;
-
-    case JVM_CONSTANT_ConstantDynamic :
-      assert(false, "ConstantDynamic has no fixed basic type");
-
     default:
       ShouldNotReachHere();
       return T_ILLEGAL;
@@ -127,8 +123,6 @@ const char* constantTag::internal_name() const {
       return "MethodType";
     case JVM_CONSTANT_MethodTypeInError :
       return "MethodType Error";
-    case JVM_CONSTANT_ConstantDynamic :
-      return "ConstantDynamic";
     case JVM_CONSTANT_InvokeDynamic :
       return "InvokeDynamic";
     case JVM_CONSTANT_Utf8 :

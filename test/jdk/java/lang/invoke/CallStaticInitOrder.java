@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,18 +24,22 @@
 /**
  * @test
  * @summary static initializer invocation order
- * @library /lib/testlibrary/bytecode /java/lang/invoke/common
- * @build jdk.experimental.bytecode.BasicClassBuilder test.java.lang.invoke.lib.InstructionHelper
- * @run main test.java.lang.invoke.CallStaticInitOrder
+ *
+ * @build indify.Indify
+ * @compile CallStaticInitOrder.java
+ * @run main/othervm
+ *      indify.Indify
+ *      --expand-properties --classpath ${test.classes}
+ *      --java test.java.lang.invoke.CallStaticInitOrder
  */
 
 package test.java.lang.invoke;
 
-import java.lang.invoke.*;
+import java.io.*;
 
+import java.lang.invoke.*;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.*;
-import static test.java.lang.invoke.lib.InstructionHelper.invokedynamic;
 
 public class CallStaticInitOrder {
     private static int TICK;
@@ -92,35 +96,19 @@ public class CallStaticInitOrder {
     private static final MethodHandle CONSTANT_MH_bat;
     private static final MethodHandle CONSTANT_MH_bangGetter;
     private static final MethodHandle CONSTANT_MH_pongSetter;
-
-    private static final MethodHandle INDY_foo;
-    private static final MethodHandle INDY_bar;
-    private static final MethodHandle INDY_baz;
-    private static final MethodHandle INDY_bat;
-    private static final MethodHandle INDY_bang;
-    private static final MethodHandle INDY_pong;
     static {
         try {
             int t1 = tick("CallStaticInitOrder.<clinit>");
             {
-                MethodHandles.Lookup l = lookup();
                 CONSTANT_CS_baz = new MutableCallSite(methodType(int.class));
                 // MH_foo() := lookup().findStatic(Init1.class, "foo", methodType(int.class));
-                CONSTANT_MH_bar = l.findStatic(Init2.class, "bar", methodType(int.class));
+                CONSTANT_MH_bar = lookup().findStatic(Init2.class, "bar", methodType(int.class));
                 // MH_baz() := lookup().findStatic(Init3.class, "baz", methodType(int.class));
-                CONSTANT_MH_bat = l.unreflect(Init4.class.getDeclaredMethod("bat"));
-                CONSTANT_MH_bangGetter = l.findStaticGetter(Init5.class, "bang", int.class);
-                MethodHandle pongSetter = l.findStaticSetter(Init6.class, "pong", int.class);
-                MethodHandle tickGetter = l.findStaticGetter(CallStaticInitOrder.class, "Init6Tick", int.class);
+                CONSTANT_MH_bat = lookup().unreflect(Init4.class.getDeclaredMethod("bat"));
+                CONSTANT_MH_bangGetter = lookup().findStaticGetter(Init5.class, "bang", int.class);
+                MethodHandle pongSetter = lookup().findStaticSetter(Init6.class, "pong", int.class);
+                MethodHandle tickGetter = lookup().findStaticGetter(CallStaticInitOrder.class, "Init6Tick", int.class);
                 CONSTANT_MH_pongSetter = filterReturnValue(insertArguments(pongSetter, 0, -99), tickGetter);
-
-                MethodType bsmType = methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-                INDY_foo = invokedynamic(l, "foo", methodType(int.class), "bsm", bsmType, S -> {});
-                INDY_bar = invokedynamic(l, "bar", methodType(int.class), "bsm", bsmType, S -> {});
-                INDY_baz = invokedynamic(l, "baz", methodType(int.class), "bsm", bsmType, S -> {});
-                INDY_bat = invokedynamic(l, "bat", methodType(int.class), "bsm", bsmType, S -> {});
-                INDY_bang = invokedynamic(l, "bang", methodType(int.class), "bsm", bsmType, S -> {});
-                INDY_pong = invokedynamic(l, "pong", methodType(int.class), "bsm", bsmType, S -> {});
             }
             int t2 = tick("CallStaticInitOrder.<clinit> done");
             assertEquals(t1+1, t2);  // no ticks in between
@@ -163,70 +151,94 @@ public class CallStaticInitOrder {
     private static int runFoo() throws Throwable {
         assertEquals(Init1Tick, 0);  // Init1 not initialized yet
         int t1 = tick("runFoo");
-        int t2 = (int) INDY_foo.invokeExact();
+        int t2 = (int) INDY_foo().invokeExact();
         int t3 = tick("runFoo done");
         assertEquals(Init1Tick, t2);  // when Init1 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_foo() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "foo", methodType(int.class))).dynamicInvoker();
+    }
 
     private static int runBar() throws Throwable {
         assertEquals(Init2Tick, 0);  // Init2 not initialized yet
         int t1 = tick("runBar");
-        int t2 = (int) INDY_bar.invokeExact();
+        int t2 = (int) INDY_bar().invokeExact();
         int t3 = tick("runBar done");
         assertEquals(Init2Tick, t2);  // when Init2 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_bar() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "bar", methodType(int.class))).dynamicInvoker();
+    }
 
     private static int runBaz() throws Throwable {
         assertEquals(Init3Tick, 0);  // Init3 not initialized yet
         int t1 = tick("runBaz");
-        int t2 = (int) INDY_baz.invokeExact();
+        int t2 = (int) INDY_baz().invokeExact();
         int t3 = tick("runBaz done");
         assertEquals(Init3Tick, t2);  // when Init3 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_baz() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "baz", methodType(int.class))).dynamicInvoker();
+    }
 
     private static int runBat() throws Throwable {
         assertEquals(Init4Tick, 0);  // Init4 not initialized yet
         int t1 = tick("runBat");
-        int t2 = (int) INDY_bat.invokeExact();
+        int t2 = (int) INDY_bat().invokeExact();
         int t3 = tick("runBat done");
         assertEquals(Init4Tick, t2);  // when Init4 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_bat() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "bat", methodType(int.class))).dynamicInvoker();
+    }
 
     private static int runBang() throws Throwable {
         assertEquals(Init5Tick, 0);  // Init5 not initialized yet
         int t1 = tick("runBang");
-        int t2 = (int) INDY_bang.invokeExact();
+        int t2 = (int) INDY_bang().invokeExact();
         int t3 = tick("runBang done");
         assertEquals(Init5Tick, t2);  // when Init5 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_bang() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "bang", methodType(int.class))).dynamicInvoker();
+    }
 
     private static int runPong() throws Throwable {
         assertEquals(Init6Tick, 0);  // Init6 not initialized yet
         int t1 = tick("runPong");
-        int t2 = (int) INDY_pong.invokeExact();
+        int t2 = (int) INDY_pong().invokeExact();
         int t3 = tick("runPong done");
         assertEquals(Init6Tick, t2);  // when Init6 was initialized
         assertEquals(t1+2, t3);  // exactly two ticks in between
         assertEquals(t1+1, t2);  // init happened inside
         return t2;
     }
+    private static MethodHandle INDY_pong() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(), "pong", methodType(int.class))).dynamicInvoker();
+    }
 
-    static CallSite bsm(Lookup caller, String name, MethodType type) throws ReflectiveOperationException {
+    private static CallSite bsm(Lookup caller, String name, MethodType type) throws ReflectiveOperationException {
         System.out.println("bsm "+name+type);
         CallSite res;
         switch (name) {
@@ -249,5 +261,14 @@ public class CallStaticInitOrder {
             throw new AssertionError(String.valueOf(res));
         }
         return res;
+    }
+    private static MethodHandle MH_bsm() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findStatic(lookup().lookupClass(), "bsm",
+                                   methodType(CallSite.class, Lookup.class, String.class, MethodType.class));
+    }
+    private static void shouldNotCallThis() {
+        // if this gets called, the transformation has not taken place
+        throw new AssertionError("this code should be statically transformed away by Indify");
     }
 }

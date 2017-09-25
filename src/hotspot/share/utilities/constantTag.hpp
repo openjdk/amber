@@ -90,12 +90,11 @@ class constantTag VALUE_OBJ_CLASS_SPEC {
 
   bool is_method_type() const              { return _tag == JVM_CONSTANT_MethodType; }
   bool is_method_handle() const            { return _tag == JVM_CONSTANT_MethodHandle; }
-  bool is_constant_dynamic() const         { return _tag == JVM_CONSTANT_ConstantDynamic; }
   bool is_invoke_dynamic() const           { return _tag == JVM_CONSTANT_InvokeDynamic; }
 
   bool is_loadable_constant() const {
     return ((_tag >= JVM_CONSTANT_Integer && _tag <= JVM_CONSTANT_String) ||
-            is_method_type() || is_method_handle() || is_constant_dynamic() ||
+            is_method_type() || is_method_handle() ||
             is_unresolved_klass());
   }
 
@@ -107,20 +106,6 @@ class constantTag VALUE_OBJ_CLASS_SPEC {
            (tag >= JVM_CONSTANT_MethodHandle && tag <= JVM_CONSTANT_InvokeDynamic) ||
            (tag >= JVM_CONSTANT_InternalMin && tag <= JVM_CONSTANT_InternalMax), "Invalid constant tag");
     _tag = tag;
-  }
-
-  static constantTag ofBasicType(BasicType bt) {
-    if (is_subword_type(bt))  bt = T_INT;
-    switch (bt) {
-      case T_OBJECT: return constantTag(JVM_CONSTANT_String);
-      case T_INT:    return constantTag(JVM_CONSTANT_Integer);
-      case T_LONG:   return constantTag(JVM_CONSTANT_Long);
-      case T_FLOAT:  return constantTag(JVM_CONSTANT_Float);
-      case T_DOUBLE: return constantTag(JVM_CONSTANT_Double);
-      default:       break;
-    }
-    assert(false, "bad basic type for tag");
-    return constantTag();
   }
 
   jbyte value() const                { return _tag; }

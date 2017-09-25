@@ -104,13 +104,6 @@ public class ConstantWriter extends BasicWriter {
                 return 1;
             }
 
-            public Integer visitConstantDynamic(CONSTANT_ConstantDynamic_info info, Void p) {
-                print("#" + info.bootstrap_method_attr_index + ":#" + info.name_and_type_index);
-                tab();
-                println("// " + stringValue(info));
-                return 1;
-            }
-
             public Integer visitLong(CONSTANT_Long_info info, Void p) {
                 println(stringValue(info));
                 return 2;
@@ -253,8 +246,6 @@ public class ConstantWriter extends BasicWriter {
                 return "InterfaceMethod";
             case CONSTANT_InvokeDynamic:
                 return "InvokeDynamic";
-            case CONSTANT_ConstantDynamic:
-                return "ConstantDynamic";
             case CONSTANT_NameAndType:
                 return "NameAndType";
             default:
@@ -315,15 +306,6 @@ public class ConstantWriter extends BasicWriter {
         }
 
         public String visitInvokeDynamic(CONSTANT_InvokeDynamic_info info, Void p) {
-            try {
-                String callee = stringValue(info.getNameAndTypeInfo());
-                return "#" + info.bootstrap_method_attr_index + ":" + callee;
-            } catch (ConstantPoolException e) {
-                return report(e);
-            }
-        }
-
-        public String visitConstantDynamic(CONSTANT_ConstantDynamic_info info, Void p) {
             try {
                 String callee = stringValue(info.getNameAndTypeInfo());
                 return "#" + info.bootstrap_method_attr_index + ":" + callee;

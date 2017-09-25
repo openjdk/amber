@@ -557,12 +557,6 @@ public class HTMLGenerator implements /* imports */ ClassConstants {
                buf.cell(Integer.toString(cpool.getIntAt(index)));
                break;
 
-           case JVM_CONSTANT_ConstantDynamic:
-               buf.cell("JVM_CONSTANT_ConstantDynamic");
-               buf.cell(genLowHighShort(cpool.getIntAt(index)) +
-                        genListOfShort(cpool.getBootstrapSpecifierAt(index)));
-             break;
-
             case JVM_CONSTANT_InvokeDynamic:
                buf.cell("JVM_CONSTANT_InvokeDynamic");
                buf.cell(genLowHighShort(cpool.getIntAt(index)) +

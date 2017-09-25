@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,96 +24,51 @@
 /* @test
  * @bug 7050328 8007035
  * @summary smoke test for invokedynamic instructions
- * @library /lib/testlibrary/bytecode /java/lang/invoke/common
- * @build jdk.experimental.bytecode.BasicClassBuilder test.java.lang.invoke.lib.InstructionHelper
- * @run main test.java.lang.invoke.InvokeDynamicPrintArgs --check-output
- * @run main/othervm test.java.lang.invoke.InvokeDynamicPrintArgs --security-manager
+ * @build indify.Indify
+ * @compile InvokeDynamicPrintArgs.java
+ * @run main/othervm
+ *      indify.Indify
+ *      --verify-specifier-count=8
+ *      --expand-properties --classpath ${test.classes}
+ *      --java test.java.lang.invoke.InvokeDynamicPrintArgs --check-output
+ * @run main/othervm
+ *      indify.Indify
+ *      --expand-properties --classpath ${test.classes}
+ *      --java test.java.lang.invoke.InvokeDynamicPrintArgs --security-manager
  */
 
 package test.java.lang.invoke;
 
-import jdk.experimental.bytecode.PoolHelper;
+import java.util.*;
+import java.io.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.lang.invoke.CallSite;
-import java.lang.invoke.ConstantCallSite;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.security.CodeSource;
-import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Permissions;
-import java.security.Policy;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-
-import static java.lang.invoke.MethodHandles.Lookup;
-import static java.lang.invoke.MethodHandles.lookup;
-import static java.lang.invoke.MethodType.genericMethodType;
-import static java.lang.invoke.MethodType.methodType;
-import static test.java.lang.invoke.lib.InstructionHelper.invokedynamic;
+import java.lang.invoke.*;
+import java.security.*;
+import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodType.*;
 
 public class InvokeDynamicPrintArgs {
-
-    private static final MethodHandle INDY_nothing;
-    private static final MethodHandle INDY_foo;
-    private static final MethodHandle INDY_bar;
-    private static final MethodHandle INDY_bar2;
-    private static final MethodHandle INDY_baz;
-    static {
-        try {
-            MethodHandles.Lookup l = lookup();
-            MethodType bsmType = methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class);
-            INDY_nothing = invokedynamic(l, "nothing", methodType(void.class), "bsm", bsmType, S -> { });
-            INDY_foo = invokedynamic(l, "foo", methodType(void.class, String.class), "bsm", bsmType, S -> { });
-
-            MethodType bsm2Type = methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Object[].class);
-            INDY_bar = invokedynamic(l, "bar", methodType(void.class, String.class, int.class), "bsm2", bsm2Type,
-                                     S -> {
-                                         S.add("java/lang/Void", PoolHelper::putClass);
-                                         S.add("void type!", PoolHelper::putString);
-                                         S.add(1);
-                                         S.add(234.5F);
-                                         S.add(67.5);
-                                         S.add(89L);
-                                     });
-            INDY_bar2 = invokedynamic(l, "bar2", methodType(void.class, String.class, int.class), "bsm2", bsm2Type,
-                                      S -> {
-                                          S.add("java/lang/Void", PoolHelper::putClass);
-                                          S.add("void type!", PoolHelper::putString);
-                                          S.add(1);
-                                          S.add(234.5F);
-                                          S.add(67.5);
-                                          S.add(89L);
-                                      });
-            INDY_baz = invokedynamic(l, "baz", methodType(void.class, String.class, int.class, double.class), "bsm2", bsm2Type,
-                                     S -> {
-                                         S.add(1234.5);
-                                     });
-        } catch (Exception ex) {
-            throw new InternalError(ex);
-        }
-    }
-
     public static void main(String... av) throws Throwable {
         if (av.length > 0 && av[0].equals("--check-output"))  openBuf();
         if (av.length > 0 && av[0].equals("--security-manager"))  setSM();
         System.out.println("Printing some argument lists, starting with a empty one:");
-        INDY_nothing.invokeExact();                 // BSM specifier #0 = {bsm}
-        INDY_bar.invokeExact("bar arg", 1);         // BSM specifier #1 = {bsm2, Void.class, "void type"}
-        INDY_bar2.invokeExact("bar2 arg", 222);     // BSM specifier #1 = (same)
-        INDY_baz.invokeExact("baz arg", 2, 3.14);   // BSM specifier #2 = {bsm2, 1234.5}
-        INDY_foo.invokeExact("foo arg");            // BSM specifier #0 = (same)
+        INDY_nothing().invokeExact();                 // BSM specifier #0 = {bsm}
+        INDY_bar().invokeExact("bar arg", 1);         // BSM specifier #1 = {bsm2, Void.class, "void type"}
+        INDY_bar2().invokeExact("bar2 arg", 222);     // BSM specifier #1 = (same)
+        INDY_baz().invokeExact("baz arg", 2, 3.14);   // BSM specifier #2 = {bsm2, 1234.5}
+        INDY_foo().invokeExact("foo arg");            // BSM specifier #0 = (same)
         // Hence, BSM specifier count should be 3.  See "--verify-specifier-count=3" above.
         System.out.println("Done printing argument lists.");
         closeBuf();
+        checkConstantRefs();
     }
 
+    private static void checkConstantRefs() throws Throwable {
+        // check some constant references to its self class
+        assertEquals(MT_bsm(), MH_bsm().type());
+        assertEquals(MT_bsm2(), MH_bsm2().type());
+        assertEquals(MT_bsm(), non_MH_bsm().type());
+    }
     private static void assertEquals(Object exp, Object act) {
         if (exp == act || (exp != null && exp.equals(act)))  return;
         throw new AssertionError("not equal: "+exp+", "+act);
@@ -164,22 +119,26 @@ public class InvokeDynamicPrintArgs {
         if (doPrint)  System.out.println(message);
     }
     private static MethodHandle MH_printArgs() throws ReflectiveOperationException {
+        shouldNotCallThis();
         return lookup().findStatic(lookup().lookupClass(),
                                    "printArgs", methodType(void.class, Object.class, Object[].class));
     }
 
-    static CallSite bsm(Lookup caller, String name, MethodType type) throws ReflectiveOperationException {
+    private static CallSite bsm(Lookup caller, String name, MethodType type) throws ReflectiveOperationException {
         // ignore caller and name, but match the type:
-
-        Object bsmInfo = Arrays.asList(forName(caller.lookupClass()), name, type);
+        Object bsmInfo = Arrays.asList(caller, name, type);
         return new ConstantCallSite(MH_printArgs().bindTo(bsmInfo).asCollector(Object[].class, type.parameterCount()).asType(type));
     }
-
-    static String forName(Class<?> c) {
-        String s = c.getCanonicalName();
-        int i = s.indexOf('$');
-        if (i > 0) s = s.substring(0, i);
-        return s;
+    private static MethodType MT_bsm() {
+        shouldNotCallThis();
+        return methodType(CallSite.class, Lookup.class, String.class, MethodType.class);
+    }
+    private static MethodHandle MH_bsm() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findStatic(lookup().lookupClass(), "bsm", MT_bsm());
+    }
+    private static MethodHandle non_MH_bsm() throws ReflectiveOperationException {
+        return lookup().findStatic(lookup().lookupClass(), "bsm", MT_bsm());
     }
 
     /* Example of a constant call site with user-data.
@@ -210,19 +169,68 @@ public class InvokeDynamicPrintArgs {
         }
 
         public Object runTarget(Object... dynamicArgs) {
-            List<Object> bsmInfo = new ArrayList<>(Arrays.asList(forName(caller.lookupClass()), name, type()));
+            List<Object> bsmInfo = new ArrayList<>(Arrays.asList(caller, name, type()));
             bsmInfo.addAll(Arrays.asList(staticArgs));
             printArgs(bsmInfo, dynamicArgs);
             return null;
         }
 
         private static MethodHandle MH_createTarget() throws ReflectiveOperationException {
+            shouldNotCallThis();
             return lookup().findVirtual(lookup().lookupClass(), "createTarget", methodType(MethodHandle.class));
         }
     }
-    static CallSite bsm2(Lookup caller, String name, MethodType type, Object... arg) throws Throwable {
+    private static CallSite bsm2(Lookup caller, String name, MethodType type, Object... arg) throws Throwable {
         // ignore caller and name, but match the type:
         return new PrintingCallSite(caller, name, type, arg);
+    }
+    private static MethodType MT_bsm2() {
+        shouldNotCallThis();
+        return methodType(CallSite.class, Lookup.class, String.class, MethodType.class, Object[].class);
+    }
+    private static MethodHandle MH_bsm2() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findStatic(lookup().lookupClass(), "bsm2", MT_bsm2());
+    }
+
+    private static MethodHandle INDY_nothing() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(),
+                                                  "nothing", methodType(void.class)
+                                                  )).dynamicInvoker();
+    }
+    private static MethodHandle INDY_foo() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm().invoke(lookup(),
+                                                  "foo", methodType(void.class, String.class)
+                                                  )).dynamicInvoker();
+    }
+    private static MethodHandle INDY_bar() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm2().invoke(lookup(),
+                                                  "bar", methodType(void.class, String.class, int.class)
+                                                  , Void.class, "void type!", 1, 234.5F, 67.5, (long)89
+                                                  )).dynamicInvoker();
+    }
+    private static MethodHandle INDY_bar2() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm2().invoke(lookup(),
+                                                  "bar2", methodType(void.class, String.class, int.class)
+                                                  , Void.class, "void type!", 1, 234.5F, 67.5, (long)89
+                                                  )).dynamicInvoker();
+    }
+    private static MethodHandle INDY_baz() throws Throwable {
+        shouldNotCallThis();
+        return ((CallSite) MH_bsm2().invoke(lookup(),
+                                                  "baz", methodType(void.class, String.class, int.class, double.class)
+                                                  , 1234.5
+                                                  )).dynamicInvoker();
+    }
+
+    private static void shouldNotCallThis() {
+        // if this gets called, the transformation has not taken place
+        if (System.getProperty("InvokeDynamicPrintArgs.allow-untransformed") != null)  return;
+        throw new AssertionError("this code should be statically transformed away by Indify");
     }
 
     static class TestPolicy extends Policy {

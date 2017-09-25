@@ -116,55 +116,24 @@ IRT_ENTRY(void, InterpreterRuntime::ldc(JavaThread* thread, bool wide))
 IRT_END
 
 IRT_ENTRY(void, InterpreterRuntime::resolve_ldc(JavaThread* thread, Bytecodes::Code bytecode)) {
-  assert(bytecode == Bytecodes::_ldc ||
-         bytecode == Bytecodes::_ldc_w ||
-         bytecode == Bytecodes::_ldc2_w ||
-         bytecode == Bytecodes::_fast_aldc ||
+  assert(bytecode == Bytecodes::_fast_aldc ||
          bytecode == Bytecodes::_fast_aldc_w, "wrong bc");
   ResourceMark rm(thread);
-  const bool is_fast_aldc = (bytecode == Bytecodes::_fast_aldc ||
-                             bytecode == Bytecodes::_fast_aldc_w);
   methodHandle m (thread, method(thread));
   Bytecode_loadconstant ldc(m, bci(thread));
-
-  // Double-check the size.  (Condy can have any type.)
-  BasicType type = ldc.result_type();
-  switch (type2size[type]) {
-  case 2: guarantee(bytecode == Bytecodes::_ldc2_w, ""); break;
-  case 1: guarantee(bytecode != Bytecodes::_ldc2_w, ""); break;
-  default: ShouldNotReachHere();
-  }
-
-  // Resolve the constant.  This does not do unboxing.
-  // But it does replace Universe::the_null_sentinel by null.
   oop result = ldc.resolve_constant(CHECK);
-  assert(result != NULL || is_fast_aldc, "null result only valid for fast_aldc");
-
 #ifdef ASSERT
   {
     // The bytecode wrappers aren't GC-safe so construct a new one
     Bytecode_loadconstant ldc2(m, bci(thread));
-    int rindex = ldc2.cache_index();
-    if (rindex < 0)
-      rindex = m->constants()->cp_to_object_index(ldc2.pool_index());
-    if (rindex >= 0) {
-      oop coop = m->constants()->resolved_references()->obj_at(rindex);
-      oop roop = (result == NULL ? Universe::the_null_sentinel() : result);
-      assert(roop == coop, "expected result for assembly code");
-    }
+    oop coop = m->constants()->resolved_references()->obj_at(ldc2.cache_index());
+    assert(result == coop, "expected result for assembly code");
   }
 #endif
   thread->set_vm_result(result);
-  if (!is_fast_aldc) {
-    // Tell the interpreter how to unbox the primitive.
-    guarantee(java_lang_boxing_object::is_instance(result, type), "");
-    int offset = java_lang_boxing_object::value_offset_in_bytes(type);
-    intptr_t flags = ((as_TosState(type) << ConstantPoolCacheEntry::tos_state_shift)
-                      | (offset & ConstantPoolCacheEntry::field_index_mask));
-    thread->set_vm_result_2((Metadata*)flags);
-  }
 }
 IRT_END
+
 
 //------------------------------------------------------------------------------------------------------------------------
 // Allocation

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,74 +24,39 @@
 /* @test
  * @bug 8022066
  * @summary smoke test for method handle constants
- * @library /lib/testlibrary/bytecode /java/lang/invoke/common
- * @build jdk.experimental.bytecode.BasicClassBuilder test.java.lang.invoke.lib.InstructionHelper
- * @run main test.java.lang.invoke.MethodHandleConstants --check-output
- * @run main/othervm test.java.lang.invoke.MethodHandleConstants --security-manager
+ * @build indify.Indify
+ * @compile MethodHandleConstants.java
+ * @run main/othervm
+ *      indify.Indify
+ *      --verify-specifier-count=4
+ *      --expand-properties --classpath ${test.classes}
+ *      --java test.java.lang.invoke.MethodHandleConstants --check-output
+ * @run main/othervm
+ *      indify.Indify
+ *      --expand-properties --classpath ${test.classes}
+ *      --java test.java.lang.invoke.MethodHandleConstants --security-manager
  */
 
 package test.java.lang.invoke;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandleInfo;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.security.CodeSource;
-import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Permissions;
-import java.security.Policy;
-import java.security.ProtectionDomain;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
+import java.io.*;
+import java.lang.invoke.*;
+import java.security.*;
 
-import static java.lang.invoke.MethodHandles.lookup;
-import static java.lang.invoke.MethodType.methodType;
-import static test.java.lang.invoke.lib.InstructionHelper.ldcMethodHandle;
+import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodType.*;
 
 public class MethodHandleConstants {
-    private static final MethodHandle MH_String_replace_C2;
-    private static final MethodHandle MH_MethodHandle_invokeExact_SC2;
-    private static final MethodHandle MH_MethodHandle_invoke_SC2;
-    private static final MethodHandle MH_Class_forName_S;
-    private static final MethodHandle MH_Class_forName_SbCL;
-    static {
-        try {
-            MethodHandles.Lookup l = lookup();
-
-            MH_String_replace_C2 = ldcMethodHandle(l,
-                    MethodHandleInfo.REF_invokeVirtual, String.class, "replace",
-                    methodType(String.class, char.class, char.class));
-            MH_MethodHandle_invokeExact_SC2 = ldcMethodHandle(l,
-                    MethodHandleInfo.REF_invokeVirtual, MethodHandle.class, "invokeExact",
-                    methodType(String.class, String.class, char.class, char.class));
-            MH_MethodHandle_invoke_SC2 = ldcMethodHandle(l,
-                    MethodHandleInfo.REF_invokeVirtual, MethodHandle.class, "invoke",
-                    methodType(String.class, String.class, char.class, char.class));
-            MH_Class_forName_S = ldcMethodHandle(l,
-                    MethodHandleInfo.REF_invokeStatic, Class.class, "forName",
-                    methodType(Class.class, String.class));
-            MH_Class_forName_SbCL = ldcMethodHandle(l,
-                    MethodHandleInfo.REF_invokeStatic, Class.class, "forName",
-                    methodType(Class.class, String.class, boolean.class, ClassLoader.class));
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-            throw new InternalError(ex);
-        }
-    }
-
     public static void main(String... av) throws Throwable {
         if (av.length > 0 && av[0].equals("--check-output"))  openBuf();
         if (av.length > 0 && av[0].equals("--security-manager"))  setSM();
         System.out.println("Obtaining method handle constants:");
-        testCase((MethodHandle) MH_String_replace_C2.invokeExact(), String.class, "replace", String.class, String.class, char.class, char.class);
-        testCase((MethodHandle) MH_MethodHandle_invokeExact_SC2.invokeExact(), MethodHandle.class, "invokeExact", String.class, MethodHandle.class, String.class, char.class, char.class);
-        testCase((MethodHandle) MH_MethodHandle_invoke_SC2.invokeExact(), MethodHandle.class, "invoke", String.class, MethodHandle.class, String.class, char.class, char.class);
-        testCase((MethodHandle) MH_Class_forName_S.invokeExact(), Class.class, "forName", Class.class, String.class);
-        testCase((MethodHandle) MH_Class_forName_SbCL.invokeExact(), Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
+        testCase(MH_String_replace_C2(), String.class, "replace", String.class, String.class, char.class, char.class);
+        testCase(MH_MethodHandle_invokeExact_SC2(), MethodHandle.class, "invokeExact", String.class, MethodHandle.class, String.class, char.class, char.class);
+        testCase(MH_MethodHandle_invoke_SC2(), MethodHandle.class, "invoke", String.class, MethodHandle.class, String.class, char.class, char.class);
+        testCase(MH_Class_forName_S(), Class.class, "forName", Class.class, String.class);
+        testCase(MH_Class_forName_SbCL(), Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class);
         System.out.println("Done.");
         closeBuf();
     }
@@ -146,6 +111,62 @@ public class MethodHandleConstants {
         "MethodHandle(String,boolean,ClassLoader)Class",
         "Done."
     };
+
+    // String.replace(String, char, char)
+    private static MethodType MT_String_replace_C2() {
+        shouldNotCallThis();
+        return methodType(String.class, char.class, char.class);
+    }
+    private static MethodHandle MH_String_replace_C2() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findVirtual(String.class, "replace", MT_String_replace_C2());
+    }
+
+    // MethodHandle.invokeExact(...)
+    private static MethodType MT_MethodHandle_invokeExact_SC2() {
+        shouldNotCallThis();
+        return methodType(String.class, String.class, char.class, char.class);
+    }
+    private static MethodHandle MH_MethodHandle_invokeExact_SC2() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findVirtual(MethodHandle.class, "invokeExact", MT_MethodHandle_invokeExact_SC2());
+    }
+
+    // MethodHandle.invoke(...)
+    private static MethodType MT_MethodHandle_invoke_SC2() {
+        shouldNotCallThis();
+        return methodType(String.class, String.class, char.class, char.class);
+    }
+    private static MethodHandle MH_MethodHandle_invoke_SC2() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findVirtual(MethodHandle.class, "invoke", MT_MethodHandle_invoke_SC2());
+    }
+
+    // Class.forName(String)
+    private static MethodType MT_Class_forName_S() {
+        shouldNotCallThis();
+        return methodType(Class.class, String.class);
+    }
+    private static MethodHandle MH_Class_forName_S() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findStatic(Class.class, "forName", MT_Class_forName_S());
+    }
+
+    // Class.forName(String, boolean, ClassLoader)
+    private static MethodType MT_Class_forName_SbCL() {
+        shouldNotCallThis();
+        return methodType(Class.class, String.class, boolean.class, ClassLoader.class);
+    }
+    private static MethodHandle MH_Class_forName_SbCL() throws ReflectiveOperationException {
+        shouldNotCallThis();
+        return lookup().findStatic(Class.class, "forName", MT_Class_forName_SbCL());
+    }
+
+    private static void shouldNotCallThis() {
+        // if this gets called, the transformation has not taken place
+        if (System.getProperty("MethodHandleConstants.allow-untransformed") != null)  return;
+        throw new AssertionError("this code should be statically transformed away by Indify");
+    }
 
     static class TestPolicy extends Policy {
         final PermissionCollection permissions = new Permissions();
