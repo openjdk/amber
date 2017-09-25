@@ -316,7 +316,7 @@ public class Flags {
     /**
      * Flag to indicate the given variable is a match binding variable.
      */
-    public static final long MATCH_BINDING = 1L<<57;
+    public static final long MATCH_BINDING = 1L<<58;
 
     /** Modifier masks.
      */
