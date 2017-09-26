@@ -130,7 +130,7 @@ class ExpressionToTypeInfo {
                 return null;
             }
         }
-        
+
     }
 
     private Type pathToType(TreePath tp) {
@@ -259,8 +259,8 @@ class ExpressionToTypeInfo {
                                                       .stream()
                                                       .map(t -> varTypeName(t, false))
                                                       .collect(List.collector());
-                        if (getEnclosingExpression(nct) != null) {
-                            TreePath enclPath = new TreePath(tp, getEnclosingExpression(nct));
+                        if (nct.getEnclosingExpression() != null) {
+                            TreePath enclPath = new TreePath(tp, nct.getEnclosingExpression());
                             ei.enclosingInstanceType = varTypeName(pathToType(enclPath), false);
                         }
                         ei.isClass = at.task.getTypes().directSupertypes(type).size() == 1;
@@ -286,27 +286,6 @@ class ExpressionToTypeInfo {
         } catch (Exception ex) {
             return OBJECT_TYPE_NAME;
         }
-    }
-
-    private static ExpressionTree getEnclosingExpression(NewClassTree nct) {
-        //workaround for: JDK-8044853, invocations should be replaced with nct.getEnclosingExpression():
-        if (nct.getArguments().size() > 0) {
-            com.sun.tools.javac.tree.JCTree arg = (com.sun.tools.javac.tree.JCTree) nct.getArguments().get(0);
-            if (arg.hasTag(com.sun.tools.javac.tree.JCTree.Tag.NULLCHK)) {
-                return ((com.sun.tools.javac.tree.JCTree.JCUnary) arg).arg;
-            } else {
-                ClassTree clazz = nct.getClassBody();
-                MethodTree constructor = (MethodTree) clazz.getMembers().get(0);
-                ExpressionStatementTree superCallStatement =
-                        (ExpressionStatementTree) constructor.getBody().getStatements().get(0);
-                MethodInvocationTree superCall =
-                        (MethodInvocationTree) superCallStatement.getExpression();
-                if (superCall.getMethodSelect().getKind() == Kind.MEMBER_SELECT) {
-                    return (ExpressionTree) arg;
-                }
-            }
-        }
-        return null;
     }
 
 }

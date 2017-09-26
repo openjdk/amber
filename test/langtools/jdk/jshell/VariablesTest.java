@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 8144903
+ * @bug 8144903 8177466
  * @summary Tests for EvaluationState.variables
  * @build KullaTesting TestingInputStream ExpectedDiagnostic
  * @run testng VariablesTest

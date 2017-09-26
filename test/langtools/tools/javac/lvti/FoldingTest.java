@@ -6,12 +6,12 @@
  */
 class FoldingTest {
 
-	void testReachability() {
-    	for(var i = 0; i < 3; i++) {
-	      // ok
-    	}
-	    System.out.println("foo");   //this should be reachable
-	}
+        void testReachability() {
+        for(var i = 0; i < 3; i++) {
+              // ok
+        }
+            System.out.println("foo");   //this should be reachable
+        }
 
     void testCase(String s) {
         var c = "";

@@ -208,7 +208,7 @@ public class Types {
                 return UPWARDS;
             }
         };
-        
+
         abstract ProjectionKind complement();
     }
 
