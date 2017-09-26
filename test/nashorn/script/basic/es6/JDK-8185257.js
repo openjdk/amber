@@ -21,18 +21,14 @@
  * questions.
  */
 
-import java.io.File;
+/**
+ * JDK-8185257: Nashorn AST is missing nodes when a for-loop contains a VariableDeclarationList
+ *
+ * @test
+ * @run
+ * @fork
+ */
 
-public final class LoggingHelper {
-
-    /*
-     * I wish we had a support for java.util.logging in jtreg similar to what we
-     * have for security policy files:
-     *
-     *     @run main/othervm/jul=logging.properties ClassUnderTest
-     */
-    public static void setupLogging() {
-        String path = System.getProperty("test.src", ".") + File.separator + "logging.properties";
-        System.setProperty("java.util.logging.config.file", path);
-    }
-}
+var ASTVisitor = Java.type("jdk.nashorn.test.models.ES6ASTVisitor");
+var testcode = "for (var i = 0; i < 100; i++) {\n print(i);\n}\n";
+ASTVisitor.visit(testcode);
