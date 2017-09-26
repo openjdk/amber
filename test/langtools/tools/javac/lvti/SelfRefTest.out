@@ -1,0 +1,3 @@
+SelfRefTest.java:16:12: compiler.err.cant.infer.local.var.type: x, (compiler.misc.local.self.ref)
+SelfRefTest.java:18:12: compiler.err.cant.infer.local.var.type: z, (compiler.misc.local.self.ref)
+2 errors
