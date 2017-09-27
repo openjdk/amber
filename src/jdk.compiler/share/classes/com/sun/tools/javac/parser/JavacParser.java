@@ -3917,6 +3917,14 @@ public class JavacParser implements Parser {
             setErrorEndPos(token.pos);
             reportSyntaxError(S.prevToken().endPos, "expected3", COMMA, RPAREN, LBRACKET);
         }
+        if (lambdaParameters && allowLocalVariableTypeInference) {
+            List<JCVariableDecl> implicitParams = params.stream()
+                    .filter(p -> p.vartype == null)
+                    .collect(List.collector());
+            if (implicitParams.nonEmpty() && implicitParams.size() != params.size()) {
+                error(implicitParams.head, "var.not.allowed.explicit.lambda");
+            }
+        }
         return params.toList();
     }
 
@@ -4027,7 +4035,7 @@ public class JavacParser implements Parser {
         // need to distinguish between vararg annos and array annos
         // look at typeAnnotationsPushedBack comment
         this.permitTypeAnnotationsPushBack = true;
-        JCExpression type = parseType();
+        JCExpression type = parseType(lambdaParameter);
         this.permitTypeAnnotationsPushBack = false;
 
         if (token.kind == ELLIPSIS) {
@@ -4044,6 +4052,10 @@ public class JavacParser implements Parser {
                         "illegal.start.of.type");
             }
             typeAnnotationsPushedBack = List.nil();
+        }
+        if (lambdaParameter && isRestrictedLocalVarTypeName(type)) {
+            //implicit lambda parameter type (with 'var')
+            type = null;
         }
         return variableDeclaratorId(mods, type, lambdaParameter);
     }
