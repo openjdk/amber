@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,14 +22,23 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+package jdk.nashorn.api.tree.test;
 
-package jdk.nashorn.test.models;
+import jdk.nashorn.api.tree.Parser;
+import jdk.nashorn.api.tree.SimpleTreeVisitorES6;
+import org.testng.annotations.Test;
 
-@SuppressWarnings("javadoc")
-public class ClassWithFinalFinalizer {
-    @Override
-    @SuppressWarnings("deprecation")
-    protected final void finalize() {
-        //empty
+/**
+ * 8188098: NPE in SimpleTreeVisitorES6 visitor when parsing a tagged template literal
+ *
+ * @test
+ * @run testng jdk.nashorn.api.tree.test.JDK_8188098_Test
+ */
+public class JDK_8188098_Test {
+    @Test
+    public void test() {
+        Parser p = Parser.create("--language=es6");
+        p.parse("test", "foo`hello world`", System.out::println).
+            accept(new SimpleTreeVisitorES6<Void, Void>(), null);
     }
 }
