@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.jvm;
 
+
 import com.sun.tools.javac.tree.TreeInfo.PosKind;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -33,6 +34,7 @@ import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.*;
+import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.*;
 
 import com.sun.tools.javac.code.Symbol.*;
@@ -127,7 +129,6 @@ public class Gen extends JCTree.Visitor {
         debugCode = options.isSet("debug.code");
         allowBetterNullChecks = target.hasObjects();
         pool = new Pool(types);
-
         // ignore cldc because we cannot have both stackmap formats
         this.stackMap = StackMapFormat.JSR202;
         annotate = Annotate.instance(context);
@@ -1641,18 +1642,30 @@ public class Gen extends JCTree.Visitor {
 
     public void visitApply(JCMethodInvocation tree) {
         setTypeAnnotationPositions(tree.pos);
-        // Generate code for method.
-        Item m = genExpr(tree.meth, methodType);
-        // Generate code for all arguments, where the expected types are
-        // the parameters of the method's external type (that is, any implicit
-        // outer instance of a super(...) call appears as first parameter).
         MethodSymbol msym = (MethodSymbol)TreeInfo.symbol(tree.meth);
-        genArgs(tree.args,
-                msym.externalType(types).getParameterTypes());
-        if (!msym.isDynamic()) {
-            code.statBegin(tree.pos);
+        Item m;
+        if (msym.isIntrinsicsLDC()) {
+            Object constant = ((IntrinsicsLDCMethodSymbol)msym).getConstant();
+            // primitives special case
+            if (constant instanceof VarSymbol && ((VarSymbol)constant).name == names.TYPE) {
+                m = items.makeStaticItem((Symbol)constant);
+            } else {
+                m = items.makeImmediateItem(pt, constant);
+            }
+            result = m.coerce(pt).load();
+        } else {
+            // Generate code for method.
+            m = genExpr(tree.meth, methodType);
+            // Generate code for all arguments, where the expected types are
+            // the parameters of the method's external type (that is, any implicit
+            // outer instance of a super(...) call appears as first parameter).
+            genArgs(tree.args,
+                    msym.externalType(types).getParameterTypes());
+            if (!msym.isDynamic()) {
+                code.statBegin(tree.pos);
+            }
+            result = m.invoke();
         }
-        result = m.invoke();
     }
 
     public void visitConditional(JCConditional tree) {

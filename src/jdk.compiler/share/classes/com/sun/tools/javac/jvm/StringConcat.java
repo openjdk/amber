@@ -360,7 +360,7 @@ public abstract class StringConcat {
             try {
                 make.at(pos);
 
-                List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                List<Type> bsm_staticArgs = List.of(syms.methodHandlesLookupType,
                         syms.stringType,
                         syms.methodTypeType);
 
@@ -422,7 +422,7 @@ public abstract class StringConcat {
                         // Concat the String representation of the constant, except
                         // for the case it contains special tags, which requires us
                         // to expose it as detached constant.
-                        String a = arg.type.stringValue();
+                        String a = arg.type.stringValue(constVal);
                         if (a.indexOf(TAG_CONST) != -1 || a.indexOf(TAG_ARG) != -1) {
                             recipe.append(TAG_CONST);
                             staticArgs.add(a);
@@ -471,7 +471,7 @@ public abstract class StringConcat {
                     constTypes.add(syms.stringType);
                 }
 
-                List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                List<Type> bsm_staticArgs = List.of(syms.methodHandlesLookupType,
                         syms.stringType,
                         syms.methodTypeType)
                         .append(syms.stringType)

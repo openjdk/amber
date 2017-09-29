@@ -39,6 +39,7 @@ import com.sun.tools.javac.util.Name;
 
 import java.util.*;
 
+import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
 
@@ -128,6 +129,8 @@ public class Pool {
     Object makePoolValue(Object o) {
         if (o instanceof DynamicMethodSymbol) {
             return new DynamicMethod((DynamicMethodSymbol)o, types);
+        } else if (o instanceof DynamicFieldSymbol) {
+            return new Pool.ConstantDynamic((DynamicFieldSymbol)o, types);
         } else if (o instanceof MethodSymbol) {
             return new Method((MethodSymbol)o, types);
         } else if (o instanceof VarSymbol) {
@@ -182,10 +185,12 @@ public class Pool {
 
     static class DynamicMethod extends Method {
         public Object[] uniqueStaticArgs;
+        Method internalBSM;
 
         DynamicMethod(DynamicMethodSymbol m, Types types) {
             super(m, types);
             uniqueStaticArgs = getUniqueTypeArray(m.staticArgs, types);
+            internalBSM = new Method(m.bsm, types);
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -198,7 +203,7 @@ public class Pool {
             if (!(any instanceof DynamicMethod)) return false;
             DynamicMethodSymbol dm1 = (DynamicMethodSymbol)other;
             DynamicMethodSymbol dm2 = (DynamicMethodSymbol)((DynamicMethod)any).other;
-            return dm1.bsm == dm2.bsm &&
+            return internalBSM.equals(((DynamicMethod)any).internalBSM) &&
                         dm1.bsmKind == dm2.bsmKind &&
                         Arrays.equals(uniqueStaticArgs,
                             ((DynamicMethod)any).uniqueStaticArgs);
@@ -213,7 +218,7 @@ public class Pool {
             int hash = includeDynamicArgs ? super.hashCode() : 0;
             DynamicMethodSymbol dm = (DynamicMethodSymbol)other;
             hash += dm.bsmKind * 7 +
-                    dm.bsm.hashCode() * 11;
+                    internalBSM.hashCode() * 11;
             for (int i = 0; i < dm.staticArgs.length; i++) {
                 hash += (uniqueStaticArgs[i].hashCode() * 23);
             }
@@ -289,13 +294,66 @@ public class Pool {
         }
     }
 
+    /**
+     * Pool entry associated with dynamic constants.
+     */
+    public static class ConstantDynamic {
+        MethodHandle bsm;
+        Name name;
+        Type type;
+
+        Object[] args;
+        Types types;
+
+        public ConstantDynamic(Name name, MethodHandle bsm, Object[] args, Types types) {
+            Assert.checkNonNull(args);
+            this.bsm = bsm;
+            MethodSymbol ms = (MethodSymbol)bsm.refSym;
+            MethodType mt = (MethodType)ms.type;
+            this.name = name;
+            this.type = mt.restype;
+            this.args = args;
+            this.types = types;
+        }
+
+        public ConstantDynamic(DynamicFieldSymbol dynField, Types types) {
+            this.bsm = new MethodHandle(dynField.bsmKind, dynField.bsm, types);
+            this.name = dynField.name;
+            this.type = dynField.type;
+            this.args = dynField.staticArgs;
+            this.types = types;
+        }
+
+        @Override
+        public int hashCode() {
+            return bsm.hashCode() * 67 + name.hashCode() + type.hashCode() * 13;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ConstantDynamic) {
+                ConstantDynamic that = (ConstantDynamic)obj;
+                return that.bsm.equals(bsm) &&
+                        types.isSameType(that.type, type) &&
+                        that.name.equals(name) &&
+                        that.args.equals(args);
+            } else {
+                return false;
+            }
+        }
+
+        public void updateType(Type type) {
+            this.type = type;
+        }
+    }
+
     public static class MethodHandle {
 
         /** Reference kind - see ClassFile */
-        int refKind;
+        public int refKind;
 
         /** Reference symbol */
-        Symbol refSym;
+        public Symbol refSym;
 
         UniqueType uniqueType;
 
@@ -359,10 +417,15 @@ public class Pool {
                     expectedKind = MTH;
                     break;
             }
-            Assert.check(!refSym.isStatic() || staticOk);
-            Assert.check(refSym.kind == expectedKind);
-            Assert.check(nameFilter.accepts(refSym.name));
-            Assert.check(!refSym.owner.isInterface() || interfaceOwner);
+            Assert.check(!refSym.isStatic() || staticOk, "incorrect static-ness for symbol " + refSym);
+            Assert.check(refSym.kind == expectedKind, "unexpected kind for symbol " + refSym +". \n"
+                    + "Expected = " + expectedKind + "\n"
+                    + "Found = " + refSym.kind);
+            Assert.check(nameFilter.accepts(refSym.name), "incorrect name for symbol " + refSym);
+            Assert.check(!refSym.owner.isInterface() || interfaceOwner,
+                    interfaceOwner ?
+                            "interface owner expected for symbol ":
+                            "non interface owner expected for symbol " + refSym);
         }
         //where
                 Filter<Name> nonInitFilter = n -> (n != n.table.names.init && n != n.table.names.clinit);

@@ -482,9 +482,9 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
     /**
      * The constant value of this type, converted to String
      */
-    public String stringValue() {
-        Object cv = Assert.checkNonNull(constValue());
-        return cv.toString();
+    public String stringValue(Object value) {
+        Assert.checkNonNull(value);
+        return value.toString();
     }
 
     /**
@@ -747,8 +747,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
          * The constant value of this type, converted to String
          */
         @Override
-        public String stringValue() {
-            Object cv = Assert.checkNonNull(constValue());
+        public String stringValue(Object cv) {
+            Assert.checkNonNull(cv);
             if (tag == BOOLEAN) {
                 return ((Integer) cv).intValue() == 0 ? "false" : "true";
             }
@@ -2283,7 +2283,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         }
 
         @Override
-        public String stringValue() {
+        public String stringValue(Object value) {
             return "null";
         }
 

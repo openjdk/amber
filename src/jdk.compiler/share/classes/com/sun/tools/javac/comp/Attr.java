@@ -46,9 +46,11 @@ import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
 import com.sun.tools.javac.comp.Check.CheckContext;
 import com.sun.tools.javac.comp.DeferredAttr.AttrMode;
 import com.sun.tools.javac.jvm.*;
+
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.Diamond;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArg;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArgs;
+
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
@@ -69,6 +71,7 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
 /** This is the main context-dependent analysis phase in GJC. It
@@ -148,7 +151,6 @@ public class Attr extends JCTree.Visitor {
         argumentAttr = ArgumentAttr.instance(context);
 
         Options options = Options.instance(context);
-
         Source source = Source.instance(context);
         allowStringsInSwitch = source.allowStringsInSwitch();
         allowPoly = source.allowPoly();
@@ -2021,6 +2023,7 @@ public class Attr extends JCTree.Visitor {
             Type capturedRes = resultInfo.checkContext.inferenceContext().cachedCapture(tree, restype, true);
             result = check(tree, capturedRes, KindSelector.VAL, resultInfo);
         }
+        tree.resolutionPhase = localEnv.info.pendingResolutionPhase;
         chk.validate(tree.typeargs, localEnv);
     }
     //where
@@ -3372,7 +3375,7 @@ public class Attr extends JCTree.Visitor {
 
             // If the argument is constant, fold it.
             if (argtype.constValue() != null) {
-                Type ctype = cfolder.fold1(opc, argtype);
+                Type ctype = cfolder.fold1(opc, argtype, argtype.constValue());
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }
@@ -3395,7 +3398,7 @@ public class Attr extends JCTree.Visitor {
             int opc = ((OperatorSymbol)operator).opcode;
             // If both arguments are constants, fold them.
             if (left.constValue() != null && right.constValue() != null) {
-                Type ctype = cfolder.fold2(opc, left, right);
+                Type ctype = cfolder.fold2(opc, left, right, left.constValue(), right.constValue());
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }
@@ -5065,7 +5068,7 @@ public class Attr extends JCTree.Visitor {
      * the compiler has encountered some errors (which might have ended up
      * terminating attribution abruptly); if the compiler is used in fail-over
      * mode (e.g. by an IDE) and the AST contains semantic errors, this routine
-     * prevents NPE to be progagated during subsequent compilation steps.
+     * prevents NPE to be propagated during subsequent compilation steps.
      */
     public void postAttr(JCTree tree) {
         new PostAttrAnalyzer().scan(tree);
@@ -5234,5 +5237,4 @@ public class Attr extends JCTree.Visitor {
             }
         }.scan(pid);
     }
-
 }

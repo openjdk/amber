@@ -858,8 +858,63 @@ public class TreeInfo {
             return symbol(((JCAnnotatedType) tree).underlyingType);
         case REFERENCE:
             return ((JCMemberReference) tree).sym;
+        case VARDEF :
+            return ((JCVariableDecl)tree).sym;
+        case TYPEIDENT:
+            return ((JCPrimitiveTypeTree)tree).type.tsym;
+        case TYPEARRAY:
+            return ((JCArrayTypeTree)tree).type.tsym;
+        case APPLY:
+            return symbol(((JCMethodInvocation)tree).meth);
         default:
             return null;
+        }
+    }
+
+    public static void updateSymbol(JCTree tree, Symbol oldSymbol, Symbol newSymbol) {
+        tree = skipParens(tree);
+        switch (tree.getTag()) {
+        case IDENT:
+            if (((JCIdent) tree).sym == oldSymbol) {
+                ((JCIdent) tree).sym = newSymbol;
+            }
+            return;
+        case SELECT:
+            if (((JCFieldAccess) tree).sym == oldSymbol) {
+                ((JCFieldAccess) tree).sym = newSymbol;
+            }
+            return;
+        case TYPEAPPLY:
+            updateSymbol(((JCTypeApply) tree).clazz, oldSymbol, newSymbol);
+            return;
+        case ANNOTATED_TYPE:
+            updateSymbol(((JCAnnotatedType) tree).underlyingType, oldSymbol, newSymbol);
+            return;
+        case REFERENCE:
+            if (((JCMemberReference) tree).sym == oldSymbol) {
+                ((JCMemberReference) tree).sym = newSymbol;
+            }
+            return;
+        case VARDEF :
+            if (((JCVariableDecl)tree).sym == oldSymbol) {
+                ((JCVariableDecl)tree).sym = (Symbol.VarSymbol)newSymbol;
+            }
+            return;
+        case TYPEIDENT:
+            if (((JCPrimitiveTypeTree)tree).type.tsym == oldSymbol) {
+                ((JCPrimitiveTypeTree)tree).type.tsym = (Symbol.TypeSymbol)newSymbol;
+            }
+            return;
+        case TYPEARRAY:
+            if (((JCArrayTypeTree)tree).type.tsym == oldSymbol) {
+                ((JCArrayTypeTree)tree).type.tsym = (Symbol.TypeSymbol)newSymbol;
+            }
+            return;
+        case APPLY:
+            updateSymbol(((JCMethodInvocation)tree).meth, oldSymbol, newSymbol);
+            return;
+        default:
+            return;
         }
     }
 

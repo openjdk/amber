@@ -48,7 +48,6 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
 import com.sun.tools.javac.code.ClassFinder.BadEnclosingMethodAttr;
-import com.sun.tools.javac.code.Directive.RequiresFlag;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -68,7 +67,6 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
-import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.FIRSTASGOP;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
@@ -2003,6 +2001,22 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         public List<Type> getThrownTypes() {
             return asType().getThrownTypes();
         }
+
+        public boolean isIntrinsicsLDC() { return false; }
+    }
+
+    public static class IntrinsicsLDCMethodSymbol extends MethodSymbol {
+        private Object constant;
+
+        public IntrinsicsLDCMethodSymbol(long flags, Name name, Type type, Symbol owner, Object constant) {
+            super(flags, name, type, owner);
+            this.constant = constant;
+        }
+
+        public Object getConstant() { return constant; }
+
+        @Override
+        public boolean isIntrinsicsLDC() { return true; }
     }
 
     /** A class for invokedynamic method calls.
@@ -2010,7 +2024,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
     public static class DynamicMethodSymbol extends MethodSymbol {
 
         public Object[] staticArgs;
-        public Symbol bsm;
+        public MethodSymbol bsm;
         public int bsmKind;
 
         public DynamicMethodSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
@@ -2023,6 +2037,31 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         @Override
         public boolean isDynamic() {
             return true;
+        }
+    }
+
+    /** A class for condy.
+     */
+    public static class DynamicFieldSymbol extends Symbol {
+
+        public Object[] staticArgs;
+        public MethodSymbol bsm;
+        public int bsmKind;
+
+        public DynamicFieldSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
+            super(Kind.VAR, 0, name, type, owner);
+            this.bsm = bsm;
+            this.bsmKind = bsmKind;
+            this.staticArgs = staticArgs;
+        }
+
+        public boolean isDynamic() {
+            return true;
+        }
+
+        @Override
+        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+            return v.visit(this, p);
         }
     }
 

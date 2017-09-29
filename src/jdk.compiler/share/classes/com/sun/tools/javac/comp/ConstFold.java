@@ -81,9 +81,8 @@ strictfp class ConstFold {
      *  @param operand   The operation's operand type.
      *                   Argument types are assumed to have non-null constValue's.
      */
-    Type fold1(int opcode, Type operand) {
+    Type fold1(int opcode, Type operand, Object od) {
         try {
-            Object od = operand.constValue();
             switch (opcode) {
             case nop:
                 return operand;
@@ -133,17 +132,17 @@ strictfp class ConstFold {
      *  @param left      The type of the operation's left operand.
      *  @param right     The type of the operation's right operand.
      */
-    Type fold2(int opcode, Type left, Type right) {
+    Type fold2(int opcode, Type left, Type right, Object l, Object r) {
         try {
+            Assert.check(l != null);
+            Assert.check(r != null);
             if (opcode > ByteCodes.preMask) {
                 // we are seeing a composite instruction of the form xcmp; ifxx.
                 // In this case fold both instructions separately.
-                Type t1 = fold2(opcode >> ByteCodes.preShift, left, right);
+                Type t1 = fold2(opcode >> ByteCodes.preShift, left, right, l, r);
                 return (t1.constValue() == null) ? t1
-                    : fold1(opcode & ByteCodes.preMask, t1);
+                    : fold1(opcode & ByteCodes.preMask, t1, t1.constValue());
             } else {
-                Object l = left.constValue();
-                Object r = right.constValue();
                 switch (opcode) {
                 case iadd:
                     return syms.intType.constType(intValue(l) + intValue(r));
@@ -293,8 +292,7 @@ strictfp class ConstFold {
                 case if_acmpne:
                     return syms.booleanType.constType(b2i(!l.equals(r)));
                 case string_add:
-                    return syms.stringType.constType(
-                        left.stringValue() + right.stringValue());
+                    return syms.stringType.constType(left.stringValue(l) + right.stringValue(r));
                 default:
                     return null;
                 }

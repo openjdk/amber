@@ -29,6 +29,7 @@ import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Types.UniqueType;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
+import com.sun.tools.javac.jvm.Pool.ConstantDynamic;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -920,6 +921,7 @@ public class Code {
         if (o instanceof ClassSymbol) return syms.classType;
         if (o instanceof Pool.MethodHandle) return syms.methodHandleType;
         if (o instanceof UniqueType) return typeForPool(((UniqueType)o).type);
+        if (o instanceof Pool.ConstantDynamic) return ((Pool.ConstantDynamic)o).type;
         if (o instanceof Type) {
             Type ty = (Type) o;
 

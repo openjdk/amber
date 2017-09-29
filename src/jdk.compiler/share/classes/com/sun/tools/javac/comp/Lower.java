@@ -3124,7 +3124,7 @@ public class Lower extends TreeTranslator {
         tree.arg = boxIfNeeded(translate(tree.arg, tree), tree.type);
 
         if (tree.hasTag(NOT) && tree.arg.type.constValue() != null) {
-            tree.type = cfolder.fold1(bool_not, tree.arg.type);
+            tree.type = cfolder.fold1(bool_not, tree.arg.type, tree.arg.type.constValue());
         }
 
         // If translated left hand side is an Apply, we are
