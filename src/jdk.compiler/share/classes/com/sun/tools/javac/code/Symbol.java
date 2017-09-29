@@ -48,13 +48,13 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
 import com.sun.tools.javac.code.ClassFinder.BadEnclosingMethodAttr;
+import com.sun.tools.javac.code.Directive.RequiresFlag;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.comp.Attr;
 import com.sun.tools.javac.comp.AttrContext;
-import com.sun.tools.javac.comp.ConstablesVisitor.SpecialConstantsHelper.SpecialConstant;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.jvm.*;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
@@ -68,6 +68,7 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
+import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.FIRSTASGOP;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
@@ -386,14 +387,6 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             (flags() & STATIC) != 0 ||
             (owner.flags() & INTERFACE) != 0 && kind != MTH &&
              name != name.table.names._this;
-    }
-
-    public boolean isFinal() {
-        return (flags() & FINAL) != 0;
-    }
-
-    public boolean isEffectivelyFinal() {
-        return (flags() & EFFECTIVELY_FINAL) != 0;
     }
 
     public boolean isInterface() {
@@ -1564,9 +1557,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Object getConstantValue() { // Mirror API
-            return getConstKind() == ConstantKind.NORMAL ?
-                    Constants.decode(getConstValue(), type) :
-                    null;
+            return Constants.decode(getConstValue(), type);
         }
 
         public void setLazyConstValue(final Env<AttrContext> env,
@@ -1592,55 +1583,8 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return data == ElementKind.RESOURCE_VARIABLE;
         }
 
-        /**
-         * Describes the constant associated with this variable (if any)
-         */
-        public enum ConstantKind {
-            /** no constant value */
-            NONE,
-            /** a compile-time constant (primitive or String) */
-            NORMAL,
-            /** a partial constant (Class, MethodHandle, MethodType, MethodHandles.Lookup) */
-            PARTIAL;
-        }
-
-        /**
-         * Returns the constant kind of this variable.
-         */
-        public ConstantKind getConstKind() {
-            Object val = getConstValue();
-            if (val == null) {
-                return ConstantKind.NONE;
-            } else if (val instanceof SpecialConstant) {
-                return ConstantKind.PARTIAL;
-            } else {
-                return ConstantKind.NORMAL;
-            }
-        }
-
-        /**
-         * Retrieves the constant value associated with this variable. This method expands partial
-         * constants in a context-sensitive way and should therefore be used during code generation
-         * to allow conditional folding (because effectively final variable might not have been
-         * detected yet in the frontend).
-         */
-        public final Object getConstValue(ClassSymbol userClass, Symtab syms) {
-            Object val = getConstValue();
-            switch (getConstKind()) {
-                case NORMAL:
-                    return val;
-                case PARTIAL:
-                    return ((SpecialConstant)val).getConstantValue(userClass);
-                default:
-                    return null;
-            }
-        }
-
-        /**
-         * Retrieves the constant value associated with this variable. If this variable has a
-         * partial constant value, it is returned as is.
-         */
         public Object getConstValue() {
+            // TODO: Consider if getConstValue and getConstantValue can be collapsed
             if (data == ElementKind.EXCEPTION_PARAMETER ||
                 data == ElementKind.RESOURCE_VARIABLE) {
                 return null;
@@ -1660,13 +1604,6 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
         public void setData(Object data) {
             Assert.check(!(data instanceof Env<?>), this);
-            if (data instanceof SpecialConstant) {
-                SpecialConstant sc = (SpecialConstant)data;
-                if (sc.generateLDC()) {
-                    Object value = sc.getConstantValue(sc.getOwner());
-                    data = new SpecialConstant(value, sc.getOwner());
-                }
-            }
             this.data = data;
         }
 
@@ -2073,7 +2010,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
     public static class DynamicMethodSymbol extends MethodSymbol {
 
         public Object[] staticArgs;
-        public MethodSymbol bsm;
+        public Symbol bsm;
         public int bsmKind;
 
         public DynamicMethodSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
@@ -2086,31 +2023,6 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         @Override
         public boolean isDynamic() {
             return true;
-        }
-    }
-
-    /** A class for condy.
-     */
-    public static class DynamicFieldSymbol extends Symbol {
-
-        public Object[] staticArgs;
-        public MethodSymbol bsm;
-        public int bsmKind;
-
-        public DynamicFieldSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
-            super(Kind.VAR, 0, name, type, owner);
-            this.bsm = bsm;
-            this.bsmKind = bsmKind;
-            this.staticArgs = staticArgs;
-        }
-
-        public boolean isDynamic() {
-            return true;
-        }
-
-        @Override
-        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
-            return v.visit(this, p);
         }
     }
 

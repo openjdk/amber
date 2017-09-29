@@ -81,9 +81,6 @@ public class TransTypes extends TreeTranslator {
 
     /** Switch: are default methods supported? */
     private final boolean allowInterfaceBridges;
-    /** Switch: is special constant folding allowed */
-    private final boolean doConstantFold;
-    private final SpecialConstantUtils specialConstantUtils;
 
     protected TransTypes(Context context) {
         context.put(transTypesKey, this);
@@ -101,9 +98,6 @@ public class TransTypes extends TreeTranslator {
         allowGraphInference = source.allowGraphInference();
         annotate = Annotate.instance(context);
         attr = Attr.instance(context);
-        Options options = Options.instance(context);
-        doConstantFold = options.isSet("doConstantFold");
-        specialConstantUtils = new SpecialConstantUtils(context);
     }
 
     /** A hashtable mapping bridge methods to the pair of methods they bridge.
@@ -556,14 +550,10 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitVarDef(JCVariableDecl tree) {
-        Object constValue = tree.init != null ? tree.init.type.constValue() : null;
         tree.vartype = translate(tree.vartype, null);
         tree.init = translate(tree.init, tree.sym.erasure(types));
         tree.type = erasure(tree.type);
         result = tree;
-        if (doConstantFold && constValue != null && tree.init.type.constValue() == null) {
-            tree.init.type = tree.type.constType(constValue);
-        }
     }
 
     public void visitDoLoop(JCDoWhileLoop tree) {
@@ -699,15 +689,9 @@ public class TransTypes extends TreeTranslator {
             }
         tree.args = translateArgs(tree.args, argtypes, tree.varargsElement);
 
-        Object constValue = tree.type.constValue();
         tree.type = types.erasure(tree.type);
         // Insert casts of method invocation results as needed.
-        boolean isCondyLDC = specialConstantUtils.isIntrinsicsLDCInvocation(TreeInfo.symbol(tree.meth)) &&
-                    tree.args.head.type.tsym == syms.dynamicConstantRefType.tsym;
-        result = retype(tree, isCondyLDC ? tree.meth.type.getReturnType() : mt.getReturnType(), pt);
-        if (doConstantFold && constValue != null && tree.type.constValue() == null) {
-            tree.type = tree.type.constType(constValue);
-        }
+        result = retype(tree, mt.getReturnType(), pt);
     }
 
     public void visitNewClass(JCNewClass tree) {

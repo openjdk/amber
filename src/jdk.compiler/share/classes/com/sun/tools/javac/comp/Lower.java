@@ -40,10 +40,8 @@ import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
-import com.sun.tools.javac.code.Symbol.VarSymbol.ConstantKind;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.code.Type.*;
-import com.sun.tools.javac.comp.ConstablesVisitor.SpecialConstantsHelper.SpecialConstant;
 
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.EndPosTable;
@@ -96,7 +94,6 @@ public class Lower extends TreeTranslator {
     private final Types types;
     private final boolean debugLower;
     private final PkgInfo pkginfoOpt;
-    private final boolean doConstantFold;
 
     protected Lower(Context context) {
         context.put(lowerKey, this);
@@ -124,10 +121,6 @@ public class Lower extends TreeTranslator {
         Options options = Options.instance(context);
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
-        doConstantFold = options.isSet("doConstantFold");
-        if (doConstantFold) {
-            specialConstUtils = new SpecialConstantUtils(context);
-        }
     }
 
     /** The currently enclosing class.
@@ -319,7 +312,7 @@ public class Lower extends TreeTranslator {
                     sym = proxies.findFirst(proxyName(sym.name));
                 if (sym != null && sym.owner == owner) {
                     VarSymbol v = (VarSymbol)sym;
-                    if (v.getConstValue(clazz, syms) == null) {
+                    if (v.getConstValue() == null) {
                         addFreeVar(v);
                     }
                 } else {
@@ -1085,7 +1078,7 @@ public class Lower extends TreeTranslator {
         while (sym.kind == VAR && sym.owner.kind == MTH &&
             sym.owner.enclClass() != currentClass) {
             // A constant is replaced by its constant value.
-            Object cv = ((VarSymbol)sym).getConstValue(currentClass, syms);
+            Object cv = ((VarSymbol)sym).getConstValue();
             if (cv != null) {
                 make.at(tree.pos);
                 return makeLit(sym.type, cv);
@@ -1144,7 +1137,7 @@ public class Lower extends TreeTranslator {
 
                     // Constants are replaced by their constant value.
                     if (sym.kind == VAR) {
-                        Object cv = ((VarSymbol)sym).getConstValue(attrEnv.enclClass.sym, syms);
+                        Object cv = ((VarSymbol)sym).getConstValue();
                         if (cv != null) {
                             addPrunedInfo(tree);
                             return makeLit(sym.type, cv);
@@ -1490,15 +1483,7 @@ public class Lower extends TreeTranslator {
     }
 //where
         JCExpression loadFreevar(DiagnosticPosition pos, VarSymbol v) {
-            JCIdent ident = make.at(pos).Ident(v);
-            /** this code to update the type of the ident is not needed if we later decide that
-             *  local anonymous inner classes can safely inline local special constants
-             */
-            Object cv = v.getConstValue(currentClass, syms);
-            if (cv != null) {
-                ident.type = ident.type.constType(cv);
-            }
-            return access(v, ident, null, false);
+            return access(v, make.at(pos).Ident(v), null, false);
         }
 
     /** Construct a tree simulating the expression {@code C.this}.
@@ -1924,32 +1909,25 @@ public class Lower extends TreeTranslator {
     }
 
     private JCExpression classOfType(Type type, DiagnosticPosition pos) {
-        if (!doConstantFold) {
-            switch (type.getTag()) {
-            case BYTE: case SHORT: case CHAR: case INT: case LONG: case FLOAT:
-            case DOUBLE: case BOOLEAN: case VOID:
-                // replace with <BoxedClass>.TYPE
-                ClassSymbol c = types.boxedClass(type);
-                Symbol typeSym =
-                    rs.accessBase(
-                        rs.findIdentInType(attrEnv, c.type, names.TYPE, KindSelector.VAR),
-                        pos, c.type, names.TYPE, true);
-                if (typeSym.kind == VAR)
-                    ((VarSymbol)typeSym).getConstValue(); // ensure initializer is evaluated
-                return make.QualIdent(typeSym);
-            case CLASS: case ARRAY:
-                    VarSymbol sym = new VarSymbol(
-                            STATIC | PUBLIC | FINAL, names._class,
-                            syms.classType, type.tsym);
-                    return make_at(pos).Select(make.Type(type), sym);
-            default:
-                throw new AssertionError();
-            }
-        } else {
-            VarSymbol sym = new VarSymbol(
-                    STATIC | PUBLIC | FINAL, names._class,
-                    syms.classType, type.tsym);
-            return make_at(pos).Select(make.Type(type), sym);
+        switch (type.getTag()) {
+        case BYTE: case SHORT: case CHAR: case INT: case LONG: case FLOAT:
+        case DOUBLE: case BOOLEAN: case VOID:
+            // replace with <BoxedClass>.TYPE
+            ClassSymbol c = types.boxedClass(type);
+            Symbol typeSym =
+                rs.accessBase(
+                    rs.findIdentInType(attrEnv, c.type, names.TYPE, KindSelector.VAR),
+                    pos, c.type, names.TYPE, true);
+            if (typeSym.kind == VAR)
+                ((VarSymbol)typeSym).getConstValue(); // ensure initializer is evaluated
+            return make.QualIdent(typeSym);
+        case CLASS: case ARRAY:
+                VarSymbol sym = new VarSymbol(
+                        STATIC | PUBLIC | FINAL, names._class,
+                        syms.classType, type.tsym);
+                return make_at(pos).Select(make.Type(type), sym);
+        default:
+            throw new AssertionError();
         }
     }
 
@@ -1999,10 +1977,10 @@ public class Lower extends TreeTranslator {
                                                             List.nil());
             JCClassDecl containerDef = classDef(container);
             make_at(containerDef.pos());
-            JCExpression qualifierExpr = !doConstantFold ? classOfType(types.erasure(outermostClass.type), containerDef.pos()) :
-                    classOfType(types.erasure(outermostClass.type), containerDef.pos())
-                            .setType(types.erasure(syms.classType).constType(outermostClass.type.tsym));
-            JCExpression notStatus = makeUnary(NOT, make.App(make.Select(qualifierExpr, desiredAssertionStatusSym)));
+            JCExpression notStatus = makeUnary(NOT, make.App(make.Select(
+                    classOfType(types.erasure(outermostClass.type),
+                                containerDef.pos()),
+                    desiredAssertionStatusSym)));
             JCVariableDecl assertDisabledDef = make.VarDef(assertDisabledSym,
                                                    notStatus);
             containerDef.defs = containerDef.defs.prepend(assertDisabledDef);
@@ -2315,10 +2293,8 @@ public class Lower extends TreeTranslator {
             tree.extending = make.Type(types.supertype(tree.type));
 
         // classOfType adds a cache field to tree.defs
-        JCExpression e_class = !doConstantFold ?
-                classOfType(tree.sym.type, tree.pos()).setType(types.erasure(syms.classType)) :
-                classOfType(tree.sym.type, tree.pos()).setType(types.erasure(syms.classType)
-                        .constType(tree.sym.type.tsym));
+        JCExpression e_class = classOfType(tree.sym.type, tree.pos()).
+            setType(types.erasure(syms.classType));
 
         // process each enumeration constant, adding implicit constructor parameters
         int nextOrdinal = 0;
@@ -2874,8 +2850,6 @@ public class Lower extends TreeTranslator {
         result = tree;
     }
 
-    SpecialConstantUtils specialConstUtils;
-
     List<JCExpression> boxArgs(List<Type> parameters, List<JCExpression> _args, Type varargsElement) {
         List<JCExpression> args = _args;
         if (parameters.isEmpty()) return args;
@@ -3149,7 +3123,7 @@ public class Lower extends TreeTranslator {
 
         tree.arg = boxIfNeeded(translate(tree.arg, tree), tree.type);
 
-        if (tree.hasTag(NOT) && tree.arg.type.hasIntrinsicConstValue()) {
+        if (tree.hasTag(NOT) && tree.arg.type.constValue() != null) {
             tree.type = cfolder.fold1(bool_not, tree.arg.type);
         }
 
@@ -3355,9 +3329,6 @@ public class Lower extends TreeTranslator {
         }
 
     public void visitVarDef(JCVariableDecl tree) {
-        if (doConstantFold) {
-            checkSpecialConstants(tree);
-        }
         MethodSymbol oldMethodSym = currentMethodSym;
         tree.mods = translate(tree.mods);
         tree.vartype = translate(tree.vartype);
@@ -3371,18 +3342,6 @@ public class Lower extends TreeTranslator {
         if (tree.init != null) tree.init = translate(tree.init, tree.type);
         result = tree;
         currentMethodSym = oldMethodSym;
-    }
-
-    void checkSpecialConstants(JCVariableDecl tree) {
-        if (tree.sym.getConstKind() == ConstantKind.PARTIAL
-                && tree.init.type.constValue(currentClass, syms) == null) {
-            Object value = tree.sym.getConstValue();
-            SpecialConstant sconstant = (SpecialConstant)value;
-            // the compiler will issue an error for all special constants but class literals
-            if (!(sconstant.value instanceof ClassSymbol)) {
-                log.error(tree.pos(), Errors.InitializerMustBeConstant);
-            }
-        }
     }
 
     public void visitBlock(JCBlock tree) {
@@ -3672,15 +3631,17 @@ public class Lower extends TreeTranslator {
             TreeInfo.name(tree.selected) == names._super &&
             !types.isDirectSuperInterface(((JCFieldAccess)tree.selected).selected.type.tsym, currentClass);
         tree.selected = translate(tree.selected);
-        if (!doConstantFold && tree.name == names._class) {
+        if (tree.name == names._class) {
             result = classOf(tree.selected);
-        } else if (tree.name == names._super &&
+        }
+        else if (tree.name == names._super &&
                 types.isDirectSuperInterface(tree.selected.type.tsym, currentClass)) {
             //default super call!! Not a classic qualified super call
             TypeSymbol supSym = tree.selected.type.tsym;
             Assert.checkNonNull(types.asSuper(currentClass.type, supSym));
             result = tree;
-        } else if (tree.name == names._this || tree.name == names._super) {
+        }
+        else if (tree.name == names._this || tree.name == names._super) {
             result = makeThis(tree.pos(), tree.selected.type.tsym);
         }
         else

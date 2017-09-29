@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,6 @@ import javax.lang.model.type.*;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.TypeMetadata.Entry;
 import com.sun.tools.javac.code.Types.TypeMapping;
-import com.sun.tools.javac.comp.ConstablesVisitor.SpecialConstantsHelper.SpecialConstant;
 import com.sun.tools.javac.comp.Infer.IncorporationAction;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -172,30 +171,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
      * The constant value of this type, null if this type does not
      * have a constant value attribute. Only primitive types and
      * strings (ClassType) can have a constant value attribute.
-     * If this variable has a partial constant value, it is returned as is.
      * @return the constant value attribute of this type
      */
     public Object constValue() {
         return null;
-    }
-
-    public boolean hasIntrinsicConstValue() {
-        return false;
-    }
-
-    /**
-     * Retrieves the constant value associated with this type. This method expands partial
-     * constants in a context-sensitive way and should therefore be used during code generation
-     * to allow conditional folding (because effectively final variable might not have been
-     * detected yet in the frontend).
-     */
-    public final Object constValue(ClassSymbol userClass, Symtab syms) {
-        Object val = constValue();
-        if (val instanceof SpecialConstant) {
-            SpecialConstant sc = (SpecialConstant)val;
-            val = sc.getConstantValue(userClass);
-        }
-        return val;
     }
 
     /** Is this a constant type whose value is false?
@@ -334,8 +313,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
     /** Define a constant type, of the same kind as this type
      *  and with given constant value
      */
-    public Type constType(final Object constValue) {
-        throw new AssertionError("trying to create a constant for type " + this);
+    public Type constType(Object constValue) {
+        throw new AssertionError();
     }
 
     /**
@@ -750,17 +729,12 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
          *  and with given constant value
          */
         @Override
-        public Type constType(final Object constValue) {
+        public Type constType(Object constValue) {
+            final Object value = constValue;
             return new JCPrimitiveType(tag, tsym, metadata) {
                     @Override
                     public Object constValue() {
-                        return constValue;
-                    }
-                    @Override
-                    public boolean hasIntrinsicConstValue() {
-                        return (constValue instanceof SpecialConstant) ?
-                            ((SpecialConstant)constValue).hasIntrisicValue() :
-                            true;
+                        return value;
                     }
                     @Override
                     public Type baseType() {
@@ -792,7 +766,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         public boolean isFalse() {
             return
                 tag == BOOLEAN &&
-                hasIntrinsicConstValue() &&
+                constValue() != null &&
                 ((Integer)constValue()).intValue() == 0;
         }
 
@@ -802,7 +776,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         public boolean isTrue() {
             return
                 tag == BOOLEAN &&
-                hasIntrinsicConstValue() &&
+                constValue() != null &&
                 ((Integer)constValue()).intValue() != 0;
         }
 
@@ -1018,22 +992,16 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
             return v.visitClassType(this, s);
         }
 
-        @Override
-        public Type constType(final Object constValue) {
+        public Type constType(Object constValue) {
+            final Object value = constValue;
             return new ClassType(getEnclosingType(), typarams_field, tsym, metadata) {
                     @Override
                     public Object constValue() {
-                        return constValue;
-                    }
-                    @Override
-                    public boolean hasIntrinsicConstValue() {
-                        return (constValue instanceof SpecialConstant) ?
-                                ((SpecialConstant)constValue).hasIntrisicValue() :
-                                true;
+                        return value;
                     }
                     @Override
                     public Type baseType() {
-                        return ClassType.this;
+                        return tsym.type;
                     }
                 };
         }

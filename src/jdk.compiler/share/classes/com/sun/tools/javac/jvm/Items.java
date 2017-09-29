@@ -26,7 +26,6 @@
 package com.sun.tools.javac.jvm;
 
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.Code.*;
@@ -473,11 +472,8 @@ public class Items {
         }
 
         Item load() {
-            Assert.check(member.kind == Kind.VAR);
-            Type type = member.erasure(types);
-            int rescode = Code.typecode(type);
-            code.emitLdc(pool.put(member));
-            return stackItem[rescode];
+            assert false;
+            return null;
         }
 
         void store() {
@@ -485,7 +481,7 @@ public class Items {
         }
 
         Item invoke() {
-            Assert.check(member.kind == Kind.MTH);
+            // assert target.hasNativeInvokeDynamic();
             MethodType mtype = (MethodType)member.erasure(types);
             int rescode = Code.typecode(mtype.restype);
             code.emitInvokedynamic(pool.put(member), mtype);
@@ -581,49 +577,45 @@ public class Items {
         }
 
         Item load() {
-            if (value instanceof Pool.ConstantDynamic) {
-                ldc();
-            } else {
-                switch (typecode) {
-                case INTcode: case BYTEcode: case SHORTcode: case CHARcode:
-                    int ival = ((Number)value).intValue();
-                    if (-1 <= ival && ival <= 5)
-                        code.emitop0(iconst_0 + ival);
-                    else if (Byte.MIN_VALUE <= ival && ival <= Byte.MAX_VALUE)
-                        code.emitop1(bipush, ival);
-                    else if (Short.MIN_VALUE <= ival && ival <= Short.MAX_VALUE)
-                        code.emitop2(sipush, ival);
-                    else
-                        ldc();
-                    break;
-                case LONGcode:
-                    long lval = ((Number)value).longValue();
-                    if (lval == 0 || lval == 1)
-                        code.emitop0(lconst_0 + (int)lval);
-                    else
-                        ldc();
-                    break;
-                case FLOATcode:
-                    float fval = ((Number)value).floatValue();
-                    if (isPosZero(fval) || fval == 1.0 || fval == 2.0)
-                        code.emitop0(fconst_0 + (int)fval);
-                    else {
-                        ldc();
-                    }
-                    break;
-                case DOUBLEcode:
-                    double dval = ((Number)value).doubleValue();
-                    if (isPosZero(dval) || dval == 1.0)
-                        code.emitop0(dconst_0 + (int)dval);
-                    else
-                        ldc();
-                    break;
-                case OBJECTcode:
+            switch (typecode) {
+            case INTcode: case BYTEcode: case SHORTcode: case CHARcode:
+                int ival = ((Number)value).intValue();
+                if (-1 <= ival && ival <= 5)
+                    code.emitop0(iconst_0 + ival);
+                else if (Byte.MIN_VALUE <= ival && ival <= Byte.MAX_VALUE)
+                    code.emitop1(bipush, ival);
+                else if (Short.MIN_VALUE <= ival && ival <= Short.MAX_VALUE)
+                    code.emitop2(sipush, ival);
+                else
                     ldc();
-                    break;
-                default:
-                    Assert.error();
+                break;
+            case LONGcode:
+                long lval = ((Number)value).longValue();
+                if (lval == 0 || lval == 1)
+                    code.emitop0(lconst_0 + (int)lval);
+                else
+                    ldc();
+                break;
+            case FLOATcode:
+                float fval = ((Number)value).floatValue();
+                if (isPosZero(fval) || fval == 1.0 || fval == 2.0)
+                    code.emitop0(fconst_0 + (int)fval);
+                else {
+                    ldc();
                 }
+                break;
+            case DOUBLEcode:
+                double dval = ((Number)value).doubleValue();
+                if (isPosZero(dval) || dval == 1.0)
+                    code.emitop0(dconst_0 + (int)dval);
+                else
+                    ldc();
+                break;
+            case OBJECTcode:
+                ldc();
+                break;
+            default:
+                Assert.error();
             }
             return stackItem[typecode];
         }

@@ -858,14 +858,6 @@ public class TreeInfo {
             return symbol(((JCAnnotatedType) tree).underlyingType);
         case REFERENCE:
             return ((JCMemberReference) tree).sym;
-        case VARDEF :
-            return ((JCVariableDecl)tree).sym;
-        case TYPEIDENT:
-            return ((JCPrimitiveTypeTree)tree).type.tsym;
-        case TYPEARRAY:
-            return ((JCArrayTypeTree)tree).type.tsym;
-        case APPLY:
-            return symbol(((JCMethodInvocation)tree).meth);
         default:
             return null;
         }

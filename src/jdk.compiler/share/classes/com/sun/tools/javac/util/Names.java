@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -185,21 +185,6 @@ public class Names {
     public final Name RUNTIME;
     public final Name SOURCE;
 
-    // members of java.lang.invoke.Constables
-    public final Name methodType;
-    public final Name virtualMethodHandle;
-    public final Name staticMethodHandle;
-    public final Name getterMethodHandle;
-    public final Name staticGetterMethodHandle;
-    public final Name setterMethodHandle;
-    public final Name staticSetterMethodHandle;
-    public final Name constructorMethodHandle;
-    public final Name specialMethodHandle;
-    public final Name indyDescriptor;
-    public final Name invokedynamic;
-    public final Name of;
-    public final Name ldc;
-
     // other identifiers
     public final Name T;
     public final Name deprecated;
@@ -362,21 +347,6 @@ public class Names {
         CLASS = fromString("CLASS");
         RUNTIME = fromString("RUNTIME");
         SOURCE = fromString("SOURCE");
-
-        // members of java.lang.invoke.Constables
-        methodType = fromString("methodType");
-        virtualMethodHandle = fromString("virtualMethodHandle");
-        staticMethodHandle = fromString("staticMethodHandle");
-        getterMethodHandle = fromString("getterMethodHandle");
-        staticGetterMethodHandle = fromString("staticGetterMethodHandle");
-        setterMethodHandle = fromString("setterMethodHandle");
-        staticSetterMethodHandle = fromString("staticSetterMethodHandle");
-        constructorMethodHandle = fromString("constructorMethodHandle");
-        specialMethodHandle = fromString("specialMethodHandle");
-        indyDescriptor = fromString("indyDescriptor");
-        invokedynamic = fromString("invokedynamic");
-        of = fromString("of");
-        ldc = fromString("ldc");
 
         // other identifiers
         T = fromString("T");

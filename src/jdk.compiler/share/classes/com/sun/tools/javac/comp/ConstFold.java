@@ -25,9 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
-
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.comp.ConstablesVisitor.SpecialConstantsHelper;
 import com.sun.tools.javac.jvm.*;
 import com.sun.tools.javac.util.*;
 
@@ -43,10 +41,10 @@ import static com.sun.tools.javac.jvm.ByteCodes.*;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-strictfp public class ConstFold {
+strictfp class ConstFold {
     protected static final Context.Key<ConstFold> constFoldKey = new Context.Key<>();
 
-    private final Symtab syms;
+    private Symtab syms;
 
     public static ConstFold instance(Context context) {
         ConstFold instance = context.get(constFoldKey);
@@ -57,6 +55,7 @@ strictfp public class ConstFold {
 
     private ConstFold(Context context) {
         context.put(constFoldKey, this);
+
         syms = Symtab.instance(context);
     }
 
@@ -311,29 +310,29 @@ strictfp public class ConstFold {
      *                    ttype.
      *  @param ttype      The target type of the coercion.
      */
-    Type coerce(Type etype, Type ttype) {
-        // WAS if (etype.baseType() == ttype.baseType())
-        if (etype.tsym.type == ttype.tsym.type)
-            return etype;
-        if (etype.isNumeric()) {
-            Object n = etype.constValue();
-            switch (ttype.getTag()) {
-            case BYTE:
-                return syms.byteType.constType(0 + (byte)intValue(n));
-            case CHAR:
-                return syms.charType.constType(0 + (char)intValue(n));
-            case SHORT:
-                return syms.shortType.constType(0 + (short)intValue(n));
-            case INT:
-                return syms.intType.constType(intValue(n));
-            case LONG:
-                return syms.longType.constType(longValue(n));
-            case FLOAT:
-                return syms.floatType.constType(floatValue(n));
-            case DOUBLE:
-                return syms.doubleType.constType(doubleValue(n));
-            }
-        }
-        return ttype;
-    }
+     Type coerce(Type etype, Type ttype) {
+         // WAS if (etype.baseType() == ttype.baseType())
+         if (etype.tsym.type == ttype.tsym.type)
+             return etype;
+         if (etype.isNumeric()) {
+             Object n = etype.constValue();
+             switch (ttype.getTag()) {
+             case BYTE:
+                 return syms.byteType.constType(0 + (byte)intValue(n));
+             case CHAR:
+                 return syms.charType.constType(0 + (char)intValue(n));
+             case SHORT:
+                 return syms.shortType.constType(0 + (short)intValue(n));
+             case INT:
+                 return syms.intType.constType(intValue(n));
+             case LONG:
+                 return syms.longType.constType(longValue(n));
+             case FLOAT:
+                 return syms.floatType.constType(floatValue(n));
+             case DOUBLE:
+                 return syms.doubleType.constType(doubleValue(n));
+             }
+         }
+         return ttype;
+     }
 }

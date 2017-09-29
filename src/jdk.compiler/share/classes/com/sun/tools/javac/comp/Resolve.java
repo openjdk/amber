@@ -145,11 +145,6 @@ public class Resolve {
         inapplicableMethodException = new InapplicableMethodException(diags);
 
         allowModules = source.allowModules();
-
-        doConstantFold = options.isSet("doConstantFold");
-        if (doConstantFold) {
-            specialConstUtils = new SpecialConstantUtils(context);
-        }
     }
 
     /** error symbols, which are returned when resolution fails
@@ -2616,22 +2611,7 @@ public class Resolve {
                         return findFun(env, name, argtypes, typeargtypes,
                                 phase.isBoxingRequired(),
                                 phase.isVarargsRequired());
-                    }
-                    @Override
-                    Symbol access(Env<AttrContext> env, DiagnosticPosition pos, Symbol location, Symbol sym) {
-                        if (sym.kind.isResolutionError()) {
-                            sym = super.access(env, pos, location, sym);
-                        } else {
-                            MethodSymbol msym = (MethodSymbol)sym;
-                            if (doConstantFold &&
-                                    (specialConstUtils.isIntrinsicsIndy(msym))) {
-                                sym.flags_field |= SIGNATURE_POLYMORPHIC;
-                                return findPolymorphicSignatureInstance(env, sym, argtypes);
-                            }
-                        }
-                        return sym;
-                    }
-                });
+                    }});
     }
 
     /** Resolve a qualified method identifier
@@ -2653,19 +2633,11 @@ public class Resolve {
                                   List<Type> typeargtypes) {
         return resolveQualifiedMethod(new MethodResolutionContext(), pos, env, location, site, name, argtypes, typeargtypes);
     }
-    Symbol resolveQualifiedMethod(MethodResolutionContext resolveContext,
+    private Symbol resolveQualifiedMethod(MethodResolutionContext resolveContext,
                                   DiagnosticPosition pos, Env<AttrContext> env,
                                   Symbol location, Type site, Name name, List<Type> argtypes,
                                   List<Type> typeargtypes) {
-        return resolveQualifiedMethod(resolveContext, pos, env, location, site, name,
-                argtypes, typeargtypes, MethodResolutionPhase.VARARITY);
-    }
-    Symbol resolveQualifiedMethod(MethodResolutionContext resolveContext,
-                                  DiagnosticPosition pos, Env<AttrContext> env,
-                                  Symbol location, Type site, Name name, List<Type> argtypes,
-                                  List<Type> typeargtypes,
-                                  MethodResolutionPhase maxPhase) {
-        return lookupMethod(env, pos, location, resolveContext, new BasicLookupHelper(name, site, argtypes, typeargtypes, maxPhase) {
+        return lookupMethod(env, pos, location, resolveContext, new BasicLookupHelper(name, site, argtypes, typeargtypes) {
             @Override
             Symbol doLookup(Env<AttrContext> env, MethodResolutionPhase phase) {
                 return findMethod(env, site, name, argtypes, typeargtypes,
@@ -2678,10 +2650,7 @@ public class Resolve {
                     sym = super.access(env, pos, location, sym);
                 } else if (allowMethodHandles) {
                     MethodSymbol msym = (MethodSymbol)sym;
-                    if ((msym.flags() & SIGNATURE_POLYMORPHIC) != 0 ||
-                        doConstantFold &&
-                        specialConstUtils.isIntrinsicsIndy(msym)) {
-                        sym.flags_field |= SIGNATURE_POLYMORPHIC;
+                    if ((msym.flags() & SIGNATURE_POLYMORPHIC) != 0) {
                         return findPolymorphicSignatureInstance(env, sym, argtypes);
                     }
                 }
@@ -2689,9 +2658,6 @@ public class Resolve {
             }
         });
     }
-
-    private boolean doConstantFold;
-    private SpecialConstantUtils specialConstUtils;
 
     /** Find or create an implicit method of exactly the given type (after erasure).
      *  Searches in a side table, not the main scope of the site.
@@ -4641,7 +4607,7 @@ public class Resolve {
         }
     }
 
-    public enum MethodResolutionPhase {
+    enum MethodResolutionPhase {
         BASIC(false, false),
         BOX(true, false),
         VARARITY(true, true) {
@@ -4722,7 +4688,7 @@ public class Resolve {
 
         MethodCheck methodCheck = resolveMethodCheck;
 
-        boolean internalResolution = false;
+        private boolean internalResolution = false;
         private DeferredAttr.AttrMode attrMode = DeferredAttr.AttrMode.SPECULATIVE;
 
         void addInapplicableCandidate(Symbol sym, JCDiagnostic details) {

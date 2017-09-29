@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -360,7 +360,7 @@ public abstract class StringConcat {
             try {
                 make.at(pos);
 
-                List<Type> bsm_staticArgs = List.of(syms.methodHandlesLookupType,
+                List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
                         syms.stringType,
                         syms.methodTypeType);
 
@@ -471,7 +471,7 @@ public abstract class StringConcat {
                     constTypes.add(syms.stringType);
                 }
 
-                List<Type> bsm_staticArgs = List.of(syms.methodHandlesLookupType,
+                List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
                         syms.stringType,
                         syms.methodTypeType)
                         .append(syms.stringType)

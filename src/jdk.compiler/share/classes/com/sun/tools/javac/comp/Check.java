@@ -3445,7 +3445,7 @@ public class Check {
      *  @param operand       The right hand operand for the expression
      */
     void checkDivZero(final DiagnosticPosition pos, Symbol operator, Type operand) {
-        if (operand.hasIntrinsicConstValue()
+        if (operand.constValue() != null
             && operand.getTag().isSubRangeOf(LONG)
             && ((Number) (operand.constValue())).longValue() == 0) {
             int opc = ((OperatorSymbol)operator).opcode;

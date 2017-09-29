@@ -169,12 +169,8 @@ public class Symtab {
     public final Type serializedLambdaType;
     public final Type varHandleType;
     public final Type methodHandleType;
-    public final Type methodHandlesLookupType;
-    public final Type constablesType;
-    public final Type dynamicConstantRefType;
-    public final Type intrinsicsType;
+    public final Type methodHandleLookupType;
     public final Type methodTypeType;
-    public final Type trackableConstantType;
     public final Type nativeHeaderType;
     public final Type throwableType;
     public final Type errorType;
@@ -497,12 +493,8 @@ public class Symtab {
         serializedLambdaType = enterClass("java.lang.invoke.SerializedLambda");
         varHandleType = enterClass("java.lang.invoke.VarHandle");
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
-        methodHandlesLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
-        constablesType = enterClass("java.lang.invoke.Constables");
-        dynamicConstantRefType = enterClass("java.lang.invoke.DynamicConstantRef");
-        intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
+        methodHandleLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
-        trackableConstantType = enterClass("java.lang.annotation.TrackableConstant");
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");
