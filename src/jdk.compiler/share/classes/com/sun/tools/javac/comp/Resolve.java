@@ -59,7 +59,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -4041,33 +4040,12 @@ public class Resolve {
         }
         //where
             private Map<Symbol, JCDiagnostic> mapCandidates() {
-                MostSpecificMap candidates = new MostSpecificMap();
+                Map<Symbol, JCDiagnostic> candidates = new LinkedHashMap<>();
                 for (Candidate c : resolveContext.candidates) {
                     if (c.isApplicable()) continue;
-                    candidates.put(c);
+                    candidates.put(c.sym, c.details);
                 }
                 return candidates;
-            }
-
-            @SuppressWarnings("serial")
-            private class MostSpecificMap extends LinkedHashMap<Symbol, JCDiagnostic> {
-                private void put(Candidate c) {
-                    ListBuffer<Symbol> overridden = new ListBuffer<>();
-                    for (Symbol s : keySet()) {
-                        if (s == c.sym) {
-                            continue;
-                        }
-                        if (c.sym.overrides(s, (TypeSymbol)s.owner, types, false)) {
-                            overridden.add(s);
-                        } else if (s.overrides(c.sym, (TypeSymbol)c.sym.owner, types, false)) {
-                            return;
-                        }
-                    }
-                    for (Symbol s : overridden) {
-                        remove(s);
-                    }
-                    put(c.sym, c.details);
-                }
             }
 
             Map<Symbol, JCDiagnostic> filterCandidates(Map<Symbol, JCDiagnostic> candidatesMap) {
