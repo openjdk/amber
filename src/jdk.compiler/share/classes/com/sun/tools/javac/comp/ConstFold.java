@@ -81,6 +81,18 @@ strictfp class ConstFold {
      *  @param operand   The operation's operand type.
      *                   Argument types are assumed to have non-null constValue's.
      */
+    Type fold1(int opcode, Type operand) {
+        return fold1(opcode, operand, operand.constValue());
+    }
+
+    /** Fold unary operation.
+     *  @param opcode    The operation's opcode instruction (usually a byte code),
+     *                   as entered by class Symtab.
+     *                   opcode's ifeq to ifge are for postprocessing
+     *                   xcmp; ifxx pairs of instructions.
+     *  @param operand   The operation's operand type.
+     *                   Argument types are assumed to have non-null constValue's.
+     */
     Type fold1(int opcode, Type operand, Object od) {
         try {
             switch (opcode) {
@@ -122,6 +134,18 @@ strictfp class ConstFold {
         } catch (ArithmeticException e) {
             return null;
         }
+    }
+
+    /** Fold binary operation.
+     *  @param opcode    The operation's opcode instruction (usually a byte code),
+     *                   as entered by class Symtab.
+     *                   opcode's ifeq to ifge are for postprocessing
+     *                   xcmp; ifxx pairs of instructions.
+     *  @param left      The type of the operation's left operand.
+     *  @param right     The type of the operation's right operand.
+     */
+    Type fold2(int opcode, Type left, Type right) {
+        return fold2(opcode, left, right, left.constValue(), right.constValue());
     }
 
     /** Fold binary operation.

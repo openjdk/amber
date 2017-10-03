@@ -2023,7 +2023,6 @@ public class Attr extends JCTree.Visitor {
             Type capturedRes = resultInfo.checkContext.inferenceContext().cachedCapture(tree, restype, true);
             result = check(tree, capturedRes, KindSelector.VAL, resultInfo);
         }
-        tree.resolutionPhase = localEnv.info.pendingResolutionPhase;
         chk.validate(tree.typeargs, localEnv);
     }
     //where
@@ -3375,7 +3374,7 @@ public class Attr extends JCTree.Visitor {
 
             // If the argument is constant, fold it.
             if (argtype.constValue() != null) {
-                Type ctype = cfolder.fold1(opc, argtype, argtype.constValue());
+                Type ctype = cfolder.fold1(opc, argtype);
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }
@@ -3398,7 +3397,7 @@ public class Attr extends JCTree.Visitor {
             int opc = ((OperatorSymbol)operator).opcode;
             // If both arguments are constants, fold them.
             if (left.constValue() != null && right.constValue() != null) {
-                Type ctype = cfolder.fold2(opc, left, right, left.constValue(), right.constValue());
+                Type ctype = cfolder.fold2(opc, left, right);
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }

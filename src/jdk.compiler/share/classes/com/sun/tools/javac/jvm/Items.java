@@ -30,6 +30,7 @@ import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.Code.*;
+import com.sun.tools.javac.jvm.Pool.ConstantDynamic;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
 
@@ -162,6 +163,13 @@ public class Items {
      */
     Item makeImmediateItem(Type type, Object value) {
         return new ImmediateItem(type, value);
+    }
+
+    /** Make an item representing a condy.
+     *  @param value    The condy value.
+     */
+    Item makeCondyItem(ConstantDynamic value) {
+        return new CondyItem(value);
     }
 
     /** Make an item representing an assignment expression.
@@ -465,6 +473,33 @@ public class Items {
         }
     }
 
+    /** An item representing a condy
+     */
+    class CondyItem extends Item {
+        ConstantDynamic value;
+
+        CondyItem(ConstantDynamic value) {
+            super(Code.typecode(value.type));
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "condy(" + value + ")";
+        }
+
+        @Override
+        Item load() {
+            int idx = pool.put(value);
+            if (typecode == LONGcode || typecode == DOUBLEcode) {
+                code.emitop2(ldc2w, idx);
+            } else {
+                code.emitLdc(idx);
+            }
+            return stackItem[typecode];
+        }
+    }
+
     /** An item representing a dynamic call site.
      */
     class DynamicItem extends StaticItem {
@@ -473,11 +508,7 @@ public class Items {
         }
 
         Item load() {
-            Assert.check(member.kind == Kind.VAR);
-            Type type = member.erasure(types);
-            int rescode = Code.typecode(type);
-            code.emitLdc(pool.put(member));
-            return stackItem[rescode];
+            throw new AssertionError();
         }
 
         void store() {
@@ -581,49 +612,45 @@ public class Items {
         }
 
         Item load() {
-            if (value instanceof Pool.ConstantDynamic) {
-                ldc();
-            } else {
-                switch (typecode) {
-                case INTcode: case BYTEcode: case SHORTcode: case CHARcode:
-                    int ival = ((Number)value).intValue();
-                    if (-1 <= ival && ival <= 5)
-                        code.emitop0(iconst_0 + ival);
-                    else if (Byte.MIN_VALUE <= ival && ival <= Byte.MAX_VALUE)
-                        code.emitop1(bipush, ival);
-                    else if (Short.MIN_VALUE <= ival && ival <= Short.MAX_VALUE)
-                        code.emitop2(sipush, ival);
-                    else
-                        ldc();
-                    break;
-                case LONGcode:
-                    long lval = ((Number)value).longValue();
-                    if (lval == 0 || lval == 1)
-                        code.emitop0(lconst_0 + (int)lval);
-                    else
-                        ldc();
-                    break;
-                case FLOATcode:
-                    float fval = ((Number)value).floatValue();
-                    if (isPosZero(fval) || fval == 1.0 || fval == 2.0)
-                        code.emitop0(fconst_0 + (int)fval);
-                    else {
-                        ldc();
-                    }
-                    break;
-                case DOUBLEcode:
-                    double dval = ((Number)value).doubleValue();
-                    if (isPosZero(dval) || dval == 1.0)
-                        code.emitop0(dconst_0 + (int)dval);
-                    else
-                        ldc();
-                    break;
-                case OBJECTcode:
+            switch (typecode) {
+            case INTcode: case BYTEcode: case SHORTcode: case CHARcode:
+                int ival = ((Number)value).intValue();
+                if (-1 <= ival && ival <= 5)
+                    code.emitop0(iconst_0 + ival);
+                else if (Byte.MIN_VALUE <= ival && ival <= Byte.MAX_VALUE)
+                    code.emitop1(bipush, ival);
+                else if (Short.MIN_VALUE <= ival && ival <= Short.MAX_VALUE)
+                    code.emitop2(sipush, ival);
+                else
                     ldc();
-                    break;
-                default:
-                    Assert.error();
+                break;
+            case LONGcode:
+                long lval = ((Number)value).longValue();
+                if (lval == 0 || lval == 1)
+                    code.emitop0(lconst_0 + (int)lval);
+                else
+                    ldc();
+                break;
+            case FLOATcode:
+                float fval = ((Number)value).floatValue();
+                if (isPosZero(fval) || fval == 1.0 || fval == 2.0)
+                    code.emitop0(fconst_0 + (int)fval);
+                else {
+                    ldc();
                 }
+                break;
+            case DOUBLEcode:
+                double dval = ((Number)value).doubleValue();
+                if (isPosZero(dval) || dval == 1.0)
+                    code.emitop0(dconst_0 + (int)dval);
+                else
+                    ldc();
+                break;
+            case OBJECTcode:
+                ldc();
+                break;
+            default:
+                Assert.error();
             }
             return stackItem[typecode];
         }

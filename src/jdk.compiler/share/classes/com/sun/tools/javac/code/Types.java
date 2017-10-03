@@ -101,7 +101,7 @@ public class Types {
 
     public final Warner noWarnings;
     private final boolean doConstantFold;
-    private final SpecialConstantUtils specialConstUtils;
+    private final Constables constables;
 
     // <editor-fold defaultstate="collapsed" desc="Instantiating">
     public static Types instance(Context context) {
@@ -128,7 +128,7 @@ public class Types {
         noWarnings = new Warner(null);
         Options options = Options.instance(context);
         doConstantFold = options.isSet("doConstantFold");
-        specialConstUtils = new SpecialConstantUtils(context);
+        constables = new Constables(context);
     }
     // </editor-fold>
 
@@ -1261,7 +1261,7 @@ public class Types {
      *   (v) is native.
     */
    public boolean isSignaturePolymorphic(MethodSymbol msym) {
-       if (doConstantFold && specialConstUtils.isIntrinsicsIndy(msym)) {
+       if (doConstantFold && constables.isIntrinsicsIndy(msym)) {
            return true;
        }
        List<Type> argtypes = msym.type.getParameterTypes();
@@ -4280,22 +4280,6 @@ public class Types {
      */
     public ClassSymbol boxedClass(Type t) {
         return syms.enterClass(syms.java_base, syms.boxedName[t.getTag().ordinal()]);
-    }
-
-    public ClassSymbol boxedClass(String descriptor) {
-        switch (descriptor) {
-            case "I": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.INT.ordinal()]);
-            case "J": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.LONG.ordinal()]);
-            case "S": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.SHORT.ordinal()]);
-            case "B": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BYTE.ordinal()]);
-            case "C": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.CHAR.ordinal()]);
-            case "F": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.FLOAT.ordinal()]);
-            case "D": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.DOUBLE.ordinal()]);
-            case "Z": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BOOLEAN.ordinal()]);
-            case "V": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.VOID.ordinal()]);
-            default:
-                throw new AssertionError("invalid primitive descriptor " + descriptor);
-        }
     }
 
     /**

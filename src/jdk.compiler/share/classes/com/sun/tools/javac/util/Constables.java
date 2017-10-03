@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,14 @@
 
 package com.sun.tools.javac.util;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -41,19 +44,25 @@ import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.ArrayType;
 import com.sun.tools.javac.code.Type.ClassType;
 import com.sun.tools.javac.code.Type.MethodType;
+import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.AttrContext;
+import com.sun.tools.javac.comp.ConstablesVisitor;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.Pool;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
+import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.TreeInfo;
 
 import static com.sun.tools.javac.code.Flags.STATIC;
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
 import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
+import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 
 /** This class is a support tool to parse a method descriptor and obtain a list of the types
  *  represented in it.
@@ -63,14 +72,15 @@ import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-public class SpecialConstantUtils {
+public class Constables {
 
-    public SpecialConstantUtils(Context context) {
+    public Constables(Context context) {
         types = Types.instance(context);
         names = Names.instance(context);
         syms = Symtab.instance(context);
         rs = Resolve.instance(context);
         log = Log.instance(context);
+        constablesVisitor = ConstablesVisitor.instance(context);
         try {
             methodHandleRefClass = Class.forName("java.lang.invoke.MethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.invoke.MethodTypeRef", false, null);
@@ -90,12 +100,13 @@ public class SpecialConstantUtils {
         }
     }
 
-    final Types types;
-    final Names names;
-    final Symtab syms;
-    final Resolve rs;
-    final Log log;
-    ModuleSymbol currentModule;
+    private final Types types;
+    private final Names names;
+    private final Symtab syms;
+    private final Resolve rs;
+    private final Log log;
+    private ModuleSymbol currentModule;
+    private final ConstablesVisitor constablesVisitor;
 
     /** The unread portion of the currently read type is
      *  signature[sigp..siglimit-1].
@@ -278,21 +289,41 @@ public class SpecialConstantUtils {
                     Object condy = invokeReflectiveMethod(constablesClass, null, "reduce", new Class<?>[]{constantRefClass}, new Object[]{constant});
                     return convertConstant(tree, attrEnv, condy, currentModule);
                 } else {
-                    return rs.resolveInternalField(tree, attrEnv, types.boxedClass(descriptor).type, names.TYPE);
+                    return rs.resolveInternalField(tree, attrEnv, boxedClass(descriptor).type, names.TYPE);
                 }
             }
             Type type = descriptorToType(descriptor, currentModule, false);
             return type.hasTag(ARRAY) ? type : type.tsym;
         } else if (dynamicConstantClass.isInstance(constant)) {
+            Object classRef =
+                    invokeReflectiveMethod(dynamicConstantClass, constant, "type");
+            String descriptor = (String)invokeReflectiveMethod(classRefClass, classRef, "descriptorString");
+            Type type = descriptorToType(descriptor, attrEnv.enclClass.sym.packge().modle, false);
             String name = (String)invokeReflectiveMethod(dynamicConstantClass, constant, "name");
             Object mh = invokeReflectiveMethod(dynamicConstantClass, constant, "bootstrapMethod");
             Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv, mh, currentModule);
             Object[] args = (Object[])invokeReflectiveMethod(dynamicConstantClass, constant, "bootstrapArgs");
             Object[] convertedArgs = convertConstants(tree, attrEnv, args, currentModule, true);
-            return new Pool.ConstantDynamic(names.fromString(name), methodHandle, convertedArgs, types);
+            return new Pool.ConstantDynamic(names.fromString(name), methodHandle, type, convertedArgs, types);
         }
         return constant;
     }
+    // where
+        private ClassSymbol boxedClass(String descriptor) {
+            switch (descriptor) {
+                case "I": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.INT.ordinal()]);
+                case "J": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.LONG.ordinal()]);
+                case "S": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.SHORT.ordinal()]);
+                case "B": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BYTE.ordinal()]);
+                case "C": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.CHAR.ordinal()]);
+                case "F": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.FLOAT.ordinal()]);
+                case "D": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.DOUBLE.ordinal()]);
+                case "Z": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.BOOLEAN.ordinal()]);
+                case "V": return syms.enterClass(syms.java_base, syms.boxedName[TypeTag.VOID.ordinal()]);
+                default:
+                    throw new AssertionError("invalid primitive descriptor " + descriptor);
+            }
+        }
 
     public Object[] convertConstants(JCTree tree, Env<AttrContext> attrEnv, Object[] constants, ModuleSymbol currentModule, boolean bsmArgs) {
         if (constants == null || constants.length == 0) {
@@ -391,13 +422,188 @@ public class SpecialConstantUtils {
                 msym.name == names.ldc);
     }
 
-    public boolean isIntrinsicsLDCInvocation(JCTree tree) {
-        Symbol msym = TreeInfo.symbol(tree);
-        return (tree.hasTag(APPLY) &&
-                msym != null &&
-                msym.owner != null &&
-                msym.owner.type != null &&
-                msym.owner.type.tsym == syms.intrinsicsType.tsym &&
-                msym.name == names.ldc);
+    /* This method doesnt verify that the annotated field is static it is assumed that
+     * it has to be
+     */
+    public Object foldTrackableField(final JCTree tree, final Env<AttrContext> env) {
+        Symbol sym = TreeInfo.symbol(tree);
+        boolean trackableConstant = sym.attribute(syms.trackableConstantType.tsym) != null &&
+                sym.packge().modle == syms.java_base;
+        if (trackableConstant) {
+            String className = sym.owner.type.tsym.flatName().toString();
+            try {
+                Class<?> constablesClass = Class.forName(className, false, null);
+                MemberKind mKind = getMemberKind(constablesClass, sym.name.toString());
+                if (mKind == MemberKind.METHOD) {
+                    // we are in the middle of a method invocation bail out
+                    return null;
+                }
+                Field theField = constablesClass.getField(sym.name.toString());
+                Object value = theField.get(null);
+                if (value != null) {
+                    return value;
+                }
+            } catch (ClassNotFoundException |
+                    NoSuchFieldException |
+                    IllegalAccessException ex) {
+                log.error(tree, Errors.ReflectiveError(sym.name.toString(), className));
+            }
+        }
+        return null;
     }
+
+    enum MemberKind {
+        FIELD,
+        METHOD
+    }
+
+    MemberKind getMemberKind(Class<?> aClass, String name) {
+        try {
+            aClass.getField(name);
+            return MemberKind.FIELD;
+        } catch (NoSuchFieldException ex) {
+            return MemberKind.METHOD;
+        }
+    }
+
+    public Object foldMethodInvocation(final JCMethodInvocation tree, final Env<AttrContext> env) {
+        Symbol msym = TreeInfo.symbol(tree.meth);
+        Object constant = null;
+        boolean trackableConstant = msym.attribute(syms.trackableConstantType.tsym) != null &&
+                msym.packge().modle == syms.java_base;
+        boolean isLDC = msym.owner.type.tsym == syms.intrinsicsType.tsym && msym.name == names.ldc;
+        if (trackableConstant || isLDC) {
+            List<Object> constantArgumentValues = extractAllConstansOrNone(tree.args);
+            boolean allConstants = tree.args.isEmpty() == constantArgumentValues.isEmpty();
+            if (allConstants) {
+                if (trackableConstant) {
+                    constant = invokeConstablesMethod(tree, env, constantArgumentValues);
+                } else if (isLDC) {
+                    constant = constantArgumentValues.head;
+                }
+            }
+            if (constant != null) {
+                return constant;
+            }
+        }
+        return null;
+    }
+
+    public List<Object> extractAllConstansOrNone(List<JCExpression> args) {
+        ListBuffer<Object> constantArgumentValues = new ListBuffer<>();
+        for (JCExpression arg: args) {
+            Object argConstant = arg.type.constValue();
+            if (argConstant != null) {
+                constantArgumentValues.add(argConstant);
+            } else {
+                argConstant = constablesVisitor.elementToConstantMap.get(arg) != null ?
+                        constablesVisitor.elementToConstantMap.get(arg) :
+                        constablesVisitor.elementToConstantMap.get(TreeInfo.symbol(arg));
+                if (argConstant != null) {
+                    constantArgumentValues.add(argConstant);
+                } else {
+                    return List.nil();
+                }
+            }
+        }
+        return constantArgumentValues.toList();
+    }
+
+    // where
+        Object invokeConstablesMethod(
+                final JCMethodInvocation tree,
+                final Env<AttrContext> env,
+                List<Object> constantArgumentValues) {
+            String className = "";
+            Name methodName = names.empty;
+            try {
+                Symbol msym = TreeInfo.symbol(tree.meth);
+                JCTree qualifierTree = (tree.meth.hasTag(SELECT))
+                    ? ((JCFieldAccess) tree.meth).selected
+                    : null;
+                Object instance = constablesVisitor.elementToConstantMap.get(qualifierTree);
+                className = msym.owner.type.tsym.flatName().toString();
+                methodName = msym.name;
+                Class<?> constablesClass = Class.forName(className, false, null);
+                MethodType mt = msym.type.asMethodType();
+                java.util.List<Class<?>> argumentTypes =
+                        mt.argtypes.stream().map(t -> getClassForType(t)).collect(List.collector());
+                Method theMethod = constablesClass.getDeclaredMethod(methodName.toString(),
+                        argumentTypes.toArray(new Class<?>[argumentTypes.size()]));
+                int modifiers = theMethod.getModifiers();
+                Object[] args = boxArgs(
+                        mt.argtypes,
+                        constantArgumentValues,
+                        tree.varargsElement);
+                if ((modifiers & Modifier.STATIC) == 0) {
+                    return (instance != null) ? theMethod.invoke(instance, args) : null;
+                }
+                return theMethod.invoke(null, args);
+            } catch (ClassNotFoundException |
+                    SecurityException |
+                    NoSuchMethodException |
+                    IllegalAccessException |
+                    IllegalArgumentException |
+                    InvocationTargetException ex) {
+                log.error(tree, Errors.ReflectiveError(methodName.toString(), className));
+                return null;
+            }
+        }
+
+        Class<?> getClassForType(Type t) {
+            try {
+                if (t.isPrimitiveOrVoid()) {
+                    return t.getTag().theClass;
+                } else {
+                    return Class.forName(getFlatName(t), false, null);
+                }
+            } catch (ClassNotFoundException ex) {
+                return null;
+            }
+        }
+
+        String getFlatName(Type t) {
+            String flatName = t.tsym.flatName().toString();
+            if (t.hasTag(ARRAY)) {
+                flatName = "";
+                while (t.hasTag(ARRAY)) {
+                    ArrayType at = (ArrayType)t;
+                    flatName += "[";
+                    t = at.elemtype;
+                }
+                flatName += "L" + t.tsym.flatName().toString() + ';';
+            }
+            return flatName;
+        }
+
+        Object[] boxArgs(List<Type> parameters, List<Object> _args, Type varargsElement) {
+            java.util.List<Object> result = new java.util.ArrayList<>();
+            List<Object> args = _args;
+            if (parameters.isEmpty()) return new Object[0];
+            while (parameters.tail.nonEmpty()) {
+                result.add(args.head);
+                args = args.tail;
+                parameters = parameters.tail;
+            }
+            if (varargsElement != null) {
+                java.util.List<Object> elems = new java.util.ArrayList<>();
+                while (args.nonEmpty()) {
+                    elems.add(args.head);
+                    args = args.tail;
+                }
+                Class<?> arrayClass = null;
+                try {
+                    arrayClass = Class.forName(getFlatName(varargsElement), false, null);
+                } catch (ClassNotFoundException ex) {}
+                Object arr = Array.newInstance(arrayClass, elems.size());
+                for (int i = 0; i < elems.size(); i++) {
+                    Array.set(arr, i, elems.get(i));
+                }
+                result.add(arr);
+            } else {
+                if (args.length() != 1) throw new AssertionError(args);
+                result.add(args.head);
+            }
+            return result.toArray();
+        }
 }

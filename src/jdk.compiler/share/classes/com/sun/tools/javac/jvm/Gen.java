@@ -1649,6 +1649,8 @@ public class Gen extends JCTree.Visitor {
             // primitives special case
             if (constant instanceof VarSymbol && ((VarSymbol)constant).name == names.TYPE) {
                 m = items.makeStaticItem((Symbol)constant);
+            } else if (constant instanceof Pool.ConstantDynamic) {
+                m = items.makeCondyItem((Pool.ConstantDynamic)constant);
             } else {
                 m = items.makeImmediateItem(pt, constant);
             }

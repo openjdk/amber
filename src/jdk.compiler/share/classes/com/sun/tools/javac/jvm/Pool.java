@@ -300,18 +300,19 @@ public class Pool {
     public static class ConstantDynamic {
         MethodHandle bsm;
         Name name;
-        Type type;
-
+        public Type type;
         Object[] args;
         Types types;
 
         public ConstantDynamic(Name name, MethodHandle bsm, Object[] args, Types types) {
+            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types);
+        }
+
+        public ConstantDynamic(Name name, MethodHandle bsm, Type type, Object[] args, Types types) {
             Assert.checkNonNull(args);
             this.bsm = bsm;
-            MethodSymbol ms = (MethodSymbol)bsm.refSym;
-            MethodType mt = (MethodType)ms.type;
             this.name = name;
-            this.type = mt.restype;
+            this.type = type;
             this.args = args;
             this.types = types;
         }

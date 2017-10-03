@@ -1620,7 +1620,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCExpression meth;
         public List<JCExpression> args;
         public Type varargsElement;
-        public Resolve.MethodResolutionPhase resolutionPhase;
         protected JCMethodInvocation(List<JCExpression> typeargs,
                         JCExpression meth,
                         List<JCExpression> args)
