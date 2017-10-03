@@ -58,7 +58,6 @@ import static com.sun.tools.javac.code.Symbol.*;
 import static com.sun.tools.javac.code.Type.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.jvm.ClassFile.externalize;
-
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 /**

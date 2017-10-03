@@ -185,19 +185,8 @@ public class Names {
     public final Name RUNTIME;
     public final Name SOURCE;
 
-    // members of java.lang.invoke.Constables
-    public final Name methodType;
-    public final Name virtualMethodHandle;
-    public final Name staticMethodHandle;
-    public final Name getterMethodHandle;
-    public final Name staticGetterMethodHandle;
-    public final Name setterMethodHandle;
-    public final Name staticSetterMethodHandle;
-    public final Name constructorMethodHandle;
-    public final Name specialMethodHandle;
-    public final Name indyDescriptor;
+    // condy names
     public final Name invokedynamic;
-    public final Name of;
     public final Name ldc;
 
     // other identifiers
@@ -363,19 +352,8 @@ public class Names {
         RUNTIME = fromString("RUNTIME");
         SOURCE = fromString("SOURCE");
 
-        // members of java.lang.invoke.Constables
-        methodType = fromString("methodType");
-        virtualMethodHandle = fromString("virtualMethodHandle");
-        staticMethodHandle = fromString("staticMethodHandle");
-        getterMethodHandle = fromString("getterMethodHandle");
-        staticGetterMethodHandle = fromString("staticGetterMethodHandle");
-        setterMethodHandle = fromString("setterMethodHandle");
-        staticSetterMethodHandle = fromString("staticSetterMethodHandle");
-        constructorMethodHandle = fromString("constructorMethodHandle");
-        specialMethodHandle = fromString("specialMethodHandle");
-        indyDescriptor = fromString("indyDescriptor");
+        // condy names
         invokedynamic = fromString("invokedynamic");
-        of = fromString("of");
         ldc = fromString("ldc");
 
         // other identifiers

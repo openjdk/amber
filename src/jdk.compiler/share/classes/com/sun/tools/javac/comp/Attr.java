@@ -46,11 +46,9 @@ import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
 import com.sun.tools.javac.comp.Check.CheckContext;
 import com.sun.tools.javac.comp.DeferredAttr.AttrMode;
 import com.sun.tools.javac.jvm.*;
-
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.Diamond;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArg;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArgs;
-
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
@@ -71,7 +69,6 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
-
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
 /** This is the main context-dependent analysis phase in GJC. It
@@ -151,6 +148,7 @@ public class Attr extends JCTree.Visitor {
         argumentAttr = ArgumentAttr.instance(context);
 
         Options options = Options.instance(context);
+
         Source source = Source.instance(context);
         allowStringsInSwitch = source.allowStringsInSwitch();
         allowPoly = source.allowPoly();
@@ -5067,7 +5065,7 @@ public class Attr extends JCTree.Visitor {
      * the compiler has encountered some errors (which might have ended up
      * terminating attribution abruptly); if the compiler is used in fail-over
      * mode (e.g. by an IDE) and the AST contains semantic errors, this routine
-     * prevents NPE to be propagated during subsequent compilation steps.
+     * prevents NPE to be progagated during subsequent compilation steps.
      */
     public void postAttr(JCTree tree) {
         new PostAttrAnalyzer().scan(tree);
@@ -5236,4 +5234,5 @@ public class Attr extends JCTree.Visitor {
             }
         }.scan(pid);
     }
+
 }

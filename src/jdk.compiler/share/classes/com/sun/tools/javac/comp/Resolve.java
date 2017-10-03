@@ -146,11 +146,6 @@ public class Resolve {
         inapplicableMethodException = new InapplicableMethodException(diags);
 
         allowModules = source.allowModules();
-
-        doConstantFold = options.isSet("doConstantFold");
-        if (doConstantFold) {
-            constables = new Constables(context);
-        }
     }
 
     /** error symbols, which are returned when resolution fails
@@ -2623,10 +2618,7 @@ public class Resolve {
                         if (sym.kind.isResolutionError()) {
                             sym = super.access(env, pos, location, sym);
                         } else {
-                            MethodSymbol msym = (MethodSymbol)sym;
-                            if (doConstantFold &&
-                                    (constables.isIntrinsicsIndy(msym))) {
-                                sym.flags_field |= SIGNATURE_POLYMORPHIC;
+                            if ((sym.flags() & SIGNATURE_POLYMORPHIC) != 0) {
                                 return findPolymorphicSignatureInstance(env, sym, argtypes);
                             }
                         }
@@ -2671,10 +2663,7 @@ public class Resolve {
                     sym = super.access(env, pos, location, sym);
                 } else if (allowMethodHandles) {
                     MethodSymbol msym = (MethodSymbol)sym;
-                    if ((msym.flags() & SIGNATURE_POLYMORPHIC) != 0 ||
-                        doConstantFold &&
-                        constables.isIntrinsicsIndy(msym)) {
-                        sym.flags_field |= SIGNATURE_POLYMORPHIC;
+                    if ((msym.flags() & SIGNATURE_POLYMORPHIC) != 0) {
                         return findPolymorphicSignatureInstance(env, sym, argtypes);
                     }
                 }
@@ -2682,9 +2671,6 @@ public class Resolve {
             }
         });
     }
-
-    private boolean doConstantFold;
-    private Constables constables;
 
     /** Find or create an implicit method of exactly the given type (after erasure).
      *  Searches in a side table, not the main scope of the site.

@@ -398,9 +398,6 @@ public class MemberEnter extends JCTree.Visitor {
         public void visitIdent(JCIdent that) {}
 
         @Override
-        public void visitTypeIdent(JCPrimitiveTypeTree that) { }
-
-        @Override
         public void visitSelect(JCFieldAccess tree) {
             tree.selected.accept(this);
         }
