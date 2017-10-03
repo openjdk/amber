@@ -150,18 +150,19 @@ public class TransPatterns extends TreeTranslator {
                         tempType,
                         patt.symbol.owner);
                 JCExpression translatedExpr = translate(tree.expr);
+                Type castTargetType = types.boxedTypeOrType(pattSym.erasure(types));
                 if (patt.vartype == null || tree.expr.type.isPrimitive()) {
                     result = make.Literal(BOOLEAN,1).setType(syms.booleanType);
                 } else {
-                    result = makeTypeTest(make.Ident(temp), patt.vartype);
+                    result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
                 }
 
                 VarSymbol bindingVar = bindingContext.getBindingFor(patt.symbol);
                 if (bindingVar != null) {
                     JCAssign fakeInit = (JCAssign)make.at(tree.pos).Assign(
-                            make.Ident(bindingVar), convert(make.Ident(temp), pattSym.erasure(types))).setType(bindingVar.erasure(types));
+                            make.Ident(bindingVar), convert(make.Ident(temp), castTargetType)).setType(bindingVar.erasure(types));
                     result = makeBinary(Tag.AND, (JCExpression)result,
-                            makeBinary(Tag.EQ, fakeInit, make.Ident(temp)));
+                            makeBinary(Tag.EQ, fakeInit, convert(make.Ident(temp), castTargetType)));
                 }
                 result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr), (JCExpression)result).setType(syms.booleanType);
                 break;
