@@ -399,6 +399,14 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         return (flags() & ENUM) != 0;
     }
 
+    public boolean isFinal() {
+        return (flags() & FINAL) != 0;
+    }
+
+    public boolean isEffectivelyFinal() {
+        return (flags() & EFFECTIVELY_FINAL) != 0;
+    }
+
     /** Is this symbol declared (directly or indirectly) local
      *  to a method or variable initializer?
      *  Also includes fields of inner classes which are in

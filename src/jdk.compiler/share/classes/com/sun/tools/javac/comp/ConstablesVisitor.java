@@ -125,18 +125,14 @@ public class ConstablesVisitor extends TreeScanner {
         super.visitVarDef(tree);
         if (tree.init != null) {
             VarSymbol v = tree.sym;
-            Object val = tree.init.type.constValue();
-            Object constant = elementToConstantMap.get(tree.init);
-            if ((val != null || constant != null) &&
-                    ((v.flags_field & FINAL) != 0 ||
-                    (v.flags_field & EFFECTIVELY_FINAL) != 0)) {
-                if (val != null) {
-                    v.setData(val);
-                    tree.type = tree.type.constType(val);
-                } else {
-                    elementToConstantMap.remove(tree.init);
-                    elementToConstantMap.put(v, constant);
-                }
+            Object constant = tree.init.type.constValue();
+            constant = constant != null ?
+                    constant :
+                    elementToConstantMap.get(tree.init);
+            if (constant != null &&
+                    (v.isFinal() || v.isEffectivelyFinal())) {
+                elementToConstantMap.remove(tree.init);
+                elementToConstantMap.put(v, constant);
             }
         }
     }
@@ -155,7 +151,8 @@ public class ConstablesVisitor extends TreeScanner {
                 getConstant(tree.rhs) != null) {
             Type ctype = cfolder.fold2(tree.operator.opcode, tree.lhs.type, tree.rhs.type, getConstant(tree.lhs), getConstant(tree.rhs));
             if (ctype != null) {
-                tree.type = cfolder.coerce(ctype, tree.type);
+                ctype = cfolder.coerce(ctype, tree.type);
+                elementToConstantMap.put(tree, ctype.constValue());
             }
         }
     }
@@ -169,7 +166,8 @@ public class ConstablesVisitor extends TreeScanner {
                 constant instanceof Number) {
             Type ctype = cfolder.fold1(tree.operator.opcode, tree.arg.type, getConstant(tree.arg));
             if (ctype != null) {
-                tree.type = cfolder.coerce(ctype, tree.type);
+                ctype = cfolder.coerce(ctype, tree.type);
+                elementToConstantMap.put(tree, ctype.constValue());
             }
         }
     }
