@@ -262,26 +262,26 @@ public class ConstablesVisitor extends TreeScanner {
             if (constant != null) {
                 elementToConstantMap.put(tree, constant);
                 if (isLDC) {
+                    Type newType;
                     // if condy
                     if (tree.args.head.type.tsym == syms.dynamicConstantRefType.tsym) {
                         constant = constables.convertConstant(tree, attrEnv,
                                 constant, attrEnv.enclClass.sym.packge().modle);
-                        MethodType oldMT = tree.meth.type.asMethodType();
-                        MethodType newMT = new MethodType(oldMT.argtypes,
-                                ((Pool.ConstantDynamic)constant).type, oldMT.thrown, syms.methodClass);
-                        MethodSymbol newMS = new MethodSymbol(msym.flags_field, msym.name, newMT, msym.owner);
-                        TreeInfo.setSymbol(tree.meth, newMS);
-                        tree.meth.type = newMT;
-                        tree.type = newMT.restype;
+                        newType = ((Pool.ConstantDynamic)constant).type;
                     } else {
+                        newType = tree.meth.type.asMethodType().restype;
+                        Type unboxed = types.unboxedType(newType);
+                        newType = unboxed != Type.noType ? unboxed : newType;
                         constant = constables.convertConstant(tree, attrEnv,
                                 constant, attrEnv.enclClass.sym.packge().modle);
                     }
-                    // lets update the field as condy could have changed it
-                    msym = TreeInfo.symbol(tree.meth);
+                    MethodType oldMT = tree.meth.type.asMethodType();
+                    MethodType newMT = new MethodType(oldMT.argtypes, newType, oldMT.thrown, syms.methodClass);
                     IntrinsicsLDCMethodSymbol ldcSymbol = new IntrinsicsLDCMethodSymbol(
-                            msym.flags_field, msym.name, msym.type, msym.owner, constant);
+                            msym.flags_field, msym.name, newMT, msym.owner, constant);
                     TreeInfo.setSymbol(tree.meth, ldcSymbol);
+                    tree.meth.type = newMT;
+                    tree.type = newMT.restype;
                 }
             } else if (constables.isIntrinsicsIndy(tree.meth)) {
                 List<Object> constants = constables.extractAllConstansOrNone(List.of(tree.args.head, tree.args.tail.head));

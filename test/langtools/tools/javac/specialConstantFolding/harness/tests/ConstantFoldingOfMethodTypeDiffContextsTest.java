@@ -33,10 +33,10 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     }
 
     @InstructionInfo(bytecodePosition=1, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=10, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
+    @InstructionInfo(bytecodePosition=7, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
 //    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "(I)V"})
-    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void invocationContext1() {
         foo(ldc(MethodTypeRef.of(ClassRef.CR_String)));
         foo(ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
@@ -70,10 +70,10 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=6, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=12, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
+    @InstructionInfo(bytecodePosition=3, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=6, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
 //    @InstructionInfo(bytecodePosition=18, values={"CONSTANT_MethodType_info", "(I)V"})
-    @InstructionInfo(bytecodePosition=18, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=9, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void castContext1() {
         Serializable s1 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String));
         Serializable s2 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
@@ -102,10 +102,10 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     }
 
     @InstructionInfo(bytecodePosition=1, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=10, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
+    @InstructionInfo(bytecodePosition=7, values={"CONSTANT_MethodType_info", "(I)Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodType_info", "(Ljava/lang/String;I)V"})
 //    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "(I)V"})
-    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void cast_plus_invocationContext() {
         foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String)));
         foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
