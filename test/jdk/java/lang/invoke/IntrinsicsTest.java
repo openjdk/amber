@@ -59,9 +59,13 @@ public class IntrinsicsTest {
 
 
     public void testPropagateThroughLocals() {
+        boolean condition = true;
         String descriptor = "Ljava/lang/String;";
+        String descriptorI = "Ljava/lang/Integer;";
         ClassRef cc1 = ClassRef.ofDescriptor(descriptor);
+        ClassRef ccI = ClassRef.ofDescriptor(descriptorI);
         assertEquals(String.class, Intrinsics.ldc(cc1));
+        assertEquals(String.class, condition ? Intrinsics.ldc(cc1) : Intrinsics.ldc(ccI));
 
         ClassRef cc2 = ClassRef.ofDescriptor("Ljava/lang/String;");
         assertEquals(String.class, Intrinsics.ldc(cc2));
@@ -70,8 +74,8 @@ public class IntrinsicsTest {
         assertEquals("foo", Intrinsics.ldc(s));
 
         // @@@ Boxing should preserve IC-ness
-//        ConstantRef<Integer> i = (Integer) 3;
-//        assertEquals(3, (int) Intrinsics.ldc(i));
+        ConstantRef<Integer> i = (Integer) 3;
+        assertEquals(3, (int) Intrinsics.ldc(i));
     }
 
     public void testPropagateThroughField() {
@@ -112,7 +116,7 @@ public class IntrinsicsTest {
         ClassRef cc = ClassRef.ofDescriptor("Ljava/lang/String;");
         assertEquals(String.class, Intrinsics.ldc(ClassRef.ofDescriptor("" + cc.descriptorString())));
 
-//        assertEquals(2, (int) Intrinsics.ldc(1 + 1));
+        assertEquals(2, (int) Intrinsics.ldc(1 + 1));
     }
 
     public void testPropagateThroughCombinator() {

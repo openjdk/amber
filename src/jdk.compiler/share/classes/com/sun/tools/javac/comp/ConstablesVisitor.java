@@ -174,25 +174,25 @@ public class ConstablesVisitor extends TreeScanner {
 
     @Override
     public void visitConditional(JCConditional tree) {
-        // missing
         super.visitConditional(tree);
+        Object condConstant = getConstant(tree.cond);
+        Object truePartConstant = getConstant(tree.truepart);
+        Object falsePartConstant = getConstant(tree.falsepart);
         if (tree.type.constValue() == null &&
-            tree.cond.type.constValue() != null &&
-            tree.truepart.type.constValue() != null &&
-            tree.falsepart.type.constValue() != null &&
+            condConstant != null &&
+            truePartConstant != null &&
+            falsePartConstant != null &&
             !tree.type.hasTag(NONE)) {
-            //constant folding
-            tree.type = cfolder.coerce(tree.cond.type.isTrue() ? tree.truepart.type : tree.falsepart.type, tree.type);
+            Object constant = ConstFold.isTrue(tree.cond.type.getTag(), condConstant) ? truePartConstant : falsePartConstant;
+            elementToConstantMap.put(tree, constant);
         }
     }
 
     @Override
     public void visitTypeCast(JCTypeCast tree) {
-        // missing
         super.visitTypeCast(tree);
-        if (tree.type.constValue() == null &&
-                tree.expr.type.constValue() != null) {
-            tree.type = coerce(tree.expr.type, tree.type);
+        if (tree.type.constValue() == null && getConstant(tree.expr) != null) {
+            elementToConstantMap.put(tree, getConstant(tree.expr));
         }
     }
 

@@ -177,18 +177,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         return null;
     }
 
-    /** Is this a constant type whose value is false?
-     */
-    public boolean isFalse() {
-        return false;
-    }
-
-    /** Is this a constant type whose value is true?
-     */
-    public boolean isTrue() {
-        return false;
-    }
-
     /**
      * Get the representation of this type used for modelling purposes.
      * By default, this is itself. For ErrorType, a different value
@@ -733,16 +721,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
                         return tsym.type;
                     }
                 };
-        }
-
-        /** Is this a constant type whose value is true?
-         */
-        @Override
-        public boolean isTrue() {
-            return
-                tag == BOOLEAN &&
-                constValue() != null &&
-                ((Integer)constValue()).intValue() != 0;
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)

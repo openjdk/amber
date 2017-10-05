@@ -2661,13 +2661,13 @@ public class Lower extends TreeTranslator {
     // are safe to simplify as no side-effects can occur.
 
     private boolean isTrue(JCTree exp) {
-        if (exp.type.isTrue())
+        if (ConstFold.isTrue(exp.type.getTag(), exp.type.constValue()))
             return true;
         Boolean b = expValue(exp);
         return b == null ? false : b;
     }
     private boolean isFalse(JCTree exp) {
-        if (exp.type.isFalse())
+        if (ConstFold.isFalse(exp.type.getTag(), exp.type.constValue()))
             return true;
         Boolean b = expValue(exp);
         return b == null ? false : !b;
@@ -2756,11 +2756,11 @@ public class Lower extends TreeTranslator {
      */
     public void visitAssert(JCAssert tree) {
         tree.cond = translate(tree.cond, syms.booleanType);
-        if (!tree.cond.type.isTrue()) {
+        if (!ConstFold.isTrue(tree.cond.type.getTag(), tree.cond.type.constValue())) {
             JCExpression cond = assertFlagTest(tree.pos());
             List<JCExpression> exnArgs = (tree.detail == null) ?
                 List.nil() : List.of(translate(tree.detail));
-            if (!tree.cond.type.isFalse()) {
+            if (!ConstFold.isFalse(tree.cond.type.getTag(), tree.cond.type.constValue())) {
                 cond = makeBinary
                     (AND,
                      cond,

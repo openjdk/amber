@@ -1606,7 +1606,7 @@ public class Attr extends JCTree.Visitor {
                 falsetype.constValue() != null &&
                 !owntype.hasTag(NONE)) {
             //constant folding
-            owntype = cfolder.coerce(condtype.isTrue() ? truetype : falsetype, owntype);
+            owntype = cfolder.coerce(ConstFold.isTrue(condtype.getTag(), condtype.constValue()) ? truetype : falsetype, owntype);
         }
         result = check(tree, owntype, KindSelector.VAL, resultInfo);
     }

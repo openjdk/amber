@@ -541,7 +541,7 @@ public class Flow {
             scanStat(tree.body);
             alive |= resolveContinues(tree);
             scan(tree.cond);
-            alive = alive && !tree.cond.type.isTrue();
+            alive = alive && !ConstFold.isTrue(tree.cond.type.getTag(), tree.cond.type.constValue());
             alive |= resolveBreaks(tree, prevPendingExits);
         }
 
@@ -549,11 +549,11 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.cond);
-            alive = !tree.cond.type.isFalse();
+            alive = !ConstFold.isFalse(tree.cond.type.getTag(), tree.cond.type.constValue());
             scanStat(tree.body);
             alive |= resolveContinues(tree);
             alive = resolveBreaks(tree, prevPendingExits) ||
-                !tree.cond.type.isTrue();
+                !ConstFold.isTrue(tree.cond.type.getTag(), tree.cond.type.constValue());
         }
 
         public void visitForLoop(JCForLoop tree) {
@@ -562,7 +562,7 @@ public class Flow {
             pendingExits = new ListBuffer<>();
             if (tree.cond != null) {
                 scan(tree.cond);
-                alive = !tree.cond.type.isFalse();
+                alive = !ConstFold.isFalse(tree.cond.type.getTag(), tree.cond.type.constValue());
             } else {
                 alive = true;
             }
@@ -570,7 +570,7 @@ public class Flow {
             alive |= resolveContinues(tree);
             scan(tree.step);
             alive = resolveBreaks(tree, prevPendingExits) ||
-                tree.cond != null && !tree.cond.type.isTrue();
+                tree.cond != null && !ConstFold.isTrue(tree.cond.type.getTag(), tree.cond.type.constValue());
         }
 
         public void visitForeachLoop(JCEnhancedForLoop tree) {
@@ -1722,7 +1722,7 @@ public class Flow {
          *  rather than (un)inits on exit.
          */
         void scanCond(JCTree tree) {
-            if (tree.type.isFalse()) {
+            if (ConstFold.isFalse(tree.type.getTag(), tree.type.constValue())) {
                 if (inits.isReset()) merge();
                 initsWhenTrue.assign(inits);
                 initsWhenTrue.inclRange(firstadr, nextadr);
@@ -1730,7 +1730,7 @@ public class Flow {
                 uninitsWhenTrue.inclRange(firstadr, nextadr);
                 initsWhenFalse.assign(inits);
                 uninitsWhenFalse.assign(uninits);
-            } else if (tree.type.isTrue()) {
+            } else if (ConstFold.isTrue(tree.type.getTag(), tree.type.constValue())) {
                 if (inits.isReset()) merge();
                 initsWhenFalse.assign(inits);
                 initsWhenFalse.inclRange(firstadr, nextadr);

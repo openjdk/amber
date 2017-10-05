@@ -88,6 +88,16 @@ strictfp public class ConstFold {
             return x.toString();
         }
     }
+    public static boolean isTrue(TypeTag tag, Object x) {
+        return tag == BOOLEAN &&
+                x != null &&
+                ((Integer)x).intValue() != 0;
+    }
+    public static boolean isFalse(TypeTag tag, Object x) {
+        return tag == BOOLEAN &&
+                x != null &&
+                ((Integer)x).intValue() == 0;
+    }
 
     Type fold1(OperatorSymbol op, Type od) {
         if (op.opcode == nop) {
