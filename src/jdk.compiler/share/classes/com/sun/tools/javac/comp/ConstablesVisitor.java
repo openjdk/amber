@@ -32,6 +32,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.DynamicMethodSymbol;
 import com.sun.tools.javac.code.Symbol.IntrinsicsLDCMethodSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
+import com.sun.tools.javac.code.Symbol.OperatorSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -149,10 +150,11 @@ public class ConstablesVisitor extends TreeScanner {
         if (tree.type.constValue() == null &&
                 getConstant(tree.lhs) != null &&
                 getConstant(tree.rhs) != null) {
-            Type ctype = cfolder.fold2(tree.operator.opcode, tree.lhs.type, tree.rhs.type, getConstant(tree.lhs), getConstant(tree.rhs));
-            if (ctype != null) {
-                ctype = cfolder.coerce(ctype, tree.type);
-                elementToConstantMap.put(tree, ctype.constValue());
+
+            Object constant = cfolder.fold2(tree.operator, getConstant(tree.lhs), getConstant(tree.rhs));
+            if (constant != null) {
+//                ctype = cfolder.coerce(ctype, tree.type);
+                elementToConstantMap.put(tree, constant);
             }
         }
     }
@@ -164,11 +166,9 @@ public class ConstablesVisitor extends TreeScanner {
         if (tree.type.constValue() == null &&
                 (constant = getConstant(tree.arg)) != null &&
                 constant instanceof Number) {
-            Type ctype = cfolder.fold1(tree.operator.opcode, tree.arg.type, getConstant(tree.arg));
-            if (ctype != null) {
-                ctype = cfolder.coerce(ctype, tree.type);
-                elementToConstantMap.put(tree, ctype.constValue());
-            }
+            constant = cfolder.fold1(tree.operator, constant);
+//                ctype = cfolder.coerce(ctype, tree.type);
+            elementToConstantMap.put(tree, constant);
         }
     }
 

@@ -2098,6 +2098,18 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return accessCode;
         }
 
+        public OperatorSymbol pre(Types types) {
+            Assert.check(opcode > ByteCodes.preMask);
+            return new OperatorSymbol(types.names.empty, type, opcode >> ByteCodes.preShift, owner);
+        }
+
+        public OperatorSymbol post(Types types) {
+            Assert.check(opcode > ByteCodes.preMask);
+            return new OperatorSymbol(types.names.empty,
+                    types.createMethodTypeWithParameters(type, List.of(type.getParameterTypes().head)),
+                    opcode & ByteCodes.preMask, owner);
+        }
+
         /** Access codes for dereferencing, assignment,
          *  and pre/post increment/decrement.
 

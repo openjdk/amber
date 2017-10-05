@@ -546,16 +546,16 @@ public class Operators {
 
         /**
          * This routine applies following mappings:
-         * - if input type is primitive, apply numeric promotion
-         * - if input type is either 'void', 'null' or 'String' leave it untouched
+         * - if input type is either 'char', 'void', 'null' or 'String' leave it untouched
+         * - otherwise, if input type is primitive, apply numeric promotion
          * - otherwise return 'Object'
          */
         private Type stringPromotion(Type t) {
-            if (t.isPrimitive()) {
-                return unaryPromotion(t);
-            } else if (t.hasTag(TypeTag.VOID) || t.hasTag(TypeTag.BOT) ||
+            if (t.hasTag(TypeTag.CHAR) || t.hasTag(TypeTag.VOID) || t.hasTag(TypeTag.BOT) ||
                     types.isSameType(t, syms.stringType)) {
                 return t;
+            } else if (t.isPrimitive()) {
+                return unaryPromotion(t);
             } else if (t.hasTag(TypeTag.TYPEVAR)) {
                 return stringPromotion(t.getUpperBound());
             } else {
@@ -696,12 +696,14 @@ public class Operators {
                     .addBinaryOperator(STRING, OBJECT, STRING, string_add)
                     .addBinaryOperator(OBJECT, STRING, STRING, string_add)
                     .addBinaryOperator(STRING, STRING, STRING, string_add)
+                    .addBinaryOperator(STRING, CHAR, STRING, string_add)
                     .addBinaryOperator(STRING, INT, STRING, string_add)
                     .addBinaryOperator(STRING, LONG, STRING, string_add)
                     .addBinaryOperator(STRING, FLOAT, STRING, string_add)
                     .addBinaryOperator(STRING, DOUBLE, STRING, string_add)
                     .addBinaryOperator(STRING, BOOLEAN, STRING, string_add)
                     .addBinaryOperator(STRING, BOT, STRING, string_add)
+                    .addBinaryOperator(CHAR, STRING, STRING, string_add)
                     .addBinaryOperator(INT, STRING, STRING, string_add)
                     .addBinaryOperator(LONG, STRING, STRING, string_add)
                     .addBinaryOperator(FLOAT, STRING, STRING, string_add)

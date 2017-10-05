@@ -480,14 +480,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
     }
 
     /**
-     * The constant value of this type, converted to String
-     */
-    public String stringValue(Object value) {
-        Assert.checkNonNull(value);
-        return value.toString();
-    }
-
-    /**
      * Override this method with care. For most Type instances this should behave as ==.
      */
     @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -741,33 +733,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
                         return tsym.type;
                     }
                 };
-        }
-
-        /**
-         * The constant value of this type, converted to String
-         */
-        @Override
-        public String stringValue(Object cv) {
-            Assert.checkNonNull(cv);
-            if (tag == BOOLEAN) {
-                return ((Integer) cv).intValue() == 0 ? "false" : "true";
-            }
-            else if (tag == CHAR) {
-                return String.valueOf((char) ((Integer) cv).intValue());
-            }
-            else {
-                return cv.toString();
-            }
-        }
-
-        /** Is this a constant type whose value is false?
-         */
-        @Override
-        public boolean isFalse() {
-            return
-                tag == BOOLEAN &&
-                constValue() != null &&
-                ((Integer)constValue()).intValue() == 0;
         }
 
         /** Is this a constant type whose value is true?
@@ -2280,11 +2245,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         @Override
         public Type constType(Object value) {
             return this;
-        }
-
-        @Override
-        public String stringValue(Object value) {
-            return "null";
         }
 
         @Override

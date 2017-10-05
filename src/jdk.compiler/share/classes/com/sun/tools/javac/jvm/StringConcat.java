@@ -26,6 +26,7 @@
 package com.sun.tools.javac.jvm;
 
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.comp.ConstFold;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.TreeInfo;
@@ -422,7 +423,7 @@ public abstract class StringConcat {
                         // Concat the String representation of the constant, except
                         // for the case it contains special tags, which requires us
                         // to expose it as detached constant.
-                        String a = arg.type.stringValue(constVal);
+                        String a = ConstFold.stringValue(arg.type.getTag(), arg.type.constValue());
                         if (a.indexOf(TAG_CONST) != -1 || a.indexOf(TAG_ARG) != -1) {
                             recipe.append(TAG_CONST);
                             staticArgs.add(a);
