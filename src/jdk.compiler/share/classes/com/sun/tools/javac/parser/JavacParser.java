@@ -1040,6 +1040,8 @@ public class JavacParser implements Parser {
                 case DOT:
                 case EQ:
                     return false;
+                case MATCHES:
+                    return true;
                 default: return optag(tk) == Tag.NO_TAG;
             }
         };
