@@ -1180,6 +1180,9 @@ public class Attr extends JCTree.Visitor {
                         v.type = chk.checkLocalVarType(tree, tree.init.type.baseType(), tree.name);
                     }
                 }
+                if (tree.isImplicitlyTyped()) {
+                    setSyntheticVariableType(tree, v.type);
+                }
             }
             result = tree.type = v.type;
             if (tree.name == names.underscore) {
@@ -1360,11 +1363,7 @@ public class Attr extends JCTree.Visitor {
             }
             if (tree.var.isImplicitlyTyped()) {
                 Type inferredType = chk.checkLocalVarType(tree.var, elemtype, tree.var.name);
-                if (inferredType.isErroneous()) {
-                    tree.var.vartype = make.at(tree.var.vartype).Erroneous();
-                } else {
-                    tree.var.vartype = make.at(tree.var.vartype).Type(inferredType);
-                }
+                setSyntheticVariableType(tree.var, inferredType);
             }
             attribStat(tree.var, loopEnv);
             chk.checkType(tree.expr.pos(), elemtype, tree.var.sym.type);
@@ -2571,7 +2570,7 @@ public class Attr extends JCTree.Visitor {
                     Type argType = arityMismatch ?
                             syms.errType :
                             actuals.head;
-                    params.head.vartype = make.at(params.head).Type(argType);
+                    setSyntheticVariableType(params.head, argType);
                     params.head.sym = null;
                     actuals = actuals.isEmpty() ?
                             actuals :
@@ -4854,6 +4853,14 @@ public class Attr extends JCTree.Visitor {
         return types.capture(type);
     }
 
+    private void setSyntheticVariableType(JCVariableDecl tree, Type type) {
+        if (type.isErroneous()) {
+            tree.vartype = make.at(Position.NOPOS).Erroneous();
+        } else {
+            tree.vartype = make.at(Position.NOPOS).Type(type);
+        }
+    }
+
     public void validateTypeAnnotations(JCTree tree, boolean sigOnly) {
         tree.accept(new TypeAnnotationsValidator(sigOnly));
     }
@@ -5175,7 +5182,7 @@ public class Attr extends JCTree.Visitor {
                 that.sym.adr = 0;
             }
             if (that.vartype == null) {
-                that.vartype = make.Erroneous();
+                that.vartype = make.at(Position.NOPOS).Erroneous();
             }
             super.visitVarDef(that);
         }
