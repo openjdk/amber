@@ -874,7 +874,7 @@ void GraphBuilder::ScopeData::incr_num_returns() {
 void GraphBuilder::load_constant() {
   ciConstant con = stream()->get_constant();
   if (con.basic_type() == T_ILLEGAL) {
-    // FIXME: an unresolved ConstantDynamic can get here,
+    // FIXME: an unresolved Dynamic constant can get here,
     // and that should not terminate the whole compilation.
     BAILOUT("could not resolve a constant");
   } else {
@@ -900,7 +900,7 @@ void GraphBuilder::load_constant() {
           patch_state = copy_state_before();
           t = new ObjectConstant(obj);
         } else {
-          // Might be a Class, MethodType, MethodHandle, or ConstantDynamic
+          // Might be a Class, MethodType, MethodHandle, or Dynamic constant
           // result, which might turn out to be an array.
           if (obj->is_null_object())
             t = objectNull;

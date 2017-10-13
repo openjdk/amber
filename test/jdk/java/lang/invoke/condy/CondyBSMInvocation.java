@@ -50,7 +50,7 @@ public class CondyBSMInvocation {
 
     @Test
     public void testNonexistent() throws Throwable {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "name", Object.class,
                 "bsm", methodType(Object.class),
                 S -> {});
@@ -77,7 +77,7 @@ public class CondyBSMInvocation {
             final int n = i;
             MethodType mt = methodType(Object.class)
                     .appendParameterTypes(Collections.nCopies(n, Object.class));
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object.class,
                     "_bsm", mt,
                     S -> IntStream.range(0, n).forEach(S::add)
@@ -105,7 +105,7 @@ public class CondyBSMInvocation {
     @Test
     public void testWrongSignature() throws Throwable {
         {
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object.class,
                     "_bsm", methodType(Object.class, String[].class),
                     S -> {}
@@ -122,7 +122,7 @@ public class CondyBSMInvocation {
         }
 
         {
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object.class,
                     "_bsm", methodType(Object.class, String.class, String.class, String.class),
                     S -> {}
@@ -198,7 +198,7 @@ public class CondyBSMInvocation {
             final int n = i;
             MethodType mt = methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class)
                     .appendParameterTypes(Collections.nCopies(n, Object.class));
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object.class,
                     "bsm", mt,
                     S -> IntStream.range(0, n).forEach(S::add)
@@ -215,7 +215,7 @@ public class CondyBSMInvocation {
             final int n = i;
             MethodType mt = methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class)
                     .appendParameterTypes(Collections.nCopies(n, Object.class));
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object.class,
                     "bsm", mt,
                     S -> IntStream.range(0, n - 1).forEach(S::add)

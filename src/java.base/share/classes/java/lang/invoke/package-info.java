@@ -50,7 +50,7 @@
  * current version of that specification.
  *
  * Each occurrence of an {@code invokedynamic} instruction is called a <em>dynamic call site</em>.
- * Each occurrence of an {@code CONSTANT_ConstantDynamic} constant pool entry is called a <em>dynamic constant</em>.
+ * Each occurrence of an {@code CONSTANT_Dynamic} constant pool entry is called a <em>dynamic constant</em>.
  *
  * <h2><a id="indyinsn"></a>{@code invokedynamic} instructions</h2>
  * Bytecode may contain <em>dynamic call sites</em> equipped with
@@ -70,8 +70,8 @@
  * The constant pool reference also specifies the call site's name and method type descriptor,
  * just like {@code invokestatic} and the other invoke instructions.
  *
- * <h2><a id="condycon"></a>constants with tag {@code CONSTANT_ConstantDynamic}</h2>
- * The constant pool may contain constants tagged {@code CONSTANT_ConstantDynamic},
+ * <h2><a id="condycon"></a>constants with tag {@code CONSTANT_Dynamic}</h2>
+ * The constant pool may contain constants tagged {@code CONSTANT_Dynamic},
  * equipped with bootstrap methods which perform their resolution.
  * Such a <em>dynamic constant</em> is originally in an unresolved state.
  * Before the JVM can evaluate a dynamic constant, it must first be <em>resolved</em>.
@@ -79,7 +79,7 @@
  * which is given the static information content of the constant,
  * and which must produce a value of the constant's statically declared type.
  * <p>
- * Each {@code CONSTANT_ConstantDynamic} constant statically specifies its own
+ * Each {@code CONSTANT_Dynamic} constant statically specifies its own
  * bootstrap method as a constant pool reference.
  * The constant pool reference also specifies the constant's name and field type descriptor,
  * just like {@code getstatic} and the other field reference instructions.
@@ -92,7 +92,7 @@
  * following items:
  * <ul>
  * <li>the bootstrap method, either a {@code CONSTANT_MethodHandle}
- * or a {@code CONSTANT_ConstantDynamic} entry</li>
+ * or a {@code CONSTANT_Dynamic} entry</li>
  * <li>if linking a dynamic call site, the {@code MethodType} derived from
  * type component of the {@code CONSTANT_NameAndType} descriptor of the call</li>
  * <li>if linking a dynamic constant, the {@code Class} derived from
@@ -152,10 +152,10 @@
  * On success the call site then becomes permanently linked to the dynamic call
  * site.
  * <p>
- * For a {@code ConstantDynamic} constant, the result returned from the
+ * For a {@code Dynamic} constant, the result returned from the
  * bootstrap method must be convertible (by the same conversions as
  * {@linkplain java.lang.invoke.MethodHandle#asType a method handle transformed by {@code asType}})
- * to the statically declared type of the {@code ConstantDynamic} constant.
+ * to the statically declared type of the {@code Dynamic} constant.
  * On success the constant then becomes permanently linked to the
  * converted result of the bootstrap method.
  * <p>

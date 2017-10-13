@@ -202,7 +202,7 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
         }
         break;
       }
-      case JVM_CONSTANT_ConstantDynamic : {
+      case JVM_CONSTANT_Dynamic : {
         // TODO major version check
         if (_major_version < Verifier::INVOKEDYNAMIC_MAJOR_VERSION) {
           classfile_parse_error(
@@ -215,7 +215,7 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
         if (_max_bootstrap_specifier_index < (int) bootstrap_specifier_index) {
           _max_bootstrap_specifier_index = (int) bootstrap_specifier_index;  // collect for later
         }
-        cp->constant_dynamic_at_put(index, bootstrap_specifier_index, name_and_type_index);
+        cp->dynamic_constant_at_put(index, bootstrap_specifier_index, name_and_type_index);
         break;
       }
       case JVM_CONSTANT_InvokeDynamic : {
@@ -550,7 +550,7 @@ void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream,
           ref_index, CHECK);
         break;
       }
-      case JVM_CONSTANT_ConstantDynamic: {
+      case JVM_CONSTANT_Dynamic: {
         const int name_and_type_ref_index =
           cp->invoke_dynamic_name_and_type_ref_index_at(index);
 
@@ -654,7 +654,7 @@ void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream,
         }
         break;
       }
-      case JVM_CONSTANT_ConstantDynamic: {
+      case JVM_CONSTANT_Dynamic: {
         const int name_and_type_ref_index =
           cp->name_and_type_ref_index_at(index);
         // already verified to be utf8
@@ -666,11 +666,11 @@ void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream,
         const Symbol* const name = cp->symbol_at(name_ref_index);
         const Symbol* const signature = cp->symbol_at(signature_ref_index);
         if (_need_verify) {
-          // ConstantDynamic name and signature are verified above, when iterating NameAndType_info.
+          // CONSTANT_Dynamic's name and signature are verified above, when iterating NameAndType_info.
           // Need only to be sure signature is non-zero length and the right type.
           if (signature->utf8_length() == 0 ||
               signature->byte_at(0) == JVM_SIGNATURE_FUNC) {
-            throwIllegalSignature("ConstantDynamic", name, signature, CHECK);
+            throwIllegalSignature("CONSTANT_Dynamic", name, signature, CHECK);
           }
         }
         break;

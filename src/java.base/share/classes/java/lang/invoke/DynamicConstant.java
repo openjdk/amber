@@ -40,10 +40,10 @@ import static java.lang.invoke.MethodHandleNatives.mapLookupExceptionToError;
 import static java.lang.invoke.MethodHandles.Lookup;
 
 /**
- * Bootstrap methods for constant dynamic.
+ * Bootstrap methods for dynamically-computed constant.
  */
-public final class ConstantDynamic {
-    // implements the upcall from the JVM, MethodHandleNatives.linkConstantDynamic:
+public final class DynamicConstant {
+    // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
     /*non-public*/
     static Object makeConstant(MethodHandle bootstrapMethod,
                                // Callee information:

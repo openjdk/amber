@@ -296,7 +296,7 @@ public class ClassWriter implements /* imports */ ClassConstants
                      break;
                 }
 
-                case JVM_CONSTANT_ConstantDynamic: {
+                case JVM_CONSTANT_Dynamic: {
                     dos.writeByte(cpConstType);
                     int value = cpool.getIntAt(ci);
                     short bsmIndex = (short) extractLowShortFromInt(value);

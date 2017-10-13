@@ -67,7 +67,7 @@ public class CondyWrongType {
             MethodHandle zero = MethodHandles.zero(typeMap.get(name));
             for (String type : typeMap.keySet()) {
                 // Use asType transformation to detect if primitive conversion
-                // is supported from the BSM value type to the constant dynamic type
+                // is supported from the BSM value type to the dynamic constant type
                 boolean pass = true;
                 try {
                     zero.asType(MethodType.methodType(typeMap.get(type)));
@@ -162,7 +162,7 @@ public class CondyWrongType {
 
     static MethodHandle caster(String name, String type) {
         try {
-            return InstructionHelper.ldcConstantdynamic(
+            return InstructionHelper.ldcDynamicConstant(
                     MethodHandles.lookup(),
                     name, type,
                     "bsm", methodType(Object.class, MethodHandles.Lookup.class, String.class, Class.class).toMethodDescriptorString(),

@@ -190,7 +190,7 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
             hash = tag.tag | ((bsmIndex | name.hashCode() | type.hashCode()) << 1);
         }
 
-        void setConstantDynamic(int bsmIndex, CharSequence name, String type) {
+        void setDynamicConstant(int bsmIndex, CharSequence name, String type) {
             tag = PoolTag.CONSTANT_INVOKEDYNAMIC;
             o1 = bsmIndex;
             o2 = name;
@@ -446,8 +446,8 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
     }
 
     @Override
-    public int putConstantDynamic(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
-        return putConstantDynamicInternal(constName, typeToString.apply(constType), symbolToString.apply(bsmClass), bsmName, typeToString.apply(bsmType), staticArgs);
+    public int putDynamicConstant(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
+        return putDynamicConstantInternal(constName, typeToString.apply(constType), symbolToString.apply(bsmClass), bsmName, typeToString.apply(bsmType), staticArgs);
     }
 
     private int putInvokeDynamicInternal(CharSequence invokedName, String invokedType, String bsmClass, CharSequence bsmName, String bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
@@ -466,9 +466,9 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
         return poolKey.index;
     }
 
-    private int putConstantDynamicInternal(CharSequence constName, String constType, String bsmClass, CharSequence bsmName, String bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
+    private int putDynamicConstantInternal(CharSequence constName, String constType, String bsmClass, CharSequence bsmName, String bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
         int bsmIndex = putBsmInternal(bsmClass, bsmName, bsmType, staticArgs);
-        key.setConstantDynamic(bsmIndex, constName, constType);
+        key.setDynamicConstant(bsmIndex, constName, constType);
         PoolKey poolKey = entries.lookup(key);
         if (poolKey == null) {
             poolKey = key.dup();
@@ -536,7 +536,7 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
                 return this;
             }
             public ByteStaticArgListBuilder add(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, byte[]>> staticArgs) {
-                indexes.add(putConstantDynamic(constName, constType, bsmClass, bsmName, bsmType, staticArgs));
+                indexes.add(putDynamicConstant(constName, constType, bsmClass, bsmName, bsmType, staticArgs));
                 return this;
             }
         }

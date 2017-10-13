@@ -88,14 +88,14 @@ class constantTag VALUE_OBJ_CLASS_SPEC {
   bool is_field_or_method() const   { return is_field() || is_method() || is_interface_method(); }
   bool is_symbol() const            { return is_utf8(); }
 
-  bool is_method_type() const              { return _tag == JVM_CONSTANT_MethodType; }
-  bool is_method_handle() const            { return _tag == JVM_CONSTANT_MethodHandle; }
-  bool is_constant_dynamic() const         { return _tag == JVM_CONSTANT_ConstantDynamic; }
-  bool is_invoke_dynamic() const           { return _tag == JVM_CONSTANT_InvokeDynamic; }
+  bool is_method_type() const       { return _tag == JVM_CONSTANT_MethodType; }
+  bool is_method_handle() const     { return _tag == JVM_CONSTANT_MethodHandle; }
+  bool is_dynamic_constant() const  { return _tag == JVM_CONSTANT_Dynamic; }
+  bool is_invoke_dynamic() const    { return _tag == JVM_CONSTANT_InvokeDynamic; }
 
   bool is_loadable_constant() const {
     return ((_tag >= JVM_CONSTANT_Integer && _tag <= JVM_CONSTANT_String) ||
-            is_method_type() || is_method_handle() || is_constant_dynamic() ||
+            is_method_type() || is_method_handle() || is_dynamic_constant() ||
             is_unresolved_klass());
   }
 

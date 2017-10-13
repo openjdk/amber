@@ -63,7 +63,7 @@ public class CondyTypeValidationTest {
 
     @Test(dataProvider = "invalidTypesProvider", expectedExceptions = ClassFormatError.class)
     public void testInvalidTypes(String type) throws Exception {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "name", type,
                 "bsm", BSM_TYPE,
                 S -> {
@@ -84,7 +84,7 @@ public class CondyTypeValidationTest {
 
     @Test(dataProvider = "validTypesProvider")
     public void testValidTypes(String type) throws Exception {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "name", type,
                 "bsm", BSM_TYPE,
                 S -> {

@@ -405,9 +405,9 @@ Handle Exceptions::new_exception(Thread* thread, Symbol* name,
 // invokedynamic uses wrap_dynamic_exception for:
 //    - bootstrap method resolution
 //    - post call to MethodHandleNatives::linkCallSite
-// constantdynamic uses wrap_dynamic_exception for:
+// dynamically computed constant uses wrap_dynamic_exception for:
 //    - bootstrap method resolution
-//    - post call to MethodHandleNatives::linkConstantDynamic
+//    - post call to MethodHandleNatives::linkDynamicConstant
 void Exceptions::wrap_dynamic_exception(Thread* THREAD) {
   if (THREAD->has_pending_exception()) {
     oop exception = THREAD->pending_exception();

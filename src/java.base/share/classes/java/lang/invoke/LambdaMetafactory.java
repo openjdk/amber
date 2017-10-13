@@ -316,7 +316,7 @@ public final class LambdaMetafactory {
      * Special-case case version of {@link LambdaMetafactory#metafactory(MethodHandles.Lookup, String, Class, MethodType, MethodHandle, MethodType)}
      * that is restricted to non-capturing lambdas.  Rather than returning a
      * {@link CallSite}, the function object itself is returned.
-     * Typically used as a <em>bootstrap method</em> for {@code constantdynamic}
+     * Typically used as a <em>bootstrap method</em> for {@code Dynamic}
      * constants, to support the <em>lambda expression</em> and <em>method
      * reference expression</em> features of the Java Programming Language.
      *
@@ -330,7 +330,7 @@ public final class LambdaMetafactory {
      *               privileges of the caller.  When used with {@code invokedynamic},
      *               this is stacked automatically by the VM.
      * @param invokedName The name of the method to implement.  When used with
-     *                    {@code constantdynamic}, this is provided by the
+     *                    {@code Dynamic} constants, this is provided by the
      *                    {@code NameAndType} of the {@code InvokeDynamic}
      *                    structure and is stacked automatically by the VM.
      * @param functionalInterface The functional interface the function object

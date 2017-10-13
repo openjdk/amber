@@ -805,14 +805,14 @@ class ConstantPoolVisitor implements ConstantPool.Visitor<String, Integer> {
     }
 
     @Override
-    public String visitConstantDynamic(ConstantPool.CONSTANT_ConstantDynamic_info c, Integer p) {
+    public String visitDynamicConstant(ConstantPool.CONSTANT_Dynamic_info c, Integer p) {
         String value = slist.get(p);
         if (value == null) {
             try {
                 value = bsmlist.get(c.bootstrap_method_attr_index) + " "
                         + visit(cfpool.get(c.name_and_type_index), c.name_and_type_index);
                 slist.set(p, value);
-                xpool.add(new Element("CONSTANT_ConstantDynamic",
+                xpool.add(new Element("CONSTANT_Dynamic",
                                       new String[]{"id", p.toString()},
                                       value));
 

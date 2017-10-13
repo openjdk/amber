@@ -57,7 +57,7 @@ public class CondyNameValidationTest {
 
     @Test(dataProvider = "invalidNamesProvider", expectedExceptions = java.lang.ClassFormatError.class)
     public void testInvalidNames(String name) throws Exception {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, name, Object.class,
                 "bsm", BSM_TYPE,
                 S -> {
@@ -74,7 +74,7 @@ public class CondyNameValidationTest {
 
     @Test(dataProvider = "validNamesProvider")
     public void testValidNames(String name) throws Exception {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, name, Object.class,
                 "bsm", BSM_TYPE,
                 S -> {

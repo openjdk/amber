@@ -2860,13 +2860,13 @@ Handle SystemDictionary::link_method_handle_constant(Klass* caller,
   return Handle(THREAD, (oop) result.get_jobject());
 }
 
-// Ask Java to compute a constant by invoking a BSM given a ConstantDynamic_info CP entry
-Handle SystemDictionary::link_constant_dynamic_constant(Klass* caller,
-                                                        int condy_index,
-                                                        Handle bootstrap_specifier,
-                                                        Symbol* name,
-                                                        Symbol* type,
-                                                        TRAPS) {
+// Ask Java to compute a constant by invoking a BSM given a Dynamic_info CP entry
+Handle SystemDictionary::link_dynamic_constant(Klass* caller,
+                                               int condy_index,
+                                               Handle bootstrap_specifier,
+                                               Symbol* name,
+                                               Symbol* type,
+                                               TRAPS) {
   Handle empty;
   Handle bsm, info;
   if (java_lang_invoke_MethodHandle::is_instance(bootstrap_specifier())) {
@@ -2883,7 +2883,7 @@ Handle SystemDictionary::link_constant_dynamic_constant(Klass* caller,
 
   // This should not happen.  JDK code should take care of that.
   if (caller == NULL) {
-    THROW_MSG_(vmSymbols::java_lang_InternalError(), "bad constantdynamic", empty);
+    THROW_MSG_(vmSymbols::java_lang_InternalError(), "bad dynamic constant", empty);
   }
 
   Handle constant_name = java_lang_String::create_from_symbol(name, CHECK_(empty));
@@ -2903,8 +2903,8 @@ Handle SystemDictionary::link_constant_dynamic_constant(Klass* caller,
   JavaValue result(T_OBJECT);
   JavaCalls::call_static(&result,
                          SystemDictionary::MethodHandleNatives_klass(),
-                         vmSymbols::linkConstantDynamic_name(),
-                         vmSymbols::linkConstantDynamic_signature(),
+                         vmSymbols::linkDynamicConstant_name(),
+                         vmSymbols::linkDynamicConstant_signature(),
                          &args, CHECK_(empty));
 
   return Handle(THREAD, (oop) result.get_jobject());

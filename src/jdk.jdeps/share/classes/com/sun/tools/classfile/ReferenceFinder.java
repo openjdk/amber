@@ -161,7 +161,7 @@ public final class ReferenceFinder {
         }
 
         @Override
-        public Boolean visitConstantDynamic(CONSTANT_ConstantDynamic_info info, ConstantPool constantPool) {
+        public Boolean visitDynamicConstant(CONSTANT_Dynamic_info info, ConstantPool constantPool) {
             return false;
         }
 

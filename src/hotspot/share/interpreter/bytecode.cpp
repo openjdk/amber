@@ -216,7 +216,7 @@ oop Bytecode_loadconstant::resolve_constant(TRAPS) const {
   ConstantPool* constants = _method->constants();
   if (has_cache_index()) {
     return constants->resolve_cached_constant_at(index, THREAD);
-  } else if (_method->constants()->tag_at(index).is_constant_dynamic()) {
+  } else if (_method->constants()->tag_at(index).is_dynamic_constant()) {
     return constants->resolve_possibly_cached_constant_at(index, THREAD);
   } else {
     return constants->resolve_constant_at(index, THREAD);

@@ -995,9 +995,9 @@ public class TypedCodeBuilder<S, T, E, C extends TypedCodeBuilder<S, T, E, C>> e
             }
 
             @Override
-            public int putConstantDynamic(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, E>> staticArgs) {
+            public int putDynamicConstant(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, E>> staticArgs) {
                 type = constType;
-                return poolHelper.putConstantDynamic(constName, constType, bsmClass, bsmName, bsmType, staticArgs);
+                return poolHelper.putDynamicConstant(constName, constType, bsmClass, bsmName, bsmType, staticArgs);
             }
 
             @Override

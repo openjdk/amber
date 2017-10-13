@@ -241,7 +241,7 @@ public class CodeBuilder<S, T, E, C extends CodeBuilder<S, T, E, C>> extends Att
 
     public C ldc(CharSequence constName, T constType, S bsmClass, CharSequence bsmName, T bsmType, Consumer<StaticArgListBuilder<S, T, E>> staticArgs) {
         boolean fat = typeHelper.tag(constType).width() == 2;
-        return ldc(pool -> pool.putConstantDynamic(constName, constType, bsmClass, bsmName, bsmType, staticArgs), fat);
+        return ldc(pool -> pool.putDynamicConstant(constName, constType, bsmClass, bsmName, bsmType, staticArgs), fat);
     }
 
     public <Z> C ldc(Z z, BiFunction<PoolHelper<S, T, E>, Z, Integer> poolFunc) {

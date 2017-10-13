@@ -283,7 +283,7 @@ public class ClassWriter {
             return 1;
         }
 
-        public Integer visitConstantDynamic(CONSTANT_ConstantDynamic_info info, ClassOutputStream out) {
+        public Integer visitDynamicConstant(CONSTANT_Dynamic_info info, ClassOutputStream out) {
             out.writeShort(info.bootstrap_method_attr_index);
             out.writeShort(info.name_and_type_index);
             return 1;

@@ -405,7 +405,7 @@ public class ClassReader {
             case CONSTANT_NameandType:
             case CONSTANT_Integer:
             case CONSTANT_Float:
-            case CONSTANT_ConstantDynamic:
+            case CONSTANT_Dynamic:
             case CONSTANT_InvokeDynamic:
                 bp = bp + 4;
                 break;
@@ -481,7 +481,7 @@ public class ClassReader {
         case CONSTANT_MethodType:
             skipBytes(3);
             break;
-        case CONSTANT_ConstantDynamic:
+        case CONSTANT_Dynamic:
         case CONSTANT_InvokeDynamic:
             skipBytes(5);
             break;

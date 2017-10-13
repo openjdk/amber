@@ -99,7 +99,7 @@ public class CondyStaticArgumentsTest {
         BSMInfo bi = BSMInfo.of("basicArgs");
         MethodHandleInfo mhi = MethodHandles.lookup().revealDirect(bi.handle);
 
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "constant-name", String.class,
                 bi.methodName, bi.handle.type(),
                 S -> S.add(1).add(2L).add(3.0f).add(4.0d)
@@ -146,7 +146,7 @@ public class CondyStaticArgumentsTest {
 
     static <E> int bigDecimalPoolHelper(String value, String mc, PoolHelper<String, String, E> P) {
         BSMInfo bi = BSMInfo.of("bigDecimal");
-        return P.putConstantDynamic("big-decimal", "Ljava/math/BigDecimal;", InstructionHelper.csym(L.lookupClass()), bi.methodName, bi.descriptor,
+        return P.putDynamicConstant("big-decimal", "Ljava/math/BigDecimal;", InstructionHelper.csym(L.lookupClass()), bi.methodName, bi.descriptor,
                                     S -> S.add(value, PoolHelper::putString)
                                             .add(mc, (P2, s) -> {
                                                 return mathContextPoolHelper(s, P2);
@@ -155,7 +155,7 @@ public class CondyStaticArgumentsTest {
 
     static <E> int mathContextPoolHelper(String mc, PoolHelper<String, String, E> P) {
         BSMInfo bi = BSMInfo.of("mathContext");
-        return P.putConstantDynamic(mc, "Ljava/math/MathContext;", InstructionHelper.csym(L.lookupClass()), bi.methodName, bi.descriptor,
+        return P.putDynamicConstant(mc, "Ljava/math/MathContext;", InstructionHelper.csym(L.lookupClass()), bi.methodName, bi.descriptor,
                                     S -> {
                                     });
     }
@@ -164,7 +164,7 @@ public class CondyStaticArgumentsTest {
     public void testCondyWithCondy() throws Throwable {
         BSMInfo bi = BSMInfo.of("condyWithCondy");
 
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "big-decimal-math-context", String.class,
                 bi.methodName, bi.handle.type(),
                 S -> S.add(null, (P, v) -> {

@@ -49,7 +49,7 @@ void Rewriter::compute_index_maps() {
       case JVM_CONSTANT_Methodref         : // fall through
         add_cp_cache_entry(i);
         break;
-      case JVM_CONSTANT_ConstantDynamic:
+      case JVM_CONSTANT_Dynamic:
       case JVM_CONSTANT_String            : // fall through
       case JVM_CONSTANT_MethodHandle      : // fall through
       case JVM_CONSTANT_MethodType        : // fall through
@@ -327,7 +327,7 @@ void Rewriter::maybe_rewrite_ldc(address bcp, int offset, bool is_wide,
     if (tag.is_method_handle() ||
         tag.is_method_type() ||
         tag.is_string() ||
-        (tag.is_constant_dynamic() &&
+        (tag.is_dynamic_constant() &&
          // keep regular ldc interpreter logic for condy primitives
          is_reference_type(FieldType::basic_type(_pool->uncached_signature_ref_at(cp_index))))
         ) {

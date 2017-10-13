@@ -2060,7 +2060,7 @@ void ClassVerifier::verify_ldc(
       types = (1 << JVM_CONSTANT_Integer) | (1 << JVM_CONSTANT_Float)
             | (1 << JVM_CONSTANT_String)  | (1 << JVM_CONSTANT_Class)
             | (1 << JVM_CONSTANT_MethodHandle) | (1 << JVM_CONSTANT_MethodType)
-            | (1 << JVM_CONSTANT_ConstantDynamic);
+            | (1 << JVM_CONSTANT_Dynamic);
       // Note:  The class file parser already verified the legality of
       // MethodHandle and MethodType constants.
       verify_cp_type(bci, index, cp, types, CHECK_VERIFY(this));
@@ -2068,7 +2068,7 @@ void ClassVerifier::verify_ldc(
   } else {
     assert(opcode == Bytecodes::_ldc2_w, "must be ldc2_w");
     types = (1 << JVM_CONSTANT_Double) | (1 << JVM_CONSTANT_Long)
-          | (1 << JVM_CONSTANT_ConstantDynamic);
+          | (1 << JVM_CONSTANT_Dynamic);
     verify_cp_type(bci, index, cp, types, CHECK_VERIFY(this));
   }
   if (tag.is_string() && cp->is_pseudo_string_at(index)) {
@@ -2103,11 +2103,11 @@ void ClassVerifier::verify_ldc(
     current_frame->push_stack(
       VerificationType::reference_type(
         vmSymbols::java_lang_invoke_MethodType()), CHECK_VERIFY(this));
-  } else if (tag.is_constant_dynamic()) {
+  } else if (tag.is_dynamic_constant()) {
     Symbol* constant_type = cp->uncached_signature_ref_at(index);
     if (!SignatureVerifier::is_valid_type_signature(constant_type)) {
       class_format_error(
-        "Invalid type for constant dynamic in class %s referenced "
+        "Invalid type for dynamic constant in class %s referenced "
         "from constant pool index %d", _klass->external_name(), index);
       return;
     }
@@ -2121,7 +2121,7 @@ void ClassVerifier::verify_ldc(
     int opcode_n = (opcode == Bytecodes::_ldc2_w ? 2 : 1);
     if (n != opcode_n) {
       // wrong kind of ldc; reverify against updated type mask
-      types &= ~(1 << JVM_CONSTANT_ConstantDynamic);
+      types &= ~(1 << JVM_CONSTANT_Dynamic);
       verify_cp_type(bci, index, cp, types, CHECK_VERIFY(this));
     }
     for (int i = 0; i < n; i++) {
