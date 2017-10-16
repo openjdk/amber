@@ -191,7 +191,7 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
         }
 
         void setDynamicConstant(int bsmIndex, CharSequence name, String type) {
-            tag = PoolTag.CONSTANT_INVOKEDYNAMIC;
+            tag = PoolTag.CONSTANT_DYNAMIC;
             o1 = bsmIndex;
             o2 = name;
             o3 = type;
@@ -475,7 +475,7 @@ public class BytePoolHelper<S, T> implements PoolHelper<S, T, byte[]> {
             int nameAndType_idx = putNameAndType(constName, constType);
             poolKey.at(currentIndex++);
             entries.enter(poolKey);
-            pool.writeByte(PoolTag.CONSTANT_CONSTANTDYNAMIC.tag);
+            pool.writeByte(PoolTag.CONSTANT_DYNAMIC.tag);
             pool.writeChar(bsmIndex);
             pool.writeChar(nameAndType_idx);
         }
