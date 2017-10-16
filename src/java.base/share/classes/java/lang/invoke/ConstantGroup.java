@@ -81,7 +81,7 @@ import java.util.function.IntFunction;
  * constants.
  * <p>
  * When choosing sentinel values, be aware that a constant
- * pool which has {@code CONSTANT_ConstantDynamic} entries
+ * pool which has {@code CONSTANT_Dynamic} entries
  * can contain potentially any representable value,
  * and arbitrary implementations of {@code ConstantGroup}
  * are also free to produce arbitrary values.

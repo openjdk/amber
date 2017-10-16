@@ -107,7 +107,7 @@ public class IsolatedMethodBuilder extends MethodBuilder<Class<?>, String, Objec
         }
 
         @Override
-        public int putConstantDynamic(CharSequence constName, String constType, Class<?> bsmClass, CharSequence bsmName, String bsmType, Consumer<StaticArgListBuilder<Class<?>, String, Object[]>> staticArgs) {
+        public int putDynamicConstant(CharSequence constName, String constType, Class<?> bsmClass, CharSequence bsmName, String bsmType, Consumer<StaticArgListBuilder<Class<?>, String, Object[]>> staticArgs) {
             return 0; //???
         }
 

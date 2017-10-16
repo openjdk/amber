@@ -297,7 +297,7 @@ public class ConstantPool extends Metadata implements ClassConstants {
       // change byte-ordering and go via cache
       i = remapInstructionOperandFromCache(which);
     } else {
-      if (getTagAt(which).isInvokeDynamic() || getTagAt(which).isConstantDynamic()) {
+      if (getTagAt(which).isInvokeDynamic() || getTagAt(which).isDynamicConstant()) {
         int poolIndex = invokeDynamicNameAndTypeRefIndexAt(which);
         Assert.that(getTagAt(poolIndex).isNameAndType(), "");
         return poolIndex;
@@ -430,10 +430,10 @@ public class ConstantPool extends Metadata implements ClassConstants {
     return res;
   }
 
-  /** Lookup for multi-operand (InvokeDynamic) entries. */
+  /** Lookup for multi-operand (InvokeDynamic, Dynamic) entries. */
   public short[] getBootstrapSpecifierAt(int i) {
     if (Assert.ASSERTS_ENABLED) {
-      Assert.that(getTagAt(i).isInvokeDynamic() || getTagAt(i).isConstantDynamic(), "Corrupted constant pool");
+      Assert.that(getTagAt(i).isInvokeDynamic() || getTagAt(i).isDynamicConstant(), "Corrupted constant pool");
     }
     int bsmSpec = extractLowShortFromInt(this.getIntAt(i));
     U2Array operands = getOperands();
@@ -469,7 +469,7 @@ public class ConstantPool extends Metadata implements ClassConstants {
     case JVM_CONSTANT_NameAndType:        return "JVM_CONSTANT_NameAndType";
     case JVM_CONSTANT_MethodHandle:       return "JVM_CONSTANT_MethodHandle";
     case JVM_CONSTANT_MethodType:         return "JVM_CONSTANT_MethodType";
-    case JVM_CONSTANT_ConstantDynamic:    return "JVM_CONSTANT_ConstantDynamic";
+    case JVM_CONSTANT_Dynamic:            return "JVM_CONSTANT_Dynamic";
     case JVM_CONSTANT_InvokeDynamic:      return "JVM_CONSTANT_InvokeDynamic";
     case JVM_CONSTANT_Invalid:            return "JVM_CONSTANT_Invalid";
     case JVM_CONSTANT_UnresolvedClass:    return "JVM_CONSTANT_UnresolvedClass";
@@ -526,7 +526,7 @@ public class ConstantPool extends Metadata implements ClassConstants {
         case JVM_CONSTANT_NameAndType:
         case JVM_CONSTANT_MethodHandle:
         case JVM_CONSTANT_MethodType:
-        case JVM_CONSTANT_ConstantDynamic:
+        case JVM_CONSTANT_Dynamic:
         case JVM_CONSTANT_InvokeDynamic:
           visitor.doInt(new IntField(new NamedFieldIdentifier(nameForTag(ctag)), indexOffset(index), true), true);
           break;

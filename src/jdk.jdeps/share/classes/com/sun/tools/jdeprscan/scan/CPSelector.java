@@ -26,7 +26,7 @@
 package com.sun.tools.jdeprscan.scan;
 
 import com.sun.tools.classfile.ConstantPool;
-import com.sun.tools.classfile.ConstantPool.CONSTANT_ConstantDynamic_info;
+import com.sun.tools.classfile.ConstantPool.CONSTANT_Dynamic_info;
 
 /**
  * A visitor that selects constant pool entries by type and adds
@@ -71,7 +71,7 @@ class CPSelector implements ConstantPool.Visitor<Void,CPEntries> {
         return null;
     }
 
-    public Void visitConstantDynamic(CONSTANT_ConstantDynamic_info info, CPEntries p) {
+    public Void visitDynamicConstant(CONSTANT_Dynamic_info info, CPEntries p) {
         return null;
     }
 

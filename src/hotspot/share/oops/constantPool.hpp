@@ -295,8 +295,8 @@ class ConstantPool : public Metadata {
     *int_at_addr(which) = ref_index;
   }
 
-  void constant_dynamic_at_put(int which, int bootstrap_specifier_index, int name_and_type_index) {
-    tag_at_put(which, JVM_CONSTANT_ConstantDynamic);
+  void dynamic_constant_at_put(int which, int bootstrap_specifier_index, int name_and_type_index) {
+    tag_at_put(which, JVM_CONSTANT_Dynamic);
     *int_at_addr(which) = ((jint) name_and_type_index<<16) | bootstrap_specifier_index;
   }
 
@@ -558,12 +558,12 @@ class ConstantPool : public Metadata {
 
   int invoke_dynamic_name_and_type_ref_index_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
     return extract_high_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_bootstrap_specifier_index(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
     return extract_low_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_operand_base(int which) {
@@ -613,7 +613,7 @@ class ConstantPool : public Metadata {
   }
 #endif //ASSERT
 
-  // layout of InvokeDynamic and ConstantDynamic bootstrap method specifier (in second part of operands array):
+  // layout of InvokeDynamic and Dynamic bootstrap method specifier (in second part of operands array):
   enum {
          _indy_bsm_offset  = 0,  // CONSTANT_MethodHandle bsm
          _indy_argc_offset = 1,  // u2 argc
@@ -661,13 +661,13 @@ class ConstantPool : public Metadata {
 
   int invoke_dynamic_bootstrap_method_ref_index_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     return operands()->at(op_base + _indy_bsm_offset);
   }
   int invoke_dynamic_argument_count_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_constant_dynamic(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     int argc = operands()->at(op_base + _indy_argc_offset);
     DEBUG_ONLY(int end_offset = op_base + _indy_argv_offset + argc;

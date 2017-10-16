@@ -24,7 +24,7 @@
 /*
  * @test
  * @bug 8186046
- * @summary Test nested constant dynamic declarations that are recursive
+ * @summary Test nested dynamic constant declarations that are recursive
  * @library /lib/testlibrary/bytecode
  * @build jdk.experimental.bytecode.BasicClassBuilder
  * @run testng CondyNestedTest
@@ -53,7 +53,7 @@ public class CondyNestedTest {
 
     /**
      * NOTE: This is a temporary solution until asmtools is updated to support
-     * constant dynamic and jtreg is updated to include a new version of
+     * dynamic constant and jtreg is updated to include a new version of
      * asmtools.
      *
      * These are the class file bytes for a class named CondyNestedTest_Code
@@ -63,9 +63,9 @@ public class CondyNestedTest {
      * java -jar asmtools.jar jdec CondyNestedTest_Code.class >
      * CondyNestedTest_Code.jcod
      *
-     * which was then edited so that constant dynamic declarations are
+     * which was then edited so that dynamic constant declarations are
      * recursive both for an ldc or invokedynamic (specifically declaring a
-     * BSM+attributes whose static argument is a constant dynamic
+     * BSM+attributes whose static argument is a dynamic constant
      * that refers to the same BSM+attributes); 3) the jcod file is converted
      * back to a class file:
      *
@@ -174,7 +174,7 @@ public class CondyNestedTest {
                                 .withCode(TypedCodeBuilder::new, C ->
                                         C.ldc("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
                                               S -> S.add(null, (P, v) -> {
-                                                  return P.putConstantDynamic("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
+                                                  return P.putDynamicConstant("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
                                                                               S2 -> S2.add("DUMMY_ARG", PoolHelper::putString));
                                               }))
                                                 .areturn()))
@@ -183,7 +183,7 @@ public class CondyNestedTest {
                                 .withCode(TypedCodeBuilder::new, C ->
                                         C.invokedynamic("name", "()Ljava/lang/String;", genClassName, "bsmIndy", bsmIndyDescriptor,
                                                         S -> S.add(null, (P, v) -> {
-                                                            return P.putConstantDynamic("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
+                                                            return P.putDynamicConstant("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
                                                                                         S2 -> S2.add("DUMMY_ARG", PoolHelper::putString));
                                                         }))
                                                 .areturn()))
@@ -192,7 +192,7 @@ public class CondyNestedTest {
                                 .withCode(TypedCodeBuilder::new, C ->
                                         C.invokedynamic("name", "()Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
                                                         S -> S.add(null, (P, v) -> {
-                                                            return P.putConstantDynamic("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
+                                                            return P.putDynamicConstant("name", "Ljava/lang/String;", genClassName, "bsm", bsmDescriptor,
                                                                                         S2 -> S2.add("DUMMY_ARG", PoolHelper::putString));
                                                         }))
                                                 .areturn()))
@@ -246,7 +246,7 @@ public class CondyNestedTest {
     }
 
     /**
-     * Testing an ldc of a constant dynamic, C say, with a BSM whose static
+     * Testing an ldc of a dynamic constant, C say, with a BSM whose static
      * argument is C.
      */
     @Test
@@ -265,7 +265,7 @@ public class CondyNestedTest {
 
     /**
      * Testing an invokedynamic with a BSM, B say, whose static argument is
-     * a constant dynamic, C say, that uses BSM B.
+     * a dynamic constant, C say, that uses BSM B.
      */
     @Test
     public void testIndyBsmCondyBsm() throws Exception {

@@ -96,7 +96,7 @@ public class BootstrapMethodJumboArgsTest {
         String[] expected = IntStream.range(0, 1000).mapToObj(Integer::toString).toArray(String[]::new);
 
         {
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object[].class,
                     "bsmZero", methodType(Object.class, MethodHandles.Lookup.class, String.class, Object.class, Object[].class),
                     S -> manyStaticStrings(expected, S));
@@ -106,7 +106,7 @@ public class BootstrapMethodJumboArgsTest {
         }
 
         {
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object[].class,
                     "bsmOne", methodType(Object.class, MethodHandles.Lookup.class, String.class, Object.class, Object.class, Object[].class),
                     S -> manyStaticStrings(expected, S));
@@ -116,7 +116,7 @@ public class BootstrapMethodJumboArgsTest {
         }
 
         {
-            MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object[].class,
                     "bsmTwo", methodType(Object.class, MethodHandles.Lookup.class, String.class, Object.class, Object.class, Object.class, Object[].class),
                     S -> manyStaticStrings(expected, S));

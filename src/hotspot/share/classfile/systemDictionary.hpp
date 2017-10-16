@@ -560,13 +560,13 @@ public:
                                                Symbol* signature,
                                                TRAPS);
 
-  // ask Java to compute a constant by invoking a BSM given a ConstantDynamic_info CP entry
-  static Handle    link_constant_dynamic_constant(Klass* caller,
-                                                  int condy_index,
-                                                  Handle bootstrap_specifier,
-                                                  Symbol* name,
-                                                  Symbol* type,
-                                                  TRAPS);
+  // ask Java to compute a constant by invoking a BSM given a Dynamic_info CP entry
+  static Handle    link_dynamic_constant(Klass* caller,
+                                         int condy_index,
+                                         Handle bootstrap_specifier,
+                                         Symbol* name,
+                                         Symbol* type,
+                                         TRAPS);
 
   // ask Java to create a dynamic call site, while linking an invokedynamic op
   static methodHandle find_dynamic_call_site_invoker(Klass* caller,

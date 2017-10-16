@@ -491,7 +491,7 @@ void VM_RedefineClasses::append_entry(const constantPoolHandle& scratch_cp,
     } break;
 
     // this is an indirect CP entry so it needs special handling
-    case JVM_CONSTANT_ConstantDynamic:  // fall through
+    case JVM_CONSTANT_Dynamic:  // fall through
     case JVM_CONSTANT_InvokeDynamic:
     {
       // Index of the bootstrap specifier in the operands array
@@ -512,8 +512,8 @@ void VM_RedefineClasses::append_entry(const constantPoolHandle& scratch_cp,
           ("Dynamic entry@%d name_and_type_index change: %d to %d", *merge_cp_length_p, old_ref_i, new_ref_i);
       }
 
-      if (scratch_cp->tag_at(scratch_i).is_constant_dynamic())
-        (*merge_cp_p)->constant_dynamic_at_put(*merge_cp_length_p, new_bs_i, new_ref_i);
+      if (scratch_cp->tag_at(scratch_i).is_dynamic_constant())
+        (*merge_cp_p)->dynamic_constant_at_put(*merge_cp_length_p, new_bs_i, new_ref_i);
       else
         (*merge_cp_p)->invoke_dynamic_at_put(*merge_cp_length_p, new_bs_i, new_ref_i);
       if (scratch_i != *merge_cp_length_p) {

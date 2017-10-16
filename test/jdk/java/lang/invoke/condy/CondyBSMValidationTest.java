@@ -57,7 +57,7 @@ public class CondyBSMValidationTest {
 
     @Test(dataProvider = "invalidSignaturesProvider", expectedExceptions = ClassFormatError.class)
     public void testInvalidBSMSignature(String sig) throws Exception {
-        MethodHandle mh = InstructionHelper.ldcConstantdynamic(
+        MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                 L, "name", "Ljava/lang/Object;",
                 "bsm", sig,
                 S -> {

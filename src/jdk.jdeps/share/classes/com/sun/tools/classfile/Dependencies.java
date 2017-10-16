@@ -689,7 +689,7 @@ public class Dependencies {
             }
 
             @Override
-            public Void visitConstantDynamic(CONSTANT_ConstantDynamic_info info, Void aVoid) {
+            public Void visitDynamicConstant(CONSTANT_Dynamic_info info, Void aVoid) {
                 return null;
             }
 

@@ -106,7 +106,7 @@ public class CondyBSMException {
 
     static MethodHandle thrower(String message, Class<? extends Throwable> t) {
         try {
-            return InstructionHelper.ldcConstantdynamic(
+            return InstructionHelper.ldcDynamicConstant(
                     MethodHandles.lookup(),
                     message, t,
                     "throwingBsm", methodType(Throwable.class, MethodHandles.Lookup.class, String.class, Class.class),

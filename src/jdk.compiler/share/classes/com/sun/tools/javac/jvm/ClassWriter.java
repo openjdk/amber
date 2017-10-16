@@ -414,7 +414,7 @@ public class ClassWriter extends ClassFile {
                         handle.refSym.type,
                         cd.args);
                 DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
-                poolbuf.appendByte(CONSTANT_ConstantDynamic);
+                poolbuf.appendByte(CONSTANT_Dynamic);
                 poolbuf.appendChar(val.index);
                 NameAndType nt = new NameAndType(cd.name, cd.type, cd.types);
                 poolbuf.appendChar(pool.put(nt));

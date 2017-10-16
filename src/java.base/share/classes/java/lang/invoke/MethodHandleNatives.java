@@ -291,8 +291,8 @@ class MethodHandleNatives {
         }
     }
 
-    // this implements the upcall from the JVM, MethodHandleNatives.linkConstantDynamic:
-    static Object linkConstantDynamic(Object callerObj,
+    // this implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
+    static Object linkDynamicConstant(Object callerObj,
                                       int indexInCP,
                                       Object bootstrapMethodObj,
                                       Object nameObj, Object typeObj,
@@ -302,15 +302,15 @@ class MethodHandleNatives {
         String name = nameObj.toString().intern();
         Class<?> type = (Class<?>)typeObj;
         if (!TRACE_METHOD_LINKAGE)
-            return linkConstantDynamicImpl(caller, bootstrapMethod, name, type, staticArguments);
-        return linkConstantDynamicTracing(caller, bootstrapMethod, name, type, staticArguments);
+            return linkDynamicConstantImpl(caller, bootstrapMethod, name, type, staticArguments);
+        return linkDynamicConstantTracing(caller, bootstrapMethod, name, type, staticArguments);
     }
 
-    static Object linkConstantDynamicImpl(Class<?> caller,
+    static Object linkDynamicConstantImpl(Class<?> caller,
                                           MethodHandle bootstrapMethod,
                                           String name, Class<?> type,
                                           Object staticArguments) {
-        return Bootstraps.makeConstant(bootstrapMethod, name, type, staticArguments, caller);
+        return DynamicConstant.makeConstant(bootstrapMethod, name, type, staticArguments, caller);
     }
 
     private static String staticArglistForTrace(Object staticArguments) {
@@ -324,23 +324,23 @@ class MethodHandleNatives {
     }
 
     // Tracing logic:
-    static Object linkConstantDynamicTracing(Class<?> caller,
+    static Object linkDynamicConstantTracing(Class<?> caller,
                                              MethodHandle bootstrapMethod,
                                              String name, Class<?> type,
                                              Object staticArguments) {
         Object bsmReference = bootstrapMethod.internalMemberName();
         if (bsmReference == null)  bsmReference = bootstrapMethod;
         String staticArglist = staticArglistForTrace(staticArguments);
-        System.out.println("linkConstantDynamic "+caller.getName()+" "+
+        System.out.println("linkDynamicConstant "+caller.getName()+" "+
                            bsmReference+" "+
                            name+type+"/"+staticArglist);
         try {
-            Object res = linkConstantDynamicImpl(caller, bootstrapMethod, name, type, staticArguments);
-            System.out.println("linkConstantDynamicImpl => "+res);
+            Object res = linkDynamicConstantImpl(caller, bootstrapMethod, name, type, staticArguments);
+            System.out.println("linkDynamicConstantImpl => "+res);
             return res;
         } catch (Throwable ex) {
             ex.printStackTrace(); // print now in case exception is swallowed
-            System.out.println("linkConstantDynamic => throw "+ex);
+            System.out.println("linkDynamicConstant => throw "+ex);
             throw ex;
         }
     }

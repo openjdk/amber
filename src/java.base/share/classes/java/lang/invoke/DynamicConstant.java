@@ -27,6 +27,7 @@ package java.lang.invoke;
 import sun.invoke.util.BytecodeName;
 import sun.invoke.util.Wrapper;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -39,22 +40,10 @@ import static java.lang.invoke.MethodHandleNatives.mapLookupExceptionToError;
 import static java.lang.invoke.MethodHandles.Lookup;
 
 /**
- * Bootstrap methods for constant dynamic.
+ * Bootstrap methods for dynamically-computed constant.
  */
-public final class Bootstraps {
-
-    // @@@
-    // default value for type -> subsumes null
-    // { short, char, byte, boolean } values
-    // primitive class
-    // enum Foo.BAR
-    // getstatic(owner, name, type)
-    // invoke(mh, args)
-    // array(contents)
-    // var handle
-    // @@@
-
-    // implements the upcall from the JVM, MethodHandleNatives.linkConstantDynamic:
+public final class DynamicConstant {
+    // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
     /*non-public*/
     static Object makeConstant(MethodHandle bootstrapMethod,
                                // Callee information:
@@ -80,8 +69,19 @@ public final class Bootstraps {
      * @throws IllegalArgumentException if no such value exists
      */
     public static Class<?> primitiveClass(Lookup lookup, String name, Class<Class<?>> type) {
-        // Subsumed by getstatic?
-        return Wrapper.forBasicType(name.charAt(0)).primitiveType();
+        switch (name) {
+            case "I": return int.class;
+            case "J": return long.class;
+            case "S": return short.class;
+            case "B": return byte.class;
+            case "C": return char.class;
+            case "F": return float.class;
+            case "D": return double.class;
+            case "Z": return boolean.class;
+            case "V": return void.class;
+            default:
+                throw new IllegalArgumentException(name);
+        }
     }
 
     /**
@@ -106,18 +106,18 @@ public final class Bootstraps {
      * @throws IllegalArgumentException if the type is not supported or the
      *         integer value cannot be converted to the required primitive value
      */
-    public static Object primitiveValueFromInt(Lookup lookup, String name, Class<?> type, int v) {
-        switch (Wrapper.forPrimitiveType(type).basicTypeChar()) {
-            case 'B': return (byte) v;
-            case 'C': return (char) v;
-            case 'S': return (short) v;
-            case 'Z': {
+    public static Object primitiveValueFromInt(Lookup lookup, String name, Class<Class<?>> type, int v) {
+        switch (name) {
+            case "B": return (byte) v;
+            case "C": return (char) v;
+            case "S": return (short) v;
+            case "Z": {
                 if (v == 0) return false;
-                if (v == 1) return true;
-                throw new IllegalArgumentException("Invalid boolean: " + v);
+                if (v == 1) return false;
+                throw new IllegalArgumentException();
             }
             default:
-                throw new IllegalArgumentException(type.getName());
+                throw new IllegalArgumentException(name);
         }
     }
 
@@ -133,9 +133,11 @@ public final class Bootstraps {
      * @return the default value for the given type
      */
     public static <T> T defaultValue(Lookup lookup, String name, Class<T> type) {
-        return type.isPrimitive()
-               ? Wrapper.forPrimitiveType(type).zero(type)
-               : null;
+        if (type.isPrimitive()) {
+            return Wrapper.forPrimitiveType(type).zero(type);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -150,8 +152,11 @@ public final class Bootstraps {
      * @throws IllegalAccessError if the type is not accessible from the lookup
      */
     public static <T extends Enum<T>> T enumConstant(Lookup lookup, String name, Class<T> type) {
-        verifyAccessible(lookup, type);
-
+        try {
+            lookup.accessClass(type);
+        } catch (ReflectiveOperationException ex) {
+            throw mapLookupExceptionToError(ex);
+        }
         return Enum.valueOf(type, name);
     }
 
@@ -166,20 +171,26 @@ public final class Bootstraps {
      * @return the value of a static final field of the specified class, name, and type
      * @throws LinkageError if no such constant exists or it cannot be accessed and initialized
      */
-    @SuppressWarnings("unchecked")
     public static <T> T namedConstant(Lookup lookup, String name, Class<T> type, Class<?> declaringClass) {
-        verifyAccessible(lookup, declaringClass);
-
+        try {
+            lookup.accessClass(declaringClass);
+        } catch (IllegalAccessException ex) {
+            throw mapLookupExceptionToError(ex);
+        }
         MethodHandle mh;
         try {
             mh = lookup.findStaticGetter(declaringClass, name, type);
-            MemberName member = mh.internalMemberName();
-            if (!member.isFinal()) {
-                throw new IncompatibleClassChangeError("not a final field: "+name);
-            }
-            return (T) (Object) mh.invoke();
         } catch (ReflectiveOperationException ex) {
             throw mapLookupExceptionToError(ex);
+        }
+        MemberName member = mh.internalMemberName();
+        if (!member.isFinal()) {
+            throw new IncompatibleClassChangeError("not a final field: "+name);
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            T value = (T) (Object) mh.invoke();
+            return value;
         } catch (Error|RuntimeException e) {
             throw e;
         } catch (Throwable e) {
@@ -321,14 +332,52 @@ public final class Bootstraps {
         return Pattern.compile(regex);
     }
 
-    private static void verifyAccessible(Lookup lookup, Class<?> ownerType) {
-        try {
-            lookup.accessClass(ownerType);
-        }
-        catch (IllegalAccessException e) {
-            throw mapLookupExceptionToError(e);
-        }
-    }
+//    /**
+//     * Load a {@link VarHandle} giving access to a field or elements of an
+//     * array.
+//     *
+//     * @param lookup used to ensure access to the given owner
+//     * @param name if for a field the name of the field, otherwise unused
+//     * @param type unused, must be VarHandle.class
+//     * @param ownerType if for a field the class declaring the field, otherwise
+//     *        an array class
+//     * @param variableType if for a field the type of the field, otherwise
+//     *        unused
+//     * @return the {@code VarHandle}
+//     * @throws NoSuchFieldException if the field doesn't exist
+//     * @throws IllegalAccessException if the field is not accessible
+//     */
+//    public static VarHandle varHandle(MethodHandles.Lookup lookup,
+//                                      String name,
+//                                      Class<?> type,
+//                                      Class<?> ownerType,
+//                                      Class<?> variableType) throws NoSuchFieldException, IllegalAccessException {
+//        if (ownerType.isArray()) {
+//            return MethodHandles.arrayElementVarHandle(ownerType);
+//        }
+//
+//        try {
+//            lookup.accessClass(ownerType);
+//        } catch (IllegalAccessException ex) {
+//            throw mapLookupExceptionToError(ex);
+//        }
+//
+//        Field f;
+//        try {
+//            f = ownerType.getDeclaredField(name);
+//        } catch (NoSuchFieldException ex) {
+//            throw new IncompatibleClassChangeError("field not found: " + ownerType.getName() + "." + name);
+//        }
+//        if (f.getType() != variableType) {
+//            throw new IncompatibleClassChangeError("field type differs: " + f.getType() + " " + variableType);
+//        }
+//
+//        try {
+//            return lookup.unreflectVarHandle(f);
+//        } catch (ReflectiveOperationException ex) {
+//            throw mapLookupExceptionToError(ex);
+//        }
+//    }
 
     /** Selector for a VarHandle for an instance field */
     public static final int VH_instanceField = 1;
@@ -344,25 +393,23 @@ public final class Bootstraps {
      * @param lookup stacked automatically by VM
      * @param type the type of the field or array element,
      *        stacked automatically by VM
-     * @param constantType stacked automatically by VM, must be {@linkplain Class<VarHandle>}
+     * @param constantType stacked automatically by VM
      * @param kind the selector value, one of VH_instanceField, VH_staticField, VH_arrayHandle
      * @param owner the class in which the field is declared (ignored for array handles)
-     * @param name ignored
-     * @param fieldName the field name (for fields)
+     * @param name the name of the field (ignored for array handles)
      * @return the VarHandle
      * @throws NoSuchFieldException if the field doesn't exist
      * @throws IllegalAccessException if the field is not accessible
      */
-    public static VarHandle varHandle(MethodHandles.Lookup lookup,
-                                      String name,
-                                      Class<VarHandle> constantType,
-                                      int kind,
-                                      Class<?> owner,
-                                      String fieldName,
-                                      Class<?> type) throws NoSuchFieldException, IllegalAccessException {
+    public static VarHandle varHandleBootstrap(MethodHandles.Lookup lookup,
+                                               String name,
+                                               Class<?> constantType,
+                                               int kind,
+                                               Class<?> owner,
+                                               Class<?> type) throws NoSuchFieldException, IllegalAccessException {
         switch (kind) {
-            case VH_instanceField: return lookup.findVarHandle(owner, fieldName, type);
-            case VH_staticField: return lookup.findStaticVarHandle(owner, fieldName, type);
+            case VH_instanceField: return lookup.findVarHandle(owner, name, type);
+            case VH_staticField: return lookup.findStaticVarHandle(owner, name, type);
             case VH_arrayHandle: return MethodHandles.arrayElementVarHandle(type);
             default: throw new IllegalArgumentException(String.format("Invalid VarHandle kind: %d", kind));
         }

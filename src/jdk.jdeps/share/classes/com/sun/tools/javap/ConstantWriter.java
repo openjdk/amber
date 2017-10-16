@@ -104,7 +104,7 @@ public class ConstantWriter extends BasicWriter {
                 return 1;
             }
 
-            public Integer visitConstantDynamic(CONSTANT_ConstantDynamic_info info, Void p) {
+            public Integer visitDynamicConstant(CONSTANT_Dynamic_info info, Void p) {
                 print("#" + info.bootstrap_method_attr_index + ":#" + info.name_and_type_index);
                 tab();
                 println("// " + stringValue(info));
@@ -253,8 +253,8 @@ public class ConstantWriter extends BasicWriter {
                 return "InterfaceMethod";
             case CONSTANT_InvokeDynamic:
                 return "InvokeDynamic";
-            case CONSTANT_ConstantDynamic:
-                return "ConstantDynamic";
+            case CONSTANT_Dynamic:
+                return "Dynamic";
             case CONSTANT_NameAndType:
                 return "NameAndType";
             default:
@@ -323,7 +323,7 @@ public class ConstantWriter extends BasicWriter {
             }
         }
 
-        public String visitConstantDynamic(CONSTANT_ConstantDynamic_info info, Void p) {
+        public String visitDynamicConstant(CONSTANT_Dynamic_info info, Void p) {
             try {
                 String callee = stringValue(info.getNameAndTypeInfo());
                 return "#" + info.bootstrap_method_attr_index + ":" + callee;

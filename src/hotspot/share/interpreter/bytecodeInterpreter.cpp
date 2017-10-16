@@ -2371,7 +2371,7 @@ run:
             THREAD->set_vm_result(NULL);
             break;
 
-          case JVM_CONSTANT_ConstantDynamic:
+          case JVM_CONSTANT_Dynamic:
             {
               oop result = constants->resolved_references()->obj_at(index);
               if (result == NULL) {
@@ -2415,7 +2415,7 @@ run:
              SET_STACK_DOUBLE(constants->double_at(index), 1);
             break;
 
-          case JVM_CONSTANT_ConstantDynamic:
+          case JVM_CONSTANT_Dynamic:
             {
               oop result = constants->resolved_references()->obj_at(index);
               if (result == NULL) {

@@ -591,7 +591,7 @@ ciConstant ciEnv::get_constant_by_index_impl(const constantPoolHandle& cpool,
         return ciConstant(T_OBJECT, get_object(NULL));
       }
       BasicType bt = T_OBJECT;
-      if (cpool->tag_at(index).is_constant_dynamic())
+      if (cpool->tag_at(index).is_dynamic_constant())
         bt = FieldType::basic_type(cpool->uncached_signature_ref_at(index));
       if (is_reference_type(bt)) {
       } else {
@@ -675,7 +675,7 @@ ciConstant ciEnv::get_constant_by_index_impl(const constantPoolHandle& cpool,
     ciSymbol* signature = get_symbol(cpool->method_handle_signature_ref_at(index));
     ciObject* ciobj     = get_unloaded_method_handle_constant(callee, name, signature, ref_kind);
     return ciConstant(T_OBJECT, ciobj);
-  } else if (tag.is_constant_dynamic()) {
+  } else if (tag.is_dynamic_constant()) {
     return ciConstant();
   } else {
     ShouldNotReachHere();
