@@ -1348,7 +1348,6 @@ JVM_ENTRY(void, MHN_copyOutBootstrapArguments(JNIEnv* env, jobject igcls,
             Handle th;
             if (type->byte_at(0) == '(') {
               th = SystemDictionary::find_method_handle_type(type, caller, CHECK);
-              
             } else {
               th = SystemDictionary::find_java_mirror_for_type(type, caller, SignatureStream::NCDFError, CHECK);
             }

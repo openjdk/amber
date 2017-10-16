@@ -177,5 +177,5 @@ public class BasicTypeHelper implements TypeHelper<String, String> {
     public String returnType(String s) {
         return s.substring(s.indexOf(')') + 1, s.length());
     }
-    
+
 }

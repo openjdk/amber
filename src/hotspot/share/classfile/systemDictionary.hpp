@@ -541,7 +541,7 @@ public:
     return find_java_mirror_for_type(signature, accessing_klass, Handle(), Handle(),
                                      failure_mode, THREAD);
   }
-                                             
+
 
   // fast short-cut for the one-character case:
   static oop       find_java_mirror_for_type(char signature_char);
