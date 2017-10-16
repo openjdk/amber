@@ -900,7 +900,7 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
       assert(bsm_info != NULL, "");
       // FIXME: Cache this once per BootstrapMethods entry, not once per CONSTANT_Dynamic.
       bootstrap_specifier = Handle(THREAD, bsm_info);
-    
+
       // Resolve the Dynamically-Computed constant to invoke the BSM in order to obtain the resulting oop.
       Handle value = SystemDictionary::link_dynamic_constant(current_klass,
                                                              index,

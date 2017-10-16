@@ -36,7 +36,7 @@ public class AbstractBuilder<S, T, E, D extends AbstractBuilder<S, T, E, D>> {
      * The helper to build the constant pool.
      */
     protected final PoolHelper<S, T, E> poolHelper;
-    
+
     /**
      * The helper to use to manipulate type descriptors.
      */
