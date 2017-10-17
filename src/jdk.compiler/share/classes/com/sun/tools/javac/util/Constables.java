@@ -397,7 +397,7 @@ public class Constables {
                 IllegalAccessException |
                 IllegalArgumentException |
                 InvocationTargetException ex) {
-            log.error(Errors.ReflectiveError(methodName, hostClass.getCanonicalName()));
+            log.error(Errors.ReflectiveError(methodName, hostClass.getCanonicalName(), ex.getCause().getLocalizedMessage()));
         }
         return null;
     }
@@ -446,7 +446,7 @@ public class Constables {
             } catch (ClassNotFoundException |
                     NoSuchFieldException |
                     IllegalAccessException ex) {
-                log.error(tree, Errors.ReflectiveError(sym.name.toString(), className));
+                log.error(tree, Errors.ReflectiveError(sym.name.toString(), className, ex.getCause().getLocalizedMessage()));
             }
         }
         return null;
@@ -545,7 +545,7 @@ public class Constables {
                     IllegalAccessException |
                     IllegalArgumentException |
                     InvocationTargetException ex) {
-                log.error(tree, Errors.ReflectiveError(methodName.toString(), className));
+                log.error(tree, Errors.ReflectiveError(methodName.toString(), className, ex.getCause().getLocalizedMessage()));
                 return null;
             }
         }
