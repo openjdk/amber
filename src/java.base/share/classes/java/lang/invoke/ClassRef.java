@@ -240,6 +240,33 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
         return ofDescriptor(descriptor.substring(1));
     }
 
+    /**
+     * If this ref is a primitive class then return the boxed class, otherwise
+     * return this.
+     * @return the promoted class
+     */
+    @TrackableConstant
+    ClassRef promote() {
+        if (isPrimitive()) {
+            switch (descriptor) {
+                case "I": return CR_Integer;
+                case "J": return CR_Long;
+                case "F": return CR_Float;
+                case "D": return CR_Double;
+                case "S": return CR_Short;
+                case "B": return CR_Byte;
+                case "C": return CR_Character;
+                case "Z": return CR_Boolean;
+                case "V": return CR_Void;
+                default:
+                    throw new InternalError("Unreachable");
+            }
+        }
+        else {
+            return this;
+        }
+    }
+
     @Override
     @TrackableConstant
     public String descriptorString() {

@@ -34,13 +34,14 @@ import java.util.stream.Stream;
 public class Constables {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.Bootstraps");
 
-    static final MethodHandleRef BSM_PRIMITIVE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
-    static final MethodHandleRef BSM_DEFAULT
+    static final MethodHandleRef BSM_GET_SATIC_FINAL_SELF
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object);
+    static final MethodHandleRef BSM_GET_SATIC_FINAL_DECL
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_DEFAULT_VALUE
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
     static final MethodHandleRef BSM_VARHANDLE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandle",
-                                               ClassRef.CR_VarHandle, ClassRef.CR_int, ClassRef.CR_Class, ClassRef.CR_String, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandle", ClassRef.CR_VarHandle, ClassRef.CR_MethodType, ClassRef.CR_Object.array());
 
     static final ConstantRef<?> NULL = ConstantRef.ofNull();
 
@@ -94,20 +95,25 @@ public class Constables {
                      .toArray();
     }
 
-    /** Returns a {@link ConstantRef}, if the argument is not a {@link ClassRef}
-     *  then the argument is returned unchanged. If the argument is a {@link ClassRef}
-     *  and it is a primitive {@link ClassRef}, then a fresh {@link DynamicConstantRef}
-     *  corresponding to it is created and returned.
+    /**
+     * Returns a {@link ConstantRef}, if the argument is not a {@link ClassRef}
+     * then the argument is returned unchanged. If the argument is a {@link ClassRef}
+     * and it is a primitive {@link ClassRef}, then a fresh {@link DynamicConstantRef}
+     * corresponding to it is created and returned.
      *
-     *  @param <T> The type of the object described by the {@link ConstantRef}
-     *  @param ref the given {@link ConstantRef}
-     *  @return the reduced {@link ConstantRef}
+     * @param <T> The type of the object described by the {@link ConstantRef}
+     * @param ref the given {@link ConstantRef}
+     * @return the reduced {@link ConstantRef}
      */
     public static<T> ConstantRef<T> reduce(ConstantRef<T> ref) {
         if (ref instanceof ClassRef) {
             ClassRef cr = (ClassRef) ref;
-            if (cr.isPrimitive())
-                return DynamicConstantRef.of(Constables.BSM_PRIMITIVE, cr.descriptorString());
+            if (cr.isPrimitive()) {
+                // Return a dynamic constant whose value is obtained by getting
+                // static final TYPE field on the boxed class
+                return DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_SATIC_FINAL_DECL, cr.promote()),
+                                             "TYPE", ClassRef.CR_Class);
+            }
         }
         return ref;
     }
@@ -121,4 +127,3 @@ public class Constables {
         return MethodType.methodType(clazz).toMethodDescriptorString().substring(2);
     }
 }
-

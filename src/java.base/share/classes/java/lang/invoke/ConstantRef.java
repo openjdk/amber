@@ -26,10 +26,6 @@ package java.lang.invoke;
 
 import java.lang.annotation.TrackableConstant;
 
-import static java.lang.invoke.Bootstraps.VH_arrayHandle;
-import static java.lang.invoke.Bootstraps.VH_instanceField;
-import static java.lang.invoke.Bootstraps.VH_staticField;
-
 /**
  * Purely-nominal descriptor for a constant value expressible in a classfile
  * constant pool.
@@ -71,7 +67,7 @@ public interface ConstantRef<T> {
      */
     @TrackableConstant
     static<T> ConstantRef<T> ofNull() {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_DEFAULT), "_", ClassRef.CR_Object);
+        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_DEFAULT_VALUE), ClassRef.CR_Object);
     }
 
     /**
@@ -82,7 +78,9 @@ public interface ConstantRef<T> {
      * @return the VarHandle
      */
     static ConstantRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_VARHANDLE, VH_instanceField, owner, name, type));
+        return DynamicConstantRef.of(
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(type, owner)),
+                name);
     }
 
     /**
@@ -93,7 +91,9 @@ public interface ConstantRef<T> {
      * @return the VarHandle
      */
     static ConstantRef<VarHandle> staticFieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_VARHANDLE, VH_staticField, owner, name, type));
+        return DynamicConstantRef.of(
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(type), owner),
+                name);
     }
 
     /**
@@ -102,7 +102,8 @@ public interface ConstantRef<T> {
      * @return the VarHandle
      */
     static ConstantRef<VarHandle> arrayVarHandle(ClassRef arrayClass) {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_VARHANDLE, VH_arrayHandle, Constables.NULL, Constables.NULL, arrayClass));
+        return DynamicConstantRef.of(
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(arrayClass.componentType(), arrayClass)));
     }
 
     /**
