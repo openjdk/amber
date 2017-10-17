@@ -662,7 +662,7 @@ public class Flow {
                                                 case VARIABLEPATTERN:
                                                     JCVariablePattern currentPattern = (JCVariablePattern)aClause.pat;
                                                     if (currentPattern.vartype != null) {
-                                                        if (types.isAssignable(currentPattern.vartype.type, vpatt.type))
+                                                        if (types.isAssignable(types.erasure(currentPattern.vartype.type), types.erasure(vpatt.type)))
                                                             return true;
                                                     }
                                                     break;
