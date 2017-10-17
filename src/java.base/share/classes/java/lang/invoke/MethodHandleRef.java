@@ -36,6 +36,7 @@ import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 import static java.lang.invoke.MethodHandleInfo.REF_putField;
 import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
+import static java.lang.invoke.MethodHandleRef.Kind.STATIC;
 
 /**
  * A descriptor for a {@linkplain MethodHandle} constant.
@@ -48,18 +49,21 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
                                                              ClassRef.of("java.lang.String"),
                                                              ClassRef.of("java.lang.Class") };
 
-    private enum Kind {
-        STATIC(REF_invokeStatic),
-        VIRTUAL(REF_invokeVirtual),
-        INTERFACE_VIRTUAL(REF_invokeInterface),
-        SPECIAL(REF_invokeSpecial),
-        CTOR(REF_newInvokeSpecial),
-        GETTER(REF_getField),
-        SETTER(REF_putField),
-        STATIC_GETTER(REF_getStatic),
-        STATIC_SETTER(REF_putStatic);
+    /**
+     * Kinds of method handle refs
+     */
+    public enum Kind {
+        @TrackableConstant STATIC(REF_invokeStatic),
+        @TrackableConstant VIRTUAL(REF_invokeVirtual),
+        @TrackableConstant INTERFACE_VIRTUAL(REF_invokeInterface),
+        @TrackableConstant SPECIAL(REF_invokeSpecial),
+        @TrackableConstant CONSTRUCTOR(REF_newInvokeSpecial),
+        @TrackableConstant GETTER(REF_getField),
+        @TrackableConstant SETTER(REF_putField),
+        @TrackableConstant STATIC_GETTER(REF_getStatic),
+        @TrackableConstant STATIC_SETTER(REF_putStatic);
 
-        final int refKind;
+        public final int refKind;
 
         Kind(int refKind) {
             this.refKind = refKind;
@@ -78,72 +82,57 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
         this.type = type;
     }
 
-    // @@@ Consider special combinator: asIndyBootstrap, asCondyBootstrap, asWhizzyBootstrap
-
     /**
      * Return a {@code MethodHandleRef} corresponding to an
      * invocation of a static method
+     * @param kind One of: STATIC, VIRTUAL, INTERFACE_VIRTUAL, SPECIAL, CONSTRUCTOR
      * @param clazz the class containing the method
-     * @param name the name of the method
+     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
      * @param type the method type of the method
      * @return the {@code MethodHandleRef}
      */
     @TrackableConstant
-    public static MethodHandleRef ofStatic(ClassRef clazz, String name, MethodTypeRef type) {
-        return new MethodHandleRef(Kind.STATIC, clazz, name, type);
+    public static MethodHandleRef of(Kind kind, ClassRef clazz, String name, MethodTypeRef type) {
+        switch (kind) {
+            case STATIC:
+            case VIRTUAL:
+            case INTERFACE_VIRTUAL:
+            case SPECIAL:
+                return new MethodHandleRef(kind, clazz, name, type);
+            case CONSTRUCTOR:
+                return new MethodHandleRef(kind, clazz, "<init>", type);
+            default:
+                throw new IllegalArgumentException(kind.toString());
+        }
     }
 
     /**
      * Return a {@code MethodHandleRef} corresponding to an
      * invocation of a static method
+     * @param kind One of: STATIC, VIRTUAL, INTERFACE_VIRTUAL, SPECIAL, CONSTRUCTOR
      * @param clazz the class containing the method
-     * @param name the name of the method
+     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
      * @param descriptorString descriptor string of the method
      * @return the {@code MethodHandleRef}
      */
     @TrackableConstant
-    public static MethodHandleRef ofStatic(ClassRef clazz, String name, String descriptorString) {
-        return ofStatic(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
+    public static MethodHandleRef of(Kind kind, ClassRef clazz, String name, String descriptorString) {
+        return of(kind, clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
     }
 
     /**
      * Return a {@code MethodHandleRef} corresponding to an
      * invocation of a static method
+     * @param kind One of: STATIC, VIRTUAL, INTERFACE_VIRTUAL, SPECIAL, CONSTRUCTOR
      * @param clazz the class containing the method
-     * @param name the name of the method
+     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
      * @param returnType the return type of the method
      * @param paramTypes the parameter types of the method
      * @return the {@code MethodHandleRef}
      */
     @TrackableConstant
-    public static MethodHandleRef ofStatic(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofStatic(clazz, name, MethodTypeRef.of(returnType, paramTypes));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to an invokedynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code MethodType}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofIndyBootstrap(ClassRef clazz, String name, MethodTypeRef type) {
-        return ofStatic(clazz, name, type.insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to an invokedynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code MethodType}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofIndyBootstrap(ClassRef clazz, String name, String descriptorString) {
-        return ofIndyBootstrap(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
+    public static MethodHandleRef of(Kind kind, ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+        return of(kind, clazz, name, MethodTypeRef.of(returnType, paramTypes));
     }
 
     /**
@@ -157,35 +146,9 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
      */
     @TrackableConstant
     public static MethodHandleRef ofIndyBootstrap(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofIndyBootstrap(clazz, name, MethodTypeRef.of(returnType, paramTypes));
+        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
     }
 
-    /**
-     * Return a {@code MethodHandleRef} corresponding to a constantdynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code Class}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-
-    @TrackableConstant
-    public static MethodHandleRef ofCondyBootstrap(ClassRef clazz, String name, MethodTypeRef type) {
-        return ofStatic(clazz, name, type.insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
-    }
-    /**
-     * Return a {@code MethodHandleRef} corresponding to a constantdynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code Class}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-
-    @TrackableConstant
-    public static MethodHandleRef ofCondyBootstrap(ClassRef clazz, String name, String descriptorString) {
-        return ofCondyBootstrap(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
-    }
     /**
      * Return a {@code MethodHandleRef} corresponding to a constantdynamic bootstrap,
      * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code Class}
@@ -197,165 +160,7 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
      */
     @TrackableConstant
     public static MethodHandleRef ofCondyBootstrap(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofCondyBootstrap(clazz, name, MethodTypeRef.of(returnType, paramTypes));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokevirtual}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofVirtual(ClassRef clazz, String name, MethodTypeRef type) {
-        return new MethodHandleRef(Kind.VIRTUAL, clazz, name, type);
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokevirtual}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-
-    @TrackableConstant
-    public static MethodHandleRef ofVirtual(ClassRef clazz, String name, String descriptorString) {
-        return ofVirtual(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
-    }
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokevirtual}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofVirtual(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofVirtual(clazz, name, MethodTypeRef.of(returnType, paramTypes));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokeinterface}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofInterface(ClassRef clazz, String name, MethodTypeRef type) {
-        return new MethodHandleRef(Kind.INTERFACE_VIRTUAL, clazz, name, type);
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokeinterface}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-
-    @TrackableConstant
-    public static MethodHandleRef ofInterface(ClassRef clazz, String name, String descriptorString) {
-        return ofInterface(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokeinterface}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofInterface(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofInterface(clazz, name, MethodTypeRef.of(returnType, paramTypes));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokespecial}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofSpecial(ClassRef clazz, String name, MethodTypeRef type) {
-        return new MethodHandleRef(Kind.SPECIAL, clazz, name, type);
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokespecial}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofSpecial(ClassRef clazz, String name, String descriptorString) {
-        return ofSpecial(clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a virtual method via {@code invokespecial}
-     * @param clazz the class containing the method
-     * @param name the name of the method
-     * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofSpecial(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return ofSpecial(clazz, name, MethodTypeRef.of(returnType, paramTypes));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a constructor
-     * @param clazz the class containing the method
-     * @param type the method type of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofConstructor(ClassRef clazz, MethodTypeRef type) {
-        return new MethodHandleRef(Kind.CTOR, clazz, "<init>", type);
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a constructor
-     * @param clazz the class containing the method
-     * @param descriptorString the descriptor string of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofConstructor(ClassRef clazz, String descriptorString) {
-        return ofConstructor(clazz, MethodTypeRef.ofDescriptor(descriptorString));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a constructor
-     * @param clazz the class containing the method
-     * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofConstructor(ClassRef clazz, ClassRef returnType, ClassRef... paramTypes) {
-        return ofConstructor(clazz, MethodTypeRef.of(returnType, paramTypes));
+        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
     }
 
     /**
@@ -367,47 +172,16 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
      * @return the {@code MethodHandleRef}
      */
     @TrackableConstant
-    public static MethodHandleRef ofGetter(ClassRef clazz, String name, ClassRef type) {
-        return new MethodHandleRef(Kind.GETTER, clazz, name, MethodTypeRef.of(type, clazz));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of an instance field setter
-     * @param clazz the class containing the field
-     * @param name the name of the field
-     * @param type the type of the field
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofSetter(ClassRef clazz, String name, ClassRef type) {
-        return new MethodHandleRef(Kind.SETTER, clazz, name, MethodTypeRef.of(ClassRef.ofVoid(), clazz, type));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a static field getter
-     * @param clazz the class containing the field
-     * @param name the name of the field
-     * @param type the type of the field
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofStaticGetter(ClassRef clazz, String name, ClassRef type) {
-        return new MethodHandleRef(Kind.STATIC_GETTER, clazz, name, MethodTypeRef.of(type));
-    }
-
-    /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of a static field setter
-     * @param clazz the class containing the field
-     * @param name the name of the field
-     * @param type the type of the field
-     * @return the {@code MethodHandleRef}
-     */
-    @TrackableConstant
-    public static MethodHandleRef ofStaticSetter(ClassRef clazz, String name, ClassRef type) {
-        return new MethodHandleRef(Kind.STATIC_SETTER, clazz, name, MethodTypeRef.of(ClassRef.ofVoid(), type));
+    public static MethodHandleRef ofField(Kind kind, ClassRef clazz, String name, ClassRef type) {
+        switch (kind) {
+            case GETTER: return new MethodHandleRef(Kind.GETTER, clazz, name, MethodTypeRef.of(type, clazz));
+            case SETTER:
+                return new MethodHandleRef(Kind.SETTER, clazz, name, MethodTypeRef.of(ClassRef.CR_void, clazz, type));
+            case STATIC_GETTER: return new MethodHandleRef(Kind.STATIC_GETTER, clazz, name, MethodTypeRef.of(type));
+            case STATIC_SETTER:
+                return new MethodHandleRef(Kind.STATIC_SETTER, clazz, name, MethodTypeRef.of(ClassRef.CR_void, type));
+            default: throw new IllegalArgumentException(kind.toString());
+        }
     }
 
     /**
@@ -423,7 +197,7 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
             case VIRTUAL:
                 return lookup.findVirtual(owner.resolve(lookup), name, type.resolve(lookup));
             case SPECIAL: return lookup.findSpecial(owner.resolve(lookup), name, type.resolve(lookup), lookup.lookupClass());
-            case CTOR: return lookup.findConstructor(owner.resolve(lookup), type.resolve(lookup));
+            case CONSTRUCTOR: return lookup.findConstructor(owner.resolve(lookup), type.resolve(lookup));
             case GETTER: return lookup.findGetter(owner.resolve(lookup), name, type.resolve(lookup).returnType());
             case STATIC_GETTER: return lookup.findStaticGetter(owner.resolve(lookup), name, type.resolve(lookup).returnType());
             case SETTER: return lookup.findSetter(owner.resolve(lookup), name, type.resolve(lookup).parameterType(1));

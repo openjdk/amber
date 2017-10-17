@@ -41,6 +41,7 @@ import java.lang.invoke.MethodTypeRef;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.ldc;
+import static java.lang.invoke.MethodHandleRef.Kind.STATIC;
 
 public class CondyCodeGenerationTest {
     public static void main(String[] args) throws Throwable {
@@ -59,8 +60,8 @@ public class CondyCodeGenerationTest {
     String testNoStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
                 ClassRef.CR_String, ClassRef.CR_Lookup, ClassRef.CR_String, ClassRef.CR_Class);
-        MethodHandleRef mh = MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
-                                                      "testNoStaticArgsBSM", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
+                                                "testNoStaticArgsBSM", methodTypeForMethodHandle);
         BootstrapSpecifier bss = BootstrapSpecifier.of(mh);
         DynamicConstantRef<String> condyDescr = DynamicConstantRef.of(bss, "constant-name");
         return (String)ldc(condyDescr);
@@ -85,8 +86,8 @@ public class CondyCodeGenerationTest {
                 ClassRef.CR_String,
                 ClassRef.CR_MethodType,
                 ClassRef.CR_MethodHandle);
-        MethodHandleRef mh = MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
-                                                      "testWithStaticArgsBSM", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
+                                                "testWithStaticArgsBSM", methodTypeForMethodHandle);
         BootstrapSpecifier bss = BootstrapSpecifier.of(mh, 1, 2L, 3.0f, 4.0d,
                                                        ClassRef.CR_Number,
                                                        "something",
@@ -122,8 +123,8 @@ public class CondyCodeGenerationTest {
                 ClassRef.CR_Class
         );
         MethodHandleRef c_primitiveClassBSM_MH =
-                MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
-                                         "primitiveClassBSM", c_primitiveClassBSM_MT);
+                MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
+                                   "primitiveClassBSM", c_primitiveClassBSM_MT);
         BootstrapSpecifier bss0 = BootstrapSpecifier.of(c_primitiveClassBSM_MH);
         DynamicConstantRef<Class> c_primitiveClassBSM_CD = DynamicConstantRef.of(bss0, "I");
 
@@ -134,9 +135,8 @@ public class CondyCodeGenerationTest {
                 ClassRef.CR_Class,
                 ClassRef.CR_Class
         );
-        MethodHandleRef mh = MethodHandleRef.ofStatic(
-                ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
-                "testWithNestedArgBSM", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
+                                                "testWithNestedArgBSM", methodTypeForMethodHandle);
         BootstrapSpecifier bss = BootstrapSpecifier.of(mh, c_primitiveClassBSM_CD);
 
         DynamicConstantRef<String> condyDescr = DynamicConstantRef.of(bss, "constant-name");

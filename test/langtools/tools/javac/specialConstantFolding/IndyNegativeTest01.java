@@ -18,8 +18,8 @@ public class IndyNegativeTest01 {
             ClassRef.CR_String,
             ClassRef.CR_Object.array()
         );
-        MethodHandleRef mh = MethodHandleRef.ofStatic(ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
-                "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
+                                                "makeConcatWithConstants", methodTypeForMethodHandle);
         final String param = "" + '\u0001' + '\u0001';
         BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh, param);
         // invokeName is not a constant

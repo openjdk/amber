@@ -36,7 +36,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test3(EffectivelyFinalTest f) throws Throwable {
         ClassRef c = ClassRef.ofDescriptor("Ljava/lang/String;");
         MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
+        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 
@@ -44,7 +44,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test4(EffectivelyFinalTest f) throws Throwable {
         ClassRef c = ClassRef.ofDescriptor("Ljava/lang/String;");
         MethodTypeRef mt = MethodTypeRef.of(c);
-        final MethodHandle mh = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
+        final MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 
@@ -54,7 +54,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test5(EffectivelyFinalTest f) throws Throwable {
         ClassRef c = ClassRef.ofDescriptor("Ljava/lang/String;");;
         MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.ofVirtual(cField, "foo", mt));
+        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, cField, "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 }

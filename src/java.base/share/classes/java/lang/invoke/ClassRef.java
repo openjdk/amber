@@ -27,8 +27,11 @@ package java.lang.invoke;
 import java.lang.annotation.TrackableConstant;
 import java.lang.reflect.Array;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A descriptor for a {@linkplain Class} constant.
@@ -88,6 +91,8 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
 
     /**  ClassRef representing the class java.lang.invoke.VarHandle */
     @TrackableConstant public static final ClassRef CR_VarHandle = ClassRef.of("java.lang.invoke.VarHandle");
+    /**  ClassRef representing the class java.lang.invoke.MethodHandles */
+    @TrackableConstant public static final ClassRef CR_MethodHandles = ClassRef.of("java.lang.invoke.MethodHandles");
     /**  ClassRef representing the class java.lang.invoke.MethodHandle */
     @TrackableConstant public static final ClassRef CR_MethodHandle = ClassRef.of("java.lang.invoke.MethodHandle");
     /**  ClassRef representing the class java.lang.invoke.MethodType */
@@ -95,7 +100,7 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
     /**  ClassRef representing the class java.lang.invoke.CallSite */
     @TrackableConstant public static final ClassRef CR_CallSite = ClassRef.of("java.lang.invoke.CallSite");
     /**  ClassRef representing the class java.lang.invoke.MethodHandles.Lookup */
-    @TrackableConstant public static final ClassRef CR_Lookup = ClassRef.of("java.lang.invoke.MethodHandles$Lookup");
+    @TrackableConstant public static final ClassRef CR_Lookup = CR_MethodHandles.inner("Lookup");
 
     /**  ClassRef representing the interface java.util.Collection */
     @TrackableConstant public static final ClassRef CR_Collection = ClassRef.of("java.util.Collection");
@@ -112,88 +117,6 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
         if (!TYPE_DESC.matcher(descriptor).matches())
             throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
         this.descriptor = descriptor;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code int}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofInt() {
-        return CR_int;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code long}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofLong() {
-        return CR_long;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code short}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofShort() {
-        return CR_short;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code char}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofChar() {
-        return CR_char;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code byte}
-     * @return the {@code ClassRef}
-     */
-
-    @TrackableConstant
-    public static ClassRef ofByte() {
-        return CR_byte;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code float}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofFloat() {
-        return CR_float;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code double}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofDouble() {
-        return CR_double;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code boolean}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofBoolean() {
-        return CR_boolean;
-    }
-
-    /**
-     * Create a {@code ClassRef} for the primitive type {@code void}
-     * @return the {@code ClassRef}
-     */
-    @TrackableConstant
-    public static ClassRef ofVoid() {
-        return CR_void;
     }
 
     /**
@@ -256,6 +179,32 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
     public ClassRef array() {
         return ofDescriptor("[" + descriptor);
     }
+
+    /**
+     * Create a {@linkplain ClassRef} describing an inner class of the
+     * non-array reference type described by this {@linkplain ClassRef}
+     */
+    @TrackableConstant
+    public ClassRef inner(String innerName) {
+        if (!descriptor.startsWith("L"))
+            throw new IllegalStateException("Outer class is not a non-array reference type");
+        return ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + innerName + ";");
+    }
+
+    /**
+     * Create a {@linkplain ClassRef} describing an inner class of the
+     * non-array reference type described by this {@linkplain ClassRef}
+     */
+    @TrackableConstant
+    public ClassRef inner(String firstInnerName, String... moreInnerNames) {
+        if (!descriptor.startsWith("L"))
+            throw new IllegalStateException("Outer class is not a non-array reference type");
+        return moreInnerNames.length == 0
+               ? inner(firstInnerName)
+               : ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + firstInnerName
+                                       + Stream.of(moreInnerNames).collect(joining("$", "$", "")) + ";");
+    }
+
 
     /**
      * Returns whether this {@linkplain ClassRef}

@@ -38,6 +38,11 @@ import java.util.stream.Stream;
 
 import org.testng.annotations.Test;
 
+import static java.lang.invoke.ClassRef.*;
+import static java.lang.invoke.MethodHandleRef.Kind.GETTER;
+import static java.lang.invoke.MethodHandleRef.Kind.SETTER;
+import static java.lang.invoke.MethodHandleRef.Kind.STATIC_GETTER;
+import static java.lang.invoke.MethodHandleRef.Kind.STATIC_SETTER;
 import static java.util.stream.Collectors.joining;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -59,15 +64,15 @@ public class ConstablesTest {
     public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     enum Primitives {
-        INT("I", "int", int.class, int[].class, ClassRef.ofInt()),
-        LONG("J", "long", long.class, long[].class, ClassRef.ofLong()),
-        SHORT("S", "short", short.class, short[].class, ClassRef.ofShort()),
-        BYTE("B", "byte", byte.class, byte[].class, ClassRef.ofByte()),
-        CHAR("C", "char", char.class, char[].class, ClassRef.ofChar()),
-        FLOAT("F", "float", float.class, float[].class, ClassRef.ofFloat()),
-        DOUBLE("D", "double", double.class, double[].class, ClassRef.ofDouble()),
-        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, ClassRef.ofBoolean()),
-        VOID("V", "void", void.class, null, ClassRef.ofVoid());
+        INT("I", "int", int.class, int[].class, CR_int),
+        LONG("J", "long", long.class, long[].class, CR_long),
+        SHORT("S", "short", short.class, short[].class, CR_short),
+        BYTE("B", "byte", byte.class, byte[].class, CR_byte),
+        CHAR("C", "char", char.class, char[].class, CR_char),
+        FLOAT("F", "float", float.class, float[].class, CR_float),
+        DOUBLE("D", "double", double.class, double[].class, CR_double),
+        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, CR_boolean),
+        VOID("V", "void", void.class, null, CR_void);
 
         public final String descriptor;
         public final String name;
@@ -277,18 +282,21 @@ public class ConstablesTest {
     }
 
     public void testMethodHandleRef() throws Throwable {
-        ClassRef testClass = ClassRef.of("ConstablesTest$TestClass");
-        ClassRef testInterface = ClassRef.of("ConstablesTest$TestInterface");
+        ClassRef thisClass = ClassRef.of("ConstablesTest");
+        ClassRef testClass = thisClass.inner("TestClass");
+        ClassRef testInterface = thisClass.inner("TestInterface");
 
         // ctor
-        MethodHandleRef ctorRef = MethodHandleRef.ofConstructor(testClass, "()V");
-        MethodHandleRef staticMethodRef = MethodHandleRef.ofStatic(testClass, "sm", "(I)I");
-        MethodHandleRef instanceMethodRef = MethodHandleRef.ofVirtual(testClass, "m", "(I)I");
-        MethodHandleRef interfaceMethodRef = MethodHandleRef.ofInterface(testInterface, "im", "(I)I");
-        MethodHandleRef staticSetterRef = MethodHandleRef.ofStaticSetter(testClass, "sf", ClassRef.ofInt());
-        MethodHandleRef staticGetterRef = MethodHandleRef.ofStaticGetter(testClass, "sf", ClassRef.ofInt());
-        MethodHandleRef setterRef = MethodHandleRef.ofSetter(testClass, "f", ClassRef.ofInt());
-        MethodHandleRef getterRef = MethodHandleRef.ofGetter(testClass, "f", ClassRef.ofInt());
+        MethodHandleRef ctorRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, testClass, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
+        MethodHandleRef staticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "sm", "(I)I");
+        MethodHandleRef instanceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, testClass, "m", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef interfaceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, testInterface, "im", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef staticSetterRef = MethodHandleRef.ofField(STATIC_SETTER, testClass, "sf", ClassRef.CR_int);
+        MethodHandleRef staticGetterRef = MethodHandleRef.ofField(STATIC_GETTER, testClass, "sf", ClassRef.CR_int);
+        MethodHandleRef setterRef = MethodHandleRef.ofField(SETTER, testClass, "f", ClassRef.CR_int);
+        MethodHandleRef getterRef = MethodHandleRef.ofField(GETTER, testClass, "f", ClassRef.CR_int);
+        MethodHandleRef privateStaticMethod = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, thisClass, "privateStaticMethod", "(I)I");
+        MethodHandleRef privateInstanceMethod = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, thisClass, "privateMethod", "(I)I");
 
         TestClass instance = (TestClass) ctorRef.resolve(LOOKUP).invoke();
         assertTrue(instance instanceof TestClass);
@@ -305,15 +313,18 @@ public class ConstablesTest {
 
         assertEquals(instance.f, 7);
         assertEquals(TestClass.sf, 6);
+
+        assertEquals(9, privateStaticMethod.resolve(LOOKUP).invoke(9));
+        assertEquals(10, privateInstanceMethod.resolve(LOOKUP).invoke(this, 10));
     }
 
     public void testVarHandles() throws ReflectiveOperationException {
-        ClassRef testClass = ClassRef.of("ConstablesTest$TestClass");
+        ClassRef testClass = ClassRef.of("ConstablesTest").inner("TestClass");
         TestClass instance = new TestClass();
         int[] ints = new int[3];
 
         // static varHandle
-        DynamicConstantRef<VarHandle> vhc = (DynamicConstantRef<VarHandle>) ConstantRef.staticFieldVarHandle(testClass, "sf", ClassRef.ofInt());
+        DynamicConstantRef<VarHandle> vhc = (DynamicConstantRef<VarHandle>) ConstantRef.staticFieldVarHandle(testClass, "sf", ClassRef.CR_int);
         MethodTypeRef methodTypeRef = vhc.bootstrapMethod().type();
         System.out.println(vhc.name() + " " + methodTypeRef.returnType() + " " + methodTypeRef.parameterList());
         VarHandle varHandle = vhc.resolve(LOOKUP);
@@ -323,14 +334,14 @@ public class ConstablesTest {
         assertEquals(TestClass.sf, 8);
 
         // static varHandle
-        vhc = (DynamicConstantRef<VarHandle>) ConstantRef.fieldVarHandle(testClass, "f", ClassRef.ofInt());
+        vhc = (DynamicConstantRef<VarHandle>) ConstantRef.fieldVarHandle(testClass, "f", ClassRef.CR_int);
         varHandle = vhc.resolve(LOOKUP);
         assertEquals(varHandle.varType(), int.class);
         varHandle.set(instance, 9);
         assertEquals(9, (int) varHandle.get(instance));
         assertEquals(instance.f, 9);
 
-        vhc = (DynamicConstantRef<VarHandle>) ConstantRef.arrayVarHandle(ClassRef.ofInt().array());
+        vhc = (DynamicConstantRef<VarHandle>) ConstantRef.arrayVarHandle(ClassRef.CR_int.array());
         varHandle = vhc.resolve(LOOKUP);
         varHandle.set(ints, 0, 1);
         varHandle.set(ints, 1, 2);
@@ -363,22 +374,22 @@ public class ConstablesTest {
 //        assertEquals(String[].class, Intrinsics.ldc(ClassRef.of(String[].class)));
 
         assertEquals(int.class, Intrinsics.ldc(ClassRef.ofDescriptor("I")));
-        assertEquals(int.class, Intrinsics.ldc(ClassRef.ofInt()));
+        assertEquals(int.class, Intrinsics.ldc(ClassRef.CR_int));
 //        assertEquals(int.class, Intrinsics.ldc(ClassRef.of(int.class)));
 
         assertEquals(int[].class, Intrinsics.ldc(ClassRef.ofDescriptor("[I")));
-        assertEquals(int[].class, Intrinsics.ldc(ClassRef.ofInt().array()));
+        assertEquals(int[].class, Intrinsics.ldc(ClassRef.CR_int.array()));
 //        assertEquals(int[].class, Intrinsics.ldc(ClassRef.of(int.class).arrayOf()));
     }
 
     public void testLdcMethodType() {
         assertEquals(MethodType.methodType(void.class), Intrinsics.ldc(MethodTypeRef.ofDescriptor("()V")));
-        assertEquals(MethodType.methodType(void.class), Intrinsics.ldc(MethodTypeRef.of(ClassRef.ofVoid())));
+        assertEquals(MethodType.methodType(void.class), Intrinsics.ldc(MethodTypeRef.of(ClassRef.CR_void)));
 
         assertEquals(MethodType.methodType(int.class, int.class),
                      Intrinsics.ldc(MethodTypeRef.ofDescriptor("(I)I")));
         assertEquals(MethodType.methodType(int.class, int.class),
-                     Intrinsics.ldc(MethodTypeRef.of(ClassRef.ofInt(), ClassRef.ofInt())));
+                     Intrinsics.ldc(MethodTypeRef.of(ClassRef.CR_int, ClassRef.CR_int)));
 
         assertEquals(MethodType.methodType(String.class, String.class),
                      Intrinsics.ldc(MethodTypeRef.ofDescriptor("(Ljava/lang/String;)Ljava/lang/String;")));
@@ -392,34 +403,47 @@ public class ConstablesTest {
     public void testLdcMethodHandle() throws Throwable {
         ClassRef CLASS_STRING = ClassRef.of("java.lang.String");
         ClassRef CLASS_OBJECT = ClassRef.of("java.lang.Object");
-        ClassRef CLASS_INT = ClassRef.ofInt();
-        ClassRef CLASS_HELPER = ClassRef.of("ConstablesTest$TestClass");
-        ClassRef CLASS_HELPER_INTF = ClassRef.of("ConstablesTest$TestInterface");
+        ClassRef CLASS_INT = ClassRef.CR_int;
+        ClassRef CLASS_THIS = ClassRef.of("ConstablesTest");
+        ClassRef CLASS_HELPER = CLASS_THIS.inner("TestClass");
+        ClassRef CLASS_HELPER_INNER = CLASS_THIS.inner("TestClass", "Inner");
+        ClassRef CLASS_HELPER_INTF = CLASS_THIS.inner("TestInterface");
 
-        assertEquals("3", Intrinsics.ldc(MethodHandleRef.ofStatic(CLASS_STRING, "valueOf", CLASS_STRING, CLASS_OBJECT))
+        assertEquals("3", Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CLASS_STRING, "valueOf", CLASS_STRING, CLASS_OBJECT))
                                     .invoke(Integer.valueOf(3)));
 
-        assertEquals("foobar", Intrinsics.ldc(MethodHandleRef.ofVirtual(CLASS_STRING, "concat", CLASS_STRING, CLASS_STRING))
+        assertEquals("foobar", Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CLASS_STRING, "concat", MethodTypeRef.of(CLASS_STRING, CLASS_STRING)))
                                          .invoke("foo", "bar"));
 
-        TestClass h = (TestClass) Intrinsics.ldc(MethodHandleRef.ofConstructor(CLASS_HELPER, ClassRef.ofVoid()))
+        TestClass h = (TestClass) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CLASS_HELPER, "<init>", MethodTypeRef.of(ClassRef.CR_void)))
                                             .invoke();
         assertTrue(h instanceof TestClass);
 
-        assertEquals(2, Intrinsics.ldc(MethodHandleRef.ofInterface(CLASS_HELPER_INTF, "im", CLASS_INT, CLASS_INT))
+        assertEquals(2, Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CLASS_HELPER_INTF, "im", MethodTypeRef.of(CLASS_INT, CLASS_INT)))
                                   .invoke(h, 2));
 
-        Intrinsics.ldc(MethodHandleRef.ofStaticSetter(CLASS_HELPER, "sf", CLASS_INT))
+        Intrinsics.ldc(MethodHandleRef.ofField(STATIC_SETTER, CLASS_HELPER, "sf", CLASS_INT))
                   .invoke(3);
         assertEquals(3, TestClass.sf);
-        assertEquals(3, (int) Intrinsics.ldc(MethodHandleRef.ofStaticGetter(CLASS_HELPER, "sf", CLASS_INT))
+        assertEquals(3, (int) Intrinsics.ldc(MethodHandleRef.ofField(STATIC_GETTER, CLASS_HELPER, "sf", CLASS_INT))
                                         .invoke());
 
-        Intrinsics.ldc(MethodHandleRef.ofSetter(CLASS_HELPER, "f", CLASS_INT))
+        Intrinsics.ldc(MethodHandleRef.ofField(SETTER, CLASS_HELPER, "f", CLASS_INT))
                   .invoke(h, 4);
         assertEquals(4, h.f);
-        assertEquals(4, (int) Intrinsics.ldc(MethodHandleRef.ofGetter(CLASS_HELPER, "f", CLASS_INT))
+        assertEquals(4, (int) Intrinsics.ldc(MethodHandleRef.ofField(GETTER, CLASS_HELPER, "f", CLASS_INT))
                                         .invoke(h));
+
+        assertEquals(9, (int) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CLASS_THIS, "privateStaticMethod", "(I)I")).invoke(9));
+        assertEquals(10, (int) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CLASS_THIS, "privateMethod", "(I)I")).invoke(this, 10));
+
+        Intrinsics.ldc(MethodHandleRef.ofField(STATIC_SETTER, CLASS_HELPER_INNER, "innerField", CLASS_INT))
+                  .invoke(12);
+        assertEquals(12, TestClass.Inner.innerField);
+        assertEquals(12, (int) Intrinsics.ldc(MethodHandleRef.ofField(STATIC_GETTER, CLASS_HELPER_INNER, "innerField", CLASS_INT))
+                                         .invoke());
+
+
     }
 
 
@@ -428,11 +452,23 @@ public class ConstablesTest {
         return MethodType.methodType(clazz).toMethodDescriptorString().substring(2);
     }
 
+    private static int privateStaticMethod(int i) {
+        return i;
+    }
+
+    private int privateMethod(int i) {
+        return i;
+    }
+
     private static interface TestInterface {
         public int im(int x);
     }
 
     private static class TestClass implements TestInterface {
+        private static class Inner {
+            static int innerField;
+        }
+
         static int sf;
         int f;
 

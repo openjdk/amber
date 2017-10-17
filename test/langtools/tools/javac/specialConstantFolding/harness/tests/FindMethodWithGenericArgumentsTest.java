@@ -10,7 +10,7 @@ class FindMethodWithGenericArgumentsTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test() {
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindMethodWithGenericArgumentsTest;"),
-                "bar", ClassRef.ofVoid(), ClassRef.CR_List));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindMethodWithGenericArgumentsTest;"), "bar",
+                                                  MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_List)));
     }
 }

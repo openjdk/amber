@@ -3,6 +3,7 @@
 import java.lang.invoke.*;
 
 import static java.lang.invoke.Intrinsics.*;
+import static java.lang.invoke.MethodHandleRef.Kind.SETTER;
 
 public class FindSetterTest extends ConstantFoldingTest {
     String strField = "instance field";
@@ -17,7 +18,7 @@ public class FindSetterTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_putField"})
     void test1(FindSetterTest f) throws Throwable {
-        final MethodHandle mhSetter = ldc(MethodHandleRef.ofSetter(ClassRef.ofDescriptor("LFindSetterTest;"), "strField", ClassRef.CR_String));
+        final MethodHandle mhSetter = ldc(MethodHandleRef.ofField(SETTER, ClassRef.ofDescriptor("LFindSetterTest;"), "strField", ClassRef.CR_String));
         mhSetter.invoke(f, "new instance field value");
         check(f.strField.equals("new instance field value"));
     }

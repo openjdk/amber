@@ -24,7 +24,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     void assignmentContext() {
         MethodType mt1 = ldc(MethodTypeRef.of(ClassRef.CR_String));
         MethodType mt2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
-        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int));
+        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
 //        MethodType mt4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type
@@ -40,7 +40,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     void invocationContext1() {
         foo(ldc(MethodTypeRef.of(ClassRef.CR_String)));
         foo(ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
-        foo(ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int)));
+        foo(ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int)));
 //        foo(ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT))));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type
@@ -58,7 +58,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
         foo(mt1);
         MethodType mt2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
         foo(mt2);
-        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int));
+        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
         foo(mt3);
 //        MethodType mt4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
 //        foo(mt4);
@@ -77,7 +77,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     void castContext1() {
         Serializable s1 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String));
         Serializable s2 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
-        Serializable s3 = (Serializable)ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int));
+        Serializable s3 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
 //        Serializable s4 = (Serializable)ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
         Serializable s5 = (Serializable)ldc(MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));
     }
@@ -93,7 +93,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
         Serializable s1 = (Serializable)m1;
         MethodType m2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
         Serializable s2 = (Serializable)m2;
-        MethodType m3 = ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int));
+        MethodType m3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
         Serializable s3 = (Serializable)m3;
 //        MethodType m4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
 //        Serializable s4 = (Serializable)m4;
@@ -109,7 +109,7 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
     void cast_plus_invocationContext() {
         foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String)));
         foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
-        foo((MethodType)ldc(MethodTypeRef.of(ClassRef.ofVoid(), ClassRef.CR_String, ClassRef.CR_int)));
+        foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int)));
 //        foo((MethodType)ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT))));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type

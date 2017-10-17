@@ -30,7 +30,7 @@ public class EffectivelyFinalTestNeg {
         ClassRef c = ClassRef.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
         MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
+        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
         c = null;
     }
 
@@ -38,7 +38,7 @@ public class EffectivelyFinalTestNeg {
         ClassRef c = ClassRef.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
         MethodTypeRef mt = MethodTypeRef.of(c);
-        final MethodHandle mh = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
+        final MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
         c = null;
     }
 
@@ -48,7 +48,7 @@ public class EffectivelyFinalTestNeg {
         ClassRef c = ClassRef.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
         MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.ofVirtual(cField, "foo", mt));
+        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, cField, "foo", mt));
         c = null;
     }
 }

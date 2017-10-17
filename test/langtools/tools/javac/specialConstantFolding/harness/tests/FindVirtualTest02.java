@@ -23,7 +23,7 @@ public class FindVirtualTest02 extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=6, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test1(Foo f) throws Throwable {
         final MethodTypeRef mt = MethodTypeRef.ofDescriptor("()Ljava/lang/String;");
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindVirtualTest02$Foo;"), "foo", mt));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest02$Foo;"), "foo", mt));
         check(mh2.invoke(f).toString().equals("invoking method Foo.foo()"));
     }
 }

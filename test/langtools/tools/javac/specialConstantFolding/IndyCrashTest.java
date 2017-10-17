@@ -21,7 +21,7 @@ public class IndyCrashTest {
     }
 
     public void testSimpleIndy() throws Throwable {
-        MethodHandleRef bsmMH = MethodHandleRef.ofStatic(HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
+        MethodHandleRef bsmMH = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
         BootstrapSpecifier bsm = BootstrapSpecifier.of(bsmMH);
         String result = (String)Intrinsics.invokedynamic(bsm, "foo", MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));
     }

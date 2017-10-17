@@ -65,8 +65,8 @@ public class IndyCodeGenerationTest {
                 ClassRef.CR_MethodType,
                 ClassRef.CR_MethodHandle
         );
-        MethodHandleRef mh = MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
-                                                      "testWithStaticArgsBSM", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
+                                                "testWithStaticArgsBSM", methodTypeForMethodHandle);
         BootstrapSpecifier bs = BootstrapSpecifier.of(mh,
                                                       1, 2L, 3.0f, 4.0d,
                                                       ClassRef.CR_int,

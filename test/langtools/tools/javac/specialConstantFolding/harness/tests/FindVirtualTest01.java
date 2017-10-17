@@ -31,7 +31,7 @@ public class FindVirtualTest01 extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test1(FindVirtualTest01 f) throws Throwable {
         final MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo", mt));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo", mt));
         check(mh2.invoke(f).toString().equals("invoking method FindVirtualTest01.foo()"));
     }
 
@@ -39,7 +39,7 @@ public class FindVirtualTest01 extends ConstantFoldingTest {
     void test2(FindVirtualTest01 f) throws Throwable {
         final MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
         final ClassRef fooClass = ClassRef.ofDescriptor("LFindVirtualTest01;");
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(fooClass, "foo", mt));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, fooClass, "foo", mt));
         check(mh2.invoke(f).toString().equals("invoking method FindVirtualTest01.foo()"));
     }
 
@@ -47,26 +47,28 @@ public class FindVirtualTest01 extends ConstantFoldingTest {
     void test2_1(FindVirtualTest01 f) throws Throwable {
         final MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
         final ClassRef fooClass = ClassRef.ofDescriptor("LFindVirtualTest01;");
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(fooClass, "foo", mt));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, fooClass, "foo", mt));
         check(mh2.invoke(f).toString().equals("invoking method FindVirtualTest01.foo()"));
     }
 
     @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test3(FindVirtualTest01 f) throws Throwable {
         MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo", mt));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo", mt));
         check(mh2.invoke(f).toString().equals("invoking method FindVirtualTest01.foo()"));
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test4(FindVirtualTest01 f) throws Throwable {
-        MethodHandle mh2 = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo", ClassRef.ofDescriptor("Ljava/lang/String;")));
+        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest01;"), "foo",
+                                                  MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"))));
         check(mh2.invoke(f).toString().equals("invoking method FindVirtualTest01.foo()"));
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test5(FindVirtualTest01 f) throws Throwable {
-        MethodHandle mhBar = ldc(MethodHandleRef.ofVirtual(ClassRef.ofDescriptor("LFindVirtualTest01;"), "bar", ClassRef.ofDescriptor("Ljava/lang/String;"), ClassRef.ofInt()));
+        MethodHandle mhBar = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest01;"), "bar",
+                                                    MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"), ClassRef.CR_int)));
         check(mhBar.invoke(f, 3).toString().equals("invoking method FindVirtualTest01.bar() with argument 3"));
     }
 }

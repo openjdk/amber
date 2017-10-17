@@ -52,7 +52,7 @@ import static org.testng.Assert.assertEquals;
  */
 @Test
 public class IntrinsicsTest {
-    static final ClassRef HELPER_CLASS = ClassRef.of("IntrinsicsTest$IntrinsicTestHelper");
+    static final ClassRef HELPER_CLASS = ClassRef.of("IntrinsicsTest").inner("IntrinsicTestHelper");
 
     static final ClassRef staticField = ClassRef.of("java.lang.String");
     final ClassRef instanceField = ClassRef.of("java.lang.String");
@@ -144,8 +144,8 @@ public class IntrinsicsTest {
     }
 
     public void testMethodHandleCombinators() {
-        MethodHandleRef mhc = MethodHandleRef.ofStatic(ClassRef.CR_String, "valueOf",
-                                                       MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_Object));
+        MethodHandleRef mhc = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.CR_String, "valueOf",
+                                                 MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_Object));
         assertEquals(MethodType.methodType(String.class, Object.class),
                      Intrinsics.ldc(mhc.type()));
         assertEquals(String.class, Intrinsics.ldc(mhc.type().returnType()));
@@ -153,8 +153,8 @@ public class IntrinsicsTest {
     }
 
     public void testInterfaceSpecial() throws Throwable {
-        MethodHandleRef mhr = MethodHandleRef.ofStatic(ClassRef.CR_List,
-                                                       "of", MethodTypeRef.of(ClassRef.CR_List, ClassRef.CR_Object.array()));
+        MethodHandleRef mhr = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.CR_List, "of",
+                                                 MethodTypeRef.of(ClassRef.CR_List, ClassRef.CR_Object.array()));
         MethodHandle mh = Intrinsics.ldc(mhr);
         assertEquals(List.of("a", "b"), (List<String>) mh.invoke("a", "b"));
     }

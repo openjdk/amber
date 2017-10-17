@@ -44,11 +44,11 @@ public class MultipleBSMEntriesTest {
     // library code starts
     static class MultiplyCallSite extends MutableCallSite {
         private static final MethodTypeRef TYPE =
-                MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/math/BigInteger;"), ClassRef.ofLong(), ClassRef.ofLong());
+                MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/math/BigInteger;"), ClassRef.CR_long, ClassRef.CR_long);
         private static final ClassRef ME = ClassRef.ofDescriptor("LMultipleBSMEntriesTest$MultiplyCallSite;");
 
-        private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleRef.ofVirtual(ME, "fast", TYPE));
-        private static final MethodHandle SLOW = Intrinsics.ldc(MethodHandleRef.ofStatic(ME, "slow", TYPE));
+        private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ME, "fast", TYPE));
+        private static final MethodHandle SLOW = Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ME, "slow", TYPE));
 
         MultiplyCallSite(MethodType type) {
             super(type);
@@ -71,8 +71,8 @@ public class MultipleBSMEntriesTest {
     }
 
     public static final BootstrapSpecifier MULT = BootstrapSpecifier.of(
-            MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LMultipleBSMEntriesTest;"), "multiplyFactory",
-                                     ClassRef.CR_CallSite, ClassRef.CR_Lookup, ClassRef.CR_String, ClassRef.CR_MethodType));
+            MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LMultipleBSMEntriesTest;"), "multiplyFactory",
+                               ClassRef.CR_CallSite, ClassRef.CR_Lookup, ClassRef.CR_String, ClassRef.CR_MethodType));
 
     public static CallSite multiplyFactory(MethodHandles.Lookup lookup, String name, MethodType type) {
         return new MultiplyCallSite(type);

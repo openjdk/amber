@@ -25,8 +25,8 @@ public class ReportIncorrectMHForIndyTest {
                 ClassRef.CR_String,
                 ClassRef.CR_Object.array()
         );
-        MethodHandleRef mh = MethodHandleRef.ofStatic(ClassRef.ofDescriptor("LReportIncorrectMHForIndyTest;"),
-                "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LReportIncorrectMHForIndyTest;"),
+                                                "makeConcatWithConstants", methodTypeForMethodHandle);
         // should this call fail if the mh is incorrect?
         BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh);
         return "";

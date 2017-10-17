@@ -3,6 +3,7 @@
 import java.lang.invoke.*;
 
 import static java.lang.invoke.Intrinsics.*;
+import static java.lang.invoke.MethodHandleRef.Kind.GETTER;
 
 public class FindGetterTest extends ConstantFoldingTest {
     String strField = "instance field";
@@ -18,13 +19,13 @@ public class FindGetterTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_getField"})
     void test1(FindGetterTest f) throws Throwable {
-        final MethodHandle mhInstanceGetter = ldc(MethodHandleRef.ofGetter(ClassRef.ofDescriptor("LFindGetterTest;"), "strField", ClassRef.ofDescriptor("Ljava/lang/String;")));
+        final MethodHandle mhInstanceGetter = ldc(MethodHandleRef.ofField(GETTER, ClassRef.ofDescriptor("LFindGetterTest;"), "strField", ClassRef.ofDescriptor("Ljava/lang/String;")));
         check(mhInstanceGetter.invoke(f).toString().equals("instance field"));
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_getField"})
     void test2(FindGetterTest f) throws Throwable {
-        MethodHandle mhInstanceGetter = ldc(MethodHandleRef.ofGetter(ClassRef.ofDescriptor("LFindGetterTest;"), "strField", ClassRef.ofDescriptor("Ljava/lang/String;")));
+        MethodHandle mhInstanceGetter = ldc(MethodHandleRef.ofField(GETTER, ClassRef.ofDescriptor("LFindGetterTest;"), "strField", ClassRef.ofDescriptor("Ljava/lang/String;")));
         check(mhInstanceGetter.invoke(f).toString().equals("instance field"));
     }
 }
