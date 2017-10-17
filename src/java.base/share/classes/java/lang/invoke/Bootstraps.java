@@ -27,7 +27,6 @@ package java.lang.invoke;
 import sun.invoke.util.BytecodeName;
 import sun.invoke.util.Wrapper;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -42,7 +41,7 @@ import static java.lang.invoke.MethodHandles.Lookup;
 /**
  * Bootstrap methods for dynamically-computed constant.
  */
-public final class DynamicConstant {
+public final class Bootstraps {
     // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
     /*non-public*/
     static Object makeConstant(MethodHandle bootstrapMethod,
@@ -396,20 +395,22 @@ public final class DynamicConstant {
      * @param constantType stacked automatically by VM
      * @param kind the selector value, one of VH_instanceField, VH_staticField, VH_arrayHandle
      * @param owner the class in which the field is declared (ignored for array handles)
-     * @param name the name of the field (ignored for array handles)
+     * @param name ignored
+     * @param fieldName the field name (for fields)
      * @return the VarHandle
      * @throws NoSuchFieldException if the field doesn't exist
      * @throws IllegalAccessException if the field is not accessible
      */
-    public static VarHandle varHandleBootstrap(MethodHandles.Lookup lookup,
-                                               String name,
-                                               Class<?> constantType,
-                                               int kind,
-                                               Class<?> owner,
-                                               Class<?> type) throws NoSuchFieldException, IllegalAccessException {
+    public static VarHandle varHandle(MethodHandles.Lookup lookup,
+                                      String name,
+                                      Class<?> constantType,
+                                      int kind,
+                                      Class<?> owner,
+                                      String fieldName,
+                                      Class<?> type) throws NoSuchFieldException, IllegalAccessException {
         switch (kind) {
-            case VH_instanceField: return lookup.findVarHandle(owner, name, type);
-            case VH_staticField: return lookup.findStaticVarHandle(owner, name, type);
+            case VH_instanceField: return lookup.findVarHandle(owner, fieldName, type);
+            case VH_staticField: return lookup.findStaticVarHandle(owner, fieldName, type);
             case VH_arrayHandle: return MethodHandles.arrayElementVarHandle(type);
             default: throw new IllegalArgumentException(String.format("Invalid VarHandle kind: %d", kind));
         }

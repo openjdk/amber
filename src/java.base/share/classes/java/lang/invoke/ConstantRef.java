@@ -26,9 +26,9 @@ package java.lang.invoke;
 
 import java.lang.annotation.TrackableConstant;
 
-import static java.lang.invoke.DynamicConstant.VH_arrayHandle;
-import static java.lang.invoke.DynamicConstant.VH_instanceField;
-import static java.lang.invoke.DynamicConstant.VH_staticField;
+import static java.lang.invoke.Bootstraps.VH_arrayHandle;
+import static java.lang.invoke.Bootstraps.VH_instanceField;
+import static java.lang.invoke.Bootstraps.VH_staticField;
 
 /**
  * Purely-nominal descriptor for a constant value expressible in a classfile
