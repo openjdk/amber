@@ -1439,7 +1439,14 @@ public class Attr extends JCTree.Visitor {
                 if (c.pat != null) {
                     switch (tree.kind) {
                         case MATCHING:
-                            Type patType = attribTree(c.pat, switchEnv, castInfo(seltype));
+                            ResultInfo castInfo = unknownExprInfo;
+                            if (c.pat.getTag() == VARIABLEPATTERN) {
+                                JCVariablePattern variablePattern = (JCVariablePattern) c.pat;
+                                if (variablePattern.vartype == null)
+                                    castInfo = castInfo(seltype);
+                            }
+                            Type patType = attribTree(c.pat, switchEnv, castInfo);
+                            chk.checkCastable(tree.selector.pos(), seltype, patType);
                             if (c.pat.getTag() == CONSTANTPATTERN && !labels.add(patType.constValue())) {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
                             }
@@ -3567,7 +3574,14 @@ public class Attr extends JCTree.Visitor {
 
     public void visitPatternTest(JCMatches tree) {
         Type exprtype = attribExpr(tree.expr, env); //no target type
-        attribTree(tree.pattern, env, castInfo(exprtype));
+        ResultInfo castInfo = unknownExprInfo;
+        if (tree.pattern.getTag() == VARIABLEPATTERN) {
+            JCVariablePattern variablePattern = (JCVariablePattern) tree.pattern;
+            if (variablePattern.vartype == null)
+                castInfo = castInfo(exprtype);
+        }
+        attribTree(tree.pattern, env, castInfo);
+        chk.checkCastable(tree.expr.pos(), exprtype, tree.pattern.type);
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
     }
 

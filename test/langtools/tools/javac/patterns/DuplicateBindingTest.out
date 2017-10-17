@@ -1,5 +1,5 @@
 DuplicateBindingTest.java:15:35: compiler.err.already.defined: kindname.variable, s, kindname.method, main(java.lang.String[])
 DuplicateBindingTest.java:19:22: compiler.err.already.defined: kindname.variable, k, kindname.method, main(java.lang.String[])
 DuplicateBindingTest.java:21:22: compiler.err.already.defined: kindname.variable, args, kindname.method, main(java.lang.String[])
-DuplicateBindingTest.java:23:22: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.Integer, java.lang.String)
+DuplicateBindingTest.java:18:19: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Integer)
 4 errors
