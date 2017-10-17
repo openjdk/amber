@@ -1700,6 +1700,14 @@ public class JavacParser implements Parser {
                         // Identifier, "matches" -> ! explicit lambda
                         return ParensResult.PARENS;
                     }
+                    if (peekToken(lookahead, MATCHES)) {
+                        Token next = S.token(lookahead + 1);
+                        if (next.kind == COMMA || next.kind == RPAREN) {
+                            // Identifier matches ','|')' -> explicit lambda
+                            return ParensResult.EXPLICIT_LAMBDA;
+                        }
+                        return ParensResult.PARENS;
+                    }
                     if (peekToken(lookahead, LAX_IDENTIFIER)) {
                         // Identifier, Identifier/'_'/'assert'/'enum' -> explicit lambda
                         return ParensResult.EXPLICIT_LAMBDA;
