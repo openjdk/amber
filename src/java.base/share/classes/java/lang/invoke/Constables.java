@@ -34,9 +34,9 @@ import java.util.stream.Stream;
 public class Constables {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.Bootstraps");
 
-    static final MethodHandleRef BSM_GET_SATIC_FINAL_SELF
+    static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_GET_SATIC_FINAL_DECL
+    static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object, ClassRef.CR_Class);
     static final MethodHandleRef BSM_DEFAULT_VALUE
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
@@ -111,7 +111,7 @@ public class Constables {
             if (cr.isPrimitive()) {
                 // Return a dynamic constant whose value is obtained by getting
                 // static final TYPE field on the boxed class
-                return DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_SATIC_FINAL_DECL, cr.promote()),
+                return DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_FINAL_DECL, cr.promote()),
                                              "TYPE", ClassRef.CR_Class);
             }
         }

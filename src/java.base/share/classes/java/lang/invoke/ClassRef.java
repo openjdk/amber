@@ -120,17 +120,6 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a live {@link Class} object
-     *
-     * @param clazz the {@code Class}
-     * @return a {@linkplain ClassRef} describing the desired class
-     */
-    @TrackableConstant
-    public static ClassRef of(Class<?> clazz) {
-        return ClassRef.ofDescriptor(clazz.toDescriptorString());
-    }
-
-    /**
      * Create a {@linkplain ClassRef} from a dot-separated class name
      *
      * @param name the class name
