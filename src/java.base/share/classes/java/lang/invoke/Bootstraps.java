@@ -28,12 +28,15 @@ import sun.invoke.util.Wrapper;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.lang.invoke.MethodHandleNatives.mapLookupExceptionToError;
 import static java.lang.invoke.MethodHandles.Lookup;
 
 /**
- * Bootstrap methods for dynamically-computed constant.
+ * Bootstrap methods for dynamically computed constants.
  */
 public final class Bootstraps {
     // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
@@ -53,51 +56,52 @@ public final class Bootstraps {
     }
 
     /**
-     * X
-     * @param lookup X
-     * @param name X
-     * @param type X
-     * @param <T> X
-     * @return X
+     * Returns the default value for a variable of the type specified in the
+     * {@code type} argument, as per JLS 4.12.5 ({@code null} for reference types,
+     * zero for primitive numeric types, {@code false} for boolean.)
+     *
+     * @param lookup unused
+     * @param name unused
+     * @param type the type for which we are seeking the default value
+     * @param <T> the type for which we are seeking the default value (or the
+     *           corresponding box type, if the type is a primitive type)
+     * @return the default value
      */
     public static <T> T defaultValue(Lookup lookup, String name, Class<T> type) {
-        if (type.isPrimitive()) {
-            return Wrapper.forPrimitiveType(type).zero(type);
-        }
-        else {
-            return null;
-        }
+        return (type.isPrimitive())
+               ? Wrapper.forPrimitiveType(type).zero(type)
+               : null;
     }
 
     /**
-     * X
+     * Returns the {@link Class} mirror for a primitive type from its type
+     * descriptor.
      *
-     * @param lookup X
-     * @param name X
-     * @param type X
-     * @param <T> X
-     * @return X
+     * @param lookup unused
+     * @param name the descriptor (JVMS 4.3) of the desired primitive type
+     * @param type the required result type (must be {@code Class.class})
+     * @return the {@link Class} mirror
+     * @throws IllegalArgumentException if no such value exists
      */
-    public static <T> T getStaticFinal(Lookup lookup, String name, Class<T> type) {
-        return getStaticFinal(lookup, name, type, promote(type));
-    }
-
-    static Class<?> promote(Class<?> type) {
-        if (type.isPrimitive()) {
-            type = Wrapper.forPrimitiveType(type).wrapperType();
-        }
-        return type;
+    public static Class<?> primitiveClass(Lookup lookup, String name, Class<Class<?>> type) {
+        return Wrapper.forPrimitiveType(name.charAt(0)).primitiveType();
     }
 
     /**
-     * X
+     * Returns the value of a static final field.
      *
-     * @param lookup X
-     * @param name X
-     * @param type X
-     * @param declaringClass X
-     * @param <T> X
-     * @return X
+     * @param lookup the lookup context describing the class performing the
+     *               operation (normally stacked by the JVM)
+     * @param name the name of the field
+     * @param type the type of the field
+     * @param declaringClass the class in which the field is declared
+     * @param <T> the type if the field (or the corresponding box type,
+     *           if the type is a primitive type)
+     * @return the value of the field
+     * @throws IllegalAccessError if the declaring class or the field is not
+     * accessible to the class performing the operation
+     * @throws IncompatibleClassChangeError if the specified field is not {@code final}
+     * @throws NoSuchFieldError if the specified field does not exist
      */
     public static <T> T getStaticFinal(Lookup lookup, String name, Class<T> type,
                                        Class<?> declaringClass) {
@@ -128,25 +132,62 @@ public final class Bootstraps {
     }
 
     /**
-     * X
+     * Returns the value of a static final field whose declaring class is the
+     * same as the field's type.  This is a simplified form of {@link Bootstraps#getStaticFinal(Lookup, String, Class, Class)}
+     * for the case where a class declares distinguished constant instances of
+     * itself.
      *
-     * @param lookup X
-     * @param name X
-     * @param type X
-     * @param mh X
-     * @param args X
-     * @param <T> X
-     * @return X
+     * @param lookup the lookup context describing the class performing the
+     *               operation (normally stacked by the JVM)
+     * @param name the name of the field
+     * @param type the type of the field
+     * @param <T> the type if the field (or the corresponding box type,
+     *           if the type is a primitive type)
+     * @return the value of the field
+     * @throws IllegalAccessError if the declaring class or the field is not
+     * accessible to the class performing the operation
+     * @throws IncompatibleClassChangeError if the specified field is not {@code final}
+     * @throws NoSuchFieldError if the specified field does not exist
+     * @see Bootstraps#getStaticFinal(Lookup, String, Class, Class)
+     */
+    public static <T> T getStaticFinal(Lookup lookup, String name, Class<T> type) {
+        return getStaticFinal(lookup, name, type, promote(type));
+    }
+
+    static Class<?> promote(Class<?> type) {
+        if (type.isPrimitive()) {
+            type = Wrapper.forPrimitiveType(type).wrapperType();
+        }
+        return type;
+    }
+
+
+    /**
+     * Returns the value of invoking a method handle with the provided arguments.
+     *
+     * @param lookup the lookup context describing the class performing the
+     *               operation (normally stacked by the JVM)
+     * @param name unused
+     * @param type the type of the value to be returned, which must be compatible
+     *             with the return type of the method handle
+     * @param handle the method handle to be invoked
+     * @param args the arguments to pass to the method handle, as if with
+     * {@code invokeWithArguments}
+     * @param <T> the type of the value to be returned (or the corresponding box
+     *           type, if the type is a primitive type)
+     * @return the result of invoking the method handle
+     * @throws IllegalArgumentException if {@code type} is not assignable from
+     * the return type of {@code handle}
      */
     public static <T> T invoke(Lookup lookup, String name, Class<T> type,
-                               MethodHandle mh, Object... args) {
-        if (!type.isAssignableFrom(mh.type().returnType())) {
+                               MethodHandle handle, Object... args) {
+        if (!type.isAssignableFrom(handle.type().returnType())) {
             throw new IllegalArgumentException();
         }
 
         try {
             @SuppressWarnings("unchecked")
-            T t = (T) mh.invokeWithArguments(args);
+            T t = (T) handle.invokeWithArguments(args);
             return t;
         }
         catch (Error | RuntimeException e) {
@@ -164,12 +205,21 @@ public final class Bootstraps {
     // (byte[], int)PT, ByteOrder
 
     /**
-     * X
+     * Find a {@link VarHandle} for an instance field, static field, or an
+     * array type.
      *
-     * @param lookup X
-     * @param name X
-     * @param type X
-     * @param getter X
+     * @param lookup the lookup context describing the class performing the
+     *               operation (normally stacked by the JVM)
+     * @param name the name of the field for a field {@link VarHandle}; ignored
+     *             for an array {@link VarHandle}
+     * @param type unused; must be {@code Class<VarHandle>}
+     * @param getter The type of the desired field or array, encoded as a
+     *               {@code MethodType} for a getter.  In all cases, the return
+     *               type is the type of the varaible to be accessed.  For a
+     *               static field, the getter has no arguments; for an instance
+     *               field, it has one argument which is the type of the
+     *               declaring class; for an array, it has two arguments, the
+     *               the array type and an {@code int} index
      * @param args X
      * @return X
      */
@@ -223,5 +273,39 @@ public final class Bootstraps {
                 // Fall through
         }
         throw new IllegalArgumentException();
+    }
+
+    /**
+     * Return an unmodifiable list containing the specified elements.
+     *
+     * @param lookup unused
+     * @param name unused
+     * @param type unused, must be {@code Class<List<?>>}
+     * @param elements the elements of the list
+     * @return the list
+     */
+    public static List<?> list(Lookup lookup, String name, Class<List<?>> type, Object... elements) {
+        return List.of(elements);
+    }
+
+    /**
+     * Return an unmodifiable map containing the specified mappings.
+     *
+     * @param lookup unused
+     * @param name unused
+     * @param type unused, must be {@code Class<Map<?, ?>>}
+     * @param elements the keys and values of the map, alternating
+     * @return the map
+     * @throws IllegalArgumentException if an odd number of elements is provided
+     */
+    public static Map<?, ?> map(Lookup lookup, String name, Class<Map<?, ?>> type, Object... elements) {
+        if (elements.length % 2 != 0) {
+            throw new IllegalArgumentException("Odd number of keys and values");
+        } else {
+            Map.Entry<?,?>[] entries = new Map.Entry<?, ?>[elements.length / 2];
+            for (int i=0; i<elements.length / 2; i++)
+                entries[i] = new AbstractMap.SimpleImmutableEntry<>(elements[2*i], elements[2*i+1]);
+            return Map.ofEntries(entries);
+        }
     }
 }
