@@ -79,7 +79,7 @@ public interface ConstantRef<T> {
      */
     static ConstantRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
         return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(type, owner)),
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_INSTANCE_FIELD, owner, type),
                 name);
     }
 
@@ -92,7 +92,7 @@ public interface ConstantRef<T> {
      */
     static ConstantRef<VarHandle> staticFieldVarHandle(ClassRef owner, String name, ClassRef type) {
         return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(type), owner),
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_STATIC_FIELD, owner, type),
                 name);
     }
 
@@ -103,7 +103,7 @@ public interface ConstantRef<T> {
      */
     static ConstantRef<VarHandle> arrayVarHandle(ClassRef arrayClass) {
         return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE, MethodTypeRef.of(arrayClass.componentType(), arrayClass)));
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_ARRAY, arrayClass));
     }
 
     /**

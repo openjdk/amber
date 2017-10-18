@@ -26,8 +26,6 @@ package java.lang.invoke;
 
 import sun.invoke.util.Wrapper;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
@@ -81,9 +79,13 @@ public final class Bootstraps {
      * @param name the descriptor (JVMS 4.3) of the desired primitive type
      * @param type the required result type (must be {@code Class.class})
      * @return the {@link Class} mirror
-     * @throws IllegalArgumentException if no such value exists
+     * @throws IllegalArgumentException if the name is not a descriptor for a
+     *         primitive type
      */
-    public static Class<?> primitiveClass(Lookup lookup, String name, Class<Class<?>> type) {
+    @SuppressWarnings("rawtypes")
+    public static Class<?> primitiveClass(Lookup lookup, String name, Class<Class> type) {
+        if (name == null || name.length() == 0 || name.length() > 1)
+            throw new IllegalArgumentException("not primitive: " + name);
         return Wrapper.forPrimitiveType(name.charAt(0)).primitiveType();
     }
 
@@ -176,15 +178,17 @@ public final class Bootstraps {
      * @param <T> the type of the value to be returned (or the corresponding box
      *           type, if the type is a primitive type)
      * @return the result of invoking the method handle
-     * @throws IllegalArgumentException if {@code type} is not assignable from
-     * the return type of {@code handle}
+     * @throws WrongMethodTypeException if the type is incompatible with the
+     *         handle's return type
+     * @throws Throwable TODO
      */
     public static <T> T invoke(Lookup lookup, String name, Class<T> type,
                                MethodHandle handle, Object... args) {
-        if (!type.isAssignableFrom(handle.type().returnType())) {
-            throw new IllegalArgumentException();
+        if (type != handle.type().returnType()) {
+            // Convert if the method handle return type and the constanr type
+            // differ
+            handle.asType(handle.type().changeReturnType(type));
         }
-
         try {
             @SuppressWarnings("unchecked")
             T t = (T) handle.invokeWithArguments(args);
@@ -198,81 +202,67 @@ public final class Bootstraps {
         }
     }
 
-    // ()T
-    // (O)T
-    // (A[])A
-    // (ByteBuffer, int)PT, ByteOrder
-    // (byte[], int)PT, ByteOrder
-
     /**
-     * Find a {@link VarHandle} for an instance field, static field, or an
-     * array type.
+     * Finds a {@link VarHandle} for an instance field.
      *
      * @param lookup the lookup context describing the class performing the
      *               operation (normally stacked by the JVM)
-     * @param name the name of the field for a field {@link VarHandle}; ignored
-     *             for an array {@link VarHandle}
+     * @param name the name of the field
      * @param type unused; must be {@code Class<VarHandle>}
-     * @param getter The type of the desired field or array, encoded as a
-     *               {@code MethodType} for a getter.  In all cases, the return
-     *               type is the type of the varaible to be accessed.  For a
-     *               static field, the getter has no arguments; for an instance
-     *               field, it has one argument which is the type of the
-     *               declaring class; for an array, it has two arguments, the
-     *               the array type and an {@code int} index
-     * @param args X
-     * @return X
+     * @param decl the type declaring the field
+     * @param fieldType the field type
+     * @return the {@code VarHandle}
+     * @throws LinkageError if the {@code VarHandle} cannot be found
+     * @throws NullPointerException if any unused argument is {@code null}
      */
-    public static VarHandle varHandle(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
-                                      MethodType getter, Object... args) {
-        int pc = getter.parameterCount();
-        switch (pc) {
-            // Static field
-            case 0: {
-                Class<?> variableType = getter.returnType();
-                Class<?> declaringClass = (Class<?>) args[0];
-                try {
-                    return lookup.findStaticVarHandle(declaringClass, name, variableType);
-                }
-                catch (ReflectiveOperationException e) {
-                    throw mapLookupExceptionToError(e);
-                }
-            }
-            // Instance field
-            case 1: {
-                Class<?> variableType = getter.returnType();
-                Class<?> coordType = getter.parameterType(0);
-
-                if (!coordType.isArray()) {
-                    try {
-                        return lookup.findVarHandle(coordType, name, variableType);
-                    }
-                    catch (ReflectiveOperationException e) {
-                        throw mapLookupExceptionToError(e);
-                    }
-                }
-                else if (coordType.getComponentType() == variableType) {
-                    return MethodHandles.arrayElementVarHandle(coordType);
-                }
-                break;
-            }
-            case 2: {
-                if (getter.returnType().isPrimitive() && getter.parameterType(1) == int.class) {
-                    Class<?> viewArrayClass = (Class<?>) args[0];
-                    ByteOrder byteOrder = (ByteOrder) args[1];
-                    if (getter.parameterType(0) == byte[].class) {
-                        return MethodHandles.byteArrayViewVarHandle(viewArrayClass, byteOrder);
-                    }
-                    else if (getter.parameterType(0) == ByteBuffer.class) {
-                        return MethodHandles.byteBufferViewVarHandle(viewArrayClass, byteOrder);
-                    }
-                }
-                break;
-            }
-            default:
-                // Fall through
+    public static VarHandle varHandleInstanceField(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
+                                                   Class<?> decl, Class<?> fieldType) {
+        try {
+            return lookup.findVarHandle(decl, name, fieldType);
         }
-        throw new IllegalArgumentException();
+        catch (ReflectiveOperationException e) {
+            throw mapLookupExceptionToError(e);
+        }
+    }
+
+    /**
+     * Finds a {@link VarHandle} for a static field.
+     *
+     * @param lookup the lookup context describing the class performing the
+     *               operation (normally stacked by the JVM)
+     * @param name the name of the field
+     * @param type unused; must be {@code Class<VarHandle>}
+     * @param decl the type declaring the field
+     * @param fieldType the field type
+     * @return the handle
+     * @throws LinkageError if the {@code VarHandle} cannot be found
+     * @throws NullPointerException if any unused argument is {@code null}
+     */
+    public static VarHandle varHandleStaticField(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
+                                                 Class<?> decl, Class<?> fieldType) {
+        try {
+            return lookup.findStaticVarHandle(decl, name, fieldType);
+        }
+        catch (ReflectiveOperationException e) {
+            throw mapLookupExceptionToError(e);
+        }
+    }
+
+    /**
+     * Finds a {@link VarHandle} for an array type.
+     *
+     * @param lookup unused; the lookup context describing the class performing
+     *               the operation (normally stacked by the JVM)
+     * @param name unused
+     * @param type unused; must be {@code Class<VarHandle>}
+     * @param arrayClass the array type
+     * @return the handle
+     * @throws IllegalArgumentException if arrayClass is not an array type
+     * @throws NullPointerException if any unused argument is {@code null}
+     */
+    public static VarHandle varHandleArray(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
+                                           Class<?> arrayClass) {
+        return MethodHandles.arrayElementVarHandle(arrayClass);
     }
 
     /**

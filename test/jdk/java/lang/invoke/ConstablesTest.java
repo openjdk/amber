@@ -285,7 +285,6 @@ public class ConstablesTest {
         ClassRef thisClass = ClassRef.of("ConstablesTest");
         ClassRef testClass = thisClass.inner("TestClass");
         ClassRef testInterface = thisClass.inner("TestInterface");
-
         // ctor
         MethodHandleRef ctorRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, testClass, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
         MethodHandleRef staticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "sm", "(I)I");

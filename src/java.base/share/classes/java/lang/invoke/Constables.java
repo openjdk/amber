@@ -34,14 +34,16 @@ import java.util.stream.Stream;
 public class Constables {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.Bootstraps");
 
-    static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_PRIMITIVE_CLASS
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
     static final MethodHandleRef BSM_DEFAULT_VALUE
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_VARHANDLE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandle", ClassRef.CR_VarHandle, ClassRef.CR_MethodType, ClassRef.CR_Object.array());
+    static final MethodHandleRef BSM_VARHANDLE_INSTANCE_FIELD
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleInstanceField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleStaticField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_VARHANDLE_ARRAY
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleArray", ClassRef.CR_VarHandle, ClassRef.CR_Class);
 
     static final ConstantRef<?> NULL = ConstantRef.ofNull();
 
@@ -109,10 +111,7 @@ public class Constables {
         if (ref instanceof ClassRef) {
             ClassRef cr = (ClassRef) ref;
             if (cr.isPrimitive()) {
-                // Return a dynamic constant whose value is obtained by getting
-                // static final TYPE field on the boxed class
-                return DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_FINAL_DECL, cr.promote()),
-                                             "TYPE", ClassRef.CR_Class);
+                return DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), cr.descriptorString());
             }
         }
         return ref;

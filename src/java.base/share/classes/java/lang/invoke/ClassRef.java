@@ -24,12 +24,12 @@
  */
 package java.lang.invoke;
 
+import sun.invoke.util.Wrapper;
+
 import java.lang.annotation.TrackableConstant;
 import java.lang.reflect.Array;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import sun.invoke.util.Wrapper;
 
 import static java.util.stream.Collectors.joining;
 
@@ -193,8 +193,7 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
                : ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + firstInnerName
                                        + Stream.of(moreInnerNames).collect(joining("$", "$", "")) + ";");
     }
-
-
+        
     /**
      * Returns whether this {@linkplain ClassRef}
      * describes an array type
@@ -227,33 +226,6 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
         if (!isArray())
             throw new IllegalStateException();
         return ofDescriptor(descriptor.substring(1));
-    }
-
-    /**
-     * If this ref is a primitive class then return the boxed class, otherwise
-     * return this.
-     * @return the promoted class
-     */
-    @TrackableConstant
-    ClassRef promote() {
-        if (isPrimitive()) {
-            switch (descriptor) {
-                case "I": return CR_Integer;
-                case "J": return CR_Long;
-                case "F": return CR_Float;
-                case "D": return CR_Double;
-                case "S": return CR_Short;
-                case "B": return CR_Byte;
-                case "C": return CR_Character;
-                case "Z": return CR_Boolean;
-                case "V": return CR_Void;
-                default:
-                    throw new InternalError("Unreachable");
-            }
-        }
-        else {
-            return this;
-        }
     }
 
     @Override

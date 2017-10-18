@@ -24,12 +24,15 @@
  */
 
 import java.lang.invoke.BootstrapSpecifier;
+import java.lang.invoke.Bootstraps;
 import java.lang.invoke.ClassRef;
 import java.lang.invoke.DynamicConstantRef;
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandleRef;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodTypeRef;
 import java.lang.invoke.VarHandle;
+import java.util.List;
 
 import org.testng.annotations.Test;
 
@@ -37,7 +40,6 @@ import static java.lang.invoke.Intrinsics.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 /**
  * @test
@@ -50,31 +52,79 @@ import static org.testng.Assert.fail;
 public class CondyBootstrapsTest {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.Bootstraps");
 
+    static final MethodHandleRef BSM_PRIMITIVE_CLASS
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
+    static final MethodHandleRef BSM_DEFAULT_VALUE
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
     static final MethodHandleRef BSM_GET_SATIC_FINAL_SELF
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object);
     static final MethodHandleRef BSM_GET_SATIC_FINAL_DECL
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object, ClassRef.CR_Class);
-    static final MethodHandleRef BSM_DEFAULT_VALUE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_VARHANDLE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandle", ClassRef.CR_VarHandle, ClassRef.CR_MethodType, ClassRef.CR_Object.array());
+    static final MethodHandleRef BSM_INVOKE
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "invoke", ClassRef.CR_Object, ClassRef.CR_MethodHandle, ClassRef.CR_Object.array());
+    static final MethodHandleRef BSM_VARHANDLE_INSTANCE_FIELD
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleInstanceField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleStaticField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_VARHANDLE_ARRAY
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleArray", ClassRef.CR_VarHandle, ClassRef.CR_Class);
 
     public void testDefaultValueBootstrap() {
         Object supposedlyNull = Intrinsics.ldc(DynamicConstantRef.of(BSM_DEFAULT_VALUE, ClassRef.CR_Object));
         assertNull(supposedlyNull);
 
         DynamicConstantRef<Integer> defaultInt = DynamicConstantRef.of(BSM_DEFAULT_VALUE, ClassRef.CR_int);
-        DynamicConstantRef<Boolean> defaultBoolean = DynamicConstantRef.of(BSM_DEFAULT_VALUE, ClassRef.CR_boolean);
-
-        int supposedlyZero = Intrinsics.ldc(defaultInt);
-        int supposedlyZeroToo = (int) ldc(defaultInt);
-        boolean supposedlyFalse = Intrinsics.ldc(defaultBoolean);
-        boolean supposedlyFalseToo = (boolean) ldc(defaultBoolean);
-
+        int supposedlyZero = ldc(defaultInt);
+        int supposedlyZeroToo = ldc(defaultInt);
         assertEquals(supposedlyZero, 0);
         assertEquals(supposedlyZeroToo, 0);
+
+        DynamicConstantRef<Boolean> defaultBoolean = DynamicConstantRef.of(BSM_DEFAULT_VALUE, ClassRef.CR_boolean);
+        boolean supposedlyFalse = ldc(defaultBoolean);
+        boolean supposedlyFalseToo = ldc(defaultBoolean);
         assertTrue(!supposedlyFalse);
         assertTrue(!supposedlyFalseToo);
+    }
+
+    public void testPrimitiveClass() {
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_int.descriptorString())),
+                     int.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_long.descriptorString())),
+                     long.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_short.descriptorString())),
+                     short.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_byte.descriptorString())),
+                     byte.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_char.descriptorString())),
+                     char.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_float.descriptorString())),
+                     float.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_double.descriptorString())),
+                     double.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_boolean.descriptorString())),
+                     boolean.class);
+        assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_void.descriptorString())),
+                     void.class);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testPrimitiveClassNullName() {
+        Bootstraps.primitiveClass(MethodHandles.lookup(), null, Class.class);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testPrimitiveClassEmptyName() {
+        Bootstraps.primitiveClass(MethodHandles.lookup(), "", Class.class);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testPrimitiveClassWrongNameChar() {
+        Bootstraps.primitiveClass(MethodHandles.lookup(), "L", Class.class);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testPrimitiveClassWrongNameString() {
+        Bootstraps.primitiveClass(MethodHandles.lookup(), "Ljava/lang/Object;", Class.class);
     }
 
     public void testStaticFinalDecl() {
@@ -92,20 +142,55 @@ public class CondyBootstrapsTest {
         assertEquals(v, Integer.MAX_VALUE);
     }
 
-    public void testVarHandleBootstrap() {
-        ClassRef helperClass = ClassRef.of("CondyTestHelper");
-        ClassRef stringClass = ClassRef.CR_String;
-        VarHandle fh = Intrinsics.ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_VARHANDLE, MethodTypeRef.of(stringClass, helperClass)), "f"));
-        VarHandle sfh = Intrinsics.ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_VARHANDLE, MethodTypeRef.of(stringClass), helperClass), "sf"));
+    public void testInvoke() {
+        DynamicConstantRef<List<Integer>> list = DynamicConstantRef.of(
+                BootstrapSpecifier.of(BSM_INVOKE,
+                                      MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.CR_List, "of", ClassRef.CR_List, ClassRef.CR_Object.array()),
+                                      1, 2, 3, 4),
+                ClassRef.CR_List);
 
-        assertEquals(null, sfh.get());
-        sfh.set("42");
-        assertEquals(sfh.get(), "42");
+        List<Integer> l = ldc(list);
+        assertEquals(l, List.of(1, 2, 3, 4));
+    }
+
+    public void testInvokeAsType() {
+        DynamicConstantRef<Integer> valueOf = DynamicConstantRef.of(
+                BootstrapSpecifier.of(BSM_INVOKE,
+                                      MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.CR_Integer, "valueOf", ClassRef.CR_Integer, ClassRef.CR_String),
+                                      "42"),
+                ClassRef.CR_int);
+
+        int v = ldc(valueOf);
+        assertEquals(v, 42);
+    }
+
+    public void testVarHandleInstanceField() {
+        VarHandle fh = Intrinsics.ldc(DynamicConstantRef.of(
+                BootstrapSpecifier.of(BSM_VARHANDLE_INSTANCE_FIELD, ClassRef.of("CondyTestHelper"), ClassRef.CR_String), "f"));
 
         CondyTestHelper instance = new CondyTestHelper();
         assertEquals(null, fh.get(instance));
         fh.set(instance, "42");
         assertEquals(fh.get(instance), "42");
+    }
+
+    public void testVarHandleStaticField() {
+        VarHandle sfh = Intrinsics.ldc(DynamicConstantRef.of(
+                BootstrapSpecifier.of(BSM_VARHANDLE_STATIC_FIELD, ClassRef.of("CondyTestHelper"), ClassRef.CR_String), "sf"));
+
+        assertEquals(null, sfh.get());
+        sfh.set("42");
+        assertEquals(sfh.get(), "42");
+    }
+
+    public void testVarHandleArray() {
+        VarHandle ah = Intrinsics.ldc(DynamicConstantRef.of(
+                BootstrapSpecifier.of(BSM_VARHANDLE_ARRAY, ClassRef.CR_String.array())));
+
+        String[] sa = { "A" };
+        assertEquals("A", ah.get(sa, 0));
+        ah.set(sa, 0, "B");
+        assertEquals(ah.get(sa, 0), "B");
     }
 }
 
