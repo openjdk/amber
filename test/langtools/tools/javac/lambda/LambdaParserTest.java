@@ -280,10 +280,10 @@ public class LambdaParserTest extends ComboInstance<LambdaParserTest> {
 
     @Override
     public void doWork() throws IOException {
-        check(newCompilationTask()
+        newCompilationTask()
                 .withOptions(Arrays.asList("-source", sk.sourceNumber))
                 .withSourceFromTemplate(template)
-                .parse());
+                .parse(this::check);
     }
 
     void check(Result<?> res) {
