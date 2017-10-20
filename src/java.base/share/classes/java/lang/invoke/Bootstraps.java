@@ -63,6 +63,7 @@ public final class Bootstraps {
      * @param type the type for which we are seeking the default value
      * @param <T> the type for which we are seeking the default value (or the
      *           corresponding box type, if the type is a primitive type)
+     * @throws NullPointerException if any used argument is {@code null}
      * @return the default value
      */
     public static <T> T defaultValue(Lookup lookup, String name, Class<T> type) {
@@ -98,12 +99,14 @@ public final class Bootstraps {
      * @param type the type of the field
      * @param declaringClass the class in which the field is declared
      * @param <T> the type if the field (or the corresponding box type,
-     *           if the type is a primitive type)
+     *            if the type is a primitive type)
      * @return the value of the field
      * @throws IllegalAccessError if the declaring class or the field is not
-     * accessible to the class performing the operation
-     * @throws IncompatibleClassChangeError if the specified field is not {@code final}
+     *         accessible to the class performing the operation
      * @throws NoSuchFieldError if the specified field does not exist
+     * @throws IncompatibleClassChangeError if the specified field is not
+     *         {@code final}
+     * @throws NullPointerException if any argument is {@code null}
      */
     public static <T> T getStaticFinal(Lookup lookup, String name, Class<T> type,
                                        Class<?> declaringClass) {
@@ -135,7 +138,8 @@ public final class Bootstraps {
 
     /**
      * Returns the value of a static final field whose declaring class is the
-     * same as the field's type.  This is a simplified form of {@link Bootstraps#getStaticFinal(Lookup, String, Class, Class)}
+     * same as the field's type.  This is a simplified form of
+     * {@link Bootstraps#getStaticFinal(Lookup, String, Class, Class)}
      * for the case where a class declares distinguished constant instances of
      * itself.
      *
@@ -144,12 +148,14 @@ public final class Bootstraps {
      * @param name the name of the field
      * @param type the type of the field
      * @param <T> the type if the field (or the corresponding box type,
-     *           if the type is a primitive type)
+     *            if the type is a primitive type)
      * @return the value of the field
      * @throws IllegalAccessError if the declaring class or the field is not
-     * accessible to the class performing the operation
-     * @throws IncompatibleClassChangeError if the specified field is not {@code final}
+     *         accessible to the class performing the operation
      * @throws NoSuchFieldError if the specified field does not exist
+     * @throws IncompatibleClassChangeError if the specified field is not
+     *         {@code final}
+     * @throws NullPointerException if any argument is {@code null}
      * @see Bootstraps#getStaticFinal(Lookup, String, Class, Class)
      */
     public static <T> T getStaticFinal(Lookup lookup, String name, Class<T> type) {
@@ -178,9 +184,15 @@ public final class Bootstraps {
      * @param <T> the type of the value to be returned (or the corresponding box
      *           type, if the type is a primitive type)
      * @return the result of invoking the method handle
-     * @throws WrongMethodTypeException if the type is incompatible with the
-     *         handle's return type
-     * @throws Throwable TODO
+     * @throws WrongMethodTypeException if the handle's return type cannot be
+     *         adjusted to the constant type
+     * @throws ClassCastException if an argument cannot be converted by
+     *         reference casting
+     * @throws Throwable anything thrown by the method handle invocation
+     * @throws NullPointerException if any used argument (of this method) is
+     *         {@code null} (this applies to the {@code args} array parameter
+     *         but not to the element arguments for method handle invocation,
+     *         which may be {@code null})
      */
     public static <T> T invoke(Lookup lookup, String name, Class<T> type,
                                MethodHandle handle, Object... args) {
@@ -209,16 +221,18 @@ public final class Bootstraps {
      *               operation (normally stacked by the JVM)
      * @param name the name of the field
      * @param type unused; must be {@code Class<VarHandle>}
-     * @param decl the type declaring the field
-     * @param fieldType the field type
+     * @param declaringClass the class in which the field is declared
+     * @param fieldType the type of the field
      * @return the {@code VarHandle}
-     * @throws LinkageError if the {@code VarHandle} cannot be found
-     * @throws NullPointerException if any unused argument is {@code null}
+     * @throws IllegalAccessError if the declaring class or the field is not
+     *         accessible to the class performing the operation
+     * @throws NoSuchFieldError if the specified field does not exist
+     * @throws NullPointerException if any used argument is {@code null}
      */
     public static VarHandle varHandleInstanceField(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
-                                                   Class<?> decl, Class<?> fieldType) {
+                                                   Class<?> declaringClass, Class<?> fieldType) {
         try {
-            return lookup.findVarHandle(decl, name, fieldType);
+            return lookup.findVarHandle(declaringClass, name, fieldType);
         }
         catch (ReflectiveOperationException e) {
             throw mapLookupExceptionToError(e);
@@ -232,16 +246,18 @@ public final class Bootstraps {
      *               operation (normally stacked by the JVM)
      * @param name the name of the field
      * @param type unused; must be {@code Class<VarHandle>}
-     * @param decl the type declaring the field
-     * @param fieldType the field type
-     * @return the handle
-     * @throws LinkageError if the {@code VarHandle} cannot be found
-     * @throws NullPointerException if any unused argument is {@code null}
+     * @param declaringClass the class in which the field is declared
+     * @param fieldType the type of the field
+     * @return the {@code VarHandle}
+     * @throws IllegalAccessError if the declaring class or the field is not
+     *         accessible to the class performing the operation
+     * @throws NoSuchFieldError if the specified field does not exist
+     * @throws NullPointerException if any used argument is {@code null}
      */
     public static VarHandle varHandleStaticField(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
-                                                 Class<?> decl, Class<?> fieldType) {
+                                                 Class<?> declaringClass, Class<?> fieldType) {
         try {
-            return lookup.findStaticVarHandle(decl, name, fieldType);
+            return lookup.findStaticVarHandle(declaringClass, name, fieldType);
         }
         catch (ReflectiveOperationException e) {
             throw mapLookupExceptionToError(e);
@@ -255,10 +271,10 @@ public final class Bootstraps {
      *               the operation (normally stacked by the JVM)
      * @param name unused
      * @param type unused; must be {@code Class<VarHandle>}
-     * @param arrayClass the array type
-     * @return the handle
+     * @param arrayClass the type of the array
+     * @return the {@code VarHandle}
      * @throws IllegalArgumentException if arrayClass is not an array type
-     * @throws NullPointerException if any unused argument is {@code null}
+     * @throws NullPointerException if any used argument is {@code null}
      */
     public static VarHandle varHandleArray(MethodHandles.Lookup lookup, String name, Class<VarHandle> type,
                                            Class<?> arrayClass) {
@@ -273,6 +289,8 @@ public final class Bootstraps {
      * @param type unused, must be {@code Class<List<?>>}
      * @param elements the elements of the list
      * @return the list
+     * @throws NullPointerException if an element is {@code null} or if the
+     *         {@code elements} array is {@code null}
      */
     public static List<?> list(Lookup lookup, String name, Class<List<?>> type, Object... elements) {
         return List.of(elements);
@@ -286,7 +304,10 @@ public final class Bootstraps {
      * @param type unused, must be {@code Class<Map<?, ?>>}
      * @param elements the keys and values of the map, alternating
      * @return the map
-     * @throws IllegalArgumentException if an odd number of elements is provided
+     * @throws IllegalArgumentException if an odd number of elements is provided,
+     *         or there are any duplicate keys
+     * @throws NullPointerException if an element (key or value) is {@code null}
+     *         or if the {@code elements} array is {@code null}
      */
     public static Map<?, ?> map(Lookup lookup, String name, Class<Map<?, ?>> type, Object... elements) {
         if (elements.length % 2 != 0) {
