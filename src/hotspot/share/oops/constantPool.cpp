@@ -600,14 +600,18 @@ int ConstantPool::impl_name_and_type_ref_index_at(int which, bool uncached) {
     // change byte-ordering and go via cache
     i = remap_instruction_operand_from_cache(which);
   } else {
-    if (tag_at(which).is_invoke_dynamic() || tag_at(which).is_dynamic_constant()) {
+    if (tag_at(which).is_invoke_dynamic() ||
+        tag_at(which).is_dynamic_constant() ||
+        tag_at(which).is_dynamic_constant_in_error()) {
       int pool_index = invoke_dynamic_name_and_type_ref_index_at(which);
       assert(tag_at(pool_index).is_name_and_type(), "");
       return pool_index;
     }
   }
   assert(tag_at(i).is_field_or_method(), "Corrupted constant pool");
-  assert(!tag_at(i).is_invoke_dynamic(), "Must be handled above");
+  assert(!tag_at(i).is_invoke_dynamic() &&
+         !tag_at(i).is_dynamic_constant() &&
+         !tag_at(i).is_dynamic_constant_in_error(), "Must be handled above");
   jint ref_index = *int_at_addr(i);
   return extract_high_short_from_int(ref_index);
 }
@@ -760,8 +764,8 @@ void ConstantPool::throw_resolution_error(const constantPoolHandle& this_cp, int
   THROW_MSG(error, message->as_C_string());
 }
 
-// If resolution for Class, MethodHandle or MethodType fails, save the exception
-// in the resolution error table, so that the same exception is thrown again.
+// If resolution for Class, Dynamic constant, MethodHandle or MethodType fails, save the
+// exception in the resolution error table, so that the same exception is thrown again.
 void ConstantPool::save_and_throw_exception(const constantPoolHandle& this_cp, int which,
                                             constantTag tag, TRAPS) {
   Symbol* error = PENDING_EXCEPTION->klass()->name();
@@ -799,7 +803,8 @@ void ConstantPool::save_and_throw_exception(const constantPoolHandle& this_cp, i
 
 BasicType ConstantPool::basic_type_for_constant_at(int which) {
   constantTag tag = tag_at(which);
-  if (tag.is_dynamic_constant()) {
+  if (tag.is_dynamic_constant() ||
+      tag.is_dynamic_constant_in_error()) {
     // have to look at the signature for this one
     Symbol* constant_type = uncached_signature_ref_at(which);
     return FieldType::basic_type(constant_type);
@@ -890,16 +895,23 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
 
   case JVM_CONSTANT_Dynamic:
     {
-      Klass* current_klass = this_cp->pool_holder();
-      Symbol* constant_name       = this_cp->uncached_name_ref_at(index);
-      Symbol* constant_type       = this_cp->uncached_signature_ref_at(index);
+      Klass* current_klass  = this_cp->pool_holder();
+      Symbol* constant_name = this_cp->uncached_name_ref_at(index);
+      Symbol* constant_type = this_cp->uncached_signature_ref_at(index);
 
-      Handle bootstrap_specifier;
+      // The initial step in resolving an unresolved symbolic reference to a
+      // dynamically-computed constant is to resolve the symbolic reference to a
+      // method handle which will be the bootstrap method for the dynamically-computed
+      // constant. If resolution of the java.lang.invoke.MethodHandle for the bootstrap
+      // method fails, then a MethodHandleInError is stored at the corresponding
+      // bootstrap method's CP index for the CONSTANT_MethodHandle_info. No need to
+      // set a DynamicConstantInError here since any subsequent use of this
+      // bootstrap method will encounter the resolution of MethodHandleInError.
       oop bsm_info = this_cp->resolve_bootstrap_specifier_at(index, THREAD);
       Exceptions::wrap_dynamic_exception(CHECK_NULL);
       assert(bsm_info != NULL, "");
       // FIXME: Cache this once per BootstrapMethods entry, not once per CONSTANT_Dynamic.
-      bootstrap_specifier = Handle(THREAD, bsm_info);
+      Handle bootstrap_specifier = Handle(THREAD, bsm_info);
 
       // Resolve the Dynamically-Computed constant to invoke the BSM in order to obtain the resulting oop.
       Handle value = SystemDictionary::link_dynamic_constant(current_klass,
@@ -909,7 +921,12 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
                                                              constant_type,
                                                              THREAD);
       result_oop = value();
-      Exceptions::wrap_dynamic_exception(CHECK_NULL);
+      Exceptions::wrap_dynamic_exception(THREAD);
+      if (HAS_PENDING_EXCEPTION) {
+        // Resolution failure of the dynamically-computed constant, save_and_throw_exception
+        // will check for a LinkageError and store a DynamicConstantInError.
+        save_and_throw_exception(this_cp, index, tag, CHECK_NULL);
+      }
       BasicType type = FieldType::basic_type(constant_type);
       if (!is_reference_type(type)) {
         // Make sure the primitive value is properly boxed.
@@ -924,6 +941,9 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
           fail = "primitive is not properly boxed";
         }
         if (fail != NULL) {
+          // Since this exception is not a LinkageError, throw exception
+          // but do not save a DynamicInError resolution result.
+          // See section 5.4.3 of the VM spec.
           THROW_MSG_NULL(vmSymbols::java_lang_InternalError(), fail);
         }
       }
@@ -939,6 +959,7 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
     result_oop = string_at_impl(this_cp, index, cache_index, CHECK_NULL);
     break;
 
+  case JVM_CONSTANT_DynamicInError:
   case JVM_CONSTANT_MethodHandleInError:
   case JVM_CONSTANT_MethodTypeInError:
     {
@@ -1738,6 +1759,7 @@ void ConstantPool::copy_entry_to(const constantPoolHandle& from_cp, int from_i,
   } break;
 
   case JVM_CONSTANT_Dynamic:
+  case JVM_CONSTANT_DynamicInError:
   {
     int k1 = from_cp->invoke_dynamic_bootstrap_specifier_index(from_i);
     int k2 = from_cp->invoke_dynamic_name_and_type_ref_index_at(from_i);
@@ -2007,6 +2029,7 @@ jint ConstantPool::cpool_entry_size(jint idx) {
       return 5;
 
     case JVM_CONSTANT_Dynamic:
+    case JVM_CONSTANT_DynamicInError:
     case JVM_CONSTANT_InvokeDynamic:
       // u1 tag, u2 bsm, u2 nt
       return 5;
@@ -2192,7 +2215,8 @@ int ConstantPool::copy_cpool_bytes(int cpool_size,
         DBG(printf("JVM_CONSTANT_MethodType: %hd", idx1));
         break;
       }
-      case JVM_CONSTANT_Dynamic: {
+      case JVM_CONSTANT_Dynamic:
+      case JVM_CONSTANT_DynamicInError: {
         *bytes = tag;
         idx1 = extract_low_short_from_int(*int_at_addr(idx));
         idx2 = extract_high_short_from_int(*int_at_addr(idx));
@@ -2408,6 +2432,7 @@ void ConstantPool::print_entry_on(const int index, outputStream* st) {
       st->print("signature_index=%d", method_type_index_at(index));
       break;
     case JVM_CONSTANT_Dynamic :
+    case JVM_CONSTANT_DynamicInError :
       {
         st->print("bootstrap_method_index=%d", invoke_dynamic_bootstrap_method_ref_index_at(index));
         st->print(" type_index=%d", invoke_dynamic_name_and_type_ref_index_at(index));
