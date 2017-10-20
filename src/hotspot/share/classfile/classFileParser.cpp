@@ -203,8 +203,7 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
         break;
       }
       case JVM_CONSTANT_Dynamic : {
-        // TODO major version check
-        if (_major_version < Verifier::INVOKEDYNAMIC_MAJOR_VERSION) {
+        if (_major_version < Verifier::DYNAMICCONSTANT_MAJOR_VERSION) {
           classfile_parse_error(
               "Class file version does not support constant tag %u in class file %s",
               tag, CHECK);

@@ -40,7 +40,8 @@ class Verifier : AllStatic {
     STRICTER_ACCESS_CTRL_CHECK_VERSION  = 49,
     STACKMAP_ATTRIBUTE_MAJOR_VERSION    = 50,
     INVOKEDYNAMIC_MAJOR_VERSION         = 51,
-    NO_RELAX_ACCESS_CTRL_CHECK_VERSION  = 52
+    NO_RELAX_ACCESS_CTRL_CHECK_VERSION  = 52,
+    DYNAMICCONSTANT_MAJOR_VERSION       = 53  // change to 54 when class file version is bumped
   };
   typedef enum { ThrowException, NoException } Mode;
 

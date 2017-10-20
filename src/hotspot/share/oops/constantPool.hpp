@@ -558,12 +558,14 @@ class ConstantPool : public Metadata {
 
   int invoke_dynamic_name_and_type_ref_index_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant() ||
+           tag_at(which).is_dynamic_constant_in_error(), "Corrupted constant pool");
     return extract_high_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_bootstrap_specifier_index(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant() ||
+           tag_at(which).is_dynamic_constant_in_error(), "Corrupted constant pool");
     return extract_low_short_from_int(*int_at_addr(which));
   }
   int invoke_dynamic_operand_base(int which) {
@@ -661,13 +663,15 @@ class ConstantPool : public Metadata {
 
   int invoke_dynamic_bootstrap_method_ref_index_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant() ||
+           tag_at(which).is_dynamic_constant_in_error(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     return operands()->at(op_base + _indy_bsm_offset);
   }
   int invoke_dynamic_argument_count_at(int which) {
     assert(tag_at(which).is_invoke_dynamic() ||
-           tag_at(which).is_dynamic_constant(), "Corrupted constant pool");
+           tag_at(which).is_dynamic_constant() ||
+           tag_at(which).is_dynamic_constant_in_error(), "Corrupted constant pool");
     int op_base = invoke_dynamic_operand_base(which);
     int argc = operands()->at(op_base + _indy_argc_offset);
     DEBUG_ONLY(int end_offset = op_base + _indy_argv_offset + argc;

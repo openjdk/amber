@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,7 +43,8 @@ enum {
   JVM_CONSTANT_UnresolvedClassInError   = 103,  // Error tag due to resolution error
   JVM_CONSTANT_MethodHandleInError      = 104,  // Error tag due to resolution error
   JVM_CONSTANT_MethodTypeInError        = 105,  // Error tag due to resolution error
-  JVM_CONSTANT_InternalMax              = 105   // Last implementation tag
+  JVM_CONSTANT_DynamicInError           = 106,  // Error tag due to resolution error
+  JVM_CONSTANT_InternalMax              = 106   // Last implementation tag
 };
 
 
@@ -78,6 +79,10 @@ class constantTag VALUE_OBJ_CLASS_SPEC {
   }
   bool is_method_type_in_error() const {
     return _tag == JVM_CONSTANT_MethodTypeInError;
+  }
+
+  bool is_dynamic_constant_in_error() const {
+    return _tag == JVM_CONSTANT_DynamicInError;
   }
 
   bool is_klass_index() const       { return _tag == JVM_CONSTANT_ClassIndex; }
