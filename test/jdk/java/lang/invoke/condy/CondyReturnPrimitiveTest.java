@@ -29,6 +29,7 @@
  * @library /lib/testlibrary/bytecode
  * @build jdk.experimental.bytecode.BasicClassBuilder
  * @run testng CondyReturnPrimitiveTest
+ * @run testng/othervm -XX:+UnlockDiagnosticVMOptions -XX:UseBootstrapCallInfo=3 CondyReturnPrimitiveTest
  */
 
 import jdk.experimental.bytecode.BasicClassBuilder;

@@ -28,6 +28,7 @@
  * @library /lib/testlibrary/bytecode
  * @build jdk.experimental.bytecode.BasicClassBuilder
  * @run testng CondyNestedTest
+ * @run testng/othervm -XX:+UnlockDiagnosticVMOptions -XX:UseBootstrapCallInfo=3 CondyNestedTest
  */
 
 import jdk.experimental.bytecode.BasicClassBuilder;
