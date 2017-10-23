@@ -27,7 +27,7 @@
  * @summary Test invalid name in name and type
  * @library /lib/testlibrary/bytecode /java/lang/invoke/common
  * @build jdk.experimental.bytecode.BasicClassBuilder test.java.lang.invoke.lib.InstructionHelper
- * @run testng CondyTypeValidationTest
+ * @run testng/othervm -XX:+UnlockDiagnosticVMOptions -XX:UseBootstrapCallInfo=3 CondyTypeValidationTest
  */
 
 import org.testng.annotations.DataProvider;

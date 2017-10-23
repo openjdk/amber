@@ -28,6 +28,7 @@
  * @library /lib/testlibrary/bytecode /java/lang/invoke/common
  * @build jdk.experimental.bytecode.BasicClassBuilder
  * @run testng CondyRepeatFailedResolution
+ * @run testng/othervm -XX:+UnlockDiagnosticVMOptions -XX:UseBootstrapCallInfo=3 CondyRepeatFailedResolution
  */
 
 import jdk.experimental.bytecode.BasicClassBuilder;
