@@ -30,8 +30,10 @@ import java.lang.invoke.DynamicConstantRef;
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandleRef;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.MethodTypeRef;
 import java.lang.invoke.VarHandle;
+import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
 
 import org.testng.annotations.Test;
@@ -162,6 +164,20 @@ public class CondyBootstrapsTest {
 
         int v = ldc(valueOf);
         assertEquals(v, 42);
+    }
+
+    @Test(expectedExceptions = ClassCastException.class)
+    public void testInvokeAsTypeClassCast() throws Exception {
+        Bootstraps.invoke(MethodHandles.lookup(), "_", String.class,
+                          MethodHandles.lookup().findStatic(Integer.class, "valueOf", MethodType.methodType(Integer.class, String.class)),
+                          "42");
+    }
+
+    @Test(expectedExceptions = WrongMethodTypeException.class)
+    public void testInvokeAsTypeWrongReturnType() throws Exception {
+        Bootstraps.invoke(MethodHandles.lookup(), "_", short.class,
+                          MethodHandles.lookup().findStatic(Integer.class, "parseInt", MethodType.methodType(int.class, String.class)),
+                          "42");
     }
 
     public void testVarHandleInstanceField() {

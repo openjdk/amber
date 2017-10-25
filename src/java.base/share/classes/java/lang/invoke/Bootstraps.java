@@ -197,9 +197,9 @@ public final class Bootstraps {
     public static <T> T invoke(Lookup lookup, String name, Class<T> type,
                                MethodHandle handle, Object... args) {
         if (type != handle.type().returnType()) {
-            // Convert if the method handle return type and the constanr type
+            // Convert if the method handle return type and the constant type
             // differ
-            handle.asType(handle.type().changeReturnType(type));
+            handle = handle.asType(handle.type().changeReturnType(type));
         }
         try {
             @SuppressWarnings("unchecked")
