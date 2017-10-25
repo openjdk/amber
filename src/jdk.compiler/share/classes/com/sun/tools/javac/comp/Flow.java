@@ -625,8 +625,8 @@ public class Flow {
                 boolean hasDefault = false;
                 for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                     JCCase c = l.head;
-                    if (patternDominated(tree.cases, c)) {
-                        log.error(c, Errors.PatternDominated);
+                    if (patternDominated(tree.cases, c, tree.selector.type)) {
+                        log.error(c, c.pat != null ? Errors.PatternDominated : Errors.UnreachableStmt);
                     }
                     alive = true;
                     if (c.pat != null)
@@ -640,8 +640,9 @@ public class Flow {
                 alive |= resolveBreaks(tree, prevPendingExits);
             }
             //where:
-                private boolean patternDominated(List<JCCase> clauses, JCCase aClause) {
+                private boolean patternDominated(List<JCCase> clauses, JCCase aClause, Type selectorType) {
                     // TODO: This needs to evolve as we add more support for other pattern kinds.
+                    boolean assignableCaseFound = false;
                     for (List<JCCase> l = clauses; l.nonEmpty(); l = l.tail) {
                         JCCase c = l.head;
                         if (c == aClause)
@@ -654,9 +655,12 @@ public class Flow {
                                 case VARIABLEPATTERN: {
                                     JCVariablePattern vpatt = (JCVariablePattern)c.pat;
                                     if (vpatt.vartype == null) {
+                                        assignableCaseFound = true;
                                         if (aClause.pat != null)
                                             return true;
                                     } else {
+                                        if (types.isAssignable(selectorType, vpatt.type))
+                                            assignableCaseFound = true;
                                         if (aClause.pat != null) {
                                             switch (aClause.pat.getTag()) {
                                                 case VARIABLEPATTERN:
@@ -689,7 +693,7 @@ public class Flow {
                             }
                         }
                     }
-                    return false;
+                    return aClause.pat != null ? assignableCaseFound : false;
                 }
             private void visitLegacySwitch(JCSwitch tree) {
                 ListBuffer<PendingExit> prevPendingExits = pendingExits;
