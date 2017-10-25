@@ -88,6 +88,8 @@ public final class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>> 
     @TrackableConstant public static final ClassRef CR_Throwable = ClassRef.of("java.lang.Throwable");
     /**  ClassRef representing the class java.lang.Exception */
     @TrackableConstant public static final ClassRef CR_Exception = ClassRef.of("java.lang.Exception");
+    /**  ClassRef representing the class java.lang.Exception */
+    @TrackableConstant public static final ClassRef CR_Enum = ClassRef.of("java.lang.Enum");
 
     /**  ClassRef representing the class java.lang.invoke.VarHandle */
     @TrackableConstant public static final ClassRef CR_VarHandle = ClassRef.of("java.lang.invoke.VarHandle");

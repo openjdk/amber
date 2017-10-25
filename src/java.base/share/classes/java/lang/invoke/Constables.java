@@ -32,14 +32,14 @@ import java.util.stream.Stream;
  * intrinsified via methods in {@link Intrinsics}.
  */
 public class Constables {
-    static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.Bootstraps");
+    static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
+    static final MethodHandleRef BSM_NULL_CONSTANT
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "nullConstant", ClassRef.CR_Object);
     static final MethodHandleRef BSM_PRIMITIVE_CLASS
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
-    static final MethodHandleRef BSM_DEFAULT_VALUE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "defaultValue", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_VARHANDLE_INSTANCE_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleInstanceField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_VARHANDLE_FIELD
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleStaticField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_ARRAY

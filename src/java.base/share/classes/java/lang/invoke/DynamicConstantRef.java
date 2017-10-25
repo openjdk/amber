@@ -190,12 +190,12 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
     public T resolve(MethodHandles.Lookup lookup) {
         try {
             MethodHandle bsmMh = bootstrapSpecifier.method().resolve(lookup);
-            return (T) Bootstraps.makeConstant(bsmMh,
-                                               name,
-                                               type.resolve(lookup),
-                                               Constables.resolveArgs(lookup, bootstrapSpecifier.arguments()),
-                                               // TODO pass lookup
-                                               lookup.lookupClass());
+            return (T) ConstantBootstraps.makeConstant(bsmMh,
+                                                       name,
+                                                       type.resolve(lookup),
+                                                       Constables.resolveArgs(lookup, bootstrapSpecifier.arguments()),
+                                                       // TODO pass lookup
+                                                       lookup.lookupClass());
         }
         catch (RuntimeException|Error e) {
             throw e;

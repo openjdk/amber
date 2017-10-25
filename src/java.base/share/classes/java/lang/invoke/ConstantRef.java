@@ -67,7 +67,7 @@ public interface ConstantRef<T> {
      */
     @TrackableConstant
     static<T> ConstantRef<T> ofNull() {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_DEFAULT_VALUE), ClassRef.CR_Object);
+        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_NULL_CONSTANT), ClassRef.CR_Object);
     }
 
     /**
@@ -79,7 +79,7 @@ public interface ConstantRef<T> {
      */
     static ConstantRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
         return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_INSTANCE_FIELD, owner, type),
+                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_FIELD, owner, type),
                 name);
     }
 
