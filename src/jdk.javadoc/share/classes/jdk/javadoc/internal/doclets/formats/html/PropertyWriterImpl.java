@@ -25,13 +25,12 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
-import java.util.Arrays;
-import java.util.List;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
+import jdk.javadoc.internal.doclets.formats.html.TableHeader;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
@@ -66,8 +65,7 @@ public class PropertyWriterImpl extends AbstractMemberWriter
      * {@inheritDoc}
      */
     @Override
-    public Content getMemberSummaryHeader(TypeElement typeElement,
-            Content memberSummaryTree) {
+    public Content getMemberSummaryHeader(TypeElement typeElement, Content memberSummaryTree) {
         memberSummaryTree.addContent(HtmlConstants.START_OF_PROPERTY_SUMMARY);
         Content memberTree = writer.getMemberTreeHeader();
         writer.addSummaryHeader(this, typeElement, memberTree);
@@ -82,6 +80,7 @@ public class PropertyWriterImpl extends AbstractMemberWriter
     /**
      * {@inheritDoc}
      */
+    @Override
     public void addMemberTree(Content memberSummaryTree, Content memberTree) {
         writer.addMemberTree(memberSummaryTree, memberTree);
     }
@@ -237,10 +236,9 @@ public class PropertyWriterImpl extends AbstractMemberWriter
      * {@inheritDoc}
      */
     @Override
-    public List<String> getSummaryTableHeader(Element member) {
-        List<String> header = Arrays.asList(resources.getText("doclet.Type"),
-                resources.getText("doclet.Property"), resources.getText("doclet.Description"));
-        return header;
+    public TableHeader getSummaryTableHeader(Element member) {
+        return new TableHeader(contents.typeLabel, contents.propertyLabel,
+                contents.descriptionLabel);
     }
 
     /**
@@ -269,10 +267,16 @@ public class PropertyWriterImpl extends AbstractMemberWriter
     public void addInheritedSummaryLabel(TypeElement typeElement, Content inheritedTree) {
         Content classLink = writer.getPreQualifiedClassLink(
                 LinkInfoImpl.Kind.MEMBER, typeElement, false);
-        Content label = new StringContent(
-                utils.isClass(typeElement)
-                       ? configuration.getText("doclet.Properties_Inherited_From_Class")
-                       : configuration.getText("doclet.Properties_Inherited_From_Interface"));
+        Content label;
+        if (configuration.summarizeOverriddenMethods) {
+            label = new StringContent(utils.isClass(typeElement)
+                    ? configuration.getText("doclet.Properties_Declared_In_Class")
+                    : configuration.getText("doclet.Properties_Declared_In_Interface"));
+        } else {
+            label = new StringContent(utils.isClass(typeElement)
+                    ? configuration.getText("doclet.Properties_Inherited_From_Class")
+                    : configuration.getText("doclet.Properties_Inherited_From_Interface"));
+        }
         Content labelHeading = HtmlTree.HEADING(HtmlConstants.INHERITED_SUMMARY_HEADING,
                 label);
         labelHeading.addContent(Contents.SPACE);
