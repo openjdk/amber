@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,13 +25,11 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
-import java.util.Arrays;
-import java.util.List;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
+import jdk.javadoc.internal.doclets.formats.html.TableHeader;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
@@ -212,10 +210,9 @@ public class FieldWriterImpl extends AbstractMemberWriter
      * {@inheritDoc}
      */
     @Override
-    public List<String> getSummaryTableHeader(Element member) {
-        List<String> header = Arrays.asList(writer.getModifierTypeHeader(),
-                resources.getText("doclet.Field"), resources.getText("doclet.Description"));
-        return header;
+    public TableHeader getSummaryTableHeader(Element member) {
+        return new TableHeader(contents.modifierAndTypeLabel, contents.fieldLabel,
+                contents.descriptionLabel);
     }
 
     /**
@@ -243,9 +240,16 @@ public class FieldWriterImpl extends AbstractMemberWriter
     public void addInheritedSummaryLabel(TypeElement typeElement, Content inheritedTree) {
         Content classLink = writer.getPreQualifiedClassLink(
                 LinkInfoImpl.Kind.MEMBER, typeElement, false);
-        Content label = new StringContent(utils.isClass(typeElement)
-                ? configuration.getText("doclet.Fields_Inherited_From_Class")
-                : configuration.getText("doclet.Fields_Inherited_From_Interface"));
+        Content label;
+        if (configuration.summarizeOverriddenMethods) {
+            label = new StringContent(utils.isClass(typeElement)
+                    ? configuration.getText("doclet.Fields_Declared_In_Class")
+                    : configuration.getText("doclet.Fields_Declared_In_Interface"));
+        } else {
+            label = new StringContent(utils.isClass(typeElement)
+                    ? configuration.getText("doclet.Fields_Inherited_From_Class")
+                    : configuration.getText("doclet.Fields_Inherited_From_Interface"));
+        }
         Content labelHeading = HtmlTree.HEADING(HtmlConstants.INHERITED_SUMMARY_HEADING,
                 label);
         labelHeading.addContent(Contents.SPACE);
