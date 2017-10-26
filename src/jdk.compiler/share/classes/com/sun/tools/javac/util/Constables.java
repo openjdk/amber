@@ -32,10 +32,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.util.Map;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.code.Symbol.CompletionFailure;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.ModuleSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
@@ -50,18 +50,23 @@ import com.sun.tools.javac.comp.AttrContext;
 import com.sun.tools.javac.comp.ConstablesVisitor;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.comp.Resolve;
+import com.sun.tools.javac.comp.Resolve.*;
+//import com.sun.tools.javac.comp.Resolve.BasicLookupHelper;
 import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.Pool;
+import com.sun.tools.javac.jvm.Pool.MethodHandle.MethodHandleCheckHelper;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
+import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.TreeInfo;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
+import static com.sun.tools.javac.code.Flags.INTERFACE;
 import static com.sun.tools.javac.code.Flags.STATIC;
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
-import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
 import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 
 /** This class is a support tool to parse a method descriptor and obtain a list of the types
@@ -278,7 +283,19 @@ public class Constables {
             MethodType mType = (MethodType)descriptorToType(
                     methodTypeDesc, currentModule, true);
             Symbol refSymbol = getReferenceSymbol(refKind, ownerType.tsym, name, mType);
-            return new Pool.MethodHandle(refKind, refSymbol, types);
+            boolean ownerFound = true;
+            try {
+                refSymbol.owner.complete();
+            } catch (CompletionFailure ex) {
+                log.warning(tree, Warnings.ClassNotFound(refSymbol.owner));
+                ownerFound = false;
+            }
+            if (ownerFound) {
+                checkIfMemberExists(tree, attrEnv, names.fromString(name), ownerType, mType.argtypes, refKind);
+            }
+            Pool.MethodHandle mHandle = new Pool.MethodHandle(refKind, refSymbol, types,
+                    new Pool.MethodHandle.DumbMethodHandleCheckHelper(refKind, refSymbol));
+            return mHandle;
         } else if (methodTypeRefClass.isInstance(constant)) {
             String descriptor = (String)invokeReflectiveMethod(methodTypeRefClass, constant, "descriptorString");
             return types.erasure(descriptorToType(descriptor, currentModule, true));
@@ -293,6 +310,13 @@ public class Constables {
                 }
             }
             Type type = descriptorToType(descriptor, currentModule, false);
+            if (!type.hasTag(ARRAY)) {
+                try {
+                    type.tsym.complete();
+                } catch (CompletionFailure ex) {
+                    log.warning(tree, Warnings.ClassNotFound(type.tsym));
+                }
+            }
             return type.hasTag(ARRAY) ? type : type.tsym;
         } else if (dynamicConstantClass.isInstance(constant)) {
             Object classRef =
@@ -323,6 +347,32 @@ public class Constables {
                 default:
                     throw new AssertionError("invalid primitive descriptor " + descriptor);
             }
+        }
+
+        private void checkIfMemberExists(DiagnosticPosition pos, Env<AttrContext> attrEnv, Name name, Type qual, List<Type> args, int refKind) {
+            Symbol refSym = resolveConstableMethod(pos, attrEnv, qual, name, args, List.nil());
+            if (refSym.kind.isResolutionError()) {
+                try {
+                    refSym = rs.resolveInternalField(pos, attrEnv, qual, name);
+                } catch (Throwable t) {
+                    log.warning(pos, Warnings.MemberNotFoundAtClass(name, qual.tsym));
+                    return;
+                }
+            }
+            Pool.MethodHandle.WarnMethodHandleCheckHelper mhCheckHelper = new Pool.MethodHandle.WarnMethodHandleCheckHelper(log, pos, refKind, refSym);
+            mhCheckHelper.check();
+        }
+
+        public Symbol resolveConstableMethod(DiagnosticPosition pos, Env<AttrContext> env,
+                                    Type site, Name name,
+                                    List<Type> argtypes,
+                                    List<Type> typeargtypes) {
+            MethodResolutionContext resolveContext = rs.new MethodResolutionContext();
+            resolveContext.internalResolution = true;
+            resolveContext.silentFail = true;
+            Symbol sym = rs.resolveQualifiedMethod(resolveContext, pos, env, site.tsym,
+                    site, name, argtypes, typeargtypes);
+            return sym;
         }
 
     public Object[] convertConstants(JCTree tree, Env<AttrContext> attrEnv, Object[] constants, ModuleSymbol currentModule, boolean bsmArgs) {

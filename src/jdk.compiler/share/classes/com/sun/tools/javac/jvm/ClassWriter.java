@@ -389,7 +389,7 @@ public class ClassWriter extends ClassFile {
             if (value instanceof MethodSymbol) {
                 MethodSymbol m = (MethodSymbol)value;
                 if (!m.isDynamic()) {
-                    poolbuf.appendByte((m.owner.flags() & INTERFACE) != 0
+                    poolbuf.appendByte((m.owner.flags_field & INTERFACE) != 0
                               ? CONSTANT_InterfaceMethodref
                               : CONSTANT_Methodref);
                     poolbuf.appendChar(pool.put(m.owner));
@@ -1068,8 +1068,7 @@ public class ClassWriter extends ClassFile {
         try {
             c.complete();
         } catch (CompletionFailure ex) {
-            System.err.println("error: " + c + ": " + ex.getMessage());
-            throw ex;
+            System.err.println("warning: " + c + ": " + ex.getMessage());
         }
         if (!c.type.hasTag(CLASS)) return; // arrays
         if (pool != null && // pool might be null if called from xClassName

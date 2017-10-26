@@ -1,0 +1,8 @@
+WarningIfMemberIncorrect.java:19:31: compiler.warn.incorrect.staticness.for.symbol: foo()
+WarningIfMemberIncorrect.java:22:31: compiler.warn.incorrect.staticness.for.symbol: bar
+WarningIfMemberIncorrect.java:22:31: compiler.warn.unexpected.kind.for.symbol: bar, MTH, VAR
+WarningIfMemberIncorrect.java:25:41: compiler.warn.incorrect.name.for.method: WarningIfMemberIncorrect(), 5
+WarningIfMemberIncorrect.java:28:31: compiler.warn.non.interface.owner.expected.for.symbol: foo()
+- compiler.err.warnings.and.werror
+1 error
+5 warnings
