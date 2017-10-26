@@ -39,11 +39,11 @@ public class Constables {
     static final MethodHandleRef BSM_PRIMITIVE_CLASS
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "fieldVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleStaticField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "staticFieldVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_ARRAY
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleArray", ClassRef.CR_VarHandle, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "arrayVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class);
 
     static final ConstantRef<?> NULL = ConstantRef.ofNull();
 

@@ -58,18 +58,18 @@ public class ConstantBootstrapsTest {
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
     static final MethodHandleRef BSM_ENUM_CONSTANT
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "enumConstant", ClassRef.CR_Enum);
-    static final MethodHandleRef BSM_GET_SATIC_SELF
+    static final MethodHandleRef BSM_GET_STATIC_SELF
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getstatic", ClassRef.CR_Object);
     static final MethodHandleRef BSM_GET_STATIC_DECL
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getstatic", ClassRef.CR_Object, ClassRef.CR_Class);
     static final MethodHandleRef BSM_INVOKE
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "invoke", ClassRef.CR_Object, ClassRef.CR_MethodHandle, ClassRef.CR_Object.array());
     static final MethodHandleRef BSM_VARHANDLE_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "fieldVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleStaticField", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "staticFieldVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class, ClassRef.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_ARRAY
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "varHandleArray", ClassRef.CR_VarHandle, ClassRef.CR_Class);
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "arrayVarHandle", ClassRef.CR_VarHandle, ClassRef.CR_Class);
 
 
     public void testNullConstant() {
@@ -107,7 +107,7 @@ public class ConstantBootstrapsTest {
                      void.class);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = NullPointerException.class)
     public void testPrimitiveClassNullName() {
         ConstantBootstraps.primitiveClass(MethodHandles.lookup(), null, Class.class);
     }
@@ -150,7 +150,7 @@ public class ConstantBootstrapsTest {
     }
 
     public void testGetStaticSelf() {
-        DynamicConstantRef<Integer> integerMaxValue = DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_SATIC_SELF),
+        DynamicConstantRef<Integer> integerMaxValue = DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_SELF),
                                                                             "MAX_VALUE", ClassRef.CR_int);
         int v = Intrinsics.ldc(integerMaxValue);
         assertEquals(v, Integer.MAX_VALUE);
@@ -180,14 +180,14 @@ public class ConstantBootstrapsTest {
     }
 
     @Test(expectedExceptions = ClassCastException.class)
-    public void testInvokeAsTypeClassCast() throws Exception {
+    public void testInvokeAsTypeClassCast() throws Throwable {
         ConstantBootstraps.invoke(MethodHandles.lookup(), "_", String.class,
                                   MethodHandles.lookup().findStatic(Integer.class, "valueOf", MethodType.methodType(Integer.class, String.class)),
                                   "42");
     }
 
     @Test(expectedExceptions = WrongMethodTypeException.class)
-    public void testInvokeAsTypeWrongReturnType() throws Exception {
+    public void testInvokeAsTypeWrongReturnType() throws Throwable {
         ConstantBootstraps.invoke(MethodHandles.lookup(), "_", short.class,
                                   MethodHandles.lookup().findStatic(Integer.class, "parseInt", MethodType.methodType(int.class, String.class)),
                                   "42");
