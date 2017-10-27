@@ -86,6 +86,8 @@ public final class ConstantBootstraps {
     @SuppressWarnings("rawtypes")
     public static Class<?> primitiveClass(Lookup lookup, String name, Class<Class> type) {
         Objects.requireNonNull(name);
+        if (type != Class.class)
+            throw new IllegalArgumentException();
         if (name.length() == 0 || name.length() > 1)
             throw new IllegalArgumentException(String.format("not primitive: %s", name));
         return Wrapper.forPrimitiveType(name.charAt(0)).primitiveType();
@@ -129,20 +131,16 @@ public final class ConstantBootstraps {
      * @param name the name of the field
      * @param type the type of the field
      * @param declaringClass the class in which the field is declared
-     * @param <T> the type if the field (or the corresponding box type,
-     *            if the type is a primitive type)
      * @return the value of the field
      * @throws IllegalAccessError if the declaring class or the field is not
      *         accessible to the class performing the operation
      * @throws NoSuchFieldError if the specified field does not exist
      * @throws IncompatibleClassChangeError if the specified field is not
      *         {@code final}
-     * @throws Throwable anything thrown by the field getter method handle
      * @throws NullPointerException if any argument is {@code null}
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T getstatic(Lookup lookup, String name, Class<T> type,
-                                  Class<?> declaringClass) throws Throwable {
+    public static Object getstatic(Lookup lookup, String name, Class<?> type,
+                                   Class<?> declaringClass) {
         Objects.requireNonNull(lookup);
         Objects.requireNonNull(name);
         Objects.requireNonNull(type);
@@ -159,7 +157,15 @@ public final class ConstantBootstraps {
             throw mapLookupExceptionToError(ex);
         }
 
-        return (T) (Object) mh.invoke();
+        try {
+            return mh.invoke();
+        }
+        catch (RuntimeException | Error e) {
+            throw e;
+        }
+        catch (Throwable e) {
+            throw new LinkageError("Unexpected throwable", e);
+        }
     }
 
     /**
@@ -174,8 +180,6 @@ public final class ConstantBootstraps {
      *               operation (normally stacked by the JVM)
      * @param name the name of the field
      * @param type the type of the field
-     * @param <T> the type if the field (or the corresponding box type,
-     *            if the type is a primitive type)
      * @return the value of the field
      * @throws IllegalAccessError if the declaring class or the field is not
      *         accessible to the class performing the operation
@@ -183,13 +187,14 @@ public final class ConstantBootstraps {
      * @throws IncompatibleClassChangeError if the specified field is not
      *         {@code final}
      * @throws NullPointerException if any argument is {@code null}
-     * @throws Throwable anything thrown by the field getter method handle
      * @see #getstatic(Lookup, String, Class, Class)
      */
-    public static <T> T getstatic(Lookup lookup, String name, Class<T> type) throws Throwable {
-        return (requireNonNull(type).isPrimitive())
-               ? getstatic(lookup, name, type, Wrapper.forPrimitiveType(type).wrapperType())
-               : getstatic(lookup, name, type, type);
+    public static Object getstatic(Lookup lookup, String name, Class<?> type) {
+        Objects.requireNonNull(type);
+        Class<?> declaring = type.isPrimitive()
+                             ? Wrapper.forPrimitiveType(type).wrapperType()
+                             : type;
+        return getstatic(lookup, name, type, declaring);
     }
 
 
@@ -204,8 +209,6 @@ public final class ConstantBootstraps {
      * @param handle the method handle to be invoked
      * @param args the arguments to pass to the method handle, as if with
      * {@link MethodHandle#invokeWithArguments}
-     * @param <T> the type of the value to be returned (or the corresponding box
-     *           type, if the type is a primitive type)
      * @return the result of invoking the method handle
      * @throws WrongMethodTypeException if the handle's return type cannot be
      *         adjusted to the desired type
@@ -217,9 +220,8 @@ public final class ConstantBootstraps {
      *         but not to the element arguments for method handle invocation,
      *         which may be {@code null})
      */
-    @SuppressWarnings("unchecked")
-    public static <T> T invoke(Lookup lookup, String name, Class<T> type,
-                               MethodHandle handle, Object... args) throws Throwable {
+    public static Object invoke(Lookup lookup, String name, Class<?> type,
+                                MethodHandle handle, Object... args) throws Throwable {
         Objects.requireNonNull(type);
         Objects.requireNonNull(handle);
         Objects.requireNonNull(args);
@@ -227,7 +229,7 @@ public final class ConstantBootstraps {
         if (type != handle.type().returnType())
             handle = handle.asType(handle.type().changeReturnType(type));
 
-        return (T) handle.invokeWithArguments(args);
+        return handle.invokeWithArguments(args);
     }
 
     /**
@@ -251,6 +253,8 @@ public final class ConstantBootstraps {
         Objects.requireNonNull(name);
         Objects.requireNonNull(declaringClass);
         Objects.requireNonNull(fieldType);
+        if (type != VarHandle.class)
+            throw new IllegalArgumentException();
         try {
             return lookup.findVarHandle(declaringClass, name, fieldType);
         }
@@ -280,6 +284,8 @@ public final class ConstantBootstraps {
         Objects.requireNonNull(name);
         Objects.requireNonNull(declaringClass);
         Objects.requireNonNull(fieldType);
+        if (type != VarHandle.class)
+            throw new IllegalArgumentException();
         try {
             return lookup.findStaticVarHandle(declaringClass, name, fieldType);
         }
@@ -306,6 +312,8 @@ public final class ConstantBootstraps {
                                            Class<?> arrayClass) {
         Objects.requireNonNull(lookup);
         Objects.requireNonNull(arrayClass);
+        if (type != VarHandle.class)
+            throw new IllegalArgumentException();
         return MethodHandles.arrayElementVarHandle(validateClassAccess(lookup, arrayClass));
     }
 
