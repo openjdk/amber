@@ -310,12 +310,20 @@ public class Constables {
                 }
             }
             Type type = descriptorToType(descriptor, currentModule, false);
+            Symbol symToLoad;
             if (!type.hasTag(ARRAY)) {
-                try {
-                    type.tsym.complete();
-                } catch (CompletionFailure ex) {
-                    log.warning(tree, Warnings.ClassNotFound(type.tsym));
+                symToLoad = type.tsym;
+            } else {
+                Type elt = type;
+                while (elt.hasTag(ARRAY)) {
+                    elt = ((ArrayType)elt).elemtype;
                 }
+                symToLoad = elt.tsym;
+            }
+            try {
+                symToLoad.complete();
+            } catch (CompletionFailure ex) {
+                log.warning(tree, Warnings.ClassNotFound(symToLoad));
             }
             return type.hasTag(ARRAY) ? type : type.tsym;
         } else if (dynamicConstantClass.isInstance(constant)) {

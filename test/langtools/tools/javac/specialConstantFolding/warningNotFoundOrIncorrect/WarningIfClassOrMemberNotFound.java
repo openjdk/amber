@@ -15,6 +15,9 @@ class WarningIfClassOrMemberNotFound {
         ClassRef cr = ClassRef.ofDescriptor("LNonExistentClass2;");
         Class<?> c = ldc(cr);
 
+        ClassRef crArr = ClassRef.ofDescriptor("[[[LNonExistentClass3;");
+        Class<?> cArr = ldc(crArr);
+
         final MethodTypeRef mt2 = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
         // now the class exists but the method doesn't
         MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LWarningIfClassOrMemberNotFound;"), "bar", mt2));
