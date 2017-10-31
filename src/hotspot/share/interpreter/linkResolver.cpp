@@ -301,14 +301,14 @@ void LinkResolver::check_klass_accessability(Klass* ref_klass, Klass* sel_klass,
   if (vca_result != Reflection::ACCESS_OK) {
     ResourceMark rm(THREAD);
     char* msg = Reflection::verify_class_access_msg(ref_klass,
-                                                    InstanceKlass::cast(sel_klass),
+                                                    InstanceKlass::cast(base_klass),
                                                     vca_result);
     if (msg == NULL) {
       Exceptions::fthrow(
         THREAD_AND_LOCATION,
         vmSymbols::java_lang_IllegalAccessError(),
         "failed to access class %s from class %s",
-        sel_klass->external_name(),
+        base_klass->external_name(),
         ref_klass->external_name());
     } else {
       // Use module specific message returned by verify_class_access_msg().
