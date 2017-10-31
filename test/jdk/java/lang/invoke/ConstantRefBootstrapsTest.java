@@ -49,7 +49,7 @@ import static org.testng.Assert.assertTrue;
  * @summary integration tests for dynamic constant bootstraps and Intrinsics.ldc()
  */
 @Test
-public class ConstantBootstrapsTest {
+public class ConstantRefBootstrapsTest {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     static final MethodHandleRef BSM_NULL_CONSTANT
@@ -80,11 +80,6 @@ public class ConstantBootstrapsTest {
         assertNull(supposedlyNull);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testNullConstantPrimitiveClass() {
-        ConstantBootstraps.nullConstant(MethodHandles.lookup(), null, int.class);
-    }
-
 
     public void testPrimitiveClass() {
         assertEquals(ldc(DynamicConstantRef.of(BootstrapSpecifier.of(BSM_PRIMITIVE_CLASS), ClassRef.CR_int.descriptorString())),
@@ -107,37 +102,12 @@ public class ConstantBootstrapsTest {
                      void.class);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testPrimitiveClassNullName() {
-        ConstantBootstraps.primitiveClass(MethodHandles.lookup(), null, Class.class);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testPrimitiveClassEmptyName() {
-        ConstantBootstraps.primitiveClass(MethodHandles.lookup(), "", Class.class);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testPrimitiveClassWrongNameChar() {
-        ConstantBootstraps.primitiveClass(MethodHandles.lookup(), "L", Class.class);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testPrimitiveClassWrongNameString() {
-        ConstantBootstraps.primitiveClass(MethodHandles.lookup(), "Ljava/lang/Object;", Class.class);
-    }
-
 
     public void testEnumConstant() {
         MethodHandleRef.Kind k = Intrinsics.ldc(DynamicConstantRef.of(
                 BSM_ENUM_CONSTANT, "STATIC",
                 ClassRef.of("java.lang.invoke.MethodHandleRef$Kind")));
         assertEquals(k, MethodHandleRef.Kind.STATIC);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testEnumConstantUnknown() {
-        ConstantBootstraps.enumConstant(MethodHandles.lookup(), "DOES_NOT_EXIST", MethodHandleRef.Kind.class);
     }
 
 
@@ -177,20 +147,6 @@ public class ConstantBootstrapsTest {
 
         int v = ldc(valueOf);
         assertEquals(v, 42);
-    }
-
-    @Test(expectedExceptions = ClassCastException.class)
-    public void testInvokeAsTypeClassCast() throws Throwable {
-        ConstantBootstraps.invoke(MethodHandles.lookup(), "_", String.class,
-                                  MethodHandles.lookup().findStatic(Integer.class, "valueOf", MethodType.methodType(Integer.class, String.class)),
-                                  "42");
-    }
-
-    @Test(expectedExceptions = WrongMethodTypeException.class)
-    public void testInvokeAsTypeWrongReturnType() throws Throwable {
-        ConstantBootstraps.invoke(MethodHandles.lookup(), "_", short.class,
-                                  MethodHandles.lookup().findStatic(Integer.class, "parseInt", MethodType.methodType(int.class, String.class)),
-                                  "42");
     }
 
 
