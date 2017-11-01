@@ -87,6 +87,7 @@ enum {
     JVM_CONSTANT_NameAndType            = 12,
     JVM_CONSTANT_MethodHandle           = 15,  // JSR 292
     JVM_CONSTANT_MethodType             = 16,   // JSR 292
+    JVM_CONSTANT_Dynamic                = 17,
     JVM_CONSTANT_InvokeDynamic          = 18
 };
 
