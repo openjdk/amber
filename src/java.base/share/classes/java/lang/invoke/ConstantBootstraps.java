@@ -73,7 +73,7 @@ public final class ConstantBootstraps {
 
     /**
      * Returns a {@link Class} mirror for the primitive type whose type descriptor
-     * is specified by {@name}.
+     * is specified by {@code name}.
      *
      * @param lookup unused
      * @param name the descriptor (JVMS 4.3) of the desired primitive type
@@ -94,7 +94,7 @@ public final class ConstantBootstraps {
     }
 
     /**
-     * Returns an {@code enum} constant of the type specified by {@type} with
+     * Returns an {@code enum} constant of the type specified by {@code type} with
      * the name specified by {@code name}.
      *
      * @param lookup the lookup context describing the class performing the
