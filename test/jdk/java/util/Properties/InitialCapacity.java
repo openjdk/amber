@@ -21,7 +21,20 @@
  * questions.
  */
 
-package java.lang;
+import java.util.Properties;
+import org.testng.annotations.Test;
 
-class Test {
+/*
+ * @test
+ * @bug 8189319
+ * @summary Test that Properties(int initialCapacity) throws exceptions (or
+            doesn't) as expected
+ * @run testng InitialCapacity
+ */
+public class InitialCapacity {
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void negativeInitCap() { Properties p = new Properties(-1); }
+
+    @Test
+    public void positiveInitCap() { Properties p = new Properties(10); }
 }
