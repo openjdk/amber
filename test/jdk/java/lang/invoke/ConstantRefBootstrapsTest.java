@@ -44,8 +44,8 @@ import static org.testng.Assert.assertTrue;
 
 /**
  * @test
- * @compile -XDdoConstantFold ConstantBootstrapsTest.java
- * @run testng ConstantBootstrapsTest
+ * @compile -XDdoConstantFold ConstantRefBootstrapsTest.java
+ * @run testng ConstantRefBootstrapsTest
  * @summary integration tests for dynamic constant bootstraps and Intrinsics.ldc()
  */
 @Test
