@@ -285,36 +285,81 @@ public class ConstablesTest {
         ClassRef thisClass = ClassRef.of("ConstablesTest");
         ClassRef testClass = thisClass.inner("TestClass");
         ClassRef testInterface = thisClass.inner("TestInterface");
-        // ctor
+        ClassRef testSuperclass = thisClass.inner("TestSuperclass");
+
         MethodHandleRef ctorRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, testClass, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
         MethodHandleRef staticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "sm", "(I)I");
+        MethodHandleRef staticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "sm", "(I)I");
         MethodHandleRef instanceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, testClass, "m", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef interfaceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, testInterface, "im", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef instanceIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, testInterface, "m", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef superMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testSuperclass, "m", "(I)I");
+        MethodHandleRef superIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "m", "(I)I");
+        MethodHandleRef privateMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testClass, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateStaticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateStaticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+
+        TestClass instance = (TestClass) ctorRef.resolve(LOOKUP).invokeExact();
+        instance = (TestClass) ctorRef.resolve(TestClass.LOOKUP).invokeExact();
+        TestInterface instanceI = instance;
+        
+        assertEquals(5, (int) staticMethodRef.resolve(LOOKUP).invokeExact(5));
+        assertEquals(5, (int) staticMethodRef.resolve(TestClass.LOOKUP).invokeExact(5));
+        assertEquals(0, (int) staticIMethodRef.resolve(LOOKUP).invokeExact(5));
+        assertEquals(0, (int) staticIMethodRef.resolve(TestClass.LOOKUP).invokeExact(5));
+        
+        assertEquals(5, (int) instanceMethodRef.resolve(LOOKUP).invokeExact(instance, 5));
+        assertEquals(5, (int) instanceMethodRef.resolve(TestClass.LOOKUP).invokeExact(instance, 5));
+        assertEquals(5, (int) instanceIMethodRef.resolve(LOOKUP).invokeExact(instanceI, 5));
+        assertEquals(5, (int) instanceIMethodRef.resolve(TestClass.LOOKUP).invokeExact(instanceI, 5));
+
+        try { superMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(-1, (int) superMethodRef.resolve(TestClass.LOOKUP).invokeExact(instance, 5));
+        try { superIMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(0, (int) superIMethodRef.resolve(TestClass.LOOKUP).invokeExact(instance, 5));
+        
+        try { privateMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(5, (int) privateMethodRef.resolve(TestClass.LOOKUP).invokeExact(instance, 5));
+        try { privateIMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        try { privateIMethodRef.resolve(TestClass.LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(0, (int) privateIMethodRef.resolve(TestInterface.LOOKUP).invokeExact(instanceI, 5));
+        
+        try { privateStaticMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(5, (int) privateStaticMethodRef.resolve(TestClass.LOOKUP).invokeExact(5));
+        try { privateStaticIMethodRef.resolve(LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        try { privateStaticIMethodRef.resolve(TestClass.LOOKUP); fail(); }
+        catch (IllegalAccessException e) { /* expected */ }
+        assertEquals(0, (int) privateStaticIMethodRef.resolve(TestInterface.LOOKUP).invokeExact(5));
+
         MethodHandleRef staticSetterRef = MethodHandleRef.ofField(STATIC_SETTER, testClass, "sf", ClassRef.CR_int);
         MethodHandleRef staticGetterRef = MethodHandleRef.ofField(STATIC_GETTER, testClass, "sf", ClassRef.CR_int);
+        MethodHandleRef staticGetterIRef = MethodHandleRef.ofField(STATIC_GETTER, testInterface, "sf", ClassRef.CR_int);
         MethodHandleRef setterRef = MethodHandleRef.ofField(SETTER, testClass, "f", ClassRef.CR_int);
         MethodHandleRef getterRef = MethodHandleRef.ofField(GETTER, testClass, "f", ClassRef.CR_int);
-        MethodHandleRef privateStaticMethod = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, thisClass, "privateStaticMethod", "(I)I");
-        MethodHandleRef privateInstanceMethod = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, thisClass, "privateMethod", "(I)I");
 
-        TestClass instance = (TestClass) ctorRef.resolve(LOOKUP).invoke();
-        assertTrue(instance instanceof TestClass);
-
-        assertEquals(3, (int) staticMethodRef.resolve(LOOKUP).invokeExact(3));
-        assertEquals(4, (int) instanceMethodRef.resolve(LOOKUP).invokeExact(instance, 4));
-        assertEquals(5, (int) interfaceMethodRef.resolve(LOOKUP).invoke(instance, 5));
-
-        staticSetterRef.resolve(LOOKUP).invokeExact(6);
+        staticSetterRef.resolve(LOOKUP).invokeExact(6); assertEquals(TestClass.sf, 6);
         assertEquals(6, (int) staticGetterRef.resolve(LOOKUP).invokeExact());
+        assertEquals(6, (int) staticGetterRef.resolve(TestClass.LOOKUP).invokeExact());
+        staticSetterRef.resolve(TestClass.LOOKUP).invokeExact(7); assertEquals(TestClass.sf, 7);
+        assertEquals(7, (int) staticGetterRef.resolve(LOOKUP).invokeExact());
+        assertEquals(7, (int) staticGetterRef.resolve(TestClass.LOOKUP).invokeExact());
 
-        setterRef.resolve(LOOKUP).invokeExact(instance, 7);
+        assertEquals(3, (int) staticGetterIRef.resolve(LOOKUP).invokeExact());
+        assertEquals(3, (int) staticGetterIRef.resolve(TestClass.LOOKUP).invokeExact());
+
+        setterRef.resolve(LOOKUP).invokeExact(instance, 6); assertEquals(instance.f, 6);
+        assertEquals(6, (int) getterRef.resolve(LOOKUP).invokeExact(instance));
+        assertEquals(6, (int) getterRef.resolve(TestClass.LOOKUP).invokeExact(instance));
+        setterRef.resolve(TestClass.LOOKUP).invokeExact(instance, 7); assertEquals(instance.f, 7);
         assertEquals(7, (int) getterRef.resolve(LOOKUP).invokeExact(instance));
-
-        assertEquals(instance.f, 7);
-        assertEquals(TestClass.sf, 6);
-
-        assertEquals(9, privateStaticMethod.resolve(LOOKUP).invoke(9));
-        assertEquals(10, privateInstanceMethod.resolve(LOOKUP).invoke(this, 10));
+        assertEquals(7, (int) getterRef.resolve(TestClass.LOOKUP).invokeExact(instance));
     }
 
     public void testVarHandles() throws ReflectiveOperationException {
@@ -399,52 +444,68 @@ public class ConstablesTest {
                      Intrinsics.ldc(MethodTypeRef.ofDescriptor("([I)[Ljava/lang/String;")));
     }
 
+
     public void testLdcMethodHandle() throws Throwable {
-        ClassRef CLASS_STRING = ClassRef.of("java.lang.String");
-        ClassRef CLASS_OBJECT = ClassRef.of("java.lang.Object");
-        ClassRef CLASS_INT = ClassRef.CR_int;
-        ClassRef CLASS_THIS = ClassRef.of("ConstablesTest");
-        ClassRef CLASS_HELPER = CLASS_THIS.inner("TestClass");
-        ClassRef CLASS_HELPER_INNER = CLASS_THIS.inner("TestClass", "Inner");
-        ClassRef CLASS_HELPER_INTF = CLASS_THIS.inner("TestInterface");
-
-        assertEquals("3", Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CLASS_STRING, "valueOf", CLASS_STRING, CLASS_OBJECT))
-                                    .invoke(Integer.valueOf(3)));
-
-        assertEquals("foobar", Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CLASS_STRING, "concat", MethodTypeRef.of(CLASS_STRING, CLASS_STRING)))
-                                         .invoke("foo", "bar"));
-
-        TestClass h = (TestClass) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CLASS_HELPER, "<init>", MethodTypeRef.of(ClassRef.CR_void)))
-                                            .invoke();
-        assertTrue(h instanceof TestClass);
-
-        assertEquals(2, Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CLASS_HELPER_INTF, "im", MethodTypeRef.of(CLASS_INT, CLASS_INT)))
-                                  .invoke(h, 2));
-
-        Intrinsics.ldc(MethodHandleRef.ofField(STATIC_SETTER, CLASS_HELPER, "sf", CLASS_INT))
-                  .invoke(3);
-        assertEquals(3, TestClass.sf);
-        assertEquals(3, (int) Intrinsics.ldc(MethodHandleRef.ofField(STATIC_GETTER, CLASS_HELPER, "sf", CLASS_INT))
-                                        .invoke());
-
-        Intrinsics.ldc(MethodHandleRef.ofField(SETTER, CLASS_HELPER, "f", CLASS_INT))
-                  .invoke(h, 4);
-        assertEquals(4, h.f);
-        assertEquals(4, (int) Intrinsics.ldc(MethodHandleRef.ofField(GETTER, CLASS_HELPER, "f", CLASS_INT))
-                                        .invoke(h));
-
-        assertEquals(9, (int) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CLASS_THIS, "privateStaticMethod", "(I)I")).invoke(9));
-        assertEquals(10, (int) Intrinsics.ldc(MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CLASS_THIS, "privateMethod", "(I)I")).invoke(this, 10));
-
-        Intrinsics.ldc(MethodHandleRef.ofField(STATIC_SETTER, CLASS_HELPER_INNER, "innerField", CLASS_INT))
-                  .invoke(12);
-        assertEquals(12, TestClass.Inner.innerField);
-        assertEquals(12, (int) Intrinsics.ldc(MethodHandleRef.ofField(STATIC_GETTER, CLASS_HELPER_INNER, "innerField", CLASS_INT))
-                                         .invoke());
-
-
+        ldcMethodHandleTestsFromOuter();
+        TestClass.ldcMethodHandleTestsFromClass();
     }
+    
+    private void ldcMethodHandleTestsFromOuter() throws Throwable {
+        ClassRef thisClass = ClassRef.of("ConstablesTest");
+        ClassRef testClass = thisClass.inner("TestClass");
+        ClassRef testInterface = thisClass.inner("TestInterface");
+        ClassRef testSuperclass = thisClass.inner("TestSuperclass");
 
+        MethodHandleRef ctorRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, testClass, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
+        MethodHandleRef staticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "sm", "(I)I");
+        MethodHandleRef staticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "sm", "(I)I");
+        MethodHandleRef instanceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, testClass, "m", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef instanceIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, testInterface, "m", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef superMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testSuperclass, "m", "(I)I");
+        MethodHandleRef superIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "m", "(I)I");
+        MethodHandleRef privateMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testClass, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateStaticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleRef privateStaticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+
+        TestClass instance = (TestClass) Intrinsics.ldc(ctorRef).invokeExact();
+        TestInterface instanceI = instance;
+        
+        assertEquals(5, (int) Intrinsics.ldc(staticMethodRef).invokeExact(5));
+        assertEquals(0, (int) Intrinsics.ldc(staticIMethodRef).invokeExact(5));
+        
+        assertEquals(5, (int) Intrinsics.ldc(instanceMethodRef).invokeExact(instance, 5));
+        assertEquals(5, (int) Intrinsics.ldc(instanceIMethodRef).invokeExact(instanceI, 5));
+
+        try { Intrinsics.ldc(superMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+        try { Intrinsics.ldc(superIMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+        
+        try { Intrinsics.ldc(privateMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+        try { Intrinsics.ldc(privateIMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+        
+        try { Intrinsics.ldc(privateStaticMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+        try { Intrinsics.ldc(privateStaticIMethodRef); fail(); }
+        catch (IllegalAccessError e) { /* expected */ }
+
+        MethodHandleRef staticSetterRef = MethodHandleRef.ofField(STATIC_SETTER, testClass, "sf", ClassRef.CR_int);
+        MethodHandleRef staticGetterRef = MethodHandleRef.ofField(STATIC_GETTER, testClass, "sf", ClassRef.CR_int);
+        MethodHandleRef staticGetterIRef = MethodHandleRef.ofField(STATIC_GETTER, testInterface, "sf", ClassRef.CR_int);
+        MethodHandleRef setterRef = MethodHandleRef.ofField(SETTER, testClass, "f", ClassRef.CR_int);
+        MethodHandleRef getterRef = MethodHandleRef.ofField(GETTER, testClass, "f", ClassRef.CR_int);
+
+        Intrinsics.ldc(staticSetterRef).invokeExact(8); assertEquals(TestClass.sf, 8);
+        assertEquals(8, (int) Intrinsics.ldc(staticGetterRef).invokeExact());
+
+        //assertEquals(3, (int) Intrinsics.ldc(staticGetterIRef).invokeExact());
+
+        Intrinsics.ldc(setterRef).invokeExact(instance, 9); assertEquals(instance.f, 9);
+        assertEquals(9, (int) Intrinsics.ldc(getterRef).invokeExact(instance));
+    }
 
 
     static String classToDescriptor(Class<?> clazz) {
@@ -460,23 +521,85 @@ public class ConstablesTest {
     }
 
     private static interface TestInterface {
-        public int im(int x);
+        public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+        
+        public static final int sf = 3;
+        
+        static int sm(int  x) { return 0; }
+        default int m(int x) { return 0; }
+        private int pm(int x) { return 0; }
+        private static int psm(int x) { return 0; }
+    }
+    
+    private static class TestSuperclass {
+        public int m(int x) { return -1; }
     }
 
-    private static class TestClass implements TestInterface {
-        private static class Inner {
-            static int innerField;
-        }
-
+    private static class TestClass extends TestSuperclass implements TestInterface {
+        public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    
         static int sf;
         int f;
 
-        TestClass()  {
+        public TestClass()  {}
 
+        public static int sm(int x) { return x; }
+        public int m(int x) { return x; }
+        private static int psm(int x) { return x; }
+        private int pm(int x) { return x; }
+        
+        private static void ldcMethodHandleTestsFromClass() throws Throwable {
+            ClassRef thisClass = ClassRef.of("ConstablesTest");
+            ClassRef testClass = thisClass.inner("TestClass");
+            ClassRef testInterface = thisClass.inner("TestInterface");
+            ClassRef testSuperclass = thisClass.inner("TestSuperclass");
+
+            MethodHandleRef ctorRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, testClass, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
+            MethodHandleRef staticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "sm", "(I)I");
+            MethodHandleRef staticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "sm", "(I)I");
+            MethodHandleRef instanceMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, testClass, "m", MethodTypeRef.ofDescriptor("(I)I"));
+            MethodHandleRef instanceIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, testInterface, "m", MethodTypeRef.ofDescriptor("(I)I"));
+            MethodHandleRef superMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testSuperclass, "m", "(I)I");
+            MethodHandleRef superIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "m", "(I)I");
+            MethodHandleRef privateMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testClass, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+            MethodHandleRef privateIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, testInterface, "pm", MethodTypeRef.ofDescriptor("(I)I"));
+            MethodHandleRef privateStaticMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testClass, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+            MethodHandleRef privateStaticIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, testInterface, "psm", MethodTypeRef.ofDescriptor("(I)I"));
+
+            TestClass instance = (TestClass) Intrinsics.ldc(ctorRef).invokeExact();
+            TestInterface instanceI = instance;
+        
+            assertEquals(5, (int) Intrinsics.ldc(staticMethodRef).invokeExact(5));
+            assertEquals(0, (int) Intrinsics.ldc(staticIMethodRef).invokeExact(5));
+        
+            assertEquals(5, (int) Intrinsics.ldc(instanceMethodRef).invokeExact(instance, 5));
+            assertEquals(5, (int) Intrinsics.ldc(instanceIMethodRef).invokeExact(instanceI, 5));
+
+            assertEquals(-1, (int) Intrinsics.ldc(superMethodRef).invokeExact(instance, 5));
+            assertEquals(0, (int) Intrinsics.ldc(superIMethodRef).invokeExact(instance, 5));
+        
+            assertEquals(5, (int) Intrinsics.ldc(privateMethodRef).invokeExact(instance, 5));
+            try { Intrinsics.ldc(privateIMethodRef); fail(); }
+            catch (IllegalAccessError e) { /* expected */ }
+        
+            assertEquals(5, (int) Intrinsics.ldc(privateStaticMethodRef).invokeExact(5));
+            try { Intrinsics.ldc(privateStaticIMethodRef); fail(); }
+            catch (IllegalAccessError e) { /* expected */ }
+
+            MethodHandleRef staticSetterRef = MethodHandleRef.ofField(STATIC_SETTER, testClass, "sf", ClassRef.CR_int);
+            MethodHandleRef staticGetterRef = MethodHandleRef.ofField(STATIC_GETTER, testClass, "sf", ClassRef.CR_int);
+            MethodHandleRef staticGetterIRef = MethodHandleRef.ofField(STATIC_GETTER, testInterface, "sf", ClassRef.CR_int);
+            MethodHandleRef setterRef = MethodHandleRef.ofField(SETTER, testClass, "f", ClassRef.CR_int);
+            MethodHandleRef getterRef = MethodHandleRef.ofField(GETTER, testClass, "f", ClassRef.CR_int);
+
+            Intrinsics.ldc(staticSetterRef).invokeExact(10); assertEquals(TestClass.sf, 10);
+            assertEquals(10, (int) Intrinsics.ldc(staticGetterRef).invokeExact());
+
+            //assertEquals(3, (int) Intrinsics.ldc(staticGetterIRef).invokeExact());
+
+            Intrinsics.ldc(setterRef).invokeExact(instance, 11); assertEquals(instance.f, 11);
+            assertEquals(11, (int) Intrinsics.ldc(getterRef).invokeExact(instance));
         }
-
-        static int sm(int  x) { return x; }
-        int m(int x) { return x; }
-        public int im(int x) { return x; }
+        
     }
 }
