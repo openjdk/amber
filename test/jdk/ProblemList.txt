@@ -200,6 +200,8 @@ java/rmi/activation/Activatable/extLoadedImpl/ext.sh            8062724 generic-
 
 java/rmi/activation/ActivationGroup/downloadActivationGroup/DownloadActivationGroup.java 8169569 windows-all
 
+java/rmi/activation/rmidViaInheritedChannel/InheritedChannelNotServerSocket.java 8170562 generic-all
+
 java/rmi/registry/readTest/CodebaseTest.java                    8173324 windows-all
 
 ############################################################################
@@ -301,14 +303,6 @@ sun/tools/jstat/jstatClassloadOutput1.sh                        8173942 generic-
 sun/jvmstat/monitor/MonitoredVm/MonitorVmStartTerminate.java    8057732 generic-all
 
 com/sun/tools/attach/StartManagementAgent.java                  8179700 generic-all
-
-sun/tools/jhsdb/AlternateHashingTest.java                       8184042 macosx-all
-
-sun/tools/jhsdb/BasicLauncherTest.java                          8184042 macosx-all
-
-sun/tools/jhsdb/HeapDumpTest.java                               8184042 macosx-all
-
-sun/tools/jhsdb/heapconfig/JMapHeapConfigTest.java              8184042 macosx-all
 
 ############################################################################
 
