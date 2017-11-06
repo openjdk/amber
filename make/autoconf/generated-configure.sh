@@ -656,7 +656,6 @@ BUILD_FAILURE_HANDLER
 ENABLE_INTREE_EC
 VALID_JVM_FEATURES
 JVM_FEATURES_custom
-JVM_FEATURES_zeroshark
 JVM_FEATURES_zero
 JVM_FEATURES_minimal
 JVM_FEATURES_core
@@ -676,10 +675,6 @@ PNG_LIBS
 PNG_CFLAGS
 USE_EXTERNAL_LIBGIF
 USE_EXTERNAL_LIBJPEG
-LLVM_LIBS
-LLVM_LDFLAGS
-LLVM_CFLAGS
-LLVM_CONFIG
 LIBFFI_LIB_FILE
 ENABLE_LIBFFI_BUNDLING
 LIBFFI_LIBS
@@ -690,6 +685,7 @@ FREETYPE_LICENSE
 FREETYPE_BUNDLE_LIB_PATH
 FREETYPE_LIBS
 FREETYPE_CFLAGS
+FONTCONFIG_CFLAGS
 CUPS_CFLAGS
 X_EXTRA_LIBS
 X_LIBS
@@ -1184,6 +1180,8 @@ with_msvcp_dll
 with_x
 with_cups
 with_cups_include
+with_fontconfig
+with_fontconfig_include
 with_freetype
 with_freetype_include
 with_freetype_lib
@@ -2030,8 +2028,7 @@ Optional Packages:
   --with-debug-level      set the debug level (release, fastdebug, slowdebug,
                           optimized) [release]
   --with-jvm-variants     JVM variants (separated by commas) to build
-                          (server,client,minimal,core,zero,zeroshark,custom)
-                          [server]
+                          (server,client,minimal,core,zero,custom) [server]
   --with-cpu-port         specify sources to use for Hotspot 64-bit ARM port
                           (arm64,aarch64) [aarch64]
   --with-devkit           use this devkit for compilers, tools and resources
@@ -2113,6 +2110,10 @@ Optional Packages:
   --with-cups             specify prefix directory for the cups package
                           (expecting the headers under PATH/include)
   --with-cups-include     specify directory for the cups include files
+  --with-fontconfig       specify prefix directory for the fontconfig package
+                          (expecting the headers under PATH/include)
+  --with-fontconfig-include
+                          specify directory for the fontconfig include files
   --with-freetype         specify prefix directory for the freetype package
                           (expecting the libraries under PATH/lib and the
                           headers under PATH/include)
@@ -4170,6 +4171,8 @@ apt_help() {
       PKGHANDLER_COMMAND="sudo apt-get install libasound2-dev" ;;
     cups)
       PKGHANDLER_COMMAND="sudo apt-get install libcups2-dev" ;;
+    fontconfig)
+      PKGHANDLER_COMMAND="sudo apt-get install libfontconfig1-dev" ;;
     freetype)
       PKGHANDLER_COMMAND="sudo apt-get install libfreetype6-dev" ;;
     ffi)
@@ -4193,6 +4196,8 @@ yum_help() {
       PKGHANDLER_COMMAND="sudo yum install alsa-lib-devel" ;;
     cups)
       PKGHANDLER_COMMAND="sudo yum install cups-devel" ;;
+    fontconfig)
+      PKGHANDLER_COMMAND="sudo yum install fontconfig-devel" ;;
     freetype)
       PKGHANDLER_COMMAND="sudo yum install freetype-devel" ;;
     x11)
@@ -4261,12 +4266,12 @@ pkgadd_help() {
 #
 
 # All valid JVM features, regardless of platform
-VALID_JVM_FEATURES="compiler1 compiler2 zero shark minimal dtrace jvmti jvmci \
+VALID_JVM_FEATURES="compiler1 compiler2 zero minimal dtrace jvmti jvmci \
     graal vm-structs jni-check services management all-gcs nmt cds \
     static-build link-time-opt aot"
 
 # All valid JVM variants
-VALID_JVM_VARIANTS="server client minimal core zero zeroshark custom"
+VALID_JVM_VARIANTS="server client minimal core zero custom"
 
 ###############################################################################
 # Check if the specified JVM variant should be built. To be used in shell if
@@ -4297,7 +4302,6 @@ VALID_JVM_VARIANTS="server client minimal core zero zeroshark custom"
 #   minimal: reduced form of client with optional features stripped out
 #   core: normal interpreter only, no compiler
 #   zero: C++ based interpreter only, no compiler
-#   zeroshark: C++ based interpreter, and a llvm-based compiler
 #   custom: baseline JVM with no default features
 #
 
@@ -4756,6 +4760,36 @@ VALID_JVM_VARIANTS="server client minimal core zero zeroshark custom"
 ################################################################################
 
 
+#
+# Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.  Oracle designates this
+# particular file as subject to the "Classpath" exception as provided
+# by Oracle in the LICENSE file that accompanied this code.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# version 2 for more details (a copy is included in the LICENSE file that
+# accompanied this code).
+#
+# You should have received a copy of the GNU General Public License version
+# 2 along with this work; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
+#
+
+################################################################################
+# Setup fontconfig
+################################################################################
+
+
 
 ################################################################################
 # Determine which libraries are needed for this configuration
@@ -4764,11 +4798,6 @@ VALID_JVM_VARIANTS="server client minimal core zero zeroshark custom"
 
 ################################################################################
 # Parse library options, and setup needed libraries
-################################################################################
-
-
-################################################################################
-# Setup llvm (Low-Level VM)
 ################################################################################
 
 
@@ -5125,7 +5154,7 @@ VS_SDK_PLATFORM_NAME_2013=
 #CUSTOM_AUTOCONF_INCLUDE
 
 # Do not change or remove the following line, it is needed for consistency checks:
-DATE_WHEN_GENERATED=1509128484
+DATE_WHEN_GENERATED=1510008041
 
 ###############################################################################
 #
@@ -17028,7 +17057,7 @@ $as_echo "$as_me: Unknown variant(s) specified: $INVALID_VARIANTS" >&6;}
 
 
 
-  if   [[ " $JVM_VARIANTS " =~ " zero " ]]   ||   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+  if   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
     # zero behaves as a platform and rewrites these values. This is really weird. :(
     # We are guaranteed that we do not build any other variants when building zero.
     HOTSPOT_TARGET_CPU=zero
@@ -25073,7 +25102,7 @@ fi
 
   # Should we build the serviceability agent (SA)?
   INCLUDE_SA=true
-  if   [[ " $JVM_VARIANTS " =~ " zero " ]]   ||   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+  if   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
     INCLUDE_SA=false
   fi
   if test "x$OPENJDK_TARGET_OS" = xaix ; then
@@ -51930,7 +51959,7 @@ $as_echo "$as_me: GCC >= 6 detected; adding ${NO_DELETE_NULL_POINTER_CHECKS_CFLA
 
 
     fi
-    if !   [[ " $JVM_VARIANTS " =~ " zero " ]]   && !   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+    if !   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
       # Non-zero builds have stricter warnings
       JVM_CFLAGS="$JVM_CFLAGS -Wreturn-type -Wundef -Wformat=2"
     else
@@ -52811,7 +52840,7 @@ $as_echo "$as_me: GCC >= 6 detected; adding ${NO_DELETE_NULL_POINTER_CHECKS_CFLA
 
 
     fi
-    if !   [[ " $JVM_VARIANTS " =~ " zero " ]]   && !   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+    if !   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
       # Non-zero builds have stricter warnings
       OPENJDK_BUILD_JVM_CFLAGS="$OPENJDK_BUILD_JVM_CFLAGS -Wreturn-type -Wundef -Wformat=2"
     else
@@ -54541,6 +54570,16 @@ $as_echo "yes" >&6; }
     NEEDS_LIB_X11=true
   fi
 
+  # Check if fontconfig is needed
+  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx; then
+    # No fontconfig support on windows or macosx
+    NEEDS_LIB_FONTCONFIG=false
+  else
+    # All other instances need fontconfig, even if building headless only,
+    # libawt still needs fontconfig headers.
+    NEEDS_LIB_FONTCONFIG=true
+  fi
+
   # Check if cups is needed
   if test "x$OPENJDK_TARGET_OS" = xwindows; then
     # Windows have a separate print system
@@ -54562,7 +54601,7 @@ $as_echo "yes" >&6; }
   fi
 
   # Check if ffi is needed
-  if   [[ " $JVM_VARIANTS " =~ " zero " ]]   ||   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+  if   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
     NEEDS_LIB_FFI=true
   else
     NEEDS_LIB_FFI=false
@@ -54635,8 +54674,7 @@ $as_echo "$has_static_libstdcxx" >&6; }
     # If dynamic wasn't requested, go with static unless it isn't available.
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking how to link with libstdc++" >&5
 $as_echo_n "checking how to link with libstdc++... " >&6; }
-    if test "x$with_stdc__lib" = xdynamic || test "x$has_static_libstdcxx" = xno \
-        ||   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+    if test "x$with_stdc__lib" = xdynamic || test "x$has_static_libstdcxx" = xno ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: result: dynamic" >&5
 $as_echo "dynamic" >&6; }
     else
@@ -58351,6 +58389,116 @@ done
   fi
 
       as_fn_error $? "Could not find cups! $HELP_MSG " "$LINENO" 5
+    fi
+  fi
+
+
+
+
+
+# Check whether --with-fontconfig was given.
+if test "${with_fontconfig+set}" = set; then :
+  withval=$with_fontconfig;
+fi
+
+
+# Check whether --with-fontconfig-include was given.
+if test "${with_fontconfig_include+set}" = set; then :
+  withval=$with_fontconfig_include;
+fi
+
+
+  if test "x$NEEDS_LIB_FONTCONFIG" = xfalse; then
+    if (test "x${with_fontconfig}" != x && test "x${with_fontconfig}" != xno) || \
+        (test "x${with_fontconfig_include}" != x && test "x${with_fontconfig_include}" != xno); then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: fontconfig not used, so --with-fontconfig[-*] is ignored" >&5
+$as_echo "$as_me: WARNING: fontconfig not used, so --with-fontconfig[-*] is ignored" >&2;}
+    fi
+    FONTCONFIG_CFLAGS=
+  else
+    FONTCONFIG_FOUND=no
+
+    if test "x${with_fontconfig}" = xno || test "x${with_fontconfig_include}" = xno; then
+      as_fn_error $? "It is not possible to disable the use of fontconfig. Remove the --without-fontconfig option." "$LINENO" 5
+    fi
+
+    if test "x${with_fontconfig}" != x; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fontconfig headers" >&5
+$as_echo_n "checking for fontconfig headers... " >&6; }
+      if test -s "${with_fontconfig}/include/fontconfig/fontconfig.h"; then
+        FONTCONFIG_CFLAGS="-I${with_fontconfig}/include"
+        FONTCONFIG_FOUND=yes
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $FONTCONFIG_FOUND" >&5
+$as_echo "$FONTCONFIG_FOUND" >&6; }
+      else
+        as_fn_error $? "Can't find 'include/fontconfig/fontconfig.h' under ${with_fontconfig} given with the --with-fontconfig option." "$LINENO" 5
+      fi
+    fi
+    if test "x${with_fontconfig_include}" != x; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fontconfig headers" >&5
+$as_echo_n "checking for fontconfig headers... " >&6; }
+      if test -s "${with_fontconfig_include}/fontconfig/fontconfig.h"; then
+        FONTCONFIG_CFLAGS="-I${with_fontconfig_include}"
+        FONTCONFIG_FOUND=yes
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $FONTCONFIG_FOUND" >&5
+$as_echo "$FONTCONFIG_FOUND" >&6; }
+      else
+        as_fn_error $? "Can't find 'fontconfig/fontconfig.h' under ${with_fontconfig_include} given with the --with-fontconfig-include option." "$LINENO" 5
+      fi
+    fi
+    if test "x$FONTCONFIG_FOUND" = xno; then
+      # Are the fontconfig headers installed in the default /usr/include location?
+      for ac_header in fontconfig/fontconfig.h
+do :
+  ac_fn_cxx_check_header_mongrel "$LINENO" "fontconfig/fontconfig.h" "ac_cv_header_fontconfig_fontconfig_h" "$ac_includes_default"
+if test "x$ac_cv_header_fontconfig_fontconfig_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_FONTCONFIG_FONTCONFIG_H 1
+_ACEOF
+
+          FONTCONFIG_FOUND=yes
+          FONTCONFIG_CFLAGS=
+          DEFAULT_FONTCONFIG=yes
+
+fi
+
+done
+
+    fi
+    if test "x$FONTCONFIG_FOUND" = xno; then
+
+  # Print a helpful message on how to acquire the necessary build dependency.
+  # fontconfig is the help tag: freetype, cups, alsa etc
+  MISSING_DEPENDENCY=fontconfig
+
+  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
+    cygwin_help $MISSING_DEPENDENCY
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+    msys_help $MISSING_DEPENDENCY
+  else
+    PKGHANDLER_COMMAND=
+
+    case $PKGHANDLER in
+      apt-get)
+        apt_help     $MISSING_DEPENDENCY ;;
+      yum)
+        yum_help     $MISSING_DEPENDENCY ;;
+      brew)
+        brew_help    $MISSING_DEPENDENCY ;;
+      port)
+        port_help    $MISSING_DEPENDENCY ;;
+      pkgutil)
+        pkgutil_help $MISSING_DEPENDENCY ;;
+      pkgadd)
+        pkgadd_help  $MISSING_DEPENDENCY ;;
+    esac
+
+    if test "x$PKGHANDLER_COMMAND" != x; then
+      HELP_MSG="You might be able to fix this by running '$PKGHANDLER_COMMAND'."
+    fi
+  fi
+
+      as_fn_error $? "Could not find fontconfig! $HELP_MSG " "$LINENO" 5
     fi
   fi
 
@@ -65008,94 +65156,6 @@ $as_echo "${LIBFFI_LIB_FILE}" >&6; }
 
 
 
-  if   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
-    # Extract the first word of "llvm-config", so it can be a program name with args.
-set dummy llvm-config; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_LLVM_CONFIG+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$LLVM_CONFIG"; then
-  ac_cv_prog_LLVM_CONFIG="$LLVM_CONFIG" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_LLVM_CONFIG="llvm-config"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-LLVM_CONFIG=$ac_cv_prog_LLVM_CONFIG
-if test -n "$LLVM_CONFIG"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LLVM_CONFIG" >&5
-$as_echo "$LLVM_CONFIG" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-
-    if test "x$LLVM_CONFIG" != xllvm-config; then
-      as_fn_error $? "llvm-config not found in $PATH." "$LINENO" 5
-    fi
-
-    llvm_components="jit mcjit engine nativecodegen native"
-    unset LLVM_CFLAGS
-    for flag in $("$LLVM_CONFIG" --cxxflags); do
-      if echo "${flag}" | grep -q '^-[ID]'; then
-        if test "${flag}" != "-D_DEBUG" ; then
-          if test "${LLVM_CFLAGS}" != "" ; then
-            LLVM_CFLAGS="${LLVM_CFLAGS} "
-          fi
-          LLVM_CFLAGS="${LLVM_CFLAGS}${flag}"
-        fi
-      fi
-    done
-    llvm_version=$("${LLVM_CONFIG}" --version | $SED 's/\.//; s/svn.*//')
-    LLVM_CFLAGS="${LLVM_CFLAGS} -DSHARK_LLVM_VERSION=${llvm_version}"
-
-    unset LLVM_LDFLAGS
-    for flag in $("${LLVM_CONFIG}" --ldflags); do
-      if echo "${flag}" | grep -q '^-L'; then
-        if test "${LLVM_LDFLAGS}" != ""; then
-          LLVM_LDFLAGS="${LLVM_LDFLAGS} "
-        fi
-        LLVM_LDFLAGS="${LLVM_LDFLAGS}${flag}"
-      fi
-    done
-
-    unset LLVM_LIBS
-    for flag in $("${LLVM_CONFIG}" --libs ${llvm_components}); do
-      if echo "${flag}" | grep -q '^-l'; then
-        if test "${LLVM_LIBS}" != ""; then
-          LLVM_LIBS="${LLVM_LIBS} "
-        fi
-        LLVM_LIBS="${LLVM_LIBS}${flag}"
-      fi
-    done
-
-    # Due to https://llvm.org/bugs/show_bug.cgi?id=16902, llvm does not
-    # always properly detect -ltinfo
-    LLVM_LIBS="${LLVM_LIBS} -ltinfo"
-
-
-
-
-  fi
-
-
 
 # Check whether --with-libjpeg was given.
 if test "${with_libjpeg+set}" = set; then :
@@ -65962,15 +66022,9 @@ $as_echo "$JVM_FEATURES" >&6; }
     fi
   fi
 
-  if !   [[ " $JVM_VARIANTS " =~ " zero " ]]   && !   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
+  if !   [[ " $JVM_VARIANTS " =~ " zero " ]]  ; then
     if   [[ " $JVM_FEATURES " =~ " zero " ]]  ; then
-      as_fn_error $? "To enable zero/zeroshark, you must use --with-jvm-variants=zero/zeroshark" "$LINENO" 5
-    fi
-  fi
-
-  if !   [[ " $JVM_VARIANTS " =~ " zeroshark " ]]  ; then
-    if   [[ " $JVM_FEATURES " =~ " shark " ]]  ; then
-      as_fn_error $? "To enable shark, you must use --with-jvm-variants=zeroshark" "$LINENO" 5
+      as_fn_error $? "To enable zero, you must use --with-jvm-variants=zero" "$LINENO" 5
     fi
   fi
 
@@ -66054,9 +66108,7 @@ $as_echo "no" >&6; }
   JVM_FEATURES_core="$NON_MINIMAL_FEATURES $JVM_FEATURES"
   JVM_FEATURES_minimal="compiler1 minimal $JVM_FEATURES $JVM_FEATURES_link_time_opt"
   JVM_FEATURES_zero="zero $NON_MINIMAL_FEATURES $JVM_FEATURES"
-  JVM_FEATURES_zeroshark="zero shark $NON_MINIMAL_FEATURES $JVM_FEATURES"
   JVM_FEATURES_custom="$JVM_FEATURES"
-
 
 
 
@@ -67942,7 +67994,6 @@ $as_echo "$OUTPUT_DIR_IS_LOCAL" >&6; }
   JVM_FEATURES_core="$($ECHO $($PRINTF '%s\n' $JVM_FEATURES_core | $SORT -u))"
   JVM_FEATURES_minimal="$($ECHO $($PRINTF '%s\n' $JVM_FEATURES_minimal | $SORT -u))"
   JVM_FEATURES_zero="$($ECHO $($PRINTF '%s\n' $JVM_FEATURES_zero | $SORT -u))"
-  JVM_FEATURES_zeroshark="$($ECHO $($PRINTF '%s\n' $JVM_FEATURES_zeroshark | $SORT -u))"
   JVM_FEATURES_custom="$($ECHO $($PRINTF '%s\n' $JVM_FEATURES_custom | $SORT -u))"
 
   # Validate features
