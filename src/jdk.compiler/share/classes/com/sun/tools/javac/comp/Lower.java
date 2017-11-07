@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
@@ -121,6 +122,24 @@ public class Lower extends TreeTranslator {
         Options options = Options.instance(context);
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
+        String generationSwitch = options.get("generation_switch");
+        if (generationSwitch != null) {
+            if (generationSwitch.equals("all")) {
+                generationSwitchSet = EnumSet.allOf(GenerationSwitch.class);
+            } else {
+                String[] switches = generationSwitch.split(",");
+                for (String s :switches) {
+                    s = s.toUpperCase();
+                    if (s.equals("OLDEQUALS")) {
+                        generationSwitchSet.add(GenerationSwitch.OLD_EQUALS);
+                    } else if (s.equals("OLDTOSTRING")) {
+                        generationSwitchSet.add(GenerationSwitch.OLD_TOSTRING);
+                    } else if (s.equals("OLDHASHCODE")) {
+                        generationSwitchSet.add(GenerationSwitch.OLD_HASCODE);
+                    }
+                }
+            }
+        }
     }
 
     /** The currently enclosing class.
@@ -2221,6 +2240,10 @@ public class Lower extends TreeTranslator {
             (types.supertype(currentClass.type).tsym.flags() & ENUM) == 0)
             visitEnumDef(tree);
 
+        if ((tree.mods.flags & (DATUM | ABSTRACT)) == DATUM) {
+            visitDatumDef(tree);
+        }
+
         // If this is a nested class, define a this$n field for
         // it and add to proxies.
         JCVariableDecl otdef = null;
@@ -2288,6 +2311,37 @@ public class Lower extends TreeTranslator {
 
         // Return empty block {} as a placeholder for an inner class.
         result = make_at(tree.pos()).Block(SYNTHETIC, List.nil());
+    }
+
+    List<JCTree> accessors(JCClassDecl tree) {
+        ListBuffer<JCTree> buffer = new ListBuffer<>();
+        tree.defs.stream()
+                    .filter(t -> t.hasTag(VARDEF))
+                    .map(t -> (JCVariableDecl)t)
+                    .filter(vd -> vd.sym.accessors.nonEmpty())
+                    .forEach(vd -> {
+                        for (Pair<Accessors.Kind, MethodSymbol> accessor : vd.sym.accessors) {
+                            MethodSymbol accessorSym = accessor.snd;
+                            if ((accessorSym.flags() & Flags.MANDATED) != 0) {
+                                make_at(tree.pos());
+                                switch (accessor.fst) {
+                                    case GET:
+                                        buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                                List.of(make.Return(make.Ident(vd.sym))))));
+                                        break;
+                                    case SET:
+                                        buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                                List.of(make.Exec(
+                                                        make.Assign(make.Ident(vd.sym), make.Ident(accessorSym.params.head))
+                                                                .setType(vd.sym.type))))));
+                                        break;
+                                    default:
+                                        Assert.error("Cannot get here!");
+                                }
+                            }
+                        }
+                    });
+        return buffer.toList();
     }
 
     /** Translate an enum class. */
@@ -2443,6 +2497,280 @@ public class Lower extends TreeTranslator {
         varDef.args = varDef.args.
             prepend(makeLit(syms.intType, ordinal)).
             prepend(makeLit(syms.stringType, var.name.toString()));
+    }
+
+    /** Translate a datum class. */
+
+    enum GenerationSwitch {
+        OLD_EQUALS,
+        OLD_HASCODE,
+        OLD_TOSTRING
+    }
+
+    private EnumSet<GenerationSwitch> generationSwitchSet = EnumSet.noneOf(GenerationSwitch.class);
+
+    private void visitDatumDef(JCClassDecl tree) {
+        make_at(tree.pos());
+        List<VarSymbol> vars = types.datumVars(tree.type);
+        Pool.MethodHandle[] getterMethHandles = new Pool.MethodHandle[vars.size()];
+        int index = 0;
+        for (VarSymbol var : vars) {
+            if (var.owner != tree.sym) {
+                var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
+            }
+            getterMethHandles[index] = new Pool.MethodHandle(ClassFile.REF_getField, var, types);
+            index++;
+        }
+
+        tree.defs = tree.defs.appendList(accessors(tree));
+        tree.defs = tree.defs.appendList(List.of(
+                generationSwitchSet.contains(GenerationSwitch.OLD_EQUALS) ?
+                        datumOldEquals(tree, vars):
+                        datumEquals(tree, getterMethHandles),
+                generationSwitchSet.contains(GenerationSwitch.OLD_TOSTRING) ?
+                        datumOldToString(tree, vars):
+                        datumToString(tree, vars, getterMethHandles),
+                generationSwitchSet.contains(GenerationSwitch.OLD_HASCODE) ?
+                        datumOldHashCode(tree, vars):
+                        datumHashCode(tree, getterMethHandles)
+        ));
+    }
+
+    JCTree datumToString(JCClassDecl tree, List<VarSymbol> vars, Pool.MethodHandle[] getterMethHandles) {
+        make_at(tree.pos());
+
+        MethodSymbol msym = lookupMethod(tree.pos(),
+                         names.toString,
+                         tree.sym.type,
+                         List.nil());
+        if ((msym.flags() & DATUM) != 0) {
+            Name bootstrapName = names.makeToString;
+            Object[] staticArgsValues = new Object[2 + getterMethHandles.length];
+            staticArgsValues[0] = tree.sym;
+            String concatNames = vars.stream()
+                    .map(v -> v.name)
+                    .collect(Collectors.joining(";", "", ""));
+            staticArgsValues[1] = concatNames;
+            int index = 2;
+            for (Object mho : getterMethHandles) {
+                staticArgsValues[index] = mho;
+                index++;
+            }
+
+            List<Type> staticArgTypes = List.of(syms.classType,
+                    syms.stringType,
+                    new ArrayType(syms.methodHandleType, syms.arrayClass));
+
+            JCFieldAccess qualifier = makeIndyQualifier(
+                    tree, msym, staticArgTypes, staticArgsValues, bootstrapName);
+
+            VarSymbol _this = new VarSymbol(SYNTHETIC, names._this, tree.sym.type, tree.sym);
+
+            JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.of(make.Ident(_this)));
+            proxyCall.type = qualifier.type;
+            return make.MethodDef(msym, make.Block(0, List.of(make.Return(proxyCall))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCTree datumHashCode(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
+        make_at(tree.pos());
+        MethodSymbol msym = lookupMethod(tree.pos(),
+                         names.hashCode,
+                         tree.sym.type,
+                         List.nil());
+        if ((msym.flags() & DATUM) != 0) {
+            Name bootstrapName = names.makeHashCode;
+            Object[] staticArgsValues = new Object[1 + getterMethHandles.length];
+            staticArgsValues[0] = tree.sym;
+            int index = 1;
+            for (Object mho : getterMethHandles) {
+                staticArgsValues[index] = mho;
+                index++;
+            }
+
+            List<Type> staticArgTypes = List.of(syms.classType,
+                    new ArrayType(syms.methodHandleType, syms.arrayClass));
+
+            JCFieldAccess qualifier = makeIndyQualifier(
+                    tree, msym, staticArgTypes, staticArgsValues, bootstrapName);
+
+            VarSymbol _this = new VarSymbol(SYNTHETIC, names._this, tree.sym.type, tree.sym);
+
+            JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.of(make.Ident(_this)));
+            proxyCall.type = qualifier.type;
+            return make.MethodDef(msym, make.Block(0, List.of(make.Return(proxyCall))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCTree datumEquals(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
+        make_at(tree.pos());
+        MethodSymbol msym = lookupMethod(tree.pos(),
+                         names.equals,
+                         tree.sym.type,
+                         List.of(syms.objectType));
+
+        if ((msym.flags() & DATUM) != 0) {
+            Name bootstrapName = names.makeEquals;
+            Object[] staticArgsValues = new Object[1 + getterMethHandles.length];
+            staticArgsValues[0] = tree.sym;
+            int index = 1;
+            for (Object mho : getterMethHandles) {
+                staticArgsValues[index] = mho;
+                index++;
+            }
+
+            List<Type> staticArgTypes = List.of(syms.classType,
+                    new ArrayType(syms.methodHandleType, syms.arrayClass));
+
+            JCFieldAccess qualifier = makeIndyQualifier(
+                    tree, msym, staticArgTypes, staticArgsValues, bootstrapName);
+
+            VarSymbol o = msym.params.head;
+            o.adr = 0;
+            VarSymbol _this = new VarSymbol(SYNTHETIC, names._this, tree.sym.type, tree.sym);
+
+            JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.of(make.Ident(_this), make.Ident(o)));
+            proxyCall.type = qualifier.type;
+            return make.MethodDef(msym, make.Block(0, List.of(make.Return(proxyCall))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCFieldAccess makeIndyQualifier(
+            JCClassDecl tree,
+            MethodSymbol msym,
+            List<Type> staticArgTypes,
+            Object[] staticArgValues,
+            Name bootstrapName) {
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                syms.methodTypeType).appendList(staticArgTypes);
+
+        Symbol bsm = rs.resolveInternalMethod(tree.pos(), attrEnv, syms.objectMethodBuildersType,
+                bootstrapName, bsm_staticArgs, List.nil());
+
+        MethodType indyType = msym.type.asMethodType();
+        indyType = new MethodType(
+                indyType.argtypes.prepend(tree.sym.type),
+                indyType.restype,
+                indyType.thrown,
+                syms.methodClass
+        );
+        DynamicMethodSymbol dynSym = new DynamicMethodSymbol(bootstrapName,
+                syms.noSymbol,
+                ClassFile.REF_invokeStatic,
+                (MethodSymbol)bsm,
+                indyType,
+                staticArgValues);
+        JCFieldAccess qualifier = make.Select(make.QualIdent(syms.objectMethodBuildersType.tsym), bootstrapName);
+        qualifier.sym = dynSym;
+        qualifier.type = msym.type.asMethodType().restype;
+        return qualifier;
+    }
+
+    JCTree datumOldToString(JCClassDecl tree, List<VarSymbol> vars) {
+        make_at(tree.pos());
+
+        MethodSymbol toStringSym = lookupMethod(tree.pos(),
+                         names.toString,
+                         tree.sym.type,
+                         List.nil());
+        if ((toStringSym.flags() & DATUM) != 0) {
+            String format = vars.stream()
+                    .map(v -> v.name + "=%s")
+                    .collect(Collectors.joining(", ", tree.name + "[", "]"));
+            JCExpression formatLit = make.Literal(format);
+            JCFieldAccess meth = make.Select(make.Type(syms.stringType), names.fromString("format"));
+            meth.sym = lookupMethod(tree.pos(),
+                    meth.name,
+                    syms.stringType,
+                    List.of(syms.stringType, types.makeArrayType(syms.objectType)));
+            meth.type = meth.sym.type;
+            JCMethodInvocation app = make.Apply(List.nil(), meth,
+                    List.of(formatLit).appendList(vars.map(make::Ident)));
+            app.type = meth.type.getReturnType();
+            app.varargsElement = syms.objectType;
+            return make.MethodDef(toStringSym, make.Block(0, List.of(make.Return(app))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCTree datumOldHashCode(JCClassDecl tree, List<VarSymbol> vars) {
+        make_at(tree.pos());
+
+        MethodSymbol hashCodeSym = lookupMethod(tree.pos(),
+                         names.hashCode,
+                         tree.sym.type,
+                         List.nil());
+        if ((hashCodeSym.flags() & DATUM) != 0) {
+            JCFieldAccess meth = make.Select(make.Type(syms.objectsType), names.fromString("hash"));
+            meth.sym = lookupMethod(tree.pos(),
+                    meth.name,
+                    syms.objectsType,
+                    List.of(types.makeArrayType(syms.objectType)));
+            meth.type = meth.sym.type;
+            JCMethodInvocation app = make.Apply(List.nil(), meth, vars.map(make::Ident));
+            app.type = meth.type.getReturnType();
+            app.varargsElement = syms.objectType;
+            return make.MethodDef(hashCodeSym, make.Block(0, List.of(make.Return(app))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCTree datumOldEquals(JCClassDecl tree, List<VarSymbol> vars) {
+        make_at(tree.pos());
+
+        MethodSymbol oldEqualsSym = lookupMethod(tree.pos(),
+                         names.equals,
+                         tree.sym.type,
+                         List.of(syms.objectType));
+
+        if ((oldEqualsSym.flags() & DATUM) != 0) {
+            ListBuffer<JCStatement> trueStats = new ListBuffer<>();
+
+            VarSymbol o = oldEqualsSym.params.head;
+
+            VarSymbol that = new VarSymbol(SYNTHETIC, names.fromString("that" + target.syntheticNameChar()),
+                                                types.erasure(tree.type),
+                                                oldEqualsSym);
+
+            trueStats.add(make.VarDef(that,
+                    make.TypeCast(make.Type(types.erasure(tree.type)),
+                            make.Ident(o)).setType(types.erasure(tree.type))));
+
+            Symbol objectEqualsSym = lookupMethod(tree.pos(),
+                    names.equals,
+                    syms.objectsType,
+                    List.of(syms.objectType, syms.objectType));
+            for (VarSymbol v : vars) {
+                JCFieldAccess meth = make.Select(make.Type(syms.objectsType), names.equals);
+                meth.sym = objectEqualsSym;
+                meth.type = meth.sym.type;
+                JCExpression sel = make.Select(make.Ident(that), v);
+                JCMethodInvocation app = make.Apply(List.nil(), meth, List.of(make.Ident(v), sel));
+                app.type = meth.type.getReturnType();
+                JCUnary neg = make.Unary(Tag.NOT, app);
+                neg.operator = operators.resolveUnary(tree.pos(), Tag.NOT, syms.booleanType);
+                neg.type = neg.operator.getReturnType();
+                trueStats.add(make.If(neg, make.Return(make.Literal(false)), null));
+            }
+            trueStats.add(make.Return(make.Literal(true)));
+
+            JCStatement ifStat = make.If(make.TypeTest(make.Ident(o), make.Type(tree.type)).setType(syms.booleanType),
+                    make.Block(0, trueStats.toList()),
+                    make.Return(make.Literal(false)));
+
+            return make.MethodDef(oldEqualsSym, make.Block(0, List.of(ifStat)));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
     }
 
     public void visitMethodDef(JCMethodDecl tree) {
@@ -3408,6 +3736,30 @@ public class Lower extends TreeTranslator {
             result = visitStringSwitch(tree);
         } else {
             result = tree;
+        }
+    }
+
+    @Override
+    public void visitExec(JCExpressionStatement tree) {
+        if (tree.expr.hasTag(APPLY) &&
+                TreeInfo.name(((JCMethodInvocation)tree.expr).meth) == names._default) {
+            //inline constructor assignments
+            List<VarSymbol> vars = types.datumVars(currentClass.type).stream()
+                            .filter(v -> v.owner == currentClass)
+                            .collect(List.collector());
+            ListBuffer<JCStatement> stats = new ListBuffer<>();
+            List<JCExpression> args = ((JCMethodInvocation)tree.expr).args;
+            for (VarSymbol vsym : vars) {
+                stats.add(make.Exec(
+                        make.Assign(make.Select(makeThis(tree, currentClass), vsym), args.head)
+                                .setType(types.erasure(vsym.type))));
+                args = args.tail;
+            }
+            JCTree block = make.Block(0, stats.toList());
+            result = translate(block);
+            return;
+        } else {
+            super.visitExec(tree);
         }
     }
 

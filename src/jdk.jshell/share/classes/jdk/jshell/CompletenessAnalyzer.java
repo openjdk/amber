@@ -193,6 +193,7 @@ class CompletenessAnalyzer {
         IDENTIFIER(TokenKind.IDENTIFIER, XEXPR1|XDECL1|XTERM),  //
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
+        DATUM(TokenKind.DATUM, XEXPR|XDECL1|XSTART|XTERM),  //  class decl (MAPPED: DOTCLASS)
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
@@ -223,6 +224,7 @@ class CompletenessAnalyzer {
         // Modifiers keywords
         ABSTRACT(TokenKind.ABSTRACT, XDECL1),  //  abstract
         FINAL(TokenKind.FINAL, XDECL1),  //  final
+        NONFINAL(TokenKind.NON_FINAL, XDECL1),  //  final
         NATIVE(TokenKind.NATIVE, XDECL1),  //  native
         STATIC(TokenKind.STATIC, XDECL1),  //  static
         STRICTFP(TokenKind.STRICTFP, XDECL1),  //  strictfp

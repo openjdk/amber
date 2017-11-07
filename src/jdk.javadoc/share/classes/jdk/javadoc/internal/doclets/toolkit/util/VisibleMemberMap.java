@@ -136,6 +136,7 @@ public class VisibleMemberMap {
     private final Map<TypeElement, List<Element>> propertiesCache;
     private final Map<Element, Element> classPropertiesMap;
     private final Map<Element, GetterSetter> getterSetterMap;
+    private final Map<Element, Element> classAccessedFieldMap;
 
     /**
      * Construct a VisibleMemberMap of the given type for the given class.
@@ -158,6 +159,7 @@ public class VisibleMemberMap {
         propertiesCache = configuration.propertiesCache;
         classPropertiesMap = configuration.classPropertiesMap;
         getterSetterMap = configuration.getterSetterMap;
+        classAccessedFieldMap = configuration.classAccessedFieldMap;
         comparator  = utils.makeGeneralPurposeComparator();
         visibleClasses = new LinkedHashSet<>();
         new ClassMembers(typeElement, STARTLEVEL).build();
@@ -211,6 +213,10 @@ public class VisibleMemberMap {
      */
     public Element getPropertyElement(Element element) {
         return classPropertiesMap.get(element);
+    }
+
+    public Element getAccessorMemberDoc(Element element) {
+        return classAccessedFieldMap.get(element);
     }
 
     /**
@@ -534,6 +540,7 @@ public class VisibleMemberMap {
                                 ? utils.getAnnotationFieldsUnfiltered(te)
                                 : utils.getFieldsUnfiltered(te);
                     }
+                    processAccessors(list);
                     break;
                 case CONSTRUCTORS:
                     list = utils.getConstructors(te);
@@ -597,6 +604,19 @@ public class VisibleMemberMap {
                 }
             }
             return false;
+        }
+
+        private void processAccessors(List<? extends Element> fields) {
+            for (Element e : fields) {
+                Element getter = utils.elementUtils.getterFor((VariableElement)e);
+                if (getter != null) {
+                    classAccessedFieldMap.put(getter, e);
+                }
+                Element setter = utils.elementUtils.setterFor((VariableElement)e);
+                if (setter != null) {
+                    classAccessedFieldMap.put(setter, e);
+                }
+            }
         }
 
         private List<Element> properties(final TypeElement typeElement, final boolean filter) {

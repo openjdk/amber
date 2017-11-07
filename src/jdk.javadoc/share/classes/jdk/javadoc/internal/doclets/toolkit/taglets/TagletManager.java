@@ -727,6 +727,8 @@ public class TagletManager {
         addStandardTaglet(new CodeTaglet());
         addStandardTaglet(new IndexTaglet());
         addStandardTaglet(new SummaryTaglet());
+        addStandardTaglet(new AccessorTaglet(GETTER));
+        addStandardTaglet(new AccessorTaglet(SETTER));
 
         // Keep track of the names of standard tags for error
         // checking purposes. The following are not handled above.

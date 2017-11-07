@@ -43,6 +43,7 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
+import static com.sun.tools.javac.code.Flags.ABSTRACT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.*;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ASSERT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CASE;
@@ -2424,8 +2425,17 @@ public class JavacParser implements Parser {
         //todo: skip to anchor on error(?)
         int pos = token.pos;
         switch (token.kind) {
-        case RBRACE: case CASE: case DEFAULT: case EOF:
+        case RBRACE: case CASE: case EOF:
             return List.nil();
+        case DEFAULT:
+            if (peekToken(COLON)) {
+                return List.nil();
+            } else {
+                accept(DEFAULT);
+                JCExpression t = toP(F.at(pos).Ident(names._default));
+                t = arguments(null, t);
+                return List.of(toP(F.at(pos).Exec(t)));
+            }
         case LBRACE: case IF: case FOR: case WHILE: case DO: case TRY:
         case SWITCH: case SYNCHRONIZED: case RETURN: case THROW: case BREAK:
         case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
@@ -2438,7 +2448,7 @@ public class JavacParser implements Parser {
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
                 token.kind == ENUM) {
-                return List.of(classOrInterfaceOrEnumDeclaration(mods, dc));
+                return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
             } else {
                 JCExpression t = parseType(true);
                 return localVariableDeclarations(mods, t);
@@ -2447,16 +2457,16 @@ public class JavacParser implements Parser {
         case ABSTRACT: case STRICTFP: {
             Comment dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
-            return List.of(classOrInterfaceOrEnumDeclaration(mods, dc));
+            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
         }
         case INTERFACE:
         case CLASS:
             Comment dc = token.comment(CommentStyle.JAVADOC);
-            return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
+            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
             error(token.pos, "local.enum");
             dc = token.comment(CommentStyle.JAVADOC);
-            return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
+            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         default:
             Token prevToken = token;
             JCExpression t = term(EXPR | TYPE);
@@ -2861,6 +2871,7 @@ public class JavacParser implements Parser {
             case STATIC      : flag = Flags.STATIC; break;
             case TRANSIENT   : flag = Flags.TRANSIENT; break;
             case FINAL       : flag = Flags.FINAL; break;
+            case NON_FINAL   : flag = Flags.NON_FINAL; break;
             case ABSTRACT    : flag = Flags.ABSTRACT; break;
             case NATIVE      : flag = Flags.NATIVE; break;
             case VOLATILE    : flag = Flags.VOLATILE; break;
@@ -3408,7 +3419,7 @@ public class JavacParser implements Parser {
             nextToken();
             return toP(F.at(pos).Skip());
         } else {
-            return classOrInterfaceOrEnumDeclaration(modifiersOpt(mods), docComment);
+            return classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(mods), docComment);
         }
     }
 
@@ -3417,9 +3428,11 @@ public class JavacParser implements Parser {
      *  @param mods     Any modifiers starting the class or interface declaration
      *  @param dc       The documentation comment for the class, or null.
      */
-    protected JCStatement classOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
+    protected JCStatement classOrDatumOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
         if (token.kind == CLASS) {
             return classDeclaration(mods, dc);
+        } if (token.kind == DATUM) {
+            return datumDeclaration(mods, dc);
         } else if (token.kind == INTERFACE) {
             return interfaceDeclaration(mods, dc);
         } else if (token.kind == ENUM) {
@@ -3472,6 +3485,71 @@ public class JavacParser implements Parser {
         return result;
     }
 
+    protected JCClassDecl datumDeclaration(JCModifiers mods, Comment dc) {
+        int pos = token.pos;
+        accept(DATUM);
+        mods.flags |= Flags.DATUM;
+        Name name = typeName();
+
+        List<JCTypeParameter> typarams = typeParametersOpt();
+
+        Map<Name, JCTree> optHeaderFields = headerFields(mods);
+
+        if (optHeaderFields.size() == 0) {
+            log.error(token.pos, Errors.DatumMustDeclareAtLeastOneField);
+        }
+
+        JCExpression extending = null;
+        Set<Name> superFieldNames = new LinkedHashSet<>();
+        if (token.kind == EXTENDS) {
+            nextToken();
+            extending = parseType();
+            if (token.kind == LPAREN) {
+                accept(LPAREN);
+                while (token.kind != RPAREN) {
+                    Name id = ident();
+                    if (!superFieldNames.contains(id)) {
+                        superFieldNames.add(id);
+                    } else {
+                        log.error(token.pos, Errors.DuplicateArgumentToSuper(id));
+                    }
+                    if (token.kind == COMMA) {
+                        nextToken();
+                    }
+                }
+                accept(RPAREN);
+            }
+        }
+        List<JCExpression> implementing = List.nil();
+        if (token.kind == IMPLEMENTS) {
+            nextToken();
+            implementing = typeList();
+        }
+        List<JCTree> defs = List.nil();
+        if (token.kind == LBRACE) {
+            defs = classOrInterfaceBody(name, false);
+        } else {
+            accept(SEMI);
+        }
+        optHeaderFields.values().stream()
+                .filter(t -> superFieldNames.contains(((JCVariableDecl)t).name))
+                .forEach(t -> ((JCVariableDecl)t).getModifiers().flags |= Flags.HYPOTHETICAL);
+        ListBuffer<JCTree> fields = new ListBuffer<>();
+        for (Name n : superFieldNames) {
+            JCTree field = optHeaderFields.get(n);
+            fields.add(field);
+            optHeaderFields.remove(n);
+        }
+        for (JCTree field : optHeaderFields.values()) {
+            fields.add(field);
+        }
+        JCClassDecl result = toP(F.at(pos).ClassDef(
+            mods, name, typarams, extending, implementing,
+                defs.prependList(fields.toList())));
+        attach(result, dc);
+        return result;
+    }
+
     Name typeName() {
         int pos = token.pos;
         Name name = ident();
@@ -3479,6 +3557,33 @@ public class JavacParser implements Parser {
             reportSyntaxError(pos, "var.not.allowed", name);
         }
         return name;
+    }
+
+    Map<Name, JCTree> headerFields(JCModifiers datumClassMods) {
+        accept(LPAREN);
+        Map<Name, JCTree> fields = new LinkedHashMap<>();
+        while (token.kind != RPAREN) {
+            JCModifiers mods = modifiersOpt();
+            mods.flags |= Flags.DATUM;
+            mods.flags |= (datumClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
+            if ((mods.flags & Flags.NON_FINAL) == 0) {
+                mods.flags |= Flags.FINAL;
+            }
+            JCExpression type = parseType();
+            int pos = token.pos;
+            Name id = ident();
+            if (!fields.containsKey(id)) {
+                List<Pair<Accessors.Kind, Name>> accessors = List.of(new Pair<>(Accessors.Kind.GET, id));
+                fields.put(id, toP(F.at(pos).VarDef(mods, id, type, null, accessors)));
+            } else {
+                log.error(pos, Errors.DatumCantDeclareDuplicateFields);
+            }
+            if (token.kind == COMMA) {
+                nextToken();
+            }
+        }
+        accept(RPAREN);
+        return fields;
     }
 
     /** InterfaceDeclaration = INTERFACE Ident TypeParametersOpt
@@ -3675,9 +3780,10 @@ public class JavacParser implements Parser {
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
             if (token.kind == CLASS ||
+                token.kind == DATUM ||
                 token.kind == INTERFACE ||
                 token.kind == ENUM) {
-                return List.of(classOrInterfaceOrEnumDeclaration(mods, dc));
+                return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
             } else if (token.kind == LBRACE &&
                        (mods.flags & Flags.StandardFlags & ~Flags.STATIC) == 0 &&
                        mods.annotations.isEmpty()) {

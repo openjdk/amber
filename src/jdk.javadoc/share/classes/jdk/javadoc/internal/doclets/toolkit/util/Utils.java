@@ -207,6 +207,17 @@ public class Utils {
         return null;
     }
 
+    public ExecutableElement findAccessorFor(VariableElement field, DocTree.Kind kind) {
+        switch (kind) {
+            case GETTER:
+                return elementUtils.getterFor(field);
+            case SETTER:
+                return elementUtils.setterFor(field);
+            default:
+                throw new IllegalStateException("Cannot get here!");
+        }
+    }
+
     /**
      * Test whether a class is a subclass of another class.
      *

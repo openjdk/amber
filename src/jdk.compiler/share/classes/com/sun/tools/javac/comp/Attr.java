@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -1070,11 +1071,9 @@ public class Attr extends JCTree.Visitor {
                     JCBlock body = tree.body;
                     if (body.stats.isEmpty() ||
                             !TreeInfo.isSelfCall(body.stats.head)) {
-                        body.stats = body.stats.
-                                prepend(typeEnter.SuperCall(make.at(body.pos),
-                                        List.nil(),
-                                        List.nil(),
-                                        false));
+                        JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
+                                make.Ident(names._super), make.Idents(List.nil())));
+                        body.stats = body.stats.prepend(supCall);
                     } else if ((env.enclClass.sym.flags() & ENUM) != 0 &&
                             (tree.mods.flags & GENERATEDCONSTR) == 0 &&
                             TreeInfo.isSuperCall(body.stats.head)) {
@@ -4610,6 +4609,44 @@ public class Attr extends JCTree.Visitor {
 
                 if (isSerializable(c.type)) {
                     env.info.isSerializable = true;
+                }
+
+                if ((c.flags() & DATUM) != 0) {
+                    Type sup = types.supertype(c.type);
+                    List<JCVariableDecl> superFields = TreeInfo.superDatumFields(env.enclClass);
+                    if (sup.tsym != syms.dataClassType.tsym &&
+                            (sup.tsym.flags() & (ABSTRACT | DATUM)) != (ABSTRACT | DATUM)) {
+                        log.error(env.enclClass.extending.pos(), Errors.CantExtendDatum(Fragments.BadDatumSuper));
+                    }
+
+                    if (superFields.nonEmpty()) {
+                        if (c.members().findFirst(names.init, s -> (s.flags() & DATUM) == 0) != null) {
+                            log.error(env.enclClass.extending.pos(), Errors.CantExtendDatum(Fragments.BadSuperFields));
+                        }
+                    }
+
+                    List<VarSymbol> supDatumFields = types.datumVars(sup);
+                    for (JCTree supField : superFields) {
+                        JCVariableDecl supVarDecl = (JCVariableDecl)supField;
+                        if (supDatumFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
+                        if (supDatumFields.head.name != supVarDecl.name ||
+                                !types.isSameType(supDatumFields.head.type, supVarDecl.vartype.type)) {
+                            log.error(env.enclClass.extending.pos(),
+                                    Errors.CantExtendDatum(
+                                            Fragments.SuperFieldMismatch(
+                                                    supDatumFields.head.type, supDatumFields.head.name,
+                                                    supVarDecl.vartype.type, supVarDecl.name)));
+                            break;
+                        }
+                        supDatumFields = supDatumFields.tail;
+                    }
+
+                    List<VarSymbol> vars = types.datumVars(c.type).stream()
+                            .filter(v -> v.owner == c)
+                            .collect(List.collector());
+                    env.info.datumImplicitConstructor = new MethodSymbol(0, names.init,
+                            new MethodType(vars.map(v -> v.type), syms.voidType, List.nil(), syms.methodClass),
+                            c);
                 }
 
                 attribClassBody(env, c);

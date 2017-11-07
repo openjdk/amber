@@ -361,6 +361,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         return (flags_field & DEPRECATED) != 0;
     }
 
+    public boolean isDatum() {
+        return (flags_field & DATUM) != 0;
+    }
+
     public boolean hasDeprecatedAnnotation() {
         return (flags_field & DEPRECATED_ANNOTATION) != 0;
     }
@@ -391,6 +395,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
     public boolean isInterface() {
         return (flags() & INTERFACE) != 0;
+    }
+
+    public boolean isAbstract() {
+        return (flags() & ABSTRACT) != 0;
     }
 
     public boolean isPrivate() {
@@ -1500,6 +1508,8 @@ public abstract class Symbol extends AnnoConstruct implements Element {
          *    If this is a local variable, its logical slot number.
          */
         public int adr = -1;
+
+        public List<Pair<Accessors.Kind, MethodSymbol>> accessors = List.nil();
 
         /** Construct a variable symbol, given its flags, name, type and owner.
          */

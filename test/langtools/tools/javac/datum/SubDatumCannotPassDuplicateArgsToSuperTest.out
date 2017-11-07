@@ -1,0 +1,2 @@
+SubDatumCannotPassDuplicateArgsToSuperTest.java:9:52: compiler.err.duplicate.argument.to.super: x
+1 error

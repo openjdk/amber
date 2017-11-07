@@ -35,6 +35,19 @@ public interface DocTree {
      * Enumerates all kinds of trees.
      */
     enum Kind {
+
+        /**
+         * Used for instances of {@link AccessorTree}
+         * representing an embedded getter JavaDoc.
+         */
+        GETTER("getter"),
+
+        /**
+         * Used for instances of {@link AccessorTree}
+         * representing an embedded getter JavaDoc.
+         */
+        SETTER("setter"),
+
         /**
          * Used for instances of {@link AttributeTree}
          * representing an HTML attribute.

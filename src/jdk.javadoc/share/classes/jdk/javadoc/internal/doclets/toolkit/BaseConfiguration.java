@@ -336,6 +336,7 @@ public abstract class BaseConfiguration {
     public final Map<TypeElement, List<Element>> propertiesCache = new HashMap<>();
     public final Map<Element, Element> classPropertiesMap = new HashMap<>();
     public final Map<Element, GetterSetter> getterSetterMap = new HashMap<>();
+    public final Map<Element,Element> classAccessedFieldMap = new HashMap<>();
 
     public DocFileFactory docFileFactory;
 

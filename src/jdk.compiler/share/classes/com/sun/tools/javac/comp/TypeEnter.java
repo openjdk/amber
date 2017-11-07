@@ -28,6 +28,8 @@ package com.sun.tools.javac.comp;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.tools.JavaFileObject;
 
@@ -53,6 +55,7 @@ import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.ERROR;
+import static com.sun.tools.javac.code.TypeTag.NONE;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
@@ -682,6 +685,8 @@ public class TypeEnter implements Completer {
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
+                : ((tree.mods.flags & Flags.DATUM) != 0)
+                ? syms.dataClassType
                 : syms.objectType;
             }
             ct.supertype_field = modelMissingTypes(baseEnv, supertype, extending, false);
@@ -798,7 +803,7 @@ public class TypeEnter implements Completer {
     private final class HeaderPhase extends AbstractHeaderPhase {
 
         public HeaderPhase() {
-            super(CompletionCause.HEADER_PHASE, new MembersPhase());
+            super(CompletionCause.HEADER_PHASE, new DatumPhase());
         }
 
         @Override
@@ -848,12 +853,10 @@ public class TypeEnter implements Completer {
         }
     }
 
-    /** Enter member fields and methods of a class
-     */
-    private final class MembersPhase extends Phase {
+    private abstract class AbstractMembersPhase extends Phase {
 
-        public MembersPhase() {
-            super(CompletionCause.MEMBERS_PHASE, null);
+        public AbstractMembersPhase(CompletionCause completionCause, Phase next) {
+            super(completionCause, next);
         }
 
         private boolean completing;
@@ -877,6 +880,32 @@ public class TypeEnter implements Completer {
                 completing = prevCompleting;
             }
         }
+    }
+
+    private final class DatumPhase extends AbstractMembersPhase {
+
+        public DatumPhase() {
+            super(CompletionCause.DATUM_PHASE, new MembersPhase());
+        }
+
+        @Override
+        protected void runPhase(Env<AttrContext> env) {
+            JCClassDecl tree = env.enclClass;
+            ClassSymbol sym = tree.sym;
+            if ((sym.flags_field & DATUM) != 0) {
+                memberEnter.memberEnter(TreeInfo.datumFields(tree), env);
+                memberEnter.memberEnter(TreeInfo.superDatumFields(tree), env);
+            }
+        }
+    }
+
+    /** Enter member fields and methods of a class
+     */
+    private final class MembersPhase extends AbstractMembersPhase {
+
+        public MembersPhase() {
+            super(CompletionCause.MEMBERS_PHASE, null);
+        }
 
         @Override
         protected void runPhase(Env<AttrContext> env) {
@@ -887,36 +916,21 @@ public class TypeEnter implements Completer {
             // Add default constructor if needed.
             if ((sym.flags() & INTERFACE) == 0 &&
                 !TreeInfo.hasConstructors(tree.defs)) {
-                List<Type> argtypes = List.nil();
-                List<Type> typarams = List.nil();
-                List<Type> thrown = List.nil();
-                long ctorFlags = 0;
-                boolean based = false;
-                boolean addConstructor = true;
-                JCNewClass nc = null;
+                DefaultConstructorHelper helper = new BasicConstructorHelper(sym);
                 if (sym.name.isEmpty()) {
-                    nc = (JCNewClass)env.next.tree;
+                    JCNewClass nc = (JCNewClass)env.next.tree;
                     if (nc.constructor != null) {
-                        addConstructor = nc.constructor.kind != ERR;
-                        Type superConstrType = types.memberType(sym.type,
-                                                                nc.constructor);
-                        argtypes = superConstrType.getParameterTypes();
-                        typarams = superConstrType.getTypeArguments();
-                        ctorFlags = nc.constructor.flags() & VARARGS;
-                        if (nc.encl != null) {
-                            argtypes = argtypes.prepend(nc.encl.type);
-                            based = true;
+                        if (nc.constructor.kind != ERR) {
+                            helper = new AnonClassConstructorHelper(sym, (MethodSymbol)nc.constructor, nc.encl);
+                        } else {
+                            helper = null;
                         }
-                        thrown = superConstrType.getThrownTypes();
                     }
+                } else if ((sym.flags() & DATUM) != 0) {
+                    helper = new DatumConstructorHelper(sym, TreeInfo.datumFields(tree).map(vd -> vd.sym), TreeInfo.superDatumFields(tree));
                 }
-                if (addConstructor) {
-                    MethodSymbol basedConstructor = nc != null ?
-                            (MethodSymbol)nc.constructor : null;
-                    JCTree constrDef = DefaultConstructor(make.at(tree.pos), sym,
-                                                        basedConstructor,
-                                                        typarams, argtypes, thrown,
-                                                        ctorFlags, based);
+                if (helper != null) {
+                    JCTree constrDef = DefaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
                 }
             }
@@ -952,11 +966,47 @@ public class TypeEnter implements Completer {
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
                 addEnumMembers(tree, env);
             }
-            memberEnter.memberEnter(tree.defs, env);
+            List<JCTree> defsToEnter = (tree.sym.flags_field & DATUM) != 0 ?
+                    tree.defs.diff(List.convert(JCTree.class, TreeInfo.datumFields(tree))) : tree.defs;
+            memberEnter.memberEnter(defsToEnter, env);
+            if ((tree.mods.flags & (DATUM | ABSTRACT)) == DATUM) {
+                addDatumMembersIfNeeded(tree, env);
+            }
 
             if (tree.sym.isAnnotationType()) {
                 Assert.check(tree.sym.isCompleted());
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));
+            }
+        }
+
+        /** Add the accessors for fields to the symbol table.
+         */
+        private void addAccessorsIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+            tree.defs.stream()
+                    .filter(t -> t.hasTag(VARDEF))
+                    .map(t -> (JCVariableDecl)t)
+                    .filter(vd -> vd.accessors != null && vd.accessors.nonEmpty())
+                    .forEach(vd -> addAccessors(vd, env));
+        }
+
+        private void addAccessors(JCVariableDecl tree, Env<AttrContext> env) {
+            for (Pair<Accessors.Kind, Name> accessor : tree.accessors) {
+                Type accessorType = accessor.fst.accessorType(syms, tree.sym.type);
+                Symbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
+                if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
+                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED),
+                              accessor.snd,
+                              make.Type(accessorType.getReturnType()),
+                              List.nil(),
+                              accessorType.getParameterTypes().stream()
+                                      .map(ptype -> make.Param(tree.name, tree.sym.type, env.enclClass.sym))
+                                      .collect(List.collector()),
+                              List.nil(), // thrown
+                              null,
+                              null);
+                    memberEnter.memberEnter(getter, env);
+                    tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
+                }
             }
         }
 
@@ -994,136 +1044,269 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(valueOf, env);
         }
 
+        /** Add the implicit members for a datum type
+         *  to the symbol table.
+         */
+        private void addDatumMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+
+            if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
+                JCExpression toStringType = make.Type(new ArrayType(tree.sym.type, syms.arrayClass));
+
+                // public String toString() { return ???; }
+                JCMethodDecl toString = make.
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                              names.toString,
+                              make.Type(syms.stringType),
+                              List.nil(),
+                              List.nil(),
+                              List.nil(), // thrown
+                              null,
+                              null);
+                memberEnter.memberEnter(toString, env);
+            }
+
+            if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
+                // public int hashCode() { return ???; }
+                JCMethodDecl hashCode = make.
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                              names.hashCode,
+                              make.Type(syms.intType),
+                              List.nil(),
+                              List.nil(),
+                              List.nil(), // thrown
+                              null,
+                              null);
+                memberEnter.memberEnter(hashCode, env);
+            }
+
+            if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
+                // public boolean equals(Object o) { return ???; }
+                JCMethodDecl equals = make.
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                              names.equals,
+                              make.Type(syms.booleanType),
+                              List.nil(),
+                              List.of(make.VarDef(make.Modifiers(Flags.PARAMETER),
+                                                names.fromString("o"),
+                                                make.Type(syms.objectType), null)),
+                              List.nil(), // thrown
+                              null,
+                              null);
+                memberEnter.memberEnter(equals, env);
+            }
+
+            addAccessorsIfNeeded(tree, env);
+        }
+
+    }
+
+    private Symbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
+        for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
+            if (types.isSameTypes(s.type.getParameterTypes(), argtypes)) {
+                return s;
+            }
+        }
+        return null;
     }
 
 /* ***************************************************************************
  * tree building
  ****************************************************************************/
 
-    /** Generate default constructor for given class. For classes different
-     *  from java.lang.Object, this is:
-     *
-     *    c(argtype_0 x_0, ..., argtype_n x_n) throws thrown {
-     *      super(x_0, ..., x_n)
-     *    }
-     *
-     *  or, if based == true:
-     *
-     *    c(argtype_0 x_0, ..., argtype_n x_n) throws thrown {
-     *      x_0.super(x_1, ..., x_n)
-     *    }
-     *
-     *  @param make     The tree factory.
-     *  @param c        The class owning the default constructor.
-     *  @param argtypes The parameter types of the constructor.
-     *  @param thrown   The thrown exceptions of the constructor.
-     *  @param based    Is first parameter a this$n?
-     */
-    JCTree DefaultConstructor(TreeMaker make,
-                            ClassSymbol c,
-                            MethodSymbol baseInit,
-                            List<Type> typarams,
-                            List<Type> argtypes,
-                            List<Type> thrown,
-                            long flags,
-                            boolean based) {
-        JCTree result;
-        if ((c.flags() & ENUM) != 0 &&
-            (types.supertype(c.type).tsym == syms.enumSym)) {
-            // constructors of true enums are private
-            flags = (flags & ~AccessFlags) | PRIVATE | GENERATEDCONSTR;
-        } else
-            flags |= (c.flags() & AccessFlags) | GENERATEDCONSTR;
-        if (c.name.isEmpty()) {
-            flags |= ANONCONSTR;
-        }
-        if (based) {
-            flags |= ANONCONSTR_BASED;
-        }
-        Type mType = new MethodType(argtypes, null, thrown, c);
-        Type initType = typarams.nonEmpty() ?
-            new ForAll(typarams, mType) :
-            mType;
-        MethodSymbol init = new MethodSymbol(flags, names.init,
-                initType, c);
-        init.params = createDefaultConstructorParams(make, baseInit, init,
-                argtypes, based);
-        List<JCVariableDecl> params = make.Params(argtypes, init);
-        List<JCStatement> stats = List.nil();
-        if (c.type != syms.objectType) {
-            stats = stats.prepend(SuperCall(make, typarams, params, based));
-        }
-        result = make.MethodDef(init, make.Block(0, stats));
-        return result;
+    interface DefaultConstructorHelper {
+       Type constructorType();
+       MethodSymbol constructorSymbol();
+       Type enclosingType();
+       TypeSymbol owner();
+       List<Name> superArgs();
+       List<Name> inits();
     }
 
-    private List<VarSymbol> createDefaultConstructorParams(
-            TreeMaker make,
-            MethodSymbol baseInit,
-            MethodSymbol init,
-            List<Type> argtypes,
-            boolean based) {
-        List<VarSymbol> initParams = null;
-        List<Type> argTypesList = argtypes;
-        if (based) {
-            /*  In this case argtypes will have an extra type, compared to baseInit,
-             *  corresponding to the type of the enclosing instance i.e.:
-             *
-             *  Inner i = outer.new Inner(1){}
-             *
-             *  in the above example argtypes will be (Outer, int) and baseInit
-             *  will have parameter's types (int). So in this case we have to add
-             *  first the extra type in argtypes and then get the names of the
-             *  parameters from baseInit.
-             */
-            initParams = List.nil();
-            VarSymbol param = new VarSymbol(PARAMETER, make.paramName(0), argtypes.head, init);
-            initParams = initParams.append(param);
-            argTypesList = argTypesList.tail;
+    class BasicConstructorHelper implements DefaultConstructorHelper {
+
+        TypeSymbol owner;
+        Type constructorType;
+        MethodSymbol constructorSymbol;
+
+        BasicConstructorHelper(TypeSymbol owner) {
+            this.owner = owner;
         }
-        if (baseInit != null && baseInit.params != null &&
-            baseInit.params.nonEmpty() && argTypesList.nonEmpty()) {
-            initParams = (initParams == null) ? List.nil() : initParams;
-            List<VarSymbol> baseInitParams = baseInit.params;
-            while (baseInitParams.nonEmpty() && argTypesList.nonEmpty()) {
-                VarSymbol param = new VarSymbol(baseInitParams.head.flags() | PARAMETER,
-                        baseInitParams.head.name, argTypesList.head, init);
-                initParams = initParams.append(param);
-                baseInitParams = baseInitParams.tail;
-                argTypesList = argTypesList.tail;
+
+        @Override
+        public Type constructorType() {
+            if (constructorType == null) {
+                constructorType = new MethodType(List.nil(), syms.voidType, List.nil(), syms.methodClass);
             }
+            return constructorType;
         }
-        return initParams;
+
+        @Override
+        public MethodSymbol constructorSymbol() {
+            if (constructorSymbol == null) {
+                long flags;
+                if ((owner().flags() & ENUM) != 0 &&
+                    (types.supertype(owner().type).tsym == syms.enumSym)) {
+                    // constructors of true enums are private
+                    flags = PRIVATE | GENERATEDCONSTR;
+                } else {
+                    flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
+                }
+                constructorSymbol = new MethodSymbol(flags, names.init,
+                    constructorType(), owner());
+            }
+            return constructorSymbol;
+        }
+
+        @Override
+        public Type enclosingType() {
+            return Type.noType;
+        }
+
+        @Override
+        public TypeSymbol owner() {
+            return owner;
+        }
+
+        @Override
+        public List<Name> superArgs() {
+            return List.nil();
+        }
+
+        @Override
+        public List<Name> inits() {
+            return List.nil();
+        }
     }
 
-    /** Generate call to superclass constructor. This is:
-     *
-     *    super(id_0, ..., id_n)
-     *
-     * or, if based == true
-     *
-     *    id_0.super(id_1,...,id_n)
-     *
-     *  where id_0, ..., id_n are the names of the given parameters.
-     *
-     *  @param make    The tree factory
-     *  @param params  The parameters that need to be passed to super
-     *  @param typarams  The type parameters that need to be passed to super
-     *  @param based   Is first parameter a this$n?
-     */
-    JCExpressionStatement SuperCall(TreeMaker make,
-                   List<Type> typarams,
-                   List<JCVariableDecl> params,
-                   boolean based) {
-        JCExpression meth;
-        if (based) {
-            meth = make.Select(make.Ident(params.head), names._super);
-            params = params.tail;
-        } else {
-            meth = make.Ident(names._super);
+    class AnonClassConstructorHelper extends BasicConstructorHelper {
+
+        MethodSymbol constr;
+        Type encl;
+        boolean based = false;
+
+        AnonClassConstructorHelper(TypeSymbol owner, MethodSymbol constr, JCExpression encl) {
+            super(owner);
+            this.constr = constr;
+            this.encl = encl != null ? encl.type : Type.noType;
         }
-        List<JCExpression> typeargs = typarams.nonEmpty() ? make.Types(typarams) : null;
-        return make.Exec(make.Apply(typeargs, meth, make.Idents(params)));
+
+        @Override
+        public Type constructorType() {
+            if (constructorType == null) {
+                Type ctype = types.memberType(owner.type, constr);
+                if (!enclosingType().hasTag(NONE)) {
+                    ctype = types.createMethodTypeWithParameters(ctype, ctype.getParameterTypes().prepend(enclosingType()));
+                    based = true;
+                }
+                constructorType = ctype;
+            }
+            return constructorType;
+        }
+
+        @Override
+        public MethodSymbol constructorSymbol() {
+            MethodSymbol csym = super.constructorSymbol();
+            csym.flags_field |= ANONCONSTR | (constr.flags() & VARARGS);
+            csym.flags_field |= based ? ANONCONSTR_BASED : 0;
+            ListBuffer<VarSymbol> params = new ListBuffer<>();
+            List<Type> argtypes = constructorType().getParameterTypes();
+            if (!enclosingType().hasTag(NONE)) {
+                argtypes = argtypes.tail;
+                params = params.prepend(new VarSymbol(PARAMETER, make.paramName(0), enclosingType(), csym));
+            }
+            if (constr.params != null) {
+                for (VarSymbol p : constr.params) {
+                    params.add(new VarSymbol(PARAMETER | p.flags(), p.name, argtypes.head, csym));
+                    argtypes = argtypes.tail;
+                }
+            }
+            csym.params = params.toList();
+            return csym;
+        }
+
+        @Override
+        public Type enclosingType() {
+            return encl;
+        }
+
+        @Override
+        public List<Name> superArgs() {
+            List<JCVariableDecl> params = make.Params(constructorType().getParameterTypes(), constructorSymbol());
+            if (!enclosingType().hasTag(NONE)) {
+                params = params.tail;
+            }
+            return params.map(vd -> vd.name);
+        }
+    }
+
+    class DatumConstructorHelper extends BasicConstructorHelper {
+
+        List<VarSymbol> datumFields;
+        List<JCVariableDecl> superFields;
+
+        DatumConstructorHelper(TypeSymbol owner, List<VarSymbol> datumFields, List<JCVariableDecl> superFields) {
+            super(owner);
+            this.datumFields = datumFields;
+            this.superFields = superFields;
+        }
+
+        @Override
+        public Type constructorType() {
+            if (constructorType == null) {
+                List<Type> argtypes = superFields.map(v -> v.vartype.type)
+                        .appendList(datumFields.map(v -> v.type));
+                constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
+            }
+            return constructorType;
+        }
+
+        @Override
+        public MethodSymbol constructorSymbol() {
+            MethodSymbol csym = super.constructorSymbol();
+            ListBuffer<VarSymbol> params = new ListBuffer<>();
+            for (JCVariableDecl p : superFields) {
+                params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.vartype.type, csym));
+            }
+            for (VarSymbol p : datumFields) {
+                params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
+            }
+            csym.params = params.toList();
+            csym.flags_field |= DATUM | PUBLIC;
+            return csym;
+        }
+
+        @Override
+        public List<Name> superArgs() {
+            return superFields.map(v -> v.name);
+        }
+
+        @Override
+        public List<Name> inits() {
+            return datumFields.map(v -> v.name);
+        }
+    }
+
+    JCTree DefaultConstructor(TreeMaker make, DefaultConstructorHelper helper) {
+        Type initType = helper.constructorType();
+        MethodSymbol initSym = helper.constructorSymbol();
+        ListBuffer<JCStatement> stats = new ListBuffer<>();
+        if (helper.owner().type != syms.objectType) {
+            JCExpression meth;
+            if (!helper.enclosingType().hasTag(NONE)) {
+                meth = make.Select(make.Ident(initSym.params.head), names._super);
+            } else {
+                meth = make.Ident(names._super);
+            }
+            List<JCExpression> typeargs = initType.getTypeArguments().nonEmpty() ?
+                    make.Types(initType.getTypeArguments()) : null;
+            JCStatement superCall = make.Exec(make.Apply(typeargs, meth, helper.superArgs().map(make::Ident)));
+            stats.add(superCall);
+        }
+        for (Name initName : helper.inits()) {
+            stats.add(make.Exec(make.Assign(make.Select(make.Ident(names._this), initName), make.Ident(initName))));
+        }
+        JCTree result = make.MethodDef(initSym, make.Block(0, stats.toList()));
+        return result;
     }
 
     /**

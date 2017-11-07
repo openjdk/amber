@@ -28,6 +28,7 @@ package jdk.javadoc.internal.doclets.formats.html;
 import java.util.List;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -36,6 +37,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleElementVisitor9;
 
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.IndexTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
@@ -310,6 +312,26 @@ public class TagletWriterImpl extends TagletWriter {
         result.addContent(HtmlTree.DD(body));
         return result;
 
+    }
+
+    public Content accessorTagOutput(Element holder, List<? extends DocTree> tags) {
+        if (!tags.isEmpty()) {
+            //Todo: check that there's only one tag
+            DocTree.Kind kind = tags.get(0).getKind();
+            ExecutableElement accessor = utils.findAccessorFor((VariableElement)holder, kind);
+            //add reference to getter/setter
+            Content body = htmlWriter.getDocLink(LinkInfoImpl.Kind.SEE_TAG, (TypeElement)holder.getEnclosingElement(),
+                    accessor, accessor.getSimpleName() + utils.makeSignature(accessor, true), false, false);
+            ContentBuilder result = new ContentBuilder();
+            String key = kind == Kind.GETTER ?
+                    "doclet.getter" : "doclet.setter";
+            result.addContent(HtmlTree.DT(HtmlTree.SPAN(HtmlStyle.seeLabel,
+                    new StringContent(configuration.getText(key)))));
+            result.addContent(HtmlTree.DD(body));
+            return result;
+        } else {
+            return new ContentBuilder();
+        }
     }
 
     private void appendSeparatorIfNotEmpty(ContentBuilder body) {

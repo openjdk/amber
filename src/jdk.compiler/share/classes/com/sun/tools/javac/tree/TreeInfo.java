@@ -160,6 +160,22 @@ public class TreeInfo {
         }
     }
 
+    public static List<JCVariableDecl> datumFields(JCClassDecl tree) {
+        return tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.getModifiers().flags & (Flags.DATUM | HYPOTHETICAL)) == DATUM)
+                .collect(List.collector());
+    }
+
+    public static List<JCVariableDecl> superDatumFields(JCClassDecl tree) {
+        return tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.getModifiers().flags & (Flags.DATUM | HYPOTHETICAL)) == (DATUM | HYPOTHETICAL))
+                .collect(List.collector());
+    }
+
     /** Is this a constructor whose first (non-synthetic) statement is not
      *  of the form this(...)?
      */

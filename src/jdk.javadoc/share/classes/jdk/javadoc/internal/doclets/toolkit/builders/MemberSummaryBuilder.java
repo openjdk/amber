@@ -33,6 +33,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
+import com.sun.source.doctree.AccessorTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
 import jdk.javadoc.internal.doclets.toolkit.AnnotationTypeWriter;
@@ -340,6 +341,10 @@ public abstract class MemberSummaryBuilder extends AbstractMemberBuilder {
                 if (property != null) {
                     processProperty(visibleMemberMap, member, property);
                 }
+                final Element accessedField = visibleMemberMap.getAccessorMemberDoc(member);
+                if (accessedField != null) {
+                    processAccessor(accessedField, member);
+                }
                 List<? extends DocTree> firstSentenceTags = utils.getFirstSentenceTrees(member);
                 if (utils.isExecutableElement(member) && firstSentenceTags.isEmpty()) {
                     //Inherit comments from overriden or implemented method if
@@ -442,6 +447,51 @@ public abstract class MemberSummaryBuilder extends AbstractMemberBuilder {
             }
         }
         cmtutils.setDocCommentTree(member, fullBody, blockTags, utils);
+    }
+
+    /**
+     * Process the an accessor method, e.g. a field getter/setter, so that it contains the documentation
+     * from the underlying field. The method adds the leading sentence, which might be derived from
+     * the field accessor taglet (if present). Certain tags are also copied from the underlying field
+     * documentation.
+     *
+     * @param member the member which is to be augmented.
+     * @param field the original field documentation.
+     */
+    private void processAccessor(Element field, Element member) {
+        CommentUtils cmtutils = configuration.cmtUtils;
+        final boolean isGetter = ((ExecutableElement)member).getParameters().isEmpty();
+        List<? extends DocTree> accessorTags = utils.getBlockTags(field, isGetter ? Kind.GETTER : Kind.SETTER);
+        //Todo: check that there's only one tag
+        List<? extends DocTree> description = ((AccessorTree)accessorTags.get(0)).getDescription();
+
+        List<DocTree> fullBody = new ArrayList<>();
+        List<DocTree> blockTags = new ArrayList<>();
+        //add description
+        if (description.isEmpty()) {
+            if (isGetter) {
+                String text = MessageFormat.format(
+                        configuration.getText("doclet.FieldGetterWithName"),
+                        utils.propertyName((ExecutableElement) member));
+                fullBody.addAll(cmtutils.makeFirstSentenceTree(text));
+            } else {
+                String text = MessageFormat.format(
+                        configuration.getText("doclet.FieldSetterWithName"),
+                        utils.propertyName((ExecutableElement)member));
+                fullBody.addAll(cmtutils.makeFirstSentenceTree(text));
+            }
+        } else {
+            fullBody.addAll(description);
+        }
+
+        // copy certain tags
+        List<? extends DocTree> tags = utils.getBlockTags(field, Kind.SINCE);
+        blockTags.addAll(tags);
+        if (getVisibleMemberMap(VisibleMemberMap.Kind.FIELDS)
+                .getMembers((TypeElement)field.getEnclosingElement()).contains(field)) {
+            blockTags.add(cmtutils.makeSeeTree("#" + field.getSimpleName(), field));
+        }
+        cmtutils.setAccessorCommentTree(member, fullBody, blockTags, utils);
     }
 
     /**

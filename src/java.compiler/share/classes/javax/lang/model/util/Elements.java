@@ -612,4 +612,18 @@ public interface Elements {
      * @since 1.8
      */
     boolean isFunctionalInterface(TypeElement type);
+
+    /**
+     * Returns the executable element for the getter associated with the given variable element.
+     * @param variableElement the field for which the getter is to be found.
+     * @return the field's getter.
+     */
+    ExecutableElement getterFor(VariableElement variableElement);
+
+    /**
+     * Returns the executable element for the setter associated with the given variable element.
+     * @param variableElement the field for which the setter is to be found.
+     * @return the field's setter.
+     */
+    ExecutableElement setterFor(VariableElement variableElement);
 }

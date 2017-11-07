@@ -31,6 +31,7 @@ import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.parser.Tokens.Token;
+
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CLASS;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.COLON;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ENUM;
@@ -41,6 +42,7 @@ import static com.sun.tools.javac.parser.Tokens.TokenKind.LPAREN;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.MONKEYS_AT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.SEMI;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.VOID;
+
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -50,11 +52,15 @@ import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.Tag;
+
 import static com.sun.tools.javac.tree.JCTree.Tag.IDENT;
+
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Position;
+
+import static com.sun.tools.javac.parser.Tokens.TokenKind.DATUM;
 
 /**
  * This is a subclass of JavacParser which overrides one method with a modified
@@ -176,9 +182,10 @@ class ReplParser extends JavacParser {
             default:
                 JCModifiers mods = modifiersOpt(pmods);
                 if (token.kind == CLASS
+                        || token.kind == DATUM
                         || token.kind == INTERFACE
                         || token.kind == ENUM) {
-                    return List.<JCTree>of(classOrInterfaceOrEnumDeclaration(mods, dc));
+                    return List.<JCTree>of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
                 } else {
                     int pos = token.pos;
                     List<JCTypeParameter> typarams = typeParametersOpt();

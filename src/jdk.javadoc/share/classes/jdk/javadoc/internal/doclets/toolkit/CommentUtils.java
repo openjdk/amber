@@ -219,6 +219,17 @@ public class CommentUtils {
         utils.removeCommentHelper(element);
     }
 
+    public void setAccessorCommentTree(Element element, List<DocTree> fullBody,
+                                  List<DocTree> blockTags, Utils utils) {
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, blockTags);
+        TreePath pathToEncl = utils.docTrees.getPath(element.getEnclosingElement());
+        dcTreesMap.put(element, new DocCommentDuo(pathToEncl, docTree));
+        // There maybe an entry with the original comments usually null,
+        // therefore remove that entry if it exists, and allow a new one
+        // to be reestablished.
+        utils.removeCommentHelper(element);
+    }
+
     /**
      * A simplistic container to transport a TreePath, DocCommentTree pair.
      * Here is why we need this:

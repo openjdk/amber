@@ -91,6 +91,7 @@ public abstract class Dependencies {
         HIERARCHY_PHASE,
         IMPORTS_PHASE,
         MEMBER_ENTER,
+        DATUM_PHASE,
         MEMBERS_PHASE,
         OTHER;
     }

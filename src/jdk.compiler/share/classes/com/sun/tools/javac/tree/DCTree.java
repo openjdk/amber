@@ -537,6 +537,32 @@ public abstract class DCTree implements DocTree {
         }
     }
 
+    public static class DCAccessor extends DCInlineTag implements AccessorTree {
+        public final Kind kind;
+        public final List<? extends DocTree> description;
+
+        DCAccessor(Kind kind, List<? extends DocTree> description) {
+            Assert.check(kind == Kind.GETTER || kind == Kind.SETTER);
+            this.kind = kind;
+            this.description = description;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return kind;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(DocTreeVisitor<R, D> v, D d) {
+            return v.visitAccessor(this, d);
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public List<? extends DocTree> getDescription() {
+            return description;
+        }
+    }
+
     public static class DCParam extends DCBlockTag implements ParamTree {
         public final boolean isTypeParameter;
         public final DCIdentifier name;

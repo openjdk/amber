@@ -1,0 +1,3 @@
+DataClassAsSuper.java:10:31: compiler.err.cant.extend.datum: (compiler.misc.bad.datum.super)
+DataClassAsSuper.java:15:38: compiler.err.cant.extend.datum: (compiler.misc.bad.datum.super)
+2 errors

@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.code.*;
@@ -112,6 +113,8 @@ public class AttrContext {
      */
     JCTree preferredTreeForDiagnostics;
 
+    MethodSymbol datumImplicitConstructor;
+
     /** Duplicate this context, replacing scope field and copying all others.
      */
     AttrContext dup(WriteableScope scope) {
@@ -132,6 +135,7 @@ public class AttrContext {
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
+        info.datumImplicitConstructor = datumImplicitConstructor;
         return info;
     }
 
