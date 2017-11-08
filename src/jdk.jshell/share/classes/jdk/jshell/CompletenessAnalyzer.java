@@ -168,6 +168,7 @@ class CompletenessAnalyzer {
     private static final int XSTART        = 0b1000000000;              // Boundary, must be XTERM before
     private static final int XERRO         = 0b10000000000;             // Is an error
     private static final int XBRACESNEEDED = 0b100000000000;            // Expect {ANY} LBRACE
+    private static final int XMODIFIER     = 0b1000000000000;           // Modifier
 
     /**
      * An extension of the compiler's TokenKind which adds our combined/processed
@@ -193,7 +194,7 @@ class CompletenessAnalyzer {
         IDENTIFIER(TokenKind.IDENTIFIER, XEXPR1|XDECL1|XTERM),  //
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
-        DATUM(TokenKind.DATUM, XEXPR|XDECL1|XSTART|XTERM),  //  class decl (MAPPED: DOTCLASS)
+        DATUM(TokenKind.DATUM, XEXPR|XDECL1),  //  class decl (MAPPED: DOTCLASS)
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
@@ -222,17 +223,17 @@ class CompletenessAnalyzer {
         VOID(TokenKind.VOID, XEXPR1|XDECL1),  //  void
 
         // Modifiers keywords
-        ABSTRACT(TokenKind.ABSTRACT, XDECL1),  //  abstract
-        FINAL(TokenKind.FINAL, XDECL1),  //  final
-        NONFINAL(TokenKind.NON_FINAL, XDECL1),  //  final
-        NATIVE(TokenKind.NATIVE, XDECL1),  //  native
-        STATIC(TokenKind.STATIC, XDECL1),  //  static
-        STRICTFP(TokenKind.STRICTFP, XDECL1),  //  strictfp
-        PRIVATE(TokenKind.PRIVATE, XDECL1),  //  private
-        PROTECTED(TokenKind.PROTECTED, XDECL1),  //  protected
-        PUBLIC(TokenKind.PUBLIC, XDECL1),  //  public
-        TRANSIENT(TokenKind.TRANSIENT, XDECL1),  //  transient
-        VOLATILE(TokenKind.VOLATILE, XDECL1),  //  volatile
+        ABSTRACT(TokenKind.ABSTRACT, XDECL1 | XMODIFIER),  //  abstract
+        FINAL(TokenKind.FINAL, XDECL1 | XMODIFIER),  //  final
+        NONFINAL(TokenKind.NON_FINAL, XDECL1 | XMODIFIER),  //  final
+        NATIVE(TokenKind.NATIVE, XDECL1 | XMODIFIER),  //  native
+        STATIC(TokenKind.STATIC, XDECL1 | XMODIFIER),  //  static
+        STRICTFP(TokenKind.STRICTFP, XDECL1 | XMODIFIER),  //  strictfp
+        PRIVATE(TokenKind.PRIVATE, XDECL1 | XMODIFIER),  //  private
+        PROTECTED(TokenKind.PROTECTED, XDECL1 | XMODIFIER),  //  protected
+        PUBLIC(TokenKind.PUBLIC, XDECL1 | XMODIFIER),  //  public
+        TRANSIENT(TokenKind.TRANSIENT, XDECL1 | XMODIFIER),  //  transient
+        VOLATILE(TokenKind.VOLATILE, XDECL1 | XMODIFIER),  //  volatile
 
         // Declarations and type parameters (thus expressions)
         EXTENDS(TokenKind.EXTENDS, XEXPR|XDECL),  //  extends
@@ -387,6 +388,10 @@ class CompletenessAnalyzer {
 
         boolean isBracesNeeded() {
             return (belongs & XBRACESNEEDED) != 0;
+        }
+
+        boolean isModifier() {
+            return (belongs & XMODIFIER) != 0;
         }
 
         /**
@@ -653,9 +658,13 @@ class CompletenessAnalyzer {
 
         public Completeness parseDeclaration() {
             boolean isImport = token.kind == IMPORT;
+            boolean isDatum = false;
+            boolean afterModifiers = false;
             boolean isBracesNeeded = false;
             while (token.kind.isDeclaration()) {
                 isBracesNeeded |= token.kind.isBracesNeeded();
+                isDatum |= !afterModifiers && token.kind == DATUM;
+                afterModifiers |= !token.kind.isModifier();
                 nextToken();
             }
             switch (token.kind) {
@@ -680,6 +689,12 @@ class CompletenessAnalyzer {
                                     : Completeness.COMPLETE_WITH_SEMI;
                         case BRACKETS:
                             return Completeness.COMPLETE_WITH_SEMI;
+                        case PARENS:
+                            if (isDatum) {
+                                return Completeness.COMPLETE_WITH_SEMI;
+                            } else {
+                                return Completeness.DEFINITELY_INCOMPLETE;
+                            }
                         case DOTSTAR:
                             if (isImport) {
                                 return Completeness.COMPLETE_WITH_SEMI;
