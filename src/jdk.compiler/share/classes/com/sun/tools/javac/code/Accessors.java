@@ -48,7 +48,7 @@ public class Accessors {
             }
         };
 
-        Function<Names, Name> nameFunc;
+        private final Function<Names, Name> nameFunc;
 
         Kind(Function<Names, Name> nameFunc) {
             this.nameFunc = nameFunc;

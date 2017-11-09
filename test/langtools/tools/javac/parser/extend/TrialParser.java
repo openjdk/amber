@@ -173,7 +173,7 @@ class TrialParser extends JavacParser {
                 if (token.kind == CLASS
                         || token.kind == INTERFACE
                         || token.kind == ENUM) {
-                    return List.<JCTree>of(classOrInterfaceOrEnumDeclaration(mods, dc));
+                    return List.<JCTree>of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
                 } else {
                     int pos = token.pos;
                     List<JCTypeParameter> typarams = typeParametersOpt();

@@ -758,6 +758,17 @@ public class DocCommentTester {
                 else
                     return s;
             }
+
+            @Override
+            public Void visitAccessor(AccessorTree node, Void p) {
+                header(node);
+                indent(+1);
+                print("description", node.getDescription());
+                indent(-1);
+                indent();
+                out.println("]");
+                return null;
+            }
         }
     }
 
