@@ -129,12 +129,11 @@ public class Lower extends TreeTranslator {
             } else {
                 String[] switches = generationSwitch.split(",");
                 for (String s :switches) {
-                    s = s.toUpperCase();
-                    if (s.equals("OLDEQUALS")) {
+                    if (s.equals("oldEquals")) {
                         generationSwitchSet.add(GenerationSwitch.OLD_EQUALS);
-                    } else if (s.equals("OLDTOSTRING")) {
+                    } else if (s.equals("oldToString")) {
                         generationSwitchSet.add(GenerationSwitch.OLD_TOSTRING);
-                    } else if (s.equals("OLDHASHCODE")) {
+                    } else if (s.equals("oldHashCode")) {
                         generationSwitchSet.add(GenerationSwitch.OLD_HASCODE);
                     }
                 }

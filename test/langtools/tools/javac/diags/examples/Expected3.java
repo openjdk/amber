@@ -21,6 +21,6 @@
  * questions.
  */
 
-// key: compiler.err.expected3
+// key: compiler.err.expected4
 
 int Expected3;

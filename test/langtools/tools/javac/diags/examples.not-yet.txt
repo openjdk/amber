@@ -152,3 +152,16 @@ compiler.err.duplicate.module.on.path
 compiler.err.locn.module-info.not.allowed.on.patch.path
 compiler.misc.cant.resolve.modules
 compiler.misc.file.does.not.contain.module
+
+# datum related messages
+compiler.err.accessors.not.supported.in.source
+compiler.err.cant.extend.datum
+compiler.err.datum.can.only.declare.methods.as.members
+compiler.err.datum.cant.declare.duplicate.fields
+compiler.err.datum.must.declare.at.least.one.field
+compiler.err.duplicate.argument.to.super
+compiler.err.expected3
+compiler.err.unexpected.accessor.kind
+compiler.misc.bad.datum.super
+compiler.misc.bad.super.fields
+compiler.misc.super.field.mismatch
