@@ -134,6 +134,8 @@ const char* constantTag::internal_name() const {
       return "MethodType Error";
     case JVM_CONSTANT_Dynamic :
       return "Dynamic";
+    case JVM_CONSTANT_DynamicInError :
+      return "Dynamic Error";
     case JVM_CONSTANT_InvokeDynamic :
       return "InvokeDynamic";
     case JVM_CONSTANT_Utf8 :

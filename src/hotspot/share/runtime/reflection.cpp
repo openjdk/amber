@@ -765,15 +765,19 @@ void Reflection::check_for_inner_class(const InstanceKlass* outer, const Instanc
 static oop get_mirror_from_signature(const methodHandle& method,
                                      SignatureStream* ss,
                                      TRAPS) {
-  oop mirror_oop = ss->as_java_mirror(method->method_holder(), SignatureStream::NCDFError, CHECK_NULL);
+  Klass* accessing_klass = method->method_holder();
+  assert(accessing_klass != NULL, "method has no accessing_klass");
+
+  oop mirror_oop = ss->as_java_mirror(Handle(THREAD, accessing_klass->class_loader()),
+                                      Handle(THREAD, accessing_klass->protection_domain()),
+                                      SignatureStream::NCDFError,
+                                      CHECK_NULL);
 
   // Special tracing logic for resolution of class names during reflection.
   if (log_is_enabled(Debug, class, resolve)) {
-    Klass* k = java_lang_Class::as_Klass(mirror_oop);
-    if (k != NULL)  {
-      mirror_oop = NULL;
-      trace_class_resolution(k);
-      mirror_oop = k->java_mirror();
+    Klass* result = java_lang_Class::as_Klass(mirror_oop);
+    if (result != NULL) {
+      trace_class_resolution(result);
     }
   }
 

@@ -3947,9 +3947,6 @@ public:
   develop(bool, TraceInvokeDynamic, false,                                  \
           "trace internal invoke dynamic operations")                       \
                                                                             \
-  develop(bool, TraceDynamicConstants, false,                               \
-          "trace internal dynamic computed constant operations")            \
-                                                                            \
   diagnostic(int, UseBootstrapCallInfo, 1,                                  \
           "0: when resolving InDy or ConDy, force all BSM arguments to be " \
           "resolved before the bootstrap method is called; 1: when a BSM "  \
