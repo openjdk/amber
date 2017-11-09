@@ -2289,7 +2289,7 @@ public class JavacParser implements Parser {
         JCClassDecl body = null;
         if (token.kind == LBRACE) {
             int pos = token.pos;
-            List<JCTree> defs = classOrInterfaceBody(names.empty, false);
+            List<JCTree> defs = classInterfaceOrDatumBody(names.empty, false, false);
             JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
             body = toP(F.at(pos).AnonymousClassDef(mods, defs));
         }
@@ -3450,7 +3450,7 @@ public class JavacParser implements Parser {
             if (parseModuleInfo) {
                 erroneousTree = syntaxError(pos, errs, "expected.module.or.open");
             } else {
-                erroneousTree = syntaxError(pos, errs, "expected3", CLASS, INTERFACE, ENUM);
+                erroneousTree = syntaxError(pos, errs, "expected4", CLASS, INTERFACE, ENUM, DATUM);
             }
             return toP(F.Exec(erroneousTree));
         }
@@ -3478,7 +3478,7 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
-        List<JCTree> defs = classOrInterfaceBody(name, false);
+        List<JCTree> defs = classInterfaceOrDatumBody(name, false, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, extending, implementing, defs));
         attach(result, dc);
@@ -3527,7 +3527,7 @@ public class JavacParser implements Parser {
         }
         List<JCTree> defs = List.nil();
         if (token.kind == LBRACE) {
-            defs = classOrInterfaceBody(name, false);
+            defs = classInterfaceOrDatumBody(name, false, true);
         } else {
             accept(SEMI);
         }
@@ -3604,7 +3604,7 @@ public class JavacParser implements Parser {
             nextToken();
             extending = typeList();
         }
-        List<JCTree> defs = classOrInterfaceBody(name, true);
+        List<JCTree> defs = classInterfaceOrDatumBody(name, true, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, null, extending, defs));
         attach(result, dc);
@@ -3692,7 +3692,7 @@ public class JavacParser implements Parser {
         JCClassDecl body = null;
         if (token.kind == LBRACE) {
             JCModifiers mods1 = F.at(Position.NOPOS).Modifiers(Flags.ENUM);
-            List<JCTree> defs = classOrInterfaceBody(names.empty, false);
+            List<JCTree> defs = classInterfaceOrDatumBody(names.empty, false, false);
             body = toP(F.at(identPos).AnonymousClassDef(mods1, defs));
         }
         if (args.isEmpty() && body == null)
@@ -3722,7 +3722,7 @@ public class JavacParser implements Parser {
     /** ClassBody     = "{" {ClassBodyDeclaration} "}"
      *  InterfaceBody = "{" {InterfaceBodyDeclaration} "}"
      */
-    List<JCTree> classOrInterfaceBody(Name className, boolean isInterface) {
+    List<JCTree> classInterfaceOrDatumBody(Name className, boolean isInterface, boolean isDatum) {
         accept(LBRACE);
         if (token.pos <= endPosTable.errorEndPos) {
             // error recovery
@@ -3732,7 +3732,11 @@ public class JavacParser implements Parser {
         }
         ListBuffer<JCTree> defs = new ListBuffer<>();
         while (token.kind != RBRACE && token.kind != EOF) {
-            defs.appendList(classOrInterfaceBodyDeclaration(className, isInterface));
+            if (!isDatum) {
+                defs.appendList(classOrInterfaceBodyDeclaration(className, isInterface));
+            } else {
+                defs.appendList(datumBodyDeclaration(className));
+            }
             if (token.pos <= endPosTable.errorEndPos) {
                // error recovery
                skip(false, true, true, false);
@@ -3792,67 +3796,83 @@ public class JavacParser implements Parser {
                 }
                 return List.of(block(pos, mods.flags));
             } else {
-                pos = token.pos;
-                List<JCTypeParameter> typarams = typeParametersOpt();
-                // if there are type parameters but no modifiers, save the start
-                // position of the method in the modifiers.
-                if (typarams.nonEmpty() && mods.pos == Position.NOPOS) {
-                    mods.pos = pos;
-                    storeEnd(mods, pos);
-                }
-                List<JCAnnotation> annosAfterParams = annotationsOpt(Tag.ANNOTATION);
-
-                if (annosAfterParams.nonEmpty()) {
-                    checkAnnotationsAfterTypeParams(annosAfterParams.head.pos);
-                    mods.annotations = mods.annotations.appendList(annosAfterParams);
-                    if (mods.pos == Position.NOPOS)
-                        mods.pos = mods.annotations.head.pos;
-                }
-
-                Token tk = token;
-                pos = token.pos;
-                JCExpression type;
-                boolean isVoid = token.kind == VOID;
-                if (isVoid) {
-                    type = to(F.at(pos).TypeIdent(TypeTag.VOID));
-                    nextToken();
-                } else {
-                    // method returns types are un-annotated types
-                    type = unannotatedType(false);
-                }
-                if (token.kind == LPAREN && !isInterface && type.hasTag(IDENT)) {
-                    if (isInterface || tk.name() != className)
-                        error(pos, "invalid.meth.decl.ret.type.req");
-                    else if (annosAfterParams.nonEmpty())
-                        illegal(annosAfterParams.head.pos);
-                    return List.of(methodDeclaratorRest(
-                        pos, mods, null, names.init, typarams,
-                        isInterface, true, dc));
-                } else {
-                    pos = token.pos;
-                    Name name = ident();
-                    if (token.kind == LPAREN) {
-                        return List.of(methodDeclaratorRest(
-                            pos, mods, type, name, typarams,
-                            isInterface, isVoid, dc));
-                    } else if (!isVoid && typarams.isEmpty()) {
-                        List<JCTree> defs =
-                            variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
-                                                    new ListBuffer<JCTree>(), false).toList();
-                        accept(SEMI);
-                        storeEnd(defs.last(), S.prevToken().endPos);
-                        return defs;
-                    } else {
-                        pos = token.pos;
-                        List<JCTree> err = isVoid
-                            ? List.of(toP(F.at(pos).MethodDef(mods, name, type, typarams,
-                                List.nil(), List.nil(), null, null)))
-                            : null;
-                        return List.of(syntaxError(token.pos, err, "expected", LPAREN));
-                    }
-                }
+                return methodOrFieldMemberDecl(className, mods, isInterface, dc, false);
             }
         }
+    }
+
+    private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc, boolean isDatum) {
+        int pos = token.pos;
+        List<JCTypeParameter> typarams = typeParametersOpt();
+        // if there are type parameters but no modifiers, save the start
+        // position of the method in the modifiers.
+        if (typarams.nonEmpty() && mods.pos == Position.NOPOS) {
+            mods.pos = pos;
+            storeEnd(mods, pos);
+        }
+        List<JCAnnotation> annosAfterParams = annotationsOpt(Tag.ANNOTATION);
+
+        if (annosAfterParams.nonEmpty()) {
+            checkAnnotationsAfterTypeParams(annosAfterParams.head.pos);
+            mods.annotations = mods.annotations.appendList(annosAfterParams);
+            if (mods.pos == Position.NOPOS)
+                mods.pos = mods.annotations.head.pos;
+        }
+
+        Token tk = token;
+        pos = token.pos;
+        JCExpression type;
+        boolean isVoid = token.kind == VOID;
+        if (isVoid) {
+            type = to(F.at(pos).TypeIdent(TypeTag.VOID));
+            nextToken();
+        } else {
+            // method returns types are un-annotated types
+            type = unannotatedType(false);
+        }
+        if (token.kind == LPAREN && !isInterface && type.hasTag(IDENT)) {
+            if (isInterface || tk.name() != className)
+                error(pos, "invalid.meth.decl.ret.type.req");
+            else if (annosAfterParams.nonEmpty())
+                illegal(annosAfterParams.head.pos);
+            return List.of(methodDeclaratorRest(
+                pos, mods, null, names.init, typarams,
+                isInterface, true, dc));
+        } else {
+            pos = token.pos;
+            Name name = ident();
+            if (token.kind == LPAREN) {
+                return List.of(methodDeclaratorRest(
+                    pos, mods, type, name, typarams,
+                    isInterface, isVoid, dc));
+            } else if (!isVoid && typarams.isEmpty()) {
+                if (!isDatum) {
+                    List<JCTree> defs =
+                        variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
+                                                new ListBuffer<JCTree>(), false).toList();
+                    accept(SEMI);
+                    storeEnd(defs.last(), S.prevToken().endPos);
+                    return defs;
+                } else {
+                    int tmpPos = token.pos;
+                    nextToken();
+                    return List.of(syntaxError(tmpPos, null, "expected", LPAREN));
+                }
+            } else {
+                pos = token.pos;
+                List<JCTree> err = isVoid
+                    ? List.of(toP(F.at(pos).MethodDef(mods, name, type, typarams,
+                        List.nil(), List.nil(), null, null)))
+                    : null;
+                return List.of(syntaxError(token.pos, err, "expected", LPAREN));
+            }
+        }
+    }
+
+    protected List<JCTree> datumBodyDeclaration(Name className) {
+        Comment dc = token.comment(CommentStyle.JAVADOC);
+        JCModifiers mods = modifiersOpt();
+        return methodOrFieldMemberDecl(className, mods, false, dc, true);
     }
 
     /** MethodDeclaratorRest =
