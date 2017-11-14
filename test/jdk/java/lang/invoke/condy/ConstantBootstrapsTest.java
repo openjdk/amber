@@ -102,6 +102,11 @@ public class ConstantBootstrapsTest {
         ConstantBootstraps.primitiveClass(MethodHandles.lookup(), null, Class.class);
     }
 
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testPrimitiveClassNullType() {
+        ConstantBootstraps.primitiveClass(MethodHandles.lookup(), "I", null);
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testPrimitiveClassEmptyName() {
         ConstantBootstraps.primitiveClass(MethodHandles.lookup(), "", Class.class);
@@ -135,20 +140,20 @@ public class ConstantBootstrapsTest {
 
     public void testGetStaticDecl() throws Throwable {
         var handle = InstructionHelper.ldcDynamicConstant(L, "TYPE", Class.class,
-                                                          ConstantBootstraps.class, "getstatic", lookupMT(Object.class, Class.class),
+                                                          ConstantBootstraps.class, "getStaticFinal", lookupMT(Object.class, Class.class),
                                                           S -> { S.add("java/lang/Integer", PoolHelper::putClass); });
         assertEquals(handle.invoke(), int.class);
     }
 
     public void testGetStaticSelf() throws Throwable {
         var handle = InstructionHelper.ldcDynamicConstant(L, "MAX_VALUE", int.class,
-                                                          ConstantBootstraps.class, "getstatic", lookupMT(Object.class),
+                                                          ConstantBootstraps.class, "getStaticFinal", lookupMT(Object.class),
                                                           S -> { });
         assertEquals(handle.invoke(), Integer.MAX_VALUE);
 
 
         handle = InstructionHelper.ldcDynamicConstant(L, "ZERO", BigInteger.class,
-                                                      ConstantBootstraps.class, "getstatic", lookupMT(Object.class),
+                                                      ConstantBootstraps.class, "getStaticFinal", lookupMT(Object.class),
                                                       S -> { });
         assertEquals(handle.invoke(), BigInteger.ZERO);
     }

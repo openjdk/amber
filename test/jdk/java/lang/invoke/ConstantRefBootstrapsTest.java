@@ -24,15 +24,11 @@
  */
 
 import java.lang.invoke.BootstrapSpecifier;
-import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.ClassRef;
 import java.lang.invoke.DynamicConstantRef;
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandleRef;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
-import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
 
 import org.testng.annotations.Test;
@@ -58,10 +54,10 @@ public class ConstantRefBootstrapsTest {
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", ClassRef.CR_Class);
     static final MethodHandleRef BSM_ENUM_CONSTANT
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "enumConstant", ClassRef.CR_Enum);
-    static final MethodHandleRef BSM_GET_STATIC_SELF
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getstatic", ClassRef.CR_Object);
-    static final MethodHandleRef BSM_GET_STATIC_DECL
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getstatic", ClassRef.CR_Object, ClassRef.CR_Class);
+    static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object);
+    static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
+            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", ClassRef.CR_Object, ClassRef.CR_Class);
     static final MethodHandleRef BSM_INVOKE
             = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "invoke", ClassRef.CR_Object, ClassRef.CR_MethodHandle, ClassRef.CR_Object.array());
     static final MethodHandleRef BSM_VARHANDLE_FIELD
@@ -111,16 +107,16 @@ public class ConstantRefBootstrapsTest {
     }
 
 
-    public void testGetStaticDecl() {
+    public void testGetStaticFinalDecl() {
         DynamicConstantRef<Class<Integer>> intClass =
-                DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_DECL, ClassRef.CR_Integer),
+                DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_FINAL_DECL, ClassRef.CR_Integer),
                                       "TYPE", ClassRef.CR_Class);
         Class<Integer> c = Intrinsics.ldc(intClass);
         assertEquals(c, int.class);
     }
 
-    public void testGetStaticSelf() {
-        DynamicConstantRef<Integer> integerMaxValue = DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_SELF),
+    public void testGetStaticFinalSelf() {
+        DynamicConstantRef<Integer> integerMaxValue = DynamicConstantRef.of(BootstrapSpecifier.of(BSM_GET_STATIC_FINAL_SELF),
                                                                             "MAX_VALUE", ClassRef.CR_int);
         int v = Intrinsics.ldc(integerMaxValue);
         assertEquals(v, Integer.MAX_VALUE);
