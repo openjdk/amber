@@ -1220,7 +1220,7 @@ void ConstantPool::copy_bootstrap_arguments_at_impl(const constantPoolHandle& th
                                                     bool must_resolve, Handle if_not_available,
                                                     TRAPS) {
   int argc;
-  int limit = java_add(pos, end_arg - start_arg);
+  int limit = pos + end_arg - start_arg;
   // checks: index in range [0..this_cp->length),
   // tag at index, start..end in range [0..argc],
   // info array non-null, pos..limit in [0..info.length]
