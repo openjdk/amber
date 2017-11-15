@@ -223,8 +223,6 @@ public final class ConstantBootstraps {
      * adjusted to the desired type
      * @throws ClassCastException if an argument cannot be converted by
      * reference casting
-     * @throws NullPointerException if {@code args} is {@code null}
-     * (each argument of {@code args} may be {@code null}).
      * @throws Throwable anything thrown by the method handle invocation
      */
     public static Object invoke(MethodHandles.Lookup lookup, String name, Class<?> type,
