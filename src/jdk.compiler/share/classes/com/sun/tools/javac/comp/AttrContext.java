@@ -113,7 +113,7 @@ public class AttrContext {
      */
     JCTree preferredTreeForDiagnostics;
 
-    MethodSymbol datumImplicitConstructor;
+    MethodSymbol recordImplicitConstructor;
 
     /** Duplicate this context, replacing scope field and copying all others.
      */
@@ -135,7 +135,7 @@ public class AttrContext {
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
-        info.datumImplicitConstructor = datumImplicitConstructor;
+        info.recordImplicitConstructor = recordImplicitConstructor;
         return info;
     }
 

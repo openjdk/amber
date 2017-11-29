@@ -314,13 +314,13 @@ public class Flags {
     public static final long ANONCONSTR_BASED = 1L<<57;
 
     /**
-     * Flag to indicate that a class is a datum. The flag is also used to mark fields that are
-     * part of the state vector of a datum class.
+     * Flag to indicate that a class is a record. The flag is also used to mark fields that are
+     * part of the state vector of a record.
      */
     public static final long RECORD = 1L<<58;
 
     /**
-     * Flag to indicate that a datum field is non-final.
+     * Flag to indicate that a record field is non-final.
      */
     public static final long NON_FINAL = 1L<<59;
 
@@ -439,7 +439,7 @@ public class Flags {
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
-        DATUM(Flags.RECORD),
+        RECORD(Flags.RECORD),
         NON_FINAL(Flags.NON_FINAL);
 
         Flag(long flag) {

@@ -3564,13 +3564,13 @@ public class JavacParser implements Parser {
         return name;
     }
 
-    Map<Name, JCTree> headerFields(JCModifiers datumClassMods) {
+    Map<Name, JCTree> headerFields(JCModifiers recordClassMods) {
         accept(LPAREN);
         Map<Name, JCTree> fields = new LinkedHashMap<>();
         while (token.kind != RPAREN) {
             JCModifiers mods = modifiersOpt();
             mods.flags |= Flags.RECORD;
-            mods.flags |= (datumClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
+            mods.flags |= (recordClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
             if ((mods.flags & Flags.NON_FINAL) == 0) {
                 mods.flags |= Flags.FINAL;
             }
@@ -3740,7 +3740,7 @@ public class JavacParser implements Parser {
             if (!isRecord) {
                 defs.appendList(classOrInterfaceBodyDeclaration(className, isInterface));
             } else {
-                defs.appendList(datumBodyDeclaration(className));
+                defs.appendList(recordBodyDeclaration(className));
             }
             if (token.pos <= endPosTable.errorEndPos) {
                // error recovery
@@ -3874,7 +3874,7 @@ public class JavacParser implements Parser {
         }
     }
 
-    protected List<JCTree> datumBodyDeclaration(Name className) {
+    protected List<JCTree> recordBodyDeclaration(Name className) {
         Comment dc = token.comment(CommentStyle.JAVADOC);
         JCModifiers mods = modifiersOpt();
         return methodOrFieldMemberDecl(className, mods, false, dc, true);

@@ -1914,7 +1914,7 @@ public class Resolve {
         if (name == names._default &&
                 env.enclMethod != null &&
                 env.enclMethod.sym.name == names.init) {
-            return env.info.datumImplicitConstructor;
+            return env.info.recordImplicitConstructor;
         }
 
         Env<AttrContext> env1 = env;

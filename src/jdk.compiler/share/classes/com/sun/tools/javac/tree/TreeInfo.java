@@ -160,7 +160,7 @@ public class TreeInfo {
         }
     }
 
-    public static List<JCVariableDecl> datumFields(JCClassDecl tree) {
+    public static List<JCVariableDecl> recordFields(JCClassDecl tree) {
         return tree.defs.stream()
                 .filter(t -> t.hasTag(VARDEF))
                 .map(t -> (JCVariableDecl)t)

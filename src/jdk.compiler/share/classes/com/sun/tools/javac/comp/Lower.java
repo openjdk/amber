@@ -2240,7 +2240,7 @@ public class Lower extends TreeTranslator {
             visitEnumDef(tree);
 
         if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-            visitDatumDef(tree);
+            visitRecordDef(tree);
         }
 
         // If this is a nested class, define a this$n field for
@@ -2498,7 +2498,7 @@ public class Lower extends TreeTranslator {
             prepend(makeLit(syms.stringType, var.name.toString()));
     }
 
-    /** Translate a datum class. */
+    /** Translate a record. */
 
     enum GenerationSwitch {
         OLD_EQUALS,
@@ -2508,9 +2508,9 @@ public class Lower extends TreeTranslator {
 
     private EnumSet<GenerationSwitch> generationSwitchSet = EnumSet.noneOf(GenerationSwitch.class);
 
-    private void visitDatumDef(JCClassDecl tree) {
+    private void visitRecordDef(JCClassDecl tree) {
         make_at(tree.pos());
-        List<VarSymbol> vars = types.datumVars(tree.type);
+        List<VarSymbol> vars = types.recordVars(tree.type);
         Pool.MethodHandle[] getterMethHandles = new Pool.MethodHandle[vars.size()];
         int index = 0;
         for (VarSymbol var : vars) {
@@ -2524,18 +2524,18 @@ public class Lower extends TreeTranslator {
         tree.defs = tree.defs.appendList(accessors(tree));
         tree.defs = tree.defs.appendList(List.of(
                 generationSwitchSet.contains(GenerationSwitch.OLD_EQUALS) ?
-                        datumOldEquals(tree, vars):
-                        datumEquals(tree, getterMethHandles),
+                        recordOldEquals(tree, vars):
+                        recordEquals(tree, getterMethHandles),
                 generationSwitchSet.contains(GenerationSwitch.OLD_TOSTRING) ?
-                        datumOldToString(tree, vars):
-                        datumToString(tree, vars, getterMethHandles),
+                        recordOldToString(tree, vars):
+                        recordToString(tree, vars, getterMethHandles),
                 generationSwitchSet.contains(GenerationSwitch.OLD_HASCODE) ?
-                        datumOldHashCode(tree, vars):
-                        datumHashCode(tree, getterMethHandles)
+                        recordOldHashCode(tree, vars):
+                        recordHashCode(tree, getterMethHandles)
         ));
     }
 
-    JCTree datumToString(JCClassDecl tree, List<VarSymbol> vars, Pool.MethodHandle[] getterMethHandles) {
+    JCTree recordToString(JCClassDecl tree, List<VarSymbol> vars, Pool.MethodHandle[] getterMethHandles) {
         make_at(tree.pos());
 
         MethodSymbol msym = lookupMethod(tree.pos(),
@@ -2573,7 +2573,7 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    JCTree datumHashCode(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
+    JCTree recordHashCode(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
         make_at(tree.pos());
         MethodSymbol msym = lookupMethod(tree.pos(),
                          names.hashCode,
@@ -2605,7 +2605,7 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    JCTree datumEquals(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
+    JCTree recordEquals(JCClassDecl tree, Pool.MethodHandle[] getterMethHandles) {
         make_at(tree.pos());
         MethodSymbol msym = lookupMethod(tree.pos(),
                          names.equals,
@@ -2672,7 +2672,7 @@ public class Lower extends TreeTranslator {
         return qualifier;
     }
 
-    JCTree datumOldToString(JCClassDecl tree, List<VarSymbol> vars) {
+    JCTree recordOldToString(JCClassDecl tree, List<VarSymbol> vars) {
         make_at(tree.pos());
 
         MethodSymbol toStringSym = lookupMethod(tree.pos(),
@@ -2700,7 +2700,7 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    JCTree datumOldHashCode(JCClassDecl tree, List<VarSymbol> vars) {
+    JCTree recordOldHashCode(JCClassDecl tree, List<VarSymbol> vars) {
         make_at(tree.pos());
 
         MethodSymbol hashCodeSym = lookupMethod(tree.pos(),
@@ -2723,7 +2723,7 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    JCTree datumOldEquals(JCClassDecl tree, List<VarSymbol> vars) {
+    JCTree recordOldEquals(JCClassDecl tree, List<VarSymbol> vars) {
         make_at(tree.pos());
 
         MethodSymbol oldEqualsSym = lookupMethod(tree.pos(),
@@ -3761,7 +3761,7 @@ public class Lower extends TreeTranslator {
         if (tree.expr.hasTag(APPLY) &&
                 TreeInfo.name(((JCMethodInvocation)tree.expr).meth) == names._default) {
             //inline constructor assignments
-            List<VarSymbol> vars = types.datumVars(currentClass.type).stream()
+            List<VarSymbol> vars = types.recordVars(currentClass.type).stream()
                             .filter(v -> v.owner == currentClass)
                             .collect(List.collector());
             ListBuffer<JCStatement> stats = new ListBuffer<>();

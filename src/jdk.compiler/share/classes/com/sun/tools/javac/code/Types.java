@@ -1482,7 +1482,7 @@ public class Types {
 
     // </editor-fold>
 
-    public List<VarSymbol> datumVars(Type t) {
+    public List<VarSymbol> recordVars(Type t) {
         List<VarSymbol> vars = List.nil();
         while (!t.hasTag(NONE)) {
             if (t.hasTag(CLASS)) {

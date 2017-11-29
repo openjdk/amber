@@ -4625,7 +4625,7 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
 
-                    List<VarSymbol> supRecordFields = types.datumVars(sup);
+                    List<VarSymbol> supRecordFields = types.recordVars(sup);
                     for (JCTree supField : superFields) {
                         JCVariableDecl supVarDecl = (JCVariableDecl)supField;
                         if (supRecordFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
@@ -4641,10 +4641,10 @@ public class Attr extends JCTree.Visitor {
                         supRecordFields = supRecordFields.tail;
                     }
 
-                    List<VarSymbol> vars = types.datumVars(c.type).stream()
+                    List<VarSymbol> vars = types.recordVars(c.type).stream()
                             .filter(v -> v.owner == c)
                             .collect(List.collector());
-                    env.info.datumImplicitConstructor = new MethodSymbol(0, names.init,
+                    env.info.recordImplicitConstructor = new MethodSymbol(0, names.init,
                             new MethodType(vars.map(v -> v.type), syms.voidType, List.nil(), syms.methodClass),
                             c);
                 }

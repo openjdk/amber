@@ -803,7 +803,7 @@ public class TypeEnter implements Completer {
     private final class HeaderPhase extends AbstractHeaderPhase {
 
         public HeaderPhase() {
-            super(CompletionCause.HEADER_PHASE, new DatumPhase());
+            super(CompletionCause.HEADER_PHASE, new RecordPhase());
         }
 
         @Override
@@ -882,10 +882,10 @@ public class TypeEnter implements Completer {
         }
     }
 
-    private final class DatumPhase extends AbstractMembersPhase {
+    private final class RecordPhase extends AbstractMembersPhase {
 
-        public DatumPhase() {
-            super(CompletionCause.DATUM_PHASE, new MembersPhase());
+        public RecordPhase() {
+            super(CompletionCause.RECORD_PHASE, new MembersPhase());
         }
 
         @Override
@@ -893,7 +893,7 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             if ((sym.flags_field & RECORD) != 0) {
-                memberEnter.memberEnter(TreeInfo.datumFields(tree), env);
+                memberEnter.memberEnter(TreeInfo.recordFields(tree), env);
                 memberEnter.memberEnter(TreeInfo.superRecordFields(tree), env);
             }
         }
@@ -927,7 +927,7 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new DatumConstructorHelper(sym, TreeInfo.datumFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
                 }
                 if (helper != null) {
                     JCTree constrDef = DefaultConstructor(make.at(tree.pos), helper);
@@ -967,10 +967,10 @@ public class TypeEnter implements Completer {
                 addEnumMembers(tree, env);
             }
             List<JCTree> defsToEnter = (tree.sym.flags_field & RECORD) != 0 ?
-                    tree.defs.diff(List.convert(JCTree.class, TreeInfo.datumFields(tree))) : tree.defs;
+                    tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
             if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-                addDatumMembersIfNeeded(tree, env);
+                addRecordMembersIfNeeded(tree, env);
             }
 
             if (tree.sym.isAnnotationType()) {
@@ -1044,10 +1044,10 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(valueOf, env);
         }
 
-        /** Add the implicit members for a datum type
+        /** Add the implicit members for a record
          *  to the symbol table.
          */
-        private void addDatumMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+        private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
 
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 JCExpression toStringType = make.Type(new ArrayType(tree.sym.type, syms.arrayClass));
@@ -1239,14 +1239,14 @@ public class TypeEnter implements Completer {
         }
     }
 
-    class DatumConstructorHelper extends BasicConstructorHelper {
+    class RecordConstructorHelper extends BasicConstructorHelper {
 
-        List<VarSymbol> datumFields;
+        List<VarSymbol> recordFields;
         List<JCVariableDecl> superFields;
 
-        DatumConstructorHelper(TypeSymbol owner, List<VarSymbol> datumFields, List<JCVariableDecl> superFields) {
+        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
             super(owner);
-            this.datumFields = datumFields;
+            this.recordFields = recordFields;
             this.superFields = superFields;
         }
 
@@ -1254,7 +1254,7 @@ public class TypeEnter implements Completer {
         public Type constructorType() {
             if (constructorType == null) {
                 List<Type> argtypes = superFields.map(v -> v.vartype.type)
-                        .appendList(datumFields.map(v -> v.type));
+                        .appendList(recordFields.map(v -> v.type));
                 constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
@@ -1267,7 +1267,7 @@ public class TypeEnter implements Completer {
             for (JCVariableDecl p : superFields) {
                 params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.vartype.type, csym));
             }
-            for (VarSymbol p : datumFields) {
+            for (VarSymbol p : recordFields) {
                 params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
             }
             csym.params = params.toList();
@@ -1282,7 +1282,7 @@ public class TypeEnter implements Completer {
 
         @Override
         public List<Name> inits() {
-            return datumFields.map(v -> v.name);
+            return recordFields.map(v -> v.name);
         }
     }
 
