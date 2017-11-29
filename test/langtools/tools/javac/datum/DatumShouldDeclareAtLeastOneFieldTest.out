@@ -1,3 +1,3 @@
-DatumShouldDeclareAtLeastOneFieldTest.java:8:34: compiler.err.datum.must.declare.at.least.one.field
-DatumShouldDeclareAtLeastOneFieldTest.java:10:25: compiler.err.datum.must.declare.at.least.one.field
+DatumShouldDeclareAtLeastOneFieldTest.java:8:33: compiler.err.record.must.declare.at.least.one.field
+DatumShouldDeclareAtLeastOneFieldTest.java:10:24: compiler.err.record.must.declare.at.least.one.field
 2 errors

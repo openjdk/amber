@@ -685,8 +685,8 @@ public class TypeEnter implements Completer {
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
-                : ((tree.mods.flags & Flags.DATUM) != 0)
-                ? syms.dataClassType
+                : ((tree.mods.flags & Flags.RECORD) != 0)
+                ? syms.abstractRecordType
                 : syms.objectType;
             }
             ct.supertype_field = modelMissingTypes(baseEnv, supertype, extending, false);
@@ -892,9 +892,9 @@ public class TypeEnter implements Completer {
         protected void runPhase(Env<AttrContext> env) {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
-            if ((sym.flags_field & DATUM) != 0) {
+            if ((sym.flags_field & RECORD) != 0) {
                 memberEnter.memberEnter(TreeInfo.datumFields(tree), env);
-                memberEnter.memberEnter(TreeInfo.superDatumFields(tree), env);
+                memberEnter.memberEnter(TreeInfo.superRecordFields(tree), env);
             }
         }
     }
@@ -926,8 +926,8 @@ public class TypeEnter implements Completer {
                             helper = null;
                         }
                     }
-                } else if ((sym.flags() & DATUM) != 0) {
-                    helper = new DatumConstructorHelper(sym, TreeInfo.datumFields(tree).map(vd -> vd.sym), TreeInfo.superDatumFields(tree));
+                } else if ((sym.flags() & RECORD) != 0) {
+                    helper = new DatumConstructorHelper(sym, TreeInfo.datumFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
                 }
                 if (helper != null) {
                     JCTree constrDef = DefaultConstructor(make.at(tree.pos), helper);
@@ -966,10 +966,10 @@ public class TypeEnter implements Completer {
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
                 addEnumMembers(tree, env);
             }
-            List<JCTree> defsToEnter = (tree.sym.flags_field & DATUM) != 0 ?
+            List<JCTree> defsToEnter = (tree.sym.flags_field & RECORD) != 0 ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.datumFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if ((tree.mods.flags & (DATUM | ABSTRACT)) == DATUM) {
+            if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
                 addDatumMembersIfNeeded(tree, env);
             }
 
@@ -1054,7 +1054,7 @@ public class TypeEnter implements Completer {
 
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD),
                               names.toString,
                               make.Type(syms.stringType),
                               List.nil(),
@@ -1068,7 +1068,7 @@ public class TypeEnter implements Completer {
             if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
                 // public int hashCode() { return ???; }
                 JCMethodDecl hashCode = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD),
                               names.hashCode,
                               make.Type(syms.intType),
                               List.nil(),
@@ -1082,7 +1082,7 @@ public class TypeEnter implements Completer {
             if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
                 // public boolean equals(Object o) { return ???; }
                 JCMethodDecl equals = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.DATUM),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD),
                               names.equals,
                               make.Type(syms.booleanType),
                               List.nil(),
@@ -1271,7 +1271,7 @@ public class TypeEnter implements Completer {
                 params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
             }
             csym.params = params.toList();
-            csym.flags_field |= DATUM | PUBLIC;
+            csym.flags_field |= RECORD | PUBLIC;
             return csym;
         }
 

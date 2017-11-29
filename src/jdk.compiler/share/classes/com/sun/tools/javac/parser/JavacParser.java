@@ -91,7 +91,7 @@ public class JavacParser implements Parser {
     private Source source;
 
     /** The name table. */
-    private Names names;
+    protected Names names;
 
     /** End position mappings container */
     protected final AbstractEndPosTable endPosTable;
@@ -181,6 +181,7 @@ public class JavacParser implements Parser {
         this.allowUnderscoreIdentifier = source.allowUnderscoreIdentifier();
         this.allowPrivateInterfaceMethods = source.allowPrivateInterfaceMethods();
         this.allowLocalVariableTypeInference = source.allowLocalVariableTypeInference();
+        this.allowRecord = source.allowRecord();
         this.keepDocComments = keepDocComments;
         this.parseModuleInfo = parseModuleInfo;
         docComments = newDocCommentTable(keepDocComments, fac);
@@ -275,6 +276,10 @@ public class JavacParser implements Parser {
     /** Switch: is local variable inference allowed?
      */
     boolean allowLocalVariableTypeInference;
+
+    /** Switch: are records allowed?
+     */
+    public boolean allowRecord;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -439,13 +444,13 @@ public class JavacParser implements Parser {
     }
 
     protected JCErroneous syntaxError(int pos, String key, TokenKind... args) {
-        return syntaxError(pos, List.nil(), key, args);
+        return syntaxError(pos, List.nil(), key, (Object[])args);
     }
 
-    protected JCErroneous syntaxError(int pos, List<JCTree> errs, String key, TokenKind... args) {
+    protected JCErroneous syntaxError(int pos, List<JCTree> errs, String key, Object... args) {
         setErrorEndPos(pos);
         JCErroneous err = F.at(pos).Erroneous(errs);
-        reportSyntaxError(err, key, (Object[])args);
+        reportSyntaxError(err, key, args);
         if (errs != null) {
             JCTree last = errs.last();
             if (last != null)
@@ -2289,7 +2294,7 @@ public class JavacParser implements Parser {
         JCClassDecl body = null;
         if (token.kind == LBRACE) {
             int pos = token.pos;
-            List<JCTree> defs = classInterfaceOrDatumBody(names.empty, false, false);
+            List<JCTree> defs = classInterfaceOrRecordBody(names.empty, false, false);
             JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
             body = toP(F.at(pos).AnonymousClassDef(mods, defs));
         }
@@ -2448,7 +2453,7 @@ public class JavacParser implements Parser {
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
                 token.kind == ENUM) {
-                return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
+                return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
             } else {
                 JCExpression t = parseType(true);
                 return localVariableDeclarations(mods, t);
@@ -2457,16 +2462,16 @@ public class JavacParser implements Parser {
         case ABSTRACT: case STRICTFP: {
             Comment dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
-            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
+            return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
         }
         case INTERFACE:
         case CLASS:
             Comment dc = token.comment(CommentStyle.JAVADOC);
-            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
+            return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
             error(token.pos, "local.enum");
             dc = token.comment(CommentStyle.JAVADOC);
-            return List.of(classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
+            return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         default:
             Token prevToken = token;
             JCExpression t = term(EXPR | TYPE);
@@ -3419,7 +3424,7 @@ public class JavacParser implements Parser {
             nextToken();
             return toP(F.at(pos).Skip());
         } else {
-            return classOrDatumOrInterfaceOrEnumDeclaration(modifiersOpt(mods), docComment);
+            return classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(mods), docComment);
         }
     }
 
@@ -3428,11 +3433,11 @@ public class JavacParser implements Parser {
      *  @param mods     Any modifiers starting the class or interface declaration
      *  @param dc       The documentation comment for the class, or null.
      */
-    protected JCStatement classOrDatumOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
+    protected JCStatement classOrRecordOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
         if (token.kind == CLASS) {
             return classDeclaration(mods, dc);
-        } if (token.kind == DATUM) {
-            return datumDeclaration(mods, dc);
+        } if (allowRecord && token.kind == IDENTIFIER && token.name() == names.record) {
+            return recordDeclaration(mods, dc);
         } else if (token.kind == INTERFACE) {
             return interfaceDeclaration(mods, dc);
         } else if (token.kind == ENUM) {
@@ -3450,7 +3455,7 @@ public class JavacParser implements Parser {
             if (parseModuleInfo) {
                 erroneousTree = syntaxError(pos, errs, "expected.module.or.open");
             } else {
-                erroneousTree = syntaxError(pos, errs, "expected4", CLASS, INTERFACE, ENUM, DATUM);
+                erroneousTree = syntaxError(pos, errs, "expected4", CLASS, INTERFACE, ENUM, names.record);
             }
             return toP(F.Exec(erroneousTree));
         }
@@ -3478,17 +3483,17 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
-        List<JCTree> defs = classInterfaceOrDatumBody(name, false, false);
+        List<JCTree> defs = classInterfaceOrRecordBody(name, false, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, extending, implementing, defs));
         attach(result, dc);
         return result;
     }
 
-    protected JCClassDecl datumDeclaration(JCModifiers mods, Comment dc) {
+    protected JCClassDecl recordDeclaration(JCModifiers mods, Comment dc) {
         int pos = token.pos;
-        accept(DATUM);
-        mods.flags |= Flags.DATUM;
+        nextToken();
+        mods.flags |= Flags.RECORD;
         Name name = typeName();
 
         List<JCTypeParameter> typarams = typeParametersOpt();
@@ -3496,7 +3501,7 @@ public class JavacParser implements Parser {
         Map<Name, JCTree> optHeaderFields = headerFields(mods);
 
         if (optHeaderFields.size() == 0) {
-            log.error(token.pos, Errors.DatumMustDeclareAtLeastOneField);
+            log.error(token.pos, Errors.RecordMustDeclareAtLeastOneField);
         }
 
         JCExpression extending = null;
@@ -3527,7 +3532,7 @@ public class JavacParser implements Parser {
         }
         List<JCTree> defs = List.nil();
         if (token.kind == LBRACE) {
-            defs = classInterfaceOrDatumBody(name, false, true);
+            defs = classInterfaceOrRecordBody(name, false, true);
         } else {
             accept(SEMI);
         }
@@ -3564,7 +3569,7 @@ public class JavacParser implements Parser {
         Map<Name, JCTree> fields = new LinkedHashMap<>();
         while (token.kind != RPAREN) {
             JCModifiers mods = modifiersOpt();
-            mods.flags |= Flags.DATUM;
+            mods.flags |= Flags.RECORD;
             mods.flags |= (datumClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
             if ((mods.flags & Flags.NON_FINAL) == 0) {
                 mods.flags |= Flags.FINAL;
@@ -3576,7 +3581,7 @@ public class JavacParser implements Parser {
                 List<Pair<Accessors.Kind, Name>> accessors = List.of(new Pair<>(Accessors.Kind.GET, id));
                 fields.put(id, toP(F.at(pos).VarDef(mods, id, type, null, accessors)));
             } else {
-                log.error(pos, Errors.DatumCantDeclareDuplicateFields);
+                log.error(pos, Errors.RecordCantDeclareDuplicateFields);
             }
             if (token.kind == COMMA) {
                 nextToken();
@@ -3604,7 +3609,7 @@ public class JavacParser implements Parser {
             nextToken();
             extending = typeList();
         }
-        List<JCTree> defs = classInterfaceOrDatumBody(name, true, false);
+        List<JCTree> defs = classInterfaceOrRecordBody(name, true, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, null, extending, defs));
         attach(result, dc);
@@ -3692,7 +3697,7 @@ public class JavacParser implements Parser {
         JCClassDecl body = null;
         if (token.kind == LBRACE) {
             JCModifiers mods1 = F.at(Position.NOPOS).Modifiers(Flags.ENUM);
-            List<JCTree> defs = classInterfaceOrDatumBody(names.empty, false, false);
+            List<JCTree> defs = classInterfaceOrRecordBody(names.empty, false, false);
             body = toP(F.at(identPos).AnonymousClassDef(mods1, defs));
         }
         if (args.isEmpty() && body == null)
@@ -3722,7 +3727,7 @@ public class JavacParser implements Parser {
     /** ClassBody     = "{" {ClassBodyDeclaration} "}"
      *  InterfaceBody = "{" {InterfaceBodyDeclaration} "}"
      */
-    List<JCTree> classInterfaceOrDatumBody(Name className, boolean isInterface, boolean isDatum) {
+    List<JCTree> classInterfaceOrRecordBody(Name className, boolean isInterface, boolean isRecord) {
         accept(LBRACE);
         if (token.pos <= endPosTable.errorEndPos) {
             // error recovery
@@ -3732,7 +3737,7 @@ public class JavacParser implements Parser {
         }
         ListBuffer<JCTree> defs = new ListBuffer<>();
         while (token.kind != RBRACE && token.kind != EOF) {
-            if (!isDatum) {
+            if (!isRecord) {
                 defs.appendList(classOrInterfaceBodyDeclaration(className, isInterface));
             } else {
                 defs.appendList(datumBodyDeclaration(className));
@@ -3784,10 +3789,10 @@ public class JavacParser implements Parser {
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
             if (token.kind == CLASS ||
-                token.kind == DATUM ||
+                allowRecord && token.kind == IDENTIFIER && token.name() == names.record ||
                 token.kind == INTERFACE ||
                 token.kind == ENUM) {
-                return List.of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
+                return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
             } else if (token.kind == LBRACE &&
                        (mods.flags & Flags.StandardFlags & ~Flags.STATIC) == 0 &&
                        mods.annotations.isEmpty()) {
@@ -3801,7 +3806,7 @@ public class JavacParser implements Parser {
         }
     }
 
-    private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc, boolean isDatum) {
+    private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc, boolean isRecord) {
         int pos = token.pos;
         List<JCTypeParameter> typarams = typeParametersOpt();
         // if there are type parameters but no modifiers, save the start
@@ -3846,7 +3851,7 @@ public class JavacParser implements Parser {
                     pos, mods, type, name, typarams,
                     isInterface, isVoid, dc));
             } else if (!isVoid && typarams.isEmpty()) {
-                if (!isDatum) {
+                if (!isRecord) {
                     List<JCTree> defs =
                         variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
                                                 new ListBuffer<JCTree>(), false).toList();

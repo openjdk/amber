@@ -292,7 +292,7 @@ public class MemberEnter extends JCTree.Visitor {
                 v.setLazyConstValue(initEnv(tree, initEnv), attr, tree);
             }
         }
-        if ((v.flags_field & (HYPOTHETICAL | DATUM)) != (HYPOTHETICAL | DATUM) &&
+        if ((v.flags_field & (HYPOTHETICAL | RECORD)) != (HYPOTHETICAL | RECORD) &&
                 chk.checkUnique(tree.pos(), v, enclScope)) {
             chk.checkTransparentVar(tree.pos(), v, enclScope);
             enclScope.enter(v);

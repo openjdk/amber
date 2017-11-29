@@ -3,5 +3,5 @@ NoAddFieldsCanBeDeclaredInDatumTest.java:13:9: compiler.err.illegal.start.of.typ
 NoAddFieldsCanBeDeclaredInDatumTest.java:13:20: compiler.err.expected: token.identifier
 NoAddFieldsCanBeDeclaredInDatumTest.java:13:21: compiler.err.expected: '('
 NoAddFieldsCanBeDeclaredInDatumTest.java:17:16: compiler.err.illegal.start.of.type
-NoAddFieldsCanBeDeclaredInDatumTest.java:18:5: compiler.err.expected4: class, interface, enum, __datum
+NoAddFieldsCanBeDeclaredInDatumTest.java:18:5: compiler.err.expected4: class, interface, enum, record
 6 errors

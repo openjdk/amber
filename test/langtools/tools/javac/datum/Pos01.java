@@ -39,9 +39,9 @@ public class Pos01 {
         }
     }
 
-    static abstract __datum Sup(int x, int y) { }
+    static abstract record Sup(int x, int y) { }
 
-    static __datum Foo(int x, int y, public int z) extends Sup(x, y);
+    static record Foo(int x, int y, public int z) extends Sup(x, y);
 
     public static void main(String[] args) {
         Foo foo = new Foo(1, 2, 3);

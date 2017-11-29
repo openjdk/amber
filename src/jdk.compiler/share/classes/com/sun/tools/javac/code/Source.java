@@ -228,6 +228,7 @@ public enum Source {
     }
     public boolean allowPrivateInterfaceMethods() { return compareTo(JDK1_9) >= 0; }
     public boolean allowLocalVariableTypeInference() { return compareTo(JDK1_10) >= 0; }
+    public boolean allowRecord() { return compareTo(JDK1_10) >= 0; }
     public static SourceVersion toSourceVersion(Source source) {
         switch(source) {
         case JDK1_2:

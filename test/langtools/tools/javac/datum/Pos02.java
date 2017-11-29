@@ -30,7 +30,7 @@
  */
 
 class Pos02 {
-    static __datum Foo(final int x) {
+    static record Foo(final int x) {
         Foo(int x) {
             default(x);
         }

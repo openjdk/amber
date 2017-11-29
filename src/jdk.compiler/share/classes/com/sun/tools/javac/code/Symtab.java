@@ -158,7 +158,7 @@ public class Symtab {
     /** Predefined types.
      */
     public final Type objectType;
-    public final Type dataClassType;
+    public final Type abstractRecordType;
     public final Type dataAnnotationType;
     public final Type objectMethodBuildersType;
     public final Type objectsType;
@@ -485,7 +485,7 @@ public class Symtab {
 
         // Enter predefined classes. All are assumed to be in the java.base module.
         objectType = enterClass("java.lang.Object");
-        dataClassType = enterClass("java.lang.DataClass");
+        abstractRecordType = enterClass("java.lang.AbstractRecord");
         dataAnnotationType = enterClass("java.lang.annotation.Data");
         objectMethodBuildersType = enterClass("java.lang.invoke.ObjectMethodBuilders");
         objectsType = enterClass("java.util.Objects");

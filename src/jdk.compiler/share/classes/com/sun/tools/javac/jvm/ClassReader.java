@@ -1579,7 +1579,7 @@ public class ClassReader {
             for (int i = 0; i<numAttributes; i++) {
                 CompoundAnnotationProxy proxy = readCompoundAnnotation();
                 if (proxy.type.tsym == syms.dataAnnotationType.tsym) {
-                    sym.flags_field |= DATUM;
+                    sym.flags_field |= RECORD;
                 } else if (proxy.type.tsym == syms.proprietaryType.tsym)
                     sym.flags_field |= PROPRIETARY;
                 else if (proxy.type.tsym == syms.profileType.tsym) {

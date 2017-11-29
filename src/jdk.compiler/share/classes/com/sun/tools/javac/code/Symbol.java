@@ -362,7 +362,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
     }
 
     public boolean isDatum() {
-        return (flags_field & DATUM) != 0;
+        return (flags_field & RECORD) != 0;
     }
 
     public boolean hasDeprecatedAnnotation() {

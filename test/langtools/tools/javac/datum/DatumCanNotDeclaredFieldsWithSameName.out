@@ -1,2 +1,2 @@
-DatumCanNotDeclaredFieldsWithSameName.java:8:27: compiler.err.datum.cant.declare.duplicate.fields
+DatumCanNotDeclaredFieldsWithSameName.java:8:26: compiler.err.record.cant.declare.duplicate.fields
 1 error

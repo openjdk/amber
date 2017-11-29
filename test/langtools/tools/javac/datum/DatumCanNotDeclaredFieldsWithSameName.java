@@ -5,5 +5,5 @@
  */
 
 public class DatumCanNotDeclaredFieldsWithSameName {
-    __datum D1(int x, int x) { }
+    record D1(int x, int x) { }
 }

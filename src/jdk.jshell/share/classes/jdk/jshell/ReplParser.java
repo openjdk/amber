@@ -60,8 +60,7 @@ import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Position;
 
-import static com.sun.tools.javac.parser.Tokens.TokenKind.DATUM;
-
+import static com.sun.tools.javac.parser.Tokens.TokenKind.IDENTIFIER;
 /**
  * This is a subclass of JavacParser which overrides one method with a modified
  * verson of that method designed to allow parsing of one "snippet" of Java
@@ -182,10 +181,10 @@ class ReplParser extends JavacParser {
             default:
                 JCModifiers mods = modifiersOpt(pmods);
                 if (token.kind == CLASS
-                        || token.kind == DATUM
+                        || allowRecord && token.kind == IDENTIFIER && token.name() == names.record
                         || token.kind == INTERFACE
                         || token.kind == ENUM) {
-                    return List.<JCTree>of(classOrDatumOrInterfaceOrEnumDeclaration(mods, dc));
+                    return List.<JCTree>of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
                 } else {
                     int pos = token.pos;
                     List<JCTypeParameter> typarams = typeParametersOpt();

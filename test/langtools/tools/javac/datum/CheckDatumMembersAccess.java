@@ -41,9 +41,9 @@ import com.sun.tools.javac.util.Assert;
 
 public class CheckDatumMembersAccess {
 
-    abstract __datum abtractDatum(int AbstractFieldToSearchFor) {}
+    abstract record abtractDatum(int AbstractFieldToSearchFor) {}
 
-    __datum Datum(int AbstractFieldToSearchFor, int newField, __nonfinal int nonFinalField) {}
+    record Datum(int AbstractFieldToSearchFor, int newField, non_final int nonFinalField) {}
 
     public static void main(String args[]) throws Throwable {
         new CheckDatumMembersAccess().run();

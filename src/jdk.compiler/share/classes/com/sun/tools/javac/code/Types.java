@@ -1486,7 +1486,7 @@ public class Types {
         List<VarSymbol> vars = List.nil();
         while (!t.hasTag(NONE)) {
             if (t.hasTag(CLASS)) {
-                for (Symbol s : t.tsym.members().getSymbols(s -> s.kind == VAR && (s.flags() & DATUM) != 0)) {
+                for (Symbol s : t.tsym.members().getSymbols(s -> s.kind == VAR && (s.flags() & RECORD) != 0)) {
                     vars = vars.prepend((VarSymbol)s);
                 }
             }

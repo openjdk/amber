@@ -5,15 +5,15 @@
  */
 
 public class NoAddFieldsCanBeDeclaredInDatumTest {
-    __datum Bad1(int i) {
+    record Bad1(int i) {
         int y;
     }
 
-    __datum Bad2(int i) {
+    record Bad2(int i) {
         interface I {}
     }
 
-    __datum Bad3(int i) {
+    record Bad3(int i) {
         static {}
     }
 }

@@ -28,12 +28,12 @@ package java.lang;
 import java.lang.annotation.Data;
 
 /**
- * DataClass
+ * AbstractRecord
  *
  * @author Brian Goetz
  */
 @Data
-public abstract class DataClass {
+public abstract class AbstractRecord {
 
     @Override
     public abstract int hashCode();

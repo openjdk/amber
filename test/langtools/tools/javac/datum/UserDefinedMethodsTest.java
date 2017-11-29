@@ -34,13 +34,13 @@ import com.sun.tools.javac.util.Assert;
 
 public class UserDefinedMethodsTest {
 
-    static abstract __datum Sup(int x) {
+    static abstract record Sup(int x) {
         String foo() {
             return "Sup.foo";
         }
     }
 
-    static __datum Foo(int x, int y, public int z) extends Sup(x) {
+    static record Foo(int x, int y, public int z) extends Sup(x) {
         @Override
         public String toString() {
             return "Foo(x=#x, y=#y, z=#z)".replaceAll("#x", "" + x).replaceAll("#y", "" + y).replaceAll("#z", "" + z);

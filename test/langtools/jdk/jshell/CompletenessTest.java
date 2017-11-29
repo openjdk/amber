@@ -122,8 +122,8 @@ public class CompletenessTest extends KullaTesting {
         "int[] m = {1, 2}, n = null",
         "int[] m = {1, 2}, n",
         "int[] m = {1, 2}, n = {3, 4}",
-        "__datum D(int i)",
-        "static __datum D(int i)"
+        "record D(int i)",
+        "static record D(int i)"
     };
 
     static final String[] considered_incomplete = new String[] {

@@ -211,6 +211,9 @@ public class Names {
     public final Name makeHashCode;
     public final Name makeToString;
 
+    // record related
+    public final Name record;
+
     public final Name.Table table;
 
     public Names(Context context) {
@@ -379,6 +382,7 @@ public class Names {
         makeEquals = fromString("makeEquals");
         makeHashCode = fromString("makeHashCode");
         makeToString = fromString("makeToString");
+        record = fromString("record");
     }
 
     protected Name.Table createTable(Options options) {

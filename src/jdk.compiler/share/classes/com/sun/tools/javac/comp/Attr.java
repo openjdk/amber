@@ -4611,34 +4611,34 @@ public class Attr extends JCTree.Visitor {
                     env.info.isSerializable = true;
                 }
 
-                if ((c.flags() & DATUM) != 0) {
+                if ((c.flags() & RECORD) != 0) {
                     Type sup = types.supertype(c.type);
-                    List<JCVariableDecl> superFields = TreeInfo.superDatumFields(env.enclClass);
-                    if (sup.tsym != syms.dataClassType.tsym &&
-                            (sup.tsym.flags() & (ABSTRACT | DATUM)) != (ABSTRACT | DATUM)) {
-                        log.error(env.enclClass.extending.pos(), Errors.CantExtendDatum(Fragments.BadDatumSuper));
+                    List<JCVariableDecl> superFields = TreeInfo.superRecordFields(env.enclClass);
+                    if (sup.tsym != syms.abstractRecordType.tsym &&
+                            (sup.tsym.flags() & (ABSTRACT | RECORD)) != (ABSTRACT | RECORD)) {
+                        log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadRecordSuper));
                     }
 
                     if (superFields.nonEmpty()) {
-                        if (c.members().findFirst(names.init, s -> (s.flags() & DATUM) == 0) != null) {
-                            log.error(env.enclClass.extending.pos(), Errors.CantExtendDatum(Fragments.BadSuperFields));
+                        if (c.members().findFirst(names.init, s -> (s.flags() & RECORD) == 0) != null) {
+                            log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadSuperFields));
                         }
                     }
 
-                    List<VarSymbol> supDatumFields = types.datumVars(sup);
+                    List<VarSymbol> supRecordFields = types.datumVars(sup);
                     for (JCTree supField : superFields) {
                         JCVariableDecl supVarDecl = (JCVariableDecl)supField;
-                        if (supDatumFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
-                        if (supDatumFields.head.name != supVarDecl.name ||
-                                !types.isSameType(supDatumFields.head.type, supVarDecl.vartype.type)) {
+                        if (supRecordFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
+                        if (supRecordFields.head.name != supVarDecl.name ||
+                                !types.isSameType(supRecordFields.head.type, supVarDecl.vartype.type)) {
                             log.error(env.enclClass.extending.pos(),
-                                    Errors.CantExtendDatum(
+                                    Errors.CantExtendRecord(
                                             Fragments.SuperFieldMismatch(
-                                                    supDatumFields.head.type, supDatumFields.head.name,
+                                                    supRecordFields.head.type, supRecordFields.head.name,
                                                     supVarDecl.vartype.type, supVarDecl.name)));
                             break;
                         }
-                        supDatumFields = supDatumFields.tail;
+                        supRecordFields = supRecordFields.tail;
                     }
 
                     List<VarSymbol> vars = types.datumVars(c.type).stream()

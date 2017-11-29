@@ -93,7 +93,7 @@ public class DataClassTest extends combo.ComboInstance<DataClassTest> {
     );
 
     static final String sourceTemplate =
-            "__datum Data(#{FT[0]} f0, #{FT[1]} f1) { }";
+            "record Data(#{FT[0]} f0, #{FT[1]} f1) { }";
 
     public static void main(String... args) throws Exception {
         new combo.ComboTestHelper<DataClassTest>()

@@ -2239,7 +2239,7 @@ public class Lower extends TreeTranslator {
             (types.supertype(currentClass.type).tsym.flags() & ENUM) == 0)
             visitEnumDef(tree);
 
-        if ((tree.mods.flags & (DATUM | ABSTRACT)) == DATUM) {
+        if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
             visitDatumDef(tree);
         }
 
@@ -2542,7 +2542,7 @@ public class Lower extends TreeTranslator {
                          names.toString,
                          tree.sym.type,
                          List.nil());
-        if ((msym.flags() & DATUM) != 0) {
+        if ((msym.flags() & RECORD) != 0) {
             Name bootstrapName = names.makeToString;
             Object[] staticArgsValues = new Object[2 + getterMethHandles.length];
             staticArgsValues[0] = tree.sym;
@@ -2579,7 +2579,7 @@ public class Lower extends TreeTranslator {
                          names.hashCode,
                          tree.sym.type,
                          List.nil());
-        if ((msym.flags() & DATUM) != 0) {
+        if ((msym.flags() & RECORD) != 0) {
             Name bootstrapName = names.makeHashCode;
             Object[] staticArgsValues = new Object[1 + getterMethHandles.length];
             staticArgsValues[0] = tree.sym;
@@ -2612,7 +2612,7 @@ public class Lower extends TreeTranslator {
                          tree.sym.type,
                          List.of(syms.objectType));
 
-        if ((msym.flags() & DATUM) != 0) {
+        if ((msym.flags() & RECORD) != 0) {
             Name bootstrapName = names.makeEquals;
             Object[] staticArgsValues = new Object[1 + getterMethHandles.length];
             staticArgsValues[0] = tree.sym;
@@ -2679,7 +2679,7 @@ public class Lower extends TreeTranslator {
                          names.toString,
                          tree.sym.type,
                          List.nil());
-        if ((toStringSym.flags() & DATUM) != 0) {
+        if ((toStringSym.flags() & RECORD) != 0) {
             String format = vars.stream()
                     .map(v -> v.name + "=%s")
                     .collect(Collectors.joining(", ", tree.name + "[", "]"));
@@ -2707,7 +2707,7 @@ public class Lower extends TreeTranslator {
                          names.hashCode,
                          tree.sym.type,
                          List.nil());
-        if ((hashCodeSym.flags() & DATUM) != 0) {
+        if ((hashCodeSym.flags() & RECORD) != 0) {
             JCFieldAccess meth = make.Select(make.Type(syms.objectsType), names.fromString("hash"));
             meth.sym = lookupMethod(tree.pos(),
                     meth.name,
@@ -2731,7 +2731,7 @@ public class Lower extends TreeTranslator {
                          tree.sym.type,
                          List.of(syms.objectType));
 
-        if ((oldEqualsSym.flags() & DATUM) != 0) {
+        if ((oldEqualsSym.flags() & RECORD) != 0) {
             ListBuffer<JCStatement> trueStats = new ListBuffer<>();
 
             VarSymbol o = oldEqualsSym.params.head;

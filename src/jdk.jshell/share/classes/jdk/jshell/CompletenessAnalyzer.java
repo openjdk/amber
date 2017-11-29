@@ -35,20 +35,27 @@ import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.Log;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.Iterator;
+
 import jdk.jshell.SourceCodeAnalysis.Completeness;
 import com.sun.source.tree.Tree;
+
 import static jdk.jshell.CompletenessAnalyzer.TK.*;
+
 import jdk.jshell.TaskFactory.ParseTask;
 import jdk.jshell.TaskFactory.Worker;
+
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import com.sun.tools.javac.util.Names;
 
 /**
  * Low level scanner to determine completeness of input.
@@ -58,6 +65,7 @@ class CompletenessAnalyzer {
 
     private final ScannerFactory scannerFactory;
     private final JShell proc;
+    private final Names names;
 
     private static Completeness error() {
         return Completeness.UNKNOWN;  // For breakpointing
@@ -79,6 +87,7 @@ class CompletenessAnalyzer {
         Log log = CaLog.createLog(context);
         context.put(Log.class, log);
         context.put(Source.class, Source.JDK1_9);
+        names = Names.instance(context);
         scannerFactory = ScannerFactory.instance(context);
     }
 
@@ -86,6 +95,7 @@ class CompletenessAnalyzer {
         try {
             Parser parser = new Parser(
                     () -> new Matched(scannerFactory.newScanner(s, false)),
+                    names,
                     worker -> proc.taskFactory.parse(s, worker));
             Completeness stat = parser.parseUnit();
             int endPos = stat == Completeness.UNKNOWN
@@ -194,7 +204,7 @@ class CompletenessAnalyzer {
         IDENTIFIER(TokenKind.IDENTIFIER, XEXPR1|XDECL1|XTERM),  //
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
-        DATUM(TokenKind.DATUM, XEXPR|XDECL1),  //  class decl (MAPPED: DOTCLASS)
+//        DATUM(TokenKind.RECORD, XEXPR|XDECL1),  //  class decl (MAPPED: DOTCLASS)
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
@@ -428,10 +438,13 @@ class CompletenessAnalyzer {
         /** The error message **/
         public final String message;
 
+        public final Token tok;
+
         private CT(TK tk, Token tok, String msg) {
             this.kind = tk;
             this.endPos = tok.endPos;
             this.message = msg;
+            this.tok = tok;
             //throw new InternalError(msg); /* for debugging */
         }
 
@@ -439,12 +452,14 @@ class CompletenessAnalyzer {
             this.kind = tk;
             this.endPos = tok.endPos;
             this.message = null;
+            this.tok = tok;
         }
 
         private CT(TK tk, int endPos) {
             this.kind = tk;
             this.endPos = endPos;
             this.message = null;
+            this.tok = null;
         }
     }
 
@@ -573,11 +588,14 @@ class CompletenessAnalyzer {
         private Matched in;
         private CT token;
         private Completeness checkResult;
+        private final Names names;
 
         Parser(Supplier<Matched> matchedFactory,
+               Names names,
                Function<Worker<ParseTask, Completeness>, Completeness> parseFactory) {
             this.matchedFactory = matchedFactory;
             this.parseFactory = parseFactory;
+            this.names = names;
             resetInput();
         }
 
@@ -663,7 +681,7 @@ class CompletenessAnalyzer {
             boolean isBracesNeeded = false;
             while (token.kind.isDeclaration()) {
                 isBracesNeeded |= token.kind.isBracesNeeded();
-                isDatum |= !afterModifiers && token.kind == DATUM;
+                isDatum |= !afterModifiers && token.kind == TK.IDENTIFIER && token.tok.name() == names.record;
                 afterModifiers |= !token.kind.isModifier();
                 nextToken();
             }

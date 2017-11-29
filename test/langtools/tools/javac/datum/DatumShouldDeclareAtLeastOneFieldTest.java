@@ -5,7 +5,7 @@
  */
 
 public class DatumShouldDeclareAtLeastOneFieldTest {
-    static abstract __datum D1() { }
+    static abstract record D1() { }
 
-    static __datum D2() { }
+    static record D2() { }
 }
