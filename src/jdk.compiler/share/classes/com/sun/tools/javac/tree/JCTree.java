@@ -814,6 +814,21 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public static class JCRecordDecl extends JCClassDecl implements ClassTree {
+        public JCExpression guard;
+        public JCRecordDecl(JCModifiers mods,
+                           Name name,
+                           List<JCTypeParameter> typarams,
+                           JCExpression extending,
+                           List<JCExpression> implementing,
+                           List<JCTree> defs,
+                           ClassSymbol sym,
+                           JCExpression guard) {
+            super(mods, name, typarams, extending, implementing, defs, sym);
+            this.guard = guard;
+        }
+    }
+
     /**
      * A method definition.
      */

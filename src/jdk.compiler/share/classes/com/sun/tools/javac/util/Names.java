@@ -213,6 +213,8 @@ public class Names {
 
     // record related
     public final Name record;
+    public final Name where;
+    public final Name guard;
 
     public final Name.Table table;
 
@@ -383,6 +385,8 @@ public class Names {
         makeHashCode = fromString("makeHashCode");
         makeToString = fromString("makeToString");
         record = fromString("record");
+        where = fromString("where");
+        guard = fromString("$guard");
     }
 
     protected Name.Table createTable(Options options) {

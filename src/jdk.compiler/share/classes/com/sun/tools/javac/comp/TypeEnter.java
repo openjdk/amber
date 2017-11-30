@@ -28,8 +28,6 @@ package com.sun.tools.javac.comp;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import javax.tools.JavaFileObject;
 
@@ -56,7 +54,9 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.ERROR;
 import static com.sun.tools.javac.code.TypeTag.NONE;
+
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
+
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;
@@ -893,8 +893,34 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             if ((sym.flags_field & RECORD) != 0) {
-                memberEnter.memberEnter(TreeInfo.recordFields(tree), env);
-                memberEnter.memberEnter(TreeInfo.superRecordFields(tree), env);
+                List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
+                List<JCVariableDecl> superFields = TreeInfo.superRecordFields(tree);
+                memberEnter.memberEnter(recordFields, env);
+                memberEnter.memberEnter(superFields, env);
+                JCRecordDecl recordDecl = (JCRecordDecl)tree;
+                if (recordDecl.guard != null) {
+                    List<VarSymbol> recordSyms = recordFields.map(vd -> vd.sym);
+                    List<Type> argtypes = superFields.map(v -> v.vartype.type).appendList(recordSyms.map(v -> v.type));
+                    MethodType guardMT = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
+                    MethodSymbol guardMS = new MethodSymbol(PRIVATE | RECORD, names.guard, guardMT, sym);
+
+                    ListBuffer<VarSymbol> params = new ListBuffer<>();
+                    for (JCVariableDecl p : superFields) {
+                        params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.vartype.type, guardMS));
+                    }
+                    for (VarSymbol p : recordSyms) {
+                        params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, guardMS));
+                    }
+                    guardMS.params = params.toList();
+
+                    JCUnary neg = make.Unary(Tag.NOT, recordDecl.guard);
+                    JCNewClass newException = make.NewClass(null, null,
+                            make.QualIdent(syms.illegalArgumentExceptionType.tsym),
+                            List.of(make.Literal(TypeTag.CLASS, "fields values are not accepted by the given guard")), null);
+                    JCStatement ifStm = make.If(neg, make.Throw(newException), null);
+                    JCMethodDecl guardDecl = make.MethodDef(guardMS, make.Block(0, List.of(ifStm)));
+                    tree.defs = tree.defs.prepend(guardDecl);
+                }
             }
         }
     }
@@ -927,10 +953,10 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
+                    helper = new RecordConstructorHelper(sym, ((JCRecordDecl)tree).guard, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
                 }
                 if (helper != null) {
-                    JCTree constrDef = DefaultConstructor(make.at(tree.pos), helper);
+                    JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
                 }
             }
@@ -1120,6 +1146,9 @@ public class TypeEnter implements Completer {
        TypeSymbol owner();
        List<Name> superArgs();
        List<Name> inits();
+       default JCExpression guard() {
+           return null;
+       }
     }
 
     class BasicConstructorHelper implements DefaultConstructorHelper {
@@ -1243,11 +1272,13 @@ public class TypeEnter implements Completer {
 
         List<VarSymbol> recordFields;
         List<JCVariableDecl> superFields;
+        JCExpression guard;
 
-        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
+        RecordConstructorHelper(TypeSymbol owner, JCExpression guard, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
             super(owner);
             this.recordFields = recordFields;
             this.superFields = superFields;
+            this.guard = guard;
         }
 
         @Override
@@ -1284,9 +1315,14 @@ public class TypeEnter implements Completer {
         public List<Name> inits() {
             return recordFields.map(v -> v.name);
         }
+
+        @Override
+        public JCExpression guard() {
+            return guard;
+        }
     }
 
-    JCTree DefaultConstructor(TreeMaker make, DefaultConstructorHelper helper) {
+    JCTree defaultConstructor(TreeMaker make, DefaultConstructorHelper helper) {
         Type initType = helper.constructorType();
         MethodSymbol initSym = helper.constructorSymbol();
         ListBuffer<JCStatement> stats = new ListBuffer<>();
@@ -1301,6 +1337,14 @@ public class TypeEnter implements Completer {
                     make.Types(initType.getTypeArguments()) : null;
             JCStatement superCall = make.Exec(make.Apply(typeargs, meth, helper.superArgs().map(make::Ident)));
             stats.add(superCall);
+        }
+        JCExpression guard = helper.guard();
+        if (guard != null) {
+            JCExpression meth = make.Ident(names.guard);
+            List<JCExpression> args = helper.superArgs().map(make::Ident);
+            args = args.appendList(helper.inits().map(make::Ident));
+            JCStatement guardCall = make.Exec(make.Apply(null, meth, args));
+            stats.add(guardCall);
         }
         for (Name initName : helper.inits()) {
             stats.add(make.Exec(make.Assign(make.Select(make.Ident(names._this), initName), make.Ident(initName))));

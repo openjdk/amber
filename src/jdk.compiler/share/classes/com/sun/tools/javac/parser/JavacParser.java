@@ -3530,7 +3530,12 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
+        JCExpression whereExpr = null;
         List<JCTree> defs = List.nil();
+        if (token.kind == IDENTIFIER && token.name() == names.where) {
+            nextToken();
+            whereExpr = parseExpression();
+        }
         if (token.kind == LBRACE) {
             defs = classInterfaceOrRecordBody(name, false, true);
         } else {
@@ -3548,9 +3553,8 @@ public class JavacParser implements Parser {
         for (JCTree field : optHeaderFields.values()) {
             fields.add(field);
         }
-        JCClassDecl result = toP(F.at(pos).ClassDef(
-            mods, name, typarams, extending, implementing,
-                defs.prependList(fields.toList())));
+        defs = defs.prependList(fields.toList());
+        JCRecordDecl result = toP(F.at(pos).RecordDef(mods, name, typarams, extending, implementing, defs, whereExpr));
         attach(result, dc);
         return result;
     }

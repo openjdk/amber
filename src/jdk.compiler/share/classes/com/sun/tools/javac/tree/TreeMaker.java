@@ -171,6 +171,26 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCRecordDecl RecordDef(JCModifiers mods,
+                                Name name,
+                                List<JCTypeParameter> typarams,
+                                JCExpression extending,
+                                List<JCExpression> implementing,
+                                List<JCTree> defs,
+                                JCExpression guard)
+    {
+        JCRecordDecl tree = new JCRecordDecl(mods,
+                                     name,
+                                     typarams,
+                                     extending,
+                                     implementing,
+                                     defs,
+                                     null,
+                                     guard);
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCMethodDecl MethodDef(JCModifiers mods,
                                Name name,
                                JCExpression restype,
