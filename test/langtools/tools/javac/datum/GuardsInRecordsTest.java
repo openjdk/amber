@@ -38,6 +38,9 @@ public class GuardsInRecordsTest {
         }
     }
 
+    static abstract record A (int a) where a >= 0;
+    static record B (int a, int b) extends A(a) where b >= 0;
+
     public static void main(String... args) {
         try {
             Range1 r = new Range1(2, 1);
@@ -52,6 +55,16 @@ public class GuardsInRecordsTest {
         try {
             Range3 r = new Range3(2, 1);
             throw new AssertionError("an exception was expected for Range3");
+        } catch (IllegalArgumentException iae) {}
+
+        try {
+            B b1 = new B(-1, 1);
+            throw new AssertionError("an exception was expected for B");
+        } catch (IllegalArgumentException iae) {}
+
+        try {
+            B b2 = new B(-1, -1);
+            throw new AssertionError("an exception was expected for B");
         } catch (IllegalArgumentException iae) {}
     }
 }
