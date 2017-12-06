@@ -220,6 +220,8 @@ public class SimpleDocTreeVisitor<R,P> implements DocTreeVisitor<R, P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return the result of {@code defaultAction}
+     *
+     * @since 9
      */
     @Override
     public R visitHidden(HiddenTree node, P p) {
@@ -244,6 +246,8 @@ public class SimpleDocTreeVisitor<R,P> implements DocTreeVisitor<R, P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return  the result of {@code defaultAction}
+     *
+     * @since 9
      */
     @Override
     public R visitIndex(IndexTree node, P p) {
@@ -316,6 +320,8 @@ public class SimpleDocTreeVisitor<R,P> implements DocTreeVisitor<R, P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return  the result of {@code defaultAction}
+     *
+     * @since 9
      */
     @Override
     public R visitProvides(ProvidesTree node, P p) {
@@ -485,6 +491,8 @@ public class SimpleDocTreeVisitor<R,P> implements DocTreeVisitor<R, P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return  the result of {@code defaultAction}
+     *
+     * @since 9
      */
     @Override
     public R visitUses(UsesTree node, P p) {

@@ -32,9 +32,9 @@ import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.parser.Tokens.*;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
-import com.sun.tools.javac.resources.CompilerProperties;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
@@ -43,7 +43,6 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
-import static com.sun.tools.javac.code.Flags.ABSTRACT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.*;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ASSERT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CASE;
@@ -164,24 +163,7 @@ public class JavacParser implements Parser {
         this.log = fac.log;
         this.names = fac.names;
         this.source = fac.source;
-        this.allowTWR = source.allowTryWithResources();
-        this.allowEffectivelyFinalVariablesInTWR =
-                source.allowEffectivelyFinalVariablesInTryWithResources();
-        this.allowDiamond = source.allowDiamond();
-        this.allowMulticatch = source.allowMulticatch();
         this.allowStringFolding = fac.options.getBoolean("allowStringFolding", true);
-        this.allowLambda = source.allowLambda();
-        this.allowMethodReferences = source.allowMethodReferences();
-        this.allowDefaultMethods = source.allowDefaultMethods();
-        this.allowStaticInterfaceMethods = source.allowStaticInterfaceMethods();
-        this.allowIntersectionTypesInCast = source.allowIntersectionTypesInCast();
-        this.allowTypeAnnotations = source.allowTypeAnnotations();
-        this.allowModules = source.allowModules();
-        this.allowAnnotationsAfterTypeParams = source.allowAnnotationsAfterTypeParams();
-        this.allowUnderscoreIdentifier = source.allowUnderscoreIdentifier();
-        this.allowPrivateInterfaceMethods = source.allowPrivateInterfaceMethods();
-        this.allowLocalVariableTypeInference = source.allowLocalVariableTypeInference();
-        this.allowRecord = source.allowRecord();
         this.keepDocComments = keepDocComments;
         this.parseModuleInfo = parseModuleInfo;
         docComments = newDocCommentTable(keepDocComments, fac);
@@ -200,53 +182,9 @@ public class JavacParser implements Parser {
         return keepDocComments ? new LazyDocCommentTable(fac) : null;
     }
 
-    /** Switch: Should diamond operator be recognized?
-     */
-    boolean allowDiamond;
-
-    /** Switch: Should multicatch clause be accepted?
-     */
-    boolean allowMulticatch;
-
-    /** Switch: should we recognize try-with-resources?
-     */
-    boolean allowTWR;
-
-    /** Switch: should we allow (effectively) final variables as resources in try-with-resources?
-     */
-    boolean allowEffectivelyFinalVariablesInTWR;
-
     /** Switch: should we fold strings?
      */
     boolean allowStringFolding;
-
-    /** Switch: should we recognize lambda expressions?
-     */
-    boolean allowLambda;
-
-    /** Switch: should we allow method/constructor references?
-     */
-    boolean allowMethodReferences;
-
-    /** Switch: should we recognize modules?
-     */
-    boolean allowModules;
-
-    /** Switch: should we allow default methods in interfaces?
-     */
-    boolean allowDefaultMethods;
-
-    /** Switch: should we allow static methods in interfaces?
-     */
-    boolean allowStaticInterfaceMethods;
-
-    /** Switch: should we allow private (instance) methods in interfaces?
-     */
-    boolean allowPrivateInterfaceMethods;
-
-    /** Switch: should we allow intersection types in cast?
-     */
-    boolean allowIntersectionTypesInCast;
 
     /** Switch: should we keep docComments?
      */
@@ -256,30 +194,10 @@ public class JavacParser implements Parser {
      */
     boolean keepLineMap;
 
-    /** Switch: should we recognize type annotations?
-     */
-    boolean allowTypeAnnotations;
-
-    /** Switch: should we allow annotations after the method type parameters?
-     */
-    boolean allowAnnotationsAfterTypeParams;
-
-    /** Switch: should we allow '_' as an identifier?
-     */
-    boolean allowUnderscoreIdentifier;
-
     /** Switch: is "this" allowed as an identifier?
      * This is needed to parse receiver types.
      */
     boolean allowThisIdent;
-
-    /** Switch: is local variable inference allowed?
-     */
-    boolean allowLocalVariableTypeInference;
-
-    /** Switch: are records allowed?
-     */
-    public boolean allowRecord;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -634,7 +552,7 @@ public class JavacParser implements Parser {
         } else if (token.kind == THIS) {
             if (allowThisIdent) {
                 // Make sure we're using a supported source version.
-                checkTypeAnnotations();
+                checkSourceLevel(Feature.TYPE_ANNOTATIONS);
                 Name name = token.name();
                 nextToken();
                 return name;
@@ -644,7 +562,7 @@ public class JavacParser implements Parser {
                 return names.error;
             }
         } else if (token.kind == UNDERSCORE) {
-            if (allowUnderscoreIdentifier) {
+            if (Feature.UNDERSCORE_IDENTIFIER.allowedInSource(source)) {
                 warning(token.pos, "underscore.as.identifier");
             } else {
                 error(token.pos, "underscore.as.identifier");
@@ -1176,7 +1094,7 @@ public class JavacParser implements Parser {
                        int pos1 = pos;
                        List<JCExpression> targets = List.of(t = parseType());
                        while (token.kind == AMP) {
-                           checkIntersectionTypesInCast();
+                           checkSourceLevel(Feature.INTERSECTION_TYPES_IN_CAST);
                            accept(AMP);
                            targets = targets.prepend(parseType());
                        }
@@ -1777,7 +1695,7 @@ public class JavacParser implements Parser {
     }
 
     JCExpression lambdaExpressionOrStatementRest(List<JCVariableDecl> args, int pos) {
-        checkLambda();
+        checkSourceLevel(Feature.LAMBDA);
         accept(ARROW);
 
         return token.kind == LBRACE ?
@@ -1896,7 +1814,7 @@ public class JavacParser implements Parser {
         if (token.kind == LT) {
             nextToken();
             if (token.kind == GT && diamondAllowed) {
-                checkDiamond();
+                checkSourceLevel(Feature.DIAMOND);
                 mode |= DIAMOND;
                 nextToken();
                 return List.nil();
@@ -2071,7 +1989,7 @@ public class JavacParser implements Parser {
     }
 
     JCExpression memberReferenceSuffix(int pos1, JCExpression t) {
-        checkMethodReferences();
+        checkSourceLevel(Feature.METHOD_REFERENCES);
         mode = EXPR;
         List<JCExpression> typeArgs = null;
         if (token.kind == LT) {
@@ -2583,7 +2501,7 @@ public class JavacParser implements Parser {
             nextToken();
             List<JCTree> resources = List.nil();
             if (token.kind == LPAREN) {
-                checkTryWithResources();
+                checkSourceLevel(Feature.TRY_WITH_RESOURCES);
                 nextToken();
                 resources = resources();
                 accept(RPAREN);
@@ -2599,7 +2517,7 @@ public class JavacParser implements Parser {
                 }
             } else {
                 if (resources.isEmpty()) {
-                    if (allowTWR) {
+                    if (Feature.TRY_WITH_RESOURCES.allowedInSource(source)) {
                         error(pos, "try.without.catch.finally.or.resource.decls");
                     } else {
                         error(pos, "try.without.catch.or.finally");
@@ -2716,7 +2634,7 @@ public class JavacParser implements Parser {
         ListBuffer<JCExpression> catchTypes = new ListBuffer<>();
         catchTypes.add(parseType());
         while (token.kind == BAR) {
-            checkMulticatch();
+            checkSourceLevel(Feature.MULTICATCH);
             nextToken();
             // Instead of qualident this is now parseType.
             // But would that allow too much, e.g. arrays or generics?
@@ -2886,7 +2804,7 @@ public class JavacParser implements Parser {
             case SYNCHRONIZED: flag = Flags.SYNCHRONIZED; break;
             case STRICTFP    : flag = Flags.STRICTFP; break;
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
-            case DEFAULT     : checkDefaultMethods(); flag = Flags.DEFAULT; break;
+            case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
             default: break loop;
             }
@@ -2930,7 +2848,7 @@ public class JavacParser implements Parser {
     JCAnnotation annotation(int pos, Tag kind) {
         // accept(AT); // AT consumed by caller
         if (kind == Tag.TYPE_ANNOTATION) {
-            checkTypeAnnotations();
+            checkSourceLevel(Feature.TYPE_ANNOTATIONS);
         }
         JCTree ident = qualident(false);
         List<JCExpression> fieldValues = annotationFieldValuesOpt();
@@ -3044,7 +2962,7 @@ public class JavacParser implements Parser {
                                                                      boolean localDecl)
     {
         JCVariableDecl head = variableDeclaratorRest(pos, mods, type, name, reqInit, dc, localDecl);
-        boolean implicit = allowLocalVariableTypeInference && head.vartype == null;
+        boolean implicit = Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source) && head.vartype == null;
         vdefs.append(head);
         while (token.kind == COMMA) {
             if (implicit) {
@@ -3082,7 +3000,7 @@ public class JavacParser implements Parser {
         else if (reqInit) syntaxError(token.pos, "expected", EQ);
         JCTree elemType = TreeInfo.innermostType(type, true);
         int startPos = Position.NOPOS;
-        if (allowLocalVariableTypeInference && elemType.hasTag(IDENT)) {
+        if (Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source) && elemType.hasTag(IDENT)) {
             Name typeName = ((JCIdent)elemType).name;
             if (isRestrictedLocalVarTypeName(typeName)) {
                 if (type.hasTag(TYPEARRAY)) {
@@ -3116,7 +3034,7 @@ public class JavacParser implements Parser {
     }
 
     boolean isRestrictedLocalVarTypeName(Name name) {
-        return allowLocalVariableTypeInference && name == names.var;
+        return Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source) && name == names.var;
     }
 
     /** VariableDeclaratorId = Ident BracketsOpt
@@ -3192,7 +3110,7 @@ public class JavacParser implements Parser {
             JCModifiers mods = toP(F.at(startPos).Modifiers(Flags.FINAL));
             return variableDeclaratorRest(token.pos, mods, t, ident(), true, null, true);
         } else {
-            checkVariableInTryWithResources(startPos);
+            checkSourceLevel(Feature.EFFECTIVELY_FINAL_VARIABLES_IN_TRY_WITH_RESOURCES);
             if (!t.hasTag(IDENT) && !t.hasTag(SELECT)) {
                 log.error(t.pos(), Errors.TryWithResourcesExprNeedsVar);
             }
@@ -3294,10 +3212,7 @@ public class JavacParser implements Parser {
 
     JCModuleDecl moduleDecl(JCModifiers mods, ModuleKind kind, Comment dc) {
         int pos = token.pos;
-        if (!allowModules) {
-            log.error(pos, Errors.ModulesNotSupportedInSource(source.name));
-            allowModules = true;
-        }
+        checkSourceLevel(Feature.MODULES);
 
         nextToken();
         JCExpression name = qualident(false);
@@ -3439,7 +3354,7 @@ public class JavacParser implements Parser {
     protected JCStatement classOrRecordOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
         if (token.kind == CLASS) {
             return classDeclaration(mods, dc);
-        } if (allowRecord && token.kind == IDENTIFIER && token.name() == names.record) {
+        } if (token.kind == IDENTIFIER && token.name() == names.record) {
             return recordDeclaration(mods, dc);
         } else if (token.kind == INTERFACE) {
             return interfaceDeclaration(mods, dc);
@@ -3796,7 +3711,7 @@ public class JavacParser implements Parser {
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
             if (token.kind == CLASS ||
-                allowRecord && token.kind == IDENTIFIER && token.name() == names.record ||
+                token.kind == IDENTIFIER && token.name() == names.record ||
                 token.kind == INTERFACE ||
                 token.kind == ENUM) {
                 return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
@@ -3825,7 +3740,7 @@ public class JavacParser implements Parser {
         List<JCAnnotation> annosAfterParams = annotationsOpt(Tag.ANNOTATION);
 
         if (annosAfterParams.nonEmpty()) {
-            checkAnnotationsAfterTypeParams(annosAfterParams.head.pos);
+            checkSourceLevel(annosAfterParams.head.pos, Feature.ANNOTATIONS_AFTER_TYPE_PARAMS);
             mods.annotations = mods.annotations.appendList(annosAfterParams);
             if (mods.pos == Position.NOPOS)
                 mods.pos = mods.annotations.head.pos;
@@ -3903,10 +3818,10 @@ public class JavacParser implements Parser {
                               Comment dc) {
         if (isInterface) {
             if ((mods.flags & Flags.STATIC) != 0) {
-                checkStaticInterfaceMethods();
+                checkSourceLevel(Feature.STATIC_INTERFACE_METHODS);
             }
             if ((mods.flags & Flags.PRIVATE) != 0) {
-                checkPrivateInterfaceMethods();
+                checkSourceLevel(Feature.PRIVATE_INTERFACE_METHODS);
             }
         }
         JCVariableDecl prevReceiverParam = this.receiverParam;
@@ -4361,64 +4276,13 @@ public class JavacParser implements Parser {
         }
     }
 
-    void checkDiamond() {
-        if (!allowDiamond) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.DiamondNotSupportedInSource(source.name));
-        }
+    void checkSourceLevel(Feature feature) {
+        checkSourceLevel(token.pos, feature);
     }
-    void checkMulticatch() {
-        if (!allowMulticatch) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.MulticatchNotSupportedInSource(source.name));
-        }
-    }
-    void checkTryWithResources() {
-        if (!allowTWR) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.TryWithResourcesNotSupportedInSource(source.name));
-        }
-    }
-    void checkVariableInTryWithResources(int startPos) {
-        if (!allowEffectivelyFinalVariablesInTWR) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, startPos, Errors.VarInTryWithResourcesNotSupportedInSource(source.name));
-        }
-    }
-    void checkLambda() {
-        if (!allowLambda) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.LambdaNotSupportedInSource(source.name));
-        }
-    }
-    void checkMethodReferences() {
-        if (!allowMethodReferences) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.MethodReferencesNotSupportedInSource(source.name));
-        }
-    }
-    void checkDefaultMethods() {
-        if (!allowDefaultMethods) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.DefaultMethodsNotSupportedInSource(source.name));
-        }
-    }
-    void checkIntersectionTypesInCast() {
-        if (!allowIntersectionTypesInCast) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.IntersectionTypesInCastNotSupportedInSource(source.name));
-        }
-    }
-    void checkStaticInterfaceMethods() {
-        if (!allowStaticInterfaceMethods) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.StaticIntfMethodsNotSupportedInSource(source.name));
-        }
-    }
-    void checkTypeAnnotations() {
-        if (!allowTypeAnnotations) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, Errors.TypeAnnotationsNotSupportedInSource(source.name));
-        }
-    }
-    void checkPrivateInterfaceMethods() {
-        if (!allowPrivateInterfaceMethods) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, token.pos, CompilerProperties.Errors.PrivateIntfMethodsNotSupportedInSource(source.name));
-        }
-    }
-    protected void checkAnnotationsAfterTypeParams(int pos) {
-        if (!allowAnnotationsAfterTypeParams) {
-            log.error(DiagnosticFlag.SOURCE_LEVEL, pos, Errors.AnnotationsAfterTypeParamsNotSupportedInSource(source.name));
+
+    protected void checkSourceLevel(int pos, Feature feature) {
+        if (!feature.allowedInSource(source)) {
+            log.error(DiagnosticFlag.SOURCE_LEVEL, pos, feature.error(source.name));
         }
     }
 
