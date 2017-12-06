@@ -23,6 +23,19 @@
  * questions.
  */
 
+/**
+ * DataClassTest
+ *
+ * @test
+ * @library /tools/javac/lib
+ * @modules jdk.compiler/com.sun.tools.javac.file
+ *          jdk.compiler/com.sun.tools.javac.api
+ *          jdk.compiler/com.sun.tools.javac.util
+ * @build combo.ComboTestHelper
+
+ * @run main DataClassTest
+ */
+
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -39,18 +52,6 @@ import javax.tools.JavaFileObject;
 import com.sun.tools.javac.file.PathFileObject;
 import combo.ComboTask;
 
-/**
- * DataClassTest
- *
- * @test
- * @library /tools/javac/lib
- * @modules jdk.compiler/com.sun.tools.javac.file
- *          jdk.compiler/com.sun.tools.javac.api
- *          jdk.compiler/com.sun.tools.javac.util
- * @build combo.ComboTestHelper
-
- * @run main DataClassTest
- */
 public class DataClassTest extends combo.ComboInstance<DataClassTest> {
 
     enum FieldTypeKind implements combo.ComboParameter {
@@ -85,8 +86,8 @@ public class DataClassTest extends combo.ComboInstance<DataClassTest> {
             Map.entry(FieldTypeKind.CHAR, List.of(Character.MIN_VALUE, 'a', 'A', 'z', (char) 0, Character.MAX_VALUE)),
             Map.entry(FieldTypeKind.INT, List.of(Integer.MIN_VALUE, (int) -4, (int) -1, (int) 0, (int) 1, (int) 4, Integer.MAX_VALUE)),
             Map.entry(FieldTypeKind.LONG, List.of(Long.MIN_VALUE, (long) -4, (long) -1, (long) 0, (long) 1, (long) 4, Long.MAX_VALUE)),
-            Map.entry(FieldTypeKind.FLOAT, List.of(Float.MIN_VALUE, Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 0.0f, 1.0f, -1.0f, 2.0f, -2.0f, Float.MAX_VALUE)),
-            Map.entry(FieldTypeKind.DOUBLE, List.of(Double.MIN_VALUE, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0d, 1.0d, -1.0d, 2.0d, -2.0d, Double.MAX_VALUE)),
+            Map.entry(FieldTypeKind.FLOAT, List.of(Float.MIN_VALUE, Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 0.0f, -0.0f, 1.0f, -1.0f, 2.0f, -2.0f, Float.MAX_VALUE)),
+            Map.entry(FieldTypeKind.DOUBLE, List.of(Double.MIN_VALUE, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0d, -0.0d, 1.0d, -1.0d, 2.0d, -2.0d, Double.MAX_VALUE)),
             Map.entry(FieldTypeKind.BOOLEAN, List.of(true, false)),
             Map.entry(FieldTypeKind.OBJECT, Arrays.asList(null, 3, "foo", new String[] {"a"})),
             Map.entry(FieldTypeKind.STRING, Arrays.asList(null, "", "foo", "bar"))
@@ -185,7 +186,19 @@ public class DataClassTest extends combo.ComboInstance<DataClassTest> {
                             Object other = ctor.newInstance(f2, f3);
                             boolean isEqual = (boolean) equalsMethod.invoke(datum, other);
                             boolean isEqualReverse = (boolean) equalsMethod.invoke(other, datum);
-                            boolean shouldEqual = Objects.equals(f0, f2) && Objects.equals(f1, f3);
+                            boolean f0f2Equal = Objects.equals(f0, f2);
+                            boolean f1f3Equal = Objects.equals(f1, f3);
+                            if (fieldType[0] == FieldTypeKind.FLOAT) {
+                                f0f2Equal = Float.compare((float)f0, (float)f2) == 0;
+                            } else if (fieldType[0] == FieldTypeKind.DOUBLE) {
+                                f0f2Equal = Double.compare((double)f0, (double)f2) == 0;
+                            }
+                            if (fieldType[1] == FieldTypeKind.FLOAT) {
+                                f1f3Equal = Float.compare((float)f1, (float)f3) == 0;
+                            } else if (fieldType[1] == FieldTypeKind.DOUBLE) {
+                                f1f3Equal = Double.compare((double)f1, (double)f3) == 0;
+                            }
+                            boolean shouldEqual = f0f2Equal && f1f3Equal;
                             // @@@ fail
                             if (shouldEqual != isEqual)
                                 System.err.println(String.format("Equals not as expected: %s %s/%s, %s %s/%s",

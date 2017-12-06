@@ -114,8 +114,8 @@ public class ObjectMethodBuilders {
     private static boolean eq(char a, char b) { return a == b; }
     private static boolean eq(int a, int b) { return a == b; }
     private static boolean eq(long a, long b) { return a == b; }
-    private static boolean eq(float a, float b) { return a == b; }
-    private static boolean eq(double a, double b) { return a == b; }
+    private static boolean eq(float a, float b) { return Float.compare(a, b) == 0; }
+    private static boolean eq(double a, double b) { return Double.compare(a, b) == 0; }
     private static boolean eq(boolean a, boolean b) { return a == b; }
 
     /** Get the method handle for combining two values of a given type */
