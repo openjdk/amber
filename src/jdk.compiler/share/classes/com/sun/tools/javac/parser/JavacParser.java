@@ -3849,7 +3849,7 @@ public class JavacParser implements Parser {
             setErrorEndPos(token.pos);
             reportSyntaxError(S.prevToken().endPos, "expected3", COMMA, RPAREN, LBRACKET);
         }
-        if (lambdaParameters && allowLocalVariableTypeInference) {
+        if (lambdaParameters && Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source)) {
             List<JCVariableDecl> implicitParams = params.stream()
                     .filter(p -> p.vartype == null)
                     .collect(List.collector());
