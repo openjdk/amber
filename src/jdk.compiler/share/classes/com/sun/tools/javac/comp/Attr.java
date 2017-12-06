@@ -38,6 +38,7 @@ import com.sun.source.util.SimpleTreeVisitor;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Lint.LintCategory;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.code.TypeMetadata.Annotations;
@@ -152,12 +153,12 @@ public class Attr extends JCTree.Visitor {
         Options options = Options.instance(context);
 
         Source source = Source.instance(context);
-        allowStringsInSwitch = source.allowStringsInSwitch();
-        allowPoly = source.allowPoly();
-        allowTypeAnnos = source.allowTypeAnnotations();
-        allowLambda = source.allowLambda();
-        allowDefaultMethods = source.allowDefaultMethods();
-        allowStaticInterfaceMethods = source.allowStaticInterfaceMethods();
+        allowStringsInSwitch = Feature.STRINGS_IN_SWITCH.allowedInSource(source);
+        allowPoly = Feature.POLY.allowedInSource(source);
+        allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
+        allowLambda = Feature.LAMBDA.allowedInSource(source);
+        allowDefaultMethods = Feature.DEFAULT_METHODS.allowedInSource(source);
+        allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
 
@@ -1419,7 +1420,7 @@ public class Attr extends JCTree.Visitor {
             } else if (types.isSameType(seltype, syms.stringType)) {
                 tree.kind = SwitchKind.STRING;
                 if (!allowStringsInSwitch) {
-                    log.error(DiagnosticFlag.SOURCE_LEVEL, tree.selector.pos(), Errors.StringSwitchNotSupportedInSource(sourceName));
+                    log.error(DiagnosticFlag.SOURCE_LEVEL, tree.selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
                 }
             } else if (!types.isAssignable(seltype, syms.intType) &&
                        !types.isSameType(seltype, syms.voidType)) {
@@ -3826,7 +3827,7 @@ public class Attr extends JCTree.Visitor {
             }
             if (!allowStaticInterfaceMethods && sitesym.isInterface() &&
                     sym.isStatic() && sym.kind == MTH) {
-                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos(), Errors.StaticIntfMethodInvokeNotSupportedInSource(sourceName));
+                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos(), Feature.STATIC_INTERFACE_METHODS_INVOKE.error(sourceName));
             }
         } else if (sym.kind != ERR &&
                    (sym.flags() & STATIC) != 0 &&
