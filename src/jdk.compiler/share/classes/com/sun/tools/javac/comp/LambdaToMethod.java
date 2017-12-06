@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
@@ -153,7 +154,7 @@ public class LambdaToMethod extends TreeTranslator {
         doConstantFold = options.isSet("doConstantFold");
         condyForLambda = options.isSet("condyForLambda");
         Source source = Source.instance(context);
-        allowCondyForLambda = source.allowCondyForLambda();
+        allowCondyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>
 
