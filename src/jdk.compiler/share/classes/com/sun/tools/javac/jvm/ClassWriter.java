@@ -1820,15 +1820,8 @@ public class ClassWriter extends ClassFile {
         acount += writeExtraClassAttributes(c);
 
         poolbuf.appendInt(JAVA_MAGIC);
-
-        if (c.owner.kind == MDL) {
-            // temporarily overide to force use of v53 for module-info.class
-            poolbuf.appendChar(0);
-            poolbuf.appendChar(53);
-        } else {
-            poolbuf.appendChar(target.minorVersion);
-            poolbuf.appendChar(target.majorVersion);
-        }
+        poolbuf.appendChar(target.minorVersion);
+        poolbuf.appendChar(target.majorVersion);
 
         writePool(c.pool);
 
