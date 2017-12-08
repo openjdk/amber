@@ -278,6 +278,18 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCaseExpression> cases) {
+        JCSwitchExpression tree = new JCSwitchExpression(selector, cases);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCCaseExpression CaseExpression(JCExpression pat, JCTree expr) {
+        JCCaseExpression tree = new JCCaseExpression(pat, expr);
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCSynchronized Synchronized(JCExpression lock, JCBlock body) {
         JCSynchronized tree = new JCSynchronized(lock, body);
         tree.pos = pos;
@@ -598,7 +610,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public LetExpr LetExpr(List<JCVariableDecl> defs, JCExpression expr) {
+    public LetExpr LetExpr(List<JCStatement> defs, JCExpression expr) {
         LetExpr tree = new LetExpr(defs, expr);
         tree.pos = pos;
         return tree;

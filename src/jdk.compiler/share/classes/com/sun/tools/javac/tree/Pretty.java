@@ -828,6 +828,45 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        try {
+            print("switch ");
+            if (tree.selector.hasTag(PARENS)) {
+                printExpr(tree.selector);
+            } else {
+                print("(");
+                printExpr(tree.selector);
+                print(")");
+            }
+            print(" {");
+            println();
+            printStats(tree.cases);
+            align();
+            print("}");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitCaseExpression(JCCaseExpression tree) {
+        try {
+            if (tree.pat == null) {
+                print("default");
+            } else {
+                print("case ");
+                printExpr(tree.pat);
+            }
+            print(" -> ");
+            println();
+            indent();
+            printExpr(tree.expr);
+            undent();
+            align();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void visitSynchronized(JCSynchronized tree) {
         try {
             print("synchronized ");

@@ -341,9 +341,37 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
+    public R visitSwitchExpression(SwitchExpressionTree node, P p) {
+        R r = scan(node.getExpression(), p);
+        r = scanAndReduce(node.getCases(), p, r);
+        return r;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
     public R visitCase(CaseTree node, P p) {
         R r = scan(node.getExpression(), p);
         r = scanAndReduce(node.getStatements(), p, r);
+        return r;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
+    public R visitCaseExpression(CaseExpressionTree node, P p) {
+        R r = scan(node.getExpression(), p);
+        r = scanAndReduce(node.getBody(), p, r);
         return r;
     }
 

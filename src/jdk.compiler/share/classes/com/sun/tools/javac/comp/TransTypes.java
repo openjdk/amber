@@ -617,6 +617,22 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        Type selsuper = types.supertype(tree.selector.type);
+        boolean enumSwitch = selsuper != null &&
+            selsuper.tsym == syms.enumSym;
+        Type target = enumSwitch ? erasure(tree.selector.type) : syms.intType;
+        tree.selector = translate(tree.selector, target);
+        tree.cases = translate(tree.cases);
+        result = tree;
+    }
+
+    public void visitCaseExpression(JCCaseExpression tree) {
+        tree.pat = translate(tree.pat, null);
+        tree.expr = translate(tree.expr);
+        result = tree;
+    }
+
     public void visitSynchronized(JCSynchronized tree) {
         tree.lock = translate(tree.lock, erasure(tree.lock.type));
         tree.body = translate(tree.body);

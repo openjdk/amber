@@ -28,6 +28,8 @@
 package com.sun.tools.javac.comp;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.tools.javac.code.*;
@@ -616,6 +618,40 @@ public class Flow {
             if (!hasDefault) {
                 alive = true;
             }
+            alive |= resolveBreaks(tree, prevPendingExits);
+        }
+
+        @Override
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            ListBuffer<PendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+            scan(tree.selector);
+            Set<Name> constants = null;
+            if ((tree.selector.type.tsym.flags() & ENUM) != 0) {
+                constants = new HashSet<>();
+                for (Symbol s : tree.selector.type.tsym.members().getSymbols(s -> (s.flags() & ENUM) != 0)) {
+                    constants.add(s.name);
+                }
+            }
+            boolean hasDefault = false;
+            boolean prevAlive = alive;
+            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                alive = true;
+                JCCaseExpression c = l.head;
+                if (c.pat == null)
+                    hasDefault = true;
+                else {
+                    scan(c.pat);
+                    if (constants != null && c.pat.hasTag(IDENT)) {
+                        constants.remove(((JCIdent) c.pat).name);
+                    }
+                }
+                scanStat(c.expr);
+            }
+            if ((constants == null || !constants.isEmpty()) && !hasDefault) {
+                log.error(tree, Errors.NotExhaustive);
+            }
+            alive = prevAlive;
             alive |= resolveBreaks(tree, prevPendingExits);
         }
 

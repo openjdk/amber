@@ -51,6 +51,7 @@ import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.OpensDirective;
 import com.sun.tools.javac.code.Type.ModuleType;
+import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
 
 /**
  * Root class for abstract syntax tree nodes. It provides definitions
@@ -125,6 +126,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         BLOCK,
 
+        /** Block expressions, of type BlockExpression.
+         */
+        BLOCK_EXPRESSION,
+
         /** Do-while loops, of type DoLoop.
          */
         DOLOOP,
@@ -152,6 +157,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** Case parts in switch statements, of type Case.
          */
         CASE,
+
+        /** Switch expression statements, of type Switch.
+         */
+        SWITCH_EXPRESSIOM,
+
+        /** Case expression parts in switch expressions, of type Case.
+         */
+        CASE_EXPRESSIOM,
 
         /** Synchronized statements, of type Synchonized.
          */
@@ -1262,6 +1275,68 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return CASE;
         }
     }
+
+    /**
+     * A "switch ( ) { }" construction.
+     */
+    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
+        public JCExpression selector;
+        public List<JCCaseExpression> cases;
+        protected JCSwitchExpression(JCExpression selector, List<JCCaseExpression> cases) {
+            this.selector = selector;
+            this.cases = cases;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitSwitchExpression(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.SWITCH_EXPRESSION; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getExpression() { return selector; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public List<JCCaseExpression> getCases() { return cases; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitSwitchExpression(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return SWITCH_EXPRESSIOM;
+        }
+    }
+
+    /**
+     * A "case  :" of a switch.
+     */
+    public static class JCCaseExpression extends JCExpression implements CaseExpressionTree {
+        public JCExpression pat;
+        public JCTree expr;
+        protected JCCaseExpression(JCExpression pat, JCTree expr) {
+            this.pat = pat;
+            this.expr = expr;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitCaseExpression(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.CASE_EXPRESSION; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getExpression() { return pat; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCTree getBody() {
+            return expr;
+        }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitCaseExpression(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return CASE_EXPRESSIOM;
+        }
+    }
+
+
 
     /**
      * A synchronized block.
@@ -2934,9 +3009,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     /** (let int x = 3; in x+2) */
     public static class LetExpr extends JCExpression {
-        public List<JCVariableDecl> defs;
+        public List<JCStatement> defs;
         public JCExpression expr;
-        protected LetExpr(List<JCVariableDecl> defs, JCExpression expr) {
+        protected LetExpr(List<JCStatement> defs, JCExpression expr) {
             this.defs = defs;
             this.expr = expr;
         }
@@ -3049,7 +3124,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCProvides Provides(JCExpression serviceName, List<JCExpression> implNames);
         JCRequires Requires(boolean isTransitive, boolean isStaticPhase, JCExpression qualId);
         JCUses Uses(JCExpression qualId);
-        LetExpr LetExpr(List<JCVariableDecl> defs, JCExpression expr);
+        LetExpr LetExpr(List<JCStatement> defs, JCExpression expr);
     }
 
     /** A generic visitor class for trees.
@@ -3070,6 +3145,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitLabelled(JCLabeledStatement that)   { visitTree(that); }
         public void visitSwitch(JCSwitch that)               { visitTree(that); }
         public void visitCase(JCCase that)                   { visitTree(that); }
+        public void visitSwitchExpression(JCSwitchExpression that)               { visitTree(that); }
+        public void visitCaseExpression(JCCaseExpression that)                   { visitTree(that); }
         public void visitSynchronized(JCSynchronized that)   { visitTree(that); }
         public void visitTry(JCTry that)                     { visitTree(that); }
         public void visitCatch(JCCatch that)                 { visitTree(that); }

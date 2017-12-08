@@ -75,6 +75,8 @@ import static com.sun.tools.javac.code.TypeTag.DEFERRED;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
+import com.sun.tools.javac.tree.JCTree.JCCaseExpression;
+import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 
 /**
  * This class performs attribution of method/constructor arguments when target-typing is enabled
@@ -145,7 +147,7 @@ public class ArgumentAttr extends JCTree.Visitor {
      * Checks a type in the speculative tree against a given result; the type can be either a plain
      * type or an argument type,in which case a more complex check is required.
      */
-    Type checkSpeculative(JCExpression expr, ResultInfo resultInfo) {
+    Type checkSpeculative(JCTree expr, ResultInfo resultInfo) {
         return checkSpeculative(expr, expr.type, resultInfo);
     }
 
@@ -253,6 +255,11 @@ public class ArgumentAttr extends JCTree.Visitor {
     @Override
     public void visitConditional(JCConditional that) {
         processArg(that, speculativeTree -> new ConditionalType(that, env, speculativeTree));
+    }
+
+    @Override
+    public void visitSwitchExpression(JCSwitchExpression that) {
+        processArg(that, speculativeTree -> new SwitchExpressionType(that, env, speculativeTree));
     }
 
     @Override
@@ -450,6 +457,43 @@ public class ArgumentAttr extends JCTree.Visitor {
         @Override
         ArgumentType<JCConditional> dup(JCConditional tree, Env<AttrContext> env) {
             return new ConditionalType(tree, env, speculativeTree, speculativeTypes);
+        }
+    }
+
+    /**
+     * Argument type for switch expressions.
+     */
+    class SwitchExpressionType extends ArgumentType<JCSwitchExpression> {
+        SwitchExpressionType(JCExpression tree, Env<AttrContext> env, JCSwitchExpression speculativeCond) {
+            this(tree, env, speculativeCond, new HashMap<>());
+        }
+
+        SwitchExpressionType(JCExpression tree, Env<AttrContext> env, JCSwitchExpression speculativeCond, Map<ResultInfo, Type> speculativeTypes) {
+           super(tree, env, speculativeCond, speculativeTypes);
+        }
+
+        @Override
+        Type overloadCheck(ResultInfo resultInfo, DeferredAttrContext deferredAttrContext) {
+            ResultInfo localInfo = resultInfo.dup(attr.conditionalContext(resultInfo.checkContext));
+            if (speculativeTree.isStandalone()) {
+                return localInfo.check(speculativeTree, speculativeTree.type);
+            } else if (resultInfo.pt.hasTag(VOID)) {
+                //this means we are returning a poly conditional from void-compatible lambda expression
+                //XXX: fix error:
+                resultInfo.checkContext.report(tree, attr.diags.fragment(Fragments.ConditionalTargetCantBeVoid));
+                return attr.types.createErrorType(resultInfo.pt);
+            } else {
+                //poly
+                for (JCCaseExpression c : speculativeTree.cases) {
+                    checkSpeculative(c.expr, localInfo);
+                }
+                return localInfo.pt;
+            }
+        }
+
+        @Override
+        ArgumentType<JCSwitchExpression> dup(JCSwitchExpression tree, Env<AttrContext> env) {
+            return new SwitchExpressionType(tree, env, speculativeTree, speculativeTypes);
         }
     }
 

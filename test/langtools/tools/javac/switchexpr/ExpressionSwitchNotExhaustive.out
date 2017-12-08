@@ -1,0 +1,3 @@
+ExpressionSwitchNotExhaustive.java:11:10: compiler.err.not.exhaustive
+ExpressionSwitchNotExhaustive.java:16:10: compiler.err.not.exhaustive
+2 errors

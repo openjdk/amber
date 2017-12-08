@@ -218,6 +218,7 @@ public class JavacParser implements Parser {
     protected static final int NOPARAMS = 0x4;
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
+    protected static final int NOLAMBDA = 0x20;
 
     /** The current mode.
      */
@@ -1203,7 +1204,7 @@ public class JavacParser implements Parser {
             break;
         case UNDERSCORE: case IDENTIFIER: case ASSERT: case ENUM:
             if (typeArgs != null) return illegal();
-            if ((mode & EXPR) != 0 && peekToken(ARROW)) {
+            if ((mode & EXPR) != 0 && (mode & NOLAMBDA) == 0 && peekToken(ARROW)) {
                 t = lambdaExpressionOrStatement(false, false, pos);
             } else {
                 t = toP(F.at(token.pos).Ident(ident()));
@@ -1366,6 +1367,36 @@ public class JavacParser implements Parser {
                 //return illegal();
             }
             break;
+        case SWITCH:
+            int switchPos = token.pos;
+            nextToken();
+            JCExpression selector = parExpression();
+            accept(LBRACE);
+            ListBuffer<JCCaseExpression> caseExprs = new ListBuffer<>();
+            while (token.kind != RBRACE) {
+                JCExpression pat;
+
+                if (token.kind == DEFAULT) {
+                    nextToken();
+                    pat = null;
+                } else {
+                    accept(CASE);
+                    pat = term(EXPR | NOLAMBDA);
+                }
+                accept(ARROW);
+                JCTree caseExpr;
+                if (token.kind == LBRACE) {
+                    caseExpr = block();
+                } else {
+                    caseExpr = parseExpression();
+                    accept(SEMI);
+                }
+
+                caseExprs.append(F.at(token.pos/*XXX*/).CaseExpression(pat, caseExpr));
+            }
+
+            nextToken();
+            return F.at(switchPos).SwitchExpression(selector, caseExprs.toList());
         default:
             return illegal();
         }
@@ -2649,7 +2680,7 @@ public class JavacParser implements Parser {
             switch (token.kind) {
             case CASE:
             case DEFAULT:
-                cases.append(switchBlockStatementGroup());
+                cases.appendList(switchBlockStatementGroup());
                 break;
             case RBRACE: case EOF:
                 return cases.toList();
@@ -2661,20 +2692,29 @@ public class JavacParser implements Parser {
         }
     }
 
-    protected JCCase switchBlockStatementGroup() {
+    protected List<JCCase> switchBlockStatementGroup() {
         int pos = token.pos;
         List<JCStatement> stats;
         JCCase c;
+        ListBuffer<JCCase> cases = new ListBuffer<JCCase>();
         switch (token.kind) {
         case CASE:
             nextToken();
-            JCExpression pat = parseExpression();
+            JCExpression pat;
+            while (true) {
+                pat = parseExpression();
+                if (token.kind == COLON) break;
+                accept(COMMA);
+                c = F.at(pos).Case(pat, List.nil());
+                storeEnd(c, S.prevToken().endPos);
+                cases.append(c);
+            };
             accept(COLON);
             stats = blockStatements();
             c = F.at(pos).Case(pat, stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
-            return c;
+            return cases.append(c).toList();
         case DEFAULT:
             nextToken();
             accept(COLON);
@@ -2682,7 +2722,7 @@ public class JavacParser implements Parser {
             c = F.at(pos).Case(null, stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
-            return c;
+            return cases.append(c).toList();
         }
         throw new AssertionError("should not reach here");
     }

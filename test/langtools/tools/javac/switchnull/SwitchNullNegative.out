@@ -1,0 +1,5 @@
+SwitchNullNegative.java:10:13: compiler.err.switch.null.must.be.first
+SwitchNullNegative.java:17:13: compiler.err.switch.null.must.be.reference
+SwitchNullNegative.java:26:13: compiler.err.switch.null.must.be.first
+SwitchNullNegative.java:33:13: compiler.err.switch.null.must.be.reference
+4 errors

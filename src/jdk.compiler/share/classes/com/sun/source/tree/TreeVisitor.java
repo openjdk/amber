@@ -138,6 +138,14 @@ public interface TreeVisitor<R,P> {
     R visitCase(CaseTree node, P p);
 
     /**
+     * Visits a CaseExpressionTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitCaseExpression(CaseExpressionTree node, P p);
+
+    /**
      * Visits a CatchTree node.
      * @param node the node being visited
      * @param p a parameter value
@@ -352,6 +360,14 @@ public interface TreeVisitor<R,P> {
      * @return a result value
      */
     R visitSwitch(SwitchTree node, P p);
+
+    /**
+     * Visits a SwitchExpressionTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitSwitchExpression(SwitchExpressionTree node, P p);
 
     /**
      * Visits a SynchronizedTree node.

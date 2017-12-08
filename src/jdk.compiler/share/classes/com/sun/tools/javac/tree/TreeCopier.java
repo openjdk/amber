@@ -152,6 +152,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitCaseExpression(CaseExpressionTree node, P p) {
+        JCCaseExpression t = (JCCaseExpression) node;
+        JCExpression pat = copy(t.pat, p);
+        JCTree expr = copy(t.expr, p);
+        return M.at(t.pos).CaseExpression(pat, expr);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCatch(CatchTree node, P p) {
         JCCatch t = (JCCatch) node;
         JCVariableDecl param = copy(t.param, p);
@@ -371,6 +379,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitSwitchExpression(SwitchExpressionTree node, P p) {
+        JCSwitchExpression t = (JCSwitchExpression) node;
+        JCExpression selector = copy(t.selector, p);
+        List<JCCaseExpression> cases = copy(t.cases, p);
+        return M.at(t.pos).SwitchExpression(selector, cases);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitSynchronized(SynchronizedTree node, P p) {
         JCSynchronized t = (JCSynchronized) node;
         JCExpression lock = copy(t.lock, p);
@@ -559,7 +575,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         switch (tree.getTag()) {
             case LETEXPR: {
                 LetExpr t = (LetExpr) node;
-                List<JCVariableDecl> defs = copy(t.defs, p);
+                List<JCStatement> defs = copy(t.defs, p);
                 JCExpression expr = copy(t.expr, p);
                 return M.at(t.pos).LetExpr(defs, expr);
             }

@@ -180,6 +180,16 @@ public class TreeScanner extends Visitor {
         scan(tree.stats);
     }
 
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        scan(tree.selector);
+        scan(tree.cases);
+    }
+
+    public void visitCaseExpression(JCCaseExpression tree) {
+        scan(tree.pat);
+        scan(tree.expr);
+    }
+
     public void visitSynchronized(JCSynchronized tree) {
         scan(tree.lock);
         scan(tree.body);
