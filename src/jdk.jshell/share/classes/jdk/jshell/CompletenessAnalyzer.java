@@ -236,7 +236,6 @@ class CompletenessAnalyzer {
         // Modifiers keywords
         ABSTRACT(TokenKind.ABSTRACT, XDECL1 | XMODIFIER),  //  abstract
         FINAL(TokenKind.FINAL, XDECL1 | XMODIFIER),  //  final
-        NONFINAL(TokenKind.NON_FINAL, XDECL1 | XMODIFIER),  //  final
         NATIVE(TokenKind.NATIVE, XDECL1 | XMODIFIER),  //  native
         STATIC(TokenKind.STATIC, XDECL1 | XMODIFIER),  //  static
         STRICTFP(TokenKind.STRICTFP, XDECL1 | XMODIFIER),  //  strictfp

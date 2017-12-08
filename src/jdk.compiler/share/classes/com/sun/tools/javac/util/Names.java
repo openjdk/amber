@@ -215,6 +215,7 @@ public class Names {
     public final Name record;
     public final Name where;
     public final Name guard;
+    public final Name non;
 
     public final Name.Table table;
 
@@ -387,6 +388,7 @@ public class Names {
         record = fromString("record");
         where = fromString("where");
         guard = fromString("$guard");
+        non = fromString("non");
     }
 
     protected Name.Table createTable(Options options) {

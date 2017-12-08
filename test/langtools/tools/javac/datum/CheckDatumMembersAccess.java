@@ -43,7 +43,7 @@ public class CheckDatumMembersAccess {
 
     abstract record abtractDatum(int AbstractFieldToSearchFor) {}
 
-    record Datum(int AbstractFieldToSearchFor, int newField, non_final int nonFinalField) {}
+    record Datum(int AbstractFieldToSearchFor, int newField, non-final int nonFinalField) {}
 
     public static void main(String args[]) throws Throwable {
         new CheckDatumMembersAccess().run();

@@ -2797,7 +2797,6 @@ public class JavacParser implements Parser {
             case STATIC      : flag = Flags.STATIC; break;
             case TRANSIENT   : flag = Flags.TRANSIENT; break;
             case FINAL       : flag = Flags.FINAL; break;
-            case NON_FINAL   : flag = Flags.NON_FINAL; break;
             case ABSTRACT    : flag = Flags.ABSTRACT; break;
             case NATIVE      : flag = Flags.NATIVE; break;
             case VOLATILE    : flag = Flags.VOLATILE; break;
@@ -2806,6 +2805,19 @@ public class JavacParser implements Parser {
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
+            case IDENTIFIER  : {
+                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.FINAL)) {
+                    Token tokenSub = S.token(1);
+                    Token tokenFinal = S.token(2);
+                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenFinal.pos) {
+                        flag = Flags.NON_FINAL;
+                        nextToken();
+                        nextToken();
+                        break;
+                    }
+                }
+                break loop;
+            }
             default: break loop;
             }
             if ((flags & flag) != 0) error(token.pos, "repeated.modifier");

@@ -134,7 +134,6 @@ public class Tokens {
         ENUM("enum", Tag.NAMED),
         EXTENDS("extends"),
         FINAL("final"),
-        NON_FINAL("non_final"),
         FINALLY("finally"),
         FLOAT("float", Tag.NAMED),
         FOR("for"),
