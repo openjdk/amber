@@ -1,7 +1,8 @@
+NoAddFieldsCanBeDeclaredInDatumTest.java:9:13: compiler.err.record.fields.must.be.in.header
 NoAddFieldsCanBeDeclaredInDatumTest.java:9:14: compiler.err.expected: '('
 NoAddFieldsCanBeDeclaredInDatumTest.java:13:9: compiler.err.illegal.start.of.type
 NoAddFieldsCanBeDeclaredInDatumTest.java:13:20: compiler.err.expected: token.identifier
-NoAddFieldsCanBeDeclaredInDatumTest.java:13:21: compiler.err.expected: '('
+NoAddFieldsCanBeDeclaredInDatumTest.java:13:21: compiler.err.record.fields.must.be.in.header
 NoAddFieldsCanBeDeclaredInDatumTest.java:17:16: compiler.err.illegal.start.of.type
 NoAddFieldsCanBeDeclaredInDatumTest.java:18:5: compiler.err.expected4: class, interface, enum, record
-6 errors
+7 errors

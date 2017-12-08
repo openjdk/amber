@@ -3793,6 +3793,7 @@ public class JavacParser implements Parser {
                     storeEnd(defs.last(), S.prevToken().endPos);
                     return defs;
                 } else {
+                    error(pos, "record.fields.must.be.in.header");
                     int tmpPos = token.pos;
                     nextToken();
                     return List.of(syntaxError(tmpPos, null, "expected", LPAREN));
