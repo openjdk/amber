@@ -30,10 +30,7 @@
  */
 public class Pos01 {
 
-    static int assertCount;
-
     static void assertTrue(boolean cond) {
-        assertCount++;
         if (!cond) {
             throw new AssertionError();
         }

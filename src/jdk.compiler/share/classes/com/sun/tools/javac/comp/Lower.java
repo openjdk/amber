@@ -2239,7 +2239,7 @@ public class Lower extends TreeTranslator {
             (types.supertype(currentClass.type).tsym.flags() & ENUM) == 0)
             visitEnumDef(tree);
 
-        if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
+        if ((tree.mods.flags & RECORD) != 0) {
             visitRecordDef(tree);
         }
 
@@ -2315,31 +2315,31 @@ public class Lower extends TreeTranslator {
     List<JCTree> accessors(JCClassDecl tree) {
         ListBuffer<JCTree> buffer = new ListBuffer<>();
         tree.defs.stream()
-                    .filter(t -> t.hasTag(VARDEF))
-                    .map(t -> (JCVariableDecl)t)
-                    .filter(vd -> vd.sym.accessors.nonEmpty())
-                    .forEach(vd -> {
-                        for (Pair<Accessors.Kind, MethodSymbol> accessor : vd.sym.accessors) {
-                            MethodSymbol accessorSym = accessor.snd;
-                            if ((accessorSym.flags() & Flags.MANDATED) != 0) {
-                                make_at(tree.pos());
-                                switch (accessor.fst) {
-                                    case GET:
-                                        buffer.add(make.MethodDef(accessorSym, make.Block(0,
-                                                List.of(make.Return(make.Ident(vd.sym))))));
-                                        break;
-                                    case SET:
-                                        buffer.add(make.MethodDef(accessorSym, make.Block(0,
-                                                List.of(make.Exec(
-                                                        make.Assign(make.Ident(vd.sym), make.Ident(accessorSym.params.head))
-                                                                .setType(vd.sym.type))))));
-                                        break;
-                                    default:
-                                        Assert.error("Cannot get here!");
-                                }
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> vd.sym.accessors.nonEmpty())
+                .forEach(vd -> {
+                    for (Pair<Accessors.Kind, MethodSymbol> accessor : vd.sym.accessors) {
+                        MethodSymbol accessorSym = accessor.snd;
+                        if ((accessorSym.flags() & Flags.MANDATED) != 0) {
+                            make_at(tree.pos());
+                            switch (accessor.fst) {
+                                case GET:
+                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                            List.of(make.Return(make.Ident(vd.sym))))));
+                                    break;
+                                case SET:
+                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                            List.of(make.Exec(
+                                                    make.Assign(make.Ident(vd.sym), make.Ident(accessorSym.params.head))
+                                                            .setType(vd.sym.type))))));
+                                    break;
+                                default:
+                                    Assert.error("Cannot get here!");
                             }
                         }
-                    });
+                    }
+                });
         return buffer.toList();
     }
 
@@ -2509,6 +2509,7 @@ public class Lower extends TreeTranslator {
     private EnumSet<GenerationSwitch> generationSwitchSet = EnumSet.noneOf(GenerationSwitch.class);
 
     private void visitRecordDef(JCClassDecl tree) {
+        boolean isAbstract = (tree.mods.flags & ABSTRACT) != 0;
         make_at(tree.pos());
         List<VarSymbol> vars = types.recordVars(tree.type);
         Pool.MethodHandle[] getterMethHandles = new Pool.MethodHandle[vars.size()];
@@ -2522,17 +2523,20 @@ public class Lower extends TreeTranslator {
         }
 
         tree.defs = tree.defs.appendList(accessors(tree));
-        tree.defs = tree.defs.appendList(List.of(
-                generationSwitchSet.contains(GenerationSwitch.OLD_EQUALS) ?
-                        recordOldEquals(tree, vars):
-                        recordEquals(tree, getterMethHandles),
-                generationSwitchSet.contains(GenerationSwitch.OLD_TOSTRING) ?
-                        recordOldToString(tree, vars):
-                        recordToString(tree, vars, getterMethHandles),
-                generationSwitchSet.contains(GenerationSwitch.OLD_HASCODE) ?
-                        recordOldHashCode(tree, vars):
-                        recordHashCode(tree, getterMethHandles)
-        ));
+
+        if (!isAbstract) {
+            tree.defs = tree.defs.appendList(List.of(
+                    generationSwitchSet.contains(GenerationSwitch.OLD_EQUALS) ?
+                            recordOldEquals(tree, vars):
+                            recordEquals(tree, getterMethHandles),
+                    generationSwitchSet.contains(GenerationSwitch.OLD_TOSTRING) ?
+                            recordOldToString(tree, vars):
+                            recordToString(tree, vars, getterMethHandles),
+                    generationSwitchSet.contains(GenerationSwitch.OLD_HASCODE) ?
+                            recordOldHashCode(tree, vars):
+                            recordHashCode(tree, getterMethHandles)
+            ));
+        }
     }
 
     JCTree recordToString(JCClassDecl tree, List<VarSymbol> vars, Pool.MethodHandle[] getterMethHandles) {

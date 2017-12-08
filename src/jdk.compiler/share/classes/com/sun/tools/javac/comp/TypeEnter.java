@@ -996,8 +996,11 @@ public class TypeEnter implements Completer {
             List<JCTree> defsToEnter = (tree.sym.flags_field & RECORD) != 0 ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-                addRecordMembersIfNeeded(tree, env);
+            if ((tree.mods.flags & RECORD) != 0) {
+                if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
+                    addRecordMembersIfNeeded(tree, env);
+                }
+                addAccessorsIfNeeded(tree, env);
             }
 
             if (tree.sym.isAnnotationType()) {
@@ -1075,10 +1078,7 @@ public class TypeEnter implements Completer {
          *  to the symbol table.
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
-
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
-                JCExpression toStringType = make.Type(new ArrayType(tree.sym.type, syms.arrayClass));
-
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD),
@@ -1121,8 +1121,6 @@ public class TypeEnter implements Completer {
                               null);
                 memberEnter.memberEnter(equals, env);
             }
-
-            addAccessorsIfNeeded(tree, env);
         }
 
     }
