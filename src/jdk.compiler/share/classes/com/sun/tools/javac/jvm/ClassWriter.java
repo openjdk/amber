@@ -146,6 +146,9 @@ public class ClassWriter extends ClassFile {
     /** The name table. */
     private final Names names;
 
+    /** The symbol table. */
+    private final Symtab syms;
+
     /** Access to files. */
     private final JavaFileManager fileManager;
 
@@ -174,6 +177,7 @@ public class ClassWriter extends ClassFile {
 
         log = Log.instance(context);
         names = Names.instance(context);
+        syms = Symtab.instance(context);
         options = Options.instance(context);
         target = Target.instance(context);
         source = Source.instance(context);
@@ -415,6 +419,21 @@ public class ClassWriter extends ClassFile {
                     poolbuf.appendChar(val.index);
                     poolbuf.appendChar(pool.put(nameType(dynSym)));
                 }
+            } else if (value instanceof Pool.ConstantDynamic) {
+                Pool.ConstantDynamic cd = (Pool.ConstantDynamic)value;
+                MethodHandle handle = cd.bsm;
+                DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
+                        handle.refSym.name,
+                        syms.noSymbol,
+                        handle.refKind,
+                        (MethodSymbol)handle.refSym,
+                        handle.refSym.type,
+                        cd.args);
+                DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
+                poolbuf.appendByte(CONSTANT_Dynamic);
+                poolbuf.appendChar(val.index);
+                NameAndType nt = new NameAndType(cd.name, cd.type, cd.types);
+                poolbuf.appendChar(pool.put(nt));
             } else if (value instanceof VarSymbol) {
                 VarSymbol v = (VarSymbol)value;
                 poolbuf.appendByte(CONSTANT_Fieldref);
@@ -490,6 +509,26 @@ public class ClassWriter extends ClassFile {
         if (pool.pp > Pool.MAX_ENTRIES)
             throw new PoolOverflow();
         putChar(poolbuf, poolCountIdx, pool.pp);
+    }
+
+    DynamicMethod.BootstrapMethodsValue writeDynSymbol(DynamicMethodSymbol dynSym, MethodHandle handle) {
+        DynamicMethod.BootstrapMethodsKey key = new DynamicMethod.BootstrapMethodsKey(dynSym, types);
+
+        // Figure out the index for existing BSM; create a new BSM if no key
+        DynamicMethod.BootstrapMethodsValue val = bootstrapMethods.get(key);
+        if (val == null) {
+            int index = bootstrapMethods.size();
+            val = new DynamicMethod.BootstrapMethodsValue(handle, index);
+            bootstrapMethods.put(key, val);
+        }
+
+        //init cp entries
+        pool.put(names.BootstrapMethods);
+        pool.put(handle);
+        for (Object staticArg : dynSym.staticArgs) {
+            pool.put(staticArg);
+        }
+        return val;
     }
 
     /** Given a symbol, return its name-and-type.

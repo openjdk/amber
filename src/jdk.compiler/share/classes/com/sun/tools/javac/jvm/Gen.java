@@ -2042,10 +2042,10 @@ public class Gen extends JCTree.Visitor {
                 res = items.makeMemberItem(sym, true);
             }
             result = res;
+        } else if (isInvokeDynamic(sym) || isLambdaCondy(sym)) {
+            result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && sym.owner.kind == MTH) {
             result = items.makeLocalItem((VarSymbol)sym);
-        } else if (isInvokeDynamic(sym)) {
-            result = items.makeDynamicItem(sym);
         } else if ((sym.flags() & STATIC) != 0) {
             if (!isAccessSuper(env.enclMethod))
                 sym = binaryQualifier(sym, env.enclClass.type);
@@ -2055,6 +2055,12 @@ public class Gen extends JCTree.Visitor {
             sym = binaryQualifier(sym, env.enclClass.type);
             result = items.makeMemberItem(sym, (sym.flags() & PRIVATE) != 0);
         }
+    }
+
+    public boolean isLambdaCondy(Symbol sym) {
+        return sym.kind == VAR &&
+                sym instanceof DynamicFieldSymbol &&
+                ((DynamicFieldSymbol)sym).isDynamic();
     }
 
     public void visitSelect(JCFieldAccess tree) {

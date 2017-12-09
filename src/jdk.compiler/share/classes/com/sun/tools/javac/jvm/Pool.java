@@ -128,6 +128,8 @@ public class Pool {
     Object makePoolValue(Object o) {
         if (o instanceof DynamicMethodSymbol) {
             return new DynamicMethod((DynamicMethodSymbol)o, types);
+        } else if (o instanceof DynamicFieldSymbol) {
+            return new Pool.ConstantDynamic((DynamicFieldSymbol)o, types);
         } else if (o instanceof MethodSymbol) {
             return new Method((MethodSymbol)o, types);
         } else if (o instanceof VarSymbol) {
@@ -286,6 +288,60 @@ public class Pool {
                 v.name.hashCode() * 33 +
                 v.owner.hashCode() * 9 +
                 uniqueType.hashCode();
+        }
+    }
+
+    /**
+     * Pool entry associated with dynamic constants.
+     */
+    public static class ConstantDynamic {
+        MethodHandle bsm;
+        Name name;
+        public Type type;
+        Object[] args;
+        Types types;
+
+        public ConstantDynamic(Name name, MethodHandle bsm, Object[] args, Types types) {
+            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types);
+        }
+
+        public ConstantDynamic(Name name, MethodHandle bsm, Type type, Object[] args, Types types) {
+            Assert.checkNonNull(args);
+            this.bsm = bsm;
+            this.name = name;
+            this.type = type;
+            this.args = args;
+            this.types = types;
+        }
+
+        public ConstantDynamic(DynamicFieldSymbol dynField, Types types) {
+            this.bsm = new MethodHandle(dynField.bsmKind, dynField.bsm, types);
+            this.name = dynField.name;
+            this.type = dynField.type;
+            this.args = dynField.staticArgs;
+            this.types = types;
+        }
+
+        @Override
+        public int hashCode() {
+            return bsm.hashCode() * 67 + name.hashCode() + type.hashCode() * 13;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ConstantDynamic) {
+                ConstantDynamic that = (ConstantDynamic)obj;
+                return that.bsm.equals(bsm) &&
+                        types.isSameType(that.type, type) &&
+                        that.name.equals(name) &&
+                        that.args.equals(args);
+            } else {
+                return false;
+            }
+        }
+
+        public void updateType(Type type) {
+            this.type = type;
         }
     }
 

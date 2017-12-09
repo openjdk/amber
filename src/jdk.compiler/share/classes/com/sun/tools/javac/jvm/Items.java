@@ -26,9 +26,11 @@
 package com.sun.tools.javac.jvm;
 
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.Code.*;
+import com.sun.tools.javac.jvm.Pool.ConstantDynamic;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
 
@@ -472,8 +474,11 @@ public class Items {
         }
 
         Item load() {
-            assert false;
-            return null;
+            Assert.check(member.kind == Kind.VAR);
+            Type type = member.erasure(types);
+            int rescode = Code.typecode(type);
+            code.emitLdc(pool.put(member));
+            return stackItem[rescode];
         }
 
         void store() {
@@ -481,7 +486,7 @@ public class Items {
         }
 
         Item invoke() {
-            // assert target.hasNativeInvokeDynamic();
+            Assert.check(member.kind == Kind.MTH);
             MethodType mtype = (MethodType)member.erasure(types);
             int rescode = Code.typecode(mtype.restype);
             code.emitInvokedynamic(pool.put(member), mtype);

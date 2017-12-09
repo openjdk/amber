@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
@@ -71,6 +72,8 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 
 import com.sun.tools.javac.main.Option;
+import com.sun.tools.javac.code.Source;
+import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
 
 /**
  * This pass desugars lambda expressions into static methods
@@ -149,6 +152,9 @@ public class LambdaToMethod extends TreeTranslator {
         dumpLambdaToMethodStats = options.isSet("debug.dumpLambdaToMethodStats");
         attr = Attr.instance(context);
         forceSerializable = options.isSet("forceSerializable");
+        condyForLambda = options.isSet("condyForLambda");
+        Source source = Source.instance(context);
+        allowCondyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>
 
@@ -1086,7 +1092,50 @@ public class LambdaToMethod extends TreeTranslator {
             }
         }
 
-        return makeIndyCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, indyType, indy_args, samSym.name);
+        return  condyForLambda &&
+                allowCondyForLambda &&
+                !context.needsAltMetafactory() &&
+                indy_args.isEmpty() ?
+                makeCondy(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, tree.type, indy_args, samSym.name) :
+                makeIndyCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, indyType, indy_args, samSym.name);
+    }
+
+
+    /* this extra flag should be temporary and used as long as it's not possible to do the build
+     * due to the lack of support for condy in the current version of ASM present in the build
+     */
+    private final boolean condyForLambda;
+    private final boolean allowCondyForLambda;
+
+    private JCExpression makeCondy(DiagnosticPosition pos, Type site, Name bsmName,
+            List<Object> staticArgs, Type interfaceType, List<JCExpression> indyArgs,
+            Name methName) {
+        int prevPos = make.pos;
+        try {
+            make.at(pos);
+            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                    syms.stringType,
+                    syms.classType).appendList(bsmStaticArgToTypes(staticArgs));
+
+            Symbol bsm = rs.resolveInternalMethod(pos, attrEnv, site,
+                    bsmName, bsm_staticArgs, List.nil());
+
+            DynamicFieldSymbol dynSym = new DynamicFieldSymbol(methName,
+                    syms.noSymbol,
+                    bsm.isStatic() ?
+                        ClassFile.REF_invokeStatic :
+                        ClassFile.REF_invokeVirtual,
+                    (MethodSymbol)bsm,
+                    interfaceType,
+                    staticArgs.toArray());
+
+            JCIdent ident = make.Ident(dynSym);
+            ident.type = interfaceType;
+
+            return ident;
+        } finally {
+            make.at(prevPos);
+        }
     }
 
     /**
