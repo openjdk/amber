@@ -71,9 +71,10 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 
-import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
+
+import static com.sun.tools.javac.jvm.Target.JDK1_10;
 
 /**
  * This pass desugars lambda expressions into static methods
@@ -152,8 +153,9 @@ public class LambdaToMethod extends TreeTranslator {
         dumpLambdaToMethodStats = options.isSet("debug.dumpLambdaToMethodStats");
         attr = Attr.instance(context);
         forceSerializable = options.isSet("forceSerializable");
-        condyForLambda = options.isSet("condyForLambda");
         Source source = Source.instance(context);
+        Target target = Target.instance(context);
+        condyForLambda = options.isSet("condyForLambda") && target.hasCondy();
         allowCondyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>

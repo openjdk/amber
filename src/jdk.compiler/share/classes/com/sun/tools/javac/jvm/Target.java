@@ -145,6 +145,12 @@ public enum Target {
         return compareTo(JDK1_9) >= 0;
     }
 
+    /** Does the target JDK knows about condy?
+     */
+    public boolean hasCondy() {
+        return compareTo(JDK1_10) >= 0;
+    }
+
     /** Value of platform release used to access multi-release jar files
      */
     public String multiReleaseValue() {
