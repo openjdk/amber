@@ -508,7 +508,11 @@ public class Items {
         }
 
         Item load() {
-            throw new AssertionError();
+            Assert.check(member.kind == Kind.VAR);
+            Type type = member.erasure(types);
+            int rescode = Code.typecode(type);
+            code.emitLdc(pool.put(member));
+            return stackItem[rescode];
         }
 
         void store() {
