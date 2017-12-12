@@ -203,6 +203,11 @@ public class Names {
     public final Name makeConcat;
     public final Name makeConcatWithConstants;
 
+    // switch
+    public final Name intSwitch;
+    public final Name stringSwitch;
+    public final Name enumSwitch;
+
     public final Name.Table table;
 
     public Names(Context context) {
@@ -364,6 +369,11 @@ public class Names {
         // string concat
         makeConcat = fromString("makeConcat");
         makeConcatWithConstants = fromString("makeConcatWithConstants");
+
+        //switch desugaring:
+        intSwitch = fromString("intSwitch");
+        stringSwitch = fromString("stringSwitch");
+        enumSwitch = fromString("enumSwitch");
     }
 
     protected Name.Table createTable(Options options) {

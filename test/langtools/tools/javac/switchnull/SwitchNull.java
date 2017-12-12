@@ -1,6 +1,8 @@
 /**
  * @test
- * @compile -doe SwitchNull.java
+ * @compile SwitchNull.java
+ * @run main SwitchNull
+ * @compile -XDenableIndySwitch SwitchNull.java
  * @run main SwitchNull
  */
 

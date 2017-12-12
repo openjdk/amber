@@ -27,6 +27,8 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
@@ -95,6 +97,7 @@ public class Lower extends TreeTranslator {
     private final Types types;
     private final boolean debugLower;
     private final PkgInfo pkginfoOpt;
+    private final boolean generateNewSwitch;
 
     protected Lower(Context context) {
         context.put(lowerKey, this);
@@ -122,6 +125,8 @@ public class Lower extends TreeTranslator {
         Options options = Options.instance(context);
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
+        
+        generateNewSwitch = options.isSet("enableIndySwitch") && target.hasSwichBootstraps();
     }
 
     /** The currently enclosing class.
@@ -3404,23 +3409,127 @@ public class Lower extends TreeTranslator {
             (tree.selector.type.tsym.flags() & ENUM) != 0;
         boolean stringSwitch = selsuper != null &&
             types.isSameType(tree.selector.type, syms.stringType);
+        boolean boxSwitch = selsuper != null &&
+            types.unboxedType(tree.selector.type).isPrimitive();
         Type target = enumSwitch ? tree.selector.type :
             (stringSwitch? syms.stringType : syms.intType);
-        if (!enumSwitch && !stringSwitch && hasNullCase(tree)) {
-            result = translate(visitBoxedIntSwitchWithNull(tree));
-            return;
-        }
 
-        tree.selector = translate(tree.selector, target);
-        tree.cases = translateCases(tree.cases);
-        if (enumSwitch) {
-            result = visitEnumSwitch(tree);
-        } else if (stringSwitch) {
-            result = visitStringSwitch(tree);
-        } else {
+        if (generateNewSwitch && ((boxSwitch && hasNullCase(tree)) || stringSwitch || enumSwitch)) {
+            tree.selector = translate(tree.selector);
+            tree.cases = translateCases(tree.cases);
+
+            JCExpression qualifier;
+            
+            if (enumSwitch) {
+                qualifier = prepareSwitchIndySelector(tree,
+                                                      names.enumSwitch,
+                                                      syms.stringType,
+                                                      tree.selector.type,
+                                                      syms.enumSym.type,
+                                                      true,
+                                                      pat -> TreeInfo.name(pat).toString());
+            } else if (stringSwitch) {
+                qualifier = prepareSwitchIndySelector(tree,
+                                                      names.stringSwitch,
+                                                      syms.stringType,
+                                                      syms.stringType,
+                                                      syms.stringType,
+                                                      false,
+                                                      pat -> pat.type.constValue());
+            } else {
+                qualifier = prepareSwitchIndySelector(tree,
+                                                      names.intSwitch,
+                                                      syms.intType,
+                                                      tree.selector.type,
+                                                      tree.selector.type,
+                                                      false,
+                                                      pat -> pat.type.constValue());
+            }
+
+            tree.selector = make.Apply(List.nil(), qualifier, List.of(tree.selector));
+            tree.selector.type = qualifier.type;
+            
+            if (!hasNullCase(tree)) {
+                JCThrow npe = make.Throw(makeNewClass(syms.nullPointerExceptionType, List.nil()));
+                tree.cases = tree.cases.prepend(make.Case(makeNull(), List.of(npe)));
+            }
+
+            tree.cases.head.pat = make.Literal(-1);
+
+            int caseIdx = 0;
+            
+            for (JCCase c : tree.cases.tail) {
+                if (c.pat != null) {
+                    c.pat = make.Literal(caseIdx++);
+                }
+            }
+
             result = tree;
+        } else {
+            if (!enumSwitch && !stringSwitch && hasNullCase(tree)) {
+                result = translate(visitBoxedIntSwitchWithNull(tree));
+                return;
+            }
+            tree.selector = translate(tree.selector, target);
+            tree.cases = translateCases(tree.cases);
+            if (enumSwitch) {
+                result = visitEnumSwitch(tree);
+            } else if (stringSwitch) {
+                result = visitStringSwitch(tree);
+            } else {
+                result = tree;
+            }
         }
     }
+        //where:
+        private JCExpression prepareSwitchIndySelector(JCSwitch tree,
+                                                       Name bootstrapMethodName,
+                                                       Type labelsType,
+                                                       Type switchType,
+                                                       Type invocationType,
+                                                       boolean prependSwitchType,
+                                                       Function<JCExpression, Object> pattern2Label) {
+            Type.MethodType indyType = new Type.MethodType(List.of(invocationType),
+                    syms.intType,
+                    List.nil(),
+                    syms.methodClass);
+
+            List<Type> bsm_staticArgs = List.of(types.makeArrayType(labelsType));
+            
+            if (prependSwitchType)
+                bsm_staticArgs = bsm_staticArgs.prepend(new ClassType(syms.classType.getEnclosingType(),
+                                                                      List.of(switchType),
+                                                                      syms.classType.tsym));
+            
+            bsm_staticArgs = bsm_staticArgs.prepend(syms.methodTypeType)
+                                           .prepend(syms.stringType)
+                                           .prepend(syms.methodHandleLookupType);
+
+            Symbol intSwitch = rs.resolveInternalMethod(tree.pos(), attrEnv, syms.switchBootstraps,
+                    bootstrapMethodName, bsm_staticArgs, List.nil());
+            
+            Stream<Object> firstParam = prependSwitchType
+                    ? Stream.of(switchType.tsym)
+                    : Stream.empty();
+            Symbol.DynamicMethodSymbol dynSym = new Symbol.DynamicMethodSymbol(bootstrapMethodName,
+                    syms.noSymbol,
+                    ClassFile.REF_invokeStatic,
+                    (Symbol.MethodSymbol)intSwitch,
+                    indyType,
+                    Stream.concat(firstParam,
+                                  tree.cases.stream()
+                                            .filter(c -> c.pat != null && !TreeInfo.isNull(c.pat))
+                                            .map(c -> pattern2Label.apply(c.pat))
+                                 )
+                          .toArray());
+
+            JCFieldAccess qualifier = make.Select(make.QualIdent(intSwitch.owner),
+                                                  bootstrapMethodName);
+            qualifier.sym = dynSym;
+            qualifier.type = indyType.getReturnType();
+            
+            return qualifier;
+        }
 
     public JCTree visitEnumSwitch(JCSwitch tree) {
         TypeSymbol enumSym = tree.selector.type.tsym;

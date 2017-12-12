@@ -185,6 +185,7 @@ public class Symtab {
     public final Type assertionErrorType;
     public final Type incompatibleClassChangeErrorType;
     public final Type cloneNotSupportedExceptionType;
+    public final Type nullPointerExceptionType;
     public final Type annotationType;
     public final TypeSymbol enumSym;
     public final Type listType;
@@ -208,6 +209,7 @@ public class Symtab {
     public final Type trustMeType;
     public final Type lambdaMetafactory;
     public final Type stringConcatFactory;
+    public final Type switchBootstraps;
     public final Type repeatableType;
     public final Type documentedType;
     public final Type elementTypeType;
@@ -508,6 +510,7 @@ public class Symtab {
         assertionErrorType = enterClass("java.lang.AssertionError");
         incompatibleClassChangeErrorType = enterClass("java.lang.IncompatibleClassChangeError");
         cloneNotSupportedExceptionType = enterClass("java.lang.CloneNotSupportedException");
+        nullPointerExceptionType = enterClass("java.lang.NullPointerException");
         annotationType = enterClass("java.lang.annotation.Annotation");
         classLoaderType = enterClass("java.lang.ClassLoader");
         enumSym = enterClass(java_base, names.java_lang_Enum);
@@ -545,6 +548,7 @@ public class Symtab {
         nativeHeaderType = enterClass("java.lang.annotation.Native");
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
+        switchBootstraps = enterClass("java.lang.invoke.SwitchBootstraps");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
@@ -553,6 +557,7 @@ public class Symtab {
         synthesizeEmptyInterfaceIfMissing(lambdaMetafactory);
         synthesizeEmptyInterfaceIfMissing(serializedLambdaType);
         synthesizeEmptyInterfaceIfMissing(stringConcatFactory);
+        synthesizeEmptyInterfaceIfMissing(switchBootstraps);
         synthesizeBoxTypeIfMissing(doubleType);
         synthesizeBoxTypeIfMissing(floatType);
         synthesizeBoxTypeIfMissing(voidType);

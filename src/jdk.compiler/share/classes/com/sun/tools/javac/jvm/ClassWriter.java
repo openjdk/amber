@@ -483,7 +483,7 @@ public class ClassWriter extends ClassFile {
                 poolbuf.appendByte(CONSTANT_Package);
                 poolbuf.appendChar(pool.put(names.fromUtf(externalize(m.fullname))));
             } else {
-                Assert.error("writePool " + value);
+                Assert.error("writePool " + value + "/" + value.getClass());
             }
             i++;
         }
