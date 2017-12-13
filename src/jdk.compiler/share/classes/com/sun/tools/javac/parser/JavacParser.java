@@ -3474,12 +3474,12 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
-        JCExpression whereExpr = null;
+//        JCExpression whereExpr = null;
         List<JCTree> defs = List.nil();
-        if (token.kind == IDENTIFIER && token.name() == names.where) {
-            nextToken();
-            whereExpr = parseExpression();
-        }
+//        if (token.kind == IDENTIFIER && token.name() == names.where) {
+//            nextToken();
+//            whereExpr = parseExpression();
+//        }
         if (token.kind == LBRACE) {
             defs = classInterfaceOrRecordBody(name, false, true);
         } else {
@@ -3498,7 +3498,7 @@ public class JavacParser implements Parser {
             fields.add(field);
         }
         defs = defs.prependList(fields.toList());
-        JCRecordDecl result = toP(F.at(pos).RecordDef(mods, name, typarams, extending, implementing, defs, whereExpr));
+        JCRecordDecl result = toP(F.at(pos).RecordDef(mods, name, typarams, extending, implementing, defs, null));
         attach(result, dc);
         return result;
     }

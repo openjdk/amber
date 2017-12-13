@@ -26,6 +26,7 @@
  * @summary test for guards in records
  * @modules jdk.jdeps/com.sun.tools.classfile
  *          jdk.compiler/com.sun.tools.javac.util
+ * @ignore guards will continue to be developed independently
  * @run main GuardsInRecordsTest
  */
 
