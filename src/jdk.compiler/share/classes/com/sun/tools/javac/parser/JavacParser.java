@@ -3799,7 +3799,7 @@ public class JavacParser implements Parser {
                     pos, mods, type, name, typarams,
                     isInterface, isVoid, dc));
             } else if (!isVoid && typarams.isEmpty()) {
-                if (!isRecord) {
+                if (!isRecord || isRecord && (mods.flags & Flags.STATIC) != 0) {
                     List<JCTree> defs =
                         variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
                                                 new ListBuffer<JCTree>(), false).toList();
