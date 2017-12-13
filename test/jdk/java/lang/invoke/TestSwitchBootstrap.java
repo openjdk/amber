@@ -23,10 +23,16 @@
  * questions.
  */
 
+/**
+ * @test
+ * @run testng TestSwitchBootstrap
+ */
+
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.SwitchBootstraps;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -38,7 +44,6 @@ import java.util.stream.Stream;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 /**
  * TestSwitchBootstrap
