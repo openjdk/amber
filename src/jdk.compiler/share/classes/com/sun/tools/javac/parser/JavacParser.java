@@ -2398,11 +2398,12 @@ public class JavacParser implements Parser {
                 // we have to check if this is a record declaration
                 Token t1 = S.token(1);
                 Token t2 = S.token(2);
-                if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER) {
+                Token t3 = S.token(3);
+                if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER && t3.kind == LPAREN) {
                     nextToken();
                 }
             }
-            if (token.kind == IDENTIFIER && token.name() == names.record && peekToken(IDENTIFIER)) {
+            if (isRecordDeclaration()) {
                 JCModifiers mods = modifiersOpt();
                 dc = token.comment(CommentStyle.JAVADOC);
                 return List.of(recordDeclaration(mods, dc));
@@ -3063,6 +3064,10 @@ public class JavacParser implements Parser {
         return Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source) && name == names.var;
     }
 
+    boolean isRestrictedRecordTypeName(Name name) {
+        return Feature.DATA_CLASSES.allowedInSource(source) && name == names.record;
+    }
+
     /** VariableDeclaratorId = Ident BracketsOpt
      */
     JCVariableDecl variableDeclaratorId(JCModifiers mods, JCExpression type) {
@@ -3380,7 +3385,7 @@ public class JavacParser implements Parser {
     protected JCStatement classOrRecordOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
         if (token.kind == CLASS) {
             return classDeclaration(mods, dc);
-        } if (token.kind == IDENTIFIER && token.name() == names.record) {
+        } if (isRecordDeclaration()) {
             return recordDeclaration(mods, dc);
         } else if (token.kind == INTERFACE) {
             return interfaceDeclaration(mods, dc);
@@ -3508,6 +3513,10 @@ public class JavacParser implements Parser {
         Name name = ident();
         if (isRestrictedLocalVarTypeName(name)) {
             reportSyntaxError(pos, "var.not.allowed", name);
+        }
+
+        if (isRestrictedRecordTypeName(name)) {
+            reportSyntaxError(pos, "record.not.allowed", name);
         }
         return name;
     }
@@ -3737,7 +3746,7 @@ public class JavacParser implements Parser {
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
             if (token.kind == CLASS ||
-                token.kind == IDENTIFIER && token.name() == names.record ||
+                isRecordDeclaration() ||
                 token.kind == INTERFACE ||
                 token.kind == ENUM) {
                 return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
@@ -3752,6 +3761,10 @@ public class JavacParser implements Parser {
                 return methodOrFieldMemberDecl(className, mods, isInterface, dc, false);
             }
         }
+    }
+
+    boolean isRecordDeclaration() {
+        return token.kind == IDENTIFIER && token.name() == names.record && peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN);
     }
 
     private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc, boolean isRecord) {
