@@ -4767,10 +4767,14 @@ public class Attr extends JCTree.Visitor {
                 (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
                 Symbol sym = null;
                 if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
-                if (sym == null ||
-                    sym.kind != VAR ||
-                    ((VarSymbol) sym).getConstValue() == null)
-                    log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                // static records are allowed
+                if (!(l.head.hasTag(Tag.CLASSDEF) && (((JCClassDecl)l.head).sym.flags() & Flags.RECORD) != 0)) {
+                    if (sym == null ||
+                        sym.kind != VAR ||
+                        ((VarSymbol) sym).getConstValue() == null) {
+                        log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                    }
+                }
             }
         }
 

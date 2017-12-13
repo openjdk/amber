@@ -399,6 +399,9 @@ public class Enter extends JCTree.Visitor {
             PackageSymbol packge = (PackageSymbol)owner;
             for (Symbol q = packge; q != null && q.kind == PCK; q = q.owner)
                 q.flags_field |= EXISTS;
+            if ((tree.mods.flags & Flags.RECORD) != 0) {
+                tree.mods.flags &= ~Flags.STATIC;
+            }
             c = syms.enterClass(env.toplevel.modle, tree.name, packge);
             packge.members().enterIfAbsent(c);
             if ((tree.mods.flags & PUBLIC) != 0 && !classNameMatchesFileName(c, env)) {

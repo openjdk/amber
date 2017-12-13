@@ -327,17 +327,19 @@ public class Flags {
     /** Modifier masks.
      */
     public static final int
-        AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
-        LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
-        MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
-        ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
-        InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
-        VarFlags              = AccessFlags | FINAL | STATIC |
-                                VOLATILE | TRANSIENT | ENUM,
-        ConstructorFlags      = AccessFlags,
-        InterfaceMethodFlags  = ABSTRACT | PUBLIC,
-        MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                SYNCHRONIZED | FINAL | STRICTFP;
+        AccessFlags                 = PUBLIC | PROTECTED | PRIVATE,
+        LocalClassFlags             = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        LocalRecordFlags            = LocalClassFlags | STATIC,
+        MemberClassFlags            = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberRecordClassFlags      = MemberClassFlags | STATIC,
+        ClassFlags                  = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
+        InterfaceVarFlags           = FINAL | STATIC | PUBLIC,
+        VarFlags                    = AccessFlags | FINAL | STATIC |
+                                      VOLATILE | TRANSIENT | ENUM,
+        ConstructorFlags            = AccessFlags,
+        InterfaceMethodFlags        = ABSTRACT | PUBLIC,
+        MethodFlags                 = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                      SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
         ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,

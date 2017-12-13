@@ -1171,17 +1171,22 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = LocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
-                    (flags & ENUM) != 0)
+                    (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
+                }
+                if ((flags & RECORD) != 0 && (flags & STATIC) == 0) {
+                    log.error(pos, Errors.NestedRecordsMustBeStatic);
+                }
             } else if (sym.owner.kind == TYP) {
-                mask = MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? MemberRecordClassFlags : MemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0)
+                else if ((flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
+                }
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
             } else {

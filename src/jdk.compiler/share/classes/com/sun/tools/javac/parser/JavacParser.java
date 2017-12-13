@@ -2394,23 +2394,37 @@ public class JavacParser implements Parser {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         default:
-            Token prevToken = token;
-            JCExpression t = term(EXPR | TYPE);
-            if (token.kind == COLON && t.hasTag(IDENT)) {
-                nextToken();
-                JCStatement stat = parseStatementAsBlock();
-                return List.of(F.at(pos).Labelled(prevToken.name(), stat));
-            } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
-                pos = token.pos;
-                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-                F.at(pos);
-                return localVariableDeclarations(mods, t);
+            if (token.kind == TokenKind.STATIC) {
+                // we have to check if this is a record declaration
+                Token t1 = S.token(1);
+                Token t2 = S.token(2);
+                if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER) {
+                    nextToken();
+                }
+            }
+            if (token.kind == IDENTIFIER && token.name() == names.record && peekToken(IDENTIFIER)) {
+                JCModifiers mods = modifiersOpt();
+                dc = token.comment(CommentStyle.JAVADOC);
+                return List.of(recordDeclaration(mods, dc));
             } else {
-                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-                t = checkExprStat(t);
-                accept(SEMI);
-                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-                return List.of(expr);
+                Token prevToken = token;
+                JCExpression t = term(EXPR | TYPE);
+                if (token.kind == COLON && t.hasTag(IDENT)) {
+                    nextToken();
+                    JCStatement stat = parseStatementAsBlock();
+                    return List.of(F.at(pos).Labelled(prevToken.name(), stat));
+                } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
+                    pos = token.pos;
+                    JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+                    F.at(pos);
+                    return localVariableDeclarations(mods, t);
+                } else {
+                    // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+                    t = checkExprStat(t);
+                    accept(SEMI);
+                    JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+                    return List.of(expr);
+                }
             }
         }
     }
@@ -3423,7 +3437,7 @@ public class JavacParser implements Parser {
     protected JCClassDecl recordDeclaration(JCModifiers mods, Comment dc) {
         int pos = token.pos;
         nextToken();
-        mods.flags |= Flags.RECORD;
+        mods.flags |= Flags.RECORD | Flags.STATIC;
         Name name = typeName();
 
         List<JCTypeParameter> typarams = typeParametersOpt();
