@@ -561,6 +561,9 @@ void ClassFileParser::parse_constant_pool(const ClassFileStream* const stream,
           name_and_type_ref_index, CHECK);
         // bootstrap specifier index must be checked later,
         // when BootstrapMethods attr is available
+
+        // Mark the constant pool as having a CONSTANT_Dynamic_info structure
+        cp->set_has_dynamic_constant();
         break;
       }
       case JVM_CONSTANT_InvokeDynamic: {

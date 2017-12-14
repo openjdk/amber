@@ -50,6 +50,9 @@ void Rewriter::compute_index_maps() {
         add_cp_cache_entry(i);
         break;
       case JVM_CONSTANT_Dynamic:
+        assert(_pool->has_dynamic_constant(), "constant pool's _has_dynamic_constant flag not set");
+        add_resolved_references_entry(i);
+        break;
       case JVM_CONSTANT_String            : // fall through
       case JVM_CONSTANT_MethodHandle      : // fall through
       case JVM_CONSTANT_MethodType        : // fall through
