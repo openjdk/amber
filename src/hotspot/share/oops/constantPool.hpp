@@ -112,9 +112,10 @@ class ConstantPool : public Metadata {
   Array<Klass*>*       _resolved_klasses;
 
   enum {
-    _has_preresolution = 1,           // Flags
-    _on_stack          = 2,
-    _is_shared         = 4
+    _has_preresolution    = 1,       // Flags
+    _on_stack             = 2,
+    _is_shared            = 4,
+    _has_dynamic_constant = 8
   };
 
   int                  _flags;  // old fashioned bit twiddling
@@ -205,6 +206,9 @@ class ConstantPool : public Metadata {
 
   // Faster than MetaspaceObj::is_shared() - used by set_on_stack()
   bool is_shared() const                     { return (_flags & _is_shared) != 0; }
+
+  bool has_dynamic_constant() const       { return (_flags & _has_dynamic_constant) != 0; }
+  void set_has_dynamic_constant()         { _flags |= _has_dynamic_constant; }
 
   // Klass holding pool
   InstanceKlass* pool_holder() const      { return _pool_holder; }
