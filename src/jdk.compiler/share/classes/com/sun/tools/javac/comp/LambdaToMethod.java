@@ -74,8 +74,6 @@ import javax.lang.model.type.TypeKind;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
 
-import static com.sun.tools.javac.jvm.Target.JDK1_10;
-
 /**
  * This pass desugars lambda expressions into static methods
  *
@@ -154,9 +152,9 @@ public class LambdaToMethod extends TreeTranslator {
         attr = Attr.instance(context);
         forceSerializable = options.isSet("forceSerializable");
         Source source = Source.instance(context);
-        Target target = Target.instance(context);
-        condyForLambda = options.isSet("condyForLambda") && target.hasCondy();
-        allowCondyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
+        String condyOp = options.get("condyForLambda");
+        condyForLambda = condyOp != null ? !condyOp.equals("generateIndy") : true &&
+                Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>
 
@@ -1118,7 +1116,6 @@ public class LambdaToMethod extends TreeTranslator {
         }
 
         return  condyForLambda &&
-                allowCondyForLambda &&
                 !context.needsAltMetafactory() &&
                 indy_args.isEmpty() ?
                 makeCondy(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, tree.type, indy_args, samSym.name) :
@@ -1130,7 +1127,6 @@ public class LambdaToMethod extends TreeTranslator {
      * due to the lack of support for condy in the current version of ASM present in the build
      */
     private final boolean condyForLambda;
-    private final boolean allowCondyForLambda;
 
     private JCExpression makeCondy(DiagnosticPosition pos, Type site, Name bsmName,
             List<Object> staticArgs, Type interfaceType, List<JCExpression> indyArgs,
