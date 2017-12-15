@@ -75,7 +75,7 @@ public class CheckCondyGeneratedForLambdaTest {
 
     void compileTestClass() throws Exception {
         new JavacTask(tb)
-                .options("-XDforNonCapturingLambda=generateCondy")
+                .options("-XDdoConstantFold", "-XDforNonCapturingLambda=generateCondy")
                 .sources(testSource)
                 .run();
     }
