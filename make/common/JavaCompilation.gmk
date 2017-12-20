@@ -195,6 +195,8 @@ define SetupJavaCompilationBody
   ifneq ($$($1_DEBUG_SYMBOLS), false)
     $1_FLAGS := -g
   endif
+  # remove this option once ASM knows how to deal with condy
+  $1_FLAGS += -XDforNonCapturingLambda=generateIndy 
   $1_FLAGS += $$($$($1_SETUP)_FLAGS) $$($1_ADD_JAVAC_FLAGS) $(JAVAC_FLAGS)
   ifneq ($$($1_CLASSPATH), )
     $1_FLAGS += -cp $$(call PathList, $$($1_CLASSPATH))
