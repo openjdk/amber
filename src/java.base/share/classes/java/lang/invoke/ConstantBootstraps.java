@@ -42,13 +42,24 @@ import static java.util.Objects.requireNonNull;
 public final class ConstantBootstraps {
     // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
     /*non-public*/
-    static Object makeConstant(MethodHandle bootstrapMethod,
-                               // Callee information:
-                               String name, Class<?> type,
-                               // Extra arguments for BSM, if any:
-                               Object info,
-                               // Caller information:
-                               Class<?> callerClass) {
+    /**
+     * (temporarily public)
+     * makeConstant
+     *
+     * @param bootstrapMethod doc
+     * @param name doc
+     * @param type doc
+     * @param info doc
+     * @param callerClass doc
+     * @return doc
+     */
+    /* @@@ */ public static Object makeConstant(MethodHandle bootstrapMethod,
+                                      // Callee information:
+                                      String name, Class<?> type,
+                                      // Extra arguments for BSM, if any:
+                                      Object info,
+                                      // Caller information:
+                                      Class<?> callerClass) {
         // BSMI.invoke handles all type checking and exception translation.
         // If type is not a reference type, the JVM is expecting a boxed
         // version, and will manage unboxing on the other side.

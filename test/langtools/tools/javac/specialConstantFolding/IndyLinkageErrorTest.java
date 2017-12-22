@@ -4,19 +4,19 @@
  * @compile/fail/ref=IndyLinkageErrorTest.out -XDdoConstantFold -XDrawDiagnostics IndyLinkageErrorTest.java
  */
 
-import java.lang.invoke.*;
+import java.lang.sym.*;
 
 import static java.lang.invoke.Intrinsics.*;
 
 public class IndyLinkageErrorTest {
     String test(String x, String y) throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-            ClassRef.CR_CallSite,
-            ClassRef.CR_Lookup,
-            ClassRef.CR_String,
-            ClassRef.CR_MethodType,
-            ClassRef.CR_String,
-            ClassRef.CR_Object.array()
+                SymbolicRefs.CR_CallSite,
+                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_MethodType,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_Object.array()
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);

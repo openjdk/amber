@@ -28,9 +28,15 @@ package java.lang.invoke;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
+import java.lang.sym.ClassRef;
+import java.lang.sym.Constable;
+import java.lang.sym.MethodHandleRef;
+import java.lang.sym.MethodTypeRef;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
+import static java.lang.invoke.MethodHandleInfo.*;
 import static java.lang.invoke.MethodHandleStatics.*;
 
 /**
@@ -425,7 +431,7 @@ mh.invokeExact(System.out, "Hello, world.");
  * @author John Rose, JSR 292 EG
  * @since 1.7
  */
-public abstract class MethodHandle {
+public abstract class MethodHandle implements Constable<MethodHandle, MethodHandleRef> {
 
     /**
      * Internal marker interface which distinguishes (to the Java compiler)
@@ -1506,6 +1512,46 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     public MethodHandle bindTo(Object x) {
         x = type.leadingReferenceParameter().cast(x);  // throw CCE if needed
         return bindArgumentL(0, x);
+    }
+
+    @Override
+    public Optional<MethodHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+        MethodHandleInfo info;
+        ClassRef owner;
+        String name;
+        MethodTypeRef type;
+        try {
+            info = lookup.revealDirect(this);
+            owner = info.getDeclaringClass().toSymbolicRef(lookup).get();
+            type = info.getMethodType().toSymbolicRef(lookup).get();
+            name = info.getName();
+        }
+        catch (Exception e) {
+            return Optional.empty();
+        }
+
+        switch (info.getReferenceKind()) {
+            case REF_getField:
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, owner, name, type.returnType()));
+            case REF_putField:
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, owner, name, type.returnType()));
+            case REF_getStatic:
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, owner, name, type.returnType()));
+            case REF_putStatic:
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, owner, name, type.returnType()));
+            case REF_invokeVirtual:
+                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, owner, name, type));
+            case REF_invokeStatic:
+                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, owner, name, type));
+            case REF_invokeSpecial:
+                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, owner, name, type));
+            case REF_invokeInterface:
+                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, owner, name, type));
+            case REF_newInvokeSpecial:
+                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, owner, name, type));
+            default:
+                return Optional.empty();
+        }
     }
 
     /**

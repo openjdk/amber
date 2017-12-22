@@ -54,7 +54,6 @@ import com.sun.tools.javac.comp.Resolve.*;
 //import com.sun.tools.javac.comp.Resolve.BasicLookupHelper;
 import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.Pool;
-import com.sun.tools.javac.jvm.Pool.MethodHandle.MethodHandleCheckHelper;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.JCTree;
@@ -64,7 +63,6 @@ import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
-import static com.sun.tools.javac.code.Flags.INTERFACE;
 import static com.sun.tools.javac.code.Flags.STATIC;
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
 import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
@@ -87,21 +85,21 @@ public class Constables {
         log = Log.instance(context);
         constablesVisitor = ConstablesVisitor.instance(context);
         try {
-            methodHandleRefClass = Class.forName("java.lang.invoke.MethodHandleRef", false, null);
-            methodTypeRefClass = Class.forName("java.lang.invoke.MethodTypeRef", false, null);
-            classRefClass = Class.forName("java.lang.invoke.ClassRef", false, null);
-            constantRefClass = Class.forName("java.lang.invoke.ConstantRef", false, null);
-            constablesClass = Class.forName("java.lang.invoke.Constables", false, null);
-            bootstrapSpecifierClass = Class.forName("java.lang.invoke.BootstrapSpecifier", false, null);
-            dynamicConstantClass = Class.forName("java.lang.invoke.DynamicConstantRef", false, null);
+            methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
+            methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
+            classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
+            namedClassRefClass = Class.forName("java.lang.sym.NamedClassRef", false, null);
+            constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
+            bootstrapSpecifierClass = Class.forName("java.lang.sym.BootstrapSpecifier", false, null);
+            dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
         } catch (ClassNotFoundException ex) {
             methodHandleRefClass = null;
             methodTypeRefClass = null;
             constantRefClass = null;
             classRefClass = null;
+            namedClassRefClass = null;
             bootstrapSpecifierClass = null;
             dynamicConstantClass = null;
-            constablesClass = null;
         }
     }
 
@@ -299,16 +297,8 @@ public class Constables {
         } else if (methodTypeRefClass.isInstance(constant)) {
             String descriptor = (String)invokeReflectiveMethod(methodTypeRefClass, constant, "descriptorString");
             return types.erasure(descriptorToType(descriptor, currentModule, true));
-        } else if (classRefClass.isInstance(constant)) {
+        } else if (namedClassRefClass.isInstance(constant)) {
             String descriptor = (String)invokeReflectiveMethod(classRefClass, constant, "descriptorString");
-            if ((boolean)invokeReflectiveMethod(classRefClass, constant, "isPrimitive")) {
-                if (bsmArg) {
-                    Object condy = invokeReflectiveMethod(constablesClass, null, "reduce", new Class<?>[]{constantRefClass}, new Object[]{constant});
-                    return convertConstant(tree, attrEnv, condy, currentModule);
-                } else {
-                    return rs.resolveInternalField(tree, attrEnv, boxedClass(descriptor).type, names.TYPE);
-                }
-            }
             Type type = descriptorToType(descriptor, currentModule, false);
             Symbol symToLoad;
             if (!type.hasTag(ARRAY)) {
@@ -396,16 +386,11 @@ public class Constables {
         return result;
     }
 
-    public boolean isPrimitiveClassRef(Object constant) {
-        return classRefClass.isInstance(constant) &&
-                (boolean)invokeReflectiveMethod(classRefClass, constant, "isPrimitive");
-    }
-
     public Class<?> methodHandleRefClass;
     public Class<?> methodTypeRefClass;
     public Class<?> classRefClass;
+    public Class<?> namedClassRefClass;
     public Class<?> constantRefClass;
-    public Class<?> constablesClass;
     public Class<?> bootstrapSpecifierClass;
     public Class<?> dynamicConstantClass;
 
@@ -448,14 +433,19 @@ public class Constables {
             Object[] arguments) {
         Method theMethod;
         try {
-            theMethod = hostClass.getDeclaredMethod(methodName, argumentTypes);
+            theMethod = hostClass.getMethod(methodName, argumentTypes);
             return theMethod.invoke(instance, arguments);
         } catch (NoSuchMethodException |
                 SecurityException |
                 IllegalAccessException |
                 IllegalArgumentException |
                 InvocationTargetException ex) {
-            log.error(Errors.ReflectiveError(methodName, hostClass.getCanonicalName(), ex.getCause().getLocalizedMessage()));
+            Throwable e = (ex.getCause() == null) ? ex : ex.getCause();
+            String msg = e.getLocalizedMessage();
+            if (msg == null)
+                msg = e.toString();
+            log.error(Errors.ReflectiveError(methodName, hostClass.getCanonicalName(), msg));
+            e.printStackTrace(System.err);
         }
         return null;
     }

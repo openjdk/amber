@@ -171,7 +171,6 @@ public class Symtab {
     public final Type varHandleType;
     public final Type methodHandleType;
     public final Type methodHandlesLookupType;
-    public final Type constablesType;
     public final Type dynamicConstantRefType;
     public final Type intrinsicsType;
     public final Type methodTypeType;
@@ -499,8 +498,7 @@ public class Symtab {
         varHandleType = enterClass("java.lang.invoke.VarHandle");
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
         methodHandlesLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
-        constablesType = enterClass("java.lang.invoke.Constables");
-        dynamicConstantRefType = enterClass("java.lang.invoke.DynamicConstantRef");
+        dynamicConstantRefType = enterClass("java.lang.sym.DynamicConstantRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
         trackableConstantType = enterClass("java.lang.annotation.TrackableConstant");

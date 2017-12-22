@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke;
+package java.lang.sym;
 
 import java.lang.annotation.TrackableConstant;
 import java.util.Arrays;
@@ -33,9 +33,9 @@ import java.util.Objects;
  */
 public final class BootstrapSpecifier {
     private final MethodHandleRef bootstrapMethod;
-    private final ConstantRef<?>[] bootstrapArgs;
+    private final SymbolicRef<?>[] bootstrapArgs;
 
-    private BootstrapSpecifier(MethodHandleRef bootstrapMethod, ConstantRef<?>... bootstrapArgs) {
+    private BootstrapSpecifier(MethodHandleRef bootstrapMethod, SymbolicRef<?>... bootstrapArgs) {
         this.bootstrapMethod = Objects.requireNonNull(bootstrapMethod);
         this.bootstrapArgs = Objects.requireNonNull(bootstrapArgs.clone());
     }
@@ -47,7 +47,7 @@ public final class BootstrapSpecifier {
      * @return the descriptor
      */
     @TrackableConstant
-    public static BootstrapSpecifier of(MethodHandleRef bootstrapMethod, ConstantRef<?>... bootstrapArgs) {
+    public static BootstrapSpecifier of(MethodHandleRef bootstrapMethod, SymbolicRef<?>... bootstrapArgs) {
         return new BootstrapSpecifier(bootstrapMethod, bootstrapArgs);
     }
 
@@ -62,7 +62,7 @@ public final class BootstrapSpecifier {
      * Returns the bootstrap arguments for the {@code invokedynamic}
      * @return the bootstrap arguments for the {@code invokedynamic}
      */
-    public ConstantRef<?>[] arguments() { return bootstrapArgs.clone(); }
+    public SymbolicRef<?>[] arguments() { return bootstrapArgs.clone(); }
 
     @Override
     public boolean equals(Object o) {

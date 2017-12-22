@@ -30,10 +30,13 @@ import sun.invoke.util.Wrapper;
 import java.lang.ref.WeakReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.sym.Constable;
+import java.lang.sym.MethodTypeRef;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,7 +94,7 @@ import sun.invoke.util.VerifyType;
  * @since 1.7
  */
 public final
-class MethodType implements java.io.Serializable {
+class MethodType implements Constable<MethodType, MethodTypeRef>, java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 
     // The rtype and ptypes fields define the structural identity of the method type:
@@ -1161,6 +1164,11 @@ class MethodType implements java.io.Serializable {
 
     /*non-public*/ static String toFieldDescriptorString(Class<?> cls) {
         return BytecodeDescriptor.unparse(cls);
+    }
+
+    @Override
+    public Optional<MethodTypeRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+        return Optional.of(MethodTypeRef.ofDescriptor(toMethodDescriptorString()));
     }
 
     /// Serialization.

@@ -1,6 +1,6 @@
 /* /nodynamiccopyright/ */
 
-import java.lang.invoke.*;
+import java.lang.sym.ClassRef;
 
 import static java.lang.invoke.Intrinsics.*;
 

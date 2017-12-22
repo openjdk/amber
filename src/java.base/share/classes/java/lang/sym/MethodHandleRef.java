@@ -22,9 +22,12 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke;
+package java.lang.sym;
 
 import java.lang.annotation.TrackableConstant;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
 import static java.lang.invoke.MethodHandleInfo.REF_getField;
@@ -36,12 +39,12 @@ import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 import static java.lang.invoke.MethodHandleInfo.REF_putField;
 import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
-import static java.lang.invoke.MethodHandleRef.Kind.STATIC;
+import static java.lang.sym.MethodHandleRef.Kind.STATIC;
 
 /**
  * A descriptor for a {@linkplain MethodHandle} constant.
  */
-public final class MethodHandleRef implements ConstantRef<MethodHandle> {
+public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     private static final ClassRef[] INDY_BOOTSTRAP_ARGS = { ClassRef.of("java.lang.invoke.MethodHandles$Lookup"),
                                                             ClassRef.of("java.lang.String"),
                                                             ClassRef.of("java.lang.invoke.MethodType") };
@@ -176,10 +179,10 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
         switch (kind) {
             case GETTER: return new MethodHandleRef(Kind.GETTER, clazz, name, MethodTypeRef.of(type, clazz));
             case SETTER:
-                return new MethodHandleRef(Kind.SETTER, clazz, name, MethodTypeRef.of(ClassRef.CR_void, clazz, type));
+                return new MethodHandleRef(Kind.SETTER, clazz, name, MethodTypeRef.of(SymbolicRefs.CR_void, clazz, type));
             case STATIC_GETTER: return new MethodHandleRef(Kind.STATIC_GETTER, clazz, name, MethodTypeRef.of(type));
             case STATIC_SETTER:
-                return new MethodHandleRef(Kind.STATIC_SETTER, clazz, name, MethodTypeRef.of(ClassRef.CR_void, type));
+                return new MethodHandleRef(Kind.STATIC_SETTER, clazz, name, MethodTypeRef.of(SymbolicRefs.CR_void, type));
             default: throw new IllegalArgumentException(kind.toString());
         }
     }
@@ -190,18 +193,18 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle> {
      * @return the MethodHandle
      * @throws ReflectiveOperationException exception
      */
-    public MethodHandle resolve(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public MethodHandle resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         switch (kind) {
-            case STATIC: return lookup.findStatic(owner.resolve(lookup), name, type.resolve(lookup));
+            case STATIC: return lookup.findStatic(owner.resolveRef(lookup), name, type.resolveRef(lookup));
             case INTERFACE_VIRTUAL:
             case VIRTUAL:
-                return lookup.findVirtual(owner.resolve(lookup), name, type.resolve(lookup));
-            case SPECIAL: return lookup.findSpecial(owner.resolve(lookup), name, type.resolve(lookup), lookup.lookupClass());
-            case CONSTRUCTOR: return lookup.findConstructor(owner.resolve(lookup), type.resolve(lookup));
-            case GETTER: return lookup.findGetter(owner.resolve(lookup), name, type.resolve(lookup).returnType());
-            case STATIC_GETTER: return lookup.findStaticGetter(owner.resolve(lookup), name, type.resolve(lookup).returnType());
-            case SETTER: return lookup.findSetter(owner.resolve(lookup), name, type.resolve(lookup).parameterType(1));
-            case STATIC_SETTER: return lookup.findStaticSetter(owner.resolve(lookup), name, type.resolve(lookup).parameterType(0));
+                return lookup.findVirtual(owner.resolveRef(lookup), name, type.resolveRef(lookup));
+            case SPECIAL: return lookup.findSpecial(owner.resolveRef(lookup), name, type.resolveRef(lookup), lookup.lookupClass());
+            case CONSTRUCTOR: return lookup.findConstructor(owner.resolveRef(lookup), type.resolveRef(lookup));
+            case GETTER: return lookup.findGetter(owner.resolveRef(lookup), name, type.resolveRef(lookup).returnType());
+            case STATIC_GETTER: return lookup.findStaticGetter(owner.resolveRef(lookup), name, type.resolveRef(lookup).returnType());
+            case SETTER: return lookup.findSetter(owner.resolveRef(lookup), name, type.resolveRef(lookup).parameterType(1));
+            case STATIC_SETTER: return lookup.findStaticSetter(owner.resolveRef(lookup), name, type.resolveRef(lookup).parameterType(0));
             default: throw new IllegalStateException(kind.name());
         }
     }

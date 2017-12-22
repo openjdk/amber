@@ -24,19 +24,17 @@
  */
 package java.lang.annotation;
 
-import java.lang.invoke.ConstantRef;
-import java.lang.invoke.Constables;
+import java.lang.sym.SymbolicRef;
 import java.lang.invoke.Intrinsics;
 
 /**
- * Identifies a {@link ConstantRef}-yielding factory method or combinator
- * in {@link java.lang.invoke.Constables}.  For invocations of methods
+ * Identifies a {@link SymbolicRef}-yielding factory method or combinator.
+ * For invocations of methods
  * annotated as {@linkplain TrackableConstant} whose arguments (and, for instance
  * methods, the receiver) are all constant expressions, the compiler will track
  * the result as a constant expression, for possible intrinsification.
  *
- * @see ConstantRef
- * @see Constables
+ * @see SymbolicRef
  * @see Intrinsics
  */
 @Retention(RetentionPolicy.CLASS)

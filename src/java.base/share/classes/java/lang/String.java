@@ -25,11 +25,10 @@
 
 package java.lang;
 
-import java.lang.invoke.ConstantRef;
-
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
+import java.lang.sym.SymbolicRef;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,7 +122,7 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public final class String
-    implements java.io.Serializable, Comparable<String>, CharSequence, ConstantRef<String> {
+    implements java.io.Serializable, Comparable<String>, CharSequence, SymbolicRef.OfSelf<String> {
 
     /**
      * The value is used for character storage.
@@ -1780,7 +1779,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgt         the characters being searched for.
+     * @param   tgtStr      the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,

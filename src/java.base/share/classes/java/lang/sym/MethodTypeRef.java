@@ -22,9 +22,11 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke;
+package java.lang.sym;
 
 import java.lang.annotation.TrackableConstant;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,10 +35,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A descriptor for a {@linkplain MethodType} constant.
  */
-public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<MethodType> {
+public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<MethodType> {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
     private static Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
 
@@ -44,8 +48,8 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
     private final ClassRef[] argTypes;
 
     private MethodTypeRef(ClassRef returnType, ClassRef[] argTypes) {
-        this.returnType = returnType;
-        this.argTypes = argTypes;
+        this.returnType = requireNonNull(returnType);
+        this.argTypes = requireNonNull(argTypes);
     }
 
     /**
@@ -220,13 +224,17 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return the MethodType
      * @throws ReflectiveOperationException exception
      */
-    public MethodType resolve(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public MethodType resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
     }
 
     @Override
     public String descriptorString() {
-        return String.format("(%s)%s", Stream.of(argTypes).map(ClassRef::descriptorString).collect(Collectors.joining()), returnType.descriptorString());
+        return String.format("(%s)%s",
+                             Stream.of(argTypes)
+                                   .map(ClassRef::descriptorString)
+                                   .collect(Collectors.joining()),
+                             returnType.descriptorString());
     }
 
     @Override

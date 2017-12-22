@@ -22,9 +22,15 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke;
+package java.lang.sym;
 
 import java.lang.annotation.TrackableConstant;
+import java.lang.invoke.Intrinsics;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
+import java.util.Optional;
 
 /**
  * Purely-nominal descriptor for a constant value expressible in a classfile
@@ -32,43 +38,33 @@ import java.lang.annotation.TrackableConstant;
  *
  * <p> Native constant types that don't require linkage ({@link String}, {@link
  * Integer}, {@link Long}, {@link Float}, and {@link Double}) implement
- * {@linkplain ConstantRef} directly. Native linkable constant types ({@link
+ * {@linkplain SymbolicRef} directly. Native linkable constant types ({@link
  * Class}, {@link MethodType}, and {@link MethodHandle}) are represented as
- * {@linkplain ConstantRef} via the symbolic reference classes {@link ClassRef},
+ * {@linkplain SymbolicRef} via the symbolic reference classes {@link ClassRef},
  * {@link MethodTypeRef}, and {@link MethodHandleRef}.  Dynamic constants are
  * represented by the symbolic reference type {@link DynamicConstantRef}.
  *
  * <p>APIs that deal in generation or parsing of bytecode should use
- * {@linkplain ConstantRef} to describe the operand of an {@code LDC} instruction,
+ * {@linkplain SymbolicRef} to describe the operand of an {@code LDC} instruction,
  * including dynamic constants, and the static argument lists of
- * {@code invokedynamic} instructions.  The {@linkplain ConstantRef} types are also
+ * {@code invokedynamic} instructions.  The {@linkplain SymbolicRef} types are also
  * used by the {@link Intrinsics} API to express {@code LDC} and
  * {@code invokedynamic} instructions.
  *
- * <p> Like names in the constant pool, names in a {@linkplain ConstantRef} are
- * independent of a class loader.  When a {@linkplain ConstantRef} is
+ * <p> Like names in the constant pool, names in a {@linkplain SymbolicRef} are
+ * independent of a class loader.  When a {@linkplain SymbolicRef} is
  * intrinsified, it is interpreted relative to the class loader that loaded the
  * class in which the intrinsic appears (just like names that appear in that
  * classes constant pool.)
  *
- * @param <T> The type of the object which this {@linkplain ConstantRef}
+ * @param <T> The type of the object which this {@linkplain SymbolicRef}
  *            describes
- * @see Constables
  * @see Intrinsics
  * @see TrackableConstant
  */
-public interface ConstantRef<T> {
+public interface SymbolicRef<T> {
 
-    /**
-     * A {@link ConstantRef} representing a null reference
-     *
-     * @param <T> The type of the object which the resulting {@linkplain ConstantRef} describes
-     * @return the {@link ConstantRef}
-     */
-    @TrackableConstant
-    static<T> ConstantRef<T> ofNull() {
-        return DynamicConstantRef.of(BootstrapSpecifier.of(Constables.BSM_NULL_CONSTANT), ClassRef.CR_Object);
-    }
+    T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 
     /**
      * Construct a VarHandle for an instance field
@@ -77,10 +73,8 @@ public interface ConstantRef<T> {
      * @param type the field type
      * @return the VarHandle
      */
-    static ConstantRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_FIELD, owner, type),
-                name);
+    static SymbolicRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
+        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_FIELD, name).withArgs(owner, type);
     }
 
     /**
@@ -90,10 +84,8 @@ public interface ConstantRef<T> {
      * @param type the field type
      * @return the VarHandle
      */
-    static ConstantRef<VarHandle> staticFieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_STATIC_FIELD, owner, type),
-                name);
+    static SymbolicRef<VarHandle> staticFieldVarHandle(ClassRef owner, String name, ClassRef type) {
+        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, name).withArgs(owner, type);
     }
 
     /**
@@ -101,23 +93,42 @@ public interface ConstantRef<T> {
      * @param arrayClass the array class
      * @return the VarHandle
      */
-    static ConstantRef<VarHandle> arrayVarHandle(ClassRef arrayClass) {
-        return DynamicConstantRef.of(
-                BootstrapSpecifier.of(Constables.BSM_VARHANDLE_ARRAY, arrayClass));
+    static SymbolicRef<VarHandle> arrayVarHandle(ClassRef arrayClass) {
+        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_ARRAY).withArgs(arrayClass);
     }
 
     /**
-     * A {@linkplain ConstantRef} which is associated with a type descriptor
+     * A {@linkplain SymbolicRef} which is associated with a type descriptor
      * string that would be the target of a {@code NameAndType} constant.
      *
      * @param <T> The type to which this constant pool entry resolves
      */
-    public interface WithTypeDescriptor<T> extends ConstantRef<T> {
+    public interface WithTypeDescriptor<T> extends SymbolicRef<T> {
         /**
          * Return the descriptor string associated with this constant pool entry
          *
          * @return the descriptor string
          */
+        @TrackableConstant
         String descriptorString();
+    }
+
+    /**
+     * SelfRef
+     *
+     * @author Brian Goetz
+     */
+    interface OfSelf<T extends SymbolicRef<T>> extends SymbolicRef<T>, Constable<T, T> {
+        @Override
+        @SuppressWarnings("unchecked")
+        default Optional<T> toSymbolicRef(MethodHandles.Lookup lookup) {
+            return Optional.of((T) this);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        default T resolveRef(MethodHandles.Lookup lookup) {
+            return (T) this;
+        }
     }
 }

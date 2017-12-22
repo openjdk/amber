@@ -2,6 +2,8 @@
 
 import java.io.Serializable;
 import java.lang.invoke.*;
+import java.lang.sym.MethodTypeRef;
+import java.lang.sym.SymbolicRefs;
 
 import static java.lang.invoke.Intrinsics.*;
 
@@ -22,9 +24,9 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=9, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=9, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void assignmentContext() {
-        MethodType mt1 = ldc(MethodTypeRef.of(ClassRef.CR_String));
-        MethodType mt2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
-        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
+        MethodType mt1 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String));
+        MethodType mt2 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int));
+        MethodType mt3 = ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int));
 //        MethodType mt4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type
@@ -38,9 +40,9 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void invocationContext1() {
-        foo(ldc(MethodTypeRef.of(ClassRef.CR_String)));
-        foo(ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
-        foo(ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int)));
+        foo(ldc(MethodTypeRef.of(SymbolicRefs.CR_String)));
+        foo(ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int)));
+        foo(ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int)));
 //        foo(ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT))));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type
@@ -54,11 +56,11 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=24, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=24, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void invocationContext2() {
-        MethodType mt1 = ldc(MethodTypeRef.of(ClassRef.CR_String));
+        MethodType mt1 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String));
         foo(mt1);
-        MethodType mt2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
+        MethodType mt2 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int));
         foo(mt2);
-        MethodType mt3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
+        MethodType mt3 = ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int));
         foo(mt3);
 //        MethodType mt4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
 //        foo(mt4);
@@ -75,9 +77,9 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=18, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=9, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void castContext1() {
-        Serializable s1 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String));
-        Serializable s2 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
-        Serializable s3 = (Serializable)ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
+        Serializable s1 = (Serializable)ldc(MethodTypeRef.of(SymbolicRefs.CR_String));
+        Serializable s2 = (Serializable)ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int));
+        Serializable s3 = (Serializable)ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int));
 //        Serializable s4 = (Serializable)ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
         Serializable s5 = (Serializable)ldc(MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));
     }
@@ -89,11 +91,11 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void castContext2() {
-        MethodType m1 = ldc(MethodTypeRef.of(ClassRef.CR_String));
+        MethodType m1 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String));
         Serializable s1 = (Serializable)m1;
-        MethodType m2 = ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int));
+        MethodType m2 = ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int));
         Serializable s2 = (Serializable)m2;
-        MethodType m3 = ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int));
+        MethodType m3 = ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int));
         Serializable s3 = (Serializable)m3;
 //        MethodType m4 = ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT)));
 //        Serializable s4 = (Serializable)m4;
@@ -107,9 +109,9 @@ public class ConstantFoldingOfMethodTypeDiffContextsTest extends ConstantFolding
 //    @InstructionInfo(bytecodePosition=28, values={"CONSTANT_MethodType_info", "(I)V"})
     @InstructionInfo(bytecodePosition=19, values={"CONSTANT_MethodType_info", "()Ljava/lang/String;"})
     void cast_plus_invocationContext() {
-        foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String)));
-        foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_String, ClassRef.CR_int)));
-        foo((MethodType)ldc(MethodTypeRef.of(ClassRef.CR_void, ClassRef.CR_String, ClassRef.CR_int)));
+        foo((MethodType)ldc(MethodTypeRef.of(SymbolicRefs.CR_String)));
+        foo((MethodType)ldc(MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int)));
+        foo((MethodType)ldc(MethodTypeRef.of(SymbolicRefs.CR_void, SymbolicRefs.CR_String, SymbolicRefs.CR_int)));
 //        foo((MethodType)ldc(MethodTypeRef.of(VOID, MethodTypeRef.of(ClassRef.of("Ljava/lang/String;"), INT))));
         /*  if last argument of the method below is not null no effort is done to try to constant fold
          *  the method type

@@ -4,7 +4,7 @@
  * @compile/fail/ref=ReflectiveErrorTest.out -XDdoConstantFold -XDrawDiagnostics ReflectiveErrorTest.java
  */
 
-import java.lang.invoke.*;
+import java.lang.sym.*;
 
 public class ReflectiveErrorTest {
     // trying to use an erroneous descriptor

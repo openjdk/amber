@@ -28,6 +28,7 @@
  */
 
 import java.lang.invoke.*;
+import java.lang.sym.MethodTypeRef;
 
 public class CrashWithPrimitiveArgumentsTest {
     void test() {

@@ -4,7 +4,7 @@
  * @compile/fail/ref=IndyCrashTest.out -XDdoConstantFold -XDrawDiagnostics IndyCrashTest.java
  */
 
-import java.lang.invoke.*;
+import java.lang.invoke.*; import java.lang.sym.*;
 
 public class IndyCrashTest {
     static final ClassRef HELPER_CLASS = ClassRef.ofDescriptor("LIndyCrashTest$IntrinsicTestHelper;");

@@ -4,7 +4,7 @@
  * @compile/fail/ref=LDCNegativeTest.out -XDdoConstantFold -XDrawDiagnostics LDCNegativeTest.java
  */
 
-import java.lang.invoke.*;
+import java.lang.sym.*;
 
 import static java.lang.invoke.Intrinsics.*;
 
@@ -13,7 +13,7 @@ public class LDCNegativeTest {
 
     public String x() { return ""; }
     public ClassRef c() { return null; }
-    public ClassRef d = ClassRef.CR_int;
+    public ClassRef d = SymbolicRefs.CR_int;
 
     void foo() {
         // all these fail

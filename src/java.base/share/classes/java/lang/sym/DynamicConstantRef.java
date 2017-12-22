@@ -22,71 +22,101 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke;
+package java.lang.sym;
 
 import java.lang.annotation.TrackableConstant;
+import java.lang.invoke.ConstantBootstraps;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A descriptor for a dynamic constant.
  */
-public final class DynamicConstantRef<T> implements ConstantRef<T> {
+public class DynamicConstantRef<T> implements SymbolicRef<T> {
+    private static final SymbolicRef<?>[] EMPTY_ARGS = new SymbolicRef<?>[0];
+
+    private final MethodHandleRef bootstrapMethod;
+    private final SymbolicRef<?>[] bootstrapArgs;
     private final String name;
-    private final BootstrapSpecifier bootstrapSpecifier;
     private final ClassRef type;
 
-    private DynamicConstantRef(BootstrapSpecifier bootstrapSpecifier, String name, ClassRef type) {
+    @SuppressWarnings("rawtypes")
+    private static final Map<MethodHandleRef, Function<DynamicConstantRef, SymbolicRef>> canonicalMap
+            = Map.ofEntries(Map.entry(SymbolicRefs.BSM_PRIMITIVE_CLASS, d -> ClassRef.ofDescriptor(d.name)),
+                            Map.entry(SymbolicRefs.BSM_ENUM_CONSTANT, d -> EnumRef.of(d.type, d.name)),
+                            Map.entry(SymbolicRefs.BSM_NULL_CONSTANT, d -> SymbolicRefs.NULL));
+
+    protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Illegal invocation name: " + name);
+        this.bootstrapMethod = requireNonNull(bootstrapMethod);
         this.name = name;
-        this.bootstrapSpecifier = bootstrapSpecifier;
-        this.type = type;
+        this.type = requireNonNull(type);
+        this.bootstrapArgs = requireNonNull(bootstrapArgs).clone();
+    }
+
+    protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
+        this(bootstrapMethod, name, type, EMPTY_ARGS);
     }
 
     /**
-     * Return a descriptor for a dynamic constant.
+     * Return a descriptor for a dynamic constant whose bootstrap, invocation
+     * name, and invocation type are the same as this one, but with the specified
+     * bootstrap arguments
+     *
+     * @param bootstrapArgs the bootstrap arguments
+     * @return the descriptor for the dynamic constant
+     */
+    @TrackableConstant
+    public DynamicConstantRef<T> withArgs(SymbolicRef<?>... bootstrapArgs) {
+        return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
+    }
+
+    /**
+     * Return a descriptor for a dynamic constant.  If  the bootstrap corresponds
+     * to a well-known bootstrap, for which a higher-level constant (e.g., ClassRef)
+     * is available, then the higher-level constant will be returned
      * @param <T> the type of the dynamic constant
-     * @param bootstrapSpecifier the bootstrap specifier for the dynamic constant
+     * @param bootstrapMethod the bootstrap method
      * @param name the name for the dynamic constant
      * @param type the type of the dynamic constant
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapArgs the bootstrap arguments
+     * @return the descriptor for the symbolic reference
      */
     @TrackableConstant
-    public static<T> DynamicConstantRef<T> of(BootstrapSpecifier bootstrapSpecifier, String name, ClassRef type) {
-        return new DynamicConstantRef<>(bootstrapSpecifier, name, type);
+    public static<T> SymbolicRef<T> ofCanonical(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
+        DynamicConstantRef<T> dcr = new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
+        return dcr.canonicalize();
+    }
+
+    private SymbolicRef<T> canonicalize() {
+        @SuppressWarnings("rawtypes")
+        Function<DynamicConstantRef, SymbolicRef> f = canonicalMap.get(bootstrapMethod);
+        if (f != null) {
+            @SuppressWarnings("unchecked")
+            SymbolicRef<T> converted = f.apply(this);
+            return converted;
+        }
+        return this;
     }
 
     /**
-     * Return a descriptor for a dynamic constant, whose name is not used by the bootstrap
+     * Return a descriptor for a dynamic constant
      * @param <T> the type of the dynamic constant
-     * @param bootstrapSpecifier the bootstrap specifier for the dynamic constant
-     * @param type the type of the dynamic constant
-     * @return the descriptor for the dynamic constant
-     */
-    @TrackableConstant
-    public static<T> DynamicConstantRef<T> of(BootstrapSpecifier bootstrapSpecifier, ClassRef type) {
-        return of(bootstrapSpecifier, "_", type);
-    }
-
-    /**
-     * Return a descriptor for a dynamic constant, whose type is the same as the bootstrap return
-     * @param <T> the type of the dynamic constant
-     * @param bootstrapSpecifier the bootstrap specifier for the dynamic constant
+     * @param bootstrapMethod the bootstrap method
      * @param name the name for the dynamic constant
+     * @param type the type of the dynamic constant
+     * @param bootstrapArgs the bootstrap arguments
      * @return the descriptor for the dynamic constant
      */
     @TrackableConstant
-    public static<T> DynamicConstantRef<T> of(BootstrapSpecifier bootstrapSpecifier, String name) {
-        return of(bootstrapSpecifier, name, bootstrapSpecifier.method().type().returnType());
-    }
-
-    /**
-     * Return a descriptor for a dynamic constant, whose type is the same as the bootstrap return,
-     * and whose name is not used by the bootstrap
-     * @param <T> the type of the dynamic constant
-     * @param bootstrapSpecifier the bootstrap specifier for the dynamic constant
-     * @return the descriptor for the dynamic constant
-     */
-    @TrackableConstant
-    public static<T> DynamicConstantRef<T> of(BootstrapSpecifier bootstrapSpecifier) {
-        return of(bootstrapSpecifier, "_");
+    public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
+        return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
     }
 
     /**
@@ -99,7 +129,7 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      */
     @TrackableConstant
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
-        return of(BootstrapSpecifier.of(bootstrapMethod), name, type);
+        return new DynamicConstantRef<>(bootstrapMethod, name, type);
     }
 
     /**
@@ -112,7 +142,7 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      */
     @TrackableConstant
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, ClassRef type) {
-        return of(BootstrapSpecifier.of(bootstrapMethod), type);
+        return of(bootstrapMethod, "_", type);
     }
 
     /**
@@ -125,7 +155,7 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      */
     @TrackableConstant
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name) {
-        return of(BootstrapSpecifier.of(bootstrapMethod), name);
+        return of(bootstrapMethod, name, bootstrapMethod.type().returnType());
     }
 
     /**
@@ -137,16 +167,7 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      */
     @TrackableConstant
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod) {
-        return of(BootstrapSpecifier.of(bootstrapMethod));
-    }
-
-    /**
-     * returns the bootstrap specifier
-     * @return the bootstrap specifier
-     */
-    @TrackableConstant
-    public BootstrapSpecifier bootstrap() {
-        return bootstrapSpecifier;
+        return of(bootstrapMethod, "_");
     }
 
     /**
@@ -172,13 +193,26 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      * @return the bootstrap method in the bootstrap specifier
      */
     @TrackableConstant
-    public MethodHandleRef bootstrapMethod() { return bootstrapSpecifier.method(); }
+    public MethodHandleRef bootstrapMethod() { return bootstrapMethod; }
 
     /**
      * Returns the bootstrap arguments in the bootstrap specifier
      * @return the bootstrap arguments in the bootstrap specifier
      */
-    public ConstantRef<?>[] bootstrapArgs() { return bootstrapSpecifier.arguments(); }
+    public SymbolicRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
+
+    private static Object[] resolveArgs(MethodHandles.Lookup lookup, SymbolicRef<?>[] args) {
+        return Stream.of(args)
+                     .map(arg -> {
+                         try {
+                             return arg.resolveRef(lookup);
+                         }
+                         catch (ReflectiveOperationException e) {
+                             throw new RuntimeException(e);
+                         }
+                     })
+                     .toArray();
+    }
 
     /**
      * Resolve
@@ -187,13 +221,13 @@ public final class DynamicConstantRef<T> implements ConstantRef<T> {
      * @throws ReflectiveOperationException exception
      */
     @SuppressWarnings("unchecked")
-    public T resolve(MethodHandles.Lookup lookup) {
+    public T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         try {
-            MethodHandle bsmMh = bootstrapSpecifier.method().resolve(lookup);
+            MethodHandle bsmMh = bootstrapMethod.resolveRef(lookup);
             return (T) ConstantBootstraps.makeConstant(bsmMh,
                                                        name,
-                                                       type.resolve(lookup),
-                                                       Constables.resolveArgs(lookup, bootstrapSpecifier.arguments()),
+                                                       type.resolveRef(lookup),
+                                                       resolveArgs(lookup, bootstrapArgs),
                                                        // TODO pass lookup
                                                        lookup.lookupClass());
         }

@@ -29,15 +29,16 @@
  * @run main IndyCodeGenerationTest
  */
 
-import java.lang.invoke.BootstrapSpecifier;
+import java.lang.sym.BootstrapSpecifier;
 import java.lang.invoke.CallSite;
-import java.lang.invoke.ClassRef;
+import java.lang.sym.ClassRef;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandleRef;
+import java.lang.sym.MethodHandleRef;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.MethodTypeRef;
+import java.lang.sym.MethodTypeRef;
+import java.lang.sym.SymbolicRefs;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.invokedynamic;
@@ -52,24 +53,24 @@ public class IndyCodeGenerationTest {
 
     String testWithStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                ClassRef.CR_CallSite,
-                ClassRef.CR_Lookup,
-                ClassRef.CR_String,
-                ClassRef.CR_MethodType,
-                ClassRef.CR_int,
-                ClassRef.CR_long,
-                ClassRef.CR_float,
-                ClassRef.CR_double,
-                ClassRef.CR_Class,
-                ClassRef.CR_String,
-                ClassRef.CR_MethodType,
-                ClassRef.CR_MethodHandle
+                SymbolicRefs.CR_CallSite,
+                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_MethodType,
+                SymbolicRefs.CR_int,
+                SymbolicRefs.CR_long,
+                SymbolicRefs.CR_float,
+                SymbolicRefs.CR_double,
+                SymbolicRefs.CR_Class,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_MethodType,
+                SymbolicRefs.CR_MethodHandle
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
                                                 "testWithStaticArgsBSM", methodTypeForMethodHandle);
         BootstrapSpecifier bs = BootstrapSpecifier.of(mh,
                                                       1, 2L, 3.0f, 4.0d,
-                                                      ClassRef.CR_int,
+                                                      SymbolicRefs.CR_int,
                                                       "something",
                                                       MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
         return (String) invokedynamic(bs, "name");

@@ -30,6 +30,12 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
+import java.lang.invoke.MethodHandles;
+import java.lang.sym.ClassRef;
+import java.lang.sym.Constable;
+import java.lang.sym.EnumRef;
+import java.lang.sym.SymbolicRef;
+import java.util.Optional;
 
 /**
  * This is the common base class of all Java language enumeration types.
@@ -55,7 +61,7 @@ import java.io.ObjectStreamException;
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum types.
 public abstract class Enum<E extends Enum<E>>
-        implements Comparable<E>, Serializable {
+        implements Constable<E, EnumRef<E>>, Comparable<E>, Serializable {
     /**
      * The name of this enum constant, as declared in the enum declaration.
      * Most programmers should use the {@link #toString} method rather than
@@ -200,6 +206,13 @@ public abstract class Enum<E extends Enum<E>>
         Class<?> clazz = getClass();
         Class<?> zuper = clazz.getSuperclass();
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
+    }
+
+    @Override
+    public Optional<EnumRef<E>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        return getDeclaringClass()
+                .toSymbolicRef(lookup)
+                .map(c -> EnumRef.of(c, name));
     }
 
     /**

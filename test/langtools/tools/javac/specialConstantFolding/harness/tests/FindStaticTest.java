@@ -1,6 +1,9 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
+import java.lang.sym.ClassRef;
+import java.lang.sym.MethodHandleRef;
+import java.lang.sym.MethodTypeRef;
 
 import static java.lang.invoke.Intrinsics.*;
 

@@ -29,7 +29,12 @@
  * @run main IndyPositiveTest01
  */
 
-import java.lang.invoke.*;
+import java.lang.sym.BootstrapSpecifier;
+import java.lang.sym.ClassRef;
+import java.lang.sym.MethodHandleRef;
+import java.lang.sym.MethodTypeRef;
+import java.lang.sym.SymbolicRefs;
+
 import com.sun.tools.javac.util.Assert;
 import static java.lang.invoke.Intrinsics.*;
 
@@ -40,12 +45,12 @@ public class IndyPositiveTest01 {
 
     String test(String x, String y) throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-            ClassRef.CR_CallSite,
-            ClassRef.CR_Lookup,
-            ClassRef.CR_String,
-            ClassRef.CR_MethodType,
-            ClassRef.CR_String,
-            ClassRef.CR_Object.array()
+                SymbolicRefs.CR_CallSite,
+                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_MethodType,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_Object.array()
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);

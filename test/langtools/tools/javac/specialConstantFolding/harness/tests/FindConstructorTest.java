@@ -1,6 +1,10 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
+import java.lang.sym.ClassRef;
+import java.lang.sym.MethodHandleRef;
+import java.lang.sym.MethodTypeRef;
+import java.lang.sym.SymbolicRefs;
 
 import static java.lang.invoke.Intrinsics.*;
 
@@ -22,7 +26,7 @@ public class FindConstructorTest extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_newInvokeSpecial"})
     void test1() throws Throwable {
         final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, ClassRef.ofDescriptor("LFindConstructorTest;"), "<init>",
-                                                                             MethodTypeRef.of(ClassRef.CR_void)));
+                                                                             MethodTypeRef.of(SymbolicRefs.CR_void)));
         FindConstructorTest foo = (FindConstructorTest) mhNewFindConstructorTest.invokeExact();
         check(foo.toString().equals("invoking FindConstructorTest.toString()"));
     }
@@ -30,7 +34,7 @@ public class FindConstructorTest extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_newInvokeSpecial"})
     void test2() throws Throwable {
         MethodHandle mhNewFindConstructorTest = ldc(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, ClassRef.ofDescriptor("LFindConstructorTest;"), "<init>",
-                                                                       MethodTypeRef.of(ClassRef.CR_void)));
+                                                                       MethodTypeRef.of(SymbolicRefs.CR_void)));
         FindConstructorTest foo = (FindConstructorTest) mhNewFindConstructorTest.invokeExact();
         check(foo.toString().equals("invoking FindConstructorTest.toString()"));
     }
