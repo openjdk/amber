@@ -94,7 +94,7 @@ import sun.invoke.util.VerifyType;
  * @since 1.7
  */
 public final
-class MethodType implements Constable<MethodType, MethodTypeRef>, java.io.Serializable {
+class MethodType implements Constable<MethodType>, java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 
     // The rtype and ptypes fields define the structural identity of the method type:

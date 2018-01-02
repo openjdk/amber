@@ -118,7 +118,7 @@ public interface SymbolicRef<T> {
      *
      * @author Brian Goetz
      */
-    interface OfSelf<T extends SymbolicRef<T>> extends SymbolicRef<T>, Constable<T, T> {
+    interface OfSelf<T extends SymbolicRef<T>> extends SymbolicRef<T>, Constable<T> {
         @Override
         @SuppressWarnings("unchecked")
         default Optional<T> toSymbolicRef(MethodHandles.Lookup lookup) {
