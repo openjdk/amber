@@ -24,12 +24,13 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
+import java.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,7 +61,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid method descriptor
      */
-    @TrackableConstant
+    @Foldable
     public static MethodTypeRef ofDescriptor(String descriptor) {
         Matcher matcher = pattern.matcher(descriptor);
         if (!matcher.matches())
@@ -90,7 +91,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @param paramDescriptors {@linkplain ClassRef}s describing the argument types type
      * @return a {@linkplain MethodTypeRef} describing the desired method type
      */
-    @TrackableConstant
+    @Foldable
     public static MethodTypeRef of(ClassRef returnDescriptor, ClassRef... paramDescriptors) {
         return new MethodTypeRef(returnDescriptor, paramDescriptors);
     }
@@ -99,7 +100,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * Get the return type of the method type described by this {@linkplain MethodTypeRef}
      * @return the return type
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef returnType() {
         return returnType;
     }
@@ -109,7 +110,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * this {@linkplain MethodTypeRef}
      * @return the number of parameters
      */
-    @TrackableConstant
+    @Foldable
     public int parameterCount() {
         return argTypes.length;
     }
@@ -123,7 +124,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @throws IndexOutOfBoundsException if the index is outside the half-open
      * range {[0, parameterCount)}
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef parameterType(int index) {
         return argTypes[index];
     }
@@ -133,7 +134,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      *
      * @return the parameter types
      */
-    @TrackableConstant
+    @Foldable
     public List<ClassRef> parameterList() {
         return Arrays.asList(argTypes);
     }
@@ -143,7 +144,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      *
      * @return the parameter types
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef[] parameterArray() {
         return argTypes.clone();
     }
@@ -154,7 +155,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @param returnType the new return type
      * @return the new method type descriptor
      */
-    @TrackableConstant
+    @Foldable
     public MethodTypeRef changeReturnType(ClassRef returnType) {
         return of(returnType, argTypes);
     }
@@ -169,7 +170,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @throws IndexOutOfBoundsException if the index is outside the half-open
      * range {[0, parameterCount)}
      */
-    @TrackableConstant
+    @Foldable
     public MethodTypeRef changeParameterType(int index, ClassRef paramType) {
         ClassRef[] newArgs = argTypes.clone();
         newArgs[index] = paramType;
@@ -186,7 +187,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * range {[0, parameterCount)}, or {@code end} is outside the closed range
      * {@code [0, parameterCount]}
      */
-    @TrackableConstant
+    @Foldable
     public MethodTypeRef dropParameterTypes(int start, int end) {
         if (start < 0 || start >= argTypes.length || end < 0 || end > argTypes.length)
             throw new IndexOutOfBoundsException();
@@ -207,7 +208,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * @throws IndexOutOfBoundsException if {@code pos} is outside the closed-open
      * range {[0, parameterCount]}
      */
-    @TrackableConstant
+    @Foldable
     public MethodTypeRef insertParameterTypes(int pos, ClassRef... paramTypes) {
         if (pos < 0 || pos > argTypes.length)
             throw new IndexOutOfBoundsException(pos);
@@ -226,6 +227,12 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      */
     public MethodType resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
+    }
+
+    @Override
+    public Optional<? extends SymbolicRef<MethodType>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantRef.<MethodType>of(SymbolicRefs.BSM_INVOKE)
+                                   .withArgs(SymbolicRefs.MHR_METHODTYPEREF_FACTORY, descriptorString()));
     }
 
     @Override

@@ -24,7 +24,9 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
+import java.lang.annotation.Foldable;
+import java.lang.invoke.MethodHandles;
+import java.util.Optional;
 
 /**
  * A descriptor for a {@linkplain Class} constant.
@@ -39,7 +41,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @throws IllegalArgumentException if the name string does not
      * describe a valid class name
      */
-    @TrackableConstant
+    @Foldable
     static ClassRef of(String name) {
         return ClassRef.ofDescriptor("L" + name.replace('.', '/') + ";");
     }
@@ -52,7 +54,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @return a {@linkplain ClassRef} describing the desired class
      * @throws IllegalArgumentException if the package name or class name are not in the correct format
      */
-    @TrackableConstant
+    @Foldable
     static ClassRef of(String packageName, String className) {
         return ofDescriptor("L" + packageName.replace('.', '/') + (packageName.length() > 0 ? "/" : "") + className + ";");
     }
@@ -66,7 +68,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid class descriptor
      */
-    @TrackableConstant
+    @Foldable
     static ClassRef ofDescriptor(String descriptor) {
         if (descriptor == null)
             throw new NullPointerException("descriptor");
@@ -82,7 +84,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      *
      * @return a {@linkplain ClassRef} describing an array type
      */
-    @TrackableConstant
+    @Foldable
     default ClassRef array() {
         return ClassRef.ofDescriptor("[" + descriptorString());
     }
@@ -91,14 +93,14 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
      */
-    @TrackableConstant
+    @Foldable
     ClassRef inner(String innerName);
 
     /**
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
      */
-    @TrackableConstant
+    @Foldable
     ClassRef inner(String firstInnerName, String... moreInnerNames);
 
     /**
@@ -128,7 +130,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @throws IllegalStateException if this reference does not describe an array type
      * {@linkplain ClassRef}
      */
-    @TrackableConstant
+    @Foldable
     default ClassRef componentType() {
         if (!isArray())
             throw new IllegalStateException();
@@ -140,4 +142,10 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @return the canonical name of the type described by this descriptor
      */
     String canonicalName();
+
+    @Override
+    default Optional<? extends SymbolicRef<Class<?>>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantRef.<Class<?>>of(SymbolicRefs.BSM_INVOKE)
+                                   .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptorString()));
+    }
 }

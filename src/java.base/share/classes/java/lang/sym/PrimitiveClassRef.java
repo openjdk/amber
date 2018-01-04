@@ -24,8 +24,7 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
-import java.lang.invoke.DynamicConstant;
+import java.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 
@@ -58,7 +57,7 @@ class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements ClassRef
     }
 
     @Override
-    @TrackableConstant
+    @Foldable
     public String descriptorString() {
         return descriptor;
     }

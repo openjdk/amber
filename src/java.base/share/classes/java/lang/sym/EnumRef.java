@@ -24,9 +24,11 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
+import java.lang.annotation.Foldable;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * EnumRef
@@ -43,17 +45,17 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
         this.constantName = constantName;
     }
 
-    @TrackableConstant
+    @Foldable
     public static<E extends Enum<E>> EnumRef<E> of(ClassRef enumClass, String constantName) {
         return new EnumRef<>(enumClass, constantName);
     }
 
-    @TrackableConstant
+    @Foldable
     public ClassRef enumClass() {
         return enumClass;
     }
 
-    @TrackableConstant
+    @Foldable
     public String constantName() {
         return constantName;
     }
@@ -62,6 +64,15 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
     @SuppressWarnings("unchecked")
     public E resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         return Enum.valueOf((Class<E>) enumClass.resolveRef(lookup), constantName);
+    }
+
+    @Override
+    public Optional<? extends SymbolicRef<E>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        Optional<? extends SymbolicRef<Class<?>>> classRefRef = enumClass.toSymbolicRef(lookup);
+        if (!classRefRef.isPresent())
+            return Optional.empty();
+        return Optional.of(DynamicConstantRef.<E>of(SymbolicRefs.BSM_INVOKE)
+                                   .withArgs(SymbolicRefs.MHR_ENUMREF_FACTORY, classRefRef.get(), constantName));
     }
 
     @Override

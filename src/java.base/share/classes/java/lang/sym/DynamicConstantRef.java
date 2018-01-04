@@ -24,11 +24,14 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
+import java.lang.annotation.Foldable;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -72,7 +75,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param bootstrapArgs the bootstrap arguments
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public DynamicConstantRef<T> withArgs(SymbolicRef<?>... bootstrapArgs) {
         return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
     }
@@ -88,7 +91,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param bootstrapArgs the bootstrap arguments
      * @return the descriptor for the symbolic reference
      */
-    @TrackableConstant
+    @Foldable
     public static<T> SymbolicRef<T> ofCanonical(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
         DynamicConstantRef<T> dcr = new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
         return dcr.canonicalize();
@@ -114,7 +117,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param bootstrapArgs the bootstrap arguments
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
         return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
     }
@@ -127,7 +130,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param type the type of the dynamic constant
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
         return new DynamicConstantRef<>(bootstrapMethod, name, type);
     }
@@ -140,7 +143,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param type the type of the dynamic constant
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, ClassRef type) {
         return of(bootstrapMethod, "_", type);
     }
@@ -153,7 +156,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param name the name for the dynamic constant
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name) {
         return of(bootstrapMethod, name, bootstrapMethod.type().returnType());
     }
@@ -165,7 +168,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * @param bootstrapMethod the bootstrap method
      * @return the descriptor for the dynamic constant
      */
-    @TrackableConstant
+    @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod) {
         return of(bootstrapMethod, "_");
     }
@@ -174,7 +177,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * returns the name
      * @return the name
      */
-    @TrackableConstant
+    @Foldable
     public String name() {
         return name;
     }
@@ -183,7 +186,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * returns the type
      * @return the type
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef type() {
         return type;
     }
@@ -192,7 +195,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
      * Returns the bootstrap method in the bootstrap specifier
      * @return the bootstrap method in the bootstrap specifier
      */
-    @TrackableConstant
+    @Foldable
     public MethodHandleRef bootstrapMethod() { return bootstrapMethod; }
 
     /**
@@ -237,5 +240,41 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
         catch (Throwable t) {
             throw new RuntimeException(t);
         }
+    }
+
+    @Override
+    public Optional<? extends SymbolicRef<T>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        SymbolicRef<?>[] args = new SymbolicRef<?>[bootstrapArgs.length + 4];
+        args[0] = SymbolicRefs.MHR_DYNAMICCONSTANTREF_FACTORY;
+        args[1] = bootstrapMethod;
+        args[2] = name;
+        args[3] = type;
+        System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
+        return Optional.of(DynamicConstantRef.<T>of(SymbolicRefs.BSM_INVOKE).withArgs(args));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DynamicConstantRef<?> ref = (DynamicConstantRef<?>) o;
+        return Objects.equals(bootstrapMethod, ref.bootstrapMethod) &&
+               Arrays.equals(bootstrapArgs, ref.bootstrapArgs) &&
+               Objects.equals(name, ref.name) &&
+               Objects.equals(type, ref.type);
+    }
+
+    @Override
+    public int hashCode() {
+
+        int result = Objects.hash(bootstrapMethod, name, type);
+        result = 31 * result + Arrays.hashCode(bootstrapArgs);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("DynamicConstantRef[bsm=%s, name=%s, type=%s, args=%s]",
+                             bootstrapMethod, name, type, Arrays.toString(bootstrapArgs));
     }
 }

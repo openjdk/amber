@@ -24,7 +24,7 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
+import java.lang.annotation.Foldable;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -46,7 +46,7 @@ public final class BootstrapSpecifier {
      * @param bootstrapArgs the bootstrap arguments for the {@code invokedynamic}
      * @return the descriptor
      */
-    @TrackableConstant
+    @Foldable
     public static BootstrapSpecifier of(MethodHandleRef bootstrapMethod, SymbolicRef<?>... bootstrapArgs) {
         return new BootstrapSpecifier(bootstrapMethod, bootstrapArgs);
     }
@@ -55,7 +55,7 @@ public final class BootstrapSpecifier {
      * Returns the bootstrap method for the {@code invokedynamic}
      * @return the bootstrap method for the {@code invokedynamic}
      */
-    @TrackableConstant
+    @Foldable
     public MethodHandleRef method() { return bootstrapMethod; }
 
     /**

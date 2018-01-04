@@ -1534,11 +1534,11 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
             case REF_getField:
                 return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, owner, name, type.returnType()));
             case REF_putField:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, owner, name, type.parameterType(0)));
             case REF_getStatic:
                 return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, owner, name, type.returnType()));
             case REF_putStatic:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
             case REF_invokeVirtual:
                 return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, owner, name, type));
             case REF_invokeStatic:

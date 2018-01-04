@@ -24,19 +24,28 @@
  */
 package java.lang.annotation;
 
+import java.lang.sym.Constable;
 import java.lang.sym.SymbolicRef;
 import java.lang.invoke.Intrinsics;
 
 /**
- * Identifies a {@link SymbolicRef}-yielding factory method or combinator.
- * For invocations of methods
- * annotated as {@linkplain TrackableConstant} whose arguments (and, for instance
- * methods, the receiver) are all constant expressions, the compiler will track
- * the result as a constant expression, for possible intrinsification.
+ * Identifies a method that is a candidate for compile-time constant folding.
+ * Such a method must be a <em>pure function</em> of its inputs, all inputs
+ * (including the receiver, if applied to an instance method) must be value-based
+ * types, and the output must be a value-based type that is representable
+ * in the constant pool ({@link Constable} or {@link SymbolicRef}).
  *
+ * <p>For accesses of fields annotated as {@linkplain Foldable}, and invocations
+ * of methods annotated as {@linkplain Foldable} whose arguments (and, for instance
+ * methods, the receiver) are all constant expressions, the compiler may evaluate
+ * the expression reflectively at compile time and replace it with a constant
+ * load of the result, or track the result as a constant expression for possible
+ * intrinsification via methods in {@link Intrinsics}.
+ *
+ * @see Constable
  * @see SymbolicRef
  * @see Intrinsics
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.METHOD, ElementType.FIELD })
-public @interface TrackableConstant {}
+public @interface Foldable { }

@@ -501,7 +501,7 @@ public class Symtab {
         dynamicConstantRefType = enterClass("java.lang.sym.DynamicConstantRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
-        trackableConstantType = enterClass("java.lang.annotation.TrackableConstant");
+        trackableConstantType = enterClass("java.lang.annotation.Foldable");
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");

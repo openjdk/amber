@@ -242,10 +242,6 @@ public final class ConstantBootstraps {
         requireNonNull(handle);
         requireNonNull(args);
 
-        if (type != handle.type().returnType()) {
-            handle = handle.asType(handle.type().changeReturnType(type));
-        }
-
         return handle.invokeWithArguments(args);
     }
 

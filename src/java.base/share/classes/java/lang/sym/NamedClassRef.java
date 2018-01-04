@@ -24,15 +24,12 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.TrackableConstant;
-import java.lang.invoke.ConstantBootstraps;
+import java.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import sun.invoke.util.Wrapper;
 
 import static java.util.stream.Collectors.joining;
 
@@ -57,7 +54,7 @@ public final class NamedClassRef implements ClassRef {
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef inner(String innerName) {
         if (!descriptor.startsWith("L"))
             throw new IllegalStateException("Outer class is not a non-array reference type");
@@ -68,7 +65,7 @@ public final class NamedClassRef implements ClassRef {
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
      */
-    @TrackableConstant
+    @Foldable
     public ClassRef inner(String firstInnerName, String... moreInnerNames) {
         if (!descriptor.startsWith("L"))
             throw new IllegalStateException("Outer class is not a non-array reference type");
@@ -79,7 +76,7 @@ public final class NamedClassRef implements ClassRef {
     }
 
     @Override
-    @TrackableConstant
+    @Foldable
     public String descriptorString() {
         return descriptor;
     }
