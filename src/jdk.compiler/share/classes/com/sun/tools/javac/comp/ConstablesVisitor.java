@@ -84,7 +84,6 @@ public class ConstablesVisitor extends TreeScanner {
     private final Symtab syms;
     private final Names names;
     private final Types types;
-    private final Resolve rs;
     private final Log log;
     private final ConstFold cfolder;
     private final Constables constables;
@@ -96,7 +95,6 @@ public class ConstablesVisitor extends TreeScanner {
         syms = Symtab.instance(context);
         names = Names.instance(context);
         types = Types.instance(context);
-        rs = Resolve.instance(context);
         log = Log.instance(context);
         cfolder = ConstFold.instance(context);
         constables = new Constables(context);
