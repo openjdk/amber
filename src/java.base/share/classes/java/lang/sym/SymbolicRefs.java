@@ -163,7 +163,7 @@ public final class SymbolicRefs {
     static final ClassRef CR_ConstantBootstraps = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     @Foldable
-    static final MethodHandleRef BSM_PRIMITIVE_CLASS
+    public static final MethodHandleRef BSM_PRIMITIVE_CLASS
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "primitiveClass", CR_Class);
 
     @Foldable

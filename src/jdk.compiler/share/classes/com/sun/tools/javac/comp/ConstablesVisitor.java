@@ -289,7 +289,7 @@ public class ConstablesVisitor extends TreeScanner {
                     if (invocationName.isEmpty()) {
                         log.error(tree.args.tail.head.pos(), Errors.InvocationNameCannotBeEmpty);
                     }
-                    Object mh = constables.invokeReflectiveMethod(constables.bootstrapSpecifierClass,
+                    Object mh = constables.invokeMethodReflectively(constables.bootstrapSpecifierClass,
                             bootstrapSpecifier, "method");
                     Pool.MethodHandle mHandle = (Pool.MethodHandle)constables
                             .convertConstant(tree, attrEnv, mh, attrEnv.enclClass.sym.packge().modle);
@@ -309,7 +309,7 @@ public class ConstablesVisitor extends TreeScanner {
                     ListBuffer<Type> arguments = new ListBuffer<>();
                     tree.args = tree.args.tail.tail;
                     tree.args.forEach(arg -> arguments.add(arg.type));
-                    Object[] bsmArgs = (Object[])constables.invokeReflectiveMethod(constables.bootstrapSpecifierClass, bootstrapSpecifier, "arguments");
+                    Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.bootstrapSpecifierClass, bootstrapSpecifier, "arguments");
                     Object[] convertedBsmArgs = constables.convertConstants(tree, attrEnv, bsmArgs, attrEnv.enclClass.sym.packge().modle, true);
                     MethodType mType = new MethodType(arguments.toList(), tree.type, List.nil(), syms.methodClass);
                     DynamicMethodSymbol dynSym = new DynamicMethodSymbol(

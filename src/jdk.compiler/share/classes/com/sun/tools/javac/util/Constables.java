@@ -88,18 +88,18 @@ public class Constables {
             methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
             classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
-            namedClassRefClass = Class.forName("java.lang.sym.NamedClassRef", false, null);
             constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
             bootstrapSpecifierClass = Class.forName("java.lang.sym.BootstrapSpecifier", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
+            symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
         } catch (ClassNotFoundException ex) {
             methodHandleRefClass = null;
             methodTypeRefClass = null;
             constantRefClass = null;
             classRefClass = null;
-            namedClassRefClass = null;
             bootstrapSpecifierClass = null;
             dynamicConstantClass = null;
+            symRefs = null;
         }
     }
 
@@ -271,13 +271,13 @@ public class Constables {
 
     public Object convertConstant(JCTree tree, Env<AttrContext> attrEnv, Object constant, ModuleSymbol currentModule, boolean bsmArg) {
         if (methodHandleRefClass.isInstance(constant)) {
-            String name = (String)invokeReflectiveMethod(methodHandleRefClass, constant, "name");
-            int refKind = (int)invokeReflectiveMethod(methodHandleRefClass, constant, "refKind");
-            Object owner = invokeReflectiveMethod(methodHandleRefClass, constant, "owner");
-            String ownerDescriptor = (String)invokeReflectiveMethod(classRefClass, owner, "descriptorString");
+            String name = (String)invokeMethodReflectively(methodHandleRefClass, constant, "name");
+            int refKind = (int)invokeMethodReflectively(methodHandleRefClass, constant, "refKind");
+            Object owner = invokeMethodReflectively(methodHandleRefClass, constant, "owner");
+            String ownerDescriptor = (String)invokeMethodReflectively(classRefClass, owner, "descriptorString");
             Type ownerType = descriptorToType(ownerDescriptor, currentModule, false);
-            Object mtConstant = invokeReflectiveMethod(methodHandleRefClass, constant, "type");
-            String methodTypeDesc = (String)invokeReflectiveMethod(methodTypeRefClass, mtConstant, "descriptorString");
+            Object mtConstant = invokeMethodReflectively(methodHandleRefClass, constant, "type");
+            String methodTypeDesc = (String)invokeMethodReflectively(methodTypeRefClass, mtConstant, "descriptorString");
             MethodType mType = (MethodType)descriptorToType(
                     methodTypeDesc, currentModule, true);
             Symbol refSymbol = getReferenceSymbol(refKind, ownerType.tsym, name, mType);
@@ -295,10 +295,16 @@ public class Constables {
                     new Pool.MethodHandle.DumbMethodHandleCheckHelper(refKind, refSymbol));
             return mHandle;
         } else if (methodTypeRefClass.isInstance(constant)) {
-            String descriptor = (String)invokeReflectiveMethod(methodTypeRefClass, constant, "descriptorString");
+            String descriptor = (String)invokeMethodReflectively(methodTypeRefClass, constant, "descriptorString");
             return types.erasure(descriptorToType(descriptor, currentModule, true));
-        } else if (namedClassRefClass.isInstance(constant)) {
-            String descriptor = (String)invokeReflectiveMethod(classRefClass, constant, "descriptorString");
+        } else if (classRefClass.isInstance(constant)) {
+            String descriptor = (String)invokeMethodReflectively(classRefClass, constant, "descriptorString");
+            if (descriptor.length() == 1) {
+                Object BSM_PRIMITIVE_CLASS = getFieldValueReflectively(symRefs, null, "BSM_PRIMITIVE_CLASS");
+                Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv,
+                        BSM_PRIMITIVE_CLASS, currentModule);
+                return new Pool.ConstantDynamic(names.fromString(descriptor), methodHandle, new Object[0], types);
+            }
             Type type = descriptorToType(descriptor, currentModule, false);
             Symbol symToLoad;
             if (!type.hasTag(ARRAY)) {
@@ -318,13 +324,13 @@ public class Constables {
             return type.hasTag(ARRAY) ? type : type.tsym;
         } else if (dynamicConstantClass.isInstance(constant)) {
             Object classRef =
-                    invokeReflectiveMethod(dynamicConstantClass, constant, "type");
-            String descriptor = (String)invokeReflectiveMethod(classRefClass, classRef, "descriptorString");
+                    invokeMethodReflectively(dynamicConstantClass, constant, "type");
+            String descriptor = (String)invokeMethodReflectively(classRefClass, classRef, "descriptorString");
             Type type = descriptorToType(descriptor, attrEnv.enclClass.sym.packge().modle, false);
-            String name = (String)invokeReflectiveMethod(dynamicConstantClass, constant, "name");
-            Object mh = invokeReflectiveMethod(dynamicConstantClass, constant, "bootstrapMethod");
+            String name = (String)invokeMethodReflectively(dynamicConstantClass, constant, "name");
+            Object mh = invokeMethodReflectively(dynamicConstantClass, constant, "bootstrapMethod");
             Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv, mh, currentModule);
-            Object[] args = (Object[])invokeReflectiveMethod(dynamicConstantClass, constant, "bootstrapArgs");
+            Object[] args = (Object[])invokeMethodReflectively(dynamicConstantClass, constant, "bootstrapArgs");
             Object[] convertedArgs = convertConstants(tree, attrEnv, args, currentModule, true);
             return new Pool.ConstantDynamic(names.fromString(name), methodHandle, type, convertedArgs, types);
         }
@@ -389,10 +395,10 @@ public class Constables {
     public Class<?> methodHandleRefClass;
     public Class<?> methodTypeRefClass;
     public Class<?> classRefClass;
-    public Class<?> namedClassRefClass;
     public Class<?> constantRefClass;
     public Class<?> bootstrapSpecifierClass;
     public Class<?> dynamicConstantClass;
+    public Class<?> symRefs;
 
     private Symbol getReferenceSymbol(int refKind, Symbol owner, String name, MethodType methodType) {
         long flags = refKind == ClassFile.REF_getStatic ||
@@ -418,14 +424,14 @@ public class Constables {
         }
     }
 
-    public Object invokeReflectiveMethod(
+    public Object invokeMethodReflectively(
             Class<?> hostClass,
             Object instance,
             String methodName) {
-        return invokeReflectiveMethod(hostClass, instance, methodName, new Class<?>[0], new Object[0]);
+        return invokeMethodReflectively(hostClass, instance, methodName, new Class<?>[0], new Object[0]);
     }
 
-    public Object invokeReflectiveMethod(
+    public Object invokeMethodReflectively(
             Class<?> hostClass,
             Object instance,
             String methodName,
@@ -486,16 +492,24 @@ public class Constables {
                     // we are in the middle of a method invocation bail out
                     return null;
                 }
-                Field theField = constablesClass.getField(sym.name.toString());
-                Object value = theField.get(null);
-                if (value != null) {
-                    return value;
-                }
-            } catch (ClassNotFoundException |
-                    NoSuchFieldException |
-                    IllegalAccessException ex) {
+                return getFieldValueReflectively(constablesClass, null, sym.name.toString());
+            } catch (ClassNotFoundException ex) {
                 log.error(tree, Errors.ReflectiveError(sym.name.toString(), className, ex.getCause().getLocalizedMessage()));
             }
+        }
+        return null;
+    }
+
+    Object getFieldValueReflectively(Class<?> hostClass, Object instance, String fieldName) {
+        try {
+            return hostClass.getField(fieldName).get(instance);
+        } catch (NoSuchFieldException | IllegalAccessException ex) {
+            Throwable e = (ex.getCause() == null) ? ex : ex.getCause();
+            String msg = e.getLocalizedMessage();
+            if (msg == null)
+                msg = e.toString();
+            log.error(Errors.ReflectiveError(fieldName, hostClass.getCanonicalName(), msg));
+            e.printStackTrace(System.err);
         }
         return null;
     }

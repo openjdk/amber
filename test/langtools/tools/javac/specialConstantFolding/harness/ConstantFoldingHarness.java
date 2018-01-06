@@ -63,6 +63,7 @@ public class ConstantFoldingHarness {
 
     static final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
     static final StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null);
+    static final String testOut = System.getProperty("test.classes");
 
     public static void main(String[] args) throws Throwable {
         boolean anyTest = false;
@@ -71,7 +72,7 @@ public class ConstantFoldingHarness {
             fm.setLocation(SOURCE_PATH, Arrays.asList(new File(testDir, "tests")));
 
             // Make sure classes are written to scratch dir.
-            fm.setLocation(CLASS_OUTPUT, Arrays.asList(new File(".")));
+            fm.setLocation(CLASS_OUTPUT, Arrays.asList(new File(testOut)));
             for (JavaFileObject jfo : fm.list(SOURCE_PATH, "", Collections.singleton(SOURCE), true)) {
                 anyTest = true;
                 new ConstantFoldingHarness(jfo).checkAndExecute();
@@ -122,7 +123,7 @@ public class ConstantFoldingHarness {
         }
 
         File javaFile = new File(jfo.getName());
-        File classFile = new File(javaFile.getName().replace(".java", ".class"));
+        File classFile = new File(testOut, javaFile.getName().replace(".java", ".class"));
         checkClassFile(classFile);
 
         //check all candidates have been used up
@@ -137,7 +138,7 @@ public class ConstantFoldingHarness {
             System.err.println("executing the test case");
             new JavaTask(tb)
                     .includeStandardOptions(false)
-                    .classpath(System.getProperty("user.dir"))
+                    .classpath(testOut)
                     .vmOptions("--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
                     .className(classFile.getName().replace(".class", ""))
                     .run();

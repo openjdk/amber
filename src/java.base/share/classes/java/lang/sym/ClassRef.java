@@ -26,12 +26,32 @@ package java.lang.sym;
 
 import java.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import sun.invoke.util.Wrapper;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 /**
  * A descriptor for a {@linkplain Class} constant.
  */
-public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
+public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
+    private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
+
+    private final String descriptor;
+
+    private ClassRef(String descriptor) {
+        // @@@ Replace validation with a lower-overhead mechanism than regex
+        if (descriptor == null
+            || !TYPE_DESC.matcher(descriptor).matches())
+            throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
+        this.descriptor = descriptor;
+    }
 
     /**
      * Create a {@linkplain ClassRef} from a dot-separated class name
@@ -42,7 +62,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * describe a valid class name
      */
     @Foldable
-    static ClassRef of(String name) {
+    public static ClassRef of(String name) {
         return ClassRef.ofDescriptor("L" + name.replace('.', '/') + ";");
     }
 
@@ -55,7 +75,7 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @throws IllegalArgumentException if the package name or class name are not in the correct format
      */
     @Foldable
-    static ClassRef of(String packageName, String className) {
+    public static ClassRef of(String packageName, String className) {
         return ofDescriptor("L" + packageName.replace('.', '/') + (packageName.length() > 0 ? "/" : "") + className + ";");
     }
 
@@ -69,13 +89,11 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * describe a valid class descriptor
      */
     @Foldable
-    static ClassRef ofDescriptor(String descriptor) {
-        if (descriptor == null)
-            throw new NullPointerException("descriptor");
-        else if (descriptor.length() == 1)
-            return new PrimitiveClassRef(descriptor);
-        else
-            return new NamedClassRef(descriptor);
+    public static ClassRef ofDescriptor(String descriptor) {
+        requireNonNull(descriptor);
+        if (!TYPE_DESC.matcher(descriptor).matches())
+            throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
+        return new ClassRef(descriptor);
     }
 
     /**
@@ -85,8 +103,8 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @return a {@linkplain ClassRef} describing an array type
      */
     @Foldable
-    default ClassRef array() {
-        return ClassRef.ofDescriptor("[" + descriptorString());
+    public ClassRef array() {
+        return ClassRef.ofDescriptor("[" + descriptor);
     }
 
     /**
@@ -94,14 +112,25 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * non-array reference type described by this {@linkplain ClassRef}
      */
     @Foldable
-    ClassRef inner(String innerName);
+    public ClassRef inner(String innerName) {
+        if (!descriptor.startsWith("L"))
+            throw new IllegalStateException("Outer class is not a non-array reference type");
+        return ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + innerName + ";");
+    }
 
     /**
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
      */
     @Foldable
-    ClassRef inner(String firstInnerName, String... moreInnerNames);
+    public ClassRef inner(String firstInnerName, String... moreInnerNames) {
+        if (!descriptor.startsWith("L"))
+            throw new IllegalStateException("Outer class is not a non-array reference type");
+        return moreInnerNames.length == 0
+               ? inner(firstInnerName)
+               : ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + firstInnerName
+                                       + Stream.of(moreInnerNames).collect(joining("$", "$", "")) + ";");
+    }
 
     /**
      * Returns whether this {@linkplain ClassRef}
@@ -109,8 +138,8 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @return whether this {@linkplain ClassRef}
      * describes an array type
      */
-    default boolean isArray() {
-        return descriptorString().startsWith("[");
+    public boolean isArray() {
+        return descriptor.startsWith("[");
     }
 
     /**
@@ -119,8 +148,8 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * @return whether this {@linkplain ClassRef}
      * describes a primitive type
      */
-    default boolean isPrimitive() {
-        return descriptorString().length() == 1;
+    public boolean isPrimitive() {
+        return descriptor.length() == 1;
     }
 
     /**
@@ -131,21 +160,93 @@ public interface ClassRef extends SymbolicRef.WithTypeDescriptor<Class<?>> {
      * {@linkplain ClassRef}
      */
     @Foldable
-    default ClassRef componentType() {
+    public ClassRef componentType() {
         if (!isArray())
             throw new IllegalStateException();
-        return ClassRef.ofDescriptor(descriptorString().substring(1));
+        return ClassRef.ofDescriptor(descriptor.substring(1));
     }
 
     /**
      * Return the canonical name of the type described by this descriptor
      * @return the canonical name of the type described by this descriptor
      */
-    String canonicalName();
+    public String canonicalName() {
+        if (descriptor.length() == 1)
+            return Wrapper.forBasicType(descriptor.charAt(0)).primitiveSimpleName();
+        else if (descriptor.startsWith("L"))
+            return descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
+        else if (descriptor.startsWith(("["))) {
+            int depth=arrayDepth();
+            ClassRef c = this;
+            for (int i=0; i<depth; i++)
+                c = c.componentType();
+            StringBuilder sb = new StringBuilder(descriptor.length() + 2*depth);
+            sb.append(c.canonicalName());
+            for (int i=0; i<depth; i++)
+                sb.append("[]");
+            return sb.toString();
+        }
+        else
+            throw new IllegalStateException(descriptor);
+    }
+
+    private int arrayDepth() {
+        int depth = 0;
+        while (descriptor.charAt(depth) == '[')
+            depth++;
+        return depth;
+    }
 
     @Override
-    default Optional<? extends SymbolicRef<Class<?>>> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Class<?> resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+        if (isPrimitive()) {
+            return Wrapper.forBasicType(descriptor.charAt(0)).primitiveType();
+        }
+        else {
+            ClassRef c = this;
+            int depth = arrayDepth();
+            for (int i=0; i<depth; i++)
+                c = c.componentType();
+
+            if (c.descriptor.length() == 1)
+                return Class.forName(descriptor, true, lookup.lookupClass().getClassLoader());
+            else {
+                Class<?> clazz = Class.forName(c.descriptor.substring(1, c.descriptor.length() - 1).replace('/', '.'), true, lookup.lookupClass().getClassLoader());
+                for (int i = 0; i < depth; i++)
+                    clazz = Array.newInstance(clazz, 0).getClass();
+                return clazz;
+            }
+        }
+    }
+
+    @Override
+    @Foldable
+    public String descriptorString() {
+        return descriptor;
+    }
+
+    @Override
+    public Optional<? extends SymbolicRef<Class<?>>> toSymbolicRef(MethodHandles.Lookup lookup) {
         return Optional.of(DynamicConstantRef.<Class<?>>of(SymbolicRefs.BSM_INVOKE)
-                                   .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptorString()));
+                                   .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptor));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ClassRef constant = (ClassRef) o;
+        return Objects.equals(descriptor, constant.descriptor);
+    }
+
+    @Override
+    public int hashCode() {
+        return descriptor != null ? descriptor.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ClassRef[%s]", canonicalName());
     }
 }
