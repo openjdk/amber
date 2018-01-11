@@ -32,7 +32,7 @@ import java.lang.sym.SymbolicRef;
  *
  * @author Brian Goetz
  */
-public class Intrinsics {
+public final class Intrinsics {
     /**
      * Instructs the compiler to generate an {@code ldc} instruction for the given
      * {@code Constable} instance. A compiler error will be issued if it cannot

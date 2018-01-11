@@ -167,27 +167,27 @@ public final class SymbolicRefs {
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "primitiveClass", CR_Class);
 
     @Foldable
-    static final MethodHandleRef BSM_ENUM_CONSTANT
+    public static final MethodHandleRef BSM_ENUM_CONSTANT
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "enumConstant", CR_Enum);
 
     @Foldable
-    static final MethodHandleRef BSM_NULL_CONSTANT
+    public static final MethodHandleRef BSM_NULL_CONSTANT
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "nullConstant", SymbolicRefs.CR_Object);
 
     @Foldable
-    static final MethodHandleRef BSM_VARHANDLE_FIELD
+    public static final MethodHandleRef BSM_VARHANDLE_FIELD
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "fieldVarHandle", CR_VarHandle, CR_Class, CR_Class);
 
     @Foldable
-    static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
+    public static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "staticFieldVarHandle", CR_VarHandle, CR_Class, CR_Class);
 
     @Foldable
-    static final MethodHandleRef BSM_VARHANDLE_ARRAY
+    public static final MethodHandleRef BSM_VARHANDLE_ARRAY
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "arrayVarHandle", CR_VarHandle, CR_Class);
 
     @Foldable
-    static final MethodHandleRef BSM_INVOKE
+    public static final MethodHandleRef BSM_INVOKE
             = MethodHandleRef.ofCondyBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.array());
 
     /**  ClassRef representing the primitive type int */

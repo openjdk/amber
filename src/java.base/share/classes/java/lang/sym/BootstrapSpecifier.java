@@ -40,6 +40,13 @@ public final class BootstrapSpecifier {
         this.bootstrapArgs = Objects.requireNonNull(bootstrapArgs.clone());
     }
 
+    // of(mh, name, type)
+    // of(mh, type)
+    // withArgs(args...)
+    // withNameAndType
+    // resolve: BCI?
+    // similar canonicalzing factories as DCR
+
     /**
      * Create a descriptor for an {@code invokedynamic} invocation.
      * @param bootstrapMethod the bootstrap method for the {@code invokedynamic}

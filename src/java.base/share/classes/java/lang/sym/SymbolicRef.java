@@ -41,8 +41,8 @@ import java.util.Optional;
  * {@linkplain SymbolicRef.OfSelf}, indicating that they serve as their own
  * symbolic reference. Native linkable constant types ({@link
  * Class}, {@link MethodType}, and {@link MethodHandle}) have counterpart
- * {@linkplain SymbolicRef} types, such as {@link ClassRef},
- * {@link MethodTypeRef}, and {@link MethodHandleRef}.  Dynamic constants are
+ * {@linkplain SymbolicRef} types, ({@link ClassRef}, {@link MethodTypeRef},
+ * and {@link MethodHandleRef}.)  Dynamic constants are
  * represented by the symbolic reference type {@link DynamicConstantRef}.
  *
  * <p>APIs that deal in generation or parsing of bytecode are encouraged to use
@@ -68,6 +68,9 @@ import java.util.Optional;
  * <p>Non-platform classes should not implement {@linkplain SymbolicRef} directly.
  * Instead, they should extend {@link DynamicConstantRef}.
  *
+ * <p>Symbolic references are <a href="../doc-files/ValueBased.html">value-based</a>
+ * classes.
+ *
  * @apiNote In the future, if the Java language permits, {@linkplain SymbolicRef}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
  * explicitly permitted types.
@@ -77,7 +80,7 @@ import java.util.Optional;
  * @see Intrinsics
  * @see SymbolicRefs
  */
-public interface SymbolicRef<T> {
+public interface SymbolicRef<T> extends Constable<T> {
 
     /**
      * Resolve this symbolic reference reflectively.
