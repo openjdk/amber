@@ -1,8 +1,8 @@
 WarningIfClassOrMemberNotFound.java:13:31: compiler.warn.class.not.found: NonExistentClass1
 WarningIfClassOrMemberNotFound.java:16:25: compiler.warn.class.not.found: NonExistentClass2
 WarningIfClassOrMemberNotFound.java:19:28: compiler.warn.class.not.found: NonExistentClass3
-WarningIfClassOrMemberNotFound.java:23:31: compiler.warn.member.not.found.at.class: bar, WarningIfClassOrMemberNotFound
-WarningIfClassOrMemberNotFound.java:27:31: compiler.warn.member.not.found.at.class: foo, WarningIfClassOrMemberNotFound
+WarningIfClassOrMemberNotFound.java:23:31: compiler.warn.member.not.found.at.class: bar, class, WarningIfClassOrMemberNotFound
+WarningIfClassOrMemberNotFound.java:27:31: compiler.warn.member.not.found.at.class: foo, class, WarningIfClassOrMemberNotFound
 - compiler.err.warnings.and.werror
 1 error
 5 warnings

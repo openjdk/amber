@@ -26,13 +26,14 @@
 package com.sun.tools.javac.util;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 
+import com.sun.tools.javac.code.Flags;
+import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.CompletionFailure;
@@ -63,6 +64,7 @@ import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
+import static com.sun.tools.javac.code.Flags.INTERFACE;
 import static com.sun.tools.javac.code.Flags.STATIC;
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
 import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
@@ -280,6 +282,7 @@ public class Constables {
             String methodTypeDesc = (String)invokeMethodReflectively(methodTypeRefClass, mtConstant, "descriptorString");
             MethodType mType = (MethodType)descriptorToType(
                     methodTypeDesc, currentModule, true);
+            // this method generates fake symbols as needed
             Symbol refSymbol = getReferenceSymbol(refKind, ownerType.tsym, name, mType);
             boolean ownerFound = true;
             try {
@@ -289,6 +292,7 @@ public class Constables {
                 ownerFound = false;
             }
             if (ownerFound) {
+                ownerType = refSymbol.owner.type;
                 checkIfMemberExists(tree, attrEnv, names.fromString(name), ownerType, mType.argtypes, refKind);
             }
             Pool.MethodHandle mHandle = new Pool.MethodHandle(refKind, refSymbol, types,
@@ -359,7 +363,8 @@ public class Constables {
                 try {
                     refSym = rs.resolveInternalField(pos, attrEnv, qual, name);
                 } catch (Throwable t) {
-                    log.warning(pos, Warnings.MemberNotFoundAtClass(name, qual.tsym));
+                    log.warning(pos, Warnings.MemberNotFoundAtClass(name,
+                            (qual.tsym.flags_field & INTERFACE) == 0 ? "class" : "interface", qual.tsym));
                     return;
                 }
             }
@@ -411,6 +416,14 @@ public class Constables {
             case ClassFile.REF_invokeStatic:
             case ClassFile.REF_invokeSpecial:
             case ClassFile.REF_invokeInterface:
+                if (refKind == ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) == 0) {
+                    // we need a new owner for the symbol
+                    ClassSymbol newOwner = new ClassSymbol(owner.flags_field | Flags.INTERFACE, owner.name, syms.noSymbol);
+                    Symbol newMS = new MethodSymbol(flags, symbolName, methodType, newOwner);
+                    newOwner.members_field = WriteableScope.create(newOwner);
+                    newOwner.members_field.enter(newMS);
+                    return newMS;
+                }
                 return new MethodSymbol(flags, symbolName, methodType, owner);
             case ClassFile.REF_putField:
                 return new VarSymbol(flags, symbolName, methodType.argtypes.tail.head, owner);
