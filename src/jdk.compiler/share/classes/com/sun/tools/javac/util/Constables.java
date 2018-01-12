@@ -481,7 +481,7 @@ public class Constables {
      */
     public Object foldTrackableField(final JCTree tree, final Env<AttrContext> env) {
         Symbol sym = TreeInfo.symbol(tree);
-        boolean trackableConstant = sym.attribute(syms.trackableConstantType.tsym) != null &&
+        boolean trackableConstant = sym.attribute(syms.foldableType.tsym) != null &&
                 sym.packge().modle == syms.java_base;
         if (trackableConstant) {
             String className = sym.owner.type.tsym.flatName().toString();
@@ -531,7 +531,7 @@ public class Constables {
     public Object foldMethodInvocation(final JCMethodInvocation tree, final Env<AttrContext> env) {
         Symbol msym = TreeInfo.symbol(tree.meth);
         Object constant = null;
-        boolean trackableConstant = msym.attribute(syms.trackableConstantType.tsym) != null &&
+        boolean trackableConstant = msym.attribute(syms.foldableType.tsym) != null &&
                 msym.packge().modle == syms.java_base;
         boolean isLDC = msym.owner.type.tsym == syms.intrinsicsType.tsym && msym.name == names.ldc;
         if (trackableConstant || isLDC) {

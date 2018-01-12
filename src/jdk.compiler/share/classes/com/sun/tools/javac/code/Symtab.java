@@ -174,7 +174,7 @@ public class Symtab {
     public final Type dynamicConstantRefType;
     public final Type intrinsicsType;
     public final Type methodTypeType;
-    public final Type trackableConstantType;
+    public final Type foldableType;
     public final Type nativeHeaderType;
     public final Type throwableType;
     public final Type errorType;
@@ -501,7 +501,7 @@ public class Symtab {
         dynamicConstantRefType = enterClass("java.lang.sym.DynamicConstantRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
-        trackableConstantType = enterClass("java.lang.annotation.Foldable");
+        foldableType = enterClass("java.lang.annotation.Foldable");
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");
