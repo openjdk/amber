@@ -140,7 +140,8 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitBreak(BreakTree node, P p) {
         JCBreak t = (JCBreak) node;
-        return M.at(t.pos).Break(t.label);
+        JCExpression value = copy(t.value, p);
+        return M.at(t.pos).Break(value);
     }
 
     @DefinedBy(Api.COMPILER_TREE)
@@ -155,8 +156,9 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     public JCTree visitCaseExpression(CaseExpressionTree node, P p) {
         JCCaseExpression t = (JCCaseExpression) node;
         JCExpression pat = copy(t.pat, p);
-        JCTree expr = copy(t.expr, p);
-        return M.at(t.pos).CaseExpression(pat, expr);
+        List<JCStatement> stats = copy(t.stats, p);
+        JCExpression value = copy(t.value, p);
+        return M.at(t.pos).CaseExpression(pat, stats, value);
     }
 
     @DefinedBy(Api.COMPILER_TREE)

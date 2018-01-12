@@ -49,4 +49,10 @@ public interface BreakTree extends StatementTree {
      * @return the label
      */
     Name getLabel();
+
+    /**
+     * Returns the expression for this {@code break} statement.
+     * @return the expression
+     */
+    ExpressionTree getValue();
 }

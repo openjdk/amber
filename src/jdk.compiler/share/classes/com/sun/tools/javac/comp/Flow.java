@@ -646,7 +646,10 @@ public class Flow {
                         constants.remove(((JCIdent) c.pat).name);
                     }
                 }
-                scanStat(c.expr);
+                if (c.stats != null)
+                    scanStats(c.stats);
+                if (c.value != null)
+                    scanStat(c.value);
             }
             if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);
@@ -720,6 +723,8 @@ public class Flow {
         }
 
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new PendingExit(tree));
         }
 
@@ -1093,6 +1098,21 @@ public class Flow {
             resolveBreaks(tree, prevPendingExits);
         }
 
+        @Override
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            ListBuffer<FlowPendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+            scan(tree.selector);
+            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                JCCaseExpression c = l.head;
+                if (c.pat != null) {
+                    scan(c.pat);
+                }
+                scan(c.stats);
+            }
+            resolveBreaks(tree, prevPendingExits);
+        }
+
         public void visitTry(JCTry tree) {
             List<Type> caughtPrev = caught;
             List<Type> thrownPrev = thrown;
@@ -1233,6 +1253,8 @@ public class Flow {
             }
 
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new FlowPendingExit(tree, null));
         }
 
@@ -2182,6 +2204,46 @@ public class Flow {
             resolveBreaks(tree, prevPendingExits);
             nextadr = nextadrPrev;
         }
+
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            ListBuffer<AssignPendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+            int nextadrPrev = nextadr;
+            scanExpr(tree.selector);
+            final Bits initsSwitch = new Bits(inits);
+            final Bits uninitsSwitch = new Bits(uninits);
+            boolean hasDefault = false;
+            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                inits.assign(initsSwitch);
+                uninits.assign(uninits.andSet(uninitsSwitch));
+                JCCaseExpression c = l.head;
+                if (c.pat == null) {
+                    hasDefault = true;
+                } else {
+                    scanExpr(c.pat);
+                }
+                if (hasDefault) {
+                    inits.assign(initsSwitch);
+                    uninits.assign(uninits.andSet(uninitsSwitch));
+                }
+                if (c.stats != null) {
+                    scan(c.stats);
+                    addVars(c.stats, initsSwitch, uninitsSwitch);
+                } else {
+                    scan(c.value);
+                }
+                if (!hasDefault) {
+                    inits.assign(initsSwitch);
+                    uninits.assign(uninits.andSet(uninitsSwitch));
+                }
+                // Warn about fall-through if lint switch fallthrough enabled.
+            }
+            if (!hasDefault) {
+                inits.andSet(initsSwitch);
+            }
+            resolveBreaks(tree, prevPendingExits);
+            nextadr = nextadrPrev;
+        }
         // where
             /** Add any variables defined in stats to inits and uninits. */
             private void addVars(List<JCStatement> stats, final Bits inits,
@@ -2344,6 +2406,8 @@ public class Flow {
 
         @Override
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new AssignPendingExit(tree, inits, uninits));
         }
 
@@ -2716,6 +2780,12 @@ public class Flow {
                 }
             }
             super.visitTry(tree);
+        }
+
+        @Override
+        public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
         }
 
         public void visitModuleDef(JCModuleDecl tree) {

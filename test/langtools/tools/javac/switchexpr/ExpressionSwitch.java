@@ -39,7 +39,8 @@ public class ExpressionSwitch {
         check(T.A, "A");
         check(T.B, "B");
         check(T.C, "other");
-        exhaustive(T.C);
+        exhaustive1(T.C);
+        exhaustive2(null);
     }
 
     private String print(T t) {
@@ -47,16 +48,26 @@ public class ExpressionSwitch {
             case null -> "NULL";
             case A -> "A";
             case B -> "B";
-            default -> "other";
+            default: break "other";
         };
     }
 
-    private String exhaustive(T t) {
+    private String exhaustive1(T t) {
         return switch (t) {
             case A -> "A";
             case B -> "B";
             case C -> "C";
-            case D -> "D";
+            case D: break "D";
+        };
+    }
+
+    private String exhaustive2(T t) {
+        return switch (t) {
+            case null -> "NULL";
+            case A -> "A";
+            case B -> "B";
+            case C -> "C";
+            case D: break "D";
         };
     }
 

@@ -1310,10 +1310,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      */
     public static class JCCaseExpression extends JCExpression implements CaseExpressionTree {
         public JCExpression pat;
-        public JCTree expr;
-        protected JCCaseExpression(JCExpression pat, JCTree expr) {
+        public List<JCStatement> stats;
+        public JCExpression value;
+        protected JCCaseExpression(JCExpression pat, List<JCStatement> stats, JCExpression value) {
             this.pat = pat;
-            this.expr = expr;
+            this.stats = stats;
+            this.value = value;
         }
         @Override
         public void accept(Visitor v) { v.visitCaseExpression(this); }
@@ -1323,9 +1325,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @DefinedBy(Api.COMPILER_TREE)
         public JCExpression getExpression() { return pat; }
         @DefinedBy(Api.COMPILER_TREE)
-        public JCTree getBody() {
-            return expr;
-        }
+        public List<JCStatement> getStatements() { return stats; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getValue() { return value; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
             return v.visitCaseExpression(this, d);
@@ -1559,19 +1561,27 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A break from a loop or switch.
      */
     public static class JCBreak extends JCStatement implements BreakTree {
-        public Name label;
+        public JCExpression value; //TODO: should be expr?
         public JCTree target;
-        protected JCBreak(Name label, JCTree target) {
-            this.label = label;
+        protected JCBreak(JCExpression value, JCTree target) {
+            this.value = value;
             this.target = target;
         }
         @Override
         public void accept(Visitor v) { v.visitBreak(this); }
+        public boolean isValueBreak() {
+            return target != null && target.hasTag(SWITCH_EXPRESSIOM);
+        }
 
         @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.BREAK; }
         @DefinedBy(Api.COMPILER_TREE)
-        public Name getLabel() { return label; }
+        public Name getLabel() {
+            //TODO: OK for compatibility?
+            return value.getKind() == Kind.IDENTIFIER ? ((JCIdent) value).getName() : null;
+        }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getValue() { return value; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
             return v.visitBreak(this, d);
@@ -3082,7 +3092,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                                 JCExpression elsepart);
         JCIf If(JCExpression cond, JCStatement thenpart, JCStatement elsepart);
         JCExpressionStatement Exec(JCExpression expr);
-        JCBreak Break(Name label);
+        JCBreak Break(JCExpression value);
         JCContinue Continue(Name label);
         JCReturn Return(JCExpression expr);
         JCThrow Throw(JCExpression expr);

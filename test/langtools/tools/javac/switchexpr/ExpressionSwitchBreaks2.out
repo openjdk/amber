@@ -1,0 +1,6 @@
+ExpressionSwitchBreaks2.java:37:25: compiler.err.break.missing.value
+ExpressionSwitchBreaks2.java:39:25: compiler.err.break.outside.switch.expression
+ExpressionSwitchBreaks2.java:43:37: compiler.err.break.ambiguous.target: x
+ExpressionSwitchBreaks2.java:49:17: compiler.err.break.complex.value.no.switch.expression
+ExpressionSwitchBreaks2.java:49:29: compiler.err.cant.resolve.location: kindname.variable, undef, , , (compiler.misc.location: kindname.class, ExpressionSwitchBreaks2, null)
+5 errors

@@ -781,7 +781,7 @@ public class DPrinter {
 
         @Override
         public void visitBreak(JCBreak tree) {
-            printName("label", tree.label);
+            printTree("value", tree.value);
         }
 
         @Override

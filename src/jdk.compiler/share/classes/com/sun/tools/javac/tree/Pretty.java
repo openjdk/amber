@@ -856,11 +856,16 @@ public class Pretty extends JCTree.Visitor {
                 print("case ");
                 printExpr(tree.pat);
             }
-            print(" -> ");
-            println();
-            indent();
-            printExpr(tree.expr);
-            undent();
+            if (tree.stats != null) {
+                print(":");
+                println();
+                indent();
+                printStats(tree.stats);
+                undent();
+            } else {
+                print(" -> ");
+                printExpr(tree.value);
+            }
             align();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -971,7 +976,7 @@ public class Pretty extends JCTree.Visitor {
     public void visitBreak(JCBreak tree) {
         try {
             print("break");
-            if (tree.label != null) print(" " + tree.label);
+            if (tree.value != null) print(" " + tree.value);
             print(";");
         } catch (IOException e) {
             throw new UncheckedIOException(e);

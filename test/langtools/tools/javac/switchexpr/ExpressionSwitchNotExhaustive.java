@@ -15,6 +15,20 @@ public class ExpressionSwitchNotExhaustive {
             case A -> "42";
         };
     }
+    private String f(int i, E e) {
+        return switch (i) {
+            case 0:
+                String s;
+                switch (e) {
+                    case A:
+                        s = "42";
+                        break;
+                }
+                break s;
+            default:
+                break "43";
+        };
+    }
     enum E {
         A, B;
     }

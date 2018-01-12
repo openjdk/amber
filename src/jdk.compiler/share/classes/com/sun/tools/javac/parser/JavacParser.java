@@ -1383,16 +1383,25 @@ public class JavacParser implements Parser {
                     accept(CASE);
                     pat = term(EXPR | NOLAMBDA);
                 }
-                accept(ARROW);
-                JCTree caseExpr;
-                if (token.kind == LBRACE) {
-                    caseExpr = block();
-                } else {
-                    caseExpr = parseExpression();
-                    accept(SEMI);
+                JCExpression value = null;
+                List<JCStatement> stats = null;
+                switch (token.kind) {
+                    case ARROW:
+                        nextToken();
+                        if (token.kind == TokenKind.THROW) {
+                            //TODO: record the arrow used?
+                            stats = List.of(parseStatement());
+                        } else {
+                            value = parseExpression();
+                            accept(SEMI);
+                        }
+                        break;
+                    case COLON:
+                        nextToken();
+                        stats = blockStatements();
+                        break;
                 }
-
-                caseExprs.append(F.at(token.pos/*XXX*/).CaseExpression(pat, caseExpr));
+                caseExprs.append(F.at(token.pos/*XXX*/).CaseExpression(pat, stats, value));
             }
 
             nextToken();
@@ -2583,9 +2592,9 @@ public class JavacParser implements Parser {
         }
         case BREAK: {
             nextToken();
-            Name label = LAX_IDENTIFIER.accepts(token.kind) ? ident() : null;
+            JCExpression value = token.kind == SEMI ? null : parseExpression();
             accept(SEMI);
-            JCBreak t = toP(F.at(pos).Break(label));
+            JCBreak t = toP(F.at(pos).Break(value));
             return t;
         }
         case CONTINUE: {

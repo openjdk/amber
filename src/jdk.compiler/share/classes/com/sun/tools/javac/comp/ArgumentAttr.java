@@ -75,6 +75,8 @@ import static com.sun.tools.javac.code.TypeTag.DEFERRED;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
+import com.sun.tools.javac.comp.DeferredAttr.SwitchExpressionScanner;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCaseExpression;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 
@@ -464,6 +466,9 @@ public class ArgumentAttr extends JCTree.Visitor {
      * Argument type for switch expressions.
      */
     class SwitchExpressionType extends ArgumentType<JCSwitchExpression> {
+        /** List of break expressions (lazily populated). */
+        Optional<List<JCBreak>> breakExpressions = Optional.empty();
+
         SwitchExpressionType(JCExpression tree, Env<AttrContext> env, JCSwitchExpression speculativeCond) {
             this(tree, env, speculativeCond, new HashMap<>());
         }
@@ -485,10 +490,33 @@ public class ArgumentAttr extends JCTree.Visitor {
             } else {
                 //poly
                 for (JCCaseExpression c : speculativeTree.cases) {
-                    checkSpeculative(c.expr, localInfo);
+                    if (c.stats != null) {
+                        for (JCBreak brk : breakExpressions()) {
+                            checkSpeculative(brk.value, brk.value.type, resultInfo);
+                        }
+                    } else {
+                        checkSpeculative(c.value, localInfo);
+                    }
                 }
                 return localInfo.pt;
             }
+        }
+
+        /** Compute return expressions (if needed). */
+        List<JCBreak> breakExpressions() {
+            return breakExpressions.orElseGet(() -> {
+                final List<JCBreak> res;
+                ListBuffer<JCBreak> buf = new ListBuffer<>();
+                new SwitchExpressionScanner() {
+                    @Override
+                    public void visitBreak(JCBreak tree) {
+                        buf.add(tree);
+                    }
+                }.scan(speculativeTree.cases);
+                res = buf.toList();
+                breakExpressions = Optional.of(res);
+                return res;
+            });
         }
 
         @Override

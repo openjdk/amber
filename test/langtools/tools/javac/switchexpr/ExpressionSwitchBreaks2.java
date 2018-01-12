@@ -23,28 +23,32 @@
 
 /**
  * @test
- * @compile BlockExpression.java
- * @run main BlockExpression
+ * @compile/fail/ref=ExpressionSwitchBreaks2.out -XDrawDiagnostics ExpressionSwitchBreaks2.java
  */
 
-public class BlockExpression {
-
-    public static void main(String... args) {
-        T t = T.B;
-
-        try {
-            int ii = switch (t) {
-                case A -> 0;
-                default -> throw new IllegalStateException();
-            };
-            throw new AssertionError("Expected exception not thrown.");
-        } catch (IllegalStateException ex) {
-            //OK
+public class ExpressionSwitchBreaks2 {
+    private String print(int i, int j) {
+        OUTER: switch (i) {
+            case 0:
+                return switch (j) {
+                    case 0:
+                        break "0-0";
+                    case 1:
+                        break ; //error: missing value
+                    case 2:
+                        break OUTER; //error: jumping outside of the switch expression
+                    default: {
+                        String x = "X";
+                        x: switch (i + j) {
+                            case 0: break x; //error: cannot disambiguate
+                        }
+                        break "X";
+                    }
+                };
+            case 1:
+                break "1" + undef; //error: complex value and no switch expression
         }
-    }
-
-    enum T {
-        A, B;
+        return null;
     }
 
 }

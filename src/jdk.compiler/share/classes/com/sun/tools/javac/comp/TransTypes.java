@@ -629,7 +629,8 @@ public class TransTypes extends TreeTranslator {
 
     public void visitCaseExpression(JCCaseExpression tree) {
         tree.pat = translate(tree.pat, null);
-        tree.expr = translate(tree.expr);
+        tree.stats = translate(tree.stats);
+        tree.value = translate(tree.value);
         result = tree;
     }
 

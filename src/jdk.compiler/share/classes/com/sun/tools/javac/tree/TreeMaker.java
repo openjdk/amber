@@ -284,8 +284,8 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCaseExpression CaseExpression(JCExpression pat, JCTree expr) {
-        JCCaseExpression tree = new JCCaseExpression(pat, expr);
+    public JCCaseExpression CaseExpression(JCExpression pat, List<JCStatement> stats, JCExpression value) {
+        JCCaseExpression tree = new JCCaseExpression(pat, stats, value);
         tree.pos = pos;
         return tree;
     }
@@ -336,7 +336,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCBreak Break(Name label) {
+    public JCBreak Break(JCExpression label) {
         JCBreak tree = new JCBreak(label, null);
         tree.pos = pos;
         return tree;

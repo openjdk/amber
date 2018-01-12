@@ -367,6 +367,13 @@ public class Lower extends TreeTranslator {
             }
             super.visitApply(tree);
         }
+
+        @Override
+        public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
+        }
+        
     }
 
     ClassSymbol ownerToCopyFreeVarsFrom(ClassSymbol c) {
@@ -3990,38 +3997,51 @@ public class Lower extends TreeTranslator {
 
         stmtList.append(make.at(tree.pos()).VarDef(dollar_switchexpr, null).setType(dollar_switchexpr.type));
         JCSwitch switchStatement = make.Switch(tree.selector, null);
-        switchStatement.cases = tree.cases.stream().map(c -> convertCase(dollar_switchexpr, switchStatement, c)).collect(List.collector());
+        switchStatement.cases = tree.cases.stream().map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c)).collect(List.collector());
         if (tree.cases.stream().noneMatch(c -> c.pat == null)) {
             JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType, List.nil()));
-            switchStatement.cases = switchStatement.cases.prepend(make.Case(null, List.of(thr)));
+            switchStatement.cases = switchStatement.cases.append(make.Case(null, List.of(thr)));
         }
         stmtList.append(translate(switchStatement));
 
         result = make.LetExpr(stmtList.toList(), make.Ident(dollar_switchexpr)).setType(dollar_switchexpr.type);
     }
         //where:
-        private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement, JCCaseExpression c) {
+        private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement, JCSwitchExpression switchExpr, JCCaseExpression c) {
             make.at(c.pos());
             ListBuffer<JCStatement> statements = new ListBuffer<>();
-            if (c.expr.hasTag(Tag.BLOCK)) {
+            if (c.stats != null) {
                 statements.addAll(new TreeTranslator() {
-                    @Override
-                    public void visitReturn(JCReturn tree) {
-                        result = make.Exec(make.Assign(make.Ident(dollar_switchexpr), tree.expr).setType(tree.expr.type));
-                    }
                     @Override
                     public void visitLambda(JCLambda tree) {}
                     @Override
                     public void visitClassDef(JCClassDecl tree) {}
                     @Override
                     public void visitMethodDef(JCMethodDecl tree) {}
-                }.translate(((JCBlock) c.expr).stats));
+                    @SuppressWarnings("unchecked")
+                    public <T extends JCTree> List<T> translate(List<T> trees) {
+                        if (trees == null) return null;
+                        ListBuffer<T> result = new ListBuffer<>();
+                        for (List<T> l = trees; l.nonEmpty(); l = l.tail) {
+                            if (l.head.hasTag(BREAK) && ((JCBreak) l.head).target == switchExpr) {
+                                JCBreak tree = (JCBreak) l.head;
+                                tree.target = switchStatement;
+                                result.append((T) make.Exec(make.Assign(make.Ident(dollar_switchexpr), translate(tree.value)).setType(dollar_switchexpr.type)));
+                                result.append((T) tree);
+                                tree.value = null;
+                            } else {
+                                result.append(translate(l.head));
+                            }
+                        }
+                        return result.toList();
+                    }
+                }.translate(c.stats));
             } else {
-                statements.add(make.Exec(make.Assign(make.Ident(dollar_switchexpr), (JCExpression) c.expr).setType(dollar_switchexpr.type)));
+                statements.add(make.Exec(make.Assign(make.Ident(dollar_switchexpr), c.value).setType(dollar_switchexpr.type)));
+                JCBreak brk = make.Break(null);
+                brk.target = switchStatement;
+                statements.add(brk);
             }
-            JCBreak brk = make.Break(null);
-            brk.target = switchStatement;
-            statements.add(brk);
             return make.Case(c.pat, statements.toList());
         }
 

@@ -371,7 +371,8 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
     @Override
     public R visitCaseExpression(CaseExpressionTree node, P p) {
         R r = scan(node.getExpression(), p);
-        r = scanAndReduce(node.getBody(), p, r);
+        r = scanAndReduce(node.getStatements(), p, r);
+        r = scanAndReduce(node.getValue(), p, r);
         return r;
     }
 
@@ -470,7 +471,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      */
     @Override
     public R visitBreak(BreakTree node, P p) {
-        return null;
+        return scan(node.getValue(), p);
     }
 
     /**

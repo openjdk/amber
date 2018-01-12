@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import java.util.List;
+
 /**
  * TODO
  */
@@ -41,5 +43,12 @@ public interface CaseExpressionTree extends Tree {
      * TODO
      * @return TODO.
      */
-    Tree getBody();
+    public List<? extends StatementTree> getStatements();
+
+    /**
+     * TODO
+     * @return TODO.
+     */
+    public ExpressionTree getValue();
+
 }
