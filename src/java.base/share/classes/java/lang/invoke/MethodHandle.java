@@ -1713,6 +1713,7 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     /** Craft a LambdaForm customized for this particular MethodHandle */
     /*non-public*/
     void customize() {
+        final LambdaForm form = this.form;
         if (form.customized == null) {
             LambdaForm newForm = form.customize(this);
             updateForm(newForm);
