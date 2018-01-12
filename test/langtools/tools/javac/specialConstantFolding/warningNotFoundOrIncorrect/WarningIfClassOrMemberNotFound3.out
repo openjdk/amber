@@ -1,0 +1,6 @@
+WarningIfClassOrMemberNotFound3.java:18:23: compiler.warn.member.not.found.at.class: <init>, class, I
+WarningIfClassOrMemberNotFound3.java:23:23: compiler.warn.member.not.found.at.class: strField, class, I
+WarningIfClassOrMemberNotFound3.java:28:23: compiler.warn.member.not.found.at.class: strField, class, I
+- compiler.err.warnings.and.werror
+1 error
+3 warnings

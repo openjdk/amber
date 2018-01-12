@@ -417,24 +417,66 @@ public class Constables {
             case ClassFile.REF_invokeSpecial:
             case ClassFile.REF_invokeInterface:
                 if (refKind == ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) == 0) {
-                    // we need a new owner for the symbol
-                    ClassSymbol newOwner = new ClassSymbol(owner.flags_field | Flags.INTERFACE, owner.name, syms.noSymbol);
-                    Symbol newMS = new MethodSymbol(flags, symbolName, methodType, newOwner);
-                    newOwner.members_field = WriteableScope.create(newOwner);
-                    newOwner.members_field.enter(newMS);
-                    return newMS;
+                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, true);
+                }
+                if (refKind != ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) != 0) {
+                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
+                }
+                if (refKind == ClassFile.REF_newInvokeSpecial && (owner.flags_field & INTERFACE) != 0) {
+                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
                 }
                 return new MethodSymbol(flags, symbolName, methodType, owner);
             case ClassFile.REF_putField:
+                if ((owner.flags_field & INTERFACE) != 0) {
+                    return generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                }
                 return new VarSymbol(flags, symbolName, methodType.argtypes.tail.head, owner);
             case ClassFile.REF_putStatic:
                 return new VarSymbol(flags, symbolName, methodType.argtypes.head, owner);
             case ClassFile.REF_getField:
             case ClassFile.REF_getStatic:
+                if (refKind == ClassFile.REF_getField && (owner.flags_field & INTERFACE) != 0) {
+                    return generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                }
                 return new VarSymbol(flags, symbolName, methodType.restype, owner);
             default:
                 throw new AssertionError("invalid refKind value " + refKind);
         }
+    }
+
+    private Symbol generateMethodSymbolHelper(
+            Symbol currentOwner,
+            Name symbolName,
+            MethodType methodType,
+            long flags,
+            boolean shouldBeInterface) {
+        ClassSymbol newOwner = createNewOwner(currentOwner, shouldBeInterface);
+        Symbol newMS = new MethodSymbol(flags, symbolName, methodType, newOwner);
+        newOwner.members_field.enter(newMS);
+        return newMS;
+    }
+
+    private ClassSymbol createNewOwner(Symbol currentOwner,
+            boolean shouldBeInterface) {
+        long newFlags = shouldBeInterface ?
+                currentOwner.flags_field | Flags.INTERFACE :
+                currentOwner.flags_field & ~Flags.INTERFACE;
+        ClassSymbol newOwner = new ClassSymbol(newFlags,
+                currentOwner.name, syms.noSymbol);
+        newOwner.members_field = WriteableScope.create(newOwner);
+        return newOwner;
+    }
+
+    private Symbol generateVarSymbolHelper(
+            Symbol currentOwner,
+            Name symbolName,
+            MethodType methodType,
+            long flags,
+            boolean shouldBeInterface) {
+        ClassSymbol newOwner = createNewOwner(currentOwner, shouldBeInterface);
+        Symbol newVS = new VarSymbol(flags, symbolName, methodType.restype, newOwner);
+        newOwner.members_field.enter(newVS);
+        return newVS;
     }
 
     public Object invokeMethodReflectively(
