@@ -1384,8 +1384,8 @@ public class JavacParser implements Parser {
                     accept(CASE);
                     while (true) {
                         pat = term(EXPR | NOLAMBDA);
-                        if (token.kind == COLON || token.kind == ARROW) break;
-                        accept(COMMA);
+                        if (token.kind != COMMA) break;
+                        nextToken();
                         caseExprs.append(toP(F.at(pos).CaseExpression(pat, List.nil(), null)));
                     };
                 }
@@ -1402,8 +1402,8 @@ public class JavacParser implements Parser {
                             accept(SEMI);
                         }
                         break;
-                    case COLON:
-                        nextToken();
+                    default:
+                        accept(COLON);
                         stats = blockStatements();
                         break;
                 }
@@ -2718,8 +2718,8 @@ public class JavacParser implements Parser {
             JCExpression pat;
             while (true) {
                 pat = parseExpression();
-                if (token.kind == COLON) break;
-                accept(COMMA);
+                if (token.kind != COMMA) break;
+                nextToken();
                 c = F.at(pos).Case(pat, List.nil());
                 storeEnd(c, S.prevToken().endPos);
                 cases.append(c);
