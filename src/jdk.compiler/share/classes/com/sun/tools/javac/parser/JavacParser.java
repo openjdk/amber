@@ -1374,6 +1374,7 @@ public class JavacParser implements Parser {
             accept(LBRACE);
             ListBuffer<JCCaseExpression> caseExprs = new ListBuffer<>();
             while (token.kind != RBRACE) {
+                int casePos = token.pos;
                 JCExpression pat;
 
                 if (token.kind == DEFAULT) {
@@ -1381,7 +1382,12 @@ public class JavacParser implements Parser {
                     pat = null;
                 } else {
                     accept(CASE);
-                    pat = term(EXPR | NOLAMBDA);
+                    while (true) {
+                        pat = term(EXPR | NOLAMBDA);
+                        if (token.kind == COLON || token.kind == ARROW) break;
+                        accept(COMMA);
+                        caseExprs.append(toP(F.at(pos).CaseExpression(pat, List.nil(), null)));
+                    };
                 }
                 JCExpression value = null;
                 List<JCStatement> stats = null;
@@ -1401,7 +1407,7 @@ public class JavacParser implements Parser {
                         stats = blockStatements();
                         break;
                 }
-                caseExprs.append(F.at(token.pos/*XXX*/).CaseExpression(pat, stats, value));
+                caseExprs.append(F.at(casePos).CaseExpression(pat, stats, value));
             }
 
             nextToken();

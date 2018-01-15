@@ -1,5 +1,5 @@
 /**
- * @test
+ * @test /nodynamiccopyright/
  * @compile/fail/ref=SwitchNullNegative.out -XDrawDiagnostics SwitchNullNegative.java
  */
 

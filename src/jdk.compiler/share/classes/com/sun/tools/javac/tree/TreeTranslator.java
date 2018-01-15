@@ -95,6 +95,14 @@ public class TreeTranslator extends JCTree.Visitor {
         return trees;
     }
 
+    /**  Visitor method: translate a list of case parts of switch statements.
+     */
+    public List<JCCaseExpression> translateCaseExpressions(List<JCCaseExpression> trees) {
+        for (List<JCCaseExpression> l = trees; l.nonEmpty(); l = l.tail)
+            l.head = translate(l.head);
+        return trees;
+    }
+
     /**  Visitor method: translate a list of catch clauses in try statements.
      */
     public List<JCCatch> translateCatchers(List<JCCatch> trees) {
@@ -209,6 +217,19 @@ public class TreeTranslator extends JCTree.Visitor {
     public void visitCase(JCCase tree) {
         tree.pat = translate(tree.pat);
         tree.stats = translate(tree.stats);
+        result = tree;
+    }
+
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        tree.selector = translate(tree.selector);
+        tree.cases = translateCaseExpressions(tree.cases);
+        result = tree;
+    }
+
+    public void visitCaseExpression(JCCaseExpression tree) {
+        tree.pat = translate(tree.pat);
+        tree.stats = translate(tree.stats);
+        tree.value = translate(tree.value);
         result = tree;
     }
 
