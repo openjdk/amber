@@ -1386,7 +1386,7 @@ public class JavacParser implements Parser {
                         pat = term(EXPR | NOLAMBDA);
                         if (token.kind != COMMA) break;
                         nextToken();
-                        caseExprs.append(toP(F.at(pos).CaseExpression(pat, List.nil(), null)));
+                        caseExprs.append(toP(F.at(casePos).CaseExpression(pat, List.nil(), null)));
                     };
                 }
                 JCExpression value = null;
@@ -1407,11 +1407,11 @@ public class JavacParser implements Parser {
                         stats = blockStatements();
                         break;
                 }
-                caseExprs.append(F.at(casePos).CaseExpression(pat, stats, value));
+                caseExprs.append(toP(F.at(casePos).CaseExpression(pat, stats, value)));
             }
 
-            nextToken();
-            return F.at(switchPos).SwitchExpression(selector, caseExprs.toList());
+            accept(RBRACE);
+            return toP(F.at(switchPos).SwitchExpression(selector, caseExprs.toList()));
         default:
             return illegal();
         }
