@@ -1373,49 +1373,67 @@ public class JavacParser implements Parser {
             JCExpression selector = parExpression();
             accept(LBRACE);
             ListBuffer<JCCaseExpression> caseExprs = new ListBuffer<>();
-            while (token.kind != RBRACE) {
-                int casePos = token.pos;
-                JCExpression pat;
-
-                if (token.kind == DEFAULT) {
-                    nextToken();
-                    pat = null;
-                } else {
-                    accept(CASE);
-                    while (true) {
-                        pat = term(EXPR | NOLAMBDA);
-                        if (token.kind != COMMA) break;
-                        nextToken();
-                        caseExprs.append(toP(F.at(casePos).CaseExpression(pat, List.nil(), null)));
-                    };
-                }
-                JCExpression value = null;
-                List<JCStatement> stats = null;
+            while (true) {
+                pos = token.pos;
                 switch (token.kind) {
-                    case ARROW:
-                        nextToken();
-                        if (token.kind == TokenKind.THROW) {
-                            //TODO: record the arrow used?
-                            stats = List.of(parseStatement());
-                        } else {
-                            value = parseExpression();
-                            accept(SEMI);
-                        }
-                        break;
-                    default:
-                        accept(COLON);
-                        stats = blockStatements();
-                        break;
+                case CASE:
+                case DEFAULT:
+                    caseExprs.appendList(switchExpressionStatementGroup());
+                    break;
+                case RBRACE: case EOF:
+                    JCSwitchExpression e = to(F.at(switchPos).SwitchExpression(selector,
+                                                                               caseExprs.toList()));
+                    accept(RBRACE);
+                    return e;
+                default:
+                    nextToken(); // to ensure progress
+                    syntaxError(pos, "expected3",
+                        CASE, DEFAULT, RBRACE);
                 }
-                caseExprs.append(toP(F.at(casePos).CaseExpression(pat, stats, value)));
             }
-
-            accept(RBRACE);
-            return toP(F.at(switchPos).SwitchExpression(selector, caseExprs.toList()));
         default:
             return illegal();
         }
         return term3Rest(t, typeArgs);
+    }
+
+    private List<JCCaseExpression> switchExpressionStatementGroup() {
+        ListBuffer<JCCaseExpression> caseExprs = new ListBuffer<>();
+        int casePos = token.pos;
+        JCExpression pat;
+
+        if (token.kind == DEFAULT) {
+            nextToken();
+            pat = null;
+        } else {
+            accept(CASE);
+            while (true) {
+                pat = term(EXPR | NOLAMBDA);
+                if (token.kind != COMMA) break;
+                nextToken();
+                caseExprs.append(toP(F.at(casePos).CaseExpression(pat, List.nil(), null)));
+            };
+        }
+        JCExpression value = null;
+        List<JCStatement> stats = null;
+        switch (token.kind) {
+            case ARROW:
+                nextToken();
+                if (token.kind == TokenKind.THROW) {
+                    //TODO: record the arrow used?
+                    stats = List.of(parseStatement());
+                } else {
+                    value = parseExpression();
+                    accept(SEMI);
+                }
+                break;
+            default:
+                accept(COLON);
+                stats = blockStatements();
+                break;
+        }
+        caseExprs.append(toP(F.at(casePos).CaseExpression(pat, stats, value)));
+        return caseExprs.toList();
     }
 
     JCExpression term3Rest(JCExpression t, List<JCExpression> typeArgs) {
