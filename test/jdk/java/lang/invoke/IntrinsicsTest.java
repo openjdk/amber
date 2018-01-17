@@ -74,13 +74,13 @@ public class IntrinsicsTest {
         SymbolicRef<String> s = "foo";
         assertEquals("foo", Intrinsics.ldc(s));
 
-        // @@@ Boxing should preserve IC-ness
+        // Boxing should preserve IC-ness
         SymbolicRef<Integer> i = (Integer) 3;
         assertEquals(3, (int) Intrinsics.ldc(i));
     }
 
     public void testPropagateThroughField() {
-        // @@@ Do we want instance fields treated as constants in this story?
+        // Instance and static fields both
 
         assertEquals(String.class, Intrinsics.ldc(staticField));
         assertEquals(String.class, Intrinsics.ldc(instanceField));
