@@ -23,6 +23,7 @@
  * questions.
  */
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.sym.ClassRef;
@@ -190,17 +191,17 @@ public class IntrinsifiedRefTest {
     public void testLdcMethodHandleFromInner() throws Throwable {
         TestClass.ldcMethodHandleFromInner();
         TestClass.negLdcMethodHandleFromInner();
+        TestInterface.testLdcMethodHandleFromIntf();
     }
 
     public void testLdcMethodHandle() throws Throwable {
         TestClass instance = (TestClass) ldc(MHR_TESTCLASS_CTOR).invokeExact();
-        TestInterface instanceI = instance;
 
         assertEquals(5, (int) ldc(MHR_TESTCLASS_SM).invokeExact(5));
         assertEquals(0, (int) ldc(MHR_TESTINTF_SM).invokeExact(5));
 
         assertEquals(5, (int) ldc(MHR_TESTCLASS_M).invokeExact(instance, 5));
-        assertEquals(5, (int) ldc(MHR_TESTINTF_M).invokeExact(instanceI, 5));
+        assertEquals(5, (int) ldc(MHR_TESTINTF_M).invokeExact(instance, 5));
 
         ldc(MHR_TESTCLASS_SF_SETTER).invokeExact(8);
         assertEquals(TestClass.sf, 8);
@@ -231,21 +232,58 @@ public class IntrinsifiedRefTest {
         MethodHandleRef staticMethodAsVirtual = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "sm", MethodTypeRef.ofDescriptor("(I)I"));
         MethodHandleRef staticMethodAsIntf = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CR_TESTINTF, "sm", MethodTypeRef.ofDescriptor("(I)I"));
 
-// @@@       assertIntrinsicFail(intfMethodAsVirtual, () -> ldc(intfMethodAsVirtual), IncompatibleClassChangeError.class);
+        assertIntrinsicFail(intfMethodAsVirtual, () -> ldc(intfMethodAsVirtual), IncompatibleClassChangeError.class);
         assertIntrinsicFail(intfMethodAsStatic, () -> ldc(intfMethodAsStatic), IncompatibleClassChangeError.class);
-// @@@       assertIntrinsicFail(virtualMethodAsIntf, () -> ldc(virtualMethodAsIntf), IncompatibleClassChangeError.class);
+        assertIntrinsicFail(virtualMethodAsIntf, () -> ldc(virtualMethodAsIntf), IncompatibleClassChangeError.class);
         assertIntrinsicFail(virtualMethodAsStatic, () -> ldc(virtualMethodAsStatic), IncompatibleClassChangeError.class);
         assertIntrinsicFail(staticMethodAsVirtual, () -> ldc(staticMethodAsVirtual), IncompatibleClassChangeError.class);
         assertIntrinsicFail(staticMethodAsIntf, () -> ldc(staticMethodAsIntf), IncompatibleClassChangeError.class);
 
-        // Nonexistent owner
-        // Inaccessible owner
-        // Nonexistent method, ctor
-        // Inaccessible method, ctor
-        // Nonexistent field
         // Field kind mismatch -- instance/static
+        MethodHandleRef staticFieldAsInstance = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
+        MethodHandleRef instanceFieldAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "f", SymbolicRefs.CR_int);
+
+        assertIntrinsicFail(staticFieldAsInstance, () -> ldc(staticFieldAsInstance), IncompatibleClassChangeError.class);
+        assertIntrinsicFail(instanceFieldAsStatic, () -> ldc(instanceFieldAsStatic), IncompatibleClassChangeError.class);
+
         // Setter for final field
+        MethodHandleRef finalStaticSetter = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", SymbolicRefs.CR_int);
+        MethodHandleRef finalSetter = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", SymbolicRefs.CR_int);
+
+        // @@@ assertIntrinsicFail(finalStaticSetter, () -> ldc(finalStaticSetter), IllegalAccessError.class);
+        // @@@ assertIntrinsicFail(finalSetter, () -> ldc(finalSetter), IllegalAccessError.class);
+
+        // Nonexistent owner
+        MethodHandleRef r1 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.of(NONEXISTENT_CLASS), "m", "()V");
+        assertIntrinsicFail(r1, () -> ldc(r1), NoClassDefFoundError.class);
+
+        // Inaccessible owner
+        MethodHandleRef r2 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.of(INACCESSIBLE_CLASS), "m", "()V");
+        assertIntrinsicFail(r2, () -> ldc(r2), IllegalAccessError.class);
+
+        // Nonexistent method, ctor, field
+        MethodHandleRef r3 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "nonexistent", "()V");
+        MethodHandleRef r4 = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "nonexistent", "()V");
+        MethodHandleRef r5 = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored>", "(I)V");
+        MethodHandleRef r6 = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r7 = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r8 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r9 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+
+        assertIntrinsicFail(r3, () -> ldc(r3), NoSuchMethodError.class);
+        assertIntrinsicFail(r4, () -> ldc(r4), NoSuchMethodError.class);
+        assertIntrinsicFail(r5, () -> ldc(r5), NoSuchMethodError.class);
+        assertIntrinsicFail(r6, () -> ldc(r6), NoSuchFieldError.class);
+// @@@       assertIntrinsicFail(r7, () -> ldc(r7), NoSuchFieldError.class);
+        assertIntrinsicFail(r8, () -> ldc(r8), NoSuchFieldError.class);
+// @@@       assertIntrinsicFail(r9, () -> ldc(r9), NoSuchFieldError.class);
     }
+
+    // Dynamic constants
+    // - null
+    // - primitive class
+    // negative tests for nonexistent/inaccessible bootstrap
+    // negative tests for bootstrap parameter mismatch
 
 
     private enum TestEnum {
@@ -257,8 +295,13 @@ public class IntrinsifiedRefTest {
 
         static int sm(int x) { return 0; }
         default int m(int x) { return 0; }
-        private int pm(int x) { return 0; }
-        private static int psm(int x) { return 0; }
+        private int pm(int x) { return 1; }
+        private static int psm(int x) { return 2; }
+
+        static void testLdcMethodHandleFromIntf() throws Throwable {
+            assertEquals(1, ldc(MHR_TESTINTF_PM_SPECIAL).invoke());
+            assertEquals(2, ldc(MHR_TESTINTF_PSM).invoke());
+        }
     }
 
     private static class TestSuperclass {
@@ -266,6 +309,9 @@ public class IntrinsifiedRefTest {
     }
 
     private static class TestClass extends TestSuperclass implements TestInterface {
+
+        static final int sff = 7;
+        static final int ff = 8;
 
         static int sf;
         int f;
@@ -278,6 +324,8 @@ public class IntrinsifiedRefTest {
         private int pm(int x) { return x; }
 
         private static void negLdcMethodHandleFromInner() {
+            // When we have nestmates, these will probably start succeeding,
+            // at which point we will need to find new negative tests for super-access.
             assertIntrinsicFail(MHR_TESTINTF_PM_SPECIAL, () -> ldc(MHR_TESTINTF_PM_SPECIAL), IllegalAccessError.class);
             assertIntrinsicFail(MHR_TESTINTF_PSM, () -> ldc(MHR_TESTINTF_PSM), IllegalAccessError.class);
         }
