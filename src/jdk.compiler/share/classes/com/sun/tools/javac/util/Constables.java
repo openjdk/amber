@@ -283,7 +283,7 @@ public class Constables {
             MethodType mType = (MethodType)descriptorToType(
                     methodTypeDesc, currentModule, true);
             // this method generates fake symbols as needed
-            Symbol refSymbol = getReferenceSymbol(refKind, ownerType.tsym, name, mType);
+            Symbol refSymbol = getReferenceSymbol(tree, refKind, ownerType.tsym, name, mType);
             boolean ownerFound = true;
             try {
                 refSymbol.owner.complete();
@@ -418,10 +418,11 @@ public class Constables {
         }
     }
 
-    private Symbol getReferenceSymbol(int refKind, Symbol owner, String name, MethodType methodType) {
+    private Symbol getReferenceSymbol(JCTree tree, int refKind, Symbol owner, String name, MethodType methodType) {
         long flags = refKind == ClassFile.REF_getStatic ||
                 refKind == ClassFile.REF_putStatic ||
                 refKind == ClassFile.REF_invokeStatic ? STATIC : 0;
+        flags |= Flags.PUBLIC;
         Name symbolName = refKind == ClassFile.REF_newInvokeSpecial ? names.init : names.fromString(name);
         boolean canHaveInterfaceOwner = canHaveInterfaceOwner(refKind);
         switch (refKind) {
@@ -431,15 +432,21 @@ public class Constables {
             case ClassFile.REF_invokeSpecial:
             case ClassFile.REF_invokeInterface:
                 if (refKind == ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) == 0) {
-                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, true);
+                    Symbol result = generateMethodSymbolHelper(owner, symbolName, methodType, flags, true);
+                    log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "interface", result.owner));
+                    return result;
                 }
                 if (!canHaveInterfaceOwner && (owner.flags_field & INTERFACE) != 0) {
-                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
+                    Symbol result = generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
+                    log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
+                    return result;
                 }
                 return new MethodSymbol(flags, symbolName, methodType, owner);
             case ClassFile.REF_putField:
                 if ((owner.flags_field & INTERFACE) != 0) {
-                    return generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    Symbol result = generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
+                    return result;
                 }
                 return new VarSymbol(flags, symbolName, methodType.argtypes.tail.head, owner);
             case ClassFile.REF_putStatic:
@@ -447,7 +454,9 @@ public class Constables {
             case ClassFile.REF_getField:
             case ClassFile.REF_getStatic:
                 if (refKind == ClassFile.REF_getField && (owner.flags_field & INTERFACE) != 0) {
-                    return generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    Symbol result = generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
+                    return result;
                 }
                 return new VarSymbol(flags, symbolName, methodType.restype, owner);
             default:
@@ -473,7 +482,7 @@ public class Constables {
                 currentOwner.flags_field | Flags.INTERFACE :
                 currentOwner.flags_field & ~Flags.INTERFACE;
         ClassSymbol newOwner = new ClassSymbol(newFlags,
-                currentOwner.name, syms.noSymbol);
+                currentOwner.name, currentOwner.owner);
         newOwner.members_field = WriteableScope.create(newOwner);
         return newOwner;
     }
