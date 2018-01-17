@@ -405,11 +405,25 @@ public class Constables {
     public Class<?> dynamicConstantClass;
     public Class<?> symRefs;
 
+    boolean canHaveInterfaceOwner(int refKind) {
+        switch (refKind) {
+            case ClassFile.REF_invokeStatic:
+            case ClassFile.REF_invokeSpecial:
+            case ClassFile.REF_invokeInterface:
+            case ClassFile.REF_getStatic:
+            case ClassFile.REF_putStatic:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private Symbol getReferenceSymbol(int refKind, Symbol owner, String name, MethodType methodType) {
         long flags = refKind == ClassFile.REF_getStatic ||
                 refKind == ClassFile.REF_putStatic ||
                 refKind == ClassFile.REF_invokeStatic ? STATIC : 0;
         Name symbolName = refKind == ClassFile.REF_newInvokeSpecial ? names.init : names.fromString(name);
+        boolean canHaveInterfaceOwner = canHaveInterfaceOwner(refKind);
         switch (refKind) {
             case ClassFile.REF_newInvokeSpecial :
             case ClassFile.REF_invokeVirtual:
@@ -419,10 +433,7 @@ public class Constables {
                 if (refKind == ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) == 0) {
                     return generateMethodSymbolHelper(owner, symbolName, methodType, flags, true);
                 }
-                if (refKind != ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) != 0) {
-                    return generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
-                }
-                if (refKind == ClassFile.REF_newInvokeSpecial && (owner.flags_field & INTERFACE) != 0) {
+                if (!canHaveInterfaceOwner && (owner.flags_field & INTERFACE) != 0) {
                     return generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
                 }
                 return new MethodSymbol(flags, symbolName, methodType, owner);
