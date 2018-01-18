@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -168,7 +168,7 @@ public class IntrinsifiedRefTest {
 
     public void negLdcEnum() throws ReflectiveOperationException {
         EnumRef<TestEnum> enr1 = EnumRef.of(CR_TESTENUM, "C");
-//        assertIntrinsicFail(enr1, () -> ldc(enr1), NoClassDefFoundError.class);
+        assertIntrinsicFail(enr1, () -> ldc(enr1), NoClassDefFoundError.class);
 
         EnumRef<TestEnum> enr2 = EnumRef.of(ClassRef.of(NONEXISTENT_CLASS), "A");
         assertIntrinsicFail(enr2, () -> ldc(enr2), NoClassDefFoundError.class);
@@ -247,11 +247,11 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(instanceFieldAsStatic, () -> ldc(instanceFieldAsStatic), IncompatibleClassChangeError.class);
 
         // Setter for final field
-        MethodHandleRef finalStaticSetter = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", SymbolicRefs.CR_int);
-        MethodHandleRef finalSetter = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", SymbolicRefs.CR_int);
+        MethodHandleRef finalStaticSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", SymbolicRefs.CR_int);
+        MethodHandleRef finalSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", SymbolicRefs.CR_int);
 
-        // @@@ assertIntrinsicFail(finalStaticSetter, () -> ldc(finalStaticSetter), IllegalAccessError.class);
-        // @@@ assertIntrinsicFail(finalSetter, () -> ldc(finalSetter), IllegalAccessError.class);
+        assertIntrinsicFail(finalStaticSetter, () -> ldc(finalStaticSetter), IllegalAccessError.class);
+        assertIntrinsicFail(finalSetter, () -> ldc(finalSetter), IllegalAccessError.class);
 
         // Nonexistent owner
         MethodHandleRef r1 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.of(NONEXISTENT_CLASS), "m", "()V");
