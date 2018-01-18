@@ -1,5 +1,8 @@
+<!doctype html>
+
+<!--
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,25 +25,20 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+-->
 
-package sun.reflect;
-
-public class Reflection {
-
-    private Reflection() { }
-
-    /**
-     * @deprecated This method is an internal API and will be removed.
-     * Use {@link StackWalker} to walk the stack and obtain the caller class
-     * with {@link StackWalker.StackFrame#getDeclaringClass} instead.
-     */
-    @Deprecated(forRemoval=true)
-    @SuppressWarnings("removal") // Reflection.getCallerClass
-    public static Class<?> getCallerClass(int depth) {
-        if (depth < 0)
-            throw new InternalError("depth must be positive");
-
-        // increase depth to account for delegation to the internal impl
-        return jdk.internal.reflect.Reflection.getCallerClass(depth + 1);
-    }
-}
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Case 2</title>
+    <style type="text/css">
+      body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+  This should be copied directly, with no modifications.
+  </body>
+</html>
