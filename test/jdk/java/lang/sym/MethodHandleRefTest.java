@@ -36,6 +36,7 @@ import java.lang.sym.SymbolicRef;
 import java.lang.sym.SymbolicRefs;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
@@ -198,6 +199,28 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         setterRef.resolveRef(TestClass.LOOKUP).invokeExact(instance, 7); assertEquals(instance.f, 7);
         assertEquals(7, (int) getterRef.resolveRef(LOOKUP).invokeExact(instance));
         assertEquals(7, (int) getterRef.resolveRef(TestClass.LOOKUP).invokeExact(instance));
+    }
+
+    private void assertBadArgs(Supplier<MethodHandleRef> supplier, String s) {
+        try {
+            MethodHandleRef r = supplier.get();
+            fail("Expected failure for " + s);
+        }
+        catch (IllegalArgumentException e) {
+            // succeed
+        }
+    }
+
+    public void testBadFieldMHs() {
+        List<String> badGetterDescs = List.of("()V", "(Ljava/lang/Object;)V", "(I)I", "(Ljava/lang/Object;I)I");
+        List<String> badStaticGetterDescs = List.of("()V", "(Ljava/lang/Object;)I", "(I)I", "(Ljava/lang/Object;I)I");
+        List<String> badSetterDescs = List.of("()V", "(I)V", "(Ljava/lang/Object;)V", "(Ljava/lang/Object;I)I", "(Ljava/lang/Object;II)V");
+        List<String> badStaticSetterDescs = List.of("()V", "(II)V", "()I");
+
+        badGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(GETTER, thisClass, "x", s), s));
+        badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(SETTER, thisClass, "x", s), s));
+        badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_GETTER, thisClass, "x", s), s));
+        badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_SETTER, thisClass, "x", s), s));
     }
 
     // This test method belongs elsewhere; move when we revamp VarHandleRef API

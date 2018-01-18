@@ -49,6 +49,10 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
     private final ClassRef[] argTypes;
 
     private MethodTypeRef(ClassRef returnType, ClassRef[] argTypes) {
+        for (ClassRef cr : argTypes)
+            if (cr.isPrimitive() && cr.descriptorString().equals("V"))
+                throw new IllegalArgumentException("Void parameters not permitted");
+
         this.returnType = requireNonNull(returnType);
         this.argTypes = requireNonNull(argTypes);
     }

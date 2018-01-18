@@ -153,7 +153,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
     }
 
     public void testBadMethodTypeRefs() {
-        List<String> badDescriptors = List.of("()II", "()I;", "(I;)", "(I)", "()L",
+        List<String> badDescriptors = List.of("()II", "()I;", "(I;)", "(I)", "()L", "(V)V",
                                               "(java.lang.String)V", "()[]", "(Ljava/lang/String)V",
                                               "(Ljava.lang.String;)V", "(java/lang/String)V");
 

@@ -23,7 +23,6 @@
  * questions.
  */
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.sym.ClassRef;
@@ -43,6 +42,7 @@ import static java.lang.sym.MethodHandleRef.Kind.SETTER;
 import static java.lang.sym.MethodHandleRef.Kind.STATIC_GETTER;
 import static java.lang.sym.MethodHandleRef.Kind.STATIC_SETTER;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 /**
@@ -93,17 +93,14 @@ public class IntrinsifiedRefTest {
             T t = supplier.get();
             fail("Expected failure resolving " + ref);
         } catch (Throwable e) {
-            if (!exception.isAssignableFrom(e.getClass())) {
-                if (e instanceof BootstrapMethodError) {
-                    Throwable cause = e.getCause();
-                    if (cause != null) {
-                        if (exception.isAssignableFrom(cause.getClass())) {
-                            return;
-                        }
-                    }
-                }
-                fail(String.format("Expected %s, found %s for %s", exception, e.getClass(), ref));
+            if (exception.isAssignableFrom(e.getClass()))
+                return;
+            else if (e instanceof BootstrapMethodError) {
+                Throwable cause = e.getCause();
+                if (cause != null && exception.isAssignableFrom(cause.getClass()))
+                    return;
             }
+            fail(String.format("Expected %s, found %s for %s", exception, e.getClass(), ref));
         }
     }
 
@@ -175,7 +172,7 @@ public class IntrinsifiedRefTest {
         assertIntrinsic(enr2, ldc(enr2), TestEnum.B);
     }
 
-    public void negLdcEnum() throws ReflectiveOperationException {
+    public void negLdcEnum() {
         EnumRef<TestEnum> enr1 = EnumRef.of(CR_TESTENUM, "C");
         assertIntrinsicFail(enr1, () -> ldc(enr1), IllegalArgumentException.class);
 
@@ -222,7 +219,7 @@ public class IntrinsifiedRefTest {
         assertEquals(9, (int) ldc(MHR_TESTCLASS_F_GETTER).invokeExact(instance));
     }
 
-    public void negLdcMethodHandle() throws ReflectiveOperationException {
+    public void negLdcMethodHandle() {
         // Accessible classes, inaccessible methods
         assertIntrinsicFail(MHR_TESTCLASS_PM_SPECIAL, () -> ldc(MHR_TESTCLASS_PM_SPECIAL), IllegalAccessError.class);
         assertIntrinsicFail(MHR_TESTINTF_PM_SPECIAL, () -> ldc(MHR_TESTINTF_PM_SPECIAL), IllegalAccessError.class);
@@ -288,12 +285,17 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(r9, () -> ldc(r9), NoSuchFieldError.class);
     }
 
-    // Dynamic constants
-    // - null
-    // - primitive class
-    // negative tests for nonexistent/inaccessible bootstrap
-    // negative tests for bootstrap parameter mismatch
+    public void testLdcDynamicConstants() throws ReflectiveOperationException {
+        assertNull(ldc(SymbolicRefs.NULL));
+        assertIntrinsic(SymbolicRefs.CR_int, ldc(SymbolicRefs.CR_int), int.class);
+        // @@@ VarHandle
+        // @@@ invoke (including multiple deep)
+    }
 
+    public void negLdcDynamicConstants() {
+        // @@@ negative tests for nonexistent/inaccessible bootstrap
+        // @@@ negative tests for bootstrap parameter mismatch
+    }
 
     private enum TestEnum {
         A, B;

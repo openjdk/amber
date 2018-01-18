@@ -84,10 +84,39 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     private final MethodTypeRef type;
 
     private MethodHandleRef(Kind kind, ClassRef owner, String name, MethodTypeRef type) {
+        if (kind == CONSTRUCTOR)
+            name = "<init>";
+
+        switch (kind) {
+            case GETTER:
+                if (type.returnType().descriptorString().equals("V")
+                    || type.parameterCount() != 1
+                    || type.parameterType(0).isPrimitive())
+                    throw new IllegalArgumentException(String.format("Expected type of (R)T for getter, found %s", type));
+                break;
+            case SETTER:
+                if (!type.returnType().descriptorString().equals("V")
+                    || type.parameterCount() != 2
+                    || type.parameterType(0).isPrimitive())
+                    throw new IllegalArgumentException(String.format("Expected type of (RT)V for setter, found %s", type));
+                break;
+            case STATIC_GETTER:
+                if (type.returnType().descriptorString().equals("V")
+                    || type.parameterCount() != 0)
+                    throw new IllegalArgumentException(String.format("Expected type of ()T for setter, found %s", type));
+                break;
+            case STATIC_SETTER:
+                if (!type.returnType().descriptorString().equals("V")
+                    || type.parameterCount() != 1)
+                    throw new IllegalArgumentException(String.format("Expected type of (T)V for setter, found %s", type));
+                break;
+        }
+
         this.kind = requireNonNull(kind);
         this.owner = requireNonNull(owner);
         this.name = requireNonNull(name);
         this.type = requireNonNull(type);
+
     }
 
     /**
@@ -102,8 +131,6 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
      */
     @Foldable
     public static MethodHandleRef of(Kind kind, ClassRef clazz, String name, MethodTypeRef type) {
-        if (kind == CONSTRUCTOR)
-            name = "<init>";
         return new MethodHandleRef(kind, clazz, name, type);
     }
 
