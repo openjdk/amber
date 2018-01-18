@@ -1,0 +1,22 @@
+MethodTypeNegTest.java:21:31: compiler.err.bad.method.type.shape: ()int, REF_putField
+MethodTypeNegTest.java:21:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:23:31: compiler.err.bad.method.type.shape: ()int, REF_putStatic
+MethodTypeNegTest.java:23:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:27:31: compiler.err.bad.method.type.shape: (int)void, REF_putField
+MethodTypeNegTest.java:27:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:29:31: compiler.err.bad.method.type.shape: (int,int)void, REF_putStatic
+MethodTypeNegTest.java:29:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:33:31: compiler.err.bad.method.type.shape: ()int, REF_newInvokeSpecial
+MethodTypeNegTest.java:33:31: compiler.warn.member.not.found.at.class: <init>, class,
+MethodTypeNegTest.java:37:31: compiler.err.bad.method.type.shape: ()void, REF_getField
+MethodTypeNegTest.java:37:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:39:31: compiler.err.bad.method.type.shape: ()void, REF_getStatic
+MethodTypeNegTest.java:39:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:43:31: compiler.err.bad.method.type.shape: (int,int)int, REF_getField
+MethodTypeNegTest.java:43:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:45:31: compiler.err.bad.method.type.shape: (int,int)int, REF_getStatic
+MethodTypeNegTest.java:45:31: compiler.warn.member.not.found.at.class: nonexistent, class,
+MethodTypeNegTest.java:49:32: compiler.err.bad.method.type.shape.arg.with.type.void: (void)int
+MethodTypeNegTest.java:49:32: compiler.warn.member.not.found.at.class: nonexistent, class, MethodTypeNegTest
+10 errors
+10 warnings

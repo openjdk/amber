@@ -418,7 +418,71 @@ public class Constables {
         }
     }
 
+    String refKindToString(int refKind) {
+        switch (refKind) {
+            case ClassFile.REF_newInvokeSpecial :
+                return "REF_newInvokeSpecial";
+            case ClassFile.REF_invokeVirtual:
+                return "REF_invokeVirtual";
+            case ClassFile.REF_invokeStatic:
+                return "REF_invokeStatic";
+            case ClassFile.REF_invokeSpecial:
+                return "REF_invokeSpecial";
+            case ClassFile.REF_invokeInterface:
+                return "REF_invokeInterface";
+            case ClassFile.REF_putField:
+                return "REF_putField";
+            case ClassFile.REF_putStatic:
+                return "REF_putStatic";
+            case ClassFile.REF_getField:
+                return "REF_getField";
+            case ClassFile.REF_getStatic:
+                return "REF_getStatic";
+            default:
+                throw new AssertionError("invalid refKind value " + refKind);
+        }
+    }
+
+    boolean checkMethodTypeShape(JCTree tree, int refKind, MethodType methodType) {
+        boolean error;
+        switch (refKind) {
+            case ClassFile.REF_newInvokeSpecial :
+                error = !methodType.restype.hasTag(TypeTag.VOID);
+                break;
+            case ClassFile.REF_invokeVirtual:
+            case ClassFile.REF_invokeStatic:
+            case ClassFile.REF_invokeSpecial:
+            case ClassFile.REF_invokeInterface:
+                error = false;
+                break;
+            case ClassFile.REF_putField:
+                error = methodType.argtypes.size() != 2 || !methodType.restype.hasTag(TypeTag.VOID);
+                break;
+            case ClassFile.REF_putStatic:
+                error = methodType.argtypes.size() != 1 || !methodType.restype.hasTag(TypeTag.VOID);
+                break;
+            case ClassFile.REF_getField:
+                error = methodType.argtypes.size() != 1 || methodType.restype.hasTag(TypeTag.VOID);
+                break;
+            case ClassFile.REF_getStatic:
+                error = methodType.argtypes.size() > 0 || methodType.restype.hasTag(TypeTag.VOID);
+                break;
+            default:
+                throw new AssertionError("invalid refKind value " + refKind);
+        }
+        if (error) {
+            log.error(tree, Errors.BadMethodTypeShape(methodType, refKindToString(refKind)));
+        }
+        if (methodType.argtypes.stream().filter(t -> t.hasTag(TypeTag.VOID)).findAny().isPresent()) {
+            log.error(tree, Errors.BadMethodTypeShapeArgWithTypeVoid(methodType));
+        }
+        return !error;
+    }
+
     private Symbol getReferenceSymbol(JCTree tree, int refKind, Symbol owner, String name, MethodType methodType) {
+        if (!checkMethodTypeShape(tree, refKind, methodType)) {
+            return syms.noSymbol;
+        }
         long flags = refKind == ClassFile.REF_getStatic ||
                 refKind == ClassFile.REF_putStatic ||
                 refKind == ClassFile.REF_invokeStatic ? STATIC : 0;
