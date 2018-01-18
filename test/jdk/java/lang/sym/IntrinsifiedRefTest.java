@@ -93,8 +93,17 @@ public class IntrinsifiedRefTest {
             T t = supplier.get();
             fail("Expected failure resolving " + ref);
         } catch (Throwable e) {
-            if (!exception.isAssignableFrom(e.getClass()))
+            if (!exception.isAssignableFrom(e.getClass())) {
+                if (e instanceof BootstrapMethodError) {
+                    Throwable cause = e.getCause();
+                    if (cause != null) {
+                        if (exception.isAssignableFrom(cause.getClass())) {
+                            return;
+                        }
+                    }
+                }
                 fail(String.format("Expected %s, found %s for %s", exception, e.getClass(), ref));
+            }
         }
     }
 
@@ -168,16 +177,16 @@ public class IntrinsifiedRefTest {
 
     public void negLdcEnum() throws ReflectiveOperationException {
         EnumRef<TestEnum> enr1 = EnumRef.of(CR_TESTENUM, "C");
-        assertIntrinsicFail(enr1, () -> ldc(enr1), NoClassDefFoundError.class);
+        assertIntrinsicFail(enr1, () -> ldc(enr1), IllegalArgumentException.class);
 
         EnumRef<TestEnum> enr2 = EnumRef.of(ClassRef.of(NONEXISTENT_CLASS), "A");
         assertIntrinsicFail(enr2, () -> ldc(enr2), NoClassDefFoundError.class);
 
         EnumRef<TestEnum> enr3 = EnumRef.of(CR_THIS, "A");
-// @@@        assertIntrinsicFail(enr3, () -> ldc(enr3), IllegalArgumentException.class);
+        assertIntrinsicFail(enr3, () -> ldc(enr3), IllegalArgumentException.class);
 
         EnumRef<TestEnum> enr4 = EnumRef.of(ClassRef.of(INACCESSIBLE_CLASS), "A");
-//        assertIntrinsicFail(enr4, () -> ldc(enr4), IllegalAccessError.class);
+        assertIntrinsicFail(enr4, () -> ldc(enr4), IllegalAccessError.class);
     }
 
     public void testLdcSelfConstants() throws ReflectiveOperationException {
@@ -191,7 +200,7 @@ public class IntrinsifiedRefTest {
     public void testLdcMethodHandleFromInner() throws Throwable {
         TestClass.ldcMethodHandleFromInner();
         TestClass.negLdcMethodHandleFromInner();
-        TestInterface.testLdcMethodHandleFromIntf();
+        TestInterface.testLdcMethodHandleFromIntf(new TestInterface(){});
     }
 
     public void testLdcMethodHandle() throws Throwable {
@@ -201,7 +210,7 @@ public class IntrinsifiedRefTest {
         assertEquals(0, (int) ldc(MHR_TESTINTF_SM).invokeExact(5));
 
         assertEquals(5, (int) ldc(MHR_TESTCLASS_M).invokeExact(instance, 5));
-        assertEquals(5, (int) ldc(MHR_TESTINTF_M).invokeExact(instance, 5));
+        assertEquals(5, (int) ldc(MHR_TESTINTF_M).invoke(instance, 5));
 
         ldc(MHR_TESTCLASS_SF_SETTER).invokeExact(8);
         assertEquals(TestClass.sf, 8);
@@ -298,9 +307,9 @@ public class IntrinsifiedRefTest {
         private int pm(int x) { return 1; }
         private static int psm(int x) { return 2; }
 
-        static void testLdcMethodHandleFromIntf() throws Throwable {
-            assertEquals(1, ldc(MHR_TESTINTF_PM_SPECIAL).invoke());
-            assertEquals(2, ldc(MHR_TESTINTF_PSM).invoke());
+        static void testLdcMethodHandleFromIntf(TestInterface testInterface) throws Throwable {
+            assertEquals(1, ldc(MHR_TESTINTF_PM_SPECIAL).invoke(testInterface, 1));
+            assertEquals(2, ldc(MHR_TESTINTF_PSM).invoke(1));
         }
     }
 

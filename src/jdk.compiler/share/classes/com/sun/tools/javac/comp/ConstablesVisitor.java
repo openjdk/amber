@@ -260,7 +260,7 @@ public class ConstablesVisitor extends TreeScanner {
                 if (isLDC) {
                     Type newType;
                     // if condy
-                    if (tree.args.head.type.tsym == syms.dynamicConstantRefType.tsym) {
+                    if (constables.dynamicConstantClass.isInstance(constant)) {
                         constant = constables.convertConstant(tree, attrEnv,
                                 constant, attrEnv.enclClass.sym.packge().modle);
                         newType = ((Pool.ConstantDynamic)constant).type;
