@@ -43,6 +43,7 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.WrongMethodTypeException;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -187,6 +188,22 @@ public class ConstantBootstrapsTest {
                     S.add("42");
                 });
         assertEquals(handle.invoke(), 42);
+    }
+
+    public void testInvokeAsTypeVariableArity() throws Throwable {
+        // The constant type is Collection but the invoke return type is List
+        var handle = InstructionHelper.ldcDynamicConstant(
+                L, "_", Collection.class,
+                ConstantBootstraps.class, "invoke", lookupMT(Object.class, MethodHandle.class, Object[].class),
+                S -> {
+                    S.add("", (P, Z) -> {
+                        return P.putHandle(MethodHandleInfo.REF_invokeStatic, "java/util/List", "of",
+                                           MethodType.methodType(List.class, Object[].class).toMethodDescriptorString(),
+                                           true);
+                    });
+                    S.add(1).add(2).add(3).add(4);
+                });
+        assertEquals(handle.invoke(), List.of(1, 2, 3, 4));
     }
 
     @Test(expectedExceptions = ClassCastException.class)
