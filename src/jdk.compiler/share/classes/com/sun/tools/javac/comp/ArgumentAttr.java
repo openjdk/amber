@@ -375,7 +375,9 @@ public class ArgumentAttr extends JCTree.Visitor {
 
         @Override
         Type speculativeType(Symbol msym, MethodResolutionPhase phase) {
-            if (pertinentToApplicability) {
+            if (notPertinentToApplicability.contains(msym)) {
+                return super.speculativeType(msym, phase);
+            } else {
                 for (Map.Entry<ResultInfo, Type> _entry : speculativeTypes.entrySet()) {
                     DeferredAttrContext deferredAttrContext = _entry.getKey().checkContext.deferredAttrContext();
                     if (deferredAttrContext.phase == phase && deferredAttrContext.msym == msym) {
@@ -383,14 +385,14 @@ public class ArgumentAttr extends JCTree.Visitor {
                     }
                 }
                 return Type.noType;
-            } else {
-                return super.speculativeType(msym, phase);
             }
         }
 
         @Override
         JCTree speculativeTree(DeferredAttrContext deferredAttrContext) {
-            return pertinentToApplicability ? speculativeTree : super.speculativeTree(deferredAttrContext);
+            return notPertinentToApplicability.contains(deferredAttrContext.msym) ?
+                    super.speculativeTree(deferredAttrContext) :
+                    speculativeTree;
         }
 
         /**
