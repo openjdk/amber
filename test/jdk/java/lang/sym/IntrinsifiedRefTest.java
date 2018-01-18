@@ -240,7 +240,7 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(staticMethodAsIntf, () -> ldc(staticMethodAsIntf), IncompatibleClassChangeError.class);
 
         // Field kind mismatch -- instance/static
-        MethodHandleRef staticFieldAsInstance = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
+        MethodHandleRef staticFieldAsInstance = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
         MethodHandleRef instanceFieldAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "f", SymbolicRefs.CR_int);
 
         assertIntrinsicFail(staticFieldAsInstance, () -> ldc(staticFieldAsInstance), IncompatibleClassChangeError.class);
@@ -265,18 +265,18 @@ public class IntrinsifiedRefTest {
         MethodHandleRef r3 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "nonexistent", "()V");
         MethodHandleRef r4 = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "nonexistent", "()V");
         MethodHandleRef r5 = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored>", "(I)V");
-        MethodHandleRef r6 = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r7 = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r8 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r9 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r6 = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r7 = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r8 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r9 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
 
         assertIntrinsicFail(r3, () -> ldc(r3), NoSuchMethodError.class);
         assertIntrinsicFail(r4, () -> ldc(r4), NoSuchMethodError.class);
         assertIntrinsicFail(r5, () -> ldc(r5), NoSuchMethodError.class);
         assertIntrinsicFail(r6, () -> ldc(r6), NoSuchFieldError.class);
-// @@@       assertIntrinsicFail(r7, () -> ldc(r7), NoSuchFieldError.class);
+        assertIntrinsicFail(r7, () -> ldc(r7), NoSuchFieldError.class);
         assertIntrinsicFail(r8, () -> ldc(r8), NoSuchFieldError.class);
-// @@@       assertIntrinsicFail(r9, () -> ldc(r9), NoSuchFieldError.class);
+        assertIntrinsicFail(r9, () -> ldc(r9), NoSuchFieldError.class);
     }
 
     // Dynamic constants
