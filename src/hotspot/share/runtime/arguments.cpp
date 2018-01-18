@@ -63,7 +63,11 @@
 #endif
 
 // Note: This is a special bug reporting site for the JVM
-#define DEFAULT_VENDOR_URL_BUG "http://bugreport.java.com/bugreport/crash.jsp"
+#ifdef VENDOR_URL_VM_BUG
+# define DEFAULT_VENDOR_URL_BUG VENDOR_URL_VM_BUG
+#else
+# define DEFAULT_VENDOR_URL_BUG "http://bugreport.java.com/bugreport/crash.jsp"
+#endif
 #define DEFAULT_JAVA_LAUNCHER  "generic"
 
 char*  Arguments::_jvm_flags_file               = NULL;
@@ -200,7 +204,9 @@ SystemProperty::SystemProperty(const char* key, const char* value, bool writeabl
   _writeable = writeable;
 }
 
-AgentLibrary::AgentLibrary(const char* name, const char* options, bool is_absolute_path, void* os_lib) {
+AgentLibrary::AgentLibrary(const char* name, const char* options,
+               bool is_absolute_path, void* os_lib,
+               bool instrument_lib) {
   _name = AllocateHeap(strlen(name)+1, mtArguments);
   strcpy(_name, name);
   if (options == NULL) {
@@ -214,6 +220,7 @@ AgentLibrary::AgentLibrary(const char* name, const char* options, bool is_absolu
   _next = NULL;
   _state = agent_invalid;
   _is_static_lib = false;
+  _is_instrument_lib = instrument_lib;
 }
 
 // Check if head of 'option' matches 'name', and sets 'tail' to the remaining
@@ -288,6 +295,10 @@ void Arguments::add_init_library(const char* name, char* options) {
 
 void Arguments::add_init_agent(const char* name, char* options, bool absolute_path) {
   _agentList.add(new AgentLibrary(name, options, absolute_path, NULL));
+}
+
+void Arguments::add_instrument_agent(const char* name, char* options, bool absolute_path) {
+  _agentList.add(new AgentLibrary(name, options, absolute_path, NULL, true));
 }
 
 // Late-binding agents not started via arguments
@@ -2797,7 +2808,7 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
         size_t length = strlen(tail) + 1;
         char *options = NEW_C_HEAP_ARRAY(char, length, mtArguments);
         jio_snprintf(options, length, "%s", tail);
-        add_init_agent("instrument", options, false);
+        add_instrument_agent("instrument", options, false);
         // java agents need module java.instrument
         if (!create_numbered_property("jdk.module.addmods", "java.instrument", addmods_count++)) {
           return JNI_ENOMEM;
