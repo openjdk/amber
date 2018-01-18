@@ -1145,7 +1145,7 @@ oop ConstantPool::resolve_bootstrap_specifier_at_impl(const constantPoolHandle& 
     // For now, exercise the pull-mode path if the BSM is of arity 2,
     // or if there is a potential condy loop (see below).
     oop mt_oop = java_lang_invoke_MethodHandle::type(bsm());
-    use_BSCI = (java_lang_invoke_MethodType::ptype_count(mt_oop) != 2);
+    use_BSCI = (java_lang_invoke_MethodType::ptype_count(mt_oop) == 2);
     break;
   }
 
