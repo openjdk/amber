@@ -5,7 +5,6 @@
  */
 
 import java.lang.sym.*;
-
 import static java.lang.invoke.Intrinsics.*;
 
 public class IndyLinkageErrorTest {
@@ -20,8 +19,13 @@ public class IndyLinkageErrorTest {
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String
+        );
         final String param = "" + '\u0001' + '\u0001';
-        BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh, param);
-        return (String)invokedynamic(indyDescr, "", x, y);
+        IndyRef indyDescr = IndyRef.of(mh, "", methodTypeForIndy, param);
+        return (String)invokedynamic(indyDescr, x, y);
     }
 }

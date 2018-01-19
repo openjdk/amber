@@ -29,16 +29,12 @@
  * @run main IndyCodeGenerationTest
  */
 
-import java.lang.sym.BootstrapSpecifier;
+import java.lang.sym.*;
 import java.lang.invoke.CallSite;
-import java.lang.sym.ClassRef;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
-import java.lang.sym.MethodHandleRef;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.invokedynamic;
@@ -68,12 +64,17 @@ public class IndyCodeGenerationTest {
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
                                                 "testWithStaticArgsBSM", methodTypeForMethodHandle);
-        BootstrapSpecifier bs = BootstrapSpecifier.of(mh,
-                                                      1, 2L, 3.0f, 4.0d,
-                                                      SymbolicRefs.CR_int,
-                                                      "something",
-                                                      MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
-        return (String) invokedynamic(bs, "name");
+        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
+                SymbolicRefs.CR_String
+        );
+        IndyRef bs = IndyRef.of(mh,
+                                "name",
+                                methodTypeForIndy,
+                                1, 2L, 3.0f, 4.0d,
+                                SymbolicRefs.CR_int,
+                                "something",
+                                MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
+        return (String)invokedynamic(bs);
     }
 
     public static CallSite testWithStaticArgsBSM(MethodHandles.Lookup l, String name, MethodType type,

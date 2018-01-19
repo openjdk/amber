@@ -20,10 +20,15 @@ public class IndyNegativeTest01 {
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String
+        );
         final String param = "" + '\u0001' + '\u0001';
-        BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh, param);
+        IndyRef indyDescr = IndyRef.of(mh, invokeName, methodTypeForIndy, param);
         // invokeName is not a constant
-        String indyRes = (String)invokedynamic(indyDescr, invokeName, x, y);
+        String indyRes = (String)invokedynamic(indyDescr, x, y);
         indyDescr = null; // not effectively final
     }
 }

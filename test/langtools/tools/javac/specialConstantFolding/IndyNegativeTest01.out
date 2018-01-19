@@ -1,2 +1,2 @@
-IndyNegativeTest01.java:26:48: compiler.err.intrinsics.indy.must.have.constant.arg
+IndyNegativeTest01.java:31:48: compiler.err.intrinsics.indy.must.have.constant.arg
 1 error

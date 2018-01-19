@@ -24,7 +24,7 @@
  */
 package java.lang.invoke;
 
-import java.lang.sym.BootstrapSpecifier;
+import java.lang.sym.IndyRef;
 import java.lang.sym.SymbolicRef;
 
 /**
@@ -51,13 +51,11 @@ public final class Intrinsics {
      * prove that the given {@code BootstrapSpecifier} is a constant, in other case
      * an error should be issued.
      * @param indy the bootstrap specifier
-     * @param invocationName invocation name for the {@code invokedynamic}
      * @param args the arguments
      * @return the result of invoking the indy
      * @throws java.lang.Throwable the targeted method can throw any exception
      */
-    public static Object invokedynamic(BootstrapSpecifier indy,
-                                       String invocationName,
+    public static Object invokedynamic(IndyRef indy,
                                        Object... args)
             throws Throwable {
         throw new UnsupportedOperationException("no reflective access");

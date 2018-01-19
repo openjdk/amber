@@ -30,15 +30,11 @@
  * @run main CondyCodeGenerationTest
  */
 
-import java.lang.sym.BootstrapSpecifier;
+import java.lang.sym.*;
 import java.lang.sym.ClassRef;
-import java.lang.sym.DynamicConstantRef;
 import java.lang.invoke.MethodHandle;
-import java.lang.sym.MethodHandleRef;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.ldc;

@@ -91,7 +91,7 @@ public class Constables {
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
             classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
             constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
-            bootstrapSpecifierClass = Class.forName("java.lang.sym.BootstrapSpecifier", false, null);
+            indyRefClass = Class.forName("java.lang.sym.IndyRef", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
             symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
         } catch (ClassNotFoundException ex) {
@@ -99,7 +99,7 @@ public class Constables {
             methodTypeRefClass = null;
             constantRefClass = null;
             classRefClass = null;
-            bootstrapSpecifierClass = null;
+            indyRefClass = null;
             dynamicConstantClass = null;
             symRefs = null;
         }
@@ -280,8 +280,7 @@ public class Constables {
             Type ownerType = descriptorToType(ownerDescriptor, currentModule, false);
             Object mtConstant = invokeMethodReflectively(methodHandleRefClass, constant, "type");
             String methodTypeDesc = (String)invokeMethodReflectively(methodTypeRefClass, mtConstant, "descriptorString");
-            MethodType mType = (MethodType)descriptorToType(
-                    methodTypeDesc, currentModule, true);
+            MethodType mType = (MethodType)descriptorToType(methodTypeDesc, currentModule, true);
             // this method generates fake symbols as needed
             Symbol refSymbol = getReferenceSymbol(tree, refKind, ownerType.tsym, name, mType);
             boolean ownerFound = true;
@@ -401,7 +400,7 @@ public class Constables {
     public Class<?> methodTypeRefClass;
     public Class<?> classRefClass;
     public Class<?> constantRefClass;
-    public Class<?> bootstrapSpecifierClass;
+    public Class<?> indyRefClass;
     public Class<?> dynamicConstantClass;
     public Class<?> symRefs;
 

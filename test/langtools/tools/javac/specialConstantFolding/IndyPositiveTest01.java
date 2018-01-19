@@ -29,11 +29,7 @@
  * @run main IndyPositiveTest01
  */
 
-import java.lang.sym.BootstrapSpecifier;
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.*;
 
 import com.sun.tools.javac.util.Assert;
 import static java.lang.invoke.Intrinsics.*;
@@ -54,8 +50,13 @@ public class IndyPositiveTest01 {
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String,
+                SymbolicRefs.CR_String
+        );
         final String param = "" + '\u0001' + '\u0001';
-        BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh, param);
-        return (String)invokedynamic(indyDescr, "makeConcatWithConstants", x, y);
+        IndyRef indyDescr = IndyRef.of(mh, "makeConcatWithConstants", methodTypeForIndy, param);
+        return (String)invokedynamic(indyDescr, x, y);
     }
 }

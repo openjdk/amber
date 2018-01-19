@@ -2625,19 +2625,7 @@ public class Resolve {
                         return findFun(env, name, argtypes, typeargtypes,
                                 phase.isBoxingRequired(),
                                 phase.isVarargsRequired());
-                    }
-                    @Override
-                    Symbol access(Env<AttrContext> env, DiagnosticPosition pos, Symbol location, Symbol sym) {
-                        if (sym.kind.isResolutionError()) {
-                            sym = super.access(env, pos, location, sym);
-                        } else {
-                            if ((sym.flags() & SIGNATURE_POLYMORPHIC) != 0) {
-                                return findPolymorphicSignatureInstance(env, sym, argtypes);
-                            }
-                        }
-                        return sym;
-                    }
-                });
+                    }});
     }
 
     /** Resolve a qualified method identifier

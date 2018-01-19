@@ -23,25 +23,11 @@
  * questions.
  */
 
-import java.lang.sym.BootstrapSpecifier;
-import java.lang.invoke.CallSite;
-import java.lang.sym.ClassRef;
-import java.lang.invoke.ConstantCallSite;
-import java.lang.sym.SymbolicRef;
-import java.lang.sym.DynamicConstantRef;
-import java.lang.invoke.Intrinsics;
-import java.lang.invoke.MethodHandle;
-import java.lang.sym.MethodHandleRef;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.sym.MethodTypeRef;
-import java.lang.invoke.MutableCallSite;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.*;
+import java.lang.invoke.*;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.testng.annotations.Test;
-
 import static org.testng.Assert.assertEquals;
 
 /**
@@ -57,7 +43,6 @@ public class IntrinsicsTest {
 
     static final ClassRef staticField = ClassRef.of("java.lang.String");
     final ClassRef instanceField = ClassRef.of("java.lang.String");
-
 
     public void testPropagateThroughLocals() {
         boolean condition = true;
@@ -161,37 +146,41 @@ public class IntrinsicsTest {
     }
 
     public void testSimpleIndy() throws Throwable {
+        final MethodTypeRef Str_MT = MethodTypeRef.of(SymbolicRefs.CR_String);
         MethodHandleRef simpleBSM = MethodHandleRef.ofIndyBootstrap(HELPER_CLASS, "simpleBSM", SymbolicRefs.CR_CallSite);
-        BootstrapSpecifier bsm = BootstrapSpecifier.of(simpleBSM);
-        String result = (String) Intrinsics.invokedynamic(bsm, "foo");
+        IndyRef bsm = IndyRef.of(simpleBSM, "foo", Str_MT);
+        String result = (String) Intrinsics.invokedynamic(bsm);
         assertEquals("foo", result);
 
-        BootstrapSpecifier bsm2 = BootstrapSpecifier.of(simpleBSM);
-        assertEquals("bar", (String) Intrinsics.invokedynamic(bsm2, "bar"));
+        IndyRef bsm2 = IndyRef.of(simpleBSM, "bar", Str_MT);
+        assertEquals("bar", (String) Intrinsics.invokedynamic(bsm2));
 
         MethodHandleRef staticArgBSM = MethodHandleRef.ofIndyBootstrap(HELPER_CLASS, "staticArgBSM", SymbolicRefs.CR_CallSite, SymbolicRefs.CR_String);
-        BootstrapSpecifier bsm3 = BootstrapSpecifier.of(staticArgBSM, "bark");
-        assertEquals("bark", (String) Intrinsics.invokedynamic(bsm3, "ignored"));
+        IndyRef bsm3 = IndyRef.of(staticArgBSM, "ignored", Str_MT, "bark");
+        assertEquals("bark", (String) Intrinsics.invokedynamic(bsm3));
 
+        final MethodTypeRef Str_Str_MT = MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_String);
         MethodHandleRef dynArgBSM = MethodHandleRef.ofIndyBootstrap(HELPER_CLASS, "dynArgBSM", SymbolicRefs.CR_CallSite, SymbolicRefs.CR_String);
-        BootstrapSpecifier bsm4 = BootstrapSpecifier.of(dynArgBSM, "bargle");
-        assertEquals("barglefoo", (String) Intrinsics.invokedynamic(bsm4, "ignored", "foo"));
-        assertEquals("barglebar", (String) Intrinsics.invokedynamic(bsm4, "ignored", "bar"));
+        IndyRef bsm4 = IndyRef.of(dynArgBSM, "ignored", Str_Str_MT, "bargle");
+        assertEquals("barglefoo", (String) Intrinsics.invokedynamic(bsm4, "foo"));
+        assertEquals("barglebar", (String) Intrinsics.invokedynamic(bsm4, "bar"));
     }
 
     public void testStatefulBSM() throws Throwable {
+        final MethodTypeRef Int_MT = MethodTypeRef.of(SymbolicRefs.CR_int);
         MethodHandleRef statefulBSM = MethodHandleRef.ofIndyBootstrap(HELPER_CLASS, "statefulBSM", SymbolicRefs.CR_CallSite);
-        BootstrapSpecifier bsm = BootstrapSpecifier.of(statefulBSM);
+        IndyRef bsm = IndyRef.of(statefulBSM, "ignored", Int_MT);
         for (int i=0; i<10; i++) {
-            assertEquals(i, (int) Intrinsics.invokedynamic(bsm, "ignored"));
+            assertEquals(i, (int) Intrinsics.invokedynamic(bsm));
         }
     }
 
     public void testCondyInIndy() throws Throwable {
+        final MethodTypeRef Class_MT = MethodTypeRef.of(SymbolicRefs.CR_Class);
         MethodHandleRef bsm = MethodHandleRef.ofIndyBootstrap(HELPER_CLASS, "staticArgBSM",
                                                               SymbolicRefs.CR_CallSite, SymbolicRefs.CR_Class);
-        assertEquals(String.class, (Class) Intrinsics.invokedynamic(BootstrapSpecifier.of(bsm, SymbolicRefs.CR_String), "ignored"));
-        assertEquals(int.class, (Class) Intrinsics.invokedynamic(BootstrapSpecifier.of(bsm, SymbolicRefs.CR_int), "ignored"));
+        assertEquals(String.class, (Class) Intrinsics.invokedynamic(IndyRef.of(bsm, "ignored", Class_MT, SymbolicRefs.CR_String)));
+        assertEquals(int.class, (Class) Intrinsics.invokedynamic(IndyRef.of(bsm, "ignored", Class_MT, SymbolicRefs.CR_int)));
     }
 
     public void testCondyInCondy() throws Throwable {

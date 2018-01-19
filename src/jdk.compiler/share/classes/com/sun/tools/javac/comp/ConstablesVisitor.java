@@ -280,17 +280,18 @@ public class ConstablesVisitor extends TreeScanner {
                     tree.type = newMT.restype;
                 }
             } else if (constables.isIntrinsicsIndy(tree.meth)) {
-                List<Object> constants = constables.extractAllConstansOrNone(List.of(tree.args.head, tree.args.tail.head));
+                List<Object> constants = constables.extractAllConstansOrNone(List.of(tree.args.head));
                 if (constants.isEmpty()) {
                     log.error(tree.args.head.pos(), Errors.IntrinsicsIndyMustHaveConstantArg);
                 } else {
-                    Object bootstrapSpecifier = constants.head;
-                    String invocationName = (String)constants.tail.head;
+                    Object indyRef = constants.head;
+                    String invocationName = (String)constables.invokeMethodReflectively(constables.indyRefClass,
+                            indyRef, "name");
                     if (invocationName.isEmpty()) {
                         log.error(tree.args.tail.head.pos(), Errors.InvocationNameCannotBeEmpty);
                     }
-                    Object mh = constables.invokeMethodReflectively(constables.bootstrapSpecifierClass,
-                            bootstrapSpecifier, "method");
+                    Object mh = constables.invokeMethodReflectively(constables.indyRefClass,
+                            indyRef, "bootstrapMethod");
                     Pool.MethodHandle mHandle = (Pool.MethodHandle)constables
                             .convertConstant(tree, attrEnv, mh, attrEnv.enclClass.sym.packge().modle);
                     boolean correct = false;
@@ -307,11 +308,15 @@ public class ConstablesVisitor extends TreeScanner {
                     }
 
                     ListBuffer<Type> arguments = new ListBuffer<>();
-                    tree.args = tree.args.tail.tail;
+                    tree.args = tree.args.tail;
                     tree.args.forEach(arg -> arguments.add(arg.type));
-                    Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.bootstrapSpecifierClass, bootstrapSpecifier, "arguments");
+                    Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.indyRefClass, indyRef, "bootstrapArgs");
                     Object[] convertedBsmArgs = constables.convertConstants(tree, attrEnv, bsmArgs, attrEnv.enclClass.sym.packge().modle, true);
-                    MethodType mType = new MethodType(arguments.toList(), tree.type, List.nil(), syms.methodClass);
+                    Object mt = constables.invokeMethodReflectively(constables.indyRefClass, indyRef, "type");
+                    String methodTypeDesc = (String)constables.invokeMethodReflectively(
+                            constables.methodTypeRefClass, mt, "descriptorString");
+                    MethodType mType = (MethodType)constables.descriptorToType(methodTypeDesc,
+                            attrEnv.enclClass.sym.packge().modle, true);
                     DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
                             names.fromString(invocationName),
                             syms.noSymbol,
@@ -321,6 +326,9 @@ public class ConstablesVisitor extends TreeScanner {
                             convertedBsmArgs);
                     TreeInfo.setSymbol(tree.meth, dynSym);
                     tree.meth.type = mType;
+                    // we need to issue a warning if the type of the indy is not assignable to the type of the
+                    // tree, same for condy
+                    tree.type = mType.restype;
                 }
             }
         }

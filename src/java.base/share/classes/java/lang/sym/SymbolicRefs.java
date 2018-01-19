@@ -163,6 +163,9 @@ public final class SymbolicRefs {
     static final ClassRef CR_DynamicConstantRef = ClassRef.of("java.lang.sym.DynamicConstantRef");
 
     @Foldable
+    static final ClassRef CR_IndyRef = ClassRef.of("java.lang.sym.IndyRef");
+
+    @Foldable
     static final ClassRef CR_ConstantBootstraps = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     @Foldable
@@ -266,4 +269,9 @@ public final class SymbolicRefs {
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
                                  CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_SymbolicRef.array());
+
+    @Foldable
+    static final MethodHandleRef MHR_INDYREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_IndyRef, "of",
+                                 CR_IndyRef, CR_MethodHandleRef, CR_String, CR_MethodTypeRef, CR_SymbolicRef.array());
 }
