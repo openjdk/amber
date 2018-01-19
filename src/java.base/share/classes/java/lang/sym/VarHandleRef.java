@@ -47,12 +47,24 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
         @Foldable STATIC_FIELD(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, SymbolicRefs.MHR_VARHANDLEREF_STATIC_FIELD_FACTORY),
         @Foldable ARRAY(SymbolicRefs.BSM_VARHANDLE_ARRAY, SymbolicRefs.MHR_VARHANDLEREF_ARRAY_FACTORY);
 
-        private final MethodHandleRef bootstrapMethod;
-        private final MethodHandleRef refFactory;
+        final MethodHandleRef bootstrapMethod;
+        final MethodHandleRef refFactory;
 
         Kind(MethodHandleRef bootstrapMethod, MethodHandleRef refFactory) {
             this.bootstrapMethod = bootstrapMethod;
             this.refFactory = refFactory;
+        }
+
+        List<SymbolicRef<?>> toBSMArgs(ClassRef declaringClass, String name, ClassRef varType) {
+            switch (this) {
+                case FIELD:
+                case STATIC_FIELD:
+                    return List.of(declaringClass, name, varType);
+                case ARRAY:
+                    return List.of(declaringClass);
+                default:
+                    throw new InternalError("Cannot reach here");
+            }
         }
     }
 
@@ -63,22 +75,10 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
     private VarHandleRef(Kind kind, String name, ClassRef declaringClass, ClassRef varType) {
         super(kind.bootstrapMethod, name,
               SymbolicRefs.CR_VarHandle,
-              kindToBSMArgs(kind, declaringClass, name, varType).toArray(EMPTY_ARGS));
+              kind.toBSMArgs(declaringClass, name, varType).toArray(EMPTY_ARGS));
         this.kind = kind;
         this.declaringClass = declaringClass;
         this.varType = varType;
-    }
-
-    private static List<SymbolicRef<?>> kindToBSMArgs(Kind kind, ClassRef declaringClass, String name, ClassRef varType) {
-        switch (kind) {
-            case FIELD:
-            case STATIC_FIELD:
-                return List.of(declaringClass, name, varType);
-            case ARRAY:
-                return List.of(declaringClass);
-            default:
-                throw new InternalError("Cannot reach here");
-        }
     }
 
     /**

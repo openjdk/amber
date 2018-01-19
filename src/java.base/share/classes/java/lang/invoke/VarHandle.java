@@ -35,6 +35,7 @@ import java.lang.sym.VarHandleRef;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -1855,6 +1856,37 @@ public abstract class VarHandle implements Constable<VarHandle> {
             this.type = type;
             this.mode = mode;
         }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        VarHandle that = (VarHandle) o;
+        return accessModeType(AccessMode.GET).equals(that.accessModeType(AccessMode.GET)) &&
+               internalEquals(that);
+    }
+
+    boolean internalEquals(VarHandle vh) {
+        return true;
+    }
+
+    @Override
+    public final int hashCode() {
+        return 31 * accessModeType(AccessMode.GET).hashCode() + internalHashCode();
+    }
+
+    int internalHashCode() {
+        return 0;
+    }
+
+    @Override
+    public final String toString() {
+        // @@@ defer to concrete type for additional description
+        return String.format("VarHandle[varType=%s, cooordType=%s]",
+                             varType().getName(),
+                             coordinateTypes());
     }
 
     /**

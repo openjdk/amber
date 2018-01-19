@@ -61,6 +61,17 @@ final class VarHandle$Type$s {
             return accessMode.at.accessModeType(receiverType, {#if[Object]?fieldType:$type$.class});
         }
 
+        @Override
+        final boolean internalEquals(VarHandle vh) {
+            FieldInstanceReadOnly that = (FieldInstanceReadOnly) vh;
+            return fieldOffset == that.fieldOffset;
+        }
+
+        @Override
+        final int internalHashCode() {
+            return Long.hashCode(fieldOffset);
+        }
+
         @ForceInline
         static $type$ get(FieldInstanceReadOnly handle, Object holder) {
             return UNSAFE.get$Type$(Objects.requireNonNull(handle.receiverType.cast(holder)),
@@ -321,6 +332,17 @@ final class VarHandle$Type$s {
 #if[Object]
             this.fieldType = fieldType;
 #end[Object]
+        }
+
+        @Override
+        final boolean internalEquals(VarHandle vh) {
+            FieldStaticReadOnly that = (FieldStaticReadOnly) vh;
+            return base == that.base && fieldOffset == that.fieldOffset;
+        }
+
+        @Override
+        final int internalHashCode() {
+            return 31 * Long.hashCode(fieldOffset) + base.hashCode();
         }
 
         @Override
