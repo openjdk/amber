@@ -154,6 +154,9 @@ public final class SymbolicRefs {
     static final ClassRef CR_MethodHandleRef = ClassRef.of("java.lang.sym.MethodHandleRef");
 
     @Foldable
+    static final ClassRef CR_VarHandleRef = ClassRef.of("java.lang.sym.VarHandleRef");
+
+    @Foldable
     static final ClassRef CR_MethodHandleRef_Kind = CR_MethodHandleRef.inner("Kind");
 
     @Foldable
@@ -246,6 +249,18 @@ public final class SymbolicRefs {
     static final MethodHandleRef MHR_METHODHANDLEREF_FACTORY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodHandleRef, "of",
                                  CR_MethodHandleRef, CR_MethodHandleRef_Kind, CR_ClassRef, CR_String, CR_MethodTypeRef);
+
+    @Foldable
+    static final MethodHandleRef MHR_VARHANDLEREF_FIELD_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "fieldVarHandle", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+
+    @Foldable
+    static final MethodHandleRef MHR_VARHANDLEREF_STATIC_FIELD_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "staticFieldVarHandle", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+
+    @Foldable
+    static final MethodHandleRef MHR_VARHANDLEREF_ARRAY_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "arrayVarHandle", CR_VarHandleRef, CR_ClassRef);
 
     @Foldable
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY

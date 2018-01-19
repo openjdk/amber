@@ -30,14 +30,16 @@ import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
+import java.lang.sym.Constable;
+import java.lang.sym.VarHandleRef;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
-import static java.lang.invoke.MethodHandleStatics.newInternalError;
 
 /**
  * A VarHandle is a dynamically strongly typed reference to a variable, or to a
@@ -437,7 +439,7 @@ import static java.lang.invoke.MethodHandleStatics.newInternalError;
  * @see MethodType
  * @since 9
  */
-public abstract class VarHandle {
+public abstract class VarHandle implements Constable<VarHandle> {
     final VarForm vform;
 
     VarHandle(VarForm vform) {
@@ -1947,6 +1949,12 @@ public abstract class VarHandle {
             return MethodHandles.varHandleInvoker(accessMode, accessModeType(accessMode)).
                     bindTo(this);
         }
+    }
+
+    @Override
+    public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+        // @@@ this is a partial function for field and array
+        throw new UnsupportedOperationException();
     }
 
     @Stable
