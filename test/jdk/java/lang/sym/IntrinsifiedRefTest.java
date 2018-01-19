@@ -228,7 +228,7 @@ public class IntrinsifiedRefTest {
 
         // Accessible class and method, but illegal super access
         assertIntrinsicFail(MHR_TESTSUPER_M_SPECIAL, () -> ldc(MHR_TESTSUPER_M_SPECIAL), IllegalAccessError.class);
-        // @@@ assertIntrinsicFail(MHR_TESTINTF_M_SPECIAL, () -> ldc(MHR_TESTINTF_M_SPECIAL), IllegalAccessError.class);
+        assertIntrinsicFail(MHR_TESTINTF_M_SPECIAL, () -> ldc(MHR_TESTINTF_M_SPECIAL), IncompatibleClassChangeError.class);
 
         // Method kind mismatches -- intf, virtual, static
         MethodHandleRef intfMethodAsVirtual = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTINTF, "m", MethodTypeRef.ofDescriptor("(I)I"));

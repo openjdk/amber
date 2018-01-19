@@ -254,9 +254,9 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof DynamicConstantRef)) return false;
         DynamicConstantRef<?> ref = (DynamicConstantRef<?>) o;
         return Objects.equals(bootstrapMethod, ref.bootstrapMethod) &&
                Arrays.equals(bootstrapArgs, ref.bootstrapArgs) &&
@@ -265,8 +265,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     @Override
-    public int hashCode() {
-
+    public final int hashCode() {
         int result = Objects.hash(bootstrapMethod, name, type);
         result = 31 * result + Arrays.hashCode(bootstrapArgs);
         return result;

@@ -37,13 +37,23 @@ import java.util.Optional;
  */
 public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
 
+    private static final SymbolicRef<?>[] EMPTY_ARGS = new SymbolicRef<?>[0];
+
     /**
      * Kinds of variable handle refs
      */
     private enum Kind {
-        @Foldable FIELD,
-        @Foldable STATIC_FIELD,
-        @Foldable ARRAY;
+        @Foldable FIELD(SymbolicRefs.BSM_VARHANDLE_FIELD, SymbolicRefs.MHR_VARHANDLEREF_FIELD_FACTORY),
+        @Foldable STATIC_FIELD(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, SymbolicRefs.MHR_VARHANDLEREF_STATIC_FIELD_FACTORY),
+        @Foldable ARRAY(SymbolicRefs.BSM_VARHANDLE_ARRAY, SymbolicRefs.MHR_VARHANDLEREF_ARRAY_FACTORY);
+
+        private final MethodHandleRef bootstrapMethod;
+        private final MethodHandleRef refFactory;
+
+        Kind(MethodHandleRef bootstrapMethod, MethodHandleRef refFactory) {
+            this.bootstrapMethod = bootstrapMethod;
+            this.refFactory = refFactory;
+        }
     }
 
     private final Kind kind;
@@ -51,25 +61,12 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
     private final ClassRef varType;
 
     private VarHandleRef(Kind kind, String name, ClassRef declaringClass, ClassRef varType) {
-        super(kindToBSM(kind), name,
+        super(kind.bootstrapMethod, name,
               SymbolicRefs.CR_VarHandle,
-              kindToBSMArgs(kind, declaringClass, name, varType).toArray(new SymbolicRef<?>[0]));
+              kindToBSMArgs(kind, declaringClass, name, varType).toArray(EMPTY_ARGS));
         this.kind = kind;
         this.declaringClass = declaringClass;
         this.varType = varType;
-    }
-
-    private static MethodHandleRef kindToBSM(Kind kind) {
-        switch (kind) {
-            case FIELD:
-                return SymbolicRefs.BSM_VARHANDLE_FIELD;
-            case STATIC_FIELD:
-                return SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD;
-            case ARRAY:
-                return SymbolicRefs.BSM_VARHANDLE_ARRAY;
-            default:
-                throw new InternalError("Cannot reach here");
-        }
     }
 
     private static List<SymbolicRef<?>> kindToBSMArgs(Kind kind, ClassRef declaringClass, String name, ClassRef varType) {
@@ -79,19 +76,6 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
                 return List.of(declaringClass, name, varType);
             case ARRAY:
                 return List.of(declaringClass);
-            default:
-                throw new InternalError("Cannot reach here");
-        }
-    }
-
-    private static MethodHandleRef kindToMethodHandleRefFactory(Kind kind) {
-        switch (kind) {
-            case FIELD:
-                return SymbolicRefs.MHR_VARHANDLEREF_FIELD_FACTORY;
-            case STATIC_FIELD:
-                return SymbolicRefs.MHR_VARHANDLEREF_STATIC_FIELD_FACTORY;
-            case ARRAY:
-                return SymbolicRefs.MHR_VARHANDLEREF_ARRAY_FACTORY;
             default:
                 throw new InternalError("Cannot reach here");
         }
@@ -108,7 +92,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    public static VarHandleRef fieldVarHandle(ClassRef declaringClass, String name, ClassRef fieldType) {
+    public static VarHandleRef ofField(ClassRef declaringClass, String name, ClassRef fieldType) {
         Objects.requireNonNull(declaringClass);
         Objects.requireNonNull(name);
         Objects.requireNonNull(fieldType);
@@ -126,7 +110,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    public static VarHandleRef staticFieldVarHandle(ClassRef declaringClass, String name, ClassRef fieldType) {
+    public static VarHandleRef ofStaticField(ClassRef declaringClass, String name, ClassRef fieldType) {
         Objects.requireNonNull(declaringClass);
         Objects.requireNonNull(name);
         Objects.requireNonNull(fieldType);
@@ -142,11 +126,11 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    public static VarHandleRef arrayVarHandle(ClassRef arrayClass) {
+    public static VarHandleRef ofArray(ClassRef arrayClass) {
         Objects.requireNonNull(arrayClass);
         if (!arrayClass.isArray())
             throw new IllegalArgumentException("Array class argument not an array: " + arrayClass);
-        return new VarHandleRef(Kind.STATIC_FIELD, "_", arrayClass, arrayClass.componentType());
+        return new VarHandleRef(Kind.ARRAY, "_", arrayClass, arrayClass.componentType());
     }
 
     /**
@@ -205,7 +189,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
             return Optional.empty();
 
         var args = new ArrayList<SymbolicRef<?>>();
-        args.add(kindToMethodHandleRefFactory(kind));
+        args.add(kind.refFactory);
         args.add(declaringClassRefRef.get());
         if (kind != Kind.ARRAY) {
             args.add(name());
@@ -215,23 +199,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
             args.add(varTypeRefRef.get());
         }
         return Optional.of(DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_INVOKE)
-                                   .withArgs(args.toArray(new SymbolicRef<?>[0])));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        var ref = (VarHandleRef) o;
-        return kind == ref.kind &&
-               Objects.equals(declaringClass, ref.declaringClass) &&
-               Objects.equals(name(), ref.name()) &&
-               Objects.equals(varType, ref.varType);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(kind, declaringClass, name(), varType);
+                                   .withArgs(args.toArray(EMPTY_ARGS)));
     }
 
     @Override

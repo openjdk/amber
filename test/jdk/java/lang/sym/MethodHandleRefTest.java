@@ -94,15 +94,6 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         assertEquals(mhi.getMethodType().toMethodDescriptorString(), r.type().descriptorString());
     }
 
-    private void testVarHandleRef(DynamicConstantRef<VarHandle> r, VarHandle vh) throws ReflectiveOperationException {
-//        testSymbolicRef(r);
-//        assertEquals(r.resolveRef(LOOKUP), vh);
-
-        // @@@ VarHandle not yet Constable
-//        assertEquals(vh.toSymbolicRef(LOOKUP).get(), r);
-        // @@@ Test other assertable properties
-    }
-
     public void testSimpleMHs() throws ReflectiveOperationException {
         testMethodHandleRef(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_String, "isEmpty", "()Z"),
                             LOOKUP.findVirtual(String.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
@@ -221,46 +212,6 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(SETTER, thisClass, "x", s), s));
         badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_GETTER, thisClass, "x", s), s));
         badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_SETTER, thisClass, "x", s), s));
-    }
-
-    // This test method belongs elsewhere; move when we revamp VarHandleRef API
-    public void testVarHandles() throws ReflectiveOperationException {
-        TestClass instance = new TestClass();
-        int[] ints = new int[3];
-
-        // static varHandle
-        DynamicConstantRef<VarHandle> vhc = (DynamicConstantRef<VarHandle>) SymbolicRef.staticFieldVarHandle(testClass, "sf", SymbolicRefs.CR_int);
-        MethodTypeRef methodTypeRef = vhc.bootstrapMethod().type();
-        System.out.println(vhc.name() + " " + methodTypeRef.returnType() + " " + methodTypeRef.parameterList());
-        VarHandle varHandle = vhc.resolveRef(LOOKUP);
-        testVarHandleRef(vhc, varHandle);
-        assertEquals(varHandle.varType(), int.class);
-        varHandle.set(8);
-        assertEquals(8, (int) varHandle.get());
-        assertEquals(TestClass.sf, 8);
-
-        // static varHandle
-        vhc = (DynamicConstantRef<VarHandle>) SymbolicRef.fieldVarHandle(testClass, "f", SymbolicRefs.CR_int);
-        varHandle = vhc.resolveRef(LOOKUP);
-        testVarHandleRef(vhc, varHandle);
-        assertEquals(varHandle.varType(), int.class);
-        varHandle.set(instance, 9);
-        assertEquals(9, (int) varHandle.get(instance));
-        assertEquals(instance.f, 9);
-
-        vhc = (DynamicConstantRef<VarHandle>) SymbolicRef.arrayVarHandle(SymbolicRefs.CR_int.array());
-        varHandle = vhc.resolveRef(LOOKUP);
-        testVarHandleRef(vhc, varHandle);
-        varHandle.set(ints, 0, 1);
-        varHandle.set(ints, 1, 2);
-        varHandle.set(ints, 2, 3);
-
-        assertEquals(1, varHandle.get(ints, 0));
-        assertEquals(2, varHandle.get(ints, 1));
-        assertEquals(3, varHandle.get(ints, 2));
-        assertEquals(1, ints[0]);
-        assertEquals(2, ints[1]);
-        assertEquals(3, ints[2]);
     }
 
     private interface TestInterface {

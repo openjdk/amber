@@ -36,13 +36,9 @@ import java.util.Optional;
  * @author Brian Goetz
  */
 public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
-    private final ClassRef enumClass;
-    private final String constantName;
 
     private EnumRef(ClassRef enumClass, String constantName) {
         super(SymbolicRefs.BSM_ENUM_CONSTANT, constantName, enumClass);
-        this.enumClass = enumClass;
-        this.constantName = constantName;
     }
 
     @Foldable
@@ -52,45 +48,31 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
 
     @Foldable
     public ClassRef enumClass() {
-        return enumClass;
+        return type();
     }
 
     @Foldable
     public String constantName() {
-        return constantName;
+        return name();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public E resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return Enum.valueOf((Class<E>) enumClass.resolveRef(lookup), constantName);
+        return Enum.valueOf((Class<E>) enumClass().resolveRef(lookup), constantName());
     }
 
     @Override
     public Optional<? extends SymbolicRef<E>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        Optional<? extends SymbolicRef<Class<?>>> classRefRef = enumClass.toSymbolicRef(lookup);
+        Optional<? extends SymbolicRef<Class<?>>> classRefRef = enumClass().toSymbolicRef(lookup);
         if (!classRefRef.isPresent())
             return Optional.empty();
         return Optional.of(DynamicConstantRef.<E>of(SymbolicRefs.BSM_INVOKE)
-                                   .withArgs(SymbolicRefs.MHR_ENUMREF_FACTORY, classRefRef.get(), constantName));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EnumRef<?> ref = (EnumRef<?>) o;
-        return Objects.equals(enumClass, ref.enumClass) &&
-               Objects.equals(constantName, ref.constantName);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(enumClass, constantName);
+                                   .withArgs(SymbolicRefs.MHR_ENUMREF_FACTORY, classRefRef.get(), constantName()));
     }
 
     @Override
     public String toString() {
-        return String.format("EnumRef[%s.%s]", enumClass, constantName);
+        return String.format("EnumRef[%s.%s]", enumClass(), constantName());
     }
 }

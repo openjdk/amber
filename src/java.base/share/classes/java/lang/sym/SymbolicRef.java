@@ -105,43 +105,12 @@ public interface SymbolicRef<T> extends Constable<T> {
     Optional<? extends SymbolicRef<T>> toSymbolicRef(MethodHandles.Lookup lookup);
 
     /**
-     * Construct a VarHandle for an instance field
-     * @param owner the class containing the field
-     * @param name the field name
-     * @param type the field type
-     * @return the VarHandle
-     */
-    static SymbolicRef<VarHandle> fieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_FIELD, name).withArgs(owner, type);
-    }
-
-    /**
-     * Construct a VarHandle for a static field
-     * @param owner the class containing the field
-     * @param name the field name
-     * @param type the field type
-     * @return the VarHandle
-     */
-    static SymbolicRef<VarHandle> staticFieldVarHandle(ClassRef owner, String name, ClassRef type) {
-        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, name).withArgs(owner, type);
-    }
-
-    /**
-     * Construct a VarHandle for an array
-     * @param arrayClass the array class
-     * @return the VarHandle
-     */
-    static SymbolicRef<VarHandle> arrayVarHandle(ClassRef arrayClass) {
-        return DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_VARHANDLE_ARRAY).withArgs(arrayClass);
-    }
-
-    /**
      * A {@linkplain SymbolicRef} which is associated with a type descriptor
      * string that would be the target of a {@code NameAndType} constant.
      *
      * @param <T> The type to which this constant pool entry resolves
      */
-    public interface WithTypeDescriptor<T> extends SymbolicRef<T> {
+    interface WithTypeDescriptor<T> extends SymbolicRef<T> {
         /**
          * Return the descriptor string associated with this constant pool entry
          *

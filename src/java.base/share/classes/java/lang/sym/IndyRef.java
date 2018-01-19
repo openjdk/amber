@@ -25,15 +25,17 @@
 package java.lang.sym;
 
 import java.lang.annotation.Foldable;
+import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+
+import static java.lang.sym.SymbolicRefs.CR_String;
 
 /**
- * A descriptor for an {@code invokedynamic} invocation
+ * A descriptor for an {@code invokedynamic} site
  */
 @SuppressWarnings("rawtypes")
 public final class IndyRef implements SymbolicRef {
@@ -169,13 +171,20 @@ public final class IndyRef implements SymbolicRef {
      */
     public SymbolicRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
-    public MethodHandle dynamicInvoker(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        // @@@ resolve BSM, adapt as appropriate, figure out how to invoke, invoke, get call site, ask for dynamic invoker
-        return null;
+    public MethodHandle dynamicInvoker(MethodHandles.Lookup lookup) throws Throwable {
+        assert bootstrapMethod.type().parameterType(1).equals(CR_String);
+        MethodHandle bsm = bootstrapMethod.resolveRef(lookup);
+        Object[] args = new Object[bootstrapArgs.length + 3];
+        args[0] = lookup;
+        args[1] = name;
+        args[2] = type.resolveRef(lookup);
+        System.arraycopy(bootstrapArgs, 0, args, 3, bootstrapArgs.length);
+        CallSite callSite = (CallSite) bsm.invokeWithArguments(args);
+        return callSite.dynamicInvoker();
     }
 
     @Override
-    public Object resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public Object resolveRef(MethodHandles.Lookup lookup) {
         throw new UnsupportedOperationException("IndyRef");
     }
 
@@ -203,7 +212,6 @@ public final class IndyRef implements SymbolicRef {
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(bootstrapMethod, name, type);
         result = 31 * result + Arrays.hashCode(bootstrapArgs);
         return result;
