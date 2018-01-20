@@ -255,15 +255,15 @@ public final class SymbolicRefs {
 
     @Foldable
     static final MethodHandleRef MHR_VARHANDLEREF_FIELD_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "fieldVarHandle", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofField", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
 
     @Foldable
     static final MethodHandleRef MHR_VARHANDLEREF_STATIC_FIELD_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "staticFieldVarHandle", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofStaticField", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
 
     @Foldable
     static final MethodHandleRef MHR_VARHANDLEREF_ARRAY_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "arrayVarHandle", CR_VarHandleRef, CR_ClassRef);
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofArray", CR_VarHandleRef, CR_ClassRef);
 
     @Foldable
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY

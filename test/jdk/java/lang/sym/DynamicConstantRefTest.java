@@ -60,11 +60,11 @@ public class DynamicConstantRefTest extends SymbolicRefTest {
         assertEquals(r.resolveRef(LOOKUP), c);
     }
 
-    private void testVarHandleRef(DynamicConstantRef<VarHandle> r, VarHandle vh) {
-//        testSymbolicRef(r);
-//        assertEquals(r.resolveRef(LOOKUP), vh);
+    private void testVarHandleRef(DynamicConstantRef<VarHandle> r, VarHandle vh) throws ReflectiveOperationException  {
+        testSymbolicRef(r);
+        assertEquals(r.resolveRef(LOOKUP), vh);
 
-//        assertEquals(vh.toSymbolicRef(LOOKUP).get(), r);
+        assertEquals(vh.toSymbolicRef(LOOKUP).get(), r);
         // @@@ Test other assertable properties
     }
 

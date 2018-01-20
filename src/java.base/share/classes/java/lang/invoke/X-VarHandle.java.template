@@ -27,7 +27,9 @@ package java.lang.invoke;
 import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 
+import java.lang.sym.VarHandleRef;
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
 
@@ -70,6 +72,18 @@ final class VarHandle$Type$s {
         @Override
         final int internalHashCode() {
             return Long.hashCode(fieldOffset);
+        }
+
+        @Override
+        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+            var receiverTypeRef = receiverType.toSymbolicRef(lookup);
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toSymbolicRef(lookup);
+            if (!receiverTypeRef.isPresent() || !fieldTypeRef.isPresent())
+                return Optional.empty();
+
+            String name = VarHandles.getFieldFromRecieverAndOffset(
+                receiverType, fieldOffset, {#if[Object]?fieldType:$type$.class}).getName();
+            return Optional.of(VarHandleRef.ofField(receiverTypeRef.get(), name, fieldTypeRef.get()));
         }
 
         @ForceInline
@@ -346,6 +360,20 @@ final class VarHandle$Type$s {
         }
 
         @Override
+        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toSymbolicRef(lookup);
+            if (!fieldTypeRef.isPresent())
+                return Optional.empty();
+
+            var staticField = VarHandles.getStaticFieldFromBaseAndOffset(
+                base, fieldOffset, {#if[Object]?fieldType:$type$.class});
+            var receiverTypeRef = staticField.getDeclaringClass().toSymbolicRef(lookup);
+            if (!receiverTypeRef.isPresent())
+                return Optional.empty();
+            return Optional.of(VarHandleRef.ofStaticField(receiverTypeRef.get(), staticField.getName(), fieldTypeRef.get()));
+        }
+
+        @Override
         final MethodType accessModeTypeUncached(AccessMode accessMode) {
             return accessMode.at.accessModeType(null, {#if[Object]?fieldType:$type$.class});
         }
@@ -607,6 +635,15 @@ final class VarHandle$Type$s {
             this.arrayType = {#if[Object]?arrayType:$type$[].class};
             this.componentType = arrayType.getComponentType();
 #end[Object]
+        }
+
+        @Override
+        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+            var arrayTypeRef = {#if[Object]?arrayType:$type$[].class}.toSymbolicRef(lookup);
+            if (!arrayTypeRef.isPresent())
+                return Optional.empty();
+
+            return Optional.of(VarHandleRef.ofArray(arrayTypeRef.get()));
         }
 
         @Override
