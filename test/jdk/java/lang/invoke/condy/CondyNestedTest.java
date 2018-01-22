@@ -274,7 +274,7 @@ public class CondyNestedTest {
     }
 
     void test(String methodName, Class<? extends Throwable>... ts) throws Exception {
-        Method m = c.getMethod("indy_bsm_condy_bsm");
+        Method m = c.getMethod(methodName);
         m.setAccessible(true);
         test(m, ts);
     }
