@@ -103,6 +103,7 @@ public class DetectMutableStaticFields {
         ignore("com/sun/tools/javac/code/Type", "moreInfo");
         ignore("com/sun/tools/javac/util/SharedNameTable", "freelist");
         ignore("com/sun/tools/javac/util/Log", "useRawMessages");
+        ignore("com/sun/tools/javac/parser/JavacParser$ParensResult", "badLambdaKind");
 
         // The following static fields are used for caches of information obtained
         // by reflective lookup, to avoid explicit references that are not available

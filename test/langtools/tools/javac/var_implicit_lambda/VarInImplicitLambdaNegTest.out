@@ -1,0 +1,4 @@
+VarInImplicitLambdaNegTest.java:11:28: compiler.err.var.should.be.applied.to.all
+VarInImplicitLambdaNegTest.java:12:28: compiler.err.var.should.be.applied.to.all
+VarInImplicitLambdaNegTest.java:13:28: compiler.err.var.not.allowed.explicit.lambda
+3 errors
