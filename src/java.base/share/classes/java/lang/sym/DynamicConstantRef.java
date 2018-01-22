@@ -28,6 +28,7 @@ import java.lang.annotation.Foldable;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +53,18 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     private static final Map<MethodHandleRef, Function<DynamicConstantRef, SymbolicRef>> canonicalMap
             = Map.ofEntries(Map.entry(SymbolicRefs.BSM_PRIMITIVE_CLASS, d -> ClassRef.ofDescriptor(d.name)),
                             Map.entry(SymbolicRefs.BSM_ENUM_CONSTANT, d -> EnumRef.of(d.type, d.name)),
-                            Map.entry(SymbolicRefs.BSM_NULL_CONSTANT, d -> SymbolicRefs.NULL));
+                            Map.entry(SymbolicRefs.BSM_NULL_CONSTANT, d -> SymbolicRefs.NULL),
+                            Map.entry(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD,
+                                      d -> VarHandleRef.ofStaticField((ClassRef) d.bootstrapArgs[0],
+                                                                      (String) d.bootstrapArgs[1],
+                                                                      (ClassRef) d.bootstrapArgs[2])),
+                            Map.entry(SymbolicRefs.BSM_VARHANDLE_FIELD,
+                                      d -> VarHandleRef.ofField((ClassRef) d.bootstrapArgs[0],
+                                                                (String) d.bootstrapArgs[1],
+                                                                (ClassRef) d.bootstrapArgs[2])),
+                            Map.entry(SymbolicRefs.BSM_VARHANDLE_ARRAY,
+                                      d -> VarHandleRef.ofArray((ClassRef) d.bootstrapArgs[0]))
+    );
 
     protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
         if (name == null || name.length() == 0)
@@ -98,6 +110,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     private SymbolicRef<T> canonicalize() {
+        // @@@ Existing map-based approach is cute but not very robust; need to add more checking of target DCRef
         @SuppressWarnings("rawtypes")
         Function<DynamicConstantRef, SymbolicRef> f = canonicalMap.get(bootstrapMethod);
         if (f != null) {
