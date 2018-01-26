@@ -263,7 +263,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
         args[2] = name;
         args[3] = type;
         System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        return Optional.of(DynamicConstantRef.<T>of(SymbolicRefs.BSM_INVOKE).withArgs(args));
+        return Optional.of(DynamicConstantRef.<T>of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_DynamicConstantRef).withArgs(args));
     }
 
     @Override

@@ -235,7 +235,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
 
     @Override
     public Optional<? extends SymbolicRef<MethodType>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.<MethodType>of(SymbolicRefs.BSM_INVOKE)
+        return Optional.of(DynamicConstantRef.<MethodType>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_MethodTypeRef)
                                    .withArgs(SymbolicRefs.MHR_METHODTYPEREF_FACTORY, descriptorString()));
     }
 

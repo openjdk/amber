@@ -67,7 +67,7 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
         Optional<? extends SymbolicRef<Class<?>>> classRefRef = enumClass().toSymbolicRef(lookup);
         if (!classRefRef.isPresent())
             return Optional.empty();
-        return Optional.of(DynamicConstantRef.<E>of(SymbolicRefs.BSM_INVOKE)
+        return Optional.of(DynamicConstantRef.<E>of(SymbolicRefs.BSM_INVOKE, name(), SymbolicRefs.CR_EnumRef)
                                    .withArgs(SymbolicRefs.MHR_ENUMREF_FACTORY, classRefRef.get(), constantName()));
     }
 

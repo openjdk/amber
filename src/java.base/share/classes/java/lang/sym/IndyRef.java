@@ -196,7 +196,7 @@ public final class IndyRef implements SymbolicRef {
         args[2] = name;
         args[3] = type;
         System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE).withArgs(args));
+        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_IndyRef).withArgs(args));
     }
 
     @Override

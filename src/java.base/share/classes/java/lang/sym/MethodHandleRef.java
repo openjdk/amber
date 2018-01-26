@@ -301,7 +301,7 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
         Optional<? extends SymbolicRef<MethodType>> typeRefRef = type.toSymbolicRef(lookup);
         if (!kindRef.isPresent() || !classRefRef.isPresent() || !typeRefRef.isPresent())
             return Optional.empty();
-        return Optional.of(DynamicConstantRef.<MethodHandle>of(SymbolicRefs.BSM_INVOKE)
+        return Optional.of(DynamicConstantRef.<MethodHandle>of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_MethodHandleRef)
                                    .withArgs(SymbolicRefs.MHR_METHODHANDLEREF_FACTORY, kindRef.get(), classRefRef.get(), name, typeRefRef.get()));
     }
 

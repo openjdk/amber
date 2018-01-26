@@ -227,7 +227,7 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
 
     @Override
     public Optional<? extends SymbolicRef<Class<?>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.<Class<?>>of(SymbolicRefs.BSM_INVOKE)
+        return Optional.of(DynamicConstantRef.<Class<?>>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_ClassRef)
                                    .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptor));
     }
 

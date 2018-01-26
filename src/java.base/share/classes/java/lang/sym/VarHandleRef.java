@@ -198,7 +198,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
                 return Optional.empty();
             args.add(varTypeRefRef.get());
         }
-        return Optional.of(DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_INVOKE)
+        return Optional.of(DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_INVOKE, name(), SymbolicRefs.CR_VarHandleRef)
                                    .withArgs(args.toArray(EMPTY_ARGS)));
     }
 
