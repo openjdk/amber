@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -20,31 +20,31 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-/*
- * @test
- * @bug 8048100
- * @summary test the new Module attributes
- * @modules jdk.compiler
- *          jdk.zipfs
- * @compile -XDignore.symbol.file Utils.java ModuleAttributes.java
- * @run main ModuleAttributes
- */
-public class ModuleAttributes {
+package custom;
 
-    public static void main(String... args) throws Exception {
-        new ModuleAttributes().run();
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ *
+ * @author danielfuchs
+ */
+public class GlobalHandler extends java.util.logging.ConsoleHandler {
+
+    public static final AtomicLong IDS = new AtomicLong();
+    public final long id = IDS.incrementAndGet();
+    public GlobalHandler() {
+        System.out.println("GlobalHandler(" + id + ") created");
+        //new Exception("GlobalHandler").printStackTrace();
     }
 
-    public void run() throws Exception {
-        File file = Utils.createRtJar(".*module-info\\.class");
-        Utils.testWithRepack(file,
-                "--effort=1",
-                "--unknown-attribute=error");
-        Utils.cleanup();
+    @Override
+    public void close() {
+        System.out.println("GlobalHandler(" + id + ") closed");
+        super.close();
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getName() + '(' + id + ')';
     }
 }
