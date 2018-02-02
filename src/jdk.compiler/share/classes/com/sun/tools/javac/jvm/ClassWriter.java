@@ -1151,7 +1151,7 @@ public class ClassWriter extends ClassFile {
         databuf.appendChar(pool.put(typeSig(v.erasure(types))));
         int acountIdx = beginAttrs();
         int acount = 0;
-        if (v.getConstValue() != null) {
+        if (v.getConstValue() != null && canMakeItToConstantValue(v.type)) {
             int alenIdx = writeAttr(names.ConstantValue);
             databuf.appendChar(pool.put(v.getConstValue()));
             endAttr(alenIdx);
@@ -1159,6 +1159,10 @@ public class ClassWriter extends ClassFile {
         }
         acount += writeMemberAttrs(v);
         endAttrs(acountIdx, acount);
+    }
+
+    private boolean canMakeItToConstantValue(Type t) {
+        return t.isPrimitive() || t.tsym == syms.stringType.tsym;
     }
 
     /** Write method symbol, entering all references into constant pool.

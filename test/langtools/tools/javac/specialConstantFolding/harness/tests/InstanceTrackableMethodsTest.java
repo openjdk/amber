@@ -23,8 +23,8 @@ public class InstanceTrackableMethodsTest extends ConstantFoldingTest {
         check(string2.descriptorString().equals(string3.descriptorString()));
     }
 
-    @InstructionInfo(bytecodePosition=6, values={"CONSTANT_Class_info", "[Ljava/lang/String;"})
-    @InstructionInfo(bytecodePosition=14, values={"CONSTANT_Class_info", "[Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=0, values={"CONSTANT_Class_info", "[Ljava/lang/String;"})
+    @InstructionInfo(bytecodePosition=3, values={"CONSTANT_Class_info", "[Ljava/lang/String;"})
     void test2() {
         ClassRef stringClass = ClassRef.ofDescriptor("Ljava/lang/String;");
         Class<?> stringArrClass = ldc(stringClass.array());

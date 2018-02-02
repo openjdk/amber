@@ -690,8 +690,12 @@ public class TransTypes extends TreeTranslator {
         tree.args = translateArgs(tree.args, argtypes, tree.varargsElement);
 
         tree.type = types.erasure(tree.type);
+        Object constant = tree.type.constValue();
         // Insert casts of method invocation results as needed.
         result = retype(tree, mt.getReturnType(), pt);
+        if (constant != null) {
+            tree.type = tree.type.constType(constant);
+        }
     }
 
     public void visitNewClass(JCNewClass tree) {

@@ -25,14 +25,14 @@
 
 package com.sun.tools.javac.comp;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
+import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
 import com.sun.tools.javac.code.Symbol.DynamicMethodSymbol;
 import com.sun.tools.javac.code.Symbol.IntrinsicsLDCMethodSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
-import com.sun.tools.javac.code.Symbol.OperatorSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -50,7 +50,8 @@ import com.sun.tools.javac.tree.JCTree.JCTypeCast;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.TreeInfo;
-import com.sun.tools.javac.tree.TreeScanner;
+import com.sun.tools.javac.tree.TreeMaker;
+import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.util.Constables;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
@@ -60,8 +61,6 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
-import static com.sun.tools.javac.code.Flags.EFFECTIVELY_FINAL;
-import static com.sun.tools.javac.code.Flags.FINAL;
 import static com.sun.tools.javac.code.Kinds.Kind.VAR;
 import static com.sun.tools.javac.code.TypeTag.NONE;
 
@@ -71,7 +70,7 @@ import static com.sun.tools.javac.code.TypeTag.NONE;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-public class ConstablesVisitor extends TreeScanner {
+public class ConstablesVisitor extends TreeTranslator {
     protected static final Context.Key<ConstablesVisitor> constablesVisitorKey = new Context.Key<>();
 
     public static ConstablesVisitor instance(Context context) {
@@ -87,6 +86,7 @@ public class ConstablesVisitor extends TreeScanner {
     private final Log log;
     private final ConstFold cfolder;
     private final Constables constables;
+    private final TreeMaker make;
 
     protected ConstablesVisitor(Context context) {
         context.put(constablesVisitorKey, this);
@@ -97,8 +97,8 @@ public class ConstablesVisitor extends TreeScanner {
         types = Types.instance(context);
         log = Log.instance(context);
         cfolder = ConstFold.instance(context);
+        make = TreeMaker.instance(context);
         constables = new Constables(context);
-        elementToConstantMap = new HashMap<>();
     }
 
     /**
@@ -108,51 +108,47 @@ public class ConstablesVisitor extends TreeScanner {
 
     private Env<AttrContext> attrEnv;
 
-    public void analyzeTree(JCTree tree, Env<AttrContext> attrEnv) {
+    public JCTree analyzeTree(JCTree tree, Env<AttrContext> attrEnv) {
         if (!doConstantFold) {
-            return;
+            return tree;
         }
         this.attrEnv = attrEnv;
-        scan(tree);
-        elementToConstantMap.clear();
+        return translate(tree);
     }
-
-    public Map<Object, Object> elementToConstantMap;
 
     @Override
     public void visitVarDef(JCVariableDecl tree) {
         super.visitVarDef(tree);
+        tree = (JCVariableDecl)result;
         if (tree.init != null) {
             VarSymbol v = tree.sym;
             Object constant = tree.init.type.constValue();
-            constant = constant != null ?
-                    constant :
-                    elementToConstantMap.get(tree.init);
             if (constant != null &&
                     (v.isFinal() || v.isEffectivelyFinal())) {
-                elementToConstantMap.remove(tree.init);
-                elementToConstantMap.put(v, constant);
+                v.setData(constant);
+            }
+            if (v.isLocal() &&
+                v.owner.kind == Kind.MTH &&
+                (v.isFinal() || v.isEffectivelyFinal())) {
+                tree.skip = true;
             }
         }
-    }
-
-    Object getConstant(JCTree tree) {
-        return tree.type.constValue() != null ?
-                tree.type.constValue() :
-                elementToConstantMap.get(tree);
     }
 
     @Override
     public void visitBinary(JCBinary tree) {
         super.visitBinary(tree);
+        tree = (JCBinary)result;
         if (tree.type.constValue() == null &&
-                getConstant(tree.lhs) != null &&
-                getConstant(tree.rhs) != null) {
+                tree.lhs.type.constValue() != null &&
+                tree.rhs.type.constValue() != null) {
 
-            Object constant = cfolder.fold2(tree.operator, getConstant(tree.lhs), getConstant(tree.rhs));
+            Object constant = cfolder.fold2(tree.operator, tree.lhs.type.constValue(), tree.rhs.type.constValue());
             if (constant != null) {
-//                ctype = cfolder.coerce(ctype, tree.type);
-                elementToConstantMap.put(tree, constant);
+                Type foldType = cfolder.foldType(tree.operator);
+                if (foldType != null) {
+                    tree.type = foldType.constType(constant);
+                }
             }
         }
     }
@@ -160,58 +156,57 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitUnary(JCUnary tree) {
         super.visitUnary(tree);
+        tree = (JCUnary)result;
         Object constant;
         if (tree.type.constValue() == null &&
-                (constant = getConstant(tree.arg)) != null &&
+                (constant = tree.arg.type.constValue()) != null &&
                 constant instanceof Number) {
             constant = cfolder.fold1(tree.operator, constant);
-//                ctype = cfolder.coerce(ctype, tree.type);
-            elementToConstantMap.put(tree, constant);
+            if (constant != null) {
+                Type foldType = cfolder.foldType(tree.operator);
+                if (foldType != null) {
+                    tree.type = foldType.constType(constant);
+                }
+            }
         }
     }
 
     @Override
     public void visitConditional(JCConditional tree) {
         super.visitConditional(tree);
-        Object condConstant = getConstant(tree.cond);
-        Object truePartConstant = getConstant(tree.truepart);
-        Object falsePartConstant = getConstant(tree.falsepart);
+        tree = (JCConditional)result;
+        Object condConstant = tree.cond.type.constValue();
+        Object truePartConstant = tree.truepart.type.constValue();
+        Object falsePartConstant = tree.falsepart.type.constValue();
         if (tree.type.constValue() == null &&
             condConstant != null &&
             truePartConstant != null &&
             falsePartConstant != null &&
             !tree.type.hasTag(NONE)) {
             Object constant = ConstFold.isTrue(tree.cond.type.getTag(), condConstant) ? truePartConstant : falsePartConstant;
-            elementToConstantMap.put(tree, constant);
+            tree.type = tree.type.constType(constant);
         }
+        result = rewriteCondy(tree);
     }
 
     @Override
     public void visitTypeCast(JCTypeCast tree) {
         super.visitTypeCast(tree);
-        if (tree.type.constValue() == null && getConstant(tree.expr) != null) {
-            elementToConstantMap.put(tree, getConstant(tree.expr));
+        tree = (JCTypeCast)result;
+        if (tree.type.constValue() == null && tree.expr.type.constValue() != null) {
+            tree.type = tree.type.constType(tree.expr.type.constValue());
         }
-    }
-
-    Type coerce(Type etype, Type ttype) {
-        Type coercedType = cfolder.coerce(etype, ttype);
-        if (coercedType.constValue() == null) {
-            // constant value lost in the intent
-            if (types.isConvertible(etype, ttype)) {
-                Type unboxedType = types.unboxedType(ttype);
-                if (unboxedType != Type.noType) {
-                    coercedType = cfolder.coerce(etype, unboxedType);
-                    return ttype.constType(coercedType.constValue());
-                }
-            }
-        }
-        return coercedType;
+        result = rewriteCondy(tree);
     }
 
     @Override
     public void visitIdent(JCIdent tree) {
         super.visitIdent(tree);
+        checkForSymbolConstant(tree);
+        result = rewriteCondy(tree);
+    }
+
+    void checkForSymbolConstant(JCTree tree) {
         Symbol sym = TreeInfo.symbol(tree);
         if (sym.kind == VAR) {
             VarSymbol v = (VarSymbol)sym;
@@ -221,14 +216,12 @@ public class ConstablesVisitor extends TreeScanner {
                 // legacy constant, we should update the type of the tree if we want Gen to generate
                 // the right code for us
                 tree.type = tree.type.constType(constant);
-                return;
             } else {
-                constant = elementToConstantMap.get(v);
                 constant = constant != null ?
                         constant :
                         constables.foldTrackableField(tree, attrEnv);
                 if (constant != null) {
-                    elementToConstantMap.put(tree, constant);
+                    tree.type = tree.type.constType(constant);
                 }
             }
         }
@@ -237,15 +230,15 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitSelect(JCFieldAccess tree) {
         super.visitSelect(tree);
-        Object constantType = constables.foldTrackableField(tree, attrEnv);
-        if (constantType != null) {
-            elementToConstantMap.put(tree, constantType);
-        }
+        tree = (JCFieldAccess)result;
+        checkForSymbolConstant(tree);
+        result = rewriteCondy(tree);
     }
 
     @Override
     public void visitApply(JCMethodInvocation tree) {
         super.visitApply(tree);
+        tree = (JCMethodInvocation)result;
         Name methName = TreeInfo.name(tree.meth);
         boolean isConstructorCall = methName == names._this || methName == names._super;
         if (!isConstructorCall) {
@@ -256,7 +249,6 @@ public class ConstablesVisitor extends TreeScanner {
                 log.error(tree.pos(), Errors.IntrinsicsLdcMustHaveConstantArg);
             }
             if (constant != null) {
-                elementToConstantMap.put(tree, constant);
                 if (isLDC) {
                     Type newType;
                     // if condy
@@ -278,6 +270,8 @@ public class ConstablesVisitor extends TreeScanner {
                     TreeInfo.setSymbol(tree.meth, ldcSymbol);
                     tree.meth.type = newMT;
                     tree.type = newMT.restype;
+                } else {
+                    tree.type = tree.type.constType(constant);
                 }
             } else if (constables.isIntrinsicsIndy(tree.meth)) {
                 List<Object> constants = constables.extractAllConstansOrNone(List.of(tree.args.head));
@@ -331,6 +325,19 @@ public class ConstablesVisitor extends TreeScanner {
                     tree.type = mType.restype;
                 }
             }
+            result = rewriteCondy(tree);
         }
+    }
+
+    JCTree rewriteCondy(JCTree tree) {
+        Object constant = tree.type.constValue();
+        Optional<DynamicFieldSymbol> opDynSym = constables.getDynamicFieldSymbol(tree, tree.type.constValue(), attrEnv);
+        if (opDynSym.isPresent()) {
+            DynamicFieldSymbol dynSym = opDynSym.get();
+            JCIdent ident = make.at(tree.pos()).Ident(dynSym);
+            ident.type = dynSym.type.constType(constant);
+            return ident;
+        }
+        return tree;
     }
 }

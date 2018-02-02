@@ -173,6 +173,7 @@ public class Symtab {
     public final Type methodHandlesLookupType;
     public final Type classRefType;
     public final Type dynamicConstantRefType;
+    public final Type symbolicRefType;
     public final Type intrinsicsType;
     public final Type methodTypeType;
     public final Type foldableType;
@@ -500,6 +501,7 @@ public class Symtab {
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
         methodHandlesLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
         dynamicConstantRefType = enterClass("java.lang.sym.DynamicConstantRef");
+        symbolicRefType = enterClass("java.lang.sym.SymbolicRef");
         classRefType = enterClass("java.lang.sym.ClassRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");

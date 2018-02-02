@@ -1,4 +1,6 @@
+IndyCrashTest.java:30:33: compiler.warn.member.not.found.at.class: foo, class, IndyCrashTest.IntrinsicTestHelper
+IndyCrashTest.java:31:58: compiler.warn.member.not.found.at.class: foo, class, IndyCrashTest.IntrinsicTestHelper
 IndyCrashTest.java:31:57: compiler.warn.member.not.found.at.class: foo, class, IndyCrashTest.IntrinsicTestHelper
 IndyCrashTest.java:31:58: compiler.err.method.handle.not.suitable.indy: ()java.lang.invoke.CallSite
 1 error
-1 warning
+3 warnings

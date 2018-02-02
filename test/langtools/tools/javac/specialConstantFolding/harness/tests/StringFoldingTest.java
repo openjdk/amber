@@ -10,7 +10,7 @@ public class StringFoldingTest extends ConstantFoldingTest {
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_Class_info", "java/lang/String"})
-    @InstructionInfo(bytecodePosition=9, values={"CONSTANT_Class_info", "java/lang/String"})
+    @InstructionInfo(bytecodePosition=3, values={"CONSTANT_Class_info", "java/lang/String"})
     void test() {
         Class<?> c1 = (Class<?>)ldc(ClassRef.ofDescriptor("Ljava/lang/String;" + ""));
         ClassRef c2 = ClassRef.ofDescriptor("Ljava/lang/String;");

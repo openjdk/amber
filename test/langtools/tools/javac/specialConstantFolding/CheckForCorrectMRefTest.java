@@ -93,9 +93,9 @@ public class CheckForCorrectMRefTest {
     void run() throws Exception {
         compileTestClass(source1);
         compileTestClass(source2);
-        checkForInterfaceMRef(33);
-        checkForMRef(44);
-        checkForFieldRef(50, 52);
+        checkForInterfaceMRef(17);
+        checkForMRef(22);
+        checkForFieldRef(23, 24);
     }
 
     void compileTestClass(String source) throws Exception {

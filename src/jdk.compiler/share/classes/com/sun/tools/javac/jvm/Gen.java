@@ -26,6 +26,8 @@
 package com.sun.tools.javac.jvm;
 
 
+import java.util.Optional;
+
 import com.sun.tools.javac.tree.TreeInfo.PosKind;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -127,6 +129,7 @@ public class Gen extends JCTree.Visitor {
             : options.isSet(G_CUSTOM, "vars");
         genCrt = options.isSet(XJCOV);
         debugCode = options.isSet("debug.code");
+        doConstantFold = options.isSet("doConstantFold");
         allowBetterNullChecks = target.hasObjects();
         pool = new Pool(types);
         // ignore cldc because we cannot have both stackmap formats
@@ -141,6 +144,7 @@ public class Gen extends JCTree.Visitor {
     private final boolean genCrt;
     private final boolean debugCode;
     private final boolean allowBetterNullChecks;
+    private final boolean doConstantFold;
 
     /** Code buffer, set by genMethod.
      */
@@ -812,7 +816,12 @@ public class Gen extends JCTree.Visitor {
                 // Short circuit any expressions which are constants
                 tree.accept(classReferenceVisitor);
                 checkStringConstant(tree.pos(), tree.type.constValue());
-                result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                Symbol sym = TreeInfo.symbol(tree);
+                if (sym != null && isLambdaCondy(sym)) {
+                    result = items.makeDynamicItem(sym);
+                } else {
+                    result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                }
             } else {
                 this.pt = pt;
                 tree.accept(this);
@@ -1011,7 +1020,9 @@ public class Gen extends JCTree.Visitor {
         code.newLocal(v);
         if (tree.init != null) {
             checkStringConstant(tree.init.pos(), v.getConstValue());
-            if (v.getConstValue() == null || varDebugInfo) {
+            if (v.getConstValue() == null ||
+                    (!doConstantFold && varDebugInfo) ||
+                    (doConstantFold && !tree.skip)) {
                 Assert.check(letExprDepth != 0 || code.state.stacksize == 0);
                 genExpr(tree.init, v.erasure(types)).load();
                 items.makeLocalItem(v).store();

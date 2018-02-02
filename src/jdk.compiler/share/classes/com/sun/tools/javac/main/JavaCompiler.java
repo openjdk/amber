@@ -1403,7 +1403,7 @@ public class JavaCompiler {
 
                 analyzer.flush(env);
 
-                constablesVisitor.analyzeTree(env.tree, env);
+                env.tree = constablesVisitor.analyzeTree(env.tree, env);
 
                 results.add(env);
             }

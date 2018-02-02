@@ -31,12 +31,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
+import java.util.Optional;
 
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.CompletionFailure;
+import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.ModuleSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
@@ -48,11 +50,9 @@ import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.AttrContext;
-import com.sun.tools.javac.comp.ConstablesVisitor;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.comp.Resolve.*;
-//import com.sun.tools.javac.comp.Resolve.BasicLookupHelper;
 import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.Pool;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
@@ -85,7 +85,6 @@ public class Constables {
         syms = Symtab.instance(context);
         rs = Resolve.instance(context);
         log = Log.instance(context);
-        constablesVisitor = ConstablesVisitor.instance(context);
         try {
             methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
@@ -93,6 +92,7 @@ public class Constables {
             constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
             indyRefClass = Class.forName("java.lang.sym.IndyRef", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
+            symbolicRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
             symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
         } catch (ClassNotFoundException ex) {
             methodHandleRefClass = null;
@@ -102,6 +102,7 @@ public class Constables {
             indyRefClass = null;
             dynamicConstantClass = null;
             symRefs = null;
+            symbolicRefClass = null;
         }
     }
 
@@ -111,7 +112,6 @@ public class Constables {
     private final Resolve rs;
     private final Log log;
     private ModuleSymbol currentModule;
-    private final ConstablesVisitor constablesVisitor;
 
     /** The unread portion of the currently read type is
      *  signature[sigp..siglimit-1].
@@ -267,6 +267,29 @@ public class Constables {
         return head.tail;
     }
 
+    public Optional<DynamicFieldSymbol> getDynamicFieldSymbol(JCTree tree, Object constant, Env<AttrContext> attrEnv) {
+        if (constant != null) {
+            if (!canMakeItToConstantValue(tree.type) &&
+                symbolicRefClass.isInstance(constant)) {
+                constant = ((Optional<?>)invokeMethodReflectively(symbolicRefClass, constant, "toSymbolicRef")).get();
+                // now this should be a condy that the compiler can understand
+                // a Pool.ConstantDynamic
+                Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);
+                if (condyOb instanceof Pool.ConstantDynamic) {
+                    Pool.ConstantDynamic condy = (Pool.ConstantDynamic)condyOb;
+                    DynamicFieldSymbol dynSym = new DynamicFieldSymbol(condy.name,
+                            syms.noSymbol,
+                            condy.bsm.refKind,
+                            (MethodSymbol)condy.bsm.refSym,
+                            condy.type,
+                            condy.args);
+                    return Optional.of(dynSym);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     public Object convertConstant(JCTree tree, Env<AttrContext> attrEnv, Object constant, ModuleSymbol currentModule) {
         return convertConstant(tree, attrEnv, constant, currentModule, false);
     }
@@ -402,7 +425,12 @@ public class Constables {
     public Class<?> constantRefClass;
     public Class<?> indyRefClass;
     public Class<?> dynamicConstantClass;
+    public Class<?> symbolicRefClass;
     public Class<?> symRefs;
+
+    public boolean canMakeItToConstantValue(Type t) {
+        return t.isPrimitive() || t.tsym == syms.stringType.tsym;
+    }
 
     boolean canHaveInterfaceOwner(int refKind) {
         switch (refKind) {
@@ -696,14 +724,7 @@ public class Constables {
             if (argConstant != null) {
                 constantArgumentValues.add(argConstant);
             } else {
-                argConstant = constablesVisitor.elementToConstantMap.get(arg) != null ?
-                        constablesVisitor.elementToConstantMap.get(arg) :
-                        constablesVisitor.elementToConstantMap.get(TreeInfo.symbol(arg));
-                if (argConstant != null) {
-                    constantArgumentValues.add(argConstant);
-                } else {
-                    return List.nil();
-                }
+                return List.nil();
             }
         }
         return constantArgumentValues.toList();
@@ -721,7 +742,7 @@ public class Constables {
                 JCTree qualifierTree = (tree.meth.hasTag(SELECT))
                     ? ((JCFieldAccess) tree.meth).selected
                     : null;
-                Object instance = constablesVisitor.elementToConstantMap.get(qualifierTree);
+                Object instance = qualifierTree.type.constValue(); //constablesVisitor.elementToConstantMap.get(qualifierTree);
                 className = msym.owner.type.tsym.flatName().toString();
                 methodName = msym.name;
                 Class<?> constablesClass = Class.forName(className, false, null);

@@ -22,14 +22,14 @@ public class FindStaticTest extends ConstantFoldingTest {
         test3();
     }
 
-    @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodHandle_info", "REF_invokeStatic"})
+    @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeStatic"})
     void test1() throws Throwable {
         final MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
         MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LFindStaticTest;"), "foo", mt));
         check(mh2.invoke().toString().equals("invoking static method FindStaticTest.foo()"));
     }
 
-    @InstructionInfo(bytecodePosition=13, values={"CONSTANT_MethodHandle_info", "REF_invokeStatic"})
+    @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeStatic"})
     void test2() throws Throwable {
         MethodTypeRef mt = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
         MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LFindStaticTest;"), "foo", mt));

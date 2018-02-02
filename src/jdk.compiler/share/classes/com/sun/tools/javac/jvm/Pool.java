@@ -301,10 +301,10 @@ public class Pool {
      * Pool entry associated with dynamic constants.
      */
     public static class ConstantDynamic {
-        MethodHandle bsm;
-        Name name;
+        public MethodHandle bsm;
+        public Name name;
         public Type type;
-        Object[] args;
+        public Object[] args;
         Types types;
 
         public ConstantDynamic(Name name, MethodHandle bsm, Object[] args, Types types) {
