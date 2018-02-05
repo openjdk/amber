@@ -240,8 +240,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         /** Patterns.
          */
-        VARIABLEPATTERN,
-        CONSTANTPATTERN,
+        BINDINGPATTERN,
+        LITERALPATTERN,
 
         /** Indexed array expressions, of type Indexed.
          */
@@ -1277,10 +1277,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return constExpression();
         }
         public JCExpression constExpression() {
-            if (pat == null || !pat.hasTag(CONSTANTPATTERN)) {
+            if (pat == null || !pat.hasTag(LITERALPATTERN)) {
                 return null;
             }
-            JCConstantPattern cpat = (JCConstantPattern) pat;
+            JCLiteralPattern cpat = (JCLiteralPattern) pat;
             return cpat.value;
         }
         @DefinedBy(Api.COMPILER_TREE)
@@ -2135,13 +2135,13 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             implements PatternTree {
     }
 
-    public static class JCVariablePattern extends JCPattern
-            implements VariablePatternTree {
+    public static class JCBindingPattern extends JCPattern
+            implements BindingPatternTree {
         public Name name;
         public BindingSymbol symbol;
         public JCExpression vartype;   /** Null if var pattern */
 
-        protected JCVariablePattern(Name name, BindingSymbol symbol, JCExpression vartype) {
+        protected JCBindingPattern(Name name, BindingSymbol symbol, JCExpression vartype) {
             this.name = name;
             this.symbol = symbol;
             this.vartype = vartype;
@@ -2159,33 +2159,33 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override
         public void accept(Visitor v) {
-            v.visitVariablePattern(this);
+            v.visitBindingPattern(this);
         }
 
         @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() {
-            return Kind.VARIABLE_PATTERN;
+            return Kind.BINDING_PATTERN;
         }
 
         @Override
         @DefinedBy(Api.COMPILER_TREE)
         public <R, D> R accept(TreeVisitor<R, D> v, D d) {
-            return v.visitVariablePattern(this, d);
+            return v.visitBindingPattern(this, d);
         }
 
         @Override
         public Tag getTag() {
-            return VARIABLEPATTERN;
+            return BINDINGPATTERN;
         }
     }
 
-    public static class JCConstantPattern extends JCPattern
-            implements ConstantPatternTree {
+    public static class JCLiteralPattern extends JCPattern
+            implements LiteralPatternTree {
 
         public JCExpression value;
+        public LiteralPatternKind patternKind;
 
-
-        protected JCConstantPattern(JCExpression value) {
+        protected JCLiteralPattern(JCExpression value) {
             Assert.checkNonNull(value);
             this.value = value;
         }
@@ -2198,12 +2198,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override
         public void accept(Visitor v) {
-            v.visitConstantPattern(this);
+            v.visitLiteralPattern(this);
         }
 
         @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() {
-            return Kind.CONSTANT_PATTERN;
+            return Kind.LITERAL_PATTERN;
         }
 
         @DefinedBy(Api.COMPILER_TREE)
@@ -2214,12 +2214,16 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         @DefinedBy(Api.COMPILER_TREE)
         public <R, D> R accept(TreeVisitor<R, D> v, D d) {
-            return v.visitConstantPattern(this, d);
+            return v.visitLiteralPattern(this, d);
         }
 
         @Override
         public Tag getTag() {
-            return CONSTANTPATTERN;
+            return LITERALPATTERN;
+        }
+        public enum LiteralPatternKind {
+            CONSTANTEXPRESSIONORNULL,
+            TYPE
         }
     }
 
@@ -3192,7 +3196,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCTypeCast TypeCast(JCTree expr, JCExpression type);
         JCInstanceOf TypeTest(JCExpression expr, JCTree clazz);
         JCMatches PatternTest(JCExpression expr, JCPattern clazz);
-        JCVariablePattern VariablePattern(Name name, JCExpression vartype);
+        JCBindingPattern BindingPattern(Name name, JCExpression vartype);
+        JCLiteralPattern LiteralPattern(JCExpression cexp);
         JCArrayAccess Indexed(JCExpression indexed, JCExpression index);
         JCFieldAccess Select(JCExpression selected, Name selector);
         JCIdent Ident(Name idname);
@@ -3256,8 +3261,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitTypeCast(JCTypeCast that)           { visitTree(that); }
         public void visitTypeTest(JCInstanceOf that)         { visitTree(that); }
         public void visitPatternTest(JCMatches that)         { visitTree(that); }
-        public void visitVariablePattern(JCVariablePattern that) { visitTree(that); }
-        public void visitConstantPattern(JCConstantPattern that) { visitTree(that); }
+        public void visitBindingPattern(JCBindingPattern that) { visitTree(that); }
+        public void visitLiteralPattern(JCLiteralPattern that) { visitTree(that); }
         public void visitIndexed(JCArrayAccess that)         { visitTree(that); }
         public void visitSelect(JCFieldAccess that)          { visitTree(that); }
         public void visitReference(JCMemberReference that)   { visitTree(that); }

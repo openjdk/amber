@@ -478,17 +478,17 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
 
 
     @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitVariablePattern(VariablePatternTree node, P p) {
-        JCVariablePattern t = (JCVariablePattern) node;
+    public JCTree visitBindingPattern(BindingPatternTree node, P p) {
+        JCBindingPattern t = (JCBindingPattern) node;
         JCExpression vartype = copy(t.vartype, p);
-        return M.at(t.pos).VariablePattern(t.name, vartype);
+        return M.at(t.pos).BindingPattern(t.name, vartype);
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitConstantPattern(ConstantPatternTree node, P p) {
-        JCConstantPattern t = (JCConstantPattern)node;
+    public JCTree visitLiteralPattern(LiteralPatternTree node, P p) {
+        JCLiteralPattern t = (JCLiteralPattern)node;
         JCExpression value = copy(t.value, p);
-        return M.at(t.pos).ConstantPattern(value);
+        return M.at(t.pos).LiteralPattern(value);
     }
     
     @DefinedBy(Api.COMPILER_TREE)

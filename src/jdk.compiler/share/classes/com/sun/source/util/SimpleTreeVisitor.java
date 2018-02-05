@@ -559,7 +559,7 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @return  the result of {@code defaultAction}
      */
     @Override
-    public R visitVariablePattern(VariablePatternTree node, P p) {
+    public R visitBindingPattern(BindingPatternTree node, P p) {
         return defaultAction(node, p);
     }
 
@@ -571,7 +571,7 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @return  the result of {@code defaultAction}
      */
     @Override
-    public R visitConstantPattern(ConstantPatternTree node, P p) {
+    public R visitLiteralPattern(LiteralPatternTree node, P p) {
         return defaultAction(node, p);
     }
 

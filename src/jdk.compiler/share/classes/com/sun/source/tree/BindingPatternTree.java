@@ -26,15 +26,15 @@
 package com.sun.source.tree;
 
 /**
- * A constant pattern tree
+ * A binding pattern tree
  */
-public interface ConstantPatternTree extends PatternTree {
+public interface BindingPatternTree extends PatternTree {
 
     /**
-     * The value of this pattern.
-     * @return value of this pattern
+     * Returns the type of the bind variable.
+     * @return the type
      */
-    public ExpressionTree getValue();
+    Tree getType();
 
 }
 

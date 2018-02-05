@@ -26,7 +26,6 @@
 package com.sun.tools.javac.comp;
 
 import com.sun.tools.javac.code.Flags;
-import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -39,20 +38,21 @@ import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
-import com.sun.tools.javac.tree.JCTree.JCConstantPattern;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCForLoop;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCInstanceOf;
 import com.sun.tools.javac.tree.JCTree.JCLabeledStatement;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern.LiteralPatternKind;
 import com.sun.tools.javac.tree.JCTree.JCMatches;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
 import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
-import com.sun.tools.javac.tree.JCTree.JCVariablePattern;
+import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
 import com.sun.tools.javac.tree.JCTree.JCWhileLoop;
 import com.sun.tools.javac.tree.JCTree.Tag;
 import com.sun.tools.javac.tree.TreeMaker;
@@ -139,8 +139,8 @@ public class TransPatterns extends TreeTranslator {
     public void visitPatternTest(JCMatches tree) {
         JCTree pattern = tree.pattern;
         switch (pattern.getTag()) {
-            case VARIABLEPATTERN:{
-                JCVariablePattern patt = (JCVariablePattern)pattern;
+            case BINDINGPATTERN:{
+                JCBindingPattern patt = (JCBindingPattern)pattern;
                 VarSymbol pattSym = patt.symbol;
                 Type tempType = tree.expr.type.hasTag(BOT) ?
                         syms.objectType
@@ -167,18 +167,23 @@ public class TransPatterns extends TreeTranslator {
                 result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr), (JCExpression)result).setType(syms.booleanType);
                 break;
             }
-            case CONSTANTPATTERN: {
-                JCExpression ce = ((JCConstantPattern) pattern).value;
-                JCExpression lhs = ce.type.hasTag(BOT) ?
-                        tree.expr
-                        : make.TypeCast(make.Type(ce.type), tree.expr).setType(ce.type.baseType());
-                if (!ce.type.hasTag(BOT) && tree.expr.type.isReference()) {
-                    result = translate(makeBinary(
-                            Tag.AND,
-                            makeTypeTest(tree.expr,make.Type(types.boxedTypeOrType(ce.type))),
-                            makeBinary(JCTree.Tag.EQ, lhs, ce)));
+            case LITERALPATTERN: {
+                JCLiteralPattern patt = (JCLiteralPattern)pattern;
+                if (patt.patternKind == LiteralPatternKind.TYPE) {
+                    result = makeTypeTest(tree.expr, patt.value);
                 } else {
-                    result = translate(makeBinary(JCTree.Tag.EQ, lhs, ce));
+                    JCExpression ce = ((JCLiteralPattern) pattern).value;
+                    JCExpression lhs = ce.type.hasTag(BOT) ?
+                            tree.expr
+                            : make.TypeCast(make.Type(ce.type), tree.expr).setType(ce.type.baseType());
+                    if (!ce.type.hasTag(BOT) && tree.expr.type.isReference()) {
+                        result = translate(makeBinary(
+                                Tag.AND,
+                                makeTypeTest(tree.expr, make.Type(types.boxedTypeOrType(ce.type))),
+                                makeBinary(JCTree.Tag.EQ, lhs, ce)));
+                    } else {
+                        result = translate(makeBinary(JCTree.Tag.EQ, lhs, ce));
+                    }
                 }
                 break;
             }

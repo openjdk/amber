@@ -653,8 +653,8 @@ public class Flow {
                             return l.nonEmpty();
                         } else {
                             switch (c.pat.getTag()) {
-                                case VARIABLEPATTERN: {
-                                    JCVariablePattern vpatt = (JCVariablePattern)c.pat;
+                                case BINDINGPATTERN: {
+                                    JCBindingPattern vpatt = (JCBindingPattern)c.pat;
                                     if (vpatt.vartype == null) {
                                         assignableCaseFound = true;
                                         if (aClause.pat != null)
@@ -664,18 +664,18 @@ public class Flow {
                                             assignableCaseFound = true;
                                         if (aClause.pat != null) {
                                             switch (aClause.pat.getTag()) {
-                                                case VARIABLEPATTERN:
-                                                    JCVariablePattern currentPattern = (JCVariablePattern)aClause.pat;
+                                                case BINDINGPATTERN:
+                                                    JCBindingPattern currentPattern = (JCBindingPattern)aClause.pat;
                                                     if (currentPattern.vartype != null) {
                                                         if (types.isAssignable(types.erasure(currentPattern.vartype.type), types.erasure(vpatt.type)))
                                                             return true;
                                                     }
                                                     break;
-                                                case CONSTANTPATTERN:
-                                                    JCConstantPattern constantPattern = (JCConstantPattern) aClause.pat;
-                                                    if (constantPattern.type.constValue()==null) {
+                                                case LITERALPATTERN:
+                                                    JCLiteralPattern literalPattern = (JCLiteralPattern) aClause.pat;
+                                                    if (literalPattern.type.constValue()==null) {
                                                         return false; // null pattern is not dominated by a type test pattern
-                                                    } else if (types.isAssignable(constantPattern.type, vpatt.type)) {
+                                                    } else if (types.isAssignable(literalPattern.type, vpatt.type)) {
                                                         return true;
                                                     }
                                                     break;
@@ -684,7 +684,7 @@ public class Flow {
                                     }
                                     break;
                                 }
-                                case CONSTANTPATTERN: {
+                                case LITERALPATTERN: {
                                     break;  // does not dominate any other pattern.
                                 }
                                 default: {
@@ -2615,7 +2615,7 @@ public class Flow {
         }
 
         // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCVariablePattern tree) {
+        public void visitTypeTestPattern(JCBindingPattern tree) {
             // Do nothing
         }
 
@@ -2812,7 +2812,7 @@ public class Flow {
         }
 
         // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCVariablePattern tree) {
+        public void visitTypeTestPattern(JCBindingPattern tree) {
             // Do nothing
         }
 

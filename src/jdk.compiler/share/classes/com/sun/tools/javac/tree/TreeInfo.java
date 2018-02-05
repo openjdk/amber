@@ -30,10 +30,8 @@ package com.sun.tools.javac.tree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.AttrContext;
 import com.sun.tools.javac.comp.Env;
-import com.sun.tools.javac.comp.MatchBindingsComputer;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.*;
 import com.sun.tools.javac.util.*;
@@ -820,8 +818,8 @@ public class TreeInfo {
             if (node.type != null)
                 return node.type.tsym;
             return null;
-        case VARIABLEPATTERN:
-            return ((JCVariablePattern) node).symbol;
+        case BINDINGPATTERN:
+            return ((JCBindingPattern) node).symbol;
         default:
             return null;
         }

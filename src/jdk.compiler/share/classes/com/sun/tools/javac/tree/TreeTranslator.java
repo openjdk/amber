@@ -353,14 +353,14 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
-    public void visitVariablePattern(JCVariablePattern tree) {
+    public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null) {
             tree.vartype = translate(tree.vartype);
         }
         result = tree;
     }
 
-    public void visitConstantPattern(JCConstantPattern tree) {
+    public void visitLiteralPattern(JCLiteralPattern tree) {
         result = tree;
     }
 

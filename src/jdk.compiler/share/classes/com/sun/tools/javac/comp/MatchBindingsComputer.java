@@ -34,10 +34,9 @@ import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
-import com.sun.tools.javac.tree.JCTree.JCConstantPattern;
-import com.sun.tools.javac.tree.JCTree.JCMatches;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
-import com.sun.tools.javac.tree.JCTree.JCVariablePattern;
+import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Log;
@@ -60,12 +59,12 @@ public class MatchBindingsComputer extends TreeScanner {
     }
 
     @Override
-    public void visitVariablePattern(JCVariablePattern tree) {
+    public void visitBindingPattern(JCBindingPattern tree) {
         bindings = whenTrue ? List.of(tree.symbol) : List.nil();
     }
 
     @Override
-    public void visitConstantPattern(JCConstantPattern tree) {
+    public void visitLiteralPattern(JCLiteralPattern tree) {
         //noop
     }
 

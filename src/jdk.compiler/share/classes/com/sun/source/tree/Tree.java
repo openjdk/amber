@@ -225,14 +225,14 @@ public interface Tree {
         PARENTHESIZED(ParenthesizedTree.class),
 
         /**
-         * Used for instances of {@link VariablePatternTree}.
+         * Used for instances of {@link BindingPatternTree}.
          */
-        VARIABLE_PATTERN(VariablePatternTree.class),
+        BINDING_PATTERN(BindingPatternTree.class),
 
         /**
-         * Used for instances of {@link ConstantPatternTree}.
+         * Used for instances of {@link LiteralPatternTree}.
          */
-        CONSTANT_PATTERN(ConstantPatternTree.class),
+        LITERAL_PATTERN(LiteralPatternTree.class),
 
         /**
          * Used for instances of {@link PrimitiveTypeTree}.

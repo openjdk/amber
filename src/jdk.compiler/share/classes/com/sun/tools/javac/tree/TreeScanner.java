@@ -298,12 +298,12 @@ public class TreeScanner extends Visitor {
         scan(tree.pattern);
     }
 
-    public void visitVariablePattern(JCVariablePattern tree) {
+    public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null)
             scan(tree.vartype);
     }
 
-    public void visitConstantPattern(JCConstantPattern tree) {
+    public void visitLiteralPattern(JCLiteralPattern tree) {
         scan(tree.value);
     }
 

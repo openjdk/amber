@@ -56,6 +56,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern.LiteralPatternKind;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -1441,14 +1442,14 @@ public class Attr extends JCTree.Visitor {
                     switch (tree.kind) {
                         case MATCHING:
                             ResultInfo castInfo = unknownExprInfo;
-                            if (c.pat.getTag() == VARIABLEPATTERN) {
-                                JCVariablePattern variablePattern = (JCVariablePattern) c.pat;
-                                if (variablePattern.vartype == null)
+                            if (c.pat.getTag() == BINDINGPATTERN) {
+                                JCBindingPattern bindingPattern = (JCBindingPattern) c.pat;
+                                if (bindingPattern.vartype == null)
                                     castInfo = castInfo(seltype);
                             }
                             Type patType = attribTree(c.pat, switchEnv, castInfo);
                             chk.checkCastable(tree.selector.pos(), seltype, patType);
-                            if (c.pat.getTag() == CONSTANTPATTERN && !labels.add(patType.constValue())) {
+                            if (c.pat.getTag() == LITERALPATTERN && !labels.add(patType.constValue())) {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
                             }
                             break;
@@ -3576,9 +3577,9 @@ public class Attr extends JCTree.Visitor {
     public void visitPatternTest(JCMatches tree) {
         Type exprtype = attribExpr(tree.expr, env); //no target type
         ResultInfo castInfo = unknownExprInfo;
-        if (tree.pattern.getTag() == VARIABLEPATTERN) {
-            JCVariablePattern variablePattern = (JCVariablePattern) tree.pattern;
-            if (variablePattern.vartype == null)
+        if (tree.pattern.getTag() == BINDINGPATTERN) {
+            JCBindingPattern bindingPattern = (JCBindingPattern) tree.pattern;
+            if (bindingPattern.vartype == null)
                 castInfo = castInfo(exprtype);
         }
         attribTree(tree.pattern, env, castInfo);
@@ -3598,7 +3599,7 @@ public class Attr extends JCTree.Visitor {
                         });
     }
 
-    public void visitVariablePattern(JCVariablePattern tree) {
+    public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null) {
             ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
             tree.type = attribTree(tree.vartype, env, varInfo);
@@ -3613,13 +3614,33 @@ public class Attr extends JCTree.Visitor {
         result = tree.type;
     }
 
-    public void visitConstantPattern(JCConstantPattern tree) {
-        Type ceType = attribTree(tree.value, env, resultInfo);
-        if (!ceType.isErroneous() && !ceType.hasTag(BOT) && ceType.constValue()==null) {
+    public void visitLiteralPattern(JCLiteralPattern tree) {
+        Type patType = attribTree(tree.value, env, resultInfo);
+
+        if (tree.value.hasTag(IDENT)) {
+            // Pattern is an identifier
+            JCIdent ident = (JCIdent)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else if (tree.value.hasTag(SELECT)) {
+            // Pattern is a compound name
+            JCFieldAccess ident = (JCFieldAccess)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else {
+            // Pattern must be null literal or a constant expression
+            tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            if (!patType.isErroneous() && !patType.hasTag(BOT) && patType.constValue() == null) {
                 log.error(tree.pos(), Errors.ConstExprReq);
+            }
         }
-        tree.type = ceType; //tree.value.type;
-        return;
+        tree.type = patType;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -5310,13 +5331,13 @@ public class Attr extends JCTree.Visitor {
         }
 
         @Override
-        public void visitVariablePattern(JCVariablePattern that) {
+        public void visitBindingPattern(JCBindingPattern that) {
             //initTypeIfNeeded(that);
             if (that.symbol == null) {
                 that.symbol = new BindingSymbol(that.name, that.type, syms.noSymbol);
                 that.symbol.adr = 0;
             }
-            super.visitVariablePattern(that);
+            super.visitBindingPattern(that);
         }
 
         @Override

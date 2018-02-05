@@ -55,7 +55,6 @@ import static com.sun.tools.javac.parser.Tokens.TokenKind.EQ;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.GT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.IMPORT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.LT;
-import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 /** The parser maps a token sequence into an abstract syntax
@@ -742,13 +741,13 @@ public class JavacParser implements Parser {
         int pos = token.pos;
         if (token.kind == VAR) {
             nextToken();
-            return toP(F.at(pos).VariablePattern(ident(), null));
+            return toP(F.at(pos).BindingPattern(ident(), null));
         } else {
             JCExpression e = term(EXPR | TYPE);
             if (token.kind == IDENTIFIER) {
-                return toP(F.at(pos).VariablePattern(ident(), e));
+                return toP(F.at(pos).BindingPattern(ident(), e));
             } else {
-                return toP(F.at(pos).ConstantPattern(e));
+                return toP(F.at(pos).LiteralPattern(e));
             }
         }
     }

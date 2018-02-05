@@ -676,7 +676,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return a result value
      */
     @Override
-    public R visitVariablePattern(VariablePatternTree node, P p) {
+    public R visitBindingPattern(BindingPatternTree node, P p) {
         return scan(node.getType(), p);
     }
 
@@ -688,7 +688,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return a result value
      */
     @Override
-    public R visitConstantPattern(ConstantPatternTree node, P p) {
+    public R visitLiteralPattern(LiteralPatternTree node, P p) {
         return scan(node.getValue(), p);
     }
 

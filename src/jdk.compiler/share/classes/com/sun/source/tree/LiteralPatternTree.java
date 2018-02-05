@@ -26,15 +26,15 @@
 package com.sun.source.tree;
 
 /**
- * A variable pattern tree
+ * A literal pattern tree
  */
-public interface VariablePatternTree extends PatternTree {
+public interface LiteralPatternTree extends PatternTree {
 
     /**
-     * Returns the type of the bind variable.
-     * @return the type
+     * The literal value of this pattern.
+     * @return literal value of this pattern
      */
-    Tree getType();
+    public ExpressionTree getValue();
 
 }
 

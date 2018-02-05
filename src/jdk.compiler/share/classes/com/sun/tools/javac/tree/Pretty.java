@@ -845,7 +845,7 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
-    public void visitVariablePattern(JCVariablePattern patt) {
+    public void visitBindingPattern(JCBindingPattern patt) {
         try {
             if (patt.vartype == null) {
                 print("var ");
@@ -860,7 +860,7 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
-    public void visitConstantPattern(JCConstantPattern patt) {
+    public void visitLiteralPattern(JCLiteralPattern patt) {
         try {
             print(patt.value);
         } catch (IOException e) {

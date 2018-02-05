@@ -272,7 +272,7 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCCase Case(JCExpression expr, List<JCStatement> stats) {
-        return Case(expr != null ? ConstantPattern(expr) : null, stats);
+        return Case(expr != null ? LiteralPattern(expr) : null, stats);
     }
 
     public JCCase Case(JCPattern pat, List<JCStatement> stats) {
@@ -442,14 +442,14 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCVariablePattern VariablePattern(Name name, JCExpression vartype) {
-        JCVariablePattern tree = new JCVariablePattern(name, null, vartype);
+    public JCBindingPattern BindingPattern(Name name, JCExpression vartype) {
+        JCBindingPattern tree = new JCBindingPattern(name, null, vartype);
         tree.pos = pos;
         return tree;
     }
 
-    public JCConstantPattern ConstantPattern(JCExpression cexp) {
-        JCConstantPattern tree = new JCConstantPattern(cexp);
+    public JCLiteralPattern LiteralPattern(JCExpression cexp) {
+        JCLiteralPattern tree = new JCLiteralPattern(cexp);
         tree.pos = pos;
         return tree;
     }
