@@ -548,7 +548,7 @@ public class Symtab {
         nativeHeaderType = enterClass("java.lang.annotation.Native");
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
-        switchBootstraps = enterClass("java.lang.invoke.SwitchBootstraps");
+        switchBootstraps = enterClass("java.lang.runtime.SwitchBootstraps");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);

@@ -23,8 +23,13 @@
  * questions.
  */
 
-package java.lang.invoke;
+package java.lang.runtime;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -94,7 +99,7 @@ public class SwitchBootstraps {
 
         static {
             try {
-                HOOK = MethodHandles.Lookup.IMPL_LOOKUP.findVirtual(IntSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
+                HOOK = MethodHandles.lookup().findVirtual(IntSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
             }
             catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new ExceptionInInitializerError(e);
@@ -110,7 +115,7 @@ public class SwitchBootstraps {
         }
 
         private MethodHandle initHook() throws ReflectiveOperationException {
-            return MethodHandles.Lookup.IMPL_LOOKUP
+            return MethodHandles.lookup()
                                 .findVirtual(IntSwitchCallSite.class, "intSwitch",
                                              MethodType.methodType(int.class, type().parameterType(0)))
                                 .bindTo(this);
@@ -218,7 +223,7 @@ public class SwitchBootstraps {
 
         static {
             try {
-                HOOK = MethodHandles.Lookup.IMPL_LOOKUP.findVirtual(StringSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
+                HOOK = MethodHandles.lookup().findVirtual(StringSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
             }
             catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new ExceptionInInitializerError(e);
@@ -236,7 +241,7 @@ public class SwitchBootstraps {
         }
 
         private MethodHandle initHook() throws ReflectiveOperationException {
-            return MethodHandles.Lookup.IMPL_LOOKUP
+            return MethodHandles.lookup()
                                 .findVirtual(StringSwitchCallSite.class, "stringSwitch",
                                              MethodType.methodType(int.class, String.class))
                                 .bindTo(this);
@@ -319,7 +324,7 @@ public class SwitchBootstraps {
 
         static {
             try {
-                HOOK = MethodHandles.Lookup.IMPL_LOOKUP.findVirtual(EnumSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
+                HOOK = MethodHandles.lookup().findVirtual(EnumSwitchCallSite.class, "initHook", MethodType.methodType(MethodHandle.class));
             }
             catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new ExceptionInInitializerError(e);
@@ -333,7 +338,7 @@ public class SwitchBootstraps {
         }
 
         private MethodHandle initHook() throws ReflectiveOperationException {
-            return MethodHandles.Lookup.IMPL_LOOKUP
+            return MethodHandles.lookup()
                                 .findVirtual(EnumSwitchCallSite.class, "enumSwitch",
                                              MethodType.methodType(int.class, Enum.class))
                                 .bindTo(this);

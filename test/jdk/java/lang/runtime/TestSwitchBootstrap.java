@@ -32,7 +32,7 @@ import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.SwitchBootstraps;
+import java.lang.runtime.SwitchBootstraps;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
