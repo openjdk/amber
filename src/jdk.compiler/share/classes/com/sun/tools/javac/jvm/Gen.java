@@ -77,6 +77,7 @@ public class Gen extends JCTree.Visitor {
     private final Lower lower;
     private final Annotate annotate;
     private final StringConcat concat;
+    private final Constables constables;
 
     /** Format of stackmap tables to be generated. */
     private final Code.StackMapFormat stackMap;
@@ -113,6 +114,7 @@ public class Gen extends JCTree.Visitor {
         target = Target.instance(context);
         types = Types.instance(context);
         concat = StringConcat.instance(context);
+        constables = new Constables(context);
 
         methodType = new MethodType(null, null, null, syms.methodClass);
         accessDollar = names.
@@ -1021,8 +1023,8 @@ public class Gen extends JCTree.Visitor {
         if (tree.init != null) {
             checkStringConstant(tree.init.pos(), v.getConstValue());
             if (v.getConstValue() == null ||
-                    (!doConstantFold && varDebugInfo) ||
-                    (doConstantFold && !tree.skip)) {
+                    varDebugInfo ||
+                    (doConstantFold && !constables.skipCodeGeneration(tree))) {
                 Assert.check(letExprDepth != 0 || code.state.stacksize == 0);
                 genExpr(tree.init, v.erasure(types)).load();
                 items.makeLocalItem(v).store();

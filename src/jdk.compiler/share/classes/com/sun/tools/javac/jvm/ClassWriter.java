@@ -154,6 +154,8 @@ public class ClassWriter extends ClassFile {
     /** Sole signature generator */
     private final CWSignatureGenerator signatureGen;
 
+    private final Constables constables;
+
     /** The tags and constants used in compressed stackmap. */
     static final int SAME_FRAME_SIZE = 64;
     static final int SAME_LOCALS_1_STACK_ITEM_EXTENDED = 247;
@@ -183,6 +185,7 @@ public class ClassWriter extends ClassFile {
         types = Types.instance(context);
         fileManager = context.get(JavaFileManager.class);
         signatureGen = new CWSignatureGenerator(types);
+        constables = new Constables(context);
 
         verbose        = options.isSet(VERBOSE);
         genCrt         = options.isSet(XJCOV);
@@ -1151,7 +1154,7 @@ public class ClassWriter extends ClassFile {
         databuf.appendChar(pool.put(typeSig(v.erasure(types))));
         int acountIdx = beginAttrs();
         int acount = 0;
-        if (v.getConstValue() != null && canMakeItToConstantValue(v.type)) {
+        if (v.getConstValue() != null && constables.canMakeItToConstantValue(v.type)) {
             int alenIdx = writeAttr(names.ConstantValue);
             databuf.appendChar(pool.put(v.getConstValue()));
             endAttr(alenIdx);
@@ -1159,10 +1162,6 @@ public class ClassWriter extends ClassFile {
         }
         acount += writeMemberAttrs(v);
         endAttrs(acountIdx, acount);
-    }
-
-    private boolean canMakeItToConstantValue(Type t) {
-        return t.isPrimitive() || t.tsym == syms.stringType.tsym;
     }
 
     /** Write method symbol, entering all references into constant pool.

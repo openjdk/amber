@@ -34,6 +34,7 @@ import java.nio.charset.Charset;
 import java.util.Optional;
 
 import com.sun.tools.javac.code.Flags;
+import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -50,6 +51,7 @@ import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.AttrContext;
+import com.sun.tools.javac.comp.ConstablesVisitor;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.comp.Resolve.*;
@@ -61,6 +63,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
+import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
@@ -85,6 +88,7 @@ public class Constables {
         syms = Symtab.instance(context);
         rs = Resolve.instance(context);
         log = Log.instance(context);
+        constablesVisitor = ConstablesVisitor.instance(context);
         try {
             methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
@@ -112,6 +116,7 @@ public class Constables {
     private final Resolve rs;
     private final Log log;
     private ModuleSymbol currentModule;
+    private final ConstablesVisitor constablesVisitor;
 
     /** The unread portion of the currently read type is
      *  signature[sigp..siglimit-1].
@@ -432,6 +437,16 @@ public class Constables {
         return t.isPrimitive() || t.tsym == syms.stringType.tsym;
     }
 
+    public boolean skipCodeGeneration(JCVariableDecl tree) {
+        if (tree.init != null) {
+            VarSymbol v = tree.sym;
+            return (v.isLocal() &&
+                v.owner.kind == Kind.MTH &&
+                (v.isFinal() || v.isEffectivelyFinal()));
+        }
+        return false;
+    }
+
     boolean canHaveInterfaceOwner(int refKind) {
         switch (refKind) {
             case ClassFile.REF_invokeStatic:
@@ -724,7 +739,14 @@ public class Constables {
             if (argConstant != null) {
                 constantArgumentValues.add(argConstant);
             } else {
-                return List.nil();
+                argConstant = constablesVisitor.elementToConstantMap.get(arg) != null ?
+                        constablesVisitor.elementToConstantMap.get(arg) :
+                        constablesVisitor.elementToConstantMap.get(TreeInfo.symbol(arg));
+                if (argConstant != null) {
+                    constantArgumentValues.add(argConstant);
+                } else {
+                    return List.nil();
+                }
             }
         }
         return constantArgumentValues.toList();
@@ -742,7 +764,7 @@ public class Constables {
                 JCTree qualifierTree = (tree.meth.hasTag(SELECT))
                     ? ((JCFieldAccess) tree.meth).selected
                     : null;
-                Object instance = qualifierTree.type.constValue(); //constablesVisitor.elementToConstantMap.get(qualifierTree);
+                Object instance = constablesVisitor.elementToConstantMap.get(qualifierTree);
                 className = msym.owner.type.tsym.flatName().toString();
                 methodName = msym.name;
                 Class<?> constablesClass = Class.forName(className, false, null);
