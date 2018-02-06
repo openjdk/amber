@@ -128,6 +128,9 @@ public class ConstablesVisitor extends TreeScanner {
                 return tree;
             }
             this.attrEnv = attrEnv;
+            errorForLDCAndIndy = false;
+            scan(tree);
+            errorForLDCAndIndy = true;
             scan(tree);
             if (!varDebugInfo) {
                 tree = constablesSetter.translate(tree);
@@ -138,11 +141,16 @@ public class ConstablesVisitor extends TreeScanner {
         }
     }
 
+    boolean errorForLDCAndIndy = false;
+
     @Override
     public void visitVarDef(JCVariableDecl tree) {
         super.visitVarDef(tree);
         if (tree.init != null) {
             VarSymbol v = tree.sym;
+            if (elementToConstantMap.get(v) != null) {
+                return;
+            }
             Object constant = getConstant(tree.init);
             if (constant != null &&
                     (v.isFinal() || v.isEffectivelyFinal())) {
@@ -161,7 +169,8 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitBinary(JCBinary tree) {
         super.visitBinary(tree);
-        if (tree.type.constValue() == null &&
+        if (elementToConstantMap.get(tree) == null &&
+                tree.type.constValue() == null &&
                 getConstant(tree.lhs) != null &&
                 getConstant(tree.rhs) != null) {
             Object constant = cfolder.fold2(tree.operator, getConstant(tree.lhs), getConstant(tree.rhs));
@@ -175,7 +184,8 @@ public class ConstablesVisitor extends TreeScanner {
     public void visitUnary(JCUnary tree) {
         super.visitUnary(tree);
         Object constant;
-        if (tree.type.constValue() == null &&
+        if (elementToConstantMap.get(tree) == null &&
+                tree.type.constValue() == null &&
                 (constant = getConstant(tree.arg)) != null &&
                 constant instanceof Number) {
             constant = cfolder.fold1(tree.operator, constant);
@@ -188,6 +198,9 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitConditional(JCConditional tree) {
         super.visitConditional(tree);
+        if (elementToConstantMap.get(tree) != null) {
+            return;
+        }
         Object condConstant = getConstant(tree.cond);
         Object truePartConstant = getConstant(tree.truepart);
         Object falsePartConstant = getConstant(tree.falsepart);
@@ -204,7 +217,9 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitTypeCast(JCTypeCast tree) {
         super.visitTypeCast(tree);
-        if (tree.type.constValue() == null && getConstant(tree.expr) != null) {
+        if (elementToConstantMap.get(tree) == null &&
+                tree.type.constValue() == null &&
+                getConstant(tree.expr) != null) {
             elementToConstantMap.put(tree, getConstant(tree.expr));
         }
     }
@@ -216,6 +231,9 @@ public class ConstablesVisitor extends TreeScanner {
     }
 
     void checkForSymbolConstant(JCTree tree) {
+        if (elementToConstantMap.get(tree) != null) {
+            return;
+        }
         Symbol sym = TreeInfo.symbol(tree);
         if (sym.kind == VAR) {
             VarSymbol v = (VarSymbol)sym;
@@ -246,6 +264,9 @@ public class ConstablesVisitor extends TreeScanner {
     @Override
     public void visitApply(JCMethodInvocation tree) {
         super.visitApply(tree);
+        if (elementToConstantMap.get(tree) != null) {
+            return;
+        }
         Name methName = TreeInfo.name(tree.meth);
         boolean isConstructorCall = methName == names._this || methName == names._super;
         if (!isConstructorCall) {
@@ -253,13 +274,21 @@ public class ConstablesVisitor extends TreeScanner {
             Symbol msym = TreeInfo.symbol(tree.meth);
             boolean isLDC = constables.isIntrinsicsLDCInvocation(msym);
             if (constant == null && isLDC) {
-                log.error(tree.pos(), Errors.IntrinsicsLdcMustHaveConstantArg);
+                if (errorForLDCAndIndy) {
+                    log.error(tree.pos(), Errors.IntrinsicsLdcMustHaveConstantArg);
+                } else {
+                    return;
+                }
             }
             if (constant != null) {
                 if (!isLDC) {
                     elementToConstantMap.put(tree, constant);
                 }
                 if (isLDC) {
+                    Symbol sym = TreeInfo.symbol(tree.meth);
+                    if (sym instanceof IntrinsicsLDCMethodSymbol) {
+                        return;
+                    }
                     Type newType;
                     // if condy
                     if (constables.dynamicConstantClass.isInstance(constant)) {
@@ -284,8 +313,14 @@ public class ConstablesVisitor extends TreeScanner {
             } else if (constables.isIntrinsicsIndy(tree.meth)) {
                 List<Object> constants = constables.extractAllConstansOrNone(List.of(tree.args.head));
                 if (constants.isEmpty()) {
-                    log.error(tree.args.head.pos(), Errors.IntrinsicsIndyMustHaveConstantArg);
+                    if (errorForLDCAndIndy) {
+                        log.error(tree.args.head.pos(), Errors.IntrinsicsIndyMustHaveConstantArg);
+                    }
                 } else {
+                    Symbol sym = TreeInfo.symbol(tree.meth);
+                    if (sym instanceof DynamicMethodSymbol) {
+                        return;
+                    }
                     Object indyRef = constants.head;
                     String invocationName = (String)constables.invokeMethodReflectively(constables.indyRefClass,
                             indyRef, "name");
