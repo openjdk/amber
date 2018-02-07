@@ -2,6 +2,7 @@
  * @test /nodynamiccopyright/
  * @summary checking that no intrinsification is possible if arguments are not constants
  * @compile/fail/ref=EffectivelyFinalTestNeg.out -XDdoConstantFold -XDrawDiagnostics EffectivelyFinalTestNeg.java
+ * @compile/fail/ref=EffectivelyFinalTestNeg.out -XDdoConstantFold -XDrawDiagnostics -g EffectivelyFinalTestNeg.java
  */
 
 import java.lang.invoke.*; import java.lang.sym.*;

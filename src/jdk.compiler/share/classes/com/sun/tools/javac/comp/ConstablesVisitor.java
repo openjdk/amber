@@ -161,9 +161,11 @@ public class ConstablesVisitor extends TreeScanner {
     }
 
     Object getConstant(JCTree tree) {
-        return tree.type.constValue() != null ?
+        Symbol sym = TreeInfo.symbol(tree);
+        Object result = tree.type.constValue() != null ?
                 tree.type.constValue() :
                 elementToConstantMap.get(tree);
+        return result == null ? elementToConstantMap.get(sym) : result;
     }
 
     @Override
@@ -211,6 +213,9 @@ public class ConstablesVisitor extends TreeScanner {
             !tree.type.hasTag(NONE)) {
             Object constant = ConstFold.isTrue(tree.cond.type.getTag(), condConstant) ? truePartConstant : falsePartConstant;
             elementToConstantMap.put(tree, constant);
+        }
+        if (condConstant != null) {
+            elementToConstantMap.put(tree.cond, condConstant);
         }
     }
 
@@ -409,6 +414,8 @@ public class ConstablesVisitor extends TreeScanner {
                     JCTree ident = make.at(tree.pos()).Ident(dynSym);
                     ident.type = dynSym.type.constType(constant);
                     return (T)ident;
+                } else {
+                    tree.type = tree.type.constType(constant);
                 }
             }
             return tree;

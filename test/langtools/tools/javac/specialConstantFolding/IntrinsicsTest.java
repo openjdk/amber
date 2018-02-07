@@ -34,6 +34,8 @@ import static org.testng.Assert.assertEquals;
  * @test
  * @compile -XDdoConstantFold IntrinsicsTest.java
  * @run testng IntrinsicsTest
+ * @compile -XDdoConstantFold -g IntrinsicsTest.java
+ * @run testng IntrinsicsTest
  * @summary integration test for compiler support of java.lang.invoke.Intrinsics
  * @author Brian Goetz
  */
