@@ -56,7 +56,7 @@ public class CondyCodeGenerationTest {
 
     String testNoStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_String, SymbolicRefs.CR_Lookup, SymbolicRefs.CR_String, SymbolicRefs.CR_Class);
+                SymbolicRefs.CR_String, SymbolicRefs.CR_MethodHandles_Lookup, SymbolicRefs.CR_String, SymbolicRefs.CR_Class);
         MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
                                                 "testNoStaticArgsBSM", methodTypeForMethodHandle);
 
@@ -72,7 +72,7 @@ public class CondyCodeGenerationTest {
     String testWithStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
                 SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_MethodHandles_Lookup,
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_Class,
                 SymbolicRefs.CR_int,
@@ -114,7 +114,7 @@ public class CondyCodeGenerationTest {
     String testWithNestedArg() throws Throwable {
         MethodTypeRef c_primitiveClassBSM_MT = MethodTypeRef.of(
                 SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_MethodHandles_Lookup,
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_Class
         );
@@ -125,7 +125,7 @@ public class CondyCodeGenerationTest {
 
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
                 SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_MethodHandles_Lookup,
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_Class,
                 SymbolicRefs.CR_Class

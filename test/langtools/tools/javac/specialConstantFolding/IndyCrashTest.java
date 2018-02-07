@@ -27,7 +27,7 @@ public class IndyCrashTest {
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_MethodType
         );
-        IndyRef bsm = IndyRef.of(bsmMH, "foo", methodTypeForIndy);
+        DynamicCallSiteRef bsm = DynamicCallSiteRef.of(bsmMH, "foo", methodTypeForIndy);
         String result = (String)Intrinsics.invokedynamic(bsm, MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));
     }
 }

@@ -27,14 +27,13 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.sym.ClassRef;
-import java.lang.sym.DynamicConstantRef;
 import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRef;
 import java.lang.sym.SymbolicRefs;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -84,7 +83,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         testMethodHandleRef(r);
 
         assertMHEquals(r.resolveRef(LOOKUP), mh);
-        assertEquals(mh.toSymbolicRef(LOOKUP).get(), r);
+        assertEquals(mh.toSymbolicRef(LOOKUP).orElseThrow(), r);
 
         // compare extractable properties: refKind, owner, name, type
         MethodHandleInfo mhi = LOOKUP.revealDirect(mh);
@@ -212,6 +211,28 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(SETTER, thisClass, "x", s), s));
         badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_GETTER, thisClass, "x", s), s));
         badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleRef.of(STATIC_SETTER, thisClass, "x", s), s));
+    }
+
+    public void testSymbolicRefsConstants() throws ReflectiveOperationException {
+        int tested = 0;
+        Field[] fields = SymbolicRefs.class.getDeclaredFields();
+        for (Field f : fields) {
+            try {
+                if (f.getType().equals(MethodHandleRef.class)
+                    && ((f.getModifiers() & Modifier.STATIC) != 0)
+                    && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
+                    MethodHandleRef r = (MethodHandleRef) f.get(null);
+                    MethodHandle m = r.resolveRef(MethodHandles.lookup());
+                    testMethodHandleRef(r, m);
+                    ++tested;
+                }
+            }
+            catch (Throwable e) {
+                fail("Error testing field " + f.getName(), e);
+            }
+        }
+
+        assertTrue(tested > 0);
     }
 
     private interface TestInterface {

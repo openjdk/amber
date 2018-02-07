@@ -85,7 +85,7 @@ public class IntrinsifiedRefTest {
     private static <T extends Constable> void assertIntrinsic(SymbolicRef<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
         assertEquals(target, intrinsified);
         assertEquals(ref.resolveRef(LOOKUP), intrinsified);
-        assertEquals(intrinsified.toSymbolicRef(LOOKUP).get(), ref);
+        assertEquals(intrinsified.toSymbolicRef(LOOKUP).orElseThrow(), ref);
     }
 
     private static<T extends Constable> void assertIntrinsicFail(SymbolicRef<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {

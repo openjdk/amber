@@ -383,6 +383,7 @@ public final class LambdaMetafactory {
         }
     }
 
+    // @@@ Special case version of altMetafactory, supporting FLAG_METHODREF
 
     /**
      * Facilitates the creation of simple "function objects" that implement one

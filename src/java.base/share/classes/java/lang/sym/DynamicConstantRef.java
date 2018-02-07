@@ -28,7 +28,6 @@ import java.lang.annotation.Foldable;
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -39,7 +38,10 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A descriptor for a dynamic constant.
+ * A symbolic reference for a dynamic constant (one described in the constant
+ * pool with {@code Constant_Dynamic_info}.)
+ *
+ * @param <T> the type of the dynamic constant
  */
 public class DynamicConstantRef<T> implements SymbolicRef<T> {
     private static final SymbolicRef<?>[] EMPTY_ARGS = new SymbolicRef<?>[0];
@@ -66,26 +68,53 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
                                       d -> VarHandleRef.ofArray((ClassRef) d.bootstrapArgs[0]))
     );
 
+    /**
+     * Construct a symbolic reference for a dynamic constant
+     *
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param bootstrapArgs The static arguments to the bootstrap, that would
+     *                      appear in the {@code BootstrapMethods} attribute
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
+     */
     protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Illegal invocation name: " + name);
         this.bootstrapMethod = requireNonNull(bootstrapMethod);
-        this.name = name;
+        this.name = requireNonNull(name);
         this.type = requireNonNull(type);
         this.bootstrapArgs = requireNonNull(bootstrapArgs).clone();
+
+        if (name.length() == 0)
+            throw new IllegalArgumentException("Illegal invocation name: " + name);
     }
 
+    /**
+     * Construct a symbolic reference for a dynamic constant, whose bootstrap
+     * takes no static arguments
+     *
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
+     */
     protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
         this(bootstrapMethod, name, type, EMPTY_ARGS);
     }
 
     /**
-     * Return a descriptor for a dynamic constant whose bootstrap, invocation
+     * Return a symbolic reference for a dynamic constant whose bootstrap, invocation
      * name, and invocation type are the same as this one, but with the specified
      * bootstrap arguments
      *
      * @param bootstrapArgs the bootstrap arguments
-     * @return the descriptor for the dynamic constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
      */
     @Foldable
     public DynamicConstantRef<T> withArgs(SymbolicRef<?>... bootstrapArgs) {
@@ -93,15 +122,22 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant.  If  the bootstrap corresponds
-     * to a well-known bootstrap, for which a higher-level constant (e.g., ClassRef)
-     * is available, then the higher-level constant will be returned
+     * Return a symbolic reference for a dynamic constant.  If  the bootstrap
+     * corresponds to a well-known bootstrap, for which a more specific symbolic
+     * reference type (e.g., ClassRef) is available, then the more specific
+     * symbolic reference will be returned.
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @param name the name for the dynamic constant
-     * @param type the type of the dynamic constant
-     * @param bootstrapArgs the bootstrap arguments
-     * @return the descriptor for the symbolic reference
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param bootstrapArgs The static arguments to the bootstrap, that would
+     *                      appear in the {@code BootstrapMethods} attribute
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> SymbolicRef<T> ofCanonical(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
@@ -122,13 +158,19 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant
+     * Return a symbolic reference for a dynamic constant.
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @param name the name for the dynamic constant
-     * @param type the type of the dynamic constant
-     * @param bootstrapArgs the bootstrap arguments
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param bootstrapArgs The static arguments to the bootstrap, that would
+     *                      appear in the {@code BootstrapMethods} attribute
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type, SymbolicRef<?>[] bootstrapArgs) {
@@ -136,12 +178,18 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant whose bootstrap has no static arguments.
+     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * no static arguments.
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @param name the name for the dynamic constant
-     * @param type the type of the dynamic constant
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
@@ -149,12 +197,16 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant whose bootstrap has no static arguments,
-     * and whose name is ignored by the bootstrap
+     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * no static arguments, and whose name parameter is ignored by the bootstrap
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @param type the type of the dynamic constant
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param type The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, ClassRef type) {
@@ -162,12 +214,17 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant whose bootstrap has no static arguments,
-     * anmd whose type is the same as the bootstrap return
+     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * no static arguments, and whose type parameter is always the same as the
+     * bootstrap method return type.
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @param name the name for the dynamic constant
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @param name The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name) {
@@ -175,11 +232,15 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Return a descriptor for a dynamic constant whose bootstrap has no static arguments,
-     * whose name is ignored by the bootstrap, and whose type is the same as the bootstrap return
+     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * no static arguments, whose name parameter is ignored, and whose type
+     * parameter is always the same as the bootstrap method return type.
+     *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod the bootstrap method
-     * @return the descriptor for the dynamic constant
+     * @param bootstrapMethod The bootstrap method for the constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod) {
@@ -187,7 +248,8 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * returns the name
+     * returns The name that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
      * @return the name
      */
     @Foldable
@@ -196,7 +258,8 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * returns the type
+     * returns The type that would appear in the {@code NameAndType} operand
+     *             of the {@code LDC} for this constant
      * @return the type
      */
     @Foldable
@@ -205,15 +268,15 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
     }
 
     /**
-     * Returns the bootstrap method in the bootstrap specifier
-     * @return the bootstrap method in the bootstrap specifier
+     * Returns the bootstrap method for this constant
+     * @return the bootstrap method
      */
     @Foldable
     public MethodHandleRef bootstrapMethod() { return bootstrapMethod; }
 
     /**
-     * Returns the bootstrap arguments in the bootstrap specifier
-     * @return the bootstrap arguments in the bootstrap specifier
+     * Returns the bootstrap arguments for this constant
+     * @return the bootstrap arguments
      */
     public SymbolicRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
@@ -230,12 +293,6 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
                      .toArray();
     }
 
-    /**
-     * Resolve
-     * @param lookup the lookup
-     * @return the resolved object
-     * @throws ReflectiveOperationException exception
-     */
     @SuppressWarnings("unchecked")
     public T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         try {
@@ -263,7 +320,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
         args[2] = name;
         args[3] = type;
         System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        return Optional.of(DynamicConstantRef.<T>of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_DynamicConstantRef).withArgs(args));
+        return Optional.of(DynamicConstantRef.<T>of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_CondyRef).withArgs(args));
     }
 
     @Override
@@ -286,7 +343,7 @@ public class DynamicConstantRef<T> implements SymbolicRef<T> {
 
     @Override
     public String toString() {
-        return String.format("DynamicConstantRef[bsm=%s, name=%s, type=%s, args=%s]",
-                             bootstrapMethod, name, type, Arrays.toString(bootstrapArgs));
+        return String.format("CondyRef[%s(%s), NameAndType[%s:%s]]",
+                             bootstrapMethod, Arrays.toString(bootstrapArgs), name, type);
     }
 }

@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A descriptor for a {@link VarHandle} constant.
+ * A symbolic reference for a {@link VarHandle}.
  */
 public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
 
@@ -72,6 +72,15 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
     private final ClassRef declaringClass;
     private final ClassRef varType;
 
+    /**
+     * Construct a {@linkplain VarHandleRef}
+     *
+     * @param kind the kind of of the var handle
+     * @param name the name of the field, for field var handles
+     * @param declaringClass the name of the declaring class, for field var handles
+     * @param varType the type of the variable
+     * @throws NullPointerException if any required argument is null
+     */
     private VarHandleRef(Kind kind, String name, ClassRef declaringClass, ClassRef varType) {
         super(kind.bootstrapMethod, name,
               SymbolicRefs.CR_VarHandle,
@@ -134,24 +143,24 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
     }
 
     /**
-     * Returns the variable type of this variable handle.
+     * Returns the type of the variable described by this symbolic reference.
      *
-     * @return the variable type.
+     * @return the variable type
      */
     @Foldable
     public ClassRef varType() { return varType; }
 
+    // @@@ should this be the of co-ordinate types? there by better mirroring
+    // VarHandle this makes it slightly more involved since the array VH has
+    // to inject it's index
     /**
-     * Returns the declaring class of this of variable handle.
+     * Returns the declaring class of the variable described by this symbolic
+     * reference.
      *
-     * <p>If the declaring class is an array type then the variable type
+     * <p>If the declaring class is an array type then the declaring class
      * will be the component type of the array type.
      *
-     * @@@ should this be the of co-ordinate types? there by better mirroring
-     * VarHandle this makes it slightly more involved since the array VH has
-     * to inject it's index
-     *
-     * @return the declaring class.
+     * @return the declaring class
      */
     @Foldable
     public ClassRef declaringClass() { return declaringClass; }
@@ -207,9 +216,11 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
         switch (kind) {
             case FIELD:
             case STATIC_FIELD:
-                return String.format("VarHandleRef[kind=%s, declaringClass=%s, name=%s, fieldType=%s]", kind, declaringClass, name(), varType);
+                return String.format("VarHandleRef[%s%s.%s:%s]",
+                                     (kind == Kind.STATIC_FIELD) ? "static " : "",
+                                     declaringClass.canonicalName(), name(), varType.canonicalName());
             case ARRAY:
-                return String.format("VarHandleRef[kind=%s, arrayClass=%s]", kind, declaringClass);
+                return String.format("VarHandleRef[%s[]]", declaringClass.canonicalName());
             default:
                 throw new InternalError("Cannot reach here");
         }

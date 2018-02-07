@@ -94,7 +94,7 @@ public class Constables {
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
             classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
             constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
-            indyRefClass = Class.forName("java.lang.sym.IndyRef", false, null);
+            dynamicCallsiteRefClass = Class.forName("java.lang.sym.DynamicCallSiteRef", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
             symbolicRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
             symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
@@ -103,7 +103,7 @@ public class Constables {
             methodTypeRefClass = null;
             constantRefClass = null;
             classRefClass = null;
-            indyRefClass = null;
+            dynamicCallsiteRefClass = null;
             dynamicConstantClass = null;
             symRefs = null;
             symbolicRefClass = null;
@@ -428,7 +428,7 @@ public class Constables {
     public Class<?> methodTypeRefClass;
     public Class<?> classRefClass;
     public Class<?> constantRefClass;
-    public Class<?> indyRefClass;
+    public Class<?> dynamicCallsiteRefClass;
     public Class<?> dynamicConstantClass;
     public Class<?> symbolicRefClass;
     public Class<?> symRefs;

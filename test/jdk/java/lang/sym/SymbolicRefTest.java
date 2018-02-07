@@ -91,11 +91,11 @@ public abstract class SymbolicRefTest {
 
     static<T> void testSymbolicRef(SymbolicRef<T> ref) throws ReflectiveOperationException {
         // Round trip sym -> resolve -> toSymbolicRef
-        SymbolicRef<T> s = ((Constable<T>) ref.resolveRef(LOOKUP)).toSymbolicRef(LOOKUP).get();
+        SymbolicRef<T> s = ((Constable<T>) ref.resolveRef(LOOKUP)).toSymbolicRef(LOOKUP).orElseThrow();
         assertEquals(ref, s);
 
         // Round trip sym -> quoted sym -> resolve
-        SymbolicRef<? extends SymbolicRef<T>> ssr = (SymbolicRef<? extends SymbolicRef<T>>) ref.toSymbolicRef(LOOKUP).get();
+        SymbolicRef<? extends SymbolicRef<T>> ssr = (SymbolicRef<? extends SymbolicRef<T>>) ref.toSymbolicRef(LOOKUP).orElseThrow();
         SymbolicRef<T> sr = ssr.resolveRef(LOOKUP);
         assertEquals(sr, ref);
     }

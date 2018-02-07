@@ -79,13 +79,13 @@ public class MultipleBSMEntriesTest {
             SymbolicRefs.CR_long
     );
 
-    public static final IndyRef MULT = IndyRef.of(
+    public static final DynamicCallSiteRef MULT = DynamicCallSiteRef.of(
             MethodHandleRef.of(
                     MethodHandleRef.Kind.STATIC,
                     ClassRef.ofDescriptor("LMultipleBSMEntriesTest;"),
                     "multiplyFactory",
                     SymbolicRefs.CR_CallSite,
-                    SymbolicRefs.CR_Lookup,
+                    SymbolicRefs.CR_MethodHandles_Lookup,
                     SymbolicRefs.CR_String,
                     SymbolicRefs.CR_MethodType),
             " ",

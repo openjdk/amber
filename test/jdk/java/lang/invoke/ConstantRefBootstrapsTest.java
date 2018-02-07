@@ -50,23 +50,23 @@ public class ConstantRefBootstrapsTest {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     static final MethodHandleRef BSM_NULL_CONSTANT
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "nullConstant", SymbolicRefs.CR_Object);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "nullConstant", SymbolicRefs.CR_Object);
     static final MethodHandleRef BSM_PRIMITIVE_CLASS
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "primitiveClass", SymbolicRefs.CR_Class);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "primitiveClass", SymbolicRefs.CR_Class);
     static final MethodHandleRef BSM_ENUM_CONSTANT
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "enumConstant", SymbolicRefs.CR_Enum);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "enumConstant", SymbolicRefs.CR_Enum);
     static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", SymbolicRefs.CR_Object);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "getStaticFinal", SymbolicRefs.CR_Object);
     static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "getStaticFinal", SymbolicRefs.CR_Object, SymbolicRefs.CR_Class);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "getStaticFinal", SymbolicRefs.CR_Object, SymbolicRefs.CR_Class);
     static final MethodHandleRef BSM_INVOKE
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "invoke", SymbolicRefs.CR_Object, SymbolicRefs.CR_MethodHandle, SymbolicRefs.CR_Object.array());
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "invoke", SymbolicRefs.CR_Object, SymbolicRefs.CR_MethodHandle, SymbolicRefs.CR_Object.array());
     static final MethodHandleRef BSM_VARHANDLE_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "fieldVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class, SymbolicRefs.CR_Class);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "fieldVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class, SymbolicRefs.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "staticFieldVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class, SymbolicRefs.CR_Class);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "staticFieldVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class, SymbolicRefs.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_ARRAY
-            = MethodHandleRef.ofCondyBootstrap(CLASS_CONDY, "arrayVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class);
+            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "arrayVarHandle", SymbolicRefs.CR_VarHandle, SymbolicRefs.CR_Class);
 
 
     public void testNullConstant() {
@@ -114,7 +114,7 @@ public class ConstantRefBootstrapsTest {
 
 
     public void testInvoke() {
-        DynamicConstantRef<List<Integer>> list 
+        DynamicConstantRef<List<Integer>> list
                 = DynamicConstantRef.<List<Integer>>of(BSM_INVOKE, SymbolicRefs.CR_List)
                 .withArgs(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, SymbolicRefs.CR_List, "of", SymbolicRefs.CR_List, SymbolicRefs.CR_Object.array()), 1, 2, 3, 4);
 

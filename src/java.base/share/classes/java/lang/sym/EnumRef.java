@@ -25,32 +25,56 @@
 package java.lang.sym;
 
 import java.lang.annotation.Foldable;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.util.Objects;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * EnumRef
+ * A symbolic reference for an {@code enum} constant.
  *
- * @author Brian Goetz
+ * @param <E> the type of the enum constant
  */
 public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
 
+    /**
+     * Construct a symbolic reference for the specified enum class and name
+     *
+     * @param enumClass the enum class
+     * @param constantName the name of the enum constant
+     * @throws NullPointerException if any argument is null
+     */
     private EnumRef(ClassRef enumClass, String constantName) {
-        super(SymbolicRefs.BSM_ENUM_CONSTANT, constantName, enumClass);
+        super(SymbolicRefs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(enumClass));
     }
 
+    /**
+     * Return a symbolic reference for the specified enum class and name
+     *
+     * @param <E> the type of the enum constant
+     * @param enumClass the enum class
+     * @param constantName the name of the enum constant
+     * @return the symbolic reference
+     * @throws NullPointerException if any argument is null
+     */
     @Foldable
     public static<E extends Enum<E>> EnumRef<E> of(ClassRef enumClass, String constantName) {
         return new EnumRef<>(enumClass, constantName);
     }
 
+    /**
+     * Return the enum class for this symbolic reference
+     * @return the enum class
+     */
     @Foldable
     public ClassRef enumClass() {
         return type();
     }
 
+    /**
+     * Return the enum constant name for this symbolic reference
+     * @return the enum constant name
+     */
     @Foldable
     public String constantName() {
         return name();
@@ -73,6 +97,6 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
 
     @Override
     public String toString() {
-        return String.format("EnumRef[%s.%s]", enumClass(), constantName());
+        return String.format("EnumRef[%s.%s]", enumClass().canonicalName(), constantName());
     }
 }

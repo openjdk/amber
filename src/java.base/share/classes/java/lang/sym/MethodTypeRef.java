@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A descriptor for a {@linkplain MethodType} constant.
+ * A symbolic reference for a {@linkplain MethodType}.
  */
 public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<MethodType> {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
@@ -48,25 +48,33 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
     private final ClassRef returnType;
     private final ClassRef[] argTypes;
 
+    /**
+     * Construct a {@linkplain MethodTypeRef} with the specified return type
+     * and parameter types
+     *
+     * @param returnType a {@link ClassRef} describing the return type
+     * @param argTypes {@link ClassRef}s describing the parameter types
+     */
     private MethodTypeRef(ClassRef returnType, ClassRef[] argTypes) {
+        this.returnType = requireNonNull(returnType);
+        this.argTypes = requireNonNull(argTypes);
+
         for (ClassRef cr : argTypes)
             if (cr.isPrimitive() && cr.descriptorString().equals("V"))
                 throw new IllegalArgumentException("Void parameters not permitted");
-
-        this.returnType = requireNonNull(returnType);
-        this.argTypes = requireNonNull(argTypes);
     }
 
     /**
-     * Create a {@linkplain MethodTypeRef} from a descriptor string.
+     * Create a {@linkplain MethodTypeRef} from a method descriptor string
      *
-     * @param descriptor the descriptor string
+     * @param descriptor the method descriptor string
      * @return a {@linkplain MethodTypeRef} describing the desired method type
-     * @throws IllegalArgumentException if the descriptor string does not
-     * describe a valid method descriptor
+     * @throws IllegalArgumentException if the descriptor string is not a valid
+     * method descriptor
      */
     @Foldable
     public static MethodTypeRef ofDescriptor(String descriptor) {
+        // @@@ Find a lower-overhead way of validating the descriptor
         Matcher matcher = pattern.matcher(descriptor);
         if (!matcher.matches())
             throw new IllegalArgumentException(String.format("%s is not a valid method descriptor", descriptor));
@@ -88,11 +96,11 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
     }
 
     /**
-     * Create a {@linkplain MethodTypeRef} from class constant describing
-     * the return type and parameter types.
+     * Returns a {@linkplain MethodTypeRef} for the specified return type and
+     * parameter types.
      *
      * @param returnDescriptor a {@linkplain ClassRef} describing the return type
-     * @param paramDescriptors {@linkplain ClassRef}s describing the argument types type
+     * @param paramDescriptors {@linkplain ClassRef}s describing the argument types
      * @return a {@linkplain MethodTypeRef} describing the desired method type
      */
     @Foldable
@@ -120,13 +128,13 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
     }
 
     /**
-     * Get the parameter type of the index'th parameter of the method type
+     * Get the parameter type of the {@code index}'th parameter of the method type
      * described by this {@linkplain MethodTypeRef}
      *
      * @param index the index of the parameter to retrieve
      * @return the parameter type
      * @throws IndexOutOfBoundsException if the index is outside the half-open
-     * range {[0, parameterCount)}
+     * range {[0, parameterCount())}
      */
     @Foldable
     public ClassRef parameterType(int index) {
@@ -138,7 +146,6 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      *
      * @return the parameter types
      */
-    @Foldable
     public List<ClassRef> parameterList() {
         return Arrays.asList(argTypes);
     }
@@ -148,14 +155,14 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      *
      * @return the parameter types
      */
-    @Foldable
     public ClassRef[] parameterArray() {
         return argTypes.clone();
     }
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to
-     * this one, except the return type is changed to the provided value
+     * this one, except with the specified return type
+     *
      * @param returnType the new return type
      * @return the new method type descriptor
      */
@@ -168,6 +175,7 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
      * except that a single parameter type has been changed to the provided
      * value
+     *
      * @param index the index of the parameter to change
      * @param paramType the new parameter type
      * @return the new method type descriptor
@@ -183,7 +191,8 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
-     * except that a range of parameters have been removed
+     * except that a range of parameter types have been removed
+     *
      * @param start the index of the first parameter to remove
      * @param end the index after the last parameter to remove
      * @return the new method type descriptor
@@ -205,11 +214,12 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
-     * except that a range of parameters have been inserted
+     * except that a range of additional parameter types have been inserted
+     *
      * @param pos the index at which to insert the first inserted parameter
      * @param paramTypes the new parameter types to insert
      * @return the new method type descriptor
-     * @throws IndexOutOfBoundsException if {@code pos} is outside the closed-open
+     * @throws IndexOutOfBoundsException if {@code pos} is outside the closed
      * range {[0, parameterCount]}
      */
     @Foldable
@@ -223,12 +233,6 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
         return of(returnType, newArgs);
     }
 
-    /**
-     * Resolve to a MethodType
-     * @param lookup the lookup
-     * @return the MethodType
-     * @throws ReflectiveOperationException exception
-     */
     public MethodType resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
     }
@@ -248,6 +252,20 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
                              returnType.descriptorString());
     }
 
+    /**
+     * Return a human-readable descriptor for this method type, using the
+     * canonical names for parameter and return types
+     * @return the human-readable descriptor for this method type
+     */
+    public String canonicalDescriptor() {
+        return String.format("(%s)%s",
+                             Stream.of(argTypes)
+                                   .map(ClassRef::canonicalName)
+                                   .collect(Collectors.joining()),
+                             returnType.canonicalName());
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -255,21 +273,19 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
 
         MethodTypeRef constant = (MethodTypeRef) o;
 
-        return (returnType != null
-                ? returnType.equals(constant.returnType)
-                : constant.returnType == null)
+        return returnType.equals(constant.returnType)
                && Arrays.equals(argTypes, constant.argTypes);
     }
 
     @Override
     public int hashCode() {
-        int result = returnType != null ? returnType.hashCode() : 0;
+        int result = returnType.hashCode();
         result = 31 * result + Arrays.hashCode(argTypes);
         return result;
     }
 
     @Override
     public String toString() {
-        return String.format("MethodTypeConstant[%s]", descriptorString());
+        return String.format("MethodTypeRef[%s]", canonicalDescriptor());
     }
 }

@@ -322,12 +322,12 @@ public class ConstablesVisitor extends TreeScanner {
                         return;
                     }
                     Object indyRef = constants.head;
-                    String invocationName = (String)constables.invokeMethodReflectively(constables.indyRefClass,
+                    String invocationName = (String)constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass,
                             indyRef, "name");
                     if (invocationName.isEmpty()) {
                         log.error(tree.args.tail.head.pos(), Errors.InvocationNameCannotBeEmpty);
                     }
-                    Object mh = constables.invokeMethodReflectively(constables.indyRefClass,
+                    Object mh = constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass,
                             indyRef, "bootstrapMethod");
                     Pool.MethodHandle mHandle = (Pool.MethodHandle)constables
                             .convertConstant(tree, attrEnv, mh, attrEnv.enclClass.sym.packge().modle);
@@ -347,9 +347,9 @@ public class ConstablesVisitor extends TreeScanner {
                     ListBuffer<Type> arguments = new ListBuffer<>();
                     tree.args = tree.args.tail;
                     tree.args.forEach(arg -> arguments.add(arg.type));
-                    Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.indyRefClass, indyRef, "bootstrapArgs");
+                    Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass, indyRef, "bootstrapArgs");
                     Object[] convertedBsmArgs = constables.convertConstants(tree, attrEnv, bsmArgs, attrEnv.enclClass.sym.packge().modle, true);
-                    Object mt = constables.invokeMethodReflectively(constables.indyRefClass, indyRef, "type");
+                    Object mt = constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass, indyRef, "type");
                     String methodTypeDesc = (String)constables.invokeMethodReflectively(
                             constables.methodTypeRefClass, mt, "descriptorString");
                     MethodType mType = (MethodType)constables.descriptorToType(methodTypeDesc,

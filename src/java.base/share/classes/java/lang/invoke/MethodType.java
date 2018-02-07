@@ -30,16 +30,20 @@ import sun.invoke.util.Wrapper;
 import java.lang.ref.WeakReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.sym.ClassRef;
 import java.lang.sym.Constable;
 import java.lang.sym.MethodTypeRef;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+
 import sun.invoke.util.BytecodeDescriptor;
 import static java.lang.invoke.MethodHandleStatics.*;
 import sun.invoke.util.VerifyType;
@@ -1168,7 +1172,15 @@ class MethodType implements Constable<MethodType>, java.io.Serializable {
 
     @Override
     public Optional<MethodTypeRef> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(MethodTypeRef.ofDescriptor(toMethodDescriptorString()));
+        try {
+            return Optional.of(MethodTypeRef.of(returnType().toSymbolicRef(lookup).orElseThrow(),
+                                                Stream.of(parameterArray())
+                                                      .map(p -> p.toSymbolicRef(lookup).orElseThrow())
+                                                      .toArray(ClassRef[]::new)));
+        }
+        catch (NoSuchElementException e) {
+            return Optional.empty();
+        }
     }
 
     /// Serialization.

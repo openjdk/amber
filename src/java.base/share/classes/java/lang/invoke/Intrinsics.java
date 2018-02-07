@@ -24,7 +24,7 @@
  */
 package java.lang.invoke;
 
-import java.lang.sym.IndyRef;
+import java.lang.sym.DynamicCallSiteRef;
 import java.lang.sym.SymbolicRef;
 
 /**
@@ -55,7 +55,7 @@ public final class Intrinsics {
      * @return the result of invoking the indy
      * @throws java.lang.Throwable the targeted method can throw any exception
      */
-    public static Object invokedynamic(IndyRef indy,
+    public static Object invokedynamic(DynamicCallSiteRef indy,
                                        Object... args)
             throws Throwable {
         throw new UnsupportedOperationException("no reflective access");

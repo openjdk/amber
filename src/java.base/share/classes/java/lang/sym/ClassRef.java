@@ -38,13 +38,20 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A descriptor for a {@linkplain Class} constant.
+ * A symbolic reference for a {@link Class}.
  */
 public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
 
     private final String descriptor;
 
+    /**
+     * Create a {@linkplain ClassRef} from a descriptor string for a class
+     *
+     * @param descriptor the descriptor string
+     * @throws IllegalArgumentException if the descriptor string does not
+     * describe a valid class name
+     */
     private ClassRef(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
         if (descriptor == null
@@ -54,9 +61,10 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a dot-separated class name
+     * Create a {@linkplain ClassRef} from a fully-qualified, dot-separated
+     * class name
      *
-     * @param name the class name
+     * @param name the fully qualified class name, dot-separated
      * @return a {@linkplain ClassRef} describing the desired class
      * @throws IllegalArgumentException if the name string does not
      * describe a valid class name
@@ -67,40 +75,43 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a dot-separated package name and a class name
+     * Create a {@linkplain ClassRef} from a dot-separated package name and an
+     * unqualified class name
      *
      * @param packageName the package name, dot-separated
-     * @param className the the class name
+     * @param className the unqualified class name
      * @return a {@linkplain ClassRef} describing the desired class
-     * @throws IllegalArgumentException if the package name or class name are not in the correct format
+     * @throws IllegalArgumentException if the package name or class name are
+     * not in the correct format
      */
     @Foldable
     public static ClassRef of(String packageName, String className) {
-        return ofDescriptor("L" + packageName.replace('.', '/') + (packageName.length() > 0 ? "/" : "") + className + ";");
+        if (className.contains("."))
+            throw new IllegalArgumentException(className);
+        return ofDescriptor("L" + packageName.replace('.', '/')
+                            + (packageName.length() > 0 ? "/" : "")
+                            + className + ";");
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a descriptor string.
+     * Create a {@linkplain ClassRef} from a descriptor string for a class
      *
      * @param descriptor the descriptor string
      * @return a {@linkplain ClassRef} describing the desired class
      * @throws NullPointerException if the descriptor string is null
-     * @throws IllegalArgumentException if the descriptor string does not
-     * describe a valid class descriptor
+     * @throws IllegalArgumentException if the descriptor string is not
+     * a valid class descriptor
      */
     @Foldable
     public static ClassRef ofDescriptor(String descriptor) {
-        requireNonNull(descriptor);
-        if (!TYPE_DESC.matcher(descriptor).matches())
-            throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
-        return new ClassRef(descriptor);
+        return new ClassRef(requireNonNull(descriptor));
     }
 
     /**
      * Create a {@linkplain ClassRef} describing an array of the type
      * described by this {@linkplain ClassRef}
      *
-     * @return a {@linkplain ClassRef} describing an array type
+     * @return a {@linkplain ClassRef} describing the array type
      */
     @Foldable
     public ClassRef array() {
@@ -110,6 +121,8 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     /**
      * Create a {@linkplain ClassRef} describing an inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
+     * @param innerName the name of the inner class
+     * @return a {@linkplain ClassRef} describing the inner class
      */
     @Foldable
     public ClassRef inner(String innerName) {
@@ -119,8 +132,12 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     /**
-     * Create a {@linkplain ClassRef} describing an inner class of the
+     * Create a {@linkplain ClassRef} describing a multiply nested inner class of the
      * non-array reference type described by this {@linkplain ClassRef}
+     *
+     * @param firstInnerName the name of the first level of inner class
+     * @param moreInnerNames the name(s) of the remaining levels of inner class
+     * @return a {@linkplain ClassRef} describing the inner class
      */
     @Foldable
     public ClassRef inner(String firstInnerName, String... moreInnerNames) {
@@ -133,31 +150,30 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     /**
-     * Returns whether this {@linkplain ClassRef}
-     * describes an array type
-     * @return whether this {@linkplain ClassRef}
-     * describes an array type
+     * Returns whether this {@linkplain ClassRef} describes an array type
+     *
+     * @return whether this {@linkplain ClassRef} describes an array type
      */
     public boolean isArray() {
         return descriptor.startsWith("[");
     }
 
     /**
-     * Returns whether this {@linkplain ClassRef}
-     * describes a primitive type
-     * @return whether this {@linkplain ClassRef}
-     * describes a primitive type
+     * Returns whether this {@linkplain ClassRef} describes a primitive type
+     *
+     * @return whether this {@linkplain ClassRef} describes a primitive type
      */
     public boolean isPrimitive() {
         return descriptor.length() == 1;
     }
 
     /**
-     * The component type of this {@linkplain ClassRef} if it describes
-     * an array type, otherwise the type that it describes
-     * @return the component type of the type described by this
-     * @throws IllegalStateException if this reference does not describe an array type
-     * {@linkplain ClassRef}
+     * Returns the component type of this {@linkplain ClassRef}, if it describes
+     * an array type
+     *
+     * @return a {@linkplain ClassRef} describing the component type
+     * @throws IllegalStateException if this {@linkplain ClassRef} does not
+     * describe an array type
      */
     @Foldable
     public ClassRef componentType() {
@@ -167,7 +183,8 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     /**
-     * Return the canonical name of the type described by this descriptor
+     * Returns the canonical name of the type described by this descriptor
+     *
      * @return the canonical name of the type described by this descriptor
      */
     public String canonicalName() {
@@ -180,8 +197,9 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
             ClassRef c = this;
             for (int i=0; i<depth; i++)
                 c = c.componentType();
-            StringBuilder sb = new StringBuilder(descriptor.length() + 2*depth);
-            sb.append(c.canonicalName());
+            String name = c.canonicalName();
+            StringBuilder sb = new StringBuilder(name.length() + 2*depth);
+            sb.append(name);
             for (int i=0; i<depth; i++)
                 sb.append("[]");
             return sb.toString();

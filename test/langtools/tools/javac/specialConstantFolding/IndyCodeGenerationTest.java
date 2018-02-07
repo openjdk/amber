@@ -50,7 +50,7 @@ public class IndyCodeGenerationTest {
     String testWithStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
                 SymbolicRefs.CR_CallSite,
-                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_MethodHandles_Lookup,
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_MethodType,
                 SymbolicRefs.CR_int,
@@ -67,13 +67,13 @@ public class IndyCodeGenerationTest {
         MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
                 SymbolicRefs.CR_String
         );
-        IndyRef bs = IndyRef.of(mh,
-                                "name",
-                                methodTypeForIndy,
-                                1, 2L, 3.0f, 4.0d,
-                                SymbolicRefs.CR_int,
-                                "something",
-                                MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
+        DynamicCallSiteRef bs = DynamicCallSiteRef.of(mh,
+                                                      "name",
+                                                      methodTypeForIndy,
+                                                      1, 2L, 3.0f, 4.0d,
+                                                      SymbolicRefs.CR_int,
+                                                      "something",
+                                                      MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
         return (String)invokedynamic(bs);
     }
 

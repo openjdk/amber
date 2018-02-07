@@ -1522,8 +1522,8 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
         MethodTypeRef type;
         try {
             info = lookup.revealDirect(this);
-            owner = info.getDeclaringClass().toSymbolicRef(lookup).get();
-            type = info.getMethodType().toSymbolicRef(lookup).get();
+            owner = info.getDeclaringClass().toSymbolicRef(lookup).orElseThrow();
+            type = info.getMethodType().toSymbolicRef(lookup).orElseThrow();
             name = info.getName();
         }
         catch (Exception e) {

@@ -23,8 +23,12 @@
  * questions.
  */
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.sym.ClassRef;
+import java.lang.sym.SymbolicRefs;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -54,15 +58,15 @@ public class ClassRefTest extends SymbolicRefTest {
         if (!r.descriptorString().equals("V")) {
             assertEquals(r, r.array().componentType());
             // Commutativity: array -> resolve -> componentType -> toSymbolic
-            assertEquals(r, r.array().resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).get());
+            assertEquals(r, r.array().resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).orElseThrow());
             // Commutativity: resolve -> array -> toSymbolic -> component type
-            assertEquals(r, Array.newInstance(r.resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).get().componentType());
+            assertEquals(r, Array.newInstance(r.resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).orElseThrow().componentType());
         }
 
         if (r.isArray()) {
             assertEquals(r, r.componentType().array());
-            assertEquals(r, r.resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).get().array());
-            assertEquals(r, Array.newInstance(r.componentType().resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).get());
+            assertEquals(r, r.resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).orElseThrow().array());
+            assertEquals(r, Array.newInstance(r.componentType().resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).orElseThrow());
         }
     }
 
@@ -70,15 +74,37 @@ public class ClassRefTest extends SymbolicRefTest {
         testClassRef(r);
 
         assertEquals(r.resolveRef(LOOKUP), c);
-        assertEquals(c.toSymbolicRef(LOOKUP).get(), r);
+        assertEquals(c.toSymbolicRef(LOOKUP).orElseThrow(), r);
         assertEquals(ClassRef.ofDescriptor(c.toDescriptorString()), r);
+    }
+
+    public void testSymbolicRefsConstants() throws ReflectiveOperationException {
+        int tested = 0;
+        Field[] fields = SymbolicRefs.class.getDeclaredFields();
+        for (Field f : fields) {
+            try {
+                if (f.getType().equals(ClassRef.class)
+                    && ((f.getModifiers() & Modifier.STATIC) != 0)
+                    && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
+                    ClassRef cr = (ClassRef) f.get(null);
+                    Class c = cr.resolveRef(MethodHandles.lookup());
+                    testClassRef(cr, c);
+                    ++tested;
+                }
+            }
+            catch (Throwable e) {
+                fail("Error testing field " + f.getName(), e);
+            }
+        }
+
+        assertTrue(tested > 0);
     }
 
     public void testPrimitiveClassRef() throws ReflectiveOperationException {
         for (Primitives p : Primitives.values()) {
             List<ClassRef> refs = List.of(ClassRef.ofDescriptor(p.descriptor),
                                           p.classRef,
-                                          (ClassRef) p.clazz.toSymbolicRef().get());
+                                          (ClassRef) p.clazz.toSymbolicRef().orElseThrow());
             for (ClassRef c : refs) {
                 testClassRef(c, p.clazz);
                 assertTrue(c.isPrimitive());
@@ -87,7 +113,7 @@ public class ClassRefTest extends SymbolicRefTest {
                 refs.forEach(cc -> assertEquals(c, cc));
                 if (p != Primitives.VOID) {
                     testClassRef(c.array(), p.arrayClass);
-                    assertEquals(c, ((ClassRef) p.arrayClass.toSymbolicRef().get()).componentType());
+                    assertEquals(c, ((ClassRef) p.arrayClass.toSymbolicRef().orElseThrow()).componentType());
                     assertEquals(c, p.classRef.array().componentType());
                 }
             }
@@ -108,7 +134,7 @@ public class ClassRefTest extends SymbolicRefTest {
                                                        ClassRef.of("java.lang", "String"),
                                                        ClassRef.of("java.lang.String"),
                                                        ClassRef.of("java.lang.String").array().componentType(),
-                                                       String.class.toSymbolicRef(LOOKUP).get());
+                                                       String.class.toSymbolicRef(LOOKUP).orElseThrow());
         for (ClassRef r : stringClassRefs) {
             testClassRef(r, String.class);
             assertFalse(r.isPrimitive());

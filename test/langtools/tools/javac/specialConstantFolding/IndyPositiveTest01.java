@@ -42,7 +42,7 @@ public class IndyPositiveTest01 {
     String test(String x, String y) throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
                 SymbolicRefs.CR_CallSite,
-                SymbolicRefs.CR_Lookup,
+                SymbolicRefs.CR_MethodHandles_Lookup,
                 SymbolicRefs.CR_String,
                 SymbolicRefs.CR_MethodType,
                 SymbolicRefs.CR_String,
@@ -56,7 +56,7 @@ public class IndyPositiveTest01 {
                 SymbolicRefs.CR_String
         );
         final String param = "" + '\u0001' + '\u0001';
-        IndyRef indyDescr = IndyRef.of(mh, "makeConcatWithConstants", methodTypeForIndy, param);
+        DynamicCallSiteRef indyDescr = DynamicCallSiteRef.of(mh, "makeConcatWithConstants", methodTypeForIndy, param);
         return (String)invokedynamic(indyDescr, x, y);
     }
 }

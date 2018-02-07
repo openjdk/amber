@@ -3855,6 +3855,11 @@ public final class Class<T> implements java.io.Serializable,
 
     @Override
     public Optional<ClassRef> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(ClassRef.ofDescriptor(toDescriptorString()));
+        try {
+            return Optional.of(ClassRef.ofDescriptor(lookup.accessClass(this).toDescriptorString()));
+        }
+        catch (IllegalAccessException e) {
+            return Optional.empty();
+        }
     }
 }

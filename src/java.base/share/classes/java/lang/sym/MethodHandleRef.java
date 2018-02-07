@@ -47,7 +47,7 @@ import static java.lang.sym.SymbolicRefs.CR_void;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A descriptor for a {@linkplain MethodHandle} constant.
+ * A symbolic reference for a {@link MethodHandle}.
  */
 public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     private static final ClassRef[] INDY_BOOTSTRAP_ARGS = { ClassRef.of("java.lang.invoke.MethodHandles$Lookup"),
@@ -61,16 +61,28 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
      * Kinds of method handle refs
      */
     public enum Kind {
+        /** A method handle for a method invoked as with {@code invokestatic} */
         @Foldable STATIC(REF_invokeStatic),
+        /** A method handle for a method invoked as with {@code invokevirtual} */
         @Foldable VIRTUAL(REF_invokeVirtual),
+        /** A method handle for a method invoked as with {@code invokeinterface} */
         @Foldable INTERFACE_VIRTUAL(REF_invokeInterface),
+        /** A method handle for a method invoked as with {@code invokespecial} */
         @Foldable SPECIAL(REF_invokeSpecial),
+        /** A method handle for a constructor */
         @Foldable CONSTRUCTOR(REF_newInvokeSpecial),
+        /** A method handle for a read accessor for an instance field  */
         @Foldable GETTER(REF_getField),
+        /** A method handle for a write accessor for an instance field  */
         @Foldable SETTER(REF_putField),
+        /** A method handle for a read accessor for a static field  */
         @Foldable STATIC_GETTER(REF_getStatic),
+        /** A method handle for a write accessor for a static field  */
         @Foldable STATIC_SETTER(REF_putStatic);
 
+        /** The corresponding {@code refKind} value for this kind of method handle,
+         * as defined by {@link MethodHandleInfo}
+         */
         public final int refKind;
 
         Kind(int refKind) {
@@ -83,48 +95,57 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     private final String name;
     private final MethodTypeRef type;
 
+    /**
+     * Construct a {@linkplain MethodHandleRef} from a kind, owner, name, and type
+     * @param kind the kind of the method handle
+     * @param owner the declaring class for the method
+     * @param name the name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
+     * @param type the type of the method
+     * @throws NullPointerException if any non-ignored argument is null
+     * @throws IllegalArgumentException if {@code kind} describes a field accessor,
+     * and {@code type} is not consistent with that kind of field accessor
+     */
     private MethodHandleRef(Kind kind, ClassRef owner, String name, MethodTypeRef type) {
         if (kind == CONSTRUCTOR)
             name = "<init>";
 
+        requireNonNull(kind);
+        requireNonNull(owner);
+        requireNonNull(name);
+        requireNonNull(type);
+
         switch (kind) {
-            case GETTER:
-                if (type.returnType().descriptorString().equals("V")
-                    || type.parameterCount() != 1
-                    || type.parameterType(0).isPrimitive())
-                    throw new IllegalArgumentException(String.format("Expected type of (R)T for getter, found %s", type));
-                break;
-            case SETTER:
-                if (!type.returnType().descriptorString().equals("V")
-                    || type.parameterCount() != 2
-                    || type.parameterType(0).isPrimitive())
-                    throw new IllegalArgumentException(String.format("Expected type of (RT)V for setter, found %s", type));
-                break;
-            case STATIC_GETTER:
-                if (type.returnType().descriptorString().equals("V")
-                    || type.parameterCount() != 0)
-                    throw new IllegalArgumentException(String.format("Expected type of ()T for setter, found %s", type));
-                break;
-            case STATIC_SETTER:
-                if (!type.returnType().descriptorString().equals("V")
-                    || type.parameterCount() != 1)
-                    throw new IllegalArgumentException(String.format("Expected type of (T)V for setter, found %s", type));
-                break;
+            case GETTER: validateFieldType(type, false, true); break;
+            case SETTER: validateFieldType(type, true, true); break;
+            case STATIC_GETTER: validateFieldType(type, false, false); break;
+            case STATIC_SETTER: validateFieldType(type, true, false); break;
         }
 
-        this.kind = requireNonNull(kind);
-        this.owner = requireNonNull(owner);
-        this.name = requireNonNull(name);
-        this.type = requireNonNull(type);
+        this.kind = kind;
+        this.owner = owner;
+        this.name = name;
+        this.type = type;
+    }
 
+    private static void validateFieldType(MethodTypeRef type, boolean isSetter, boolean isVirtual) {
+        boolean isVoid = type.returnType().descriptorString().equals("V");
+        int expectedParams = (isSetter ? 1 : 0) + (isVirtual ? 1 : 0);
+        if (isVoid != isSetter
+            || type.parameterCount() != expectedParams
+            || (isVirtual && type.parameterType(0).isPrimitive())) {
+            String expectedType = String.format("(%s%s)%s", (isVirtual ? "R" : ""),
+                                                (isSetter ? "T" : ""), (isSetter ? "V" : "T"));
+            throw new IllegalArgumentException(String.format("Expected type of %s for getter, found %s", expectedType, type));
+        }
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an
-     * invocation of a static method
+     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * declared method or an accessor for a field
+     *
      * @param kind The kind of method handle to be described
-     * @param clazz the class containing the method
-     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
+     * @param clazz the class declaring the method
+     * @param name the name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param type the method type of the method
      * @return the {@code MethodHandleRef}
      * @throws NullPointerException if any of the non-ignored arguments are null
@@ -135,11 +156,12 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an
-     * invocation of a static method
-     * @param kind One of: STATIC, VIRTUAL, INTERFACE_VIRTUAL, SPECIAL, CONSTRUCTOR
-     * @param clazz the class containing the method
-     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
+     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * declared method or an accessor for a field
+     *
+     * @param kind The kind of method handle to be described
+     * @param clazz the class declaring the method
+     * @param name the name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param descriptorString descriptor string of the method
      * @return the {@code MethodHandleRef}
      * @throws NullPointerException if any of the non-ignored arguments are null
@@ -150,11 +172,12 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an
-     * invocation of a static method
-     * @param kind One of: STATIC, VIRTUAL, INTERFACE_VIRTUAL, SPECIAL, CONSTRUCTOR
-     * @param clazz the class containing the method
-     * @param name the name of the method (ignored if kind=CONSTRUCTOR)
+     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * declared method or an accessor for a field
+     *
+     * @param kind The kind of method handle to be described
+     * @param clazz the class declaring the method
+     * @param name the name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param returnType the return type of the method
      * @param paramTypes the parameter types of the method
      * @return the {@code MethodHandleRef}
@@ -166,39 +189,44 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an invokedynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code MethodType}
-     * @param clazz the class containing the method
+     * Return a {@code MethodHandleRef} corresponding to a bootstrap method for
+     * an {@code invokedynamic} callsite, which is a static method whose leading
+     * parameter types are {@code Lookup}, {@code String}, and {@code MethodType}
+     * @param clazz the class declaring the method
      * @param name the name of the method
      * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
+     * @param paramTypes the parameter types of the method that follow the three
+     *                   standard leading arguments, if any
      * @return the {@code MethodHandleRef}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    public static MethodHandleRef ofIndyBootstrap(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+    public static MethodHandleRef ofDynamicCallsite(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
         return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to a constantdynamic bootstrap,
-     * which is a static method whose leading arguments are {@code Lookup}, {@code String}, and {@code Class}
-     * @param clazz the class containing the method
+     * Return a {@code MethodHandleRef} corresponding to a bootstrap method for a
+     * dynamic constant, which is a static method whose leading arguments are
+     * {@code Lookup}, {@code String}, and {@code Class}
+     * @param clazz the class declaring the method
      * @param name the name of the method
      * @param returnType the return type of the method
-     * @param paramTypes the parameter types of the method
+     * @param paramTypes the parameter types of the method that follow the three
+     *                   standard leading arguments, if any
      * @return the {@code MethodHandleRef}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    public static MethodHandleRef ofCondyBootstrap(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+    public static MethodHandleRef ofDynamicConstant(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
         return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to invocation
-     * of an instance field getter
-     * @param clazz the class containing the field
+     * Return a {@code MethodHandleRef} corresponding to accessing a field
+     * @param kind the kind of the method handle; must be one of {@code GETTER},
+     *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
+     * @param clazz the class declaring the field
      * @param name the name of the field
      * @param type the type of the field
      * @return the {@code MethodHandleRef}
@@ -218,12 +246,6 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
         return new MethodHandleRef(kind, clazz, name, mtr);
     }
 
-    /**
-     * Resolve to a MethodHandle
-     * @param lookup the lookup
-     * @return the MethodHandle
-     * @throws ReflectiveOperationException exception
-     */
     public MethodHandle resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         Class<?> resolvedOwner = owner.resolveRef(lookup);
         MethodType resolvedType = this.type.resolveRef(lookup);
@@ -251,25 +273,25 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return the {@code refKind} of the method handle described by this descriptor,
+     * Return the {@code refKind} of the method handle described by this symbolic reference,
      * as defined by {@link MethodHandleInfo}
-     * @return the {@link MethodHandle} reference kind
+     * @return the reference kind
      */
     @Foldable
     public int refKind() { return kind.refKind; }
 
     /**
-     * Return the {@code kind} of the method handle described by this descriptor
+     * Return the {@code kind} of the method handle described by this symbolic reference
      * @return the {@link Kind}
      */
     @Foldable
     public Kind kind() { return kind; }
 
     /**
-     * Return the class in which the method described by this descriptor is
-     * declared
+     * Return the class which declares the method or field described by
+     * this symbolic reference
      *
-     * @return the class in which the method is declared
+     * @return the class in which the method or field is declared
      */
     @Foldable
     public ClassRef owner() {
@@ -277,7 +299,8 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return the name of the method described by this descriptor
+     * Return the name of the method described by this symbolic reference
+     *
      * @return the name of the method
      */
     @Foldable
@@ -286,7 +309,7 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     /**
-     * Return the method type of the method described by this descriptor
+     * Return the type of the method described by this symbolic reference
      * @return the method type
      */
     @Foldable
@@ -323,6 +346,6 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
 
     @Override
     public String toString() {
-        return String.format("MethodHandleRef[kind=%s, owner=%s, name=%s, type=%s]", kind, owner, name, type);
+        return String.format("MethodHandleRef[%s/%s::%s%s]", kind, owner.canonicalName(), name, type.canonicalDescriptor());
     }
 }
