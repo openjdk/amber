@@ -396,8 +396,8 @@ public class Pool {
             public Filter<Name> nameFilter = nonInitFilter;
             public boolean interfaceOwner = false;
 
-            static Filter<Name> nonInitFilter = n -> (n != n.table.names.init && n != n.table.names.clinit);
-            static Filter<Name> initFilter = n -> n == n.table.names.init;
+            final static Filter<Name> nonInitFilter = n -> (n != n.table.names.init && n != n.table.names.clinit);
+            final static Filter<Name> initFilter = n -> n == n.table.names.init;
 
             @SuppressWarnings("fallthrough")
             public MethodHandleCheckHelper(int refKind, Symbol refSym) {

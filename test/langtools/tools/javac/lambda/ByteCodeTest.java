@@ -635,20 +635,6 @@ public class ByteCodeTest {
         }
 
         @Override
-        public String visitConstantDynamic(CONSTANT_ConstantDynamic_info c, Integer p) {
-            String value = slist.get(p);
-            if (value == null) {
-                try {
-                    value = visit(cfpool.get(c.bootstrap_method_attr_index), c.name_and_type_index);
-                    slist.set(p, value);
-                } catch (ConstantPoolException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            return value;
-        }
-
-        @Override
         public String visitModule(CONSTANT_Module_info c, Integer p) {
 
             String value = slist.get(p);
