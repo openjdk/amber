@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -545,7 +545,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ get(ByteBufferHandle handle, Object obb, int index) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
 #if[floatingPoint]
             $rawType$ rawValue = UNSAFE.get$RawType$Unaligned(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -562,7 +562,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static void set(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
 #if[floatingPoint]
             UNSAFE.put$RawType$Unaligned(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -580,7 +580,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getVolatile(ByteBufferHandle handle, Object obb, int index) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Volatile(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -589,7 +589,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static void setVolatile(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Volatile(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -598,7 +598,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAcquire(ByteBufferHandle handle, Object obb, int index) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Acquire(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -607,7 +607,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static void setRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Release(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -616,7 +616,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getOpaque(ByteBufferHandle handle, Object obb, int index) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Opaque(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -625,7 +625,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static void setOpaque(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Opaque(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -635,7 +635,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static boolean compareAndSet(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.compareAndSet$RawType$(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -644,7 +644,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ compareAndExchange(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -654,7 +654,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ compareAndExchangeAcquire(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$Acquire(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -664,7 +664,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ compareAndExchangeRelease(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$Release(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -674,7 +674,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static boolean weakCompareAndSetPlain(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Plain(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -683,7 +683,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static boolean weakCompareAndSet(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -692,7 +692,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static boolean weakCompareAndSetAcquire(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Acquire(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -701,7 +701,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static boolean weakCompareAndSetRelease(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Release(
                     UNSAFE.getObject(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
@@ -710,7 +710,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndSet(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -720,7 +720,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndSetAcquire(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$Acquire(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -730,7 +730,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndSetRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$Release(
                                       UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -742,7 +742,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndAdd(ByteBufferHandle handle, Object obb, int index, $type$ delta) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -755,7 +755,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndAddAcquire(ByteBufferHandle handle, Object obb, int index, $type$ delta) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$Acquire(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -768,7 +768,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndAddRelease(ByteBufferHandle handle, Object obb, int index, $type$ delta) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$Release(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -796,7 +796,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseOr(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -809,7 +809,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseOrRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$Release(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -822,7 +822,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseOrAcquire(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$Acquire(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -848,7 +848,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseAnd(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -861,7 +861,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseAndRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$Release(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -874,7 +874,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseAndAcquire(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$Acquire(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -901,7 +901,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseXor(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -914,7 +914,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseXorRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$Release(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
@@ -927,7 +927,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
 
         @ForceInline
         static $type$ getAndBitwiseXorAcquire(ByteBufferHandle handle, Object obb, int index, $type$ value) {
-            ByteBuffer bb = (ByteBuffer) obb;
+            ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$Acquire(
                         UNSAFE.getObject(bb, BYTE_BUFFER_HB),
