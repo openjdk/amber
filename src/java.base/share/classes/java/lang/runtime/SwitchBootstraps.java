@@ -30,7 +30,6 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,12 +52,20 @@ import java.util.stream.Stream;
  */
 public class SwitchBootstraps {
 
+    // Shared INIT_HOOK for all switch call sites; looks the target method up in a map
     private static final MethodHandle INIT_HOOK;
+    private static final Map<Class<?>, MethodHandle> switchMethods = new HashMap<>();
 
+    // Types that can be handled as int switches
     private static final Set<Class<?>> INT_TYPES
             = Set.of(int.class, short.class, byte.class, char.class,
                      Integer.class, Short.class, Byte.class, Character.class);
-    private static final Map<Class<?>, MethodHandle> switchMethods = new HashMap<>();
+    private static final Set<Class<?>> FLOAT_TYPES
+            = Set.of(float.class, Float.class);
+    private static final Set<Class<?>> LONG_TYPES
+            = Set.of(long.class, Long.class);
+    private static final Set<Class<?>> DOUBLE_TYPES
+            = Set.of(long.class, Long.class);
 
     private static final Comparator<String> STRING_BY_HASH
             = Comparator.comparingInt(Objects::hashCode);
@@ -70,6 +77,15 @@ public class SwitchBootstraps {
                                           MethodType.methodType(MethodHandle.class, CallSite.class));
             for (Class<?> c : INT_TYPES)
                 switchMethods.put(c, lookup.findVirtual(IntSwitchCallSite.class, "doSwitch",
+                                                        MethodType.methodType(int.class, c)));
+            for (Class<?> c : FLOAT_TYPES)
+                switchMethods.put(c, lookup.findVirtual(IntSwitchCallSite.class, "doSwitch",
+                                                        MethodType.methodType(int.class, c)));
+            for (Class<?> c : LONG_TYPES)
+                switchMethods.put(c, lookup.findVirtual(LongSwitchCallSite.class, "doSwitch",
+                                                        MethodType.methodType(int.class, c)));
+            for (Class<?> c : DOUBLE_TYPES)
+                switchMethods.put(c, lookup.findVirtual(LongSwitchCallSite.class, "doSwitch",
                                                         MethodType.methodType(int.class, c)));
             switchMethods.put(String.class, lookup.findVirtual(StringSwitchCallSite.class, "doSwitch",
                                                                MethodType.methodType(int.class, String.class)));
@@ -126,6 +142,49 @@ public class SwitchBootstraps {
         return new IntSwitchCallSite(invocationType, intLabels);
     }
 
+    /**
+     * Bootstrap method for linking an {@code invokedynamic} call site that
+     * implements a {@code switch} on an {@code float} or {@code Float}.
+     * The static arguments are a varargs array of {@code float} labels.
+     *
+     * @param lookup Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invocationName The invocation name, which is ignored.  When used with
+     *                       {@code invokedynamic}, this is provided by the
+     *                       {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param invocationType The invocation type of the {@code CallSite}.  This
+     *                       method type should have a single parameter which is
+     *                       one of the 32-bit or shorter primitive types, or
+     *                       one of their box types, and return {@code int}.  When
+     *                       used with {@code invokedynamic}, this is provided by
+     *                       the {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param floatLabels float values corresponding to the case labels of the
+     *                    {@code switch} statement.
+     * @return the index into {@code floatLabels} of the target value, if the target
+     *         matches any of the labels, {@literal -1} if the target value is
+     *         {@code null}, or {@code floatLabels.length} if the target value does
+     *         not match any of the labels.
+     * @throws Throwable if there is any error linking the call site
+     */
+    public static CallSite floatSwitch(MethodHandles.Lookup lookup,
+                                       String invocationName,
+                                       MethodType invocationType,
+                                       float... floatLabels) throws Throwable {
+        if (invocationType.parameterCount() != 1
+            || (!invocationType.returnType().equals(int.class))
+            || (!FLOAT_TYPES.contains(invocationType.parameterType(0))))
+            throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+
+        int[] intLabels = new int[floatLabels.length];
+        for (int i=0; i<floatLabels.length; i++)
+            intLabels[i] = Float.floatToIntBits(floatLabels[i]);
+
+        return new IntSwitchCallSite(invocationType, intLabels);
+    }
+
     static class IntSwitchCallSite extends ConstantCallSite {
         private final int[] labels;
         private final int[] indexes;
@@ -150,6 +209,10 @@ public class SwitchBootstraps {
             return (index >= 0) ? indexes[index] : indexes.length;
         }
 
+        int doSwitch(float target) {
+            return doSwitch(Float.floatToIntBits(target));
+        }
+
         int doSwitch(short target) {
             return doSwitch((int) target);
         }
@@ -166,6 +229,10 @@ public class SwitchBootstraps {
             return (target == null) ? -1 : doSwitch((int) target);
         }
 
+        int doSwitch(Float target) {
+            return (target == null) ? -1 : doSwitch((float) target);
+        }
+
         int doSwitch(Short target) {
             return (target == null) ? -1 : doSwitch((int) target);
         }
@@ -176,6 +243,125 @@ public class SwitchBootstraps {
 
         int doSwitch(Byte target) {
             return (target == null) ? -1 : doSwitch((int) target);
+        }
+    }
+
+    /**
+     * Bootstrap method for linking an {@code invokedynamic} call site that
+     * implements a {@code switch} on a {@code long} or {@code Long}.
+     * The static arguments are a varargs array of {@code long} labels.
+     *
+     * @param lookup Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invocationName The invocation name, which is ignored.  When used with
+     *                       {@code invokedynamic}, this is provided by the
+     *                       {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param invocationType The invocation type of the {@code CallSite}.  This
+     *                       method type should have a single parameter which is
+     *                       one of the 32-bit or shorter primitive types, or
+     *                       one of their box types, and return {@code int}.  When
+     *                       used with {@code invokedynamic}, this is provided by
+     *                       the {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param longLabels long values corresponding to the case labels of the
+     *                  {@code switch} statement.
+     * @return the index into {@code longLabels} of the target value, if the target
+     *         matches any of the labels, {@literal -1} if the target value is
+     *         {@code null}, or {@code longLabels.length} if the target value does
+     *         not match any of the labels.
+     * @throws Throwable if there is any error linking the call site
+     */
+    public static CallSite longSwitch(MethodHandles.Lookup lookup,
+                                      String invocationName,
+                                      MethodType invocationType,
+                                      long... longLabels) throws Throwable {
+        if (invocationType.parameterCount() != 1
+            || (!invocationType.returnType().equals(int.class))
+            || (!LONG_TYPES.contains(invocationType.parameterType(0))))
+            throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+
+        return new LongSwitchCallSite(invocationType, longLabels);
+    }
+
+    /**
+     * Bootstrap method for linking an {@code invokedynamic} call site that
+     * implements a {@code switch} on a {@code double} or {@code Double}.
+     * The static arguments are a varargs array of {@code double} labels.
+     *
+     * @param lookup Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invocationName The invocation name, which is ignored.  When used with
+     *                       {@code invokedynamic}, this is provided by the
+     *                       {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param invocationType The invocation type of the {@code CallSite}.  This
+     *                       method type should have a single parameter which is
+     *                       one of the 32-bit or shorter primitive types, or
+     *                       one of their box types, and return {@code int}.  When
+     *                       used with {@code invokedynamic}, this is provided by
+     *                       the {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param doubleLabels long values corresponding to the case labels of the
+     *                  {@code switch} statement.
+     * @return the index into {@code doubleLabels} of the target value, if the target
+     *         matches any of the labels, {@literal -1} if the target value is
+     *         {@code null}, or {@code doubleLabels.length} if the target value does
+     *         not match any of the labels.
+     * @throws Throwable if there is any error linking the call site
+     */
+    public static CallSite doubleSwitch(MethodHandles.Lookup lookup,
+                                        String invocationName,
+                                        MethodType invocationType,
+                                        double... doubleLabels) throws Throwable {
+        if (invocationType.parameterCount() != 1
+            || (!invocationType.returnType().equals(int.class))
+            || (!DOUBLE_TYPES.contains(invocationType.parameterType(0))))
+            throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+
+        long[] longLabels = new long[doubleLabels.length];
+        for (int i=0; i<doubleLabels.length; i++)
+            longLabels[i] = Double.doubleToLongBits(doubleLabels[i]);
+
+        return new LongSwitchCallSite(invocationType, longLabels);
+    }
+
+    static class LongSwitchCallSite extends ConstantCallSite {
+        private final long[] labels;
+        private final int[] indexes;
+
+        LongSwitchCallSite(MethodType targetType,
+                           long[] longLabels) throws Throwable {
+            super(targetType, INIT_HOOK);
+
+            // expensive way to index an array
+            indexes = IntStream.range(0, longLabels.length)
+                               .boxed()
+                               .sorted(Comparator.comparingLong(a -> longLabels[a]))
+                               .mapToInt(Integer::intValue)
+                               .toArray();
+            labels = new long[indexes.length];
+            for (int i=0; i<indexes.length; i++)
+                labels[i] = longLabels[indexes[i]];
+        }
+
+        int doSwitch(long target) {
+            int index = Arrays.binarySearch(labels, target);
+            return (index >= 0) ? indexes[index] : indexes.length;
+        }
+
+        int doSwitch(double target) {
+            return doSwitch(Double.doubleToLongBits(target));
+        }
+
+        int doSwitch(Long target) {
+            return (target == null) ? -1 : doSwitch((long) target);
+        }
+
+        int doSwitch(Double target) {
+            return (target == null) ? -1 : doSwitch((double) target);
         }
     }
 

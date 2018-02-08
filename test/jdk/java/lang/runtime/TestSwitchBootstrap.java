@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.runtime.SwitchBootstraps;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -51,18 +52,24 @@ public class TestSwitchBootstrap {
                                                           Integer.class, Short.class, Byte.class, Character.class);
     private final static Set<Class<?>> NON_BYTE_TYPES = Set.of(int.class, Integer.class, short.class, Short.class);
     private final static Set<Class<?>> BYTE_TYPES = Set.of(byte.class, Byte.class);
+    private final static Set<Class<?>> FLOAT_TYPES = Set.of(float.class, Float.class);
     private final static Set<Class<?>> SIGNED_TYPES
             = Set.of(int.class, short.class, byte.class,
                      Integer.class, Short.class, Byte.class);
 
     public static final MethodHandle BSM_INT_SWITCH;
+    public static final MethodHandle BSM_FLOAT_SWITCH;
     public static final MethodHandle BSM_STRING_SWITCH;
     public static final MethodHandle BSM_ENUM_SWITCH;
+
+    private final static Random random = new Random(System.currentTimeMillis());
 
     static {
         try {
             BSM_INT_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "intSwitch",
                                                                MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, int[].class));
+            BSM_FLOAT_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "floatSwitch",
+                                                               MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, float[].class));
             BSM_STRING_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "stringSwitch",
                                                                   MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String[].class));
             BSM_ENUM_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "enumSwitch",
@@ -144,6 +151,31 @@ public class TestSwitchBootstrap {
         assertEquals(-1, (int) mhs.get(Character.class).invoke(null));
     }
 
+    private void testFloat(float... labels) throws Throwable {
+        Map<Class<?>, MethodHandle> mhs
+                = Map.of(float.class, ((CallSite) BSM_FLOAT_SWITCH.invoke(MethodHandles.lookup(), "", switchType(float.class), labels)).dynamicInvoker(),
+                         Float.class, ((CallSite) BSM_FLOAT_SWITCH.invoke(MethodHandles.lookup(), "", switchType(Float.class), labels)).dynamicInvoker());
+
+        List<Float> labelList = new ArrayList<>();
+        for (float label : labels)
+            labelList.add(label);
+
+        for (int i=0; i<labels.length; i++) {
+            assertEquals(i, (int) mhs.get(float.class).invokeExact((float) labels[i]));
+            assertEquals(i, (int) mhs.get(Float.class).invokeExact((Float) labels[i]));
+        }
+
+        float[] someFloats = { 1.0f, Float.MIN_VALUE, 3.14f };
+        for (float f : someFloats) {
+            if (!labelList.contains(f)) {
+                assertEquals(labels.length, mhs.get(float.class).invoke((float) f));
+                assertEquals(labels.length, mhs.get(Float.class).invoke((float) f));
+            }
+        }
+
+        assertEquals(-1, (int) mhs.get(Float.class).invoke(null));
+    }
+
     private void testString(String... targets) throws Throwable {
         MethodHandle indy = ((CallSite) BSM_STRING_SWITCH.invoke(MethodHandles.lookup(), "", switchType(String.class), targets)).dynamicInvoker();
         List<String> targetList = Stream.of(targets)
@@ -195,21 +227,37 @@ public class TestSwitchBootstrap {
         testInt(SIGNED_TYPES, -1);
         testInt(ALL_TYPES, new int[] { });
 
-        Random r = new Random();
         for (int i=0; i<5; i++) {
-            int len = 50 + r.nextInt(800);
-            int[] arr = IntStream.generate(() -> r.nextInt(10000) - 5000)
+            int len = 50 + random.nextInt(800);
+            int[] arr = IntStream.generate(() -> random.nextInt(10000) - 5000)
                                  .distinct()
                                  .limit(len)
                                  .toArray();
             testInt(NON_BYTE_TYPES, arr);
 
-            arr = IntStream.generate(() -> r.nextInt(127) - 64)
+            arr = IntStream.generate(() -> random.nextInt(127) - 64)
                            .distinct()
                            .limit(120)
                            .toArray();
             testInt(BYTE_TYPES, arr);
         }
+    }
+
+    public void testLong() throws Throwable {
+        // @@@
+    }
+
+    public void testFloat() throws Throwable {
+        testFloat(0.0f, -0.0f, -1.0f, 1.0f, 3.14f, Float.MIN_VALUE, Float.MAX_VALUE, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY);
+        testFloat(new float[] { });
+        testFloat(0.0f, 1.0f, 3.14f, Float.NaN);
+
+        // @@@ Random tests
+        // @@@ More tests for weird values
+    }
+
+    public void testDouble() throws Throwable {
+        // @@@
     }
 
     public void testString() throws Throwable {
