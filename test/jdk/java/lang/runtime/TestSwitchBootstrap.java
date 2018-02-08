@@ -23,11 +23,6 @@
  * questions.
  */
 
-/**
- * @test
- * @run testng TestSwitchBootstrap
- */
-
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -44,17 +39,18 @@ import java.util.stream.Stream;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 /**
- * TestSwitchBootstrap
- *
- * @author Brian Goetz
+ * @test
+ * @run testng TestSwitchBootstrap
  */
 @Test
 public class TestSwitchBootstrap {
     private final static Set<Class<?>> ALL_TYPES = Set.of(int.class, short.class, byte.class, char.class,
                                                           Integer.class, Short.class, Byte.class, Character.class);
     private final static Set<Class<?>> NON_BYTE_TYPES = Set.of(int.class, Integer.class, short.class, Short.class);
+    private final static Set<Class<?>> BYTE_TYPES = Set.of(byte.class, Byte.class);
     private final static Set<Class<?>> SIGNED_TYPES
             = Set.of(int.class, short.class, byte.class,
                      Integer.class, Short.class, Byte.class);
@@ -192,18 +188,28 @@ public class TestSwitchBootstrap {
     }
 
     public void testInt() throws Throwable {
-        testInt(ALL_TYPES, 3, 1, 2);
-        testInt(ALL_TYPES, 1, 2, 3, 4);
+        testInt(ALL_TYPES, 8, 6, 7, 5, 3, 0, 9);
+        testInt(ALL_TYPES, 1, 2, 4, 8, 16);
+        testInt(ALL_TYPES, 5, 4, 3, 2, 1, 0);
+        testInt(SIGNED_TYPES, 5, 4, 3, 2, 1, 0, -1);
         testInt(SIGNED_TYPES, -1);
         testInt(ALL_TYPES, new int[] { });
 
         Random r = new Random();
-        int len = r.nextInt(1000);
-        int[] arr = IntStream.generate(() -> r.nextInt(10000) - 5000)
-                .distinct()
-                .limit(len)
-                .toArray();
-        testInt(NON_BYTE_TYPES, arr);
+        for (int i=0; i<5; i++) {
+            int len = 50 + r.nextInt(800);
+            int[] arr = IntStream.generate(() -> r.nextInt(10000) - 5000)
+                                 .distinct()
+                                 .limit(len)
+                                 .toArray();
+            testInt(NON_BYTE_TYPES, arr);
+
+            arr = IntStream.generate(() -> r.nextInt(127) - 64)
+                           .distinct()
+                           .limit(120)
+                           .toArray();
+            testInt(BYTE_TYPES, arr);
+        }
     }
 
     public void testString() throws Throwable {
@@ -212,12 +218,19 @@ public class TestSwitchBootstrap {
         testString("cow", "pig", "horse", "orangutan", "elephant", "dog", "frog", "ant");
         testString("a", "b", "c", "A", "B", "C");
         testString("C", "B", "A", "c", "b", "a");
-        testString("a", null, "c");
 
         // Tests with hash collisions; Ba/CB, Ca/DB
         testString("Ba", "CB");
         testString("Ba", "CB", "Ca", "DB");
-        testString("Ba", "pig", null, "CB", "cow", "Ca", "horse", "DB");
+
+        // Test with null
+        try {
+            testString("a", null, "c");
+            fail("expected failure");
+        }
+        catch (IllegalArgumentException t) {
+            // success
+        }
     }
 
     enum E1 { A, B }
@@ -231,5 +244,32 @@ public class TestSwitchBootstrap {
         testEnum(E2.class, "C");
         testEnum(E2.class, "C", "D", "E", "F", "H");
         testEnum(E2.class, "H", "C", "G", "D", "F", "E");
+
+        // Bad enum class
+        try {
+            testEnum((Class) String.class, "A");
+            fail("expected failure");
+        }
+        catch (IllegalArgumentException t) {
+            // success
+        }
+
+        // Bad enum constants
+        try {
+            testEnum(E1.class, "B", "A", "FILE_NOT_FOUND");
+            fail("expected failure");
+        }
+        catch (IllegalArgumentException t) {
+            // success
+        }
+
+        // Null enum constant
+        try {
+            testEnum(E1.class, "A", null, "B");
+            fail("expected failure");
+        }
+        catch (IllegalArgumentException t) {
+            // success
+        }
     }
 }
