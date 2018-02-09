@@ -1373,8 +1373,7 @@ public class JavacParser implements Parser {
                     return e;
                 default:
                     nextToken(); // to ensure progress
-                    syntaxError(pos, "expected3",
-                        CASE, DEFAULT, RBRACE);
+                    syntaxError(pos, Errors.Expected3(CASE, DEFAULT, RBRACE));
                 }
             }
         default:

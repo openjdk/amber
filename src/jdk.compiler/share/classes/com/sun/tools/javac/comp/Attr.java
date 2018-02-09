@@ -1551,7 +1551,7 @@ public class Attr extends JCTree.Visitor {
                         if (!pattype.hasTag(ERROR)) {
                             if (pattype.constValue() == null) {
                                 log.error(c.pat.pos(),
-                                          (stringSwitch ? "string.const.req" : "const.expr.req"));
+                                          (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
                             } else if (!labels.add(pattype.constValue())) {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
                             }
