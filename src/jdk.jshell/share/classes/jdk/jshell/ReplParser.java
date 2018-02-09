@@ -32,7 +32,8 @@ import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.parser.Tokens.Token;
-
+import com.sun.tools.javac.resources.CompilerProperties;
+import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CLASS;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.COLON;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ENUM;
@@ -43,7 +44,6 @@ import static com.sun.tools.javac.parser.Tokens.TokenKind.LPAREN;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.MONKEYS_AT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.SEMI;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.VOID;
-
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCAnnotation;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -53,9 +53,7 @@ import com.sun.tools.javac.tree.JCTree.JCModifiers;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.JCTree.Tag;
-
 import static com.sun.tools.javac.tree.JCTree.Tag.IDENT;
-
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Name;
@@ -250,11 +248,11 @@ class ReplParser extends JavacParser {
                                     ? List.of(toP(F.at(pos).MethodDef(mods, name, t, typarams,
                                                             List.nil(), List.nil(), null, null)))
                                     : null;
-                            return List.<JCTree>of(syntaxError(token.pos, err, "expected", LPAREN));
+                            return List.<JCTree>of(syntaxError(token.pos, err, Errors.Expected(LPAREN)));
                         }
                     } else if (!typarams.isEmpty()) {
                         // type parameters on non-variable non-method -- error
-                        return List.<JCTree>of(syntaxError(token.pos, "illegal.start.of.type"));
+                        return List.<JCTree>of(syntaxError(token.pos, Errors.IllegalStartOfType));
                     } else {
                         // expression-statement or expression to evaluate
                         JCExpressionStatement expr = toP(F.at(pos).Exec(t));
