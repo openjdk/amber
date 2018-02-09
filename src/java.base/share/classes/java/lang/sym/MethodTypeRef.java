@@ -39,9 +39,9 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A symbolic reference for a {@linkplain MethodType}.
+ * A symbolic reference for a {@linkplain MethodType} constant.
  */
-public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<MethodType> {
+public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<MethodType>, Constable<ConstantRef<MethodType>> {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
     private static Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
 
@@ -238,9 +238,9 @@ public final class MethodTypeRef implements SymbolicRef.WithTypeDescriptor<Metho
     }
 
     @Override
-    public Optional<? extends SymbolicRef<MethodType>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.<MethodType>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_MethodTypeRef)
-                                   .withArgs(SymbolicRefs.MHR_METHODTYPEREF_FACTORY, descriptorString()));
+    public Optional<ConstantRef<ConstantRef<MethodType>>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        ConstantRef<?>[] args = new ConstantRef<?>[] { SymbolicRefs.MHR_METHODTYPEREF_FACTORY, descriptorString() };
+        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, "_", SymbolicRefs.CR_MethodTypeRef, args));
     }
 
     @Override

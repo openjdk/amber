@@ -27,10 +27,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.sym.ClassRef;
 import java.lang.sym.Constable;
+import java.lang.sym.ConstantRef;
 import java.lang.sym.EnumRef;
 import java.lang.sym.MethodHandleRef;
 import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRef;
 import java.lang.sym.SymbolicRefs;
 import java.util.function.Supplier;
 
@@ -82,13 +82,13 @@ public class IntrinsifiedRefTest {
 
 
 
-    private static <T extends Constable> void assertIntrinsic(SymbolicRef<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
+    private static <T extends Constable> void assertIntrinsic(ConstantRef<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
         assertEquals(target, intrinsified);
         assertEquals(ref.resolveRef(LOOKUP), intrinsified);
         assertEquals(intrinsified.toSymbolicRef(LOOKUP).orElseThrow(), ref);
     }
 
-    private static<T extends Constable> void assertIntrinsicFail(SymbolicRef<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
+    private static<T extends Constable> void assertIntrinsicFail(ConstantRef<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
         try {
             T t = supplier.get();
             fail("Expected failure resolving " + ref);

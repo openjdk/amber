@@ -38,11 +38,11 @@ import static java.lang.sym.SymbolicRefs.CR_String;
  * A symbolic reference for an {@code invokedynamic} call site.
  */
 @SuppressWarnings("rawtypes")
-public final class DynamicCallSiteRef implements SymbolicRef {
-    private static final SymbolicRef<?>[] EMPTY_ARGS = new SymbolicRef<?>[0];
+public final class DynamicCallSiteRef implements SymbolicRef, Constable<DynamicCallSiteRef> {
+    private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
     private final MethodHandleRef bootstrapMethod;
-    private final SymbolicRef<?>[] bootstrapArgs;
+    private final ConstantRef<?>[] bootstrapArgs;
     private final String name;
     private final MethodTypeRef type;
 
@@ -61,7 +61,7 @@ public final class DynamicCallSiteRef implements SymbolicRef {
     private DynamicCallSiteRef(MethodHandleRef bootstrapMethod,
                                String name,
                                MethodTypeRef type,
-                               SymbolicRef<?>[] bootstrapArgs) {
+                               ConstantRef<?>[] bootstrapArgs) {
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
         this.bootstrapMethod = Objects.requireNonNull(bootstrapMethod);
@@ -85,7 +85,7 @@ public final class DynamicCallSiteRef implements SymbolicRef {
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef ofCanonical(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, SymbolicRef<?>... bootstrapArgs) {
+    public static DynamicCallSiteRef ofCanonical(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, ConstantRef<?>... bootstrapArgs) {
         DynamicCallSiteRef ref = new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
         return ref.canonicalize();
     }
@@ -104,7 +104,7 @@ public final class DynamicCallSiteRef implements SymbolicRef {
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef of(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, SymbolicRef<?>... bootstrapArgs) {
+    public static DynamicCallSiteRef of(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, ConstantRef<?>... bootstrapArgs) {
         return new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
     }
 
@@ -151,7 +151,7 @@ public final class DynamicCallSiteRef implements SymbolicRef {
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public DynamicCallSiteRef withArgs(SymbolicRef<?>... bootstrapArgs) {
+    public DynamicCallSiteRef withArgs(ConstantRef<?>... bootstrapArgs) {
         return new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
     }
 
@@ -208,7 +208,7 @@ public final class DynamicCallSiteRef implements SymbolicRef {
      * Returns the bootstrap arguments for the {@code invokedynamic}
      * @return the bootstrap arguments for the {@code invokedynamic}
      */
-    public SymbolicRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
+    public ConstantRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
     /**
      * Reflectively invokes the bootstrap method, and returns a dynamic invoker
@@ -233,19 +233,14 @@ public final class DynamicCallSiteRef implements SymbolicRef {
     }
 
     @Override
-    public Object resolveRef(MethodHandles.Lookup lookup) {
-        throw new UnsupportedOperationException("DynamicCallSiteRef");
-    }
-
-    @Override
-    public Optional<? extends SymbolicRef<?>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        SymbolicRef<?>[] args = new SymbolicRef<?>[bootstrapArgs.length + 4];
-        args[0] = SymbolicRefs.MHR_DYNAMICCALLSITEREF_FACTORY;
+    public Optional<? extends ConstantRef<DynamicCallSiteRef>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        ConstantRef<?>[] args = new ConstantRef<?>[bootstrapArgs.length + 4];
+        args[0] = SymbolicRefs.MHR_DYNAMICCONSTANTREF_FACTORY;
         args[1] = bootstrapMethod;
         args[2] = name;
         args[3] = type;
         System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_DynamicCallSiteRef).withArgs(args));
+        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_DynamicConstantRef, args));
     }
 
     @Override

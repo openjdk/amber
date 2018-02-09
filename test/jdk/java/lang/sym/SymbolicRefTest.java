@@ -28,11 +28,14 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
 import java.lang.sym.ClassRef;
 import java.lang.sym.Constable;
+import java.lang.sym.ConstantRef;
 import java.lang.sym.SymbolicRef;
 import java.lang.sym.SymbolicRefs;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertEquals;
@@ -89,14 +92,15 @@ public abstract class SymbolicRefTest {
         return ClassRef.ofDescriptor(c.toDescriptorString());
     }
 
-    static<T> void testSymbolicRef(SymbolicRef<T> ref) throws ReflectiveOperationException {
+    static<T> void testSymbolicRef(ConstantRef<T> ref) throws ReflectiveOperationException {
         // Round trip sym -> resolve -> toSymbolicRef
-        SymbolicRef<T> s = ((Constable<T>) ref.resolveRef(LOOKUP)).toSymbolicRef(LOOKUP).orElseThrow();
+        ConstantRef<? super ConstantRef<T>> s = ((Constable<ConstantRef<T>>) ref.resolveRef(LOOKUP)).toSymbolicRef(LOOKUP).orElseThrow();
         assertEquals(ref, s);
 
         // Round trip sym -> quoted sym -> resolve
-        SymbolicRef<? extends SymbolicRef<T>> ssr = (SymbolicRef<? extends SymbolicRef<T>>) ref.toSymbolicRef(LOOKUP).orElseThrow();
-        SymbolicRef<T> sr = ssr.resolveRef(LOOKUP);
+        Method m = ref.getClass().getMethod("toSymbolicRef", MethodHandles.Lookup.class);
+        Optional<ConstantRef<ConstantRef<T>>> opt = (Optional<ConstantRef<ConstantRef<T>>>) m.invoke(ref, LOOKUP);
+        ConstantRef<T> sr = opt.orElseThrow().resolveRef(LOOKUP);
         assertEquals(sr, ref);
     }
 }

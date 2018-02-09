@@ -26,6 +26,7 @@
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.sym.ClassRef;
+import java.lang.sym.ConstantRef;
 import java.lang.sym.DynamicConstantRef;
 import java.lang.sym.EnumRef;
 import java.lang.sym.MethodHandleRef;
@@ -53,7 +54,7 @@ import static org.testng.Assert.assertTrue;
  */
 @Test
 public class CondyRefTest extends SymbolicRefTest {
-    private final static SymbolicRef[] EMPTY_ARGS = new SymbolicRef[0];
+    private final static ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
     private final static ClassRef CR_ConstantBootstraps = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     private static<T> void testDCR(DynamicConstantRef<T> r, T c) throws ReflectiveOperationException {
@@ -163,9 +164,9 @@ public class CondyRefTest extends SymbolicRefTest {
         assertEquals(3, ints[2]);
     }
 
-    private<T> void assertLifted(SymbolicRef<T> prototype,
+    private<T> void assertLifted(ConstantRef<T> prototype,
                                  DynamicConstantRef<T> nonCanonical,
-                                 SymbolicRef<T> canonical) {
+                                 ConstantRef<T> canonical) {
         Class<?> clazz = prototype.getClass();
 
         assertTrue(canonical != nonCanonical);
@@ -200,14 +201,14 @@ public class CondyRefTest extends SymbolicRefTest {
 
         ClassRef testClass = ClassRef.of("CondyRefTest").inner("MyClass");
         assertLifted(VarHandleRef.ofStaticField(testClass, "sf", CR_int),
-                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new SymbolicRef<?>[] {testClass, "sf", CR_int }),
-                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new SymbolicRef<?>[] {testClass, "sf", CR_int }));
+                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantRef<?>[] {testClass, "sf", CR_int }),
+                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantRef<?>[] {testClass, "sf", CR_int }));
         assertLifted(VarHandleRef.ofField(testClass, "f", CR_int),
-                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new SymbolicRef<?>[] {testClass, "f", CR_int }),
-                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new SymbolicRef<?>[] {testClass, "f", CR_int }));
+                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantRef<?>[] {testClass, "f", CR_int }),
+                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantRef<?>[] {testClass, "f", CR_int }));
         assertLifted(VarHandleRef.ofArray(CR_int.array()),
-                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new SymbolicRef<?>[] {CR_int.array() }),
-                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new SymbolicRef<?>[] {CR_int.array() }));
+                     DynamicConstantRef.of(SymbolicRefs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantRef<?>[] {CR_int.array() }),
+                     DynamicConstantRef.ofCanonical(SymbolicRefs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantRef<?>[] {CR_int.array() }));
     }
 
 }

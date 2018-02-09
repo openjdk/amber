@@ -93,10 +93,9 @@ public class Constables {
             methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
             classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
-            constantRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
+            constantRefClass = Class.forName("java.lang.sym.ConstantRef", false, null);
             dynamicCallsiteRefClass = Class.forName("java.lang.sym.DynamicCallSiteRef", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
-            symbolicRefClass = Class.forName("java.lang.sym.SymbolicRef", false, null);
             symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
         } catch (ClassNotFoundException ex) {
             methodHandleRefClass = null;
@@ -106,7 +105,6 @@ public class Constables {
             dynamicCallsiteRefClass = null;
             dynamicConstantClass = null;
             symRefs = null;
-            symbolicRefClass = null;
         }
     }
 
@@ -275,8 +273,8 @@ public class Constables {
     public Optional<DynamicFieldSymbol> getDynamicFieldSymbol(JCTree tree, Object constant, Env<AttrContext> attrEnv) {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
-                symbolicRefClass.isInstance(constant)) {
-                constant = ((Optional<?>)invokeMethodReflectively(symbolicRefClass, constant, "toSymbolicRef")).get();
+                constantRefClass.isInstance(constant)) {
+                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "toSymbolicRef")).get();
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
                 Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);
@@ -430,7 +428,6 @@ public class Constables {
     public Class<?> constantRefClass;
     public Class<?> dynamicCallsiteRefClass;
     public Class<?> dynamicConstantClass;
-    public Class<?> symbolicRefClass;
     public Class<?> symRefs;
 
     public boolean canMakeItToConstantValue(Type t) {

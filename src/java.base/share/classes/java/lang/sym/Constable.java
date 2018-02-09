@@ -27,28 +27,31 @@ package java.lang.sym;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
 import java.util.Optional;
 
 /**
- * A type which can be stored in the constant pool of a Java classfile.
- * {@linkplain Constable} describe themselves for storage in the constant pool
- * by a {@link SymbolicRef}.  {@linkplain Constable} types include the types
- * that act as their own symbolic references ({@link String}, {@link Integer},
- * {@link Long}, {@link Float}, {@link Double}), types for which explicit
- * constant pool forms exist ({@link Class}, {@link MethodType}, and {@link MethodHandle}),
- * and other types corresponding to core language features ({@link Enum}).
+ * A type whose instances can describe themselves as a {@link ConstantRef}.
+ * {@linkplain Constable} types include those types which have native
+ * representation in the constant pool ({@link String}, {@link Integer},
+ * {@link Long}, {@link Float}, {@link Double}, {@link Class}, {@link MethodType},
+ * and {@link MethodHandle}), runtime support classes such as {@link VarHandle},
+ * and types corresponding to core language features ({@link Enum}).
  *
  * <p>The symbolic description is obtained via {@link #toSymbolicRef(MethodHandles.Lookup)}.
- * Not all instances of a {@linkplain Constable} type need be representable in
- * the constant pool; for example, direct method handles have a native form
- * in the constant pool, but the result of method handle combinators such as
- * {@link MethodHandle#asType(MethodType)} do not.  This method uses {@link Optional}
- * to represent whether or not the {@linkplain Constable} can be stored in the
- * constant pool.
+ * A {@linkplain Constable} need not be able to render all instances in the form
+ * of a {@link ConstantRef}; this method returns {@link Optional} to indicate
+ * whether such a description could be created for a particular instance.
+ * (For example, {@link MethodHandle} will produce symbolic descriptions for
+ * direct methods handles, but not necessarily for method handles resulting from
+ * method handle combinators such as {@link MethodHandle#asType(MethodType)}.)
+ *
+ * @param <T> the type of the class implementing {@linkplain Constable}
  */
 public interface Constable<T> {
     /**
-     * Return a symbolic reference for this instance, if one can be constructed.
+     * Return a symbolic constant reference for this instance, if one can be
+     * constructed.
      *
      * @implSpec This method behaves as if {@link #toSymbolicRef(MethodHandles.Lookup)}
      * were called with a lookup parameter of {@code MethodHandles.publicLookup()}.
@@ -56,14 +59,15 @@ public interface Constable<T> {
      * @return An {@link Optional} describing the resulting symbolic reference,
      * or an empty {@link Optional} if one cannot be constructed
      */
-    default Optional<? extends SymbolicRef<T>> toSymbolicRef() {
+    default Optional<? extends ConstantRef<? super T>> toSymbolicRef() {
         return toSymbolicRef(MethodHandles.publicLookup());
     }
 
     /**
-     * Return a symbolic reference for this instance, if one can be constructed
-     * and this object (and any classes needed to construct its symbolic description)
-     * is accessible from the class described by the {@code lookup} parameter.
+     * Return a symbolic constant reference for this instance, if one can be
+     * constructed.  This object (and any classes needed to construct its
+     * symbolic description) must be accessible from the class described by the
+     * {@code lookup} parameter.
      *
      * @param lookup A {@link MethodHandles.Lookup} to be used to perform
      *               access control determinations
@@ -71,5 +75,5 @@ public interface Constable<T> {
      * or an empty {@link Optional} if one cannot be constructed or this object
      * is not accessible from {@code lookup}
      */
-    Optional<? extends SymbolicRef<T>> toSymbolicRef(MethodHandles.Lookup lookup);
+    Optional<? extends ConstantRef<? super T>> toSymbolicRef(MethodHandles.Lookup lookup);
 }

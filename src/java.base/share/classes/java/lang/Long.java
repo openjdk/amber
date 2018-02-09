@@ -26,7 +26,7 @@
 package java.lang;
 
 import java.lang.annotation.Native;
-import java.lang.sym.SymbolicRef;
+import java.lang.sym.ConstantRef;
 import java.math.*;
 import java.util.Objects;
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -57,7 +57,7 @@ import static java.lang.String.UTF16;
  * @author  Joseph D. Darcy
  * @since   1.0
  */
-public final class Long extends Number implements Comparable<Long>, SymbolicRef.OfSelf<Long> {
+public final class Long extends Number implements Comparable<Long>, ConstantRef.OfSelf<Long> {
     /**
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.

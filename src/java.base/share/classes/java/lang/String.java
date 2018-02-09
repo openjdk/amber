@@ -28,7 +28,7 @@ package java.lang;
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
-import java.lang.sym.SymbolicRef;
+import java.lang.sym.ConstantRef;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,7 +122,7 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public final class String
-    implements java.io.Serializable, Comparable<String>, CharSequence, SymbolicRef.OfSelf<String> {
+    implements java.io.Serializable, Comparable<String>, CharSequence, ConstantRef.OfSelf<String> {
 
     /**
      * The value is used for character storage.

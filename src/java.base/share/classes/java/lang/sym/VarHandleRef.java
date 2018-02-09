@@ -33,11 +33,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A symbolic reference for a {@link VarHandle}.
+ * A symbolic reference for a {@link VarHandle} constant.
  */
-public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
+public final class VarHandleRef extends DynamicConstantRef<VarHandle>
+        implements Constable<ConstantRef<VarHandle>> {
 
-    private static final SymbolicRef<?>[] EMPTY_ARGS = new SymbolicRef<?>[0];
+    private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
     /**
      * Kinds of variable handle refs
@@ -55,7 +56,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
             this.refFactory = refFactory;
         }
 
-        List<SymbolicRef<?>> toBSMArgs(ClassRef declaringClass, String name, ClassRef varType) {
+        List<ConstantRef<?>> toBSMArgs(ClassRef declaringClass, String name, ClassRef varType) {
             switch (this) {
                 case FIELD:
                 case STATIC_FIELD:
@@ -192,12 +193,12 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
     }
 
     @Override
-    public Optional<? extends SymbolicRef<VarHandle>> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantRef<ConstantRef<VarHandle>>> toSymbolicRef(MethodHandles.Lookup lookup) {
         var declaringClassRefRef = declaringClass.toSymbolicRef(lookup);
         if (!declaringClassRefRef.isPresent())
             return Optional.empty();
 
-        var args = new ArrayList<SymbolicRef<?>>();
+        ArrayList<ConstantRef<?>> args = new ArrayList<>();
         args.add(kind.refFactory);
         args.add(declaringClassRefRef.get());
         if (kind != Kind.ARRAY) {
@@ -207,8 +208,9 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle> {
                 return Optional.empty();
             args.add(varTypeRefRef.get());
         }
-        return Optional.of(DynamicConstantRef.<VarHandle>of(SymbolicRefs.BSM_INVOKE, name(), SymbolicRefs.CR_VarHandleRef)
-                                   .withArgs(args.toArray(EMPTY_ARGS)));
+        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name(),
+                                                 SymbolicRefs.CR_VarHandleRef,
+                                                 args.toArray(EMPTY_ARGS)));
     }
 
     @Override

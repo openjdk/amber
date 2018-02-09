@@ -185,7 +185,7 @@ public final class SymbolicRefs {
 
     /** {@link ClassRef} representing {@link DynamicConstantRef} */
     @Foldable
-    static final ClassRef CR_CondyRef = ClassRef.of("java.lang.sym.DynamicConstantRef");
+    static final ClassRef CR_DynamicConstantRef = ClassRef.of("java.lang.sym.DynamicConstantRef");
 
     /** {@link ClassRef} representing {@link DynamicCallSiteRef} */
     @Foldable
@@ -268,7 +268,7 @@ public final class SymbolicRefs {
 
     /** Symbolic reference representing the constant {@code null} */
     @Foldable
-    public static final SymbolicRef<?> NULL = DynamicConstantRef.of(SymbolicRefs.BSM_NULL_CONSTANT, SymbolicRefs.CR_Object);
+    public static final ConstantRef<?> NULL = DynamicConstantRef.of(SymbolicRefs.BSM_NULL_CONSTANT, SymbolicRefs.CR_Object);
 
     /** {@link MethodHandleRef} representing the factory method {@link ClassRef#ofDescriptor(String)} */
     @Foldable
@@ -306,15 +306,9 @@ public final class SymbolicRefs {
     static final MethodHandleRef MHR_VARHANDLEREF_ARRAY_FACTORY
             = MethodHandleRef.of(Kind.STATIC, CR_VarHandleRef, "ofArray", CR_VarHandleRef, CR_ClassRef);
 
-    /** {@link MethodHandleRef} representing the factory method {@link DynamicConstantRef#of(MethodHandleRef, String, ClassRef, SymbolicRef[])} */
+    /** {@link MethodHandleRef} representing the factory method {@link DynamicConstantRef#of(MethodHandleRef, String, ClassRef, ConstantRef[])} */
     @Foldable
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_CondyRef, "of",
-                                 CR_CondyRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_SymbolicRef.array());
-
-    /** {@link MethodHandleRef} representing the factory method {@link DynamicCallSiteRef#of(MethodHandleRef, String, MethodTypeRef, SymbolicRef[])} */
-    @Foldable
-    static final MethodHandleRef MHR_DYNAMICCALLSITEREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_DynamicCallSiteRef, "of",
-                                 CR_DynamicCallSiteRef, CR_MethodHandleRef, CR_String, CR_MethodTypeRef, CR_SymbolicRef.array());
+            = MethodHandleRef.of(Kind.STATIC, CR_DynamicConstantRef, "of",
+                                 CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_SymbolicRef.array());
 }

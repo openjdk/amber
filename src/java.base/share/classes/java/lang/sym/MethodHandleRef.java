@@ -47,9 +47,9 @@ import static java.lang.sym.SymbolicRefs.CR_void;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A symbolic reference for a {@link MethodHandle}.
+ * A symbolic reference for a {@link MethodHandle} constant.
  */
-public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
+public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constable<ConstantRef<MethodHandle>> {
     private static final ClassRef[] INDY_BOOTSTRAP_ARGS = { ClassRef.of("java.lang.invoke.MethodHandles$Lookup"),
                                                             ClassRef.of("java.lang.String"),
                                                             ClassRef.of("java.lang.invoke.MethodType") };
@@ -318,14 +318,16 @@ public final class MethodHandleRef implements SymbolicRef<MethodHandle> {
     }
 
     @Override
-    public Optional<? extends SymbolicRef<MethodHandle>> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantRef<ConstantRef<MethodHandle>>> toSymbolicRef(MethodHandles.Lookup lookup) {
         Optional<EnumRef<Kind>> kindRef = kind.toSymbolicRef(lookup);
-        Optional<? extends SymbolicRef<Class<?>>> classRefRef = owner.toSymbolicRef(lookup);
-        Optional<? extends SymbolicRef<MethodType>> typeRefRef = type.toSymbolicRef(lookup);
+        Optional<ConstantRef<ConstantRef<Class<?>>>> classRefRef = owner.toSymbolicRef(lookup);
+        Optional<ConstantRef<ConstantRef<MethodType>>> typeRefRef = type.toSymbolicRef(lookup);
         if (!kindRef.isPresent() || !classRefRef.isPresent() || !typeRefRef.isPresent())
             return Optional.empty();
-        return Optional.of(DynamicConstantRef.<MethodHandle>of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_MethodHandleRef)
-                                   .withArgs(SymbolicRefs.MHR_METHODHANDLEREF_FACTORY, kindRef.get(), classRefRef.get(), name, typeRefRef.get()));
+        ConstantRef<?>[] args = {SymbolicRefs.MHR_METHODHANDLEREF_FACTORY, kindRef.get(),
+                                 classRefRef.get(), name, typeRefRef.get()};
+        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name,
+                                                 SymbolicRefs.CR_MethodHandleRef, args));
     }
 
     @Override

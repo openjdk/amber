@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * A symbolic reference for a {@link Class}.
  */
-public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
+public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Constable<ConstantRef<Class<?>>> {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
 
     private final String descriptor;
@@ -244,8 +244,8 @@ public class ClassRef implements SymbolicRef.WithTypeDescriptor<Class<?>> {
     }
 
     @Override
-    public Optional<? extends SymbolicRef<Class<?>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.<Class<?>>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_ClassRef)
+    public Optional<ConstantRef<ConstantRef<Class<?>>>> toSymbolicRef(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantRef.<ConstantRef<Class<?>>>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_ClassRef)
                                    .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptor));
     }
 

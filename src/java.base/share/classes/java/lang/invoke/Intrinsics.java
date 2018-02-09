@@ -24,8 +24,8 @@
  */
 package java.lang.invoke;
 
+import java.lang.sym.ConstantRef;
 import java.lang.sym.DynamicCallSiteRef;
-import java.lang.sym.SymbolicRef;
 
 /**
  * Intrinsics
@@ -41,7 +41,7 @@ public final class Intrinsics {
      * @param constant a constant to be ldc'ed
      * @return the constant wrapped inside the {@code Constable} object
      */
-    public static <T> T ldc(SymbolicRef<T> constant) {
+    public static <T> T ldc(ConstantRef<T> constant) {
         throw new UnsupportedOperationException("no reflective access");
     }
 
