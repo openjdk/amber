@@ -126,7 +126,7 @@ public class Lower extends TreeTranslator {
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
         
-        generateNewSwitch = options.isSet("enableIndySwitch") && target.hasSwichBootstraps();
+        generateNewSwitch = !options.isSet("disableIndySwitch") && target.hasSwichBootstraps();
     }
 
     /** The currently enclosing class.

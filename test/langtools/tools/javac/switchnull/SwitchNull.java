@@ -2,7 +2,7 @@
  * @test
  * @compile SwitchNull.java
  * @run main SwitchNull
- * @compile -XDenableIndySwitch SwitchNull.java
+ * @compile -XDdisableIndySwitch=true SwitchNull.java
  * @run main SwitchNull
  */
 
