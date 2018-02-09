@@ -61,7 +61,9 @@ import com.sun.tools.javac.tree.JCTree.JCPolyExpression.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
+import com.sun.tools.javac.util.JCDiagnostic.Error;
 import com.sun.tools.javac.util.JCDiagnostic.Fragment;
+import com.sun.tools.javac.util.JCDiagnostic.Warning;
 import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.Flags.*;
@@ -1466,8 +1468,8 @@ public class Attr extends JCTree.Visitor {
                             if (!pattype.hasTag(ERROR)) {
                                 if (pattype.constValue() == null) {
                                     log.error(c.constExpression().pos(),
-                                              (tree.kind == SwitchKind.STRING ? "string.const.req"
-                                                                              : "const.expr.req"));
+                                              (tree.kind == SwitchKind.STRING ? Errors.StringConstReq
+                                                                              : Errors.ConstExprReq));
                                 } else if (!labels.add(pattype.constValue())) {
                                     log.error(c.pos(), Errors.DuplicateCaseLabel);
                                 }
@@ -3855,8 +3857,7 @@ public class Attr extends JCTree.Visitor {
                    sym.name != names._class) {
             // If the qualified item is not a type and the selected item is static, report
             // a warning. Make allowance for the class of an array type e.g. Object[].class)
-            chk.warnStatic(tree, "static.not.qualified.by.type",
-                           sym.kind.kindName(), sym.owner);
+            chk.warnStatic(tree, Warnings.StaticNotQualifiedByType(sym.kind.kindName(), sym.owner));
         }
 
         // If we are selecting an instance member via a `super', ...
@@ -4105,9 +4106,7 @@ public class Attr extends JCTree.Visitor {
                     if (s != null &&
                         s.isRaw() &&
                         !types.isSameType(v.type, v.erasure(types))) {
-                        chk.warnUnchecked(tree.pos(),
-                                          "unchecked.assign.to.var",
-                                          v, s);
+                        chk.warnUnchecked(tree.pos(), Warnings.UncheckedAssignToVar(v, s));
                     }
                 }
                 // The computed type of a variable is the type of the
@@ -4182,12 +4181,14 @@ public class Attr extends JCTree.Visitor {
                 ((v.flags() & STATIC) != 0) == Resolve.isStatic(env) &&
                 (!env.tree.hasTag(ASSIGN) ||
                  TreeInfo.skipParens(((JCAssign) env.tree).lhs) != tree)) {
-                String suffix = (initEnv.info.enclVar == v) ?
-                                "self.ref" : "forward.ref";
                 if (!onlyWarning || isStaticEnumField(v)) {
-                    log.error(tree.pos(), "illegal." + suffix);
+                    Error errkey = (initEnv.info.enclVar == v) ?
+                                Errors.IllegalSelfRef : Errors.IllegalForwardRef;
+                    log.error(tree.pos(), errkey);
                 } else if (useBeforeDeclarationWarning) {
-                    log.warning(tree.pos(), suffix, v);
+                    Warning warnkey = (initEnv.info.enclVar == v) ?
+                                Warnings.SelfRef(v) : Warnings.ForwardRef(v);
+                    log.warning(tree.pos(), warnkey);
                 }
             }
 
@@ -4297,9 +4298,7 @@ public class Attr extends JCTree.Visitor {
             if (s != null && s.isRaw() &&
                 !types.isSameTypes(sym.type.getParameterTypes(),
                                    sym.erasure(types).getParameterTypes())) {
-                chk.warnUnchecked(env.tree.pos(),
-                                  "unchecked.call.mbr.of.raw.type",
-                                  sym, s);
+                chk.warnUnchecked(env.tree.pos(), Warnings.UncheckedCallMbrOfRawType(sym, s));
             }
         }
 
@@ -4349,14 +4348,12 @@ public class Attr extends JCTree.Visitor {
             argtypes = argtypes.map(checkDeferredMap);
 
             if (noteWarner.hasNonSilentLint(LintCategory.UNCHECKED)) {
-                chk.warnUnchecked(env.tree.pos(),
-                        "unchecked.meth.invocation.applied",
-                        kindName(sym),
+                chk.warnUnchecked(env.tree.pos(), Warnings.UncheckedMethInvocationApplied(kindName(sym),
                         sym.name,
                         rs.methodArguments(sym.type.getParameterTypes()),
                         rs.methodArguments(argtypes.map(checkDeferredMap)),
                         kindName(sym.location()),
-                        sym.location());
+                        sym.location()));
                 if (resultInfo.pt != Infer.anyPoly ||
                         !owntype.hasTag(METHOD) ||
                         !owntype.isPartial()) {
