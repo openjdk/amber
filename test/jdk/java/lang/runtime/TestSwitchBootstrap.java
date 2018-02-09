@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import jdk.test.lib.RandomFactory;
 
 import org.testng.annotations.Test;
 
@@ -44,32 +45,41 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
+ * @key randomness
+ * @library /test/lib
+ * @build jdk.test.lib.RandomFactory
  * @run testng TestSwitchBootstrap
  */
 @Test
 public class TestSwitchBootstrap {
-    private final static Set<Class<?>> ALL_TYPES = Set.of(int.class, short.class, byte.class, char.class,
-                                                          Integer.class, Short.class, Byte.class, Character.class);
-    private final static Set<Class<?>> NON_BYTE_TYPES = Set.of(int.class, Integer.class, short.class, Short.class);
+    private final static Set<Class<?>> ALL_INT_TYPES = Set.of(int.class, short.class, byte.class, char.class,
+                                                              Integer.class, Short.class, Byte.class, Character.class);
+    private final static Set<Class<?>> SIGNED_NON_BYTE_TYPES = Set.of(int.class, Integer.class, short.class, Short.class);
+    private final static Set<Class<?>> CHAR_TYPES = Set.of(char.class, Character.class);
     private final static Set<Class<?>> BYTE_TYPES = Set.of(byte.class, Byte.class);
-    private final static Set<Class<?>> FLOAT_TYPES = Set.of(float.class, Float.class);
     private final static Set<Class<?>> SIGNED_TYPES
             = Set.of(int.class, short.class, byte.class,
                      Integer.class, Short.class, Byte.class);
 
     public static final MethodHandle BSM_INT_SWITCH;
+    public static final MethodHandle BSM_LONG_SWITCH;
     public static final MethodHandle BSM_FLOAT_SWITCH;
+    public static final MethodHandle BSM_DOUBLE_SWITCH;
     public static final MethodHandle BSM_STRING_SWITCH;
     public static final MethodHandle BSM_ENUM_SWITCH;
 
-    private final static Random random = new Random(System.currentTimeMillis());
+    private final static Random random = RandomFactory.getRandom();
 
     static {
         try {
             BSM_INT_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "intSwitch",
                                                                MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, int[].class));
+            BSM_LONG_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "longSwitch",
+                                                                MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, long[].class));
             BSM_FLOAT_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "floatSwitch",
-                                                               MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, float[].class));
+                                                                 MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, float[].class));
+            BSM_DOUBLE_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "doubleSwitch",
+                                                                  MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, double[].class));
             BSM_STRING_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "stringSwitch",
                                                                   MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String[].class));
             BSM_ENUM_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "enumSwitch",
@@ -142,6 +152,14 @@ public class TestSwitchBootstrap {
                 assertEquals(labels.length, mhs.get(Short.class).invoke((short) i));
                 assertEquals(labels.length, mhs.get(int.class).invoke(i));
                 assertEquals(labels.length, mhs.get(Integer.class).invoke(i));
+                if (i >= 0) {
+                    assertEquals(labels.length, mhs.get(char.class).invoke((char)i));
+                    assertEquals(labels.length, mhs.get(Character.class).invoke((char)i));
+                }
+                if (i >= -128 && i <= 127) {
+                    assertEquals(labels.length, mhs.get(byte.class).invoke((byte)i));
+                    assertEquals(labels.length, mhs.get(Byte.class).invoke((byte)i));
+                }
             }
         }
 
@@ -174,6 +192,56 @@ public class TestSwitchBootstrap {
         }
 
         assertEquals(-1, (int) mhs.get(Float.class).invoke(null));
+    }
+
+    private void testDouble(double... labels) throws Throwable {
+        Map<Class<?>, MethodHandle> mhs
+                = Map.of(double.class, ((CallSite) BSM_DOUBLE_SWITCH.invoke(MethodHandles.lookup(), "", switchType(double.class), labels)).dynamicInvoker(),
+                         Double.class, ((CallSite) BSM_DOUBLE_SWITCH.invoke(MethodHandles.lookup(), "", switchType(Double.class), labels)).dynamicInvoker());
+
+        var labelList = new ArrayList<Double>();
+        for (double label : labels)
+            labelList.add(label);
+
+        for (int i=0; i<labels.length; i++) {
+            assertEquals(i, (int) mhs.get(double.class).invokeExact((double) labels[i]));
+            assertEquals(i, (int) mhs.get(Double.class).invokeExact((Double) labels[i]));
+        }
+
+        double[] someDoubles = { 1.0, Double.MIN_VALUE, 3.14 };
+        for (double f : someDoubles) {
+            if (!labelList.contains(f)) {
+                assertEquals(labels.length, mhs.get(double.class).invoke((double) f));
+                assertEquals(labels.length, mhs.get(Double.class).invoke((double) f));
+            }
+        }
+
+        assertEquals(-1, (int) mhs.get(Double.class).invoke(null));
+    }
+
+    private void testLong(long... labels) throws Throwable {
+        Map<Class<?>, MethodHandle> mhs
+                = Map.of(long.class, ((CallSite) BSM_LONG_SWITCH.invoke(MethodHandles.lookup(), "", switchType(long.class), labels)).dynamicInvoker(),
+                         Long.class, ((CallSite) BSM_LONG_SWITCH.invoke(MethodHandles.lookup(), "", switchType(Long.class), labels)).dynamicInvoker());
+
+        List<Long> labelList = new ArrayList<>();
+        for (long label : labels)
+            labelList.add(label);
+
+        for (int i=0; i<labels.length; i++) {
+            assertEquals(i, (int) mhs.get(long.class).invokeExact((long) labels[i]));
+            assertEquals(i, (int) mhs.get(Long.class).invokeExact((Long) labels[i]));
+        }
+
+        long[] someLongs = { 1L, Long.MIN_VALUE, Long.MAX_VALUE };
+        for (long l : someLongs) {
+            if (!labelList.contains(l)) {
+                assertEquals(labels.length, mhs.get(long.class).invoke((long) l));
+                assertEquals(labels.length, mhs.get(Long.class).invoke((long) l));
+            }
+        }
+
+        assertEquals(-1, (int) mhs.get(Long.class).invoke(null));
     }
 
     private void testString(String... targets) throws Throwable {
@@ -220,12 +288,12 @@ public class TestSwitchBootstrap {
     }
 
     public void testInt() throws Throwable {
-        testInt(ALL_TYPES, 8, 6, 7, 5, 3, 0, 9);
-        testInt(ALL_TYPES, 1, 2, 4, 8, 16);
-        testInt(ALL_TYPES, 5, 4, 3, 2, 1, 0);
+        testInt(ALL_INT_TYPES, 8, 6, 7, 5, 3, 0, 9);
+        testInt(ALL_INT_TYPES, 1, 2, 4, 8, 16);
+        testInt(ALL_INT_TYPES, 5, 4, 3, 2, 1, 0);
         testInt(SIGNED_TYPES, 5, 4, 3, 2, 1, 0, -1);
         testInt(SIGNED_TYPES, -1);
-        testInt(ALL_TYPES, new int[] { });
+        testInt(ALL_INT_TYPES, new int[] { });
 
         for (int i=0; i<5; i++) {
             int len = 50 + random.nextInt(800);
@@ -233,7 +301,13 @@ public class TestSwitchBootstrap {
                                  .distinct()
                                  .limit(len)
                                  .toArray();
-            testInt(NON_BYTE_TYPES, arr);
+            testInt(SIGNED_NON_BYTE_TYPES, arr);
+
+            arr = IntStream.generate(() -> random.nextInt(10000))
+                    .distinct()
+                    .limit(len)
+                    .toArray();
+            testInt(CHAR_TYPES, arr);
 
             arr = IntStream.generate(() -> random.nextInt(127) - 64)
                            .distinct()
@@ -244,7 +318,12 @@ public class TestSwitchBootstrap {
     }
 
     public void testLong() throws Throwable {
-        // @@@
+        testLong(1L, Long.MIN_VALUE, Long.MAX_VALUE);
+        testLong(8L, 2L, 5L, 4L, 3L, 9L, 1L);
+        testLong(new long[] { });
+
+        // @@@ Random tests
+        // @@@ More tests for weird values
     }
 
     public void testFloat() throws Throwable {
@@ -257,7 +336,13 @@ public class TestSwitchBootstrap {
     }
 
     public void testDouble() throws Throwable {
-        // @@@
+        testDouble(0.0, -0.0, -1.0, 1.0, 3.14, Double.MIN_VALUE, Double.MAX_VALUE,
+                   Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
+        testDouble(new double[] { });
+        testDouble(0.0f, 1.0f, 3.14f, Double.NaN);
+
+        // @@@ Random tests
+        // @@@ More tests for weird values
     }
 
     public void testString() throws Throwable {

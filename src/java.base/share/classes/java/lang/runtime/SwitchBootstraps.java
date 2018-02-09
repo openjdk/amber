@@ -32,10 +32,11 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -54,7 +55,7 @@ public class SwitchBootstraps {
 
     // Shared INIT_HOOK for all switch call sites; looks the target method up in a map
     private static final MethodHandle INIT_HOOK;
-    private static final Map<Class<?>, MethodHandle> switchMethods = new HashMap<>();
+    private static final Map<Class<?>, MethodHandle> switchMethods = new ConcurrentHashMap<>();
 
     // Types that can be handled as int switches
     private static final Set<Class<?>> INT_TYPES
@@ -65,32 +66,39 @@ public class SwitchBootstraps {
     private static final Set<Class<?>> LONG_TYPES
             = Set.of(long.class, Long.class);
     private static final Set<Class<?>> DOUBLE_TYPES
-            = Set.of(long.class, Long.class);
+            = Set.of(double.class, Double.class);
 
-    private static final Comparator<String> STRING_BY_HASH
-            = Comparator.comparingInt(Objects::hashCode);
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final Function<Class<?>, MethodHandle> lookupSwitchMethod =
+            new Function<>() {
+                @Override
+                public MethodHandle apply(Class<?> c) {
+                    try {
+                        Class<?> switchClass;
+                        if (c == Enum.class)
+                            switchClass = EnumSwitchCallSite.class;
+                        else if (c == String.class)
+                            switchClass = StringSwitchCallSite.class;
+                        else if (INT_TYPES.contains(c) || FLOAT_TYPES.contains(c))
+                            switchClass = IntSwitchCallSite.class;
+                        else if (LONG_TYPES.contains(c) || DOUBLE_TYPES.contains(c))
+                            switchClass = LongSwitchCallSite.class;
+                        else
+                            throw new BootstrapMethodError("Invalid switch type: " + c);
+
+                        return LOOKUP.findVirtual(switchClass, "doSwitch",
+                                                  MethodType.methodType(int.class, c));
+                    }
+                    catch (ReflectiveOperationException e) {
+                        throw new BootstrapMethodError("Invalid switch type: " + c);
+                    }
+                }
+            };
 
     static {
         try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            INIT_HOOK = lookup.findStatic(SwitchBootstraps.class, "initHook",
+            INIT_HOOK = LOOKUP.findStatic(SwitchBootstraps.class, "initHook",
                                           MethodType.methodType(MethodHandle.class, CallSite.class));
-            for (Class<?> c : INT_TYPES)
-                switchMethods.put(c, lookup.findVirtual(IntSwitchCallSite.class, "doSwitch",
-                                                        MethodType.methodType(int.class, c)));
-            for (Class<?> c : FLOAT_TYPES)
-                switchMethods.put(c, lookup.findVirtual(IntSwitchCallSite.class, "doSwitch",
-                                                        MethodType.methodType(int.class, c)));
-            for (Class<?> c : LONG_TYPES)
-                switchMethods.put(c, lookup.findVirtual(LongSwitchCallSite.class, "doSwitch",
-                                                        MethodType.methodType(int.class, c)));
-            for (Class<?> c : DOUBLE_TYPES)
-                switchMethods.put(c, lookup.findVirtual(LongSwitchCallSite.class, "doSwitch",
-                                                        MethodType.methodType(int.class, c)));
-            switchMethods.put(String.class, lookup.findVirtual(StringSwitchCallSite.class, "doSwitch",
-                                                               MethodType.methodType(int.class, String.class)));
-            switchMethods.put(Enum.class, lookup.findVirtual(EnumSwitchCallSite.class, "doSwitch",
-                                                             MethodType.methodType(int.class, Enum.class)));
         }
         catch (ReflectiveOperationException e) {
             throw new ExceptionInInitializerError(e);
@@ -98,7 +106,7 @@ public class SwitchBootstraps {
     }
 
     private static<T extends CallSite> MethodHandle initHook(T receiver) {
-        return switchMethods.get(receiver.type().parameterType(0))
+        return switchMethods.computeIfAbsent(receiver.type().parameterType(0), lookupSwitchMethod)
                             .bindTo(receiver);
     }
 
@@ -406,6 +414,9 @@ public class SwitchBootstraps {
     }
 
     static class StringSwitchCallSite extends ConstantCallSite {
+        private static final Comparator<String> STRING_BY_HASH
+                = Comparator.comparingInt(Objects::hashCode);
+
         private final String[] sortedByHash;
         private final int[] indexes;
         private final boolean collisions;
