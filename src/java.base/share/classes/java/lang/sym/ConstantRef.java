@@ -29,7 +29,6 @@ import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
 import java.util.Optional;
 
 /**
@@ -70,7 +69,6 @@ import java.util.Optional;
  * is an exhaustive set of subtypes: {@link String}, {@link Integer}, {@link Long},
  * {@link Float}, {@link Double}, {@link ClassRef}, {@link MethodTypeRef},
  * {@link MethodHandleRef}, and {@link DynamicConstantRef}.
- *
  * @see Constable
  * @see ConstantRef
  * @see Intrinsics
@@ -94,7 +92,7 @@ public interface ConstantRef<T> extends SymbolicRef {
      * string that would be the target of a {@code NameAndType} constant.
      *
      * @param <T> The type of the object which this {@linkplain ConstantRef}
-     *            describes
+     * describes
      */
     interface WithTypeDescriptor<T> extends ConstantRef<T> {
         /**
@@ -113,17 +111,16 @@ public interface ConstantRef<T> extends SymbolicRef {
      * {@link Double} should implement this interface.
      *
      * @param <T> The type of the object which this {@linkplain ConstantRef}
-     *            describes
+     * describes
      */
     interface OfSelf<T extends ConstantRef.OfSelf<T>>
             extends ConstantRef<T>, Constable<T> {
         /**
          * {@inheritDoc}
          *
-         * @implSpec This implementation returns its receiver
-         *
          * @param lookup ignored
          * @return the symbolic reference
+         * @implSpec This implementation returns its receiver
          */
         @Override
         @SuppressWarnings("unchecked")
@@ -134,10 +131,9 @@ public interface ConstantRef<T> extends SymbolicRef {
         /**
          * {@inheritDoc}
          *
-         * @implSpec This implementation returns its receiver
-         *
          * @param lookup ignored
          * @return the symbolic reference
+         * @implSpec This implementation returns its receiver
          */
         @Override
         @SuppressWarnings("unchecked")

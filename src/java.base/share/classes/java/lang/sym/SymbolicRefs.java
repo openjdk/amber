@@ -195,6 +195,17 @@ public final class SymbolicRefs {
     @Foldable
     static final ClassRef CR_ConstantBootstraps = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
+    // Used by MethodHandleRef, but initialized here before reference to
+    // MethodHandleRef to avoid static initalization circularities
+    static final ClassRef[] INDY_BOOTSTRAP_ARGS = {
+            SymbolicRefs.CR_MethodHandles_Lookup,
+            SymbolicRefs.CR_String,
+            SymbolicRefs.CR_MethodType };
+    static final ClassRef[] CONDY_BOOTSTRAP_ARGS = {
+            SymbolicRefs.CR_MethodHandles_Lookup,
+            SymbolicRefs.CR_String,
+            SymbolicRefs.CR_Class };
+
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
     @Foldable
     public static final MethodHandleRef BSM_PRIMITIVE_CLASS

@@ -50,13 +50,6 @@ import static java.util.Objects.requireNonNull;
  * A symbolic reference for a {@link MethodHandle} constant.
  */
 public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constable<ConstantRef<MethodHandle>> {
-    private static final ClassRef[] INDY_BOOTSTRAP_ARGS = { ClassRef.of("java.lang.invoke.MethodHandles$Lookup"),
-                                                            ClassRef.of("java.lang.String"),
-                                                            ClassRef.of("java.lang.invoke.MethodType") };
-    private static final ClassRef[] CONDY_BOOTSTRAP_ARGS = { ClassRef.of("java.lang.invoke.MethodHandles$Lookup"),
-                                                             ClassRef.of("java.lang.String"),
-                                                             ClassRef.of("java.lang.Class") };
-
     /**
      * Kinds of method handle refs
      */
@@ -202,7 +195,7 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constab
      */
     @Foldable
     public static MethodHandleRef ofDynamicCallsite(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
+        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, SymbolicRefs.INDY_BOOTSTRAP_ARGS));
     }
 
     /**
@@ -219,7 +212,7 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constab
      */
     @Foldable
     public static MethodHandleRef ofDynamicConstant(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
-        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
+        return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, SymbolicRefs.CONDY_BOOTSTRAP_ARGS));
     }
 
     /**

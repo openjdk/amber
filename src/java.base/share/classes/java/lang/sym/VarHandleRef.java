@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -194,23 +195,20 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
 
     @Override
     public Optional<ConstantRef<ConstantRef<VarHandle>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        var declaringClassRefRef = declaringClass.toSymbolicRef(lookup);
-        if (!declaringClassRefRef.isPresent())
+        try {
+            ArrayList<ConstantRef<?>> args = new ArrayList<>();
+            args.add(kind.refFactory);
+            args.add(declaringClass.toSymbolicRef(lookup).orElseThrow());
+            if (kind != Kind.ARRAY) {
+                args.add(name());
+                args.add(varType.toSymbolicRef(lookup).orElseThrow());
+            }
+            return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name(),
+                                                     SymbolicRefs.CR_VarHandleRef,
+                                                     args.toArray(EMPTY_ARGS)));
+        } catch (NoSuchElementException e) {
             return Optional.empty();
-
-        ArrayList<ConstantRef<?>> args = new ArrayList<>();
-        args.add(kind.refFactory);
-        args.add(declaringClassRefRef.get());
-        if (kind != Kind.ARRAY) {
-            args.add(name());
-            var varTypeRefRef = varType.toSymbolicRef(lookup);
-            if (!varTypeRefRef.isPresent())
-                return Optional.empty();
-            args.add(varTypeRefRef.get());
         }
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name(),
-                                                 SymbolicRefs.CR_VarHandleRef,
-                                                 args.toArray(EMPTY_ARGS)));
     }
 
     @Override

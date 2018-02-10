@@ -54,6 +54,9 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      */
     private ClassRef(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
+        // Follow the trail from MethodType.fromMethodDescriptorString to
+        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
+        // be extracted and/or shared
         if (descriptor == null
             || !TYPE_DESC.matcher(descriptor).matches())
             throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));

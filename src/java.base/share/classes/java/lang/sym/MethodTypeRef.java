@@ -74,7 +74,10 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      */
     @Foldable
     public static MethodTypeRef ofDescriptor(String descriptor) {
-        // @@@ Find a lower-overhead way of validating the descriptor
+        // @@@ Replace validation with a lower-overhead mechanism than regex
+        // Follow the trail from MethodType.fromMethodDescriptorString to
+        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
+        // be extracted and/or shared
         Matcher matcher = pattern.matcher(descriptor);
         if (!matcher.matches())
             throw new IllegalArgumentException(String.format("%s is not a valid method descriptor", descriptor));
@@ -147,7 +150,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return the parameter types
      */
     public List<ClassRef> parameterList() {
-        return Arrays.asList(argTypes);
+        return List.of(argTypes);
     }
 
     /**

@@ -24,12 +24,7 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.Foldable;
 import java.lang.invoke.Intrinsics;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.Optional;
 
 /**
  * A purely nominal descriptor for an object, runtime entity, or classfile entity
@@ -51,11 +46,9 @@ import java.util.Optional;
  * <p>Constants describing various useful symbolic references (such as {@link ClassRef}
  * constants for platform classes) can be found in {@link SymbolicRefs}.
  *
- *
  * @apiNote In the future, if the Java language permits, {@linkplain SymbolicRef}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
  * explicitly permitted types.
- *
  * @see Constable
  * @see ConstantRef
  * @see Intrinsics

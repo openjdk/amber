@@ -280,36 +280,38 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     public ConstantRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
-    private static Object[] resolveArgs(MethodHandles.Lookup lookup, ConstantRef<?>[] args) {
-        return Stream.of(args)
-                     .map(arg -> {
-                         try {
-                             return arg.resolveRef(lookup);
-                         }
-                         catch (ReflectiveOperationException e) {
-                             throw new RuntimeException(e);
-                         }
-                     })
-                     .toArray();
+    private static Object[] resolveArgs(MethodHandles.Lookup lookup, ConstantRef<?>[] args)
+            throws ReflectiveOperationException {
+        try {
+            return Stream.of(args)
+                    .map(arg -> {
+                        try {
+                            return arg.resolveRef(lookup);
+                        }
+                        catch (ReflectiveOperationException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .toArray();
+        }
+        catch (RuntimeException e) {
+            if (e.getCause() instanceof ReflectiveOperationException) {
+                throw (ReflectiveOperationException) e.getCause();
+            }
+            else {
+                throw e;
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
     public T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        try {
-            MethodHandle bsmMh = bootstrapMethod.resolveRef(lookup);
-            return (T) ConstantBootstraps.makeConstant(bsmMh,
-                                                       name,
-                                                       type.resolveRef(lookup),
-                                                       resolveArgs(lookup, bootstrapArgs),
-                                                       // TODO pass lookup
-                                                       lookup.lookupClass());
-        }
-        catch (RuntimeException|Error e) {
-            throw e;
-        }
-        catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
+        return (T) ConstantBootstraps.makeConstant(bootstrapMethod.resolveRef(lookup),
+                                                   name,
+                                                   type.resolveRef(lookup),
+                                                   resolveArgs(lookup, bootstrapArgs),
+                                                   // TODO pass lookup
+                                                   lookup.lookupClass());
     }
 
     @Override
