@@ -204,9 +204,12 @@ public class Names {
     public final Name makeConcatWithConstants;
 
     // switch
-    public final Name intSwitch;
     public final Name stringSwitch;
     public final Name enumSwitch;
+    public final Name intSwitch;
+    public final Name longSwitch;
+    public final Name floatSwitch;
+    public final Name doubleSwitch;
 
     public final Name.Table table;
 
@@ -371,9 +374,12 @@ public class Names {
         makeConcatWithConstants = fromString("makeConcatWithConstants");
 
         //switch desugaring:
-        intSwitch = fromString("intSwitch");
         stringSwitch = fromString("stringSwitch");
         enumSwitch = fromString("enumSwitch");
+        intSwitch = fromString("intSwitch");
+        longSwitch = fromString("longSwitch");
+        floatSwitch = fromString("floatSwitch");
+        doubleSwitch = fromString("doubleSwitch");
     }
 
     protected Name.Table createTable(Options options) {

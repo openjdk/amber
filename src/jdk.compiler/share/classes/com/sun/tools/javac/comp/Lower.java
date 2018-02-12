@@ -3411,12 +3411,14 @@ public class Lower extends TreeTranslator {
             (tree.selector.type.tsym.flags() & ENUM) != 0;
         boolean stringSwitch = selsuper != null &&
             types.isSameType(tree.selector.type, syms.stringType);
+        Type unboxed = types.unboxedTypeOrType(tree.selector.type);
+        boolean intSwitch = types.isSubtype(unboxed, syms.intType);
         boolean boxSwitch = selsuper != null &&
-            types.unboxedType(tree.selector.type).isPrimitive();
+            unboxed.isPrimitive();
         Type target = enumSwitch ? tree.selector.type :
             (stringSwitch? syms.stringType : syms.intType);
 
-        if (generateNewSwitch && ((boxSwitch && hasNullCase(tree)) || stringSwitch || enumSwitch)) {
+        if (generateNewSwitch && ((boxSwitch && hasNullCase(tree)) || stringSwitch || enumSwitch || !intSwitch)) {
             tree.selector = translate(tree.selector);
             tree.cases = translateCases(tree.cases);
 
@@ -3439,9 +3441,25 @@ public class Lower extends TreeTranslator {
                                                       false,
                                                       pat -> pat.type.constValue());
             } else {
+                Name switchName;
+                Type methodType;
+                if (types.isSameType(unboxed, syms.longType)) {
+                    switchName = names.longSwitch;
+                    methodType = syms.longType;
+                } else if (types.isSameType(unboxed, syms.floatType)) {
+                    switchName = names.floatSwitch;
+                    methodType = syms.floatType;
+                } else if (types.isSameType(unboxed, syms.doubleType)) {
+                    switchName = names.doubleSwitch;
+                    methodType = syms.doubleType;
+                } else {
+                    switchName = names.intSwitch;
+                    methodType = syms.intType;
+                }
+
                 qualifier = prepareSwitchIndySelector(tree,
-                                                      names.intSwitch,
-                                                      syms.intType,
+                                                      switchName,
+                                                      methodType,
                                                       tree.selector.type,
                                                       tree.selector.type,
                                                       false,

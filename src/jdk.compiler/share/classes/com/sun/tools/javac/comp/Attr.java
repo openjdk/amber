@@ -1460,14 +1460,17 @@ public class Attr extends JCTree.Visitor {
             env.dup(switchTree, env.info.dup(env.info.scope.dup()));
 
         try {
-
             boolean enumSwitch = (seltype.tsym.flags() & Flags.ENUM) != 0;
             boolean stringSwitch = types.isSameType(seltype, syms.stringType);
             if (stringSwitch && !allowStringsInSwitch) {
                 log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
             }
-            if (!enumSwitch && !stringSwitch)
-                seltype = chk.checkType(selector.pos(), seltype, syms.intType);
+            Type unboxedSelType = types.unboxedTypeOrType(seltype);
+            if (!enumSwitch && !stringSwitch && !types.isSubtype(unboxedSelType, syms.intType) &&
+                !types.isSameType(unboxedSelType, syms.longType) && !types.isSubtype(unboxedSelType, syms.floatType) &&
+                !types.isSameType(unboxedSelType, syms.doubleType)) {
+                log.error(selector.pos(), Errors.SwitchInvalidType(seltype));
+            }
 
             // Attribute all cases and
             // check that there are no duplicate case labels or default clauses.
@@ -1494,7 +1497,7 @@ public class Attr extends JCTree.Visitor {
                             log.error(c.pos(), Errors.DuplicateCaseLabel);
                         }
                     } else {
-                        Type pattype = attribExpr(pat, switchEnv, seltype);
+                        Type pattype = attribExpr(pat, switchEnv, unboxedSelType);
                         if (!pattype.hasTag(ERROR)) {
                             if (pattype.constValue() == null) {
                                 log.error(pat.pos(),
