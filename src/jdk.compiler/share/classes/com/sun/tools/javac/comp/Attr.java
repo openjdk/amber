@@ -26,6 +26,8 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -1392,49 +1394,110 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        Type seltype = attribExpr(tree.selector, env);
+        handleSwitch(tree, tree.selector, tree.cases, c -> c.pat, (c, caseEnv) -> {
+            attribStats(c.stats, caseEnv);
+            return c.stats;
+        });
+        result = null;
+    }
+
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        tree.polyKind = (pt().hasTag(NONE) && pt() != Type.recoveryType && pt() != Infer.anyPoly
+                /*TODO: || isBooleanOrNumeric(env, tree)*/) ?
+                PolyKind.STANDALONE : PolyKind.POLY;
+
+        if (tree.polyKind == PolyKind.POLY && resultInfo.pt.hasTag(VOID)) {
+            //this means we are returning a poly conditional from void-compatible lambda expression
+            //TODO: fix error (&test):
+            resultInfo.checkContext.report(tree, diags.fragment(Fragments.ConditionalTargetCantBeVoid));
+            result = tree.type = types.createErrorType(resultInfo.pt);
+            return;
+        }
+
+        ResultInfo condInfo = tree.polyKind == PolyKind.STANDALONE ?
+                unknownExprInfo :
+                //TODO: fix error in conditionalContext
+                resultInfo.dup(conditionalContext(resultInfo.checkContext));
+
+        ListBuffer<Type> caseTypes = new ListBuffer<>();
+
+        handleSwitch(tree, tree.selector, tree.cases, c -> c.pat, (c, caseEnv) -> {
+            if (c.stats != null) {
+                caseEnv.info.breakResult = condInfo;
+                attribStats(c.stats, caseEnv);
+                new TreeScanner() {
+                    @Override
+                    public void visitBreak(JCBreak brk) {
+                        if (brk.target == tree)
+                            caseTypes.append(brk.value != null ? brk.value.type : syms.errType);
+                        super.visitBreak(brk);
+                    }
+
+                    @Override public void visitClassDef(JCClassDecl tree) {}
+                    @Override public void visitLambda(JCLambda tree) {}
+                    @Override public void visitMethodDef(JCMethodDecl tree) {}
+                }.scan(c.stats);
+                return c.stats;
+            } else {
+                caseTypes.append(attribExpr(c.value, caseEnv, condInfo));
+                return List.nil();
+            }
+        });
+
+        Type owntype = (tree.polyKind == PolyKind.STANDALONE) ? condType(tree, caseTypes.toList()) : pt();
+
+        result = tree.type = check(tree, owntype, KindSelector.VAL, resultInfo);
+    }
+
+    private <Z extends JCTree> void handleSwitch(JCTree switchTree,
+                                                 JCExpression selector,
+                                                 List<Z> cases,
+                                                 Function<Z, JCExpression> patternGetter,
+                                                 BiFunction<Z, Env<AttrContext>, List<JCStatement>> attribCase) {
+        Type seltype = attribExpr(selector, env);
 
         Env<AttrContext> switchEnv =
-            env.dup(tree, env.info.dup(env.info.scope.dup()));
+            env.dup(switchTree, env.info.dup(env.info.scope.dup()));
 
         try {
 
             boolean enumSwitch = (seltype.tsym.flags() & Flags.ENUM) != 0;
             boolean stringSwitch = types.isSameType(seltype, syms.stringType);
             if (stringSwitch && !allowStringsInSwitch) {
-                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
+                log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
             }
             if (!enumSwitch && !stringSwitch)
-                seltype = chk.checkType(tree.selector.pos(), seltype, syms.intType);
+                seltype = chk.checkType(selector.pos(), seltype, syms.intType);
 
             // Attribute all cases and
             // check that there are no duplicate case labels or default clauses.
             Set<Object> labels = new HashSet<>(); // The set of case labels.
             boolean hasDefault = false;      // Is there a default label?
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                JCCase c = l.head;
-                if (c.pat != null) {
-                    if (TreeInfo.isNull(c.pat)) {
+            for (List<Z> l = cases; l.nonEmpty(); l = l.tail) {
+                Z c = l.head;
+                JCExpression pat = patternGetter.apply(c);
+                if (pat != null) {
+                    if (TreeInfo.isNull(pat)) {
                         //case null:
                         //TODO: check -source
-                        if (l != tree.cases) {
+                        if (l != cases) {
                             log.error(c.pos(), Errors.SwitchNullMustBeFirst);
                         }
                         if (seltype.isPrimitive()) {
                             log.error(c.pos(), Errors.SwitchNullMustBeReference);
                         }
                     } else if (enumSwitch) {
-                        Symbol sym = enumConstant(c.pat, seltype);
+                        Symbol sym = enumConstant(pat, seltype);
                         if (sym == null) {
-                            log.error(c.pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
+                            log.error(pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
                         } else if (!labels.add(sym)) {
                             log.error(c.pos(), Errors.DuplicateCaseLabel);
                         }
                     } else {
-                        Type pattype = attribExpr(c.pat, switchEnv, seltype);
+                        Type pattype = attribExpr(pat, switchEnv, seltype);
                         if (!pattype.hasTag(ERROR)) {
                             if (pattype.constValue() == null) {
-                                log.error(c.pat.pos(),
+                                log.error(pat.pos(),
                                           (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
                             } else if (!labels.add(pattype.constValue())) {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
@@ -1448,17 +1511,15 @@ public class Attr extends JCTree.Visitor {
                 }
                 Env<AttrContext> caseEnv =
                     switchEnv.dup(c, env.info.dup(switchEnv.info.scope.dup()));
+                List<JCStatement> stats = List.nil();
                 try {
-                    attribStats(c.stats, caseEnv);
+                    stats = attribCase.apply(c, caseEnv);
                 } finally {
                     caseEnv.info.scope.leave();
-                    addVars(c.stats, switchEnv.info.scope);
+                    addVars(stats, switchEnv.info.scope);
                 }
             }
-
-            result = null;
-        }
-        finally {
+        } finally {
             switchEnv.info.scope.leave();
         }
     }
@@ -1488,115 +1549,6 @@ public class Attr extends JCTree.Visitor {
             }
         }
         return null;
-    }
-
-    public void visitSwitchExpression(JCSwitchExpression tree) {
-        Type seltype = attribExpr(tree.selector, env);
-
-        tree.polyKind = (pt().hasTag(NONE) && pt() != Type.recoveryType && pt() != Infer.anyPoly
-                /*TODO: || isBooleanOrNumeric(env, tree)*/) ?
-                PolyKind.STANDALONE : PolyKind.POLY;
-
-        if (tree.polyKind == PolyKind.POLY && resultInfo.pt.hasTag(VOID)) {
-            //this means we are returning a poly conditional from void-compatible lambda expression
-            //TODO: fix error (&test):
-            resultInfo.checkContext.report(tree, diags.fragment(Fragments.ConditionalTargetCantBeVoid));
-            result = tree.type = types.createErrorType(resultInfo.pt);
-            return;
-        }
-
-        ResultInfo condInfo = tree.polyKind == PolyKind.STANDALONE ?
-                unknownExprInfo :
-                //TODO: fix error in conditionalContext
-                resultInfo.dup(conditionalContext(resultInfo.checkContext));
-
-        Env<AttrContext> switchEnv =
-            env.dup(tree, env.info.dup(env.info.scope.dup()));
-
-        try {
-            boolean enumSwitch = (seltype.tsym.flags() & Flags.ENUM) != 0;
-            boolean stringSwitch = types.isSameType(seltype, syms.stringType);
-            if (stringSwitch && !allowStringsInSwitch) {
-                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
-            }
-            if (!enumSwitch && !stringSwitch)
-                seltype = chk.checkType(tree.selector.pos(), seltype, syms.intType);
-
-            // Attribute all cases and
-            // check that there are no duplicate case labels or default clauses.
-            Set<Object> labels = new HashSet<>(); // The set of case labels.
-            boolean hasDefault = false;      // Is there a default label?
-            ListBuffer<Type> caseTypes = new ListBuffer<>();
-            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                JCCaseExpression c = l.head;
-                if (c.pat != null) {
-                    if (TreeInfo.isNull(c.pat)) {
-                        //case null:
-                        //TODO: check -source
-                        if (l != tree.cases) {
-                            log.error(c.pos(), Errors.SwitchNullMustBeFirst);
-                        }
-                        if (seltype.isPrimitive()) {
-                            log.error(c.pos(), Errors.SwitchNullMustBeReference);
-                        }
-                    } else if (enumSwitch) {
-                        Symbol sym = enumConstant(c.pat, seltype);
-                        if (sym == null) {
-                            log.error(c.pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
-                        } else if (!labels.add(sym)) {
-                            log.error(c.pos(), Errors.DuplicateCaseLabel);
-                        }
-                    } else {
-                        Type pattype = attribExpr(c.pat, switchEnv, seltype);
-                        if (!pattype.hasTag(ERROR)) {
-                            if (pattype.constValue() == null) {
-                                log.error(c.pat.pos(),
-                                          (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
-                            } else if (!labels.add(pattype.constValue())) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
-                            }
-                        }
-                    }
-                } else if (hasDefault) {
-                    log.error(c.pos(), Errors.DuplicateDefaultLabel);
-                } else {
-                    hasDefault = true;
-                }
-
-                Env<AttrContext> caseEnv =
-                    switchEnv.dup(c, env.info.dup(switchEnv.info.scope.dup()));
-
-                try {
-                    if (c.stats != null) {
-                        caseEnv.info.breakResult = condInfo;
-                        attribStats(c.stats, caseEnv);
-                        new TreeScanner() {
-                            @Override
-                            public void visitBreak(JCBreak brk) {
-                                if (brk.target == tree)
-                                    caseTypes.append(brk.value != null ? brk.value.type : syms.errType);
-                                super.visitBreak(brk);
-                            }
-
-                            @Override public void visitClassDef(JCClassDecl tree) {}
-                            @Override public void visitLambda(JCLambda tree) {}
-                            @Override public void visitMethodDef(JCMethodDecl tree) {}
-                        }.scan(c.stats);
-                    } else {
-                        caseTypes.append(attribExpr(c.value, caseEnv, condInfo));
-                    }
-                } finally {
-                    caseEnv.info.scope.leave();
-                }
-            }
-
-            Type owntype = (tree.polyKind == PolyKind.STANDALONE) ? condType(tree, caseTypes.toList()) : pt();
-
-            result = tree.type = check(tree, owntype, KindSelector.VAL, resultInfo);
-        }
-        finally {
-            switchEnv.info.scope.leave();
-        }
     }
 
     public void visitSynchronized(JCSynchronized tree) {
