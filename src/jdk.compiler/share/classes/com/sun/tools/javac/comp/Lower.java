@@ -56,6 +56,7 @@ import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
+import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
@@ -3471,7 +3472,7 @@ public class Lower extends TreeTranslator {
             
             if (!hasNullCase(tree)) {
                 JCThrow npe = make.Throw(makeNewClass(syms.nullPointerExceptionType, List.nil()));
-                tree.cases = tree.cases.prepend(make.Case(makeNull(), List.of(npe)));
+                tree.cases = tree.cases.prepend(make.Case(makeNull(), List.of(npe), CaseKind.STATEMENTS));
             }
 
             tree.cases.head.pat = make.Literal(-1);
@@ -3594,7 +3595,7 @@ public class Lower extends TreeTranslator {
             if (c.pat != null) {
                 VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pat);
                 JCLiteral pat = TreeInfo.isNull(c.pat) ? make.Literal(-1) : map.forConstant(label);
-                cases.append(make.Case(pat, c.stats));
+                cases.append(make.Case(pat, c.stats, CaseKind.STATEMENTS));
             } else {
                 cases.append(c);
             }
@@ -3756,7 +3757,7 @@ public class Lower extends TreeTranslator {
                 breakStmt.target = switch1;
                 lb.append(elsepart).append(breakStmt);
 
-                caseBuffer.append(make.Case(make.Literal(hashCode), lb.toList()));
+                caseBuffer.append(make.Case(make.Literal(hashCode), lb.toList(), CaseKind.STATEMENTS));
             }
 
             switch1.cases = caseBuffer.toList();
@@ -3802,7 +3803,8 @@ public class Lower extends TreeTranslator {
                 }
 
                 lb.append(make.Case(caseExpr,
-                                    oneCase.getStatements()));
+                                    oneCase.getStatements(),
+                                    CaseKind.STATEMENTS));
 
                 casePosition2++;
             }
@@ -3884,7 +3886,8 @@ public class Lower extends TreeTranslator {
                 caseBuffer.append(make.Case(entry.getKey(), List.of(
                                             make.Exec(make.Assign(make.Ident(dollar_tmp),
                                                                   make.Literal(entry.getValue()))
-                                                          . setType(dollar_tmp.type)))));
+                                                          . setType(dollar_tmp.type))),
+                                            CaseKind.STATEMENTS));
             }
 
             switch1.cases = caseBuffer.toList();
@@ -3923,7 +3926,8 @@ public class Lower extends TreeTranslator {
                 }
 
                 lb.append(make.Case(caseExpr,
-                                    oneCase.getStatements()));
+                                    oneCase.getStatements(),
+                                    CaseKind.STATEMENTS));
 
                 casePosition2++;
             }
@@ -4013,49 +4017,42 @@ public class Lower extends TreeTranslator {
         switchStatement.cases = tree.cases.stream().map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c)).collect(List.collector());
         if (tree.cases.stream().noneMatch(c -> c.pat == null)) {
             JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType, List.nil()));
-            switchStatement.cases = switchStatement.cases.append(make.Case(null, List.of(thr)));
+            switchStatement.cases = switchStatement.cases.append(make.Case(null, List.of(thr), CaseKind.STATEMENTS));
         }
         stmtList.append(translate(switchStatement));
 
         result = make.LetExpr(stmtList.toList(), make.Ident(dollar_switchexpr)).setType(dollar_switchexpr.type);
     }
         //where:
-        private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement, JCSwitchExpression switchExpr, JCCaseExpression c) {
+        private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement, JCSwitchExpression switchExpr, JCCase c) {
             make.at(c.pos());
             ListBuffer<JCStatement> statements = new ListBuffer<>();
-            if (c.stats != null) {
-                statements.addAll(new TreeTranslator() {
-                    @Override
-                    public void visitLambda(JCLambda tree) {}
-                    @Override
-                    public void visitClassDef(JCClassDecl tree) {}
-                    @Override
-                    public void visitMethodDef(JCMethodDecl tree) {}
-                    @SuppressWarnings("unchecked")
-                    public <T extends JCTree> List<T> translate(List<T> trees) {
-                        if (trees == null) return null;
-                        ListBuffer<T> result = new ListBuffer<>();
-                        for (List<T> l = trees; l.nonEmpty(); l = l.tail) {
-                            if (l.head.hasTag(BREAK) && ((JCBreak) l.head).target == switchExpr) {
-                                JCBreak tree = (JCBreak) l.head;
-                                tree.target = switchStatement;
-                                result.append((T) make.Exec(make.Assign(make.Ident(dollar_switchexpr), translate(tree.value)).setType(dollar_switchexpr.type)));
-                                result.append((T) tree);
-                                tree.value = null;
-                            } else {
-                                result.append(translate(l.head));
-                            }
+            statements.addAll(new TreeTranslator() {
+                @Override
+                public void visitLambda(JCLambda tree) {}
+                @Override
+                public void visitClassDef(JCClassDecl tree) {}
+                @Override
+                public void visitMethodDef(JCMethodDecl tree) {}
+                @SuppressWarnings("unchecked")
+                public <T extends JCTree> List<T> translate(List<T> trees) {
+                    if (trees == null) return null;
+                    ListBuffer<T> result = new ListBuffer<>();
+                    for (List<T> l = trees; l.nonEmpty(); l = l.tail) {
+                        if (l.head.hasTag(BREAK) && ((JCBreak) l.head).target == switchExpr) {
+                            JCBreak tree = (JCBreak) l.head;
+                            tree.target = switchStatement;
+                            result.append((T) make.Exec(make.Assign(make.Ident(dollar_switchexpr), translate(tree.value)).setType(dollar_switchexpr.type)));
+                            result.append((T) tree);
+                            tree.value = null;
+                        } else {
+                            result.append(translate(l.head));
                         }
-                        return result.toList();
                     }
-                }.translate(c.stats));
-            } else {
-                statements.add(make.Exec(make.Assign(make.Ident(dollar_switchexpr), c.value).setType(dollar_switchexpr.type)));
-                JCBreak brk = make.Break(null);
-                brk.target = switchStatement;
-                statements.add(brk);
-            }
-            return make.Case(c.pat, statements.toList());
+                    return result.toList();
+                }
+            }.translate(c.stats));
+            return make.Case(c.pat, statements.toList(), CaseKind.STATEMENTS);
         }
 
     public void visitNewArray(JCNewArray tree) {

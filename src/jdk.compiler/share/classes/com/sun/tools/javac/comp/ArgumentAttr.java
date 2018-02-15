@@ -77,7 +77,7 @@ import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import com.sun.tools.javac.comp.DeferredAttr.SwitchExpressionScanner;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
-import com.sun.tools.javac.tree.JCTree.JCCaseExpression;
+import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 
 /**
@@ -491,14 +491,8 @@ public class ArgumentAttr extends JCTree.Visitor {
                 return attr.types.createErrorType(resultInfo.pt);
             } else {
                 //poly
-                for (JCCaseExpression c : speculativeTree.cases) {
-                    if (c.stats != null) {
-                        for (JCBreak brk : breakExpressions()) {
-                            checkSpeculative(brk.value, brk.value.type, resultInfo);
-                        }
-                    } else {
-                        checkSpeculative(c.value, localInfo);
-                    }
+                for (JCBreak brk : breakExpressions()) {
+                    checkSpeculative(brk.value, brk.value.type, resultInfo);
                 }
                 return localInfo.pt;
             }

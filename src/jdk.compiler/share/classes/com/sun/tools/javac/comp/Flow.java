@@ -637,9 +637,9 @@ public class Flow {
             }
             boolean hasDefault = false;
             boolean prevAlive = alive;
-            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
+            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = true;
-                JCCaseExpression c = l.head;
+                JCCase c = l.head;
                 if (c.pat == null)
                     hasDefault = true;
                 else {
@@ -648,10 +648,7 @@ public class Flow {
                         constants.remove(((JCIdent) c.pat).name);
                     }
                 }
-                if (c.stats != null)
-                    scanStats(c.stats);
-                if (c.value != null)
-                    scanStat(c.value);
+                scanStats(c.stats);
             }
             if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);
@@ -1087,26 +1084,20 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
-            ListBuffer<FlowPendingExit> prevPendingExits = pendingExits;
-            pendingExits = new ListBuffer<>();
-            scan(tree.selector);
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                JCCase c = l.head;
-                if (c.pat != null) {
-                    scan(c.pat);
-                }
-                scan(c.stats);
-            }
-            resolveBreaks(tree, prevPendingExits);
+            handleSwitch(tree, tree.selector, tree.cases);
         }
 
         @Override
         public void visitSwitchExpression(JCSwitchExpression tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        private void handleSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
             ListBuffer<FlowPendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
-            scan(tree.selector);
-            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                JCCaseExpression c = l.head;
+            scan(selector);
+            for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
+                JCCase c = l.head;
                 if (c.pat != null) {
                     scan(c.pat);
                 }
@@ -2172,14 +2163,22 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        private void handleSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
             ListBuffer<AssignPendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             int nextadrPrev = nextadr;
-            scanExpr(tree.selector);
+            scanExpr(selector);
             final Bits initsSwitch = new Bits(inits);
             final Bits uninitsSwitch = new Bits(uninits);
             boolean hasDefault = false;
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+            for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 inits.assign(initsSwitch);
                 uninits.assign(uninits.andSet(uninitsSwitch));
                 JCCase c = l.head;
@@ -2194,46 +2193,6 @@ public class Flow {
                 }
                 scan(c.stats);
                 addVars(c.stats, initsSwitch, uninitsSwitch);
-                if (!hasDefault) {
-                    inits.assign(initsSwitch);
-                    uninits.assign(uninits.andSet(uninitsSwitch));
-                }
-                // Warn about fall-through if lint switch fallthrough enabled.
-            }
-            if (!hasDefault) {
-                inits.andSet(initsSwitch);
-            }
-            resolveBreaks(tree, prevPendingExits);
-            nextadr = nextadrPrev;
-        }
-
-        public void visitSwitchExpression(JCSwitchExpression tree) {
-            ListBuffer<AssignPendingExit> prevPendingExits = pendingExits;
-            pendingExits = new ListBuffer<>();
-            int nextadrPrev = nextadr;
-            scanExpr(tree.selector);
-            final Bits initsSwitch = new Bits(inits);
-            final Bits uninitsSwitch = new Bits(uninits);
-            boolean hasDefault = false;
-            for (List<JCCaseExpression> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                inits.assign(initsSwitch);
-                uninits.assign(uninits.andSet(uninitsSwitch));
-                JCCaseExpression c = l.head;
-                if (c.pat == null) {
-                    hasDefault = true;
-                } else {
-                    scanExpr(c.pat);
-                }
-                if (hasDefault) {
-                    inits.assign(initsSwitch);
-                    uninits.assign(uninits.andSet(uninitsSwitch));
-                }
-                if (c.stats != null) {
-                    scan(c.stats);
-                    addVars(c.stats, initsSwitch, uninitsSwitch);
-                } else {
-                    scan(c.value);
-                }
                 if (!hasDefault) {
                     inits.assign(initsSwitch);
                     uninits.assign(uninits.andSet(uninitsSwitch));

@@ -99,11 +99,6 @@ public interface Tree {
         CASE(CaseTree.class),
 
         /**
-         * Used for instances of {@link CaseExpressionTree}.
-         */
-        CASE_EXPRESSION(CaseExpressionTree.class),
-
-        /**
          * Used for instances of {@link CatchTree}.
          */
         CATCH(CatchTree.class),
@@ -243,11 +238,6 @@ public interface Tree {
          * Used for instances of {@link SwitchTree}.
          */
         SWITCH(SwitchTree.class),
-
-        /**
-         * Used for instances of {@link SwitchExpressionTree}.
-         */
-        SWITCH_EXPRESSION(SwitchExpressionTree.class),
 
         /**
          * Used for instances of {@link SynchronizedTree}.

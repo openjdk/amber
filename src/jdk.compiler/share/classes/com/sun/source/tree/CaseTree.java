@@ -55,7 +55,20 @@ public interface CaseTree extends Tree {
 
     /**
      * Returns the statements labeled by the case.
-     * @return the statements labeled by the case
+     * If this is a case in switch expression in for
+     * {@code case expression -> value}, returns null.
+     * @return the statements labeled by the case or null
      */
     List<? extends StatementTree> getStatements();
+
+    /**
+     * If this is a case in switch expression in for
+     * {@code case expression -> value}, the value of
+     * the case, null otherwise.
+     * 
+     * @return case value or null
+     */
+    public default ExpressionTree getValue() {
+        return null;
+    }
 }

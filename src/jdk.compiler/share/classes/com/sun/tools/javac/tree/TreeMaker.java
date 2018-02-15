@@ -40,6 +40,7 @@ import com.sun.tools.javac.tree.JCTree.*;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
+import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 
 /** Factory class for trees.
  *
@@ -272,20 +273,14 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCase Case(JCExpression pat, List<JCStatement> stats) {
-        JCCase tree = new JCCase(pat, stats);
+    public JCCase Case(JCExpression pat, List<JCStatement> stats, CaseKind kind) {
+        JCCase tree = new JCCase(pat, stats, kind);
         tree.pos = pos;
         return tree;
     }
 
-    public JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCaseExpression> cases) {
+    public JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases) {
         JCSwitchExpression tree = new JCSwitchExpression(selector, cases);
-        tree.pos = pos;
-        return tree;
-    }
-
-    public JCCaseExpression CaseExpression(JCExpression pat, List<JCStatement> stats, JCExpression value) {
-        JCCaseExpression tree = new JCCaseExpression(pat, stats, value);
         tree.pos = pos;
         return tree;
     }

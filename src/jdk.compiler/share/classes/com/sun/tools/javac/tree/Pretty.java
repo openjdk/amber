@@ -841,7 +841,7 @@ public class Pretty extends JCTree.Visitor {
                 print("case ");
                 printExpr(tree.pat);
             }
-            print(": ");
+            print(": "); //XXX
             println();
             indent();
             printStats(tree.stats);
@@ -867,30 +867,6 @@ public class Pretty extends JCTree.Visitor {
             printStats(tree.cases);
             align();
             print("}");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public void visitCaseExpression(JCCaseExpression tree) {
-        try {
-            if (tree.pat == null) {
-                print("default");
-            } else {
-                print("case ");
-                printExpr(tree.pat);
-            }
-            if (tree.stats != null) {
-                print(":");
-                println();
-                indent();
-                printStats(tree.stats);
-                undent();
-            } else {
-                print(" -> ");
-                printExpr(tree.value);
-            }
-            align();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

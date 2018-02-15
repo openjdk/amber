@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -1394,9 +1395,8 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        handleSwitch(tree, tree.selector, tree.cases, c -> c.pat, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
             attribStats(c.stats, caseEnv);
-            return c.stats;
         });
         result = null;
     }
@@ -1421,27 +1421,21 @@ public class Attr extends JCTree.Visitor {
 
         ListBuffer<Type> caseTypes = new ListBuffer<>();
 
-        handleSwitch(tree, tree.selector, tree.cases, c -> c.pat, (c, caseEnv) -> {
-            if (c.stats != null) {
-                caseEnv.info.breakResult = condInfo;
-                attribStats(c.stats, caseEnv);
-                new TreeScanner() {
-                    @Override
-                    public void visitBreak(JCBreak brk) {
-                        if (brk.target == tree)
-                            caseTypes.append(brk.value != null ? brk.value.type : syms.errType);
-                        super.visitBreak(brk);
-                    }
+        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
+            caseEnv.info.breakResult = condInfo;
+            attribStats(c.stats, caseEnv);
+            new TreeScanner() {
+                @Override
+                public void visitBreak(JCBreak brk) {
+                    if (brk.target == tree)
+                        caseTypes.append(brk.value != null ? brk.value.type : syms.errType);
+                    super.visitBreak(brk);
+                }
 
-                    @Override public void visitClassDef(JCClassDecl tree) {}
-                    @Override public void visitLambda(JCLambda tree) {}
-                    @Override public void visitMethodDef(JCMethodDecl tree) {}
-                }.scan(c.stats);
-                return c.stats;
-            } else {
-                caseTypes.append(attribExpr(c.value, caseEnv, condInfo));
-                return List.nil();
-            }
+                @Override public void visitClassDef(JCClassDecl tree) {}
+                @Override public void visitLambda(JCLambda tree) {}
+                @Override public void visitMethodDef(JCMethodDecl tree) {}
+            }.scan(c.stats);
         });
 
         Type owntype = (tree.polyKind == PolyKind.STANDALONE) ? condType(tree, caseTypes.toList()) : pt();
@@ -1449,11 +1443,10 @@ public class Attr extends JCTree.Visitor {
         result = tree.type = check(tree, owntype, KindSelector.VAL, resultInfo);
     }
 
-    private <Z extends JCTree> void handleSwitch(JCTree switchTree,
-                                                 JCExpression selector,
-                                                 List<Z> cases,
-                                                 Function<Z, JCExpression> patternGetter,
-                                                 BiFunction<Z, Env<AttrContext>, List<JCStatement>> attribCase) {
+    private void handleSwitch(JCTree switchTree,
+                              JCExpression selector,
+                              List<JCCase> cases,
+                              BiConsumer<JCCase, Env<AttrContext>> attribCase) {
         Type seltype = attribExpr(selector, env);
 
         Env<AttrContext> switchEnv =
@@ -1476,9 +1469,9 @@ public class Attr extends JCTree.Visitor {
             // check that there are no duplicate case labels or default clauses.
             Set<Object> labels = new HashSet<>(); // The set of case labels.
             boolean hasDefault = false;      // Is there a default label?
-            for (List<Z> l = cases; l.nonEmpty(); l = l.tail) {
-                Z c = l.head;
-                JCExpression pat = patternGetter.apply(c);
+            for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
+                JCCase c = l.head;
+                JCExpression pat = c.pat;
                 if (pat != null) {
                     if (TreeInfo.isNull(pat)) {
                         //case null:
@@ -1514,12 +1507,11 @@ public class Attr extends JCTree.Visitor {
                 }
                 Env<AttrContext> caseEnv =
                     switchEnv.dup(c, env.info.dup(switchEnv.info.scope.dup()));
-                List<JCStatement> stats = List.nil();
                 try {
-                    stats = attribCase.apply(c, caseEnv);
+                    attribCase.accept(c, caseEnv);
                 } finally {
                     caseEnv.info.scope.leave();
-                    addVars(stats, switchEnv.info.scope);
+                    addVars(c.stats, switchEnv.info.scope);
                 }
             }
         } finally {

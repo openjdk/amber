@@ -43,7 +43,7 @@ import java.util.List;
  * @author Jonathan Gibbons
  * @since 1.6
  */
-public interface SwitchTree extends StatementTree {
+public interface SwitchTree extends StatementTree, ExpressionTree {
     /**
      * Returns the expression for the {@code switch} statement.
      * @return the expression

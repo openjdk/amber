@@ -47,11 +47,14 @@
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+
 import javax.tools.*;
 
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCModuleDecl;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
@@ -150,6 +153,9 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
                             // The modifiers will not found by TreeScanner,
                             // but the embedded annotations will be.
                             reflectiveScan(((JCModuleDecl) tree).mods.annotations);
+                        } else if (tree instanceof JCCase && f.getName().equals("stats") &&
+                                   ((JCCase) tree).kind == CaseKind.VALUE) {
+                            reflectiveScan(((JCCase) tree).getValue());
                         } else {
                             reflectiveScan(f.get(tree));
                         }

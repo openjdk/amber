@@ -149,16 +149,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCCase t = (JCCase) node;
         JCExpression pat = copy(t.pat, p);
         List<JCStatement> stats = copy(t.stats, p);
-        return M.at(t.pos).Case(pat, stats);
-    }
-
-    @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitCaseExpression(CaseExpressionTree node, P p) {
-        JCCaseExpression t = (JCCaseExpression) node;
-        JCExpression pat = copy(t.pat, p);
-        List<JCStatement> stats = copy(t.stats, p);
-        JCExpression value = copy(t.value, p);
-        return M.at(t.pos).CaseExpression(pat, stats, value);
+        return M.at(t.pos).Case(pat, stats, t.kind);
     }
 
     @DefinedBy(Api.COMPILER_TREE)
@@ -374,18 +365,17 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
 
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitSwitch(SwitchTree node, P p) {
-        JCSwitch t = (JCSwitch) node;
-        JCExpression selector = copy(t.selector, p);
-        List<JCCase> cases = copy(t.cases, p);
-        return M.at(t.pos).Switch(selector, cases);
-    }
-
-    @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitSwitchExpression(SwitchExpressionTree node, P p) {
-        JCSwitchExpression t = (JCSwitchExpression) node;
-        JCExpression selector = copy(t.selector, p);
-        List<JCCaseExpression> cases = copy(t.cases, p);
-        return M.at(t.pos).SwitchExpression(selector, cases);
+        if (node instanceof JCSwitch) {
+            JCSwitch t = (JCSwitch) node;
+            JCExpression selector = copy(t.selector, p);
+            List<JCCase> cases = copy(t.cases, p);
+            return M.at(t.pos).Switch(selector, cases);
+        } else {
+            JCSwitchExpression t = (JCSwitchExpression) node;
+            JCExpression selector = copy(t.selector, p);
+            List<JCCase> cases = copy(t.cases, p);
+            return M.at(t.pos).SwitchExpression(selector, cases);
+        }
     }
 
     @DefinedBy(Api.COMPILER_TREE)
