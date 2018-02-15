@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 import javax.lang.model.element.ElementKind;
@@ -2021,11 +2022,81 @@ public class Attr extends JCTree.Visitor {
             // Check that value of resulting type is admissible in the
             // current context.  Also, capture the return type
             Type capturedRes = resultInfo.checkContext.inferenceContext().cachedCapture(tree, restype, true);
+
+            // TODO - temporary support for raw string trimming until condy folding is ready.
+            capturedRes = applyTrimMethods(tree, qualifier, methName, argtypes, capturedRes);
+
             result = check(tree, capturedRes, KindSelector.VAL, resultInfo);
         }
         chk.validate(tree.typeargs, localEnv);
     }
+
     //where
+     // TODO - temporary support for raw string trimming until condy folding is ready.
+        String invokeTrimMethod(String name, String receiver) {
+            try {
+                java.lang.reflect.Method method = String.class.getMethod(name);
+                return (String)method.invoke(receiver);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                return null;
+            }
+        }
+        String invokeTrimMethod(String name, String receiver, String arg) {
+            try {
+                java.lang.reflect.Method method = String.class.getMethod(name, String.class);
+                return (String)method.invoke(receiver, arg);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                return null;
+            }
+        }
+        Type applyTrimMethods(JCMethodInvocation tree, Type qualifier,
+                          Name methName, List<Type> argtypes, Type capturedRes) {
+            if (tree.meth.hasTag(SELECT) && types.isSameType(qualifier, syms.stringType)) {
+                Object selector = qualifier.constValue();
+                if (selector instanceof String) {
+                    String string = (String)selector;
+                    switch (methName.toString()) {
+                    case "trimLines":
+                        if (argtypes.size() == 0) {
+                            String trimmed = invokeTrimMethod("trimLines", string);
+                            if (trimmed != null) {
+                                capturedRes = capturedRes.constType(trimmed);
+                            }
+                        }
+                        break;
+                    case "trimIndent":
+                        if (argtypes.size() == 0) {
+                            String trimmed = invokeTrimMethod("trimIndent", string);
+                            if (trimmed != null) {
+                                capturedRes = capturedRes.constType(trimmed);
+                            }
+                        }
+                        break;
+                    case "trimMargin":
+                        if (argtypes.size() == 0) {
+                            String trimmed = invokeTrimMethod("trimMargin", string);
+                            if (trimmed != null) {
+                                capturedRes = capturedRes.constType(trimmed);
+                            }
+                        } else if (argtypes.size() == 1) {
+                            Type argType = argtypes.get(0);
+                            if (types.isSameType(argType, syms.stringType)) {
+                                Object value = argType.constValue();
+                                if (value instanceof String) {
+                                    String trimmed = invokeTrimMethod("trimMargin", string, (String)value);
+                                    if (trimmed != null) {
+                                        capturedRes = capturedRes.constType(trimmed);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            return capturedRes;
+        }
+
         Type adjustMethodReturnType(Symbol msym, Type qualifierType, Name methodName, List<Type> argtypes, Type restype) {
             if (msym != null &&
                     msym.owner == syms.objectType.tsym &&
