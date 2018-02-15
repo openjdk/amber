@@ -33,6 +33,7 @@ import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
 import java.nio.CharBuffer;
+import java.util.Properties;
 
 import static com.sun.tools.javac.parser.Tokens.*;
 import static com.sun.tools.javac.util.LayoutCharacters.*;
@@ -138,6 +139,23 @@ public class JavaTokenizer {
         errPos = pos;
     }
 
+    /** Process line terminators in strings
+     */
+    private void scanLineTerminator(int pos) {
+        Assert.check(reader.ch == CR || reader.ch == LF);
+        if (reader.ch == CR) {
+            if (reader.peekChar() == LF) {
+                reader.scanChar();
+            } else {
+                reader.putChar('\n', true);
+            }
+            processLineTerminator(pos, reader.bp);
+        } else {
+            reader.putChar(true);
+            processLineTerminator(pos, reader.bp);
+        }
+    }
+
     /** Read next character in character or string literal and copy into sbuf.
      */
     private void scanLitChar(int pos) {
@@ -183,6 +201,17 @@ public class JavaTokenizer {
                     lexError(reader.bp, Errors.IllegalEscChar);
                 }
             }
+        } else if (reader.bp != reader.buflen) {
+            reader.putChar(true);
+        }
+    }
+
+    /** Read next character in raw string literal and copy into sbuf.
+     */
+    protected void scanRawStringLitChar(int pos, int repeat) {
+        if (reader.ch == '`' && reader.peekChar() == '`' && repeat == 0) {
+            reader.scanChar();
+            reader.putChar('`', true);
         } else if (reader.bp != reader.buflen) {
             reader.putChar(true);
         }
@@ -628,9 +657,54 @@ public class JavaTokenizer {
                     break loop;
                 case '\"':
                     reader.scanChar();
+                    /*
+                        // If multi-line double quoted strings are introduced,
+                        // replace the the next while statement with the following.
+                        while (reader.ch != '\"' && reader.bp < reader.buflen) {
+                            if (reader.ch == LF || reader.ch == CR) {
+                                scanLineTerminator(pos);
+                            } else {
+                                scanLitChar(pos);
+                            }
+                        }
+                    */
                     while (reader.ch != '\"' && reader.ch != CR && reader.ch != LF && reader.bp < reader.buflen)
                         scanLitChar(pos);
                     if (reader.ch == '\"') {
+                        tk = TokenKind.STRINGLITERAL;
+                        reader.scanChar();
+                    } else {
+                        lexError(pos, Errors.UnclosedStrLit);
+                    }
+                    break loop;
+                case '`':
+                    checkSourceLevel(pos, Feature.RAW_STRING_LITERALS);
+                    if (reader.peekBack() != '`') {
+                        reader.scanChar();
+                        lexError(pos, Errors.IllegalChar("\\u0060 in raw string literal delimiter"));
+                        break loop;
+                    }
+                    boolean oldState = reader.setUnicodeConversion(false);
+                    int repeats = reader.skipRepeats();
+                    reader.scanChar();
+                    while (reader.bp < reader.buflen) {
+                        if (reader.ch == '`') {
+                            int count = reader.skipRepeats();
+                            if (repeats == count) {
+                                break;
+                            }
+                            for (int i = 0; i <= count; i++) {
+                                reader.putChar('`', false);
+                            }
+                            reader.scanChar();
+                        } else if (reader.ch == LF || reader.ch == CR) {
+                            scanLineTerminator(pos);
+                        } else {
+                            scanRawStringLitChar(pos, 0);
+                        }
+                    }
+                    reader.setUnicodeConversion(oldState);
+                    if (reader.ch == '`') {
                         tk = TokenKind.STRINGLITERAL;
                         reader.scanChar();
                     } else {
