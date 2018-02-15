@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.util.Arrays;
+import java.util.Formatter;
 import java.util.Locale;
 import java.util.Spliterator;
 import java.util.function.IntConsumer;
@@ -816,19 +817,53 @@ final class StringUTF16 {
         return newString(result, 0, resultOffset);
     }
 
+    public static int skipLeadingSpaces(byte[] value) {
+        int left = 0;
+        while ((left < value.length) &&
+                (value[left + 1] == 0) &&
+                ((value[left] & 0xff) <= ' ')) {
+            left += 2;
+        }
+        return left;
+    }
+
+    public static int skipTrailingSpaces(byte[] value) {
+        int right = value.length;
+        while ((0 < right) &&
+                (value[right - 1] == 0) &&
+                ((value[right - 2] & 0xff) <= ' ')) {
+            right -= 2;
+        }
+        return right;
+    }
+
     public static String trim(byte[] value) {
-        int length = value.length >> 1;
-        int len = length;
-        int st = 0;
-        while (st < len && getChar(value, st) <= ' ') {
-            st++;
+        int left = skipLeadingSpaces(value);
+        if (left == value.length) {
+            return "";
         }
-        while (st < len && getChar(value, len - 1) <= ' ') {
-            len--;
+        int right = skipTrailingSpaces(value);
+        return ((left > 0) || (right < value.length)) ?
+                new String(Arrays.copyOfRange(value, left, right), UTF16) : null;
+    }
+
+    public static String trimLeft(byte[] value) {
+        int left = skipLeadingSpaces(value);
+        if (left == value.length) {
+            return "";
         }
-        return ((st > 0) || (len < length )) ?
-            new String(Arrays.copyOfRange(value, st << 1, len << 1), UTF16) :
-            null;
+        return (left != 0) ?
+                new String(Arrays.copyOfRange(value, left, value.length), UTF16) :
+                null;
+    }
+
+    public static String trimRight(byte[] value) {
+        int right = skipTrailingSpaces(value);
+        if (right == 0) {
+            return "";
+        }
+        return (right != value.length) ?
+                new String(Arrays.copyOfRange(value, 0, right), UTF16) : null;
     }
 
     private static void putChars(byte[] val, int index, char[] str, int off, int end) {
@@ -1303,6 +1338,149 @@ final class StringUTF16 {
 
     public static void checkBoundsOffCount(int offset, int count, byte[] val) {
         String.checkBoundsOffCount(offset, count, length(val));
+    }
+
+    static String unescape(char[] chars, boolean backslash, boolean unicode)
+            throws MalformedEscapeException {
+        int length = chars.length;
+        int from = 0;
+        int to = 0;
+
+        while (from < length) {
+            char ch = chars[from++];
+            if (ch == '\\' && from < length) {
+                ch = chars[from++];
+                if (unicode && ch == 'u') {
+                    while (from < length && chars[from] == 'u') {
+                        from++;
+                    }
+                    if (length <= from + 3) {
+                        throw new MalformedEscapeException();
+                    }
+                    int code = (Character.digit(chars[from + 0], 16) << 12) |
+                               (Character.digit(chars[from + 1], 16) <<  8) |
+                               (Character.digit(chars[from + 2], 16) <<  4) |
+                                Character.digit(chars[from + 3], 16);
+                    if (code < 0) {
+                        throw new MalformedEscapeException();
+                    }
+                    ch = (char)code;
+                    from += 4;
+                } else if (backslash) {
+                    switch (ch) {
+                    case 'b':
+                        ch = '\b';
+                        break;
+                    case 'f':
+                        ch = '\f';
+                        break;
+                    case 'n':
+                        ch = '\n';
+                        break;
+                    case 'r':
+                        ch = '\r';
+                        break;
+                    case 't':
+                        ch = '\t';
+                        break;
+                    case 'u':
+                        chars[to++] = (byte)'\\';
+                        break;
+                    case '0': case '1': case '2': case '3':
+                    case '4': case '5': case '6': case '7':
+                        int code = ch - '0';
+                        for (int i = 0; i < 2 && from < length; i++) {
+                            int digit = Character.digit(chars[from], 8);
+                            if (digit < 0) {
+                                break;
+                            }
+                            from++;
+                            code = code << 3 | digit;
+                        }
+                        if (0377 < code) {
+                            throw new MalformedEscapeException();
+                        }
+                        ch = (char)code;
+                        break;
+                    default:
+                        throw new MalformedEscapeException();
+                    }
+                } else {
+                    chars[to++] = '\\';
+                }
+            }
+
+            chars[to++] = ch;
+        }
+
+        return new String(chars, 0, to);
+    }
+
+    static String escape(char[] value, boolean backslash, boolean unicode) {
+        int length = value.length;
+        StringBuilder sb = new StringBuilder(length);
+        Formatter fmt = null;
+        for (int i = 0; i < length; i++) {
+            char ch = value[i];
+            if (backslash && ch <= '~') {
+                switch (ch) {
+                case '\b':
+                    sb.append('\\');
+                    sb.append('b');
+                    break;
+                case '\f':
+                    sb.append('\\');
+                    sb.append('f');
+                    break;
+                case '\n':
+                    sb.append('\\');
+                    sb.append('n');
+                    break;
+                case '\r':
+                    sb.append('\\');
+                    sb.append('r');
+                    break;
+                case '\t':
+                    sb.append('\\');
+                    sb.append('t');
+                    break;
+                case '\\':
+                    sb.append('\\');
+                    sb.append('\\');
+                    break;
+                case '\"':
+                    sb.append('\\');
+                    sb.append('\"');
+                    break;
+                case '\'':
+                    sb.append('\\');
+                    sb.append('\'');
+                    break;
+                default:
+                    if (' ' <= ch) {
+                        sb.append(ch);
+                    } else {
+                        if (fmt == null) {
+                            fmt = new Formatter(sb);
+                        }
+                        sb.append('\\');
+                        sb.append('u');
+                        fmt.format("%04x", (int)ch);
+                    }
+                    break;
+                }
+            } else if (unicode && ch > '~') {
+                if (fmt == null) {
+                    fmt = new Formatter(sb);
+                }
+                sb.append("\\u");
+                fmt.format("%04x", (int)ch);
+            } else {
+                sb.append(ch);
+            }
+        }
+
+        return sb.length() == length ? null : sb.toString();
     }
 
 }

@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.util.Arrays;
+import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
@@ -507,17 +508,48 @@ final class StringLatin1 {
         return StringUTF16.newString(result, 0, resultOffset);
     }
 
+    public static int skipLeadingSpaces(byte[] value) {
+        int left = 0;
+        while ((left < value.length) && ((value[left] & 0xff) <= ' ')) {
+            left++;
+        }
+        return left;
+    }
+
+    public static int skipTrailingSpaces(byte[] value) {
+        int right = value.length;
+        while ((0 < right) && ((value[right - 1] & 0xff) <= ' ')) {
+            right--;
+        }
+        return right;
+    }
+
     public static String trim(byte[] value) {
-        int len = value.length;
-        int st = 0;
-        while ((st < len) && ((value[st] & 0xff) <= ' ')) {
-            st++;
+        int left = skipLeadingSpaces(value);
+        if (left == value.length) {
+            return "";
         }
-        while ((st < len) && ((value[len - 1] & 0xff) <= ' ')) {
-            len--;
+        int right = skipTrailingSpaces(value);
+        return ((left > 0) || (right < value.length)) ?
+                newString(value, left, right - left) : null;
+    }
+
+    public static String trimLeft(byte[] value) {
+        int left = skipLeadingSpaces(value);
+        if (left == value.length) {
+            return "";
         }
-        return ((st > 0) || (len < value.length)) ?
-            newString(value, st, len - st) : null;
+        return (left != 0) ?
+                newString(value, left, value.length - left) : null;
+    }
+
+    public static String trimRight(byte[] value) {
+        int right = skipTrailingSpaces(value);
+        if (right == 0) {
+            return "";
+        }
+        return (right != value.length) ?
+                newString(value, 0, right) : null;
     }
 
     public static void putChar(byte[] val, int index, int c) {
@@ -566,6 +598,148 @@ final class StringLatin1 {
     @HotSpotIntrinsicCandidate
     public static void inflate(byte[] src, int srcOff, byte[] dst, int dstOff, int len) {
         StringUTF16.inflate(src, srcOff, dst, dstOff, len);
+    }
+
+    static String unescape(byte[] value, boolean backslash, boolean unicode)
+            throws MalformedEscapeException {
+        int length = value.length;
+        byte[] chars = new byte[length];
+
+        int from = 0;
+        int to = 0;
+
+        while (from < length) {
+            char ch = (char)value[from++];
+            if (ch == '\\' && from < length) {
+                ch = (char)value[from++];
+                if (unicode && ch == 'u') {
+                    while (from < length && (char)value[from] == 'u') {
+                        from++;
+                    }
+                    if (length <= from + 3) {
+                        throw new MalformedEscapeException();
+                    }
+                    int code = (Character.digit(value[from + 0], 16) << 12) |
+                               (Character.digit(value[from + 1], 16) <<  8) |
+                               (Character.digit(value[from + 2], 16) <<  4) |
+                                Character.digit(value[from + 3], 16);
+                    if (code < 0) {
+                        throw new MalformedEscapeException();
+                    }
+                    if (canEncode(code)) {
+                        ch = (char)code;
+                        from += 4;
+                    } else {
+                        return StringUTF16.unescape(toChars(value), backslash, unicode);
+                    }
+                } else if (backslash) {
+                    switch (ch) {
+                    case 'b':
+                        ch = '\b';
+                        break;
+                    case 'f':
+                        ch = '\f';
+                        break;
+                    case 'n':
+                        ch = '\n';
+                        break;
+                    case 'r':
+                        ch = '\r';
+                        break;
+                    case 't':
+                        ch = '\t';
+                        break;
+                    case 'u':
+                        chars[to++] = (byte)'\\';
+                        break;
+                    case '0': case '1': case '2': case '3':
+                    case '4': case '5': case '6': case '7':
+                        int code = ch - '0';
+                        for (int i = 0; i < 2 && from < length; i++) {
+                            int digit = Character.digit(value[from], 8);
+                            if (digit < 0) {
+                                break;
+                            }
+                            from++;
+                            code = code << 3 | digit;
+                        }
+                        if (0377 < code) {
+                            throw new MalformedEscapeException();
+                        }
+                        ch = (char)code;
+                        break;
+                    default:
+                        throw new MalformedEscapeException();
+                    }
+                } else {
+                    chars[to++] = (byte)'\\';
+                }
+            }
+
+            chars[to++] = (byte)ch;
+        }
+
+        return new String(Arrays.copyOfRange(chars, 0, to), LATIN1);
+    }
+
+    static String escape(byte[] value, boolean backslash, boolean unicode) {
+        if (!backslash) {
+            return null;
+        }
+        int length = value.length;
+        StringBuilder sb = new StringBuilder(value.length);
+        Formatter fmt = null;
+        for (int i = 0; i < length; i++) {
+            char ch = (char)value[i];
+            switch (ch) {
+            case '\b':
+                sb.append('\\');
+                sb.append('b');
+                break;
+            case '\f':
+                sb.append('\\');
+                sb.append('f');
+                break;
+            case '\n':
+                sb.append('\\');
+                sb.append('n');
+                break;
+            case '\r':
+                sb.append('\\');
+                sb.append('r');
+                break;
+            case '\t':
+                sb.append('\\');
+                sb.append('t');
+                break;
+            case '\\':
+                sb.append('\\');
+                sb.append('\\');
+                break;
+            case '\"':
+                sb.append('\\');
+                sb.append('\"');
+                break;
+            case '\'':
+                sb.append('\\');
+                sb.append('\'');
+                break;
+            default:
+                if (' ' <= ch && ch <= '~') {
+                    sb.append(ch);
+                } else {
+                    if (fmt == null) {
+                        fmt = new Formatter(sb);
+                    }
+                    sb.append('\\');
+                    sb.append('u');
+                    fmt.format("%04x", (int)ch);
+                }
+                break;
+            }
+        }
+
+        return sb.length() == length ? null : sb.toString();
     }
 
     static class CharsSpliterator implements Spliterator.OfInt {

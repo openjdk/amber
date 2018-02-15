@@ -2636,6 +2636,210 @@ public final class String
     }
 
     /**
+     * Returns a string whose value is this string, with any leading
+     * whitespace removed.
+     * <p>
+     * If this {@code String} object represents an empty character
+     * sequence, or the first characters of character sequence
+     * represented by this {@code String} object have codes
+     * greater than {@code '\u005Cu0020'} (the space character), then a
+     * reference to this {@code String} object is returned.
+     * <p>
+     * Otherwise, if there is no character with a code greater than
+     * {@code '\u005Cu0020'} in the string, then a
+     * {@code String} object representing an empty string is
+     * returned.
+     * <p>
+     * Otherwise, let <i>k</i> be the index of the first character in the
+     * string whose code is greater than {@code '\u005Cu0020'}, and let
+     * <i>m</i> be the index of the last character in the string. A
+     * {@code String} object is returned, representing the substring of this
+     * string that begins with the character at index <i>k</i> and ends with the
+     * character at index <i>m</i>-that is, the result of
+     * {@code this.substring(k, m + 1)}.
+     * <p>
+     * This method may be used to trim whitespace (as defined above) from
+     * the beginning of a string.
+     *
+     * @return  A string whose value is this string, with any leading white
+     *          space removed, or this string if it has no leading white space.
+     * @since 10
+     */
+    public String trimLeft() {
+        String ret = isLatin1() ? StringLatin1.trimLeft(value)
+                                : StringUTF16.trimLeft(value);
+        return ret == null ? this : ret;
+    }
+
+    /**
+     * Returns a string whose value is this string, with any trailing
+     * whitespace removed.
+     * <p>
+     * If this {@code String} object represents an empty character
+     * sequence, or the last characters of character sequence
+     * represented by this {@code String} object have codes
+     * greater than {@code '\u005Cu0020'} (the space character), then a
+     * reference to this {@code String} object is returned.
+     * <p>
+     * Otherwise, if there is no character with a code greater than
+     * {@code '\u005Cu0020'} in the string, then a
+     * {@code String} object representing an empty string is
+     * returned.
+     * <p>
+     * Otherwise, let <i>k</i> be the index of the first character in the
+     * string, and let
+     * <i>m</i> be the index of the last character in the string whose code
+     * is greater than {@code '\u005Cu0020'}. A {@code String}
+     * object is returned, representing the substring of this string that
+     * begins with the character at index <i>k</i> and ends with the
+     * character at index <i>m</i>-that is, the result of
+     * {@code this.substring(k, m + 1)}.
+     * <p>
+     * This method may be used to trim whitespace (as defined above) from
+     * the end of a string.
+     *
+     * @return  A string whose value is this string, with any trailing white
+     *          space removed, or this string if it has no
+     *          trailing white space.
+     * @since 10
+     */
+    public String trimRight() {
+        String ret = isLatin1() ? StringLatin1.trimRight(value)
+                                : StringUTF16.trimRight(value);
+        return ret == null ? this : ret;
+    }
+
+    private int skipLeadingSpaces() {
+        if (isLatin1()) {
+            return StringLatin1.skipLeadingSpaces(value);
+        } else {
+            return StringUTF16.skipLeadingSpaces(value) >> 1;
+        }
+    }
+
+    private String trimJoin(String[] lines) {
+        int length = lines.length;
+        StringBuilder sb = new StringBuilder(length());
+        int first = lines[0].isEmpty() ? 1 : 0;
+        int last = lines[length - 1].isEmpty() ? length - 1 : length;
+        for (int i = first; i < last; i++) {
+            if (i != first) {
+                sb.append('\n');
+            }
+            sb.append(lines[i]);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * When applied to multi-line strings, removes trailing spaces
+     * from each line.
+     * <p>
+     * The new line terminator should {@code '\n'}.
+     * <p>
+     * If the first line is blank then it is removed.
+     * <p>
+     * If the last line is blank then it is removed.
+     * @return String with trailing spaces removed.
+     * @since 10
+     */
+    public java.lang.String trimLines() {
+        if (isEmpty()) {
+            return this;
+        }
+        java.lang.String[] lines = split("\n");
+        for (int i = 0; i < lines.length; i++) {
+            lines[i] = lines[i].trimRight();
+        }
+        return trimJoin(lines);
+    }
+
+    /**
+     * When applied to multi-line strings, determines the minimal number of
+     * leading spaces of each line and then removes that minimum from each
+     * line.
+     * <p>
+     * The new line terminator should {@code '\n'}.
+     * <p>
+     * If the first line is blank then it is removed.
+     * <p>
+     * If the last line is blank then it is removed.
+     * @return String with indent removed.
+     * @since 10
+     */
+    public String trimIndent() {
+        if (isEmpty()) {
+            return this;
+        }
+        String[] lines = split("\n");
+        int count = lines.length;
+        int least = Integer.MAX_VALUE;
+        for (int i = 0; i < count; i++) {
+            String line = lines[i].trimRight();
+            if (i == 0) {
+                // ignore
+            } else if (!line.isEmpty()) {
+                least = Integer.min(least, line.skipLeadingSpaces());
+            } else if (i == count - 1) {
+                least = Integer.min(least, lines[i].length());
+            }
+            lines[i] = line;
+        }
+        if (least != 0 && least != Integer.MAX_VALUE) {
+            for (int i = 1; i < count; i++) {
+                String line = lines[i];
+                if (!line.isEmpty()) {
+                    lines[i] = line.substring(least);
+                }
+             }
+        }
+        return trimJoin(lines);
+    }
+
+    /**
+     * When applied to multi-line strings, removes leading whitespace up to
+     * marker from each line.
+     * <p>
+     * The new line terminator should {@code '\n'}.
+     * <p>
+     * If the first line is blank then it is removed.
+     * <p>
+     * If the last line is blank then it is removed.
+     * @param marker String representing margin indicator.
+     * @return String with margin removed.
+     * @since 10
+     */
+    public String trimMargin(String marker) {
+        if (isEmpty()) {
+            return this;
+        }
+        String[] lines = split("\n");
+        int count = lines.length;
+        int trim = marker.length();
+        for (int i = 0; i < count; i++) {
+            String line = lines[i].trimLeft();
+            if (line.startsWith(marker)) {
+                line = line.substring(trim);
+            }
+            lines[i] = line.trimRight();
+        }
+        return trimJoin(lines);
+    }
+
+    /**
+     * When applied to multi-line strings, removes leading whitespace up to
+     * the first "|" from each line.
+     * <p>
+     * If the first line is blank then it is removed.
+     * <p>
+     * If the last line is blank then it is removed.
+     * @return String with margin removed.
+     */
+    public String trimMargin() {
+        return trimMargin("|");
+    }
+
+    /**
      * This object (which is already a string!) is itself returned.
      *
      * @return  the string itself.
@@ -2981,6 +3185,180 @@ public final class String
         } else {    // this.coder == LATIN && coder == UTF16
             StringLatin1.inflate(value, 0, dst, dstBegin, value.length);
         }
+    }
+
+    private String unescape(boolean backslash, boolean unicode) throws MalformedEscapeException {
+        if (isLatin1()) {
+            return StringLatin1.unescape(value, backslash, unicode);
+        } else {
+            return StringUTF16.unescape(toCharArray(), backslash, unicode);
+        }
+    }
+
+    /**
+     * Translates all escapes in the string into representations specified
+     * in sections 3.3 and 3.10.6 of the <cite>The Java&trade; Language
+     * Specification</cite>.
+     * <p>
+     * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
+     * the unicode character whose code point is {@code 0xnnnn}. Care should be
+     * taken when using UTF-16 surrogate pairs to ensure that the high
+     * surrogate ({@code \u005CuD800..\u005CuDBFF}) is immediately followed by
+     * a low surrogate ({@code \u005CuDC00..\u005CuDFFF}) otherwise a {@link
+     * java.nio.charset.CharacterCodingException} may occur during UTF-8
+     * decoding.
+     * <p>
+     * Backslash escape sequences are translated as follows;
+     * <table class="plain">
+     *   <caption style="display:none">Escape sequences</caption>
+     *   <thead>
+     *   <tr>
+     *     <th scope="col">Escape</th>
+     *     <th scope="col">Name</th>
+     *     <th scope="col">Unicode</th>
+     *   </tr>
+     *   </thead>
+     *   <tr>
+     *     <td>{@code \u005Cb}</td>
+     *     <td>backspace</td>
+     *     <td>{@code \u005Cu0008}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Ct}</td>
+     *     <td>horizontal tab</td>
+     *     <td>{@code \u005Cu0009}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cn}</td>
+     *     <td>linefeed</td>
+     *     <td>{@code \u005Cu000A}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cf}</td>
+     *     <td>form feed</td>
+     *     <td>{@code \u005Cu000C}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cr}</td>
+     *     <td>carriage return</td>
+     *     <td>{@code \u005Cu000D}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C"}</td>
+     *     <td>double quote</td>
+     *     <td>{@code \u005Cu0022}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C'}</td>
+     *     <td>single quote</td>
+     *     <td>{@code \u005Cu0027}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C\u005C}</td>
+     *     <td>backslash</td>
+     *     <td>{@code \u005Cu005C}</td>
+     *   </tr>
+     * </table>
+     * <p>
+     * Octal escapes \u005C0 - \u005C377 are translated to their code
+     * point equivalents.
+     * @throws MalformedEscapeException when escape sequence is malformed.
+     * @return String with all escapes translated.
+     */
+    public String unescape() throws MalformedEscapeException {
+        return unescape(true, true);
+    }
+
+    /**
+     * Translates all non-unicode escapes in the string into representations
+     * specified in section 3.10.6 of the <cite>The Java&trade; Language
+     * Specification</cite>.
+     * <p>
+     * Backslash escape sequences are translated following the table at
+     * {@link #unescape()}.
+     * <p>
+     * Octal escapes {@code \u005C0..\u005C377} are translated to their
+     * code point equivalents.
+     * @throws MalformedEscapeException when escape sequence is malformed.
+     * @return String with all non-unicode escapes translated.
+     */
+    public String unescapeBackslash() throws MalformedEscapeException {
+        return unescape(true, false);
+    }
+
+    /**
+     * Translates all unicode escapes in the string into representations
+     * specified in section 3.3 of the <cite>The Java&trade; Language
+     * Specification</cite>.
+     * <p>
+     * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
+     * the unicode character whose code point is {@code 0xnnnn}. Care should be
+     * taken when using UTF-16 surrogate pairs to ensure that the high
+     * surrogate ({@code \u005CuD800..\u005CuDBFF}) is immediately followed by
+     * a low surrogate ({@code \u005CuDC00..\u005CuDFFF}) otherwise a {@link
+     * java.nio.charset.CharacterCodingException} may occur during UTF-8
+     * decoding.
+     * @throws MalformedEscapeException when escape sequence is malformed.
+     * @return String with all escapes unicode translated.
+     */
+    public String unescapeUnicode() throws MalformedEscapeException {
+        return unescape(false, true);
+    }
+
+    private String escape(boolean backslash, boolean unicode) {
+        String result;
+        if (isLatin1()) {
+            result = StringLatin1.escape(value, backslash, unicode);
+        } else {
+            result = StringUTF16.escape(toCharArray(), backslash, unicode);
+        }
+        return result == null ? this : result;
+    }
+
+    /**
+     * Translates characters in the string that have a code point outside the
+     * range {@code \u005Cu0020..\u005Cu007F} into representations specified in
+     * sections 3.3 and 3.10.6 of the <cite>The Java&trade; Language
+     * Specification</cite>.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF} are
+     * translated into unicode escapes.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F} are
+     * translated into unicode escapes unless they have a character escape
+     * sequence found in the table at {@link #unescape()}.
+     * @return String with translated escape sequences.
+     */
+    public String escape() {
+        return escape(true, true);
+    }
+
+    /**
+     * Translates characters in the string that have a code point in the range
+     * {@code \u005Cu0000..\u005Cu001F} into representations specified in
+     * section 3.10.6 of the <cite>The Java&trade; Language
+     * Specification</cite>.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F} are
+     * translated into unicode escapes unless they have a character escape
+     * sequence found in the table at {@link #unescape()}.
+     * @return String with translated escape sequences.
+     */
+    public String escapeBackslash() {
+        return escape(true, false);
+    }
+
+    /**
+     * Translates characters in the string that have a code point in the range
+     * {@code \u005Cu0080..\u005CuFFFF} into representations specified in
+     * section 3.3 of the <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF} are
+     * translated into unicode escapes.
+     * @return String with translated escape sequences.
+     */
+     public String escapeUnicode() {
+        return escape(false, true);
     }
 
     /*
