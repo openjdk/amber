@@ -104,7 +104,7 @@ public class CondyReturnPrimitiveTest {
         String bsmDescriptor = MethodType.methodType(Object.class, MethodHandles.Lookup.class,
                                                      String.class, Class.class, int.class).toMethodDescriptorString();
 
-        byte[] byteArray = new BasicClassBuilder(genClassName, 53, 0)
+        byte[] byteArray = new BasicClassBuilder(genClassName, 55, 0)
                 .withSuperclass("java/lang/Object")
                 .withMethod("<init>", "()V", M ->
                         M.withFlags(Flag.ACC_PUBLIC)

@@ -55,7 +55,6 @@
 #include "runtime/thread.inline.hpp"
 #include "runtime/vmThread.hpp"
 
-
 //------------------------------------------------------------------------------------------------------------------------
 // Implementation of CallInfo
 

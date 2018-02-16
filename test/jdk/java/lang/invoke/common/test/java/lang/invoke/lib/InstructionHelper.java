@@ -48,7 +48,7 @@ public class InstructionHelper {
 
     static BasicClassBuilder classBuilder(MethodHandles.Lookup l) {
         String className = l.lookupClass().getCanonicalName().replace('.', '/') + "$Code_" + COUNT.getAndIncrement();
-        return new BasicClassBuilder(className, 53, 0)
+        return new BasicClassBuilder(className, 55, 0)
                 .withSuperclass("java/lang/Object")
                 .withMethod("<init>", "()V", M ->
                         M.withFlags(Flag.ACC_PUBLIC)

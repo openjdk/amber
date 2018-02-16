@@ -25,6 +25,7 @@
  * @test
  * @bug 8186211
  * @summary Test basic invocation of multiple ldc's of the same dynamic constant that fail resolution
+ * @requires os.arch == "x86_64"
  * @library /lib/testlibrary/bytecode /java/lang/invoke/common
  * @build jdk.experimental.bytecode.BasicClassBuilder
  * @run testng CondyRepeatFailedResolution
@@ -102,7 +103,7 @@ public class CondyRepeatFailedResolution {
         String bsmDescriptor = MethodType.methodType(Object.class, MethodHandles.Lookup.class,
                                                      String.class, Class.class, int.class).toMethodDescriptorString();
 
-        byte[] byteArray = new BasicClassBuilder(genClassName, 53, 0)
+        byte[] byteArray = new BasicClassBuilder(genClassName, 55, 0)
                 .withSuperclass("java/lang/Object")
                 .withMethod("<init>", "()V", M ->
                         M.withFlags(Flag.ACC_PUBLIC)

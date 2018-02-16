@@ -1436,7 +1436,7 @@ JVM_ENTRY(void, MHN_copyOutBootstrapArguments(JNIEnv* env, jobject igcls,
   caller->constants()->
     copy_bootstrap_arguments_at(bss_index_in_pool,
                                 start, end, buf, pos,
-                                resolve, ifna, CHECK);
+                                (resolve == JNI_TRUE), ifna, CHECK);
 }
 JVM_END
 

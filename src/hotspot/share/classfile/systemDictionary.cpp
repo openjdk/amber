@@ -2666,16 +2666,6 @@ Handle SystemDictionary::find_java_mirror_for_type(Symbol* signature,
          "one or the other, or perhaps neither");
 
   Symbol* type = signature;
-  TempNewSymbol type_buf;
-  if (type->utf8_length() > 1 && type->byte_at(0) == ';') {
-    // Strip the quote, which may have come from CONSTANT_Class[";"+FD].
-    // (This logic corresponds to the use of "FieldType::is_obj"
-    // in resolve_or_null.  A field type can be unwrapped to a class
-    // type and vice versa.)
-    type = SymbolTable::new_symbol(type->as_C_string() + 1,
-                                   type->utf8_length() - 1, CHECK_(empty));
-    type_buf = type;  // will free later
-  }
 
   // What we have here must be a valid field descriptor,
   // and all valid field descriptors are supported.
@@ -2719,7 +2709,6 @@ Handle SystemDictionary::find_java_mirror_for_type(Symbol* signature,
     return mirror;
 
   }
-  // New cases like "QFoo;" would go here.
 
   // Fall through to an error.
   assert(false, "unsupported mirror syntax");
