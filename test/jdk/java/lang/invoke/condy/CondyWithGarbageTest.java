@@ -65,7 +65,7 @@ public class CondyWithGarbageTest {
     }
 
     static MethodHandle lcdStringBasher() throws Exception {
-        byte[] byteArray = new BasicClassBuilder(csym(L.lookupClass()) + "$Code$String", 53, 0)
+        byte[] byteArray = new BasicClassBuilder(csym(L.lookupClass()) + "$Code$String", 55, 0)
                 .withSuperclass("java/lang/Object")
                 .withMethod("<init>", "()V", M ->
                         M.withFlags(Flag.ACC_PUBLIC)
@@ -125,7 +125,7 @@ public class CondyWithGarbageTest {
     }
 
     static MethodHandle lcdStringArrayBasher() throws Exception {
-        byte[] byteArray = new BasicClassBuilder(csym(L.lookupClass()) + "$Code$StringArray", 53, 0)
+        byte[] byteArray = new BasicClassBuilder(csym(L.lookupClass()) + "$Code$StringArray", 55, 0)
                 .withSuperclass("java/lang/Object")
                 .withMethod("<init>", "()V", M ->
                         M.withFlags(Flag.ACC_PUBLIC)

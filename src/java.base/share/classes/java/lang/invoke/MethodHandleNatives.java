@@ -310,7 +310,7 @@ class MethodHandleNatives {
                                           MethodHandle bootstrapMethod,
                                           String name, Class<?> type,
                                           Object staticArguments) {
-        return DynamicConstant.makeConstant(bootstrapMethod, name, type, staticArguments, caller);
+        return ConstantBootstraps.makeConstant(bootstrapMethod, name, type, staticArguments, caller);
     }
 
     private static String staticArglistForTrace(Object staticArguments) {
@@ -358,6 +358,10 @@ class MethodHandleNatives {
      * are (Lookup, BootstrapCallInfo), or can be converted pairwise
      * to those types, and it is not of variable arity.
      * Excluding error cases, we can just test that the arity is a constant 2.
+     *
+     * NOTE: This method currently returns false, since pulling is not currently
+     * exposed to a BSM. When pull mode is supported the method block will be
+     * replaced with currently commented out code.
      */
     static boolean isPullModeBSM(MethodHandle bsm) {
         return bsm.type().parameterCount() == 2 && !bsm.isVarargsCollector();
