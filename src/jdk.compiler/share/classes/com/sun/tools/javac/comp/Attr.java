@@ -1868,7 +1868,6 @@ public class Attr extends JCTree.Visitor {
                     Pair<JCTree, Error> jumpTarget = findJumpTargetNoError(tree.getTag(), label, env);
 
                     if (jumpTarget.fst != null) {
-                        //TODO: add test - identifier whose type does not match the expected type! (test for unknownExprInfo)
                         JCTree speculative = deferredAttr.attribSpeculative(tree.value, env, unknownExprInfo);
                         if (!speculative.type.hasTag(ERROR)) {
                             log.error(tree.pos(), Errors.BreakAmbiguousTarget(label));

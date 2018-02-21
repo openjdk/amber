@@ -37,6 +37,13 @@ public class ExpressionSwitchBreaks2 {
                         break ; //error: missing value
                     case 2:
                         break OUTER; //error: jumping outside of the switch expression
+                    case 3: {
+                        int x = -1;
+                        x: switch (i + j) {
+                            case 0: break x; //error: cannot disambiguate, wrong type as well
+                        }
+                        break "X";
+                    }
                     default: {
                         String x = "X";
                         x: switch (i + j) {
