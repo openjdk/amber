@@ -304,23 +304,12 @@ final class BootstrapMethodInvoker {
 
     /*non-public*/ static final
     class PushAdapter {
-        // skeleton for push-mode BSM which wraps a pull-mode BSM:
-        static Object pushToBootstrapMethod(MethodHandle pullModeBSM,
-                                            MethodHandles.Lookup lookup, String name, Object type,
-                                            Object... arguments) throws Throwable {
-            ConstantGroup cons = makeConstantGroup(Arrays.asList(arguments));
-            BootstrapCallInfo<?> bsci = makeBootstrapCallInfo(pullModeBSM, name, type, cons);
-            if (TRACE_METHOD_LINKAGE)
-                System.out.println("pull-mode BSM gets pushed arguments from fake BSCI");
-            return pullModeBSM.invoke(lookup, bsci);
-        }
-
         static final MethodHandle MH_pushToBootstrapMethod;
+
         static {
-            final Class<?> THIS_CLASS = PushAdapter.class;
             try {
                 MH_pushToBootstrapMethod = IMPL_LOOKUP
-                    .findStatic(THIS_CLASS, "pushToBootstrapMethod",
+                    .findStatic(BootstrapCallInfo.class, "invokeFromArgumentsToCallInfo",
                                 MethodType.methodType(Object.class, MethodHandle.class,
                                         Lookup.class, String.class, Object.class, Object[].class));
             } catch (Throwable ex) {
@@ -331,63 +320,14 @@ final class BootstrapMethodInvoker {
 
     /*non-public*/ static final
     class PullAdapter {
-        // skeleton for pull-mode BSM which wraps a push-mode BSM:
-        static Object pullFromBootstrapMethod(MethodHandle pushModeBSM,
-                                              MethodHandles.Lookup lookup,
-                                              BootstrapCallInfo<?> bsci)
-                throws Throwable {
-            int argc = bsci.size();
-            switch (argc) {
-                case 0:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType());
-                case 1:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0));
-                case 2:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0), bsci.get(1));
-                case 3:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0), bsci.get(1), bsci.get(2));
-                case 4:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0), bsci.get(1), bsci.get(2), bsci.get(3));
-                case 5:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0), bsci.get(1), bsci.get(2), bsci.get(3), bsci.get(4));
-                case 6:
-                    return pushModeBSM.invoke(lookup, bsci.invocationName(), bsci.invocationType(),
-                            bsci.get(0), bsci.get(1), bsci.get(2), bsci.get(3), bsci.get(4), bsci.get(5));
-                default:
-                    final int NON_SPREAD_ARG_COUNT = 3;  // (lookup, name, type)
-                    final int MAX_SAFE_SIZE = MethodType.MAX_MH_ARITY / 2 - NON_SPREAD_ARG_COUNT;
-                    if (argc >= MAX_SAFE_SIZE) {
-                        // to be on the safe side, use invokeWithArguments which handles jumbo lists
-                        Object[] newargv = new Object[NON_SPREAD_ARG_COUNT + argc];
-                        newargv[0] = lookup;
-                        newargv[1] = bsci.invocationName();
-                        newargv[2] = bsci.invocationType();
-                        bsci.copyConstants(0, argc, newargv, NON_SPREAD_ARG_COUNT);
-                        return pushModeBSM.invokeWithArguments(newargv);
-                    }
-                    MethodType invocationType = MethodType.genericMethodType(NON_SPREAD_ARG_COUNT + argc);
-                    MethodHandle typedBSM = pushModeBSM.asType(invocationType);
-                    MethodHandle spreader = invocationType.invokers().spreadInvoker(NON_SPREAD_ARG_COUNT);
-                    Object[] argv = new Object[argc];
-                    bsci.copyConstants(0, argc, argv, 0);
-                    return spreader.invokeExact(typedBSM, (Object) lookup, (Object) bsci.invocationName(), bsci.invocationType(), argv);
-                }
-        }
-
         static final MethodHandle MH_pullFromBootstrapMethod;
 
         static {
-            final Class<?> THIS_CLASS = PullAdapter.class;
             try {
                 MH_pullFromBootstrapMethod = IMPL_LOOKUP
-                    .findStatic(THIS_CLASS, "pullFromBootstrapMethod",
+                    .findStatic(BootstrapCallInfo.class, "invokeFromCallInfoToArguments",
                                 MethodType.methodType(Object.class, MethodHandle.class,
-                                        Lookup.class, BootstrapCallInfo.class));
+                                                      Lookup.class, BootstrapCallInfo.class));
             } catch (Throwable ex) {
                 throw new InternalError(ex);
             }
