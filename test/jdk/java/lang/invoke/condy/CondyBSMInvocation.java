@@ -36,6 +36,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import test.java.lang.invoke.lib.InstructionHelper;
 
+import java.lang.invoke.BootstrapCallInfo;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -229,6 +230,28 @@ public class CondyBSMInvocation {
                 Throwable t = e.getCause();
                 Assert.assertTrue(WrongMethodTypeException.class.isAssignableFrom(t.getClass()));
             }
+        }
+    }
+
+    public static Object bsm(MethodHandles.Lookup l, BootstrapCallInfo<Class<?>> bci) {
+        assertAll(bci.asList().toArray());
+        return Integer.toString(bci.size());
+    }
+
+    @Test
+    public void testArityWithBootstrapCallDescriptor() throws Throwable {
+        MethodType mt = methodType(Object.class, MethodHandles.Lookup.class, BootstrapCallInfo.class);
+        MethodHandle bsm = L.findStatic(CondyBSMInvocation.class, "bsm", mt);
+        for (int i = 0; i < 8; i++) {
+            final int n = i;
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
+                    L, "name", Object.class,
+                    "bsm", mt,
+                    S -> IntStream.range(0, n).forEach(S::add)
+            );
+
+            Object r = mh.invoke();
+            Assert.assertEquals(r, Integer.toString(n));
         }
     }
 }
