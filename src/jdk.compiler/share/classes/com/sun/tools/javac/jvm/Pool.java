@@ -340,7 +340,7 @@ public class Pool {
                 return that.bsm.equals(bsm) &&
                         types.isSameType(that.type, type) &&
                         that.name.equals(name) &&
-                        that.args.equals(args);
+                        Arrays.equals(that.args, args);
             } else {
                 return false;
             }
