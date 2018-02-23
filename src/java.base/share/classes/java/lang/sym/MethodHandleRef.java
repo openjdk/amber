@@ -108,6 +108,7 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constab
         requireNonNull(type);
 
         switch (kind) {
+            case CONSTRUCTOR: validateConstructor(type); break;
             case GETTER: validateFieldType(type, false, true); break;
             case SETTER: validateFieldType(type, true, true); break;
             case STATIC_GETTER: validateFieldType(type, false, false); break;
@@ -129,6 +130,12 @@ public final class MethodHandleRef implements ConstantRef<MethodHandle>, Constab
             String expectedType = String.format("(%s%s)%s", (isVirtual ? "R" : ""),
                                                 (isSetter ? "T" : ""), (isSetter ? "V" : "T"));
             throw new IllegalArgumentException(String.format("Expected type of %s for getter, found %s", expectedType, type));
+        }
+    }
+
+    private static void validateConstructor(MethodTypeRef type) {
+        if (!type.returnType().descriptorString().equals("V")) {
+            throw new IllegalArgumentException(String.format("Expected type of (T)V for constructor, found %s", type));
         }
     }
 

@@ -58,11 +58,11 @@ public class IntrinsicsTest {
         ClassRef cc2 = ClassRef.ofDescriptor("Ljava/lang/String;");
         assertEquals(String.class, Intrinsics.ldc(cc2));
 
-        SymbolicRef<String> s = "foo";
+        ConstantRef<String> s = "foo";
         assertEquals("foo", Intrinsics.ldc(s));
 
         // Boxing should preserve IC-ness
-        SymbolicRef<Integer> i = (Integer) 3;
+        ConstantRef<Integer> i = (Integer) 3;
         assertEquals(3, (int) Intrinsics.ldc(i));
     }
 
