@@ -154,9 +154,7 @@ public class LambdaToMethod extends TreeTranslator {
         doConstantFold = options.isSet("doConstantFold");
         Source source = Source.instance(context);
         // format: -XDforNonCapturingLambda=generateCondy, which is the default, or -XDforNonCapturingLambda=generateIndy
-        String condyOp = options.get("forNonCapturingLambda");
-        condyForLambda = condyOp != null ? condyOp.equals("generateCondy") : true &&
-                Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
+        condyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>
 
