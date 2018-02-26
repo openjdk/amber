@@ -57,6 +57,7 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
+import com.sun.tools.javac.tree.JCTree.JCExpression;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
@@ -3444,6 +3445,7 @@ public class Lower extends TreeTranslator {
             } else {
                 Name switchName;
                 Type methodType;
+                Function<JCExpression, Object> caseToValue = pat -> pat.type.constValue();
                 if (types.isSameType(unboxed, syms.longType)) {
                     switchName = names.longSwitch;
                     methodType = syms.longType;
@@ -3453,6 +3455,28 @@ public class Lower extends TreeTranslator {
                 } else if (types.isSameType(unboxed, syms.doubleType)) {
                     switchName = names.doubleSwitch;
                     methodType = syms.doubleType;
+                } else if (types.isSameType(unboxed, syms.booleanType)) {
+                    switchName = names.booleanSwitch;
+                    methodType = syms.booleanType;
+                    caseToValue = pat -> {
+                        Symbol getStaticFinal = rs.resolveInternalMethod(tree.pos(), attrEnv,
+                                syms.constantBootstraps, names.getStaticFinal,
+                                List.of(syms.methodHandleLookupType,
+                                        syms.stringType,
+                                        syms.classType,
+                                        syms.classType), List.nil());
+
+                        int value = (Integer) pat.type.constValue();
+                        Name valueName = value != 0 ? names.TRUE : names.FALSE;
+                        Symbol.DynamicMethodSymbol dynSym = new Symbol.DynamicMethodSymbol(valueName,
+                                syms.noSymbol,
+                                ClassFile.REF_invokeStatic,
+                                (Symbol.MethodSymbol)getStaticFinal,
+                                types.boxedClass(syms.booleanType).type,
+                                new Object[] {types.boxedClass(syms.booleanType)
+                                });
+                        return dynSym;
+                    };
                 } else {
                     switchName = names.intSwitch;
                     methodType = syms.intType;
@@ -3464,7 +3488,7 @@ public class Lower extends TreeTranslator {
                                                       tree.selector.type,
                                                       tree.selector.type,
                                                       false,
-                                                      pat -> pat.type.constValue());
+                                                      caseToValue);
             }
 
             tree.selector = make.Apply(List.nil(), qualifier, List.of(tree.selector));

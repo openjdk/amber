@@ -210,6 +210,7 @@ public class Symtab {
     public final Type lambdaMetafactory;
     public final Type stringConcatFactory;
     public final Type switchBootstraps;
+    public final Type constantBootstraps;
     public final Type repeatableType;
     public final Type documentedType;
     public final Type elementTypeType;
@@ -549,6 +550,7 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         switchBootstraps = enterClass("java.lang.runtime.SwitchBootstraps");
+        constantBootstraps = enterClass("java.lang.invoke.ConstantBootstraps");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);

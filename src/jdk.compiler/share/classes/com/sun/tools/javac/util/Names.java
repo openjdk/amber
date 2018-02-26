@@ -206,10 +206,14 @@ public class Names {
     // switch
     public final Name stringSwitch;
     public final Name enumSwitch;
+    public final Name booleanSwitch;
     public final Name intSwitch;
     public final Name longSwitch;
     public final Name floatSwitch;
     public final Name doubleSwitch;
+    public final Name getStaticFinal;
+    public final Name TRUE;
+    public final Name FALSE;
 
     public final Name.Table table;
 
@@ -376,10 +380,14 @@ public class Names {
         //switch desugaring:
         stringSwitch = fromString("stringSwitch");
         enumSwitch = fromString("enumSwitch");
+        booleanSwitch = fromString("booleanSwitch");
         intSwitch = fromString("intSwitch");
         longSwitch = fromString("longSwitch");
         floatSwitch = fromString("floatSwitch");
         doubleSwitch = fromString("doubleSwitch");
+        getStaticFinal = fromString("getStaticFinal");
+        TRUE = fromString("TRUE");
+        FALSE = fromString("FALSE");
     }
 
     protected Name.Table createTable(Options options) {

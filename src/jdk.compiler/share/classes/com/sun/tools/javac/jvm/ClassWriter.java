@@ -411,7 +411,7 @@ public class ClassWriter extends ClassFile {
                     for (Object staticArg : dynSym.staticArgs) {
                         pool.put(staticArg);
                     }
-                    poolbuf.appendByte(CONSTANT_InvokeDynamic);
+                    poolbuf.appendByte(dynSym.type.hasTag(METHOD) ? CONSTANT_InvokeDynamic : CONSTANT_Dynamic);
                     poolbuf.appendChar(val.index);
                     poolbuf.appendChar(pool.put(nameType(dynSym)));
                 }
@@ -1109,7 +1109,7 @@ public class ClassWriter extends ClassFile {
             databuf.appendChar(uniqueArgs.length);
             //write static args array
             for (Object o : uniqueArgs) {
-                databuf.appendChar(pool.get(o));
+                databuf.appendChar(pool.get(pool.makePoolValue(o)));
             }
         }
         endAttr(alenIdx);

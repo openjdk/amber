@@ -600,14 +600,24 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
+            Set<Object> constants = null;
+            if (types.unboxedTypeOrType(tree.selector.type).tsym == syms.booleanType.tsym) {
+                constants = new HashSet<>();
+                constants.add(0);
+                constants.add(1);
+            }
             boolean hasDefault = false;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = true;
                 JCCase c = l.head;
                 if (c.pat == null)
                     hasDefault = true;
-                else
+                else {
                     scan(c.pat);
+                    if (constants != null) {
+                        constants.remove(c.pat.type.constValue());
+                    }
+                }
                 scanStats(c.stats);
                 // Warn about fall-through if lint switch fallthrough enabled.
                 if (alive &&
@@ -617,7 +627,7 @@ public class Flow {
                                 l.tail.head.pos(),
                                 Warnings.PossibleFallThroughIntoCase);
             }
-            if (!hasDefault) {
+            if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 alive = true;
             }
             alive |= resolveBreaks(tree, prevPendingExits);
@@ -628,12 +638,17 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
-            Set<Name> constants = null;
+            Set<Object> constants = null;
             if ((tree.selector.type.tsym.flags() & ENUM) != 0) {
                 constants = new HashSet<>();
                 for (Symbol s : tree.selector.type.tsym.members().getSymbols(s -> (s.flags() & ENUM) != 0)) {
                     constants.add(s.name);
                 }
+            }
+            if (types.unboxedTypeOrType(tree.selector.type).tsym == syms.booleanType.tsym) {
+                constants = new HashSet<>();
+                constants.add(0);
+                constants.add(1);
             }
             boolean hasDefault = false;
             boolean prevAlive = alive;
@@ -644,8 +659,11 @@ public class Flow {
                     hasDefault = true;
                 else {
                     scan(c.pat);
-                    if (constants != null && c.pat.hasTag(IDENT)) {
-                        constants.remove(((JCIdent) c.pat).name);
+                    if (constants != null) {
+                        if (c.pat.hasTag(IDENT))
+                            constants.remove(((JCIdent) c.pat).name);
+                        if (c.pat.type != null)
+                            constants.remove(c.pat.type.constValue());
                     }
                 }
                 scanStats(c.stats);

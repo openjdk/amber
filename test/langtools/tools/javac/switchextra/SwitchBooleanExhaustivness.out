@@ -1,0 +1,3 @@
+SwitchBooleanExhaustivness.java:39:5: compiler.err.missing.ret.stmt
+SwitchBooleanExhaustivness.java:42:16: compiler.err.not.exhaustive
+2 errors

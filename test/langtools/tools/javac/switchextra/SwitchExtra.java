@@ -78,6 +78,12 @@ public class SwitchExtra {
         assertEquals(5, doubleSwitchBoxed(Double.POSITIVE_INFINITY));
         assertEquals(6, doubleSwitchBoxed(0d));
         assertEquals(7, doubleSwitchBoxed(3.14));
+        assertEquals(0, booleanSwitch1(false));
+        assertEquals(1, booleanSwitch1(true));
+        assertEquals(0, booleanSwitch2(false));
+        assertEquals(1, booleanSwitch2(true));
+        assertEquals(0, booleanSwitchBoxed(false));
+        assertEquals(1, booleanSwitchBoxed(true));
     }
 
     private int longSwitch(long l) {
@@ -152,6 +158,34 @@ public class SwitchExtra {
             case 0.0: return 6;
             default: return 7;
         }
+    }
+
+    private int booleanSwitch1(boolean b) {
+        switch (b) {
+            case false: return 0;
+            case true: return 1;
+        }
+    }
+
+    private int booleanSwitch2(boolean b) {
+        switch (b) {
+            case false: return 0;
+            default: return 1;
+        }
+    }
+
+    private int booleanSwitchBoxed(Boolean b) {
+        switch (b) {
+            case false: return 0;
+            case true: return 1;
+        }
+    }
+
+    private int booleanSwitchExpr(boolean b) {
+        return switch (b) {
+            case false -> 0;
+            case true -> 1;
+        };
     }
 
     private void assertEquals(int expected, int actual) {

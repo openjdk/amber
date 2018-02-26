@@ -57,6 +57,8 @@ public class SwitchBootstraps {
     private static final MethodHandle INIT_HOOK;
     private static final Map<Class<?>, MethodHandle> switchMethods = new ConcurrentHashMap<>();
 
+    private static final Set<Class<?>> BOOLEAN_TYPES
+            = Set.of(boolean.class, Boolean.class);
     // Types that can be handled as int switches
     private static final Set<Class<?>> INT_TYPES
             = Set.of(int.class, short.class, byte.class, char.class,
@@ -79,7 +81,8 @@ public class SwitchBootstraps {
                             switchClass = EnumSwitchCallSite.class;
                         else if (c == String.class)
                             switchClass = StringSwitchCallSite.class;
-                        else if (INT_TYPES.contains(c) || FLOAT_TYPES.contains(c))
+                        else if (BOOLEAN_TYPES.contains(c) || INT_TYPES.contains(c) ||
+                                 FLOAT_TYPES.contains(c))
                             switchClass = IntSwitchCallSite.class;
                         else if (LONG_TYPES.contains(c) || DOUBLE_TYPES.contains(c))
                             switchClass = LongSwitchCallSite.class;
@@ -108,6 +111,48 @@ public class SwitchBootstraps {
     private static<T extends CallSite> MethodHandle initHook(T receiver) {
         return switchMethods.computeIfAbsent(receiver.type().parameterType(0), lookupSwitchMethod)
                             .bindTo(receiver);
+    }
+
+    /**
+     * Bootstrap method for linking an {@code invokedynamic} call site that
+     * implements a {@code switch} on a {@code boolean} or {@code Boolean}.
+     * The static arguments are a varargs array of {@code boolean} labels.
+     *
+     * @param lookup Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invocationName The invocation name, which is ignored.  When used with
+     *                       {@code invokedynamic}, this is provided by the
+     *                       {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param invocationType The invocation type of the {@code CallSite}.  This
+     *                       method type should have a single parameter which is
+     *                       {@code boolean} or {@code Boolean},and return {@code int}.
+     *                       When used with {@code invokedynamic}, this is provided by
+     *                       the {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param booleanLabels boolean values corresponding to the case labels of the
+     *                  {@code switch} statement.
+     * @return the index into {@code booleanLabels} of the target value, if the target
+     *         matches any of the labels, {@literal -1} if the target value is
+     *         {@code null}, or {@code booleanLabels.length} if the target value does
+     *         not match any of the labels.
+     * @throws Throwable if there is any error linking the call site
+     */
+    public static CallSite booleanSwitch(MethodHandles.Lookup lookup,
+                                         String invocationName,
+                                         MethodType invocationType,
+                                         boolean... booleanLabels) throws Throwable {
+        if (invocationType.parameterCount() != 1
+            || (!invocationType.returnType().equals(int.class))
+            || (!BOOLEAN_TYPES.contains(invocationType.parameterType(0))))
+            throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+
+        int[] intLabels = new int[booleanLabels.length];
+        for (int i=0; i<booleanLabels.length; i++)
+            intLabels[i] = booleanLabels[i] ? 1 : 0;
+
+        return new IntSwitchCallSite(invocationType, intLabels);
     }
 
     /**
@@ -212,6 +257,11 @@ public class SwitchBootstraps {
                 labels[i] = intLabels[indexes[i]];
         }
 
+        int doSwitch(boolean target) {
+            int index = Arrays.binarySearch(labels, target ? 1 : 0);
+            return (index >= 0) ? indexes[index] : indexes.length;
+        }
+
         int doSwitch(int target) {
             int index = Arrays.binarySearch(labels, target);
             return (index >= 0) ? indexes[index] : indexes.length;
@@ -231,6 +281,10 @@ public class SwitchBootstraps {
 
         int doSwitch(char target) {
             return doSwitch((int) target);
+        }
+
+        int doSwitch(Boolean target) {
+            return (target == null) ? -1 : doSwitch((boolean) target);
         }
 
         int doSwitch(Integer target) {

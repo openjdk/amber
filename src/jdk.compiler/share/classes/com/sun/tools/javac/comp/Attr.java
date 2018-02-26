@@ -1459,9 +1459,7 @@ public class Attr extends JCTree.Visitor {
                 log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
             }
             Type unboxedSelType = types.unboxedTypeOrType(seltype);
-            if (!enumSwitch && !stringSwitch && !types.isSubtype(unboxedSelType, syms.intType) &&
-                !types.isSameType(unboxedSelType, syms.longType) && !types.isSubtype(unboxedSelType, syms.floatType) &&
-                !types.isSameType(unboxedSelType, syms.doubleType)) {
+            if (!enumSwitch && !stringSwitch && !unboxedSelType.isPrimitive()) {
                 log.error(selector.pos(), Errors.SwitchInvalidType(seltype));
             }
 

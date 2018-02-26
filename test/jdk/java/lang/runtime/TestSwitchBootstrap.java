@@ -52,6 +52,7 @@ import static org.testng.Assert.fail;
  */
 @Test
 public class TestSwitchBootstrap {
+    private final static Set<Class<?>> BOOLEAN_TYPES = Set.of(boolean.class, Boolean.class);
     private final static Set<Class<?>> ALL_INT_TYPES = Set.of(int.class, short.class, byte.class, char.class,
                                                               Integer.class, Short.class, Byte.class, Character.class);
     private final static Set<Class<?>> SIGNED_NON_BYTE_TYPES = Set.of(int.class, Integer.class, short.class, Short.class);
@@ -61,6 +62,7 @@ public class TestSwitchBootstrap {
             = Set.of(int.class, short.class, byte.class,
                      Integer.class, Short.class, Byte.class);
 
+    public static final MethodHandle BSM_BOOLEAN_SWITCH;
     public static final MethodHandle BSM_INT_SWITCH;
     public static final MethodHandle BSM_LONG_SWITCH;
     public static final MethodHandle BSM_FLOAT_SWITCH;
@@ -72,6 +74,8 @@ public class TestSwitchBootstrap {
 
     static {
         try {
+            BSM_BOOLEAN_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "booleanSwitch",
+                                                                   MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, boolean[].class));
             BSM_INT_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "intSwitch",
                                                                MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, int[].class));
             BSM_LONG_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "longSwitch",
@@ -105,6 +109,31 @@ public class TestSwitchBootstrap {
             return (byte) i;
         else
             throw new IllegalArgumentException(clazz.toString());
+    }
+
+    private void testBoolean(boolean... labels) throws Throwable {
+        Map<Class<?>, MethodHandle> mhs
+                = Map.of(boolean.class, ((CallSite) BSM_BOOLEAN_SWITCH.invoke(MethodHandles.lookup(), "", switchType(boolean.class), labels)).dynamicInvoker(),
+                         Boolean.class, ((CallSite) BSM_BOOLEAN_SWITCH.invoke(MethodHandles.lookup(), "", switchType(Boolean.class), labels)).dynamicInvoker());
+
+        List<Boolean> labelList = new ArrayList<>();
+        for (boolean label : labels)
+            labelList.add(label);
+
+        for (int i=0; i<labels.length; i++) {
+            assertEquals(i, (int) mhs.get(boolean.class).invokeExact((boolean) labels[i]));
+            assertEquals(i, (int) mhs.get(Boolean.class).invokeExact((Boolean) labels[i]));
+        }
+
+        boolean[] booleans = { false, true };
+        for (boolean b : booleans) {
+            if (!labelList.contains(b)) {
+                assertEquals(labels.length, mhs.get(boolean.class).invoke((boolean) b));
+                assertEquals(labels.length, mhs.get(Boolean.class).invoke((boolean) b));
+            }
+        }
+
+        assertEquals(-1, (int) mhs.get(Boolean.class).invoke(null));
     }
 
     private void testInt(Set<Class<?>> targetTypes, int... labels) throws Throwable {
@@ -285,6 +314,13 @@ public class TestSwitchBootstrap {
         }
 
         assertEquals(-1, (int) indy.invoke(null));
+    }
+
+    public void testBoolean() throws Throwable {
+        testBoolean(new boolean[0]);
+        testBoolean(false);
+        testBoolean(true);
+        testBoolean(false, true);
     }
 
     public void testInt() throws Throwable {
