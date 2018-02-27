@@ -52,56 +52,104 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
-package jdk.internal.org.objectweb.asm.tree;
+package jdk.internal.org.objectweb.asm;
 
-import java.util.List;
-
-import jdk.internal.org.objectweb.asm.ModuleVisitor;
+import java.util.Arrays;
 
 /**
- * A node that represents an opened package with its name and the module that can access it.
+ * A class that represent a constant dynamic.
  *
  * @author Remi Forax
  */
-public class ModuleOpenNode {
-
-  /** The internal name of the opened package. */
-  public String packaze;
-
-  /**
-   * The access flag of the opened package, valid values are among {@code ACC_SYNTHETIC} and {@code
-   * ACC_MANDATED}.
-   */
-  public int access;
+public final class Condy {
+  final String name;
+  final String descriptor;
+  final Handle bootstrapMethod;
+  final Object[] bootstrapArguments;
 
   /**
-   * The fully qualified names (using dots) of the modules that can use deep reflection to the
-   * classes of the open package, or <tt>null</tt>.
-   */
-  public List<String> modules;
-
-  /**
-   * Constructs a new {@link ModuleOpenNode}.
+   * Create a constant dynamic.
    *
-   * @param packaze the internal name of the opened package.
-   * @param access the access flag of the opened package, valid values are among {@code
-   *     ACC_SYNTHETIC} and {@code ACC_MANDATED}.
-   * @param modules the fully qualified names (using dots) of the modules that can use deep
-   *     reflection to the classes of the open package, or <tt>null</tt>.
+   * @param name an arbitrary name
+   * @param descriptor a field descriptor
+   * @param bootstrapMethod a bootstrap method
+   * @param bootstrapArguments the arguments of the bootstrap method
    */
-  public ModuleOpenNode(final String packaze, final int access, final List<String> modules) {
-    this.packaze = packaze;
-    this.access = access;
-    this.modules = modules;
+  public Condy(
+      String name, String descriptor, Handle bootstrapMethod, Object... bootstrapArguments) {
+    this.name = name;
+    this.descriptor = descriptor;
+    this.bootstrapMethod = bootstrapMethod;
+    this.bootstrapArguments = bootstrapArguments;
   }
 
   /**
-   * Makes the given module visitor visit this opened package.
+   * Returns the name of the current constant dynamic.
    *
-   * @param moduleVisitor a module visitor.
+   * @return the name of the current constant dynamic.
    */
-  public void accept(final ModuleVisitor moduleVisitor) {
-    moduleVisitor.visitOpen(
-        packaze, access, modules == null ? null : modules.toArray(new String[modules.size()]));
+  public String getName() {
+    return name;
+  }
+
+  /**
+   * Returns the field descriptor of the current constant dynamic.
+   *
+   * @return the field descriptor of the current constant dynamic.
+   */
+  public String getDescriptor() {
+    return descriptor;
+  }
+
+  /**
+   * Returns the boostrap method of the current constant dynamic.
+   *
+   * @return the boostrap method of the current constant dynamic.
+   */
+  public Handle getBootrapMethod() {
+    return bootstrapMethod;
+  }
+
+  /**
+   * Returns the bootstrap method arguments of the current constant dynamic.
+   *
+   * @return the bootstrap method arguments of the current constant dynamic.
+   */
+  public Object[] getBootstrapArguments() {
+    return bootstrapArguments;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (!(obj instanceof Condy)) {
+      return false;
+    }
+    Condy condy = (Condy) obj;
+    return name.equals(condy.name)
+        && descriptor.equals(condy.descriptor)
+        && bootstrapMethod.equals(condy.bootstrapMethod)
+        && Arrays.equals(bootstrapArguments, condy.bootstrapArguments);
+  }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode()
+        ^ Integer.rotateLeft(descriptor.hashCode(), 8)
+        ^ Integer.rotateLeft(bootstrapMethod.hashCode(), 16)
+        ^ Integer.rotateLeft(Arrays.hashCode(bootstrapArguments), 24);
+  }
+
+  @Override
+  public String toString() {
+    return name
+        + " : "
+        + descriptor
+        + ' '
+        + bootstrapMethod
+        + ' '
+        + Arrays.toString(bootstrapArguments);
   }
 }
