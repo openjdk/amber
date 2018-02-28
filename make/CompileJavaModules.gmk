@@ -264,7 +264,7 @@ java.sql.rowset_CLEAN_FILES += $(wildcard \
 
 ################################################################################
 
-java.rmi_ADD_JAVAC_FLAGS += -Xdoclint:all/protected '-Xdoclint/package:java.*,javax.*' -XDcondyForLambda=generateIndy
+java.rmi_ADD_JAVAC_FLAGS += -Xdoclint:all/protected '-Xdoclint/package:java.*,javax.*' -XDforNonCapturingLambda=generateIndy
 java.rmi_CLEAN_FILES += $(wildcard \
     $(TOPDIR)/src/java.rmi/share/classes/sun/rmi/registry/resources/*.properties \
     $(TOPDIR)/src/java.rmi/share/classes/sun/rmi/server/resources/*.properties)

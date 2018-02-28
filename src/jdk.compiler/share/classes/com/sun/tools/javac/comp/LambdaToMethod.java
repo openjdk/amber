@@ -151,10 +151,11 @@ public class LambdaToMethod extends TreeTranslator {
         dumpLambdaToMethodStats = options.isSet("debug.dumpLambdaToMethodStats");
         attr = Attr.instance(context);
         forceSerializable = options.isSet("forceSerializable");
-        doConstantFold = options.isSet("doConstantFold");
         Source source = Source.instance(context);
         // format: -XDforNonCapturingLambda=generateCondy, which is the default, or -XDforNonCapturingLambda=generateIndy
-        condyForLambda = Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
+        String condyOp = options.get("forNonCapturingLambda");
+        condyForLambda = condyOp != null ? condyOp.equals("generateCondy") : true &&
+                Feature.CONDY_FOR_LAMBDA.allowedInSource(source);
     }
     // </editor-fold>
 
@@ -1115,15 +1116,13 @@ public class LambdaToMethod extends TreeTranslator {
             }
         }
 
-        return  doConstantFold &&
-                condyForLambda &&
+        return  condyForLambda &&
                 !context.needsAltMetafactory() &&
                 indy_args.isEmpty() ?
                 makeCondy(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, tree.type, indy_args, samSym.name) :
                 makeIndyCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, indyType, indy_args, samSym.name);
     }
 
-    private final boolean doConstantFold;
     /* this extra flag should be temporary and used as long as it's not possible to do the build
      * due to the lack of support for condy in the current version of ASM present in the build
      */
