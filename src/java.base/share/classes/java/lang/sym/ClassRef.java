@@ -25,11 +25,6 @@
 package java.lang.sym;
 
 import java.lang.annotation.Foldable;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
@@ -40,29 +35,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * A symbolic reference for a {@link Class}.
  */
-public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Constable<ConstantRef<Class<?>>> {
-    private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
-
-    private final String descriptor;
-
-    /**
-     * Create a {@linkplain ClassRef} from a descriptor string for a class
-     *
-     * @param descriptor the descriptor string
-     * @throws IllegalArgumentException if the descriptor string does not
-     * describe a valid class name
-     */
-    private ClassRef(String descriptor) {
-        // @@@ Replace validation with a lower-overhead mechanism than regex
-        // Follow the trail from MethodType.fromMethodDescriptorString to
-        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
-        // be extracted and/or shared
-        if (descriptor == null
-            || !TYPE_DESC.matcher(descriptor).matches())
-            throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
-        this.descriptor = descriptor;
-    }
-
+public interface ClassRef extends ConstantRef<Class<?>>, Constable<ConstantRef<Class<?>>> {
     /**
      * Create a {@linkplain ClassRef} from a fully-qualified, dot-separated
      * class name
@@ -73,7 +46,7 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * describe a valid class name
      */
     @Foldable
-    public static ClassRef of(String name) {
+    static ClassRef of(String name) {
         return ClassRef.ofDescriptor("L" + name.replace('.', '/') + ";");
     }
 
@@ -88,7 +61,7 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * not in the correct format
      */
     @Foldable
-    public static ClassRef of(String packageName, String className) {
+    static ClassRef of(String packageName, String className) {
         if (className.contains("."))
             throw new IllegalArgumentException(className);
         return ofDescriptor("L" + packageName.replace('.', '/')
@@ -106,8 +79,11 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * a valid class descriptor
      */
     @Foldable
-    public static ClassRef ofDescriptor(String descriptor) {
-        return new ClassRef(requireNonNull(descriptor));
+    static ClassRef ofDescriptor(String descriptor) {
+        requireNonNull(descriptor);
+        return (descriptor.length() == 1)
+               ? new PrimitiveClassRef(descriptor)
+               : new ConstantClassRef(descriptor);
     }
 
     /**
@@ -117,8 +93,8 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * @return a {@linkplain ClassRef} describing the array type
      */
     @Foldable
-    public ClassRef array() {
-        return ClassRef.ofDescriptor("[" + descriptor);
+    default ClassRef array() {
+        return ClassRef.ofDescriptor("[" + descriptorString());
     }
 
     /**
@@ -128,10 +104,10 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * @return a {@linkplain ClassRef} describing the inner class
      */
     @Foldable
-    public ClassRef inner(String innerName) {
-        if (!descriptor.startsWith("L"))
+    default ClassRef inner(String innerName) {
+        if (!descriptorString().startsWith("L"))
             throw new IllegalStateException("Outer class is not a non-array reference type");
-        return ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + innerName + ";");
+        return ClassRef.ofDescriptor(descriptorString().substring(0, descriptorString().length() - 1) + "$" + innerName + ";");
     }
 
     /**
@@ -143,12 +119,12 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * @return a {@linkplain ClassRef} describing the inner class
      */
     @Foldable
-    public ClassRef inner(String firstInnerName, String... moreInnerNames) {
-        if (!descriptor.startsWith("L"))
+    default ClassRef inner(String firstInnerName, String... moreInnerNames) {
+        if (!descriptorString().startsWith("L"))
             throw new IllegalStateException("Outer class is not a non-array reference type");
         return moreInnerNames.length == 0
                ? inner(firstInnerName)
-               : ClassRef.ofDescriptor(descriptor.substring(0, descriptor.length() - 1) + "$" + firstInnerName
+               : ClassRef.ofDescriptor(descriptorString().substring(0, descriptorString().length() - 1) + "$" + firstInnerName
                                        + Stream.of(moreInnerNames).collect(joining("$", "$", "")) + ";");
     }
 
@@ -157,8 +133,8 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      *
      * @return whether this {@linkplain ClassRef} describes an array type
      */
-    public boolean isArray() {
-        return descriptor.startsWith("[");
+    default boolean isArray() {
+        return descriptorString().startsWith("[");
     }
 
     /**
@@ -166,8 +142,8 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      *
      * @return whether this {@linkplain ClassRef} describes a primitive type
      */
-    public boolean isPrimitive() {
-        return descriptor.length() == 1;
+    default boolean isPrimitive() {
+        return descriptorString().length() == 1;
     }
 
     /**
@@ -179,28 +155,30 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
      * describe an array type
      */
     @Foldable
-    public ClassRef componentType() {
+    default ClassRef componentType() {
         if (!isArray())
             throw new IllegalStateException();
-        return ClassRef.ofDescriptor(descriptor.substring(1));
+        return ClassRef.ofDescriptor(descriptorString().substring(1));
     }
 
     /**
-     * Returns the canonical name of the type described by this descriptor
+     * Returns a human-readable name for the type described by this descriptor
      *
-     * @return the canonical name of the type described by this descriptor
+     * @return a human-readable name for the type described by this descriptor
      */
-    public String canonicalName() {
-        if (descriptor.length() == 1)
-            return Wrapper.forBasicType(descriptor.charAt(0)).primitiveSimpleName();
-        else if (descriptor.startsWith("L"))
-            return descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
-        else if (descriptor.startsWith(("["))) {
+    default String simpleName() {
+        if (descriptorString().length() == 1)
+            return Wrapper.forBasicType(descriptorString().charAt(0)).primitiveSimpleName();
+        else if (descriptorString().startsWith("L")) {
+            return descriptorString().substring(Math.max(1, descriptorString().lastIndexOf('/') + 1),
+                                                descriptorString().length() - 1);
+        }
+        else if (descriptorString().startsWith(("["))) {
             int depth=arrayDepth();
             ClassRef c = this;
             for (int i=0; i<depth; i++)
                 c = c.componentType();
-            String name = c.canonicalName();
+            String name = c.simpleName();
             StringBuilder sb = new StringBuilder(name.length() + 2*depth);
             sb.append(name);
             for (int i=0; i<depth; i++)
@@ -208,66 +186,20 @@ public class ClassRef implements ConstantRef.WithTypeDescriptor<Class<?>>, Const
             return sb.toString();
         }
         else
-            throw new IllegalStateException(descriptor);
+            throw new IllegalStateException(descriptorString());
     }
 
     private int arrayDepth() {
         int depth = 0;
-        while (descriptor.charAt(depth) == '[')
+        while (descriptorString().charAt(depth) == '[')
             depth++;
         return depth;
     }
 
-    @Override
-    public Class<?> resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        if (isPrimitive()) {
-            return Wrapper.forBasicType(descriptor.charAt(0)).primitiveType();
-        }
-        else {
-            ClassRef c = this;
-            int depth = arrayDepth();
-            for (int i=0; i<depth; i++)
-                c = c.componentType();
-
-            if (c.descriptor.length() == 1)
-                return Class.forName(descriptor, true, lookup.lookupClass().getClassLoader());
-            else {
-                Class<?> clazz = Class.forName(c.descriptor.substring(1, c.descriptor.length() - 1).replace('/', '.'), true, lookup.lookupClass().getClassLoader());
-                for (int i = 0; i < depth; i++)
-                    clazz = Array.newInstance(clazz, 0).getClass();
-                return clazz;
-            }
-        }
-    }
-
-    @Override
+    /**
+     * Return the type descriptor string
+     * @return the type descriptor string
+     */
     @Foldable
-    public String descriptorString() {
-        return descriptor;
-    }
-
-    @Override
-    public Optional<ConstantRef<ConstantRef<Class<?>>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.<ConstantRef<Class<?>>>of(SymbolicRefs.BSM_INVOKE, SymbolicRefs.CR_ClassRef)
-                                   .withArgs(SymbolicRefs.MHR_CLASSREF_FACTORY, descriptor));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ClassRef constant = (ClassRef) o;
-        return Objects.equals(descriptor, constant.descriptor);
-    }
-
-    @Override
-    public int hashCode() {
-        return descriptor != null ? descriptor.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("ClassRef[%s]", canonicalName());
-    }
+    String descriptorString();
 }

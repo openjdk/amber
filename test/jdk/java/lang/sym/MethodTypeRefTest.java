@@ -63,8 +63,8 @@ public class MethodTypeRefTest extends SymbolicRefTest {
     private void testMethodTypeRef(MethodTypeRef r, MethodType mt) throws ReflectiveOperationException {
         testMethodTypeRef(r);
 
-        assertEquals(r.resolveRef(LOOKUP), mt);
-        assertEquals(mt.toSymbolicRef(LOOKUP).get(), r);
+        assertEquals(r.resolveConstantRef(LOOKUP), mt);
+        assertEquals(mt.toConstantRef(LOOKUP).get(), r);
 
         assertEquals(r.descriptorString(), mt.toMethodDescriptorString());
         assertEquals(r.parameterCount(), mt.parameterCount());
@@ -99,7 +99,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
             ClassRef rc = ClassRef.ofDescriptor(r);
             MethodTypeRef newRef = mtRef.changeReturnType(rc);
             assertEquals(newRef, MethodTypeRef.of(rc, paramTypes));
-            testMethodTypeRef(newRef, mt.changeReturnType(rc.resolveRef(LOOKUP)));
+            testMethodTypeRef(newRef, mt.changeReturnType(rc.resolveConstantRef(LOOKUP)));
         }
 
         // changeParamType
@@ -110,7 +110,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
                 ps[i] = pc;
                 MethodTypeRef newRef = mtRef.changeParameterType(i, pc);
                 assertEquals(newRef, MethodTypeRef.of(returnType, ps));
-                testMethodTypeRef(newRef, mt.changeParameterType(i, pc.resolveRef(LOOKUP)));
+                testMethodTypeRef(newRef, mt.changeParameterType(i, pc.resolveConstantRef(LOOKUP)));
             }
         }
 
@@ -135,7 +135,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
                                          .toArray(ClassRef[]::new);
                 MethodTypeRef newRef = mtRef.insertParameterTypes(i, p);
                 assertEquals(newRef, MethodTypeRef.of(returnType, ps));
-                testMethodTypeRef(newRef, mt.insertParameterTypes(i, p.resolveRef(LOOKUP)));
+                testMethodTypeRef(newRef, mt.insertParameterTypes(i, p.resolveConstantRef(LOOKUP)));
             }
         }
     }

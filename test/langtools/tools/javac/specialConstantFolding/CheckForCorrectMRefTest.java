@@ -76,12 +76,12 @@ public class CheckForCorrectMRefTest {
             "    }\n" +
 
             "    public void test2() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, \"strField\", SymbolicRefs.CR_String);\n" +
+            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, \"strField\", ConstantRefs.CR_String);\n" +
             "        Intrinsics.ldc(negIMethodRef);\n" +
             "    }\n" +
 
             "    public void test3() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, \"strField\", SymbolicRefs.CR_String);\n" +
+            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, \"strField\", ConstantRefs.CR_String);\n" +
             "        Intrinsics.ldc(negIMethodRef);\n" +
             "    }\n" +
             "}";

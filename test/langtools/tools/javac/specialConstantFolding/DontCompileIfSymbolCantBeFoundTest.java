@@ -9,7 +9,7 @@ import java.lang.invoke.*;
 import java.lang.sym.ClassRef;
 import java.lang.sym.MethodHandleRef;
 import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.ConstantRefs;
 
 import static java.lang.invoke.Intrinsics.*;
 import static java.lang.sym.MethodHandleRef.Kind.GETTER;
@@ -23,11 +23,11 @@ public class DontCompileIfSymbolCantBeFoundTest {
         final MethodHandle mhStatic = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", "()Ljava/lang/String;"));
         final MethodHandle mhSpecial = ldc(MethodHandleRef.ofSpecial(ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", MethodTypeRef.ofDescriptor("()Ljava/lang/String;"), ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest")));
 
-        final MethodHandle mhStaticSetter = ldc(MethodHandleRef.ofField(STATIC_SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", SymbolicRefs.CR_String));
-        final MethodHandle mhSetter = ldc(MethodHandleRef.ofField(SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", SymbolicRefs.CR_String));
-        final MethodHandle mhGetter = ldc(MethodHandleRef.ofField(GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", SymbolicRefs.CR_String));
-        final MethodHandle mhStaticGetter = ldc(MethodHandleRef.ofField(STATIC_GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", SymbolicRefs.CR_String));
+        final MethodHandle mhStaticSetter = ldc(MethodHandleRef.ofField(STATIC_SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
+        final MethodHandle mhSetter = ldc(MethodHandleRef.ofField(SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
+        final MethodHandle mhGetter = ldc(MethodHandleRef.ofField(GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
+        final MethodHandle mhStaticGetter = ldc(MethodHandleRef.ofField(STATIC_GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
 
-        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleRef.ofConstructor(ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), VOID, SymbolicRefs.CR_String));
+        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleRef.ofConstructor(ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), VOID, ConstantRefs.CR_String));
     }
 }

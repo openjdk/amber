@@ -31,20 +31,26 @@ import java.lang.invoke.VarHandle;
 import java.util.Optional;
 
 /**
- * A type whose instances can describe themselves as a {@link ConstantRef}.
- * {@linkplain Constable} types include those types which have native
- * representation in the constant pool ({@link String}, {@link Integer},
- * {@link Long}, {@link Float}, {@link Double}, {@link Class}, {@link MethodType},
- * and {@link MethodHandle}), runtime support classes such as {@link VarHandle},
- * and types corresponding to core language features ({@link Enum}).
+ * Represents a <em>constable</em> type, whch is one whose values can be
+ * represented in the constant pool of a Java classfile.  Instances of constable
+ * types can describe themselves in symbolic form as a {@link ConstantRef}.
+ * The base constable types are those that have a native representation in
+ * the constant pool: ({@link String}, {@link Integer}, {@link Long}, {@link Float},
+ * {@link Double}, {@link Class}, {@link MethodType}, and {@link MethodHandle}).
+ * An arbitrary reference type can be constable as long as its instances can
+ * describe themselves as symbolic references to dynamically-computed constants
+ * of that type.  Examples in the Java SE Platform API are types that support
+ * Java language features, such as {@link Enum}, and runtime support classes,
+ * such as {@link VarHandle}.
  *
- * <p>The symbolic description is obtained via {@link #toSymbolicRef(MethodHandles.Lookup)}.
- * A {@linkplain Constable} need not be able to render all instances in the form
- * of a {@link ConstantRef}; this method returns {@link Optional} to indicate
- * whether such a description could be created for a particular instance.
- * (For example, {@link MethodHandle} will produce symbolic descriptions for
- * direct methods handles, but not necessarily for method handles resulting from
- * method handle combinators such as {@link MethodHandle#asType(MethodType)}.)
+ * <p>The nominal form is obtained via {@link #toConstantRef(MethodHandles.Lookup)}.
+ * A {@linkplain Constable} need not be able to (or may not choose to) render
+ * all instances in the form of a {@link ConstantRef}; consequently this method
+ * returns an {@link Optional} to indicate whether such a description could be
+ * created for a particular instance. (For example, {@link MethodHandle} will
+ * produce symbolic descriptions for direct methods handles, but not necessarily
+ * for method handles resulting from method handle combinators such as
+ * {@link MethodHandle#asType(MethodType)}.)
  *
  * @param <T> the type of the class implementing {@linkplain Constable}
  */
@@ -53,14 +59,14 @@ public interface Constable<T> {
      * Return a symbolic constant reference for this instance, if one can be
      * constructed.
      *
-     * @implSpec This method behaves as if {@link #toSymbolicRef(MethodHandles.Lookup)}
+     * @implSpec This method behaves as if {@link #toConstantRef(MethodHandles.Lookup)}
      * were called with a lookup parameter of {@code MethodHandles.publicLookup()}.
      *
      * @return An {@link Optional} describing the resulting symbolic reference,
      * or an empty {@link Optional} if one cannot be constructed
      */
-    default Optional<? extends ConstantRef<? super T>> toSymbolicRef() {
-        return toSymbolicRef(MethodHandles.publicLookup());
+    default Optional<? extends ConstantRef<? super T>> toConstantRef() {
+        return toConstantRef(MethodHandles.publicLookup());
     }
 
     /**
@@ -75,5 +81,5 @@ public interface Constable<T> {
      * or an empty {@link Optional} if one cannot be constructed or this object
      * is not accessible from {@code lookup}
      */
-    Optional<? extends ConstantRef<? super T>> toSymbolicRef(MethodHandles.Lookup lookup);
+    Optional<? extends ConstantRef<? super T>> toConstantRef(MethodHandles.Lookup lookup);
 }

@@ -24,41 +24,41 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.Foldable;
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Optional;
 
 /**
- * A {@link SymbolicRef} for an object expressible in a classfile constant pool.
+ * A symbolic reference to a loadable constant value, as defined in JVMS 4.4.
+ * Such a symbolic reference can be stored in the constant pool of a classfile
+ * and resolved to yield the constant value itself.
  *
- * <p>Static constants that can appear natively in the constant pool ({@link String},
+ * <p>Static constants that are expressible natively in the constant pool ({@link String},
  * {@link Integer}, {@link Long}, {@link Float}, and {@link Double}) implement
- * {@link ConstantRef}, serving as symbolic references for themselves.
- * Native linkable constant types ({@link Class}, {@link MethodType}, and
+ * {@link ConstantRef}, serve as symbolic references for themselves.
+ * Native linkable constants ({@link Class}, {@link MethodType}, and
  * {@link MethodHandle}) have counterpart {@linkplain ConstantRef} types:
- * ({@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.)
- * Dynamic constants are represented by {@link DynamicConstantRef}.
- *
- * <p>APIs that perform generation or parsing of bytecode are encouraged to use
- * {@linkplain ConstantRef} to describe the operand of an {@code ldc} instruction
- * (including dynamic constants), the static bootstrap arguments of
- * dynamic constants and {@code invokedynamic} instructions, and any other
- * bytecodes or classfile structures that make use of the constant pool.
- *
- * <p>The {@linkplain ConstantRef} types are also used by {@link Intrinsics}
- * to express {@code ldc} instructions.
+ * {@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.
+ * Other constants are represented by subtypes of {@link DynamicConstantRef}.
  *
  * <p>Non-platform classes should not implement {@linkplain ConstantRef} directly.
  * Instead, they should extend {@link DynamicConstantRef} (as {@link EnumRef}
  * and {@link VarHandleRef} do.)
  *
- * <p>Constants can be reflectively resolved via {@link ConstantRef#resolveRef(MethodHandles.Lookup)}.
+ * <p>Constants can be reflectively resolved via {@link ConstantRef#resolveConstantRef(MethodHandles.Lookup)}.
  *
  * <p>Constants describing various useful symbolic references (such as {@link ClassRef}
- * constants for platform classes) can be found in {@link SymbolicRefs}.
+ * instances for platform classes) can be found in {@link ConstantRefs}.
+ *
+ * <p>APIs that perform generation or parsing of bytecode are encouraged to use
+ * {@linkplain ConstantRef} to describe the operand of an {@code ldc} instruction
+ * (including dynamic constants), the static bootstrap arguments of
+ * dynamic constants and {@code invokedynamic} instructions, and other
+ * bytecodes or classfile structures that make use of the constant pool.
+ *
+ * <p>The {@linkplain ConstantRef} types are also used by {@link Intrinsics}
+ * to express {@code ldc} instructions.
  *
  * <p>Implementations of {@linkplain ConstantRef} must be
  * <a href="../doc-files/ValueBased.html">value-based</a> classes.
@@ -66,15 +66,17 @@ import java.util.Optional;
  * @apiNote In the future, if the Java language permits, {@linkplain ConstantRef}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
  * explicitly permitted types.  Bytecode libraries can assume that the following
- * is an exhaustive set of subtypes: {@link String}, {@link Integer}, {@link Long},
- * {@link Float}, {@link Double}, {@link ClassRef}, {@link MethodTypeRef},
- * {@link MethodHandleRef}, and {@link DynamicConstantRef}.
+ * is an exhaustive set of direct subtypes: {@link String}, {@link Integer},
+ * {@link Long}, {@link Float}, {@link Double}, {@link ClassRef},
+ * {@link MethodTypeRef}, {@link MethodHandleRef}, and {@link DynamicConstantRef}.
+ *
  * @see Constable
  * @see ConstantRef
  * @see Intrinsics
- * @see SymbolicRefs
+ * @see ConstantRefs
+ *
  */
-public interface ConstantRef<T> extends SymbolicRef {
+public interface ConstantRef<T> {
     /**
      * Resolve this reference reflectively, using a {@link MethodHandles.Lookup}
      * to resolve any type names into classes.
@@ -85,60 +87,5 @@ public interface ConstantRef<T> extends SymbolicRef {
      * (directly or indirectly) to a class, method, or field that cannot be
      * resolved
      */
-    T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
-
-    /**
-     * A {@linkplain ConstantRef} which is associated with a type descriptor
-     * string that would be the target of a {@code NameAndType} constant.
-     *
-     * @param <T> The type of the object which this {@linkplain ConstantRef}
-     * describes
-     */
-    interface WithTypeDescriptor<T> extends ConstantRef<T> {
-        /**
-         * Return the descriptor string associated with the object described
-         * by this symbolic reference
-         *
-         * @return the descriptor string
-         */
-        @Foldable
-        String descriptorString();
-    }
-
-    /**
-     * An object that serves as its own symbolic reference.  Only the classes
-     * {@link String}, {@link Integer}, {@link Long}, {@link Float}, and
-     * {@link Double} should implement this interface.
-     *
-     * @param <T> The type of the object which this {@linkplain ConstantRef}
-     * describes
-     */
-    interface OfSelf<T extends ConstantRef.OfSelf<T>>
-            extends ConstantRef<T>, Constable<T> {
-        /**
-         * {@inheritDoc}
-         *
-         * @param lookup ignored
-         * @return the symbolic reference
-         * @implSpec This implementation returns its receiver
-         */
-        @Override
-        @SuppressWarnings("unchecked")
-        default Optional<T> toSymbolicRef(MethodHandles.Lookup lookup) {
-            return Optional.of((T) this);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @param lookup ignored
-         * @return the symbolic reference
-         * @implSpec This implementation returns its receiver
-         */
-        @Override
-        @SuppressWarnings("unchecked")
-        default T resolveRef(MethodHandles.Lookup lookup) {
-            return (T) this;
-        }
-    }
+    T resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 }

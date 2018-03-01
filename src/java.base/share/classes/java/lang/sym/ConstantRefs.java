@@ -32,7 +32,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
-import java.lang.sym.MethodHandleRef.Kind;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -43,11 +42,11 @@ import java.util.Set;
  * for primitive types and common platform types, and method handle references
  * for standard bootstrap methods.
  *
- * @see SymbolicRef
+ * @see ConstantRef
  */
-public final class SymbolicRefs {
+public final class ConstantRefs {
     // No instances
-    private SymbolicRefs() { }
+    private ConstantRefs() { }
 
     // Don't change the order of these declarations!
 
@@ -155,9 +154,9 @@ public final class SymbolicRefs {
     @Foldable
     public static final ClassRef CR_Map = ClassRef.of("java.util.Map");
 
-    /** {@link ClassRef} representing {@link SymbolicRef} */
+    /** {@link ClassRef} representing {@link ConstantRef} */
     @Foldable
-    static final ClassRef CR_SymbolicRef = ClassRef.of("java.lang.sym.SymbolicRef");
+    static final ClassRef CR_ConstantRef = ClassRef.of("java.lang.sym.ConstantRef");
 
     /** {@link ClassRef} representing {@link ClassRef} */
     @Foldable
@@ -198,13 +197,14 @@ public final class SymbolicRefs {
     // Used by MethodHandleRef, but initialized here before reference to
     // MethodHandleRef to avoid static initalization circularities
     static final ClassRef[] INDY_BOOTSTRAP_ARGS = {
-            SymbolicRefs.CR_MethodHandles_Lookup,
-            SymbolicRefs.CR_String,
-            SymbolicRefs.CR_MethodType };
+            ConstantRefs.CR_MethodHandles_Lookup,
+            ConstantRefs.CR_String,
+            ConstantRefs.CR_MethodType };
+
     static final ClassRef[] CONDY_BOOTSTRAP_ARGS = {
-            SymbolicRefs.CR_MethodHandles_Lookup,
-            SymbolicRefs.CR_String,
-            SymbolicRefs.CR_Class };
+            ConstantRefs.CR_MethodHandles_Lookup,
+            ConstantRefs.CR_String,
+            ConstantRefs.CR_Class };
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
     @Foldable
@@ -219,7 +219,7 @@ public final class SymbolicRefs {
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class)} */
     @Foldable
     public static final MethodHandleRef BSM_NULL_CONSTANT
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "nullConstant", SymbolicRefs.CR_Object);
+            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "nullConstant", ConstantRefs.CR_Object);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#fieldVarHandle(Lookup, String, Class, Class, Class)} */
     @Foldable
@@ -279,47 +279,49 @@ public final class SymbolicRefs {
 
     /** Symbolic reference representing the constant {@code null} */
     @Foldable
-    public static final ConstantRef<?> NULL = DynamicConstantRef.of(SymbolicRefs.BSM_NULL_CONSTANT, SymbolicRefs.CR_Object);
+    public static final ConstantRef<?> NULL = DynamicConstantRef.of(ConstantRefs.BSM_NULL_CONSTANT, ConstantRefs.CR_Object);
 
-    /** {@link MethodHandleRef} representing the factory method {@link ClassRef#ofDescriptor(String)} */
-    @Foldable
-    static final MethodHandleRef MHR_CLASSREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_ClassRef, "ofDescriptor", CR_ClassRef, CR_String);
-
-    /** {@link MethodHandleRef} representing the factory method {@link EnumRef#of(MethodHandleRef)} */
-    @Foldable
-    static final MethodHandleRef MHR_ENUMREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_EnumRef, "of", CR_EnumRef, CR_ClassRef, CR_String);
-
-    /** {@link MethodHandleRef} representing the factory method {@link MethodTypeRef#ofDescriptor(String)} */
-    @Foldable
+    // Used by XxxRef classes, but need to be hear to avoid bootstrap cycles
     static final MethodHandleRef MHR_METHODTYPEREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_MethodTypeRef, "ofDescriptor", CR_MethodTypeRef, CR_String);
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodTypeRef, "ofDescriptor", CR_MethodTypeRef, CR_String);
 
-    /** {@link MethodHandleRef} representing the factory method {@link MethodHandleRef#of(Kind, ClassRef, String, MethodTypeRef)} */
-    @Foldable
+    static final MethodHandleRef MHR_CLASSREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_ClassRef, "ofDescriptor", CR_ClassRef, CR_String);
+
     static final MethodHandleRef MHR_METHODHANDLEREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_MethodHandleRef, "of",
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodHandleRef, "of",
                                  CR_MethodHandleRef, CR_MethodHandleRef_Kind, CR_ClassRef, CR_String, CR_MethodTypeRef);
 
-    /** {@link MethodHandleRef} representing the factory method {@link VarHandleRef#ofField(ClassRef, String, ClassRef)} */
-    @Foldable
-    static final MethodHandleRef MHR_VARHANDLEREF_FIELD_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_VarHandleRef, "ofField", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+    static final MethodHandleRef MHR_METHODHANDLE_ASTYPE
+            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandle, "asType", CR_MethodHandle, CR_MethodType);
 
-    /** {@link MethodHandleRef} representing the factory method {@link VarHandleRef#ofStaticField(ClassRef, String, ClassRef)} */
-    @Foldable
-    static final MethodHandleRef MHR_VARHANDLEREF_STATIC_FIELD_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_VarHandleRef, "ofStaticField", CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+    static final MethodHandleRef MHR_METHODHANDLEREF_ASTYPE
+            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandleRef, "asType", CR_MethodHandleRef, CR_MethodTypeRef);
 
-    /** {@link MethodHandleRef} representing the factory method {@link VarHandleRef#ofArray(ClassRef)} */
-    @Foldable
-    static final MethodHandleRef MHR_VARHANDLEREF_ARRAY_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_VarHandleRef, "ofArray", CR_VarHandleRef, CR_ClassRef);
+    static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY_VARARGS
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
+                                 CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_ConstantRef.array());
 
-    /** {@link MethodHandleRef} representing the factory method {@link DynamicConstantRef#of(MethodHandleRef, String, ClassRef, ConstantRef[])} */
-    @Foldable
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
-            = MethodHandleRef.of(Kind.STATIC, CR_DynamicConstantRef, "of",
-                                 CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_SymbolicRef.array());
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
+                                 CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef);
+
+    static final MethodHandleRef MHR_DYNAMICCONSTANTREF_WITHARGS
+            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_DynamicConstantRef, "withArgs",
+                                 CR_DynamicConstantRef, CR_ConstantRef.array());
+
+    static final MethodHandleRef MHR_ENUMREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_EnumRef, "of", CR_EnumRef, CR_ClassRef, CR_String);
+
+    static final MethodHandleRef MHR_VARHANDLEREF_OFFIELD
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofField",
+                                 CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+
+    static final MethodHandleRef MHR_VARHANDLEREF_OFSTATIC
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofStaticField",
+                                 CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
+
+    static final MethodHandleRef MHR_VARHANDLEREF_OFARRAY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofArray",
+                                 CR_VarHandleRef, CR_ClassRef);
 }

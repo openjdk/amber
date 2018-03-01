@@ -56,7 +56,7 @@ public class CondyCodeGenerationTest {
 
     String testNoStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_String, SymbolicRefs.CR_MethodHandles_Lookup, SymbolicRefs.CR_String, SymbolicRefs.CR_Class);
+                ConstantRefs.CR_String, ConstantRefs.CR_MethodHandles_Lookup, ConstantRefs.CR_String, ConstantRefs.CR_Class);
         MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
                                                 "testNoStaticArgsBSM", methodTypeForMethodHandle);
 
@@ -71,22 +71,22 @@ public class CondyCodeGenerationTest {
 
     String testWithStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodHandles_Lookup,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_int,
-                SymbolicRefs.CR_long,
-                SymbolicRefs.CR_float,
-                SymbolicRefs.CR_double,
-                SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodType,
-                SymbolicRefs.CR_MethodHandle);
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodHandles_Lookup,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_Class,
+                ConstantRefs.CR_int,
+                ConstantRefs.CR_long,
+                ConstantRefs.CR_float,
+                ConstantRefs.CR_double,
+                ConstantRefs.CR_Class,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodType,
+                ConstantRefs.CR_MethodHandle);
         MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
                                                 "testWithStaticArgsBSM", methodTypeForMethodHandle);
         DynamicConstantRef<String> condyDescr = DynamicConstantRef.<String>of(mh, "constant-name").withArgs(1, 2L, 3.0f, 4.0d,
-                                                                                                            SymbolicRefs.CR_Number,
+                                                                                                            ConstantRefs.CR_Number,
                                                                                                             "something",
                                                                                                             MethodTypeRef.ofDescriptor("(IJFD)V"),
                                                                                                             mh);
@@ -113,10 +113,10 @@ public class CondyCodeGenerationTest {
 
     String testWithNestedArg() throws Throwable {
         MethodTypeRef c_primitiveClassBSM_MT = MethodTypeRef.of(
-                SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_MethodHandles_Lookup,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Class
+                ConstantRefs.CR_Class,
+                ConstantRefs.CR_MethodHandles_Lookup,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_Class
         );
         MethodHandleRef c_primitiveClassBSM_MH =
                 MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
@@ -124,11 +124,11 @@ public class CondyCodeGenerationTest {
         DynamicConstantRef<Class> c_primitiveClassBSM_CD = DynamicConstantRef.of(c_primitiveClassBSM_MH, "I");
 
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodHandles_Lookup,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_Class
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodHandles_Lookup,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_Class,
+                ConstantRefs.CR_Class
         );
         MethodHandleRef mh = MethodHandleRef.of(STATIC, ClassRef.ofDescriptor("LCondyCodeGenerationTest;"),
                                                 "testWithNestedArgBSM", methodTypeForMethodHandle);

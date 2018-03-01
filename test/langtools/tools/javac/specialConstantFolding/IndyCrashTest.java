@@ -24,8 +24,8 @@ public class IndyCrashTest {
     public void testSimpleIndy() throws Throwable {
         MethodHandleRef bsmMH = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
         MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodType
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodType
         );
         DynamicCallSiteRef bsm = DynamicCallSiteRef.of(bsmMH, "foo", methodTypeForIndy);
         String result = (String)Intrinsics.invokedynamic(bsm, MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));

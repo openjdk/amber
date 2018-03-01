@@ -28,6 +28,9 @@ import java.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
+import static java.lang.sym.ConstantRefs.CR_ClassRef;
+import static java.lang.sym.ConstantRefs.CR_EnumRef;
+import static java.lang.sym.ConstantRefs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,12 +43,12 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
     /**
      * Construct a symbolic reference for the specified enum class and name
      *
-     * @param enumClass the enum class
+     * @param constantType the enum class
      * @param constantName the name of the enum constant
      * @throws NullPointerException if any argument is null
      */
-    private EnumRef(ClassRef enumClass, String constantName) {
-        super(SymbolicRefs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(enumClass));
+    private EnumRef(ClassRef constantType, String constantName) {
+        super(ConstantRefs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(constantType));
     }
 
     /**
@@ -62,41 +65,20 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
         return new EnumRef<>(enumClass, constantName);
     }
 
-    /**
-     * Return the enum class for this symbolic reference
-     * @return the enum class
-     */
-    @Foldable
-    public ClassRef enumClass() {
-        return type();
-    }
-
-    /**
-     * Return the enum constant name for this symbolic reference
-     * @return the enum constant name
-     */
-    @Foldable
-    public String constantName() {
-        return name();
-    }
-
     @Override
     @SuppressWarnings("unchecked")
-    public E resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return Enum.valueOf((Class<E>) enumClass().resolveRef(lookup), constantName());
+    public E resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+        return Enum.valueOf((Class<E>) constantType().resolveConstantRef(lookup), constantName());
     }
 
     @Override
-    public Optional<ConstantRef<ConstantRef<E>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        Optional<ConstantRef<ConstantRef<Class<?>>>> classRefRef = enumClass().toSymbolicRef(lookup);
-        if (!classRefRef.isPresent())
-            return Optional.empty();
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name(), SymbolicRefs.CR_EnumRef,
-                                                 new ConstantRef<?>[] { SymbolicRefs.MHR_ENUMREF_FACTORY, classRefRef.get(), constantName() }));
+    public Optional<? extends ConstantRef<? super ConstantRef<E>>> toConstantRef(MethodHandles.Lookup lookup) {
+        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_ENUMREF_FACTORY, CR_EnumRef,
+                                                  constantType(), constantName());
     }
 
     @Override
     public String toString() {
-        return String.format("EnumRef[%s.%s]", enumClass().canonicalName(), constantName());
+        return String.format("EnumRef[%s.%s]", constantType().simpleName(), constantName());
     }
 }

@@ -4,7 +4,7 @@ import java.lang.invoke.*;
 import java.lang.sym.ClassRef;
 import java.lang.sym.MethodHandleRef;
 import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.ConstantRefs;
 
 import static java.lang.invoke.Intrinsics.*;
 
@@ -72,7 +72,7 @@ public class FindVirtualTest01 extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_invokeVirtual"})
     void test5(FindVirtualTest01 f) throws Throwable {
         MethodHandle mhBar = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LFindVirtualTest01;"), "bar",
-                                                    MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"), SymbolicRefs.CR_int)));
+                                                    MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"), ConstantRefs.CR_int)));
         check(mhBar.invoke(f, 3).toString().equals("invoking method FindVirtualTest01.bar() with argument 3"));
     }
 }

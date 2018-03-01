@@ -33,6 +33,10 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
+import static java.lang.sym.ConstantRefs.CR_ClassRef;
+import static java.lang.sym.ConstantRefs.CR_String;
+import static java.lang.sym.ConstantRefs.CR_VarHandleRef;
+
 /**
  * A symbolic reference for a {@link VarHandle} constant.
  */
@@ -45,9 +49,12 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
      * Kinds of variable handle refs
      */
     private enum Kind {
-        @Foldable FIELD(SymbolicRefs.BSM_VARHANDLE_FIELD, SymbolicRefs.MHR_VARHANDLEREF_FIELD_FACTORY),
-        @Foldable STATIC_FIELD(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD, SymbolicRefs.MHR_VARHANDLEREF_STATIC_FIELD_FACTORY),
-        @Foldable ARRAY(SymbolicRefs.BSM_VARHANDLE_ARRAY, SymbolicRefs.MHR_VARHANDLEREF_ARRAY_FACTORY);
+        @Foldable
+        FIELD(ConstantRefs.BSM_VARHANDLE_FIELD, ConstantRefs.MHR_VARHANDLEREF_OFFIELD),
+        @Foldable
+        STATIC_FIELD(ConstantRefs.BSM_VARHANDLE_STATIC_FIELD, ConstantRefs.MHR_VARHANDLEREF_OFSTATIC),
+        @Foldable
+        ARRAY(ConstantRefs.BSM_VARHANDLE_ARRAY, ConstantRefs.MHR_VARHANDLEREF_OFARRAY);
 
         final MethodHandleRef bootstrapMethod;
         final MethodHandleRef refFactory;
@@ -85,7 +92,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
      */
     private VarHandleRef(Kind kind, String name, ClassRef declaringClass, ClassRef varType) {
         super(kind.bootstrapMethod, name,
-              SymbolicRefs.CR_VarHandle,
+              ConstantRefs.CR_VarHandle,
               kind.toBSMArgs(declaringClass, name, varType).toArray(EMPTY_ARGS));
         this.kind = kind;
         this.declaringClass = declaringClass;
@@ -176,36 +183,34 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
      */
 
     @Override
-    public VarHandle resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public VarHandle resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         switch (kind) {
             case FIELD:
-                return lookup.findVarHandle(declaringClass.resolveRef(lookup),
-                                            name(),
-                                            varType.resolveRef(lookup));
+                return lookup.findVarHandle(declaringClass.resolveConstantRef(lookup),
+                                            constantName(),
+                                            varType.resolveConstantRef(lookup));
             case STATIC_FIELD:
-                return lookup.findStaticVarHandle(declaringClass.resolveRef(lookup),
-                                                  name(),
-                                                  varType.resolveRef(lookup));
+                return lookup.findStaticVarHandle(declaringClass.resolveConstantRef(lookup),
+                                                  constantName(),
+                                                  varType.resolveConstantRef(lookup));
             case ARRAY:
-                return MethodHandles.arrayElementVarHandle(declaringClass.resolveRef(lookup));
+                return MethodHandles.arrayElementVarHandle(declaringClass.resolveConstantRef(lookup));
             default:
                 throw new InternalError("Cannot reach here");
         }
     }
 
     @Override
-    public Optional<ConstantRef<ConstantRef<VarHandle>>> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantRef<ConstantRef<VarHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
         try {
             ArrayList<ConstantRef<?>> args = new ArrayList<>();
-            args.add(kind.refFactory);
-            args.add(declaringClass.toSymbolicRef(lookup).orElseThrow());
+            args.add(declaringClass.toConstantRef(lookup).orElseThrow());
             if (kind != Kind.ARRAY) {
-                args.add(name());
-                args.add(varType.toSymbolicRef(lookup).orElseThrow());
+                args.add(constantName());
+                args.add(varType.toConstantRef(lookup).orElseThrow());
             }
-            return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name(),
-                                                     SymbolicRefs.CR_VarHandleRef,
-                                                     args.toArray(EMPTY_ARGS)));
+            return Optional.of(DynamicConstantRef.ofInvoke(kind.refFactory, CR_VarHandleRef,
+                                                           args.toArray(EMPTY_ARGS)));
         } catch (NoSuchElementException e) {
             return Optional.empty();
         }
@@ -218,9 +223,9 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
             case STATIC_FIELD:
                 return String.format("VarHandleRef[%s%s.%s:%s]",
                                      (kind == Kind.STATIC_FIELD) ? "static " : "",
-                                     declaringClass.canonicalName(), name(), varType.canonicalName());
+                                     declaringClass.simpleName(), constantName(), varType.simpleName());
             case ARRAY:
-                return String.format("VarHandleRef[%s[]]", declaringClass.canonicalName());
+                return String.format("VarHandleRef[%s[]]", declaringClass.simpleName());
             default:
                 throw new InternalError("Cannot reach here");
         }

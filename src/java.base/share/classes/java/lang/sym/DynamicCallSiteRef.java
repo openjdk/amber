@@ -30,15 +30,14 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
-import static java.lang.sym.SymbolicRefs.CR_String;
+import static java.lang.sym.ConstantRefs.CR_String;
 
 /**
  * A symbolic reference for an {@code invokedynamic} call site.
  */
 @SuppressWarnings("rawtypes")
-public final class DynamicCallSiteRef implements SymbolicRef, Constable<DynamicCallSiteRef> {
+public final class DynamicCallSiteRef {
     private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
     private final MethodHandleRef bootstrapMethod;
@@ -221,26 +220,15 @@ public final class DynamicCallSiteRef implements SymbolicRef, Constable<DynamicC
      * @see CallSite#dynamicInvoker()
      */
     public MethodHandle dynamicInvoker(MethodHandles.Lookup lookup) throws Throwable {
-        assert bootstrapMethod.type().parameterType(1).equals(CR_String);
-        MethodHandle bsm = bootstrapMethod.resolveRef(lookup);
+        assert bootstrapMethod.methodType().parameterType(1).equals(CR_String);
+        MethodHandle bsm = bootstrapMethod.resolveConstantRef(lookup);
         Object[] args = new Object[bootstrapArgs.length + 3];
         args[0] = lookup;
         args[1] = name;
-        args[2] = type.resolveRef(lookup);
+        args[2] = type.resolveConstantRef(lookup);
         System.arraycopy(bootstrapArgs, 0, args, 3, bootstrapArgs.length);
         CallSite callSite = (CallSite) bsm.invokeWithArguments(args);
         return callSite.dynamicInvoker();
-    }
-
-    @Override
-    public Optional<? extends ConstantRef<DynamicCallSiteRef>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        ConstantRef<?>[] args = new ConstantRef<?>[bootstrapArgs.length + 4];
-        args[0] = SymbolicRefs.MHR_DYNAMICCONSTANTREF_FACTORY;
-        args[1] = bootstrapMethod;
-        args[2] = name;
-        args[3] = type;
-        System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_DynamicConstantRef, args));
     }
 
     @Override

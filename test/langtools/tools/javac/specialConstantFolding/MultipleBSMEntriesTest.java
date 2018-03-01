@@ -44,7 +44,7 @@ import com.sun.tools.javac.util.Assert;
 public class MultipleBSMEntriesTest {
     // library code starts
     static class MultiplyCallSite extends MutableCallSite {
-        private static final MethodTypeRef TYPE = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/math/BigInteger;"), SymbolicRefs.CR_long, SymbolicRefs.CR_long);
+        private static final MethodTypeRef TYPE = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/math/BigInteger;"), ConstantRefs.CR_long, ConstantRefs.CR_long);
         private static final ClassRef ME = ClassRef.ofDescriptor("LMultipleBSMEntriesTest$MultiplyCallSite;");
 
         private static final MethodHandle FAST = Intrinsics.ldc(
@@ -75,8 +75,8 @@ public class MultipleBSMEntriesTest {
     public static final ClassRef CR_BigInt = ClassRef.ofDescriptor("Ljava/math/BigInteger;");
     public static final MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
             CR_BigInt,
-            SymbolicRefs.CR_long,
-            SymbolicRefs.CR_long
+            ConstantRefs.CR_long,
+            ConstantRefs.CR_long
     );
 
     public static final DynamicCallSiteRef MULT = DynamicCallSiteRef.of(
@@ -84,10 +84,10 @@ public class MultipleBSMEntriesTest {
                     MethodHandleRef.Kind.STATIC,
                     ClassRef.ofDescriptor("LMultipleBSMEntriesTest;"),
                     "multiplyFactory",
-                    SymbolicRefs.CR_CallSite,
-                    SymbolicRefs.CR_MethodHandles_Lookup,
-                    SymbolicRefs.CR_String,
-                    SymbolicRefs.CR_MethodType),
+                    ConstantRefs.CR_CallSite,
+                    ConstantRefs.CR_MethodHandles_Lookup,
+                    ConstantRefs.CR_String,
+                    ConstantRefs.CR_MethodType),
             " ",
             methodTypeForIndy
 

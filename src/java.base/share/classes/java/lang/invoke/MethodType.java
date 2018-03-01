@@ -1171,11 +1171,11 @@ class MethodType implements Constable<MethodType>, java.io.Serializable {
     }
 
     @Override
-    public Optional<MethodTypeRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<MethodTypeRef> toConstantRef(MethodHandles.Lookup lookup) {
         try {
-            return Optional.of(MethodTypeRef.of(returnType().toSymbolicRef(lookup).orElseThrow(),
+            return Optional.of(MethodTypeRef.of(returnType().toConstantRef(lookup).orElseThrow(),
                                                 Stream.of(parameterArray())
-                                                      .map(p -> p.toSymbolicRef(lookup).orElseThrow())
+                                                      .map(p -> p.toConstantRef(lookup).orElseThrow())
                                                       .toArray(ClassRef[]::new)));
         }
         catch (NoSuchElementException e) {

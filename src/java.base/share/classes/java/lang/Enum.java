@@ -207,9 +207,9 @@ public abstract class Enum<E extends Enum<E>>
     }
 
     @Override
-    public Optional<EnumRef<E>> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<EnumRef<E>> toConstantRef(MethodHandles.Lookup lookup) {
         return getDeclaringClass()
-                .toSymbolicRef(lookup)
+                .toConstantRef(lookup)
                 .map(c -> EnumRef.of(c, name));
     }
 

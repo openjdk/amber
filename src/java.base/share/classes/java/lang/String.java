@@ -28,6 +28,8 @@ package java.lang;
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.sym.Constable;
 import java.lang.sym.ConstantRef;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ import java.util.Comparator;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
@@ -122,7 +125,8 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public final class String
-    implements java.io.Serializable, Comparable<String>, CharSequence, ConstantRef.OfSelf<String> {
+    implements java.io.Serializable, Comparable<String>, CharSequence,
+               ConstantRef<String>, Constable<String> {
 
     /**
      * The value is used for character storage.
@@ -3108,4 +3112,29 @@ public final class String
                 "begin " + begin + ", end " + end + ", length " + length);
         }
     }
+
+    /**
+     * Returns a symbolic constant reference for this instance, which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain String} instance
+     */
+    @Override
+    public Optional<ConstantRef<String>> toConstantRef(MethodHandles.Lookup lookup) {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain String} instance
+     */
+    @Override
+    public String resolveConstantRef(MethodHandles.Lookup lookup) {
+        return this;
+    }
+
 }

@@ -1984,7 +1984,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
     }
 
     @Override
-    public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<VarHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
         // partial function for field and array only
         return Optional.empty();
     }

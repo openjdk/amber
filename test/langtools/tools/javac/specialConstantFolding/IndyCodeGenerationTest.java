@@ -49,29 +49,29 @@ public class IndyCodeGenerationTest {
 
     String testWithStaticArgs() throws Throwable {
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_CallSite,
-                SymbolicRefs.CR_MethodHandles_Lookup,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodType,
-                SymbolicRefs.CR_int,
-                SymbolicRefs.CR_long,
-                SymbolicRefs.CR_float,
-                SymbolicRefs.CR_double,
-                SymbolicRefs.CR_Class,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodType,
-                SymbolicRefs.CR_MethodHandle
+                ConstantRefs.CR_CallSite,
+                ConstantRefs.CR_MethodHandles_Lookup,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodType,
+                ConstantRefs.CR_int,
+                ConstantRefs.CR_long,
+                ConstantRefs.CR_float,
+                ConstantRefs.CR_double,
+                ConstantRefs.CR_Class,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodType,
+                ConstantRefs.CR_MethodHandle
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
                                                 "testWithStaticArgsBSM", methodTypeForMethodHandle);
         MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
-                SymbolicRefs.CR_String
+                ConstantRefs.CR_String
         );
         DynamicCallSiteRef bs = DynamicCallSiteRef.of(mh,
                                                       "name",
                                                       methodTypeForIndy,
                                                       1, 2L, 3.0f, 4.0d,
-                                                      SymbolicRefs.CR_int,
+                                                      ConstantRefs.CR_int,
                                                       "something",
                                                       MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
         return (String)invokedynamic(bs);

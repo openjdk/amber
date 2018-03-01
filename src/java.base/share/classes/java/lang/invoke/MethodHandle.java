@@ -1515,15 +1515,15 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     }
 
     @Override
-    public Optional<MethodHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
+    public Optional<MethodHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
         MethodHandleInfo info;
         ClassRef owner;
         String name;
         MethodTypeRef type;
         try {
             info = lookup.revealDirect(this);
-            owner = info.getDeclaringClass().toSymbolicRef(lookup).orElseThrow();
-            type = info.getMethodType().toSymbolicRef(lookup).orElseThrow();
+            owner = info.getDeclaringClass().toConstantRef(lookup).orElseThrow();
+            type = info.getMethodType().toConstantRef(lookup).orElseThrow();
             name = info.getName();
         }
         catch (Exception e) {

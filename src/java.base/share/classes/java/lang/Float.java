@@ -25,7 +25,10 @@
 
 package java.lang;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.sym.Constable;
 import java.lang.sym.ConstantRef;
+import java.util.Optional;
 
 import jdk.internal.math.FloatingDecimal;
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -47,7 +50,8 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Float extends Number implements Comparable<Float>, ConstantRef.OfSelf<Float> {
+public final class Float extends Number
+        implements Comparable<Float>, ConstantRef<Float>, Constable<Float> {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by
@@ -982,6 +986,30 @@ public final class Float extends Number implements Comparable<Float>, ConstantRe
      */
     public static float min(float a, float b) {
         return Math.min(a, b);
+    }
+
+    /**
+     * Returns a symbolic constant reference for this instance, which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Float} instance
+     */
+    @Override
+    public Optional<ConstantRef<Float>> toConstantRef(MethodHandles.Lookup lookup) {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Float} instance
+     */
+    @Override
+    public Float resolveConstantRef(MethodHandles.Lookup lookup) {
+        return this;
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

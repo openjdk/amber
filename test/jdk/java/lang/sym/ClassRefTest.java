@@ -28,7 +28,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.sym.ClassRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.ConstantRefs;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -58,36 +58,36 @@ public class ClassRefTest extends SymbolicRefTest {
         if (!r.descriptorString().equals("V")) {
             assertEquals(r, r.array().componentType());
             // Commutativity: array -> resolve -> componentType -> toSymbolic
-            assertEquals(r, r.array().resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).orElseThrow());
+            assertEquals(r, r.array().resolveConstantRef(LOOKUP).getComponentType().toConstantRef(LOOKUP).orElseThrow());
             // Commutativity: resolve -> array -> toSymbolic -> component type
-            assertEquals(r, Array.newInstance(r.resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).orElseThrow().componentType());
+            assertEquals(r, Array.newInstance(r.resolveConstantRef(LOOKUP), 0).getClass().toConstantRef(LOOKUP).orElseThrow().componentType());
         }
 
         if (r.isArray()) {
             assertEquals(r, r.componentType().array());
-            assertEquals(r, r.resolveRef(LOOKUP).getComponentType().toSymbolicRef(LOOKUP).orElseThrow().array());
-            assertEquals(r, Array.newInstance(r.componentType().resolveRef(LOOKUP), 0).getClass().toSymbolicRef(LOOKUP).orElseThrow());
+            assertEquals(r, r.resolveConstantRef(LOOKUP).getComponentType().toConstantRef(LOOKUP).orElseThrow().array());
+            assertEquals(r, Array.newInstance(r.componentType().resolveConstantRef(LOOKUP), 0).getClass().toConstantRef(LOOKUP).orElseThrow());
         }
     }
 
     private void testClassRef(ClassRef r, Class<?> c) throws ReflectiveOperationException {
         testClassRef(r);
 
-        assertEquals(r.resolveRef(LOOKUP), c);
-        assertEquals(c.toSymbolicRef(LOOKUP).orElseThrow(), r);
+        assertEquals(r.resolveConstantRef(LOOKUP), c);
+        assertEquals(c.toConstantRef(LOOKUP).orElseThrow(), r);
         assertEquals(ClassRef.ofDescriptor(c.toDescriptorString()), r);
     }
 
     public void testSymbolicRefsConstants() throws ReflectiveOperationException {
         int tested = 0;
-        Field[] fields = SymbolicRefs.class.getDeclaredFields();
+        Field[] fields = ConstantRefs.class.getDeclaredFields();
         for (Field f : fields) {
             try {
                 if (f.getType().equals(ClassRef.class)
                     && ((f.getModifiers() & Modifier.STATIC) != 0)
                     && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
                     ClassRef cr = (ClassRef) f.get(null);
-                    Class c = cr.resolveRef(MethodHandles.lookup());
+                    Class c = cr.resolveConstantRef(MethodHandles.lookup());
                     testClassRef(cr, c);
                     ++tested;
                 }
@@ -104,16 +104,16 @@ public class ClassRefTest extends SymbolicRefTest {
         for (Primitives p : Primitives.values()) {
             List<ClassRef> refs = List.of(ClassRef.ofDescriptor(p.descriptor),
                                           p.classRef,
-                                          (ClassRef) p.clazz.toSymbolicRef().orElseThrow());
+                                          (ClassRef) p.clazz.toConstantRef().orElseThrow());
             for (ClassRef c : refs) {
                 testClassRef(c, p.clazz);
                 assertTrue(c.isPrimitive());
                 assertEquals(p.descriptor, c.descriptorString());
-                assertEquals(p.name, c.canonicalName());
+                assertEquals(p.name, c.simpleName());
                 refs.forEach(cc -> assertEquals(c, cc));
                 if (p != Primitives.VOID) {
                     testClassRef(c.array(), p.arrayClass);
-                    assertEquals(c, ((ClassRef) p.arrayClass.toSymbolicRef().orElseThrow()).componentType());
+                    assertEquals(c, ((ClassRef) p.arrayClass.toConstantRef().orElseThrow()).componentType());
                     assertEquals(c, p.classRef.array().componentType());
                 }
             }
@@ -134,13 +134,13 @@ public class ClassRefTest extends SymbolicRefTest {
                                                        ClassRef.of("java.lang", "String"),
                                                        ClassRef.of("java.lang.String"),
                                                        ClassRef.of("java.lang.String").array().componentType(),
-                                                       String.class.toSymbolicRef(LOOKUP).orElseThrow());
+                                                       String.class.toConstantRef(LOOKUP).orElseThrow());
         for (ClassRef r : stringClassRefs) {
             testClassRef(r, String.class);
             assertFalse(r.isPrimitive());
             assertEquals("Ljava/lang/String;", r.descriptorString());
-            assertEquals("java.lang.String", r.canonicalName());
-            assertEquals(r.array().resolveRef(LOOKUP), String[].class);
+            assertEquals("String", r.simpleName());
+            assertEquals(r.array().resolveConstantRef(LOOKUP), String[].class);
             stringClassRefs.forEach(rr -> assertEquals(r, rr));
         }
 
@@ -150,7 +150,7 @@ public class ClassRefTest extends SymbolicRefTest {
         ClassRef thisClassRef = ClassRef.ofDescriptor("LClassRefTest;");
         assertEquals(thisClassRef, ClassRef.of("", "ClassRefTest"));
         assertEquals(thisClassRef, ClassRef.of("ClassRefTest"));
-        assertEquals(thisClassRef.canonicalName(), "ClassRefTest");
+        assertEquals(thisClassRef.simpleName(), "ClassRefTest");
         testClassRef(thisClassRef, ClassRefTest.class);
     }
 
@@ -187,9 +187,9 @@ public class ClassRefTest extends SymbolicRefTest {
 
             assertEquals(a1, ClassRef.ofDescriptor("[" + d));
             assertEquals(a2, ClassRef.ofDescriptor("[[" + d));
-            assertEquals(classToDescriptor(a0.resolveRef(LOOKUP)), a0.descriptorString());
-            assertEquals(classToDescriptor(a1.resolveRef(LOOKUP)), a1.descriptorString());
-            assertEquals(classToDescriptor(a2.resolveRef(LOOKUP)), a2.descriptorString());
+            assertEquals(classToDescriptor(a0.resolveConstantRef(LOOKUP)), a0.descriptorString());
+            assertEquals(classToDescriptor(a1.resolveConstantRef(LOOKUP)), a1.descriptorString());
+            assertEquals(classToDescriptor(a2.resolveConstantRef(LOOKUP)), a2.descriptorString());
         }
     }
 

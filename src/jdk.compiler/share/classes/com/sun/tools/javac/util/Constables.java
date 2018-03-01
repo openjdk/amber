@@ -90,16 +90,18 @@ public class Constables {
         log = Log.instance(context);
         constablesVisitor = ConstablesVisitor.instance(context);
         try {
-            methodHandleRefClass = Class.forName("java.lang.sym.MethodHandleRef", false, null);
+            directMethodHandleRefClass = Class.forName("java.lang.sym.ConstantMethodHandleRef", false, null);
             methodTypeRefClass = Class.forName("java.lang.sym.MethodTypeRef", false, null);
             classRefClass = Class.forName("java.lang.sym.ClassRef", false, null);
             constantRefClass = Class.forName("java.lang.sym.ConstantRef", false, null);
+            constableClass = Class.forName("java.lang.sym.Constable", false, null);
             dynamicCallsiteRefClass = Class.forName("java.lang.sym.DynamicCallSiteRef", false, null);
             dynamicConstantClass = Class.forName("java.lang.sym.DynamicConstantRef", false, null);
-            symRefs = Class.forName("java.lang.sym.SymbolicRefs", false, null);
+            symRefs = Class.forName("java.lang.sym.ConstantRefs", false, null);
         } catch (ClassNotFoundException ex) {
-            methodHandleRefClass = null;
+            directMethodHandleRefClass = null;
             methodTypeRefClass = null;
+            constableClass = null;
             constantRefClass = null;
             classRefClass = null;
             dynamicCallsiteRefClass = null;
@@ -274,7 +276,7 @@ public class Constables {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
                 constantRefClass.isInstance(constant)) {
-                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "toSymbolicRef")).get();
+                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "toConstantRef")).get();
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
                 Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);
@@ -298,13 +300,13 @@ public class Constables {
     }
 
     public Object convertConstant(JCTree tree, Env<AttrContext> attrEnv, Object constant, ModuleSymbol currentModule, boolean bsmArg) {
-        if (methodHandleRefClass.isInstance(constant)) {
-            String name = (String)invokeMethodReflectively(methodHandleRefClass, constant, "name");
-            int refKind = (int)invokeMethodReflectively(methodHandleRefClass, constant, "refKind");
-            Object owner = invokeMethodReflectively(methodHandleRefClass, constant, "owner");
+        if (directMethodHandleRefClass.isInstance(constant)) {
+            String name = (String)invokeMethodReflectively(directMethodHandleRefClass, constant, "methodName");
+            int refKind = (int)invokeMethodReflectively(directMethodHandleRefClass, constant, "refKind");
+            Object owner = invokeMethodReflectively(directMethodHandleRefClass, constant, "owner");
             String ownerDescriptor = (String)invokeMethodReflectively(classRefClass, owner, "descriptorString");
             Type ownerType = descriptorToType(ownerDescriptor, currentModule, false);
-            Object mtConstant = invokeMethodReflectively(methodHandleRefClass, constant, "type");
+            Object mtConstant = invokeMethodReflectively(directMethodHandleRefClass, constant, "methodType");
             String methodTypeDesc = (String)invokeMethodReflectively(methodTypeRefClass, mtConstant, "descriptorString");
             MethodType mType = (MethodType)descriptorToType(methodTypeDesc, currentModule, true);
             // this method generates fake symbols as needed
@@ -353,10 +355,10 @@ public class Constables {
             return type.hasTag(ARRAY) ? type : type.tsym;
         } else if (dynamicConstantClass.isInstance(constant)) {
             Object classRef =
-                    invokeMethodReflectively(dynamicConstantClass, constant, "type");
+                    invokeMethodReflectively(dynamicConstantClass, constant, "constantType");
             String descriptor = (String)invokeMethodReflectively(classRefClass, classRef, "descriptorString");
             Type type = descriptorToType(descriptor, attrEnv.enclClass.sym.packge().modle, false);
-            String name = (String)invokeMethodReflectively(dynamicConstantClass, constant, "name");
+            String name = (String)invokeMethodReflectively(dynamicConstantClass, constant, "constantName");
             Object mh = invokeMethodReflectively(dynamicConstantClass, constant, "bootstrapMethod");
             Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv, mh, currentModule);
             Object[] args = (Object[])invokeMethodReflectively(dynamicConstantClass, constant, "bootstrapArgs");
@@ -422,9 +424,10 @@ public class Constables {
         return result;
     }
 
-    public Class<?> methodHandleRefClass;
+    public Class<?> directMethodHandleRefClass;
     public Class<?> methodTypeRefClass;
     public Class<?> classRefClass;
+    public Class<?> constableClass;
     public Class<?> constantRefClass;
     public Class<?> dynamicCallsiteRefClass;
     public Class<?> dynamicConstantClass;

@@ -31,7 +31,7 @@ import java.lang.sym.ConstantRef;
 import java.lang.sym.EnumRef;
 import java.lang.sym.MethodHandleRef;
 import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.ConstantRefs;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
@@ -74,18 +74,18 @@ public class IntrinsifiedRefTest {
     private static final MethodHandleRef MHR_TESTINTF_PSM = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTINTF, "psm", MethodTypeRef.ofDescriptor("(I)I"));
     private static final MethodHandleRef MHR_TESTSUPER_M_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTSUPERCLASS, "m", "(I)I");
     private static final MethodHandleRef MHR_TESTINTF_M_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTINTF, "m", "(I)I");
-    private static final MethodHandleRef MHR_TESTCLASS_SF_SETTER = MethodHandleRef.ofField(STATIC_SETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTINTF_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTINTF, "sf", SymbolicRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_F_SETTER = MethodHandleRef.ofField(SETTER, CR_TESTCLASS, "f", SymbolicRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_F_GETTER = MethodHandleRef.ofField(GETTER, CR_TESTCLASS, "f", SymbolicRefs.CR_int);
+    private static final MethodHandleRef MHR_TESTCLASS_SF_SETTER = MethodHandleRef.ofField(STATIC_SETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
+    private static final MethodHandleRef MHR_TESTCLASS_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
+    private static final MethodHandleRef MHR_TESTINTF_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTINTF, "sf", ConstantRefs.CR_int);
+    private static final MethodHandleRef MHR_TESTCLASS_F_SETTER = MethodHandleRef.ofField(SETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
+    private static final MethodHandleRef MHR_TESTCLASS_F_GETTER = MethodHandleRef.ofField(GETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
 
 
 
     private static <T extends Constable> void assertIntrinsic(ConstantRef<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
         assertEquals(target, intrinsified);
-        assertEquals(ref.resolveRef(LOOKUP), intrinsified);
-        assertEquals(intrinsified.toSymbolicRef(LOOKUP).orElseThrow(), ref);
+        assertEquals(ref.resolveConstantRef(LOOKUP), intrinsified);
+        assertEquals(intrinsified.toConstantRef(LOOKUP).orElseThrow(), ref);
     }
 
     private static<T extends Constable> void assertIntrinsicFail(ConstantRef<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
@@ -120,10 +120,10 @@ public class IntrinsifiedRefTest {
 
         ClassRef cr6 = ClassRef.ofDescriptor("I");
         assertIntrinsic(cr6, ldc(cr6), int.class);
-        assertIntrinsic(SymbolicRefs.CR_int, ldc(SymbolicRefs.CR_int), int.class);
+        assertIntrinsic(ConstantRefs.CR_int, ldc(ConstantRefs.CR_int), int.class);
 
         ClassRef cr7 = ClassRef.ofDescriptor("[I");
-        ClassRef cr8 = SymbolicRefs.CR_int.array();
+        ClassRef cr8 = ConstantRefs.CR_int.array();
         assertIntrinsic(cr7, ldc(cr7), int[].class);
         assertIntrinsic(cr8, ldc(cr8), int[].class);
     }
@@ -138,17 +138,17 @@ public class IntrinsifiedRefTest {
 
     public void testLdcMethodType() throws ReflectiveOperationException {
         MethodTypeRef mtr1 = MethodTypeRef.ofDescriptor("()V");
-        MethodTypeRef mtr2 = MethodTypeRef.of(SymbolicRefs.CR_void);
+        MethodTypeRef mtr2 = MethodTypeRef.of(ConstantRefs.CR_void);
         assertIntrinsic(mtr1, ldc(mtr1), MethodType.methodType(void.class));
         assertIntrinsic(mtr2, ldc(mtr2), MethodType.methodType(void.class));
 
         MethodTypeRef mtr3 = MethodTypeRef.ofDescriptor("(I)I");
-        MethodTypeRef mtr4 = MethodTypeRef.of(SymbolicRefs.CR_int, SymbolicRefs.CR_int);
+        MethodTypeRef mtr4 = MethodTypeRef.of(ConstantRefs.CR_int, ConstantRefs.CR_int);
         assertIntrinsic(mtr3, ldc(mtr3), MethodType.methodType(int.class, int.class));
         assertIntrinsic(mtr4, ldc(mtr4), MethodType.methodType(int.class, int.class));
 
         MethodTypeRef mtr5 = MethodTypeRef.ofDescriptor("(Ljava/lang/String;)Ljava/lang/String;");
-        MethodTypeRef mtr6 = MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_String);
+        MethodTypeRef mtr6 = MethodTypeRef.of(ConstantRefs.CR_String, ConstantRefs.CR_String);
         assertIntrinsic(mtr5, ldc(mtr5), MethodType.methodType(String.class, String.class));
         assertIntrinsic(mtr6, ldc(mtr6), MethodType.methodType(String.class, String.class));
 
@@ -246,15 +246,15 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(staticMethodAsIntf, () -> ldc(staticMethodAsIntf), IncompatibleClassChangeError.class);
 
         // Field kind mismatch -- instance/static
-        MethodHandleRef staticFieldAsInstance = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", SymbolicRefs.CR_int);
-        MethodHandleRef instanceFieldAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "f", SymbolicRefs.CR_int);
+        MethodHandleRef staticFieldAsInstance = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
+        MethodHandleRef instanceFieldAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
 
         assertIntrinsicFail(staticFieldAsInstance, () -> ldc(staticFieldAsInstance), IncompatibleClassChangeError.class);
         assertIntrinsicFail(instanceFieldAsStatic, () -> ldc(instanceFieldAsStatic), IncompatibleClassChangeError.class);
 
         // Setter for final field
-        MethodHandleRef finalStaticSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", SymbolicRefs.CR_int);
-        MethodHandleRef finalSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", SymbolicRefs.CR_int);
+        MethodHandleRef finalStaticSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", ConstantRefs.CR_int);
+        MethodHandleRef finalSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", ConstantRefs.CR_int);
 
         assertIntrinsicFail(finalStaticSetter, () -> ldc(finalStaticSetter), IllegalAccessError.class);
         assertIntrinsicFail(finalSetter, () -> ldc(finalSetter), IllegalAccessError.class);
@@ -271,10 +271,10 @@ public class IntrinsifiedRefTest {
         MethodHandleRef r3 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "nonexistent", "()V");
         MethodHandleRef r4 = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "nonexistent", "()V");
         MethodHandleRef r5 = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored>", "(I)V");
-        MethodHandleRef r6 = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r7 = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r8 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
-        MethodHandleRef r9 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", SymbolicRefs.CR_int);
+        MethodHandleRef r6 = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
+        MethodHandleRef r7 = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
+        MethodHandleRef r8 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
+        MethodHandleRef r9 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
 
         assertIntrinsicFail(r3, () -> ldc(r3), NoSuchMethodError.class);
         assertIntrinsicFail(r4, () -> ldc(r4), NoSuchMethodError.class);
@@ -286,8 +286,8 @@ public class IntrinsifiedRefTest {
     }
 
     public void testLdcDynamicConstants() throws ReflectiveOperationException {
-        assertNull(ldc(SymbolicRefs.NULL));
-        assertIntrinsic(SymbolicRefs.CR_int, ldc(SymbolicRefs.CR_int), int.class);
+        assertNull(ldc(ConstantRefs.NULL));
+        assertIntrinsic(ConstantRefs.CR_int, ldc(ConstantRefs.CR_int), int.class);
         // @@@ VarHandle
         // @@@ invoke (including multiple deep)
     }

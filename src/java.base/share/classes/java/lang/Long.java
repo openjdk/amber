@@ -26,9 +26,13 @@
 package java.lang;
 
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.sym.Constable;
 import java.lang.sym.ConstantRef;
 import java.math.*;
 import java.util.Objects;
+import java.util.Optional;
+
 import jdk.internal.HotSpotIntrinsicCandidate;
 
 import static java.lang.String.COMPACT_STRINGS;
@@ -57,7 +61,8 @@ import static java.lang.String.UTF16;
  * @author  Joseph D. Darcy
  * @since   1.0
  */
-public final class Long extends Number implements Comparable<Long>, ConstantRef.OfSelf<Long> {
+public final class Long extends Number
+        implements Comparable<Long>, ConstantRef<Long>, Constable<Long> {
     /**
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.
@@ -1971,6 +1976,30 @@ public final class Long extends Number implements Comparable<Long>, ConstantRef.
      */
     public static long min(long a, long b) {
         return Math.min(a, b);
+    }
+
+    /**
+     * Returns a symbolic constant reference for this instance, which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Long} instance
+     */
+    @Override
+    public Optional<ConstantRef<Long>> toConstantRef(MethodHandles.Lookup lookup) {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Long} instance
+     */
+    @Override
+    public Long resolveConstantRef(MethodHandles.Lookup lookup) {
+        return this;
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

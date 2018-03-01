@@ -10,7 +10,7 @@ import java.lang.sym.BootstrapSpecifier;
 import java.lang.sym.ClassRef;
 import java.lang.sym.MethodHandleRef;
 import java.lang.sym.MethodTypeRef;
-import java.lang.sym.SymbolicRefs;
+import java.lang.sym.ConstantRefs;
 
 public class ReportIncorrectMHForIndyTest {
 
@@ -23,12 +23,12 @@ public class ReportIncorrectMHForIndyTest {
     String test(String x, String y) throws Throwable {
         // correct method type
         MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                SymbolicRefs.CR_CallSite,
-                SymbolicRefs.CR_String,  // bad argument must be of type MethodHandles.Lookup
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_MethodType,
-                SymbolicRefs.CR_String,
-                SymbolicRefs.CR_Object.array()
+                ConstantRefs.CR_CallSite,
+                ConstantRefs.CR_String,  // bad argument must be of type MethodHandles.Lookup
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_MethodType,
+                ConstantRefs.CR_String,
+                ConstantRefs.CR_Object.array()
         );
         MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LReportIncorrectMHForIndyTest;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);

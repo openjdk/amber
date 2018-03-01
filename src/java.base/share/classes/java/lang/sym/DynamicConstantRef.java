@@ -26,26 +26,32 @@ package java.lang.sym;
 
 import java.lang.annotation.Foldable;
 import java.lang.invoke.ConstantBootstraps;
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static java.lang.sym.ConstantRefs.CR_ClassRef;
+import static java.lang.sym.ConstantRefs.CR_ConstantRef;
+import static java.lang.sym.ConstantRefs.CR_DynamicConstantRef;
+import static java.lang.sym.ConstantRefs.CR_MethodHandleRef;
+import static java.lang.sym.ConstantRefs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A symbolic reference for a dynamic constant (one described in the constant
  * pool with {@code Constant_Dynamic_info}.)
  *
+ * <p>Concrete subtypes of {@linkplain DynamicConstantRef} must be
+ * <a href="../doc-files/ValueBased.html">value-based</a>.
+ *
  * @param <T> the type of the dynamic constant
  */
-public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<ConstantRef<T>> {
-    private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
-
+public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable<ConstantRef<T>> {
     private final MethodHandleRef bootstrapMethod;
     private final ConstantRef<?>[] bootstrapArgs;
     private final String name;
@@ -53,18 +59,18 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
 
     @SuppressWarnings("rawtypes")
     private static final Map<MethodHandleRef, Function<DynamicConstantRef, ConstantRef<?>>> canonicalMap
-            = Map.ofEntries(Map.entry(SymbolicRefs.BSM_PRIMITIVE_CLASS, d -> ClassRef.ofDescriptor(d.name)),
-                            Map.entry(SymbolicRefs.BSM_ENUM_CONSTANT, d -> EnumRef.of(d.type, d.name)),
-                            Map.entry(SymbolicRefs.BSM_NULL_CONSTANT, d -> SymbolicRefs.NULL),
-                            Map.entry(SymbolicRefs.BSM_VARHANDLE_STATIC_FIELD,
+            = Map.ofEntries(Map.entry(ConstantRefs.BSM_PRIMITIVE_CLASS, d -> ClassRef.ofDescriptor(d.name)),
+                            Map.entry(ConstantRefs.BSM_ENUM_CONSTANT, d -> EnumRef.of(d.type, d.name)),
+                            Map.entry(ConstantRefs.BSM_NULL_CONSTANT, d -> ConstantRefs.NULL),
+                            Map.entry(ConstantRefs.BSM_VARHANDLE_STATIC_FIELD,
                                       d -> VarHandleRef.ofStaticField((ClassRef) d.bootstrapArgs[0],
                                                                       (String) d.bootstrapArgs[1],
                                                                       (ClassRef) d.bootstrapArgs[2])),
-                            Map.entry(SymbolicRefs.BSM_VARHANDLE_FIELD,
+                            Map.entry(ConstantRefs.BSM_VARHANDLE_FIELD,
                                       d -> VarHandleRef.ofField((ClassRef) d.bootstrapArgs[0],
                                                                 (String) d.bootstrapArgs[1],
                                                                 (ClassRef) d.bootstrapArgs[2])),
-                            Map.entry(SymbolicRefs.BSM_VARHANDLE_ARRAY,
+                            Map.entry(ConstantRefs.BSM_VARHANDLE_ARRAY,
                                       d -> VarHandleRef.ofArray((ClassRef) d.bootstrapArgs[0]))
     );
 
@@ -81,7 +87,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
-    protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type, ConstantRef<?>[] bootstrapArgs) {
+    protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type, ConstantRef<?>... bootstrapArgs) {
         this.bootstrapMethod = requireNonNull(bootstrapMethod);
         this.name = requireNonNull(name);
         this.type = requireNonNull(type);
@@ -89,22 +95,6 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
 
         if (name.length() == 0)
             throw new IllegalArgumentException("Illegal invocation name: " + name);
-    }
-
-    /**
-     * Construct a symbolic reference for a dynamic constant, whose bootstrap
-     * takes no static arguments
-     *
-     * @param bootstrapMethod The bootstrap method for the constant
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code LDC} for this constant
-     * @param type The type that would appear in the {@code NameAndType} operand
-     *             of the {@code LDC} for this constant
-     * @throws NullPointerException if any argument is null
-     * @throws IllegalArgumentException if {@code name.length()} is zero
-     */
-    protected DynamicConstantRef(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
-        this(bootstrapMethod, name, type, EMPTY_ARGS);
     }
 
     /**
@@ -118,7 +108,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     @Foldable
     public DynamicConstantRef<T> withArgs(ConstantRef<?>... bootstrapArgs) {
-        return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
+        return new DynamicConstantRefImpl<>(bootstrapMethod, name, type, bootstrapArgs);
     }
 
     /**
@@ -141,7 +131,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     @Foldable
     public static<T> ConstantRef<T> ofCanonical(MethodHandleRef bootstrapMethod, String name, ClassRef type, ConstantRef<?>[] bootstrapArgs) {
-        DynamicConstantRef<T> dcr = new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
+        DynamicConstantRef<T> dcr = new DynamicConstantRefImpl<>(bootstrapMethod, name, type, bootstrapArgs);
         return dcr.canonicalize();
     }
 
@@ -174,7 +164,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type, ConstantRef<?>[] bootstrapArgs) {
-        return new DynamicConstantRef<>(bootstrapMethod, name, type, bootstrapArgs);
+        return new DynamicConstantRefImpl<>(bootstrapMethod, name, type, bootstrapArgs);
     }
 
     /**
@@ -193,7 +183,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name, ClassRef type) {
-        return new DynamicConstantRef<>(bootstrapMethod, name, type);
+        return new DynamicConstantRefImpl<>(bootstrapMethod, name, type);
     }
 
     /**
@@ -228,7 +218,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      */
     @Foldable
     public static<T> DynamicConstantRef<T> of(MethodHandleRef bootstrapMethod, String name) {
-        return of(bootstrapMethod, name, bootstrapMethod.type().returnType());
+        return of(bootstrapMethod, name, bootstrapMethod.methodType().returnType());
     }
 
     /**
@@ -253,7 +243,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      * @return the name
      */
     @Foldable
-    public String name() {
+    public String constantName() {
         return name;
     }
 
@@ -263,7 +253,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
      * @return the type
      */
     @Foldable
-    public ClassRef type() {
+    public ClassRef constantType() {
         return type;
     }
 
@@ -286,7 +276,7 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
             return Stream.of(args)
                     .map(arg -> {
                         try {
-                            return arg.resolveRef(lookup);
+                            return arg.resolveConstantRef(lookup);
                         }
                         catch (ReflectiveOperationException e) {
                             throw new RuntimeException(e);
@@ -305,25 +295,77 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
     }
 
     @SuppressWarnings("unchecked")
-    public T resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return (T) ConstantBootstraps.makeConstant(bootstrapMethod.resolveRef(lookup),
+    public T resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+        return (T) ConstantBootstraps.makeConstant(bootstrapMethod.resolveConstantRef(lookup),
                                                    name,
-                                                   type.resolveRef(lookup),
+                                                   type.resolveConstantRef(lookup),
                                                    resolveArgs(lookup, bootstrapArgs),
                                                    // TODO pass lookup
                                                    lookup.lookupClass());
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<T>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        ConstantRef<?>[] args = new ConstantRef<?>[bootstrapArgs.length + 4];
-        args[0] = SymbolicRefs.MHR_DYNAMICCONSTANTREF_FACTORY;
-        args[1] = bootstrapMethod;
-        args[2] = name;
-        args[3] = type;
-        System.arraycopy(bootstrapArgs, 0, args, 4, bootstrapArgs.length);
-        ConstantRef<ConstantRef<T>> ref = DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, name, SymbolicRefs.CR_DynamicConstantRef, args);
-        return Optional.of(ref);
+    public Optional<? extends ConstantRef<? super ConstantRef<T>>> toConstantRef(MethodHandles.Lookup lookup) {
+        try {
+            ConstantRef<?>[] args = new ConstantRef<?>[bootstrapArgs.length + 1];
+            args[0] = DynamicConstantRef.ofInvoke(ConstantRefs.MHR_DYNAMICCONSTANTREF_FACTORY, CR_DynamicConstantRef,
+                                          bootstrapMethod.toConstantRef().orElseThrow(),
+                                          name, type.toConstantRef().orElseThrow());
+            for (int i=0; i<bootstrapArgs.length; i++)
+                args[i+1] = ((Constable<?>) bootstrapArgs[i]).toConstantRef(lookup).orElseThrow();
+            return Optional.of(DynamicConstantRef.ofInvoke(ConstantRefs.MHR_DYNAMICCONSTANTREF_WITHARGS, CR_DynamicConstantRef, args));
+        }
+        catch (NoSuchElementException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Produce a {@linkplain DynamicConstantRef} describing the invocation of
+     * the specified bootstrap with the specified arguments.
+     *
+     * @param bootstrap symbolic reference for the bootstrap method
+     * @param type symbolic reference for the type of the resulting constant
+     * @param args symbolic references for the bootstrap arguments
+     * @param <T> the type of the resulting constant
+     * @return the dynamic constant reference
+     */
+    protected static<T> DynamicConstantRef<T> ofInvoke(MethodHandleRef bootstrap,
+                                                       ClassRef type,
+                                                       ConstantRef<?>... args) {
+        ConstantRef<?>[] quotedArgs = new ConstantRef<?>[args.length + 1];
+        quotedArgs[0] = bootstrap;
+        System.arraycopy(args, 0, quotedArgs, 1, args.length);
+        return DynamicConstantRef.of(ConstantRefs.BSM_INVOKE, "_", type, quotedArgs);
+    }
+
+    /**
+     * Produce an {@code Optional<DynamicConstantRef<T>>} describing the invocation
+     * of the specified bootstrap with the specified arguments.  The arguments will
+     * be converted to symbolic references using the provided lookup.
+     *
+     * @param lookup A {@link MethodHandles.Lookup} to be used to perform
+     *               access control determinations
+     * @param bootstrap symbolic reference for the bootstrap method
+     * @param type symbolic reference for the type of the resulting constant
+     * @param args symbolic references for the bootstrap arguments
+     * @param <T> the type of the resulting constant
+     * @return the dynamic constant reference
+     */
+    static<T> Optional<DynamicConstantRef<T>> symbolizeHelper(MethodHandles.Lookup lookup,
+                                                              MethodHandleRef bootstrap,
+                                                              ClassRef type,
+                                                              Constable<?>... args) {
+        try {
+            ConstantRef<?>[] quotedArgs = new ConstantRef<?>[args.length + 1];
+            quotedArgs[0] = bootstrap;
+            for (int i=0; i<args.length; i++)
+                quotedArgs[i+1] = args[i].toConstantRef(lookup).orElseThrow();
+            return Optional.of(DynamicConstantRef.of(ConstantRefs.BSM_INVOKE, "_", type, quotedArgs));
+        }
+        catch (NoSuchElementException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -346,7 +388,14 @@ public class DynamicConstantRef<T> implements ConstantRef<T>, Constable<Constant
 
     @Override
     public String toString() {
-        return String.format("CondyRef[%s(%s), NameAndType[%s:%s]]",
-                             bootstrapMethod, Arrays.toString(bootstrapArgs), name, type);
+        // @@@ Too verbose.  Prefer something like DynamicRef[Foo::bootstrap(name/static args)type]
+        return String.format("DynamicConstantRef[%s(%s), NameAndType[%s:%s]]",
+                             bootstrapMethod, Arrays.toString(bootstrapArgs), name, type.simpleName());
+    }
+
+    private static final class DynamicConstantRefImpl<T> extends DynamicConstantRef<T> {
+        public DynamicConstantRefImpl(MethodHandleRef bootstrapMethod, String name, ClassRef type, ConstantRef<?>... bootstrapArgs) {
+            super(bootstrapMethod, name, type, bootstrapArgs);
+        }
     }
 }

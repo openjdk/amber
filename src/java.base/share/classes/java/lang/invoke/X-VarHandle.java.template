@@ -75,9 +75,9 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
-            var receiverTypeRef = receiverType.toSymbolicRef(lookup);
-            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toSymbolicRef(lookup);
+        public Optional<VarHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
+            var receiverTypeRef = receiverType.toConstantRef(lookup);
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toConstantRef(lookup);
             if (!receiverTypeRef.isPresent() || !fieldTypeRef.isPresent())
                 return Optional.empty();
 
@@ -360,14 +360,14 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
-            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toSymbolicRef(lookup);
+        public Optional<VarHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.toConstantRef(lookup);
             if (!fieldTypeRef.isPresent())
                 return Optional.empty();
 
             var staticField = VarHandles.getStaticFieldFromBaseAndOffset(
                 base, fieldOffset, {#if[Object]?fieldType:$type$.class});
-            var receiverTypeRef = staticField.getDeclaringClass().toSymbolicRef(lookup);
+            var receiverTypeRef = staticField.getDeclaringClass().toConstantRef(lookup);
             if (!receiverTypeRef.isPresent())
                 return Optional.empty();
             return Optional.of(VarHandleRef.ofStaticField(receiverTypeRef.get(), staticField.getName(), fieldTypeRef.get()));
@@ -638,8 +638,8 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleRef> toSymbolicRef(MethodHandles.Lookup lookup) {
-            var arrayTypeRef = {#if[Object]?arrayType:$type$[].class}.toSymbolicRef(lookup);
+        public Optional<VarHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
+            var arrayTypeRef = {#if[Object]?arrayType:$type$[].class}.toConstantRef(lookup);
             if (!arrayTypeRef.isPresent())
                 return Optional.empty();
 

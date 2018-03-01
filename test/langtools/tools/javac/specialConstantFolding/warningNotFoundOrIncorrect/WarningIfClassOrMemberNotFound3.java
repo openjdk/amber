@@ -19,12 +19,12 @@ public class WarningIfClassOrMemberNotFound3 {
     }
 
     public void test2() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, "strField", SymbolicRefs.CR_String);
+        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, "strField", ConstantRefs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 
     public void test3() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, "strField", SymbolicRefs.CR_String);
+        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, "strField", ConstantRefs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 }

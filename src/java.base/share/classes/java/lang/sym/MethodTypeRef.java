@@ -41,29 +41,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A symbolic reference for a {@linkplain MethodType} constant.
  */
-public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<MethodType>, Constable<ConstantRef<MethodType>> {
-    private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
-    private static Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
-
-    private final ClassRef returnType;
-    private final ClassRef[] argTypes;
-
-    /**
-     * Construct a {@linkplain MethodTypeRef} with the specified return type
-     * and parameter types
-     *
-     * @param returnType a {@link ClassRef} describing the return type
-     * @param argTypes {@link ClassRef}s describing the parameter types
-     */
-    private MethodTypeRef(ClassRef returnType, ClassRef[] argTypes) {
-        this.returnType = requireNonNull(returnType);
-        this.argTypes = requireNonNull(argTypes);
-
-        for (ClassRef cr : argTypes)
-            if (cr.isPrimitive() && cr.descriptorString().equals("V"))
-                throw new IllegalArgumentException("Void parameters not permitted");
-    }
-
+public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<ConstantRef<MethodType>> {
     /**
      * Create a {@linkplain MethodTypeRef} from a method descriptor string
      *
@@ -73,29 +51,8 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * method descriptor
      */
     @Foldable
-    public static MethodTypeRef ofDescriptor(String descriptor) {
-        // @@@ Replace validation with a lower-overhead mechanism than regex
-        // Follow the trail from MethodType.fromMethodDescriptorString to
-        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
-        // be extracted and/or shared
-        Matcher matcher = pattern.matcher(descriptor);
-        if (!matcher.matches())
-            throw new IllegalArgumentException(String.format("%s is not a valid method descriptor", descriptor));
-        String paramTypes = matcher.group(1);
-        String returnType = matcher.group(2);
-        if (!TYPE_DESC.matcher(returnType).matches())
-            throw new IllegalArgumentException(String.format("Invalid return type %s", returnType));
-        List<String> params = new ArrayList<>();
-        matcher = TYPE_DESC.matcher(paramTypes);
-        while (matcher.regionStart() < paramTypes.length()) {
-            if (matcher.lookingAt()) {
-                params.add(matcher.group());
-                matcher.region(matcher.end(), matcher.regionEnd());
-            }
-            else
-                throw new IllegalArgumentException(String.format("Invalid parameter type: %s", paramTypes.substring(matcher.regionStart(), matcher.regionEnd())));
-        }
-        return new MethodTypeRef(ClassRef.ofDescriptor(returnType), params.stream().map(ClassRef::ofDescriptor).toArray(ClassRef[]::new));
+    static MethodTypeRef ofDescriptor(String descriptor) {
+        return ConstantMethodTypeRef.ofDescriptor(descriptor);
     }
 
     /**
@@ -107,8 +64,8 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return a {@linkplain MethodTypeRef} describing the desired method type
      */
     @Foldable
-    public static MethodTypeRef of(ClassRef returnDescriptor, ClassRef... paramDescriptors) {
-        return new MethodTypeRef(returnDescriptor, paramDescriptors);
+    static MethodTypeRef of(ClassRef returnDescriptor, ClassRef... paramDescriptors) {
+        return new ConstantMethodTypeRef(returnDescriptor, paramDescriptors);
     }
 
     /**
@@ -116,9 +73,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return the return type
      */
     @Foldable
-    public ClassRef returnType() {
-        return returnType;
-    }
+    ClassRef returnType();
 
     /**
      * Get the number of parameters of the method type described by
@@ -126,9 +81,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return the number of parameters
      */
     @Foldable
-    public int parameterCount() {
-        return argTypes.length;
-    }
+    int parameterCount();
 
     /**
      * Get the parameter type of the {@code index}'th parameter of the method type
@@ -140,27 +93,21 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * range {[0, parameterCount())}
      */
     @Foldable
-    public ClassRef parameterType(int index) {
-        return argTypes[index];
-    }
+    ClassRef parameterType(int index);
 
     /**
      * Get the parameter types as a {@link List}
      *
      * @return the parameter types
      */
-    public List<ClassRef> parameterList() {
-        return List.of(argTypes);
-    }
+    List<ClassRef> parameterList();
 
     /**
      * Get the parameter types as an array
      *
      * @return the parameter types
      */
-    public ClassRef[] parameterArray() {
-        return argTypes.clone();
-    }
+    ClassRef[] parameterArray();
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to
@@ -170,9 +117,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * @return the new method type descriptor
      */
     @Foldable
-    public MethodTypeRef changeReturnType(ClassRef returnType) {
-        return of(returnType, argTypes);
-    }
+    MethodTypeRef changeReturnType(ClassRef returnType);
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
@@ -186,11 +131,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * range {[0, parameterCount)}
      */
     @Foldable
-    public MethodTypeRef changeParameterType(int index, ClassRef paramType) {
-        ClassRef[] newArgs = argTypes.clone();
-        newArgs[index] = paramType;
-        return of(returnType, newArgs);
-    }
+    MethodTypeRef changeParameterType(int index, ClassRef paramType);
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
@@ -204,16 +145,7 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * {@code [0, parameterCount]}
      */
     @Foldable
-    public MethodTypeRef dropParameterTypes(int start, int end) {
-        if (start < 0 || start >= argTypes.length || end < 0 || end > argTypes.length)
-            throw new IndexOutOfBoundsException();
-        else if (start > end)
-            throw new IllegalArgumentException(String.format("Range (%d, %d) not valid for size %d", start, end, argTypes.length));
-        ClassRef[] newArgs = new ClassRef[argTypes.length - (end - start)];
-        System.arraycopy(argTypes, 0, newArgs, 0, start);
-        System.arraycopy(argTypes, end, newArgs, start, argTypes.length - end);
-        return of(returnType, newArgs);
-    }
+    MethodTypeRef dropParameterTypes(int start, int end);
 
     /**
      * Return a {@linkplain MethodTypeRef} that is identical to this one,
@@ -226,33 +158,18 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * range {[0, parameterCount]}
      */
     @Foldable
-    public MethodTypeRef insertParameterTypes(int pos, ClassRef... paramTypes) {
-        if (pos < 0 || pos > argTypes.length)
-            throw new IndexOutOfBoundsException(pos);
-        ClassRef[] newArgs = new ClassRef[argTypes.length + paramTypes.length];
-        System.arraycopy(argTypes, 0, newArgs, 0, pos);
-        System.arraycopy(paramTypes, 0, newArgs, pos, paramTypes.length);
-        System.arraycopy(argTypes, pos, newArgs, pos+paramTypes.length, argTypes.length - pos);
-        return of(returnType, newArgs);
-    }
+    MethodTypeRef insertParameterTypes(int pos, ClassRef... paramTypes);
 
-    public MethodType resolveRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
-    }
-
-    @Override
-    public Optional<ConstantRef<ConstantRef<MethodType>>> toSymbolicRef(MethodHandles.Lookup lookup) {
-        ConstantRef<?>[] args = new ConstantRef<?>[] { SymbolicRefs.MHR_METHODTYPEREF_FACTORY, descriptorString() };
-        return Optional.of(DynamicConstantRef.of(SymbolicRefs.BSM_INVOKE, "_", SymbolicRefs.CR_MethodTypeRef, args));
-    }
-
-    @Override
-    public String descriptorString() {
+    /**
+     * Return the method type descriptor string
+     * @return the method type descriptor string
+     */
+    default String descriptorString() {
         return String.format("(%s)%s",
-                             Stream.of(argTypes)
+                             Stream.of(parameterArray())
                                    .map(ClassRef::descriptorString)
                                    .collect(Collectors.joining()),
-                             returnType.descriptorString());
+                             returnType().descriptorString());
     }
 
     /**
@@ -260,35 +177,11 @@ public final class MethodTypeRef implements ConstantRef.WithTypeDescriptor<Metho
      * canonical names for parameter and return types
      * @return the human-readable descriptor for this method type
      */
-    public String canonicalDescriptor() {
+    default String simpleDescriptor() {
         return String.format("(%s)%s",
-                             Stream.of(argTypes)
-                                   .map(ClassRef::canonicalName)
-                                   .collect(Collectors.joining()),
-                             returnType.canonicalName());
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        MethodTypeRef constant = (MethodTypeRef) o;
-
-        return returnType.equals(constant.returnType)
-               && Arrays.equals(argTypes, constant.argTypes);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = returnType.hashCode();
-        result = 31 * result + Arrays.hashCode(argTypes);
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("MethodTypeRef[%s]", canonicalDescriptor());
+                             Stream.of(parameterArray())
+                                   .map(ClassRef::simpleName)
+                                   .collect(Collectors.joining(",")),
+                             returnType().simpleName());
     }
 }

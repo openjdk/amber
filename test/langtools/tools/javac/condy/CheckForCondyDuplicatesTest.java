@@ -36,6 +36,7 @@
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.lang.sym.*;
 
 import com.sun.tools.classfile.ClassFile;
 import com.sun.tools.classfile.ConstantPool.*;
@@ -52,8 +53,8 @@ public class CheckForCondyDuplicatesTest {
 
         "public class MultipleEntriesCP {\n" +
         "    void m() {\n" +
-        "        Object o1 = Intrinsics.ldc(SymbolicRefs.NULL);\n" +
-        "        Object o2 = Intrinsics.ldc(SymbolicRefs.NULL);\n" +
+        "        Object o1 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
+        "        Object o2 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
         "    }\n" +
         "}";
 

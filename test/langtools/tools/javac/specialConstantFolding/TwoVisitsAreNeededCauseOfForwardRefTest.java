@@ -35,7 +35,7 @@ import java.lang.sym.*;
 public class TwoVisitsAreNeededCauseOfForwardRefTest {
     static class Inner {
         private static final MethodTypeRef TYPE = MethodTypeRef.of(ClassRef_BigInt,
-                SymbolicRefs.CR_long, SymbolicRefs.CR_long);
+                                                                   ConstantRefs.CR_long, ConstantRefs.CR_long);
         private static final ClassRef ME = ClassRef.ofDescriptor("LTwoVisitsAreNeededCauseOfForwardRefTest$Inner;");
 
         private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleRef.of(

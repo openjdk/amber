@@ -123,33 +123,33 @@ public class IntrinsicsTest {
     }
 
     public void testMethodTypeCombinators() {
-        MethodTypeRef mtc = MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_int);
+        MethodTypeRef mtc = MethodTypeRef.of(ConstantRefs.CR_String, ConstantRefs.CR_int);
         assertEquals(String.class, Intrinsics.ldc(mtc.returnType()));
         assertEquals(int.class, Intrinsics.ldc(mtc.parameterType(0)));
         assertEquals(String.class, Intrinsics.ldc(mtc.returnType()));
         assertEquals(MethodType.methodType(long.class, int.class),
-                     Intrinsics.ldc(mtc.changeReturnType(SymbolicRefs.CR_long)));
+                     Intrinsics.ldc(mtc.changeReturnType(ConstantRefs.CR_long)));
     }
 
     public void testMethodHandleCombinators() {
-        MethodHandleRef mhc = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, SymbolicRefs.CR_String, "valueOf",
-                                                 MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_Object));
+        MethodHandleRef mhc = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ConstantRefs.CR_String, "valueOf",
+                                                 MethodTypeRef.of(ConstantRefs.CR_String, ConstantRefs.CR_Object));
         assertEquals(MethodType.methodType(String.class, Object.class),
-                     Intrinsics.ldc(mhc.type()));
-        assertEquals(String.class, Intrinsics.ldc(mhc.type().returnType()));
-        assertEquals(String.class, Intrinsics.ldc(ClassRef.ofDescriptor(mhc.type().returnType().descriptorString())));
+                     Intrinsics.ldc(mhc.methodType()));
+        assertEquals(String.class, Intrinsics.ldc(mhc.methodType().returnType()));
+        assertEquals(String.class, Intrinsics.ldc(ClassRef.ofDescriptor(mhc.methodType().returnType().descriptorString())));
     }
 
     public void testInterfaceSpecial() throws Throwable {
-        MethodHandleRef mhr = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, SymbolicRefs.CR_List, "of",
-                                                 MethodTypeRef.of(SymbolicRefs.CR_List, SymbolicRefs.CR_Object.array()));
+        MethodHandleRef mhr = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ConstantRefs.CR_List, "of",
+                                                 MethodTypeRef.of(ConstantRefs.CR_List, ConstantRefs.CR_Object.array()));
         MethodHandle mh = Intrinsics.ldc(mhr);
         assertEquals(List.of("a", "b"), (List<String>) mh.invoke("a", "b"));
     }
 
     public void testSimpleIndy() throws Throwable {
-        final MethodTypeRef Str_MT = MethodTypeRef.of(SymbolicRefs.CR_String);
-        MethodHandleRef simpleBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "simpleBSM", SymbolicRefs.CR_CallSite);
+        final MethodTypeRef Str_MT = MethodTypeRef.of(ConstantRefs.CR_String);
+        MethodHandleRef simpleBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "simpleBSM", ConstantRefs.CR_CallSite);
         DynamicCallSiteRef bsm = DynamicCallSiteRef.of(simpleBSM, "foo", Str_MT);
         String result = (String) Intrinsics.invokedynamic(bsm);
         assertEquals("foo", result);
@@ -157,20 +157,20 @@ public class IntrinsicsTest {
         DynamicCallSiteRef bsm2 = DynamicCallSiteRef.of(simpleBSM, "bar", Str_MT);
         assertEquals("bar", (String) Intrinsics.invokedynamic(bsm2));
 
-        MethodHandleRef staticArgBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "staticArgBSM", SymbolicRefs.CR_CallSite, SymbolicRefs.CR_String);
+        MethodHandleRef staticArgBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "staticArgBSM", ConstantRefs.CR_CallSite, ConstantRefs.CR_String);
         DynamicCallSiteRef bsm3 = DynamicCallSiteRef.of(staticArgBSM, "ignored", Str_MT, "bark");
         assertEquals("bark", (String) Intrinsics.invokedynamic(bsm3));
 
-        final MethodTypeRef Str_Str_MT = MethodTypeRef.of(SymbolicRefs.CR_String, SymbolicRefs.CR_String);
-        MethodHandleRef dynArgBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "dynArgBSM", SymbolicRefs.CR_CallSite, SymbolicRefs.CR_String);
+        final MethodTypeRef Str_Str_MT = MethodTypeRef.of(ConstantRefs.CR_String, ConstantRefs.CR_String);
+        MethodHandleRef dynArgBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "dynArgBSM", ConstantRefs.CR_CallSite, ConstantRefs.CR_String);
         DynamicCallSiteRef bsm4 = DynamicCallSiteRef.of(dynArgBSM, "ignored", Str_Str_MT, "bargle");
         assertEquals("barglefoo", (String) Intrinsics.invokedynamic(bsm4, "foo"));
         assertEquals("barglebar", (String) Intrinsics.invokedynamic(bsm4, "bar"));
     }
 
     public void testStatefulBSM() throws Throwable {
-        final MethodTypeRef Int_MT = MethodTypeRef.of(SymbolicRefs.CR_int);
-        MethodHandleRef statefulBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "statefulBSM", SymbolicRefs.CR_CallSite);
+        final MethodTypeRef Int_MT = MethodTypeRef.of(ConstantRefs.CR_int);
+        MethodHandleRef statefulBSM = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "statefulBSM", ConstantRefs.CR_CallSite);
         DynamicCallSiteRef bsm = DynamicCallSiteRef.of(statefulBSM, "ignored", Int_MT);
         for (int i=0; i<10; i++) {
             assertEquals(i, (int) Intrinsics.invokedynamic(bsm));
@@ -178,18 +178,18 @@ public class IntrinsicsTest {
     }
 
     public void testCondyInIndy() throws Throwable {
-        final MethodTypeRef Class_MT = MethodTypeRef.of(SymbolicRefs.CR_Class);
+        final MethodTypeRef Class_MT = MethodTypeRef.of(ConstantRefs.CR_Class);
         MethodHandleRef bsm = MethodHandleRef.ofDynamicCallsite(HELPER_CLASS, "staticArgBSM",
-                                                                SymbolicRefs.CR_CallSite, SymbolicRefs.CR_Class);
-        assertEquals(String.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteRef.of(bsm, "ignored", Class_MT, SymbolicRefs.CR_String)));
-        assertEquals(int.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteRef.of(bsm, "ignored", Class_MT, SymbolicRefs.CR_int)));
+                                                                ConstantRefs.CR_CallSite, ConstantRefs.CR_Class);
+        assertEquals(String.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteRef.of(bsm, "ignored", Class_MT, ConstantRefs.CR_String)));
+        assertEquals(int.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteRef.of(bsm, "ignored", Class_MT, ConstantRefs.CR_int)));
     }
 
     public void testCondyInCondy() throws Throwable {
-        MethodHandleRef bsm = MethodHandleRef.ofDynamicConstant(HELPER_CLASS, "identityCondy", SymbolicRefs.CR_Object, SymbolicRefs.CR_Object);
-        assertEquals(String.class, Intrinsics.ldc(DynamicConstantRef.of(bsm, SymbolicRefs.CR_Class).withArgs(SymbolicRefs.CR_String)));
-        assertEquals(String.class, Intrinsics.ldc(DynamicConstantRef.of(bsm).withArgs(SymbolicRefs.CR_String)));
-        assertEquals(int.class, Intrinsics.ldc(DynamicConstantRef.of(bsm).withArgs(SymbolicRefs.CR_int)));
+        MethodHandleRef bsm = MethodHandleRef.ofDynamicConstant(HELPER_CLASS, "identityCondy", ConstantRefs.CR_Object, ConstantRefs.CR_Object);
+        assertEquals(String.class, Intrinsics.ldc(DynamicConstantRef.of(bsm, ConstantRefs.CR_Class).withArgs(ConstantRefs.CR_String)));
+        assertEquals(String.class, Intrinsics.ldc(DynamicConstantRef.of(bsm).withArgs(ConstantRefs.CR_String)));
+        assertEquals(int.class, Intrinsics.ldc(DynamicConstantRef.of(bsm).withArgs(ConstantRefs.CR_int)));
         assertEquals("foo", Intrinsics.ldc(DynamicConstantRef.of(bsm).withArgs("foo")));
     }
 

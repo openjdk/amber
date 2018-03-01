@@ -23,7 +23,7 @@ class WarningIfMemberIncorrect {
 
         // warn: wrong kind to refer to a constructor
         MethodHandle mhConstructor = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LWarningIfMemberIncorrect;"), "<init>",
-                                                                             MethodTypeRef.of(SymbolicRefs.CR_void)));
+                                                                             MethodTypeRef.of(ConstantRefs.CR_void)));
 
         MethodHandle mh3 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LWarningIfMemberIncorrect$I;"), "foo", mtReturnString));
     }

@@ -13,7 +13,7 @@ public class LDCNegativeTest {
 
     public String x() { return ""; }
     public ClassRef c() { return null; }
-    public ClassRef d = SymbolicRefs.CR_int;
+    public ClassRef d = ConstantRefs.CR_int;
 
     void foo() {
         // all these fail
