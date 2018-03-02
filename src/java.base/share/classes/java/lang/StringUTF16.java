@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Spliterator;
@@ -818,52 +819,76 @@ final class StringUTF16 {
     }
 
     public static int skipLeadingSpaces(byte[] value) {
+        int length = value.length >> 1;
         int left = 0;
-        while ((left < value.length) &&
-                (value[left + 1] == 0) &&
-                ((value[left] & 0xff) <= ' ')) {
-            left += 2;
+        while (left < length && getChar(value, left) <= ' ') {
+            left++;
         }
         return left;
     }
 
     public static int skipTrailingSpaces(byte[] value) {
-        int right = value.length;
-        while ((0 < right) &&
-                (value[right - 1] == 0) &&
-                ((value[right - 2] & 0xff) <= ' ')) {
-            right -= 2;
+        int length = value.length >> 1;
+        int right = length;
+        while (0 < right && getChar(value, right - 1) <= ' ') {
+            right--;
         }
         return right;
     }
 
     public static String trim(byte[] value) {
+        int length = value.length >> 1;
         int left = skipLeadingSpaces(value);
-        if (left == value.length) {
+        if (left == length) {
             return "";
         }
         int right = skipTrailingSpaces(value);
-        return ((left > 0) || (right < value.length)) ?
-                new String(Arrays.copyOfRange(value, left, right), UTF16) : null;
+        return ((left > 0) || (right < length)) ?
+               new String(Arrays.copyOfRange(value, left << 1, right << 1), UTF16) : null;
     }
 
     public static String trimLeft(byte[] value) {
+        int length = value.length >> 1;
         int left = skipLeadingSpaces(value);
-        if (left == value.length) {
+        if (left == length) {
             return "";
         }
         return (left != 0) ?
-                new String(Arrays.copyOfRange(value, left, value.length), UTF16) :
+                new String(Arrays.copyOfRange(value, left << 1, value.length), UTF16) :
                 null;
     }
 
     public static String trimRight(byte[] value) {
+        int length = value.length >> 1;
         int right = skipTrailingSpaces(value);
         if (right == 0) {
             return "";
         }
-        return (right != value.length) ?
-                new String(Arrays.copyOfRange(value, 0, right), UTF16) : null;
+        return (right != length) ?
+                new String(Arrays.copyOfRange(value, 0, right << 1), UTF16) : null;
+    }
+
+    static String[] lines(byte[] value) {
+        ArrayList<String> list = new ArrayList<>();
+        int length = value.length >> 1;
+        int start = 0;
+        for (int i = 0; i < length; i++) {
+            char ch = getChar(value, i);
+            if (ch != '\n' && ch != '\r') {
+                continue;
+            }
+            int end = i;
+            if (ch == '\r') {
+                int j = i + 1;
+                if (j != length && getChar(value, j) =='\n') {
+                    i = j;
+                }
+            }
+            list.add(newString(value, start, end - start));
+            start = i + 1;
+        }
+        list.add(newString(value, start, length - start));
+        return list.toArray(new String[list.size()]);
     }
 
     private static void putChars(byte[] val, int index, char[] str, int off, int end) {

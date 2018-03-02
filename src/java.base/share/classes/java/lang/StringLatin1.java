@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
@@ -550,6 +551,29 @@ final class StringLatin1 {
         }
         return (right != value.length) ?
                 newString(value, 0, right) : null;
+    }
+
+    static String[] lines(byte[] value) {
+        ArrayList<String> list = new ArrayList<>();
+        int length = value.length;
+        int start = 0;
+        for (int i = 0; i < length; i++) {
+            byte ch = value[i];
+            if (ch != '\n' && ch != '\r') {
+                continue;
+            }
+            int end = i;
+            if (ch == '\r') {
+                int j = i + 1;
+                if (j != length && value[j] =='\n') {
+                    i = j;
+                }
+            }
+            list.add(newString(value, start, end - start));
+            start = i + 1;
+        }
+        list.add(newString(value, start, length - start));
+        return list.toArray(new String[list.size()]);
     }
 
     public static void putChar(byte[] val, int index, int c) {

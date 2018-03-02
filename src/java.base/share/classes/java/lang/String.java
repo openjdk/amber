@@ -37,7 +37,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.StringJoiner;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
@@ -1779,7 +1778,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgt         the characters being searched for.
+     * @param   tgtStr      the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,
@@ -2599,8 +2598,8 @@ public final class String
     }
 
     /**
-     * Returns a string whose value is this string, with any leading and trailing
-     * whitespace removed.
+     * Returns a string whose value is this string, with all leading
+     * and trailing white space removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first and last characters of character sequence
@@ -2622,12 +2621,12 @@ public final class String
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim whitespace (as defined above) from
+     * This method may be used to trim white space (as defined above) from
      * the beginning and end of a string.
      *
-     * @return  A string whose value is this string, with any leading and trailing white
-     *          space removed, or this string if it has no leading or
-     *          trailing white space.
+     * @return  a string whose value is this string, with all leading
+     *          and trailing white space removed, or this string if it
+     *          has no leading or trailing white space.
      */
     public String trim() {
         String ret = isLatin1() ? StringLatin1.trim(value)
@@ -2636,8 +2635,8 @@ public final class String
     }
 
     /**
-     * Returns a string whose value is this string, with any leading
-     * whitespace removed.
+     * Returns a string whose value is this string, with all leading
+     * white space removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first characters of character sequence
@@ -2658,12 +2657,12 @@ public final class String
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim whitespace (as defined above) from
+     * This method may be used to trim white space (as defined above) from
      * the beginning of a string.
      *
-     * @return  A string whose value is this string, with any leading white
+     * @return  a string whose value is this string, with all leading white
      *          space removed, or this string if it has no leading white space.
-     * @since 10
+     * @since 11
      */
     public String trimLeft() {
         String ret = isLatin1() ? StringLatin1.trimLeft(value)
@@ -2672,8 +2671,8 @@ public final class String
     }
 
     /**
-     * Returns a string whose value is this string, with any trailing
-     * whitespace removed.
+     * Returns a string whose value is this string, with all trailing
+     * white space removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the last characters of character sequence
@@ -2695,13 +2694,13 @@ public final class String
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim whitespace (as defined above) from
+     * This method may be used to trim white space (as defined above) from
      * the end of a string.
      *
-     * @return  A string whose value is this string, with any trailing white
+     * @return  a string whose value is this string, with all trailing white
      *          space removed, or this string if it has no
      *          trailing white space.
-     * @since 10
+     * @since 11
      */
     public String trimRight() {
         String ret = isLatin1() ? StringLatin1.trimRight(value)
@@ -2709,69 +2708,65 @@ public final class String
         return ret == null ? this : ret;
     }
 
-    private int skipLeadingSpaces() {
-        if (isLatin1()) {
-            return StringLatin1.skipLeadingSpaces(value);
-        } else {
-            return StringUTF16.skipLeadingSpaces(value) >> 1;
-        }
-    }
-
-    private String trimJoin(String[] lines) {
-        int length = lines.length;
-        StringBuilder sb = new StringBuilder(length());
-        int first = lines[0].isEmpty() ? 1 : 0;
-        int last = lines[length - 1].isEmpty() ? length - 1 : length;
-        for (int i = first; i < last; i++) {
-            if (i != first) {
-                sb.append('\n');
-            }
-            sb.append(lines[i]);
-        }
-        return sb.toString();
+    /**
+     * Splits this string at line separators into a String array.
+     * <p>
+     * The array returned by this method contains each line of this
+     * string that is terminated by a line separator or end of
+     * string. The lines in the array are in the order in which
+     * they occur in this string and do not include the line
+     * separator.
+     * <p>
+     * Line separators recognized are {@code "\n", "\r\n"}
+     * and {@code "\r"}.
+     *
+     * @return  the array of strings computed by splitting this
+     *          string at line separators
+     * @since 11
+     */
+    public String[] lines() {
+        return isLatin1() ? StringLatin1.lines(value)
+                          : StringUTF16.lines(value);
     }
 
     /**
-     * When applied to multi-line strings, removes trailing spaces
+     * Replaces line separators in the string with the
+     * system-dependent line separator returned by
+     * {@code System.lineSeparator()}
+     * <p>
+     * Line separators recognized are {@code "\n", "\r\n"}
+     * and {@code "\r"}.
+     *
+     * @return  a copy of this string with line separators
+     *          replaced with the system-dependent line separator
+     * @since 11
+     */
+    public String useLineSeparator() {
+        return join(System.lineSeparator(), lines());
+    }
+
+    /**
+     * When applied to multi-line strings, determines the
+     * minimal number of leading white spaces of each line
+     * and then removes that minimum number of characters
      * from each line.
      * <p>
-     * The new line terminator should {@code '\n'}.
+     * Trailing white space is always removed.
+     * <p>
+     * Line separators are replaced with {@code "\n"}
      * <p>
      * If the first line is blank then it is removed.
      * <p>
      * If the last line is blank then it is removed.
-     * @return String with trailing spaces removed.
-     * @since 10
-     */
-    public java.lang.String trimLines() {
-        if (isEmpty()) {
-            return this;
-        }
-        java.lang.String[] lines = split("\n");
-        for (int i = 0; i < lines.length; i++) {
-            lines[i] = lines[i].trimRight();
-        }
-        return trimJoin(lines);
-    }
-
-    /**
-     * When applied to multi-line strings, determines the minimal number of
-     * leading spaces of each line and then removes that minimum from each
-     * line.
-     * <p>
-     * The new line terminator should {@code '\n'}.
-     * <p>
-     * If the first line is blank then it is removed.
-     * <p>
-     * If the last line is blank then it is removed.
+     *
      * @return String with indent removed.
-     * @since 10
+     * @since 11
      */
     public String trimIndent() {
         if (isEmpty()) {
             return this;
         }
-        String[] lines = split("\n");
+        String[] lines = lines();
         int count = lines.length;
         int least = Integer.MAX_VALUE;
         for (int i = 0; i < count; i++) {
@@ -2796,47 +2791,141 @@ public final class String
         return trimJoin(lines);
     }
 
+    private String trimJoin(String[] lines) {
+        int length = lines.length;
+        StringBuilder sb = new StringBuilder(length());
+        int first = lines[0].isEmpty() ? 1 : 0;
+        int last = lines[length - 1].isEmpty() ? length - 1 : length;
+        for (int i = first; i < last; i++) {
+            if (i != first) {
+                sb.append('\n');
+            }
+            sb.append(lines[i]);
+        }
+        return sb.toString();
+    }
+
+    private int skipLeadingSpaces() {
+        if (isLatin1()) {
+            return StringLatin1.skipLeadingSpaces(value);
+        } else {
+            return StringUTF16.skipLeadingSpaces(value) >> 1;
+        }
+    }
+
     /**
-     * When applied to multi-line strings, removes leading whitespace up to
-     * marker from each line.
+     * When applied to multi-line strings selectively removes
+     * margin characters from the beginning and end of each line.
      * <p>
-     * The new line terminator should {@code '\n'}.
+     * Two marker strings provide control over how each line is
+     * trimmed, one for the beginning of the line and one for
+     * the end.
      * <p>
-     * If the first line is blank then it is removed.
+     * If begin marker {@code beginMarker} is the empty string
+     * then the left margin is uneffected. If the begin marker
+     * is a single space, then all leading white space is removed.
+     * Otherwise, if the begin marker is found, all characters
+     * between the line start of the end of the first
+     * occurrence of the begin marker are removed.
      * <p>
-     * If the last line is blank then it is removed.
-     * @param marker String representing margin indicator.
-     * @return String with margin removed.
-     * @since 10
+     * If end marker {@code endMarker} is the empty string
+     * then the right margin is uneffected. If the end marker
+     * is a single space, then all trailing white space is removed.
+     * Otherwise, if the end marker is found, all characters
+     * between the last occurrence of the end marker and the
+     * end of line are removed.
+     * <p>
+     * Line separators are replaced with {@code "\n"}. If the first
+     * line is blank then it is removed. If the last line is blank
+     * then it is removed.
+     *
+     * @param  beginMarker  string representing left margin indicator
+     * @param  endMarker    string representing right margin indicator
+     * @return  string with margins removed
+     * @since 11
      */
-    public String trimMargin(String marker) {
+    public String trimMargins(String beginMarker, String endMarker) {
+        Objects.requireNonNull(beginMarker);
+        Objects.requireNonNull(endMarker);
         if (isEmpty()) {
             return this;
         }
-        String[] lines = split("\n");
-        int count = lines.length;
-        int trim = marker.length();
-        for (int i = 0; i < count; i++) {
-            String line = lines[i].trimLeft();
-            if (line.startsWith(marker)) {
-                line = line.substring(trim);
+        boolean hasBeginTrim = !beginMarker.isEmpty();
+        boolean isTrimLeft = " ".equals(beginMarker);
+        int beginLength = beginMarker.length();
+        boolean hasEndTrim = !endMarker.isEmpty();
+        boolean isTrimRight = " ".equals(endMarker);
+        int endLength = endMarker.length();
+        String[] lines = lines();
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            if (hasBeginTrim) {
+                line = line.trimLeft();
+                if (!isTrimLeft && line.startsWith(beginMarker)) {
+                    line = line.substring(beginLength);
+                }
             }
-            lines[i] = line.trimRight();
+            if (hasEndTrim) {
+                line = line.trimRight();
+                if (!isTrimRight && line.endsWith(endMarker)) {
+                    line = line.substring(0, line.length() - endLength);
+                }
+            }
+            lines[i] = line;
         }
         return trimJoin(lines);
     }
 
     /**
-     * When applied to multi-line strings, removes leading whitespace up to
-     * the first "|" from each line.
+     * When applied to multi-line strings selectively removes
+     * margin characters from the beginning of each line.
      * <p>
-     * If the first line is blank then it is removed.
+     * The marker string provided controls over how each line is
+     * trimmed.
      * <p>
-     * If the last line is blank then it is removed.
-     * @return String with margin removed.
+     * If the marker {@code marker} is the empty string then
+     * the left margin is uneffected. If the marker is a
+     * single space, then all leading white space is removed.
+     * Otherwise, if the marker is found, all characters
+     * between the line start of the end of the first
+     * occurrence of the marker are removed.
+     * <p>
+     * Trailing white space is always removed.
+     * <p>
+     * Line separators are replaced with {@code "\n"}. If the first
+     * line is blank then it is removed. If the last line is blank
+     * then it is removed.
+     *
+     * @param  marker  String representing margin indicator
+     * @return  string with margins removed
+     * @since 11
      */
-    public String trimMargin() {
-        return trimMargin("|");
+    public String trimMargins(String marker) {
+        Objects.requireNonNull(marker);
+        return trimMargins(marker, " ");
+    }
+
+    /**
+     * When applied to multi-line strings removes white space
+     * from the beginning and end of each line.
+     * <p>
+     * Line separators are replaced with {@code "\n"}. If the first
+     * line is blank then it is removed. If the last line is blank
+     * then it is removed.
+     *
+     * @return  string with margins removed
+     * @since 11
+     */
+    public String trimMargins() {
+        if (isEmpty()) {
+            return this;
+        }
+        String[] lines = lines();
+        for (int i = 0; i < lines.length; i++) {
+            lines[i] = lines[i].trim();
+        }
+        return trimJoin(lines);
     }
 
     /**
@@ -3486,4 +3575,5 @@ public final class String
                 "begin " + begin + ", end " + end + ", length " + length);
         }
     }
+
 }

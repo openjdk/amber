@@ -43,48 +43,112 @@ public class RawStringLiteralLib {
         EQ("   abc   ".trim(), "abc");
         EQ("   abc   ".trimLeft(), "abc   ");
         EQ("   abc   ".trimRight(), "   abc");
+        EQ("   abc\u2022   ".trim(), "abc\u2022");
+        EQ("   abc\u2022   ".trimLeft(), "abc\u2022   ");
+        EQ("   abc\u2022   ".trimRight(), "   abc\u2022");
         EQ("".trim(), "");
         EQ("".trimLeft(), "");
         EQ("".trimRight(), "");
 
+        // trimIndent
         for (String prefix : List.of("", "\n", "   \n"))
         for (String suffix : List.of("", "\n", "   \n"))
-        for (String insert : List.of("", "xyz", "   xyz", "xyz   ", "   xyz   ", "   // comment"))
+        for (String middle : List.of("",
+                                     "xyz",
+                                     "   xyz",
+                                     "xyz   ",
+                                     "   xyz   ",
+                                     "xyz\u2022",
+                                     "   xyz\u2022",
+                                     "xyz\u2022   ",
+                                     "   xyz\u2022   ",
+                                     "   // comment"))
         {
-            // trimLines
-            EQ((prefix + "   abc   \n" + insert + "\n   def   \n" + suffix).trimLines(),
-                "   abc\n" + insert.trimRight() + "\n   def");
+            String input = prefix + "   abc   \n" + middle + "\n   def   \n" + suffix;
+            String[] inputLines = input.lines();
+            int inputLength = inputLines.length;
+            String output = input.trimIndent();
+            String[] outputLines = output.lines();
+            int outputLength = outputLines.length;
 
-            // trimIndent
-            if (prefix.isEmpty()) {
-                if (insert.isEmpty()) {
-                    EQ(("   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "   abc\n" + insert.trimRight() + "\ndef");
-                } else if (insert.startsWith("   ")) {
-                    EQ(("   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "   abc\n" + insert.trimRight().substring(3) + "\ndef");
-                } else {
-                    EQ(("   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "   abc\n" + insert.trimRight() + "\n   def");
+            int start = inputLines[0].trim().isEmpty() ? 1 : 0;
+            int end = inputLines[inputLength - 1].trim().isEmpty() ? inputLength - 1 : inputLength;
+
+            if (outputLength != (end - start)) {
+                report("Wrong number of lines", "Input:", input, "Output:", output);
+            }
+            int indent = 0;
+            for (int i = 0; i < outputLength; i++) {
+                String line = outputLines[i];
+                int offset = inputLines[start + i].indexOf(line);
+                if (offset == -1) {
+                    report("Loss of lines", "Input:", input, "Output:", output);
                 }
+                if (i == 0) {
+                    indent = offset;
+                } else if (offset != indent ) {
+                    report("Inconsistent indent", "Input:", input, "Output:", output);
+                }
+            }
+        }
+
+        // trimMargin
+        for (String prefix : List.of("", "\n", "   \n"))
+        for (String suffix : List.of("", "\n", "   \n"))
+        for (String middle : List.of("",
+                                     "xyz",
+                                     "   xyz",
+                                     "xyz   ",
+                                     "   xyz   ",
+                                     "xyz\u2022",
+                                     "   xyz\u2022",
+                                     "xyz\u2022   ",
+                                     "   xyz\u2022   ",
+                                     "   // comment"))
+        for (String leftMargin : List.of("", " ", "|", "   |"))
+        for (String rightMargin : List.of("", " ", "|", "|   "))
+        {
+            String input = prefix +
+                           leftMargin + "   abc   " + rightMargin + "\n" +
+                           leftMargin + middle + rightMargin + "\n" +
+                           leftMargin + "   def   " + rightMargin + "\n" +
+                           suffix;
+            String[] inputLines = input.lines();
+            int inputLength = inputLines.length;
+            String output;
+
+            if (leftMargin.isEmpty() && rightMargin.isEmpty()) {
+                output = input.trimMargins();
             } else {
-                if (insert.isEmpty()) {
-                    EQ((prefix + "   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "abc\n" + insert.trimRight() + "\ndef");
-                } else if (insert.startsWith("   ")) {
-                    EQ(("   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "   abc\n" + insert.trimRight().substring(3) + "\ndef");
+                String beginMarker = leftMargin.contains("|") ? "|" : leftMargin;
+                String endMarker = rightMargin.contains("|") ? "|" : rightMargin;
+
+                if (" ".equals(endMarker)) {
+                    output = input.trimMargins(beginMarker);
                 } else {
-                    EQ((prefix + "   abc   \n" + insert + "\n   def   \n" + suffix).trimIndent(),
-                        "   abc\n" + insert.trimRight() + "\n   def");
+                    output = input.trimMargins(beginMarker, endMarker);
                 }
             }
 
-            // trimMargin
-            EQ((prefix + "   | abc   \n   | " + insert + "\n   | def   \n" + suffix).trimMargin(),
-                " abc\n" + (" " + insert).trimRight() + "\n def");
-            EQ((prefix + "   # abc   \n   # " + insert + "\n   # def   \n" + suffix).trimMargin("#"),
-                " abc\n" + (" " + insert).trimRight() + "\n def");
+            String[] outputLines = output.lines();
+            int outputLength = outputLines.length;
+
+            int start = inputLines[0].trim().isEmpty() ? 1 : 0;
+            int end = inputLines[inputLength - 1].trim().isEmpty() ? inputLength - 1 : inputLength;
+
+            if (outputLength != (end - start)) {
+                report("Wrong number of lines", "Input:", input, "Output:", output);
+            }
+            int indent = 0;
+            for (int i = 0; i < outputLength; i++) {
+                String line = outputLines[i];
+                if (!inputLines[start + i].contains(line)) {
+                    report("Loss of lines", "Input:", input, "Output:", output);
+                }
+                if (line.indexOf('|') != -1) {
+                    report("Margin not removed", "Input:", input, "Output:", output);
+                }
+            }
         }
     }
 
@@ -160,112 +224,120 @@ public class RawStringLiteralLib {
      * Test for MalformedEscapeException.
      */
     static void test3() {
-        WELLFORMED(`\b`);
-        WELLFORMED(`\f`);
-        WELLFORMED(`\n`);
-        WELLFORMED(`\r`);
-        WELLFORMED(`\t`);
-        WELLFORMED(`\0`);
-        WELLFORMED(`\7`);
-        WELLFORMED(`\12`);
-        WELLFORMED(`\012`);
-        WELLFORMED(`\u0000`);
-        WELLFORMED(`\u2022`);
-        WELLFORMED(`•\b`);
-        WELLFORMED(`•\f`);
-        WELLFORMED(`•\n`);
-        WELLFORMED(`•\r`);
-        WELLFORMED(`•\t`);
-        WELLFORMED(`•\0`);
-        WELLFORMED(`•\7`);
-        WELLFORMED(`•\12`);
-        WELLFORMED(`•\012`);
-        WELLFORMED(`•\u0000`);
-        WELLFORMED(`•\u2022`);
+        wellFormed(`\b`);
+        wellFormed(`\f`);
+        wellFormed(`\n`);
+        wellFormed(`\r`);
+        wellFormed(`\t`);
+        wellFormed(`\0`);
+        wellFormed(`\7`);
+        wellFormed(`\12`);
+        wellFormed(`\012`);
+        wellFormed(`\u0000`);
+        wellFormed(`\u2022`);
+        wellFormed(`•\b`);
+        wellFormed(`•\f`);
+        wellFormed(`•\n`);
+        wellFormed(`•\r`);
+        wellFormed(`•\t`);
+        wellFormed(`•\0`);
+        wellFormed(`•\7`);
+        wellFormed(`•\12`);
+        wellFormed(`•\012`);
+        wellFormed(`•\u0000`);
+        wellFormed(`•\u2022`);
 
-        MALFORMED(`\x`);
-        MALFORMED(`\+`);
-        MALFORMED(`\u`);
-        MALFORMED(`\uuuuu`);
-        MALFORMED(`\u2`);
-        MALFORMED(`\u20`);
-        MALFORMED(`\u202`);
-        MALFORMED(`\u2   `);
-        MALFORMED(`\u20  `);
-        MALFORMED(`\u202 `);
-        MALFORMED(`\uuuuu2`);
-        MALFORMED(`\uuuuu20`);
-        MALFORMED(`\uuuuu202`);
-        MALFORMED(`\uuuuu2   `);
-        MALFORMED(`\uuuuu20  `);
-        MALFORMED(`\uuuuu202 `);
-        MALFORMED(`\uG`);
-        MALFORMED(`\u2G`);
-        MALFORMED(`\u20G`);
-        MALFORMED(`\uG   `);
-        MALFORMED(`\u2G  `);
-        MALFORMED(`\u20G `);
-        MALFORMED(`\uuuuuG`);
-        MALFORMED(`\uuuuu2G`);
-        MALFORMED(`\uuuuu20G`);
-        MALFORMED(`\uuuuuG   `);
-        MALFORMED(`\uuuuu2G  `);
-        MALFORMED(`\uuuuu20G `);
+        malformed(`\x`);
+        malformed(`\+`);
+        malformed(`\u`);
+        malformed(`\uuuuu`);
+        malformed(`\u2`);
+        malformed(`\u20`);
+        malformed(`\u202`);
+        malformed(`\u2   `);
+        malformed(`\u20  `);
+        malformed(`\u202 `);
+        malformed(`\uuuuu2`);
+        malformed(`\uuuuu20`);
+        malformed(`\uuuuu202`);
+        malformed(`\uuuuu2   `);
+        malformed(`\uuuuu20  `);
+        malformed(`\uuuuu202 `);
+        malformed(`\uG`);
+        malformed(`\u2G`);
+        malformed(`\u20G`);
+        malformed(`\uG   `);
+        malformed(`\u2G  `);
+        malformed(`\u20G `);
+        malformed(`\uuuuuG`);
+        malformed(`\uuuuu2G`);
+        malformed(`\uuuuu20G`);
+        malformed(`\uuuuuG   `);
+        malformed(`\uuuuu2G  `);
+        malformed(`\uuuuu20G `);
 
-        MALFORMED(`•\x`);
-        MALFORMED(`•\+`);
-        MALFORMED(`•\u`);
-        MALFORMED(`•\uuuuu`);
-        MALFORMED(`•\u2`);
-        MALFORMED(`•\u20`);
-        MALFORMED(`•\u202`);
-        MALFORMED(`•\u2   `);
-        MALFORMED(`•\u20  `);
-        MALFORMED(`•\u202 `);
-        MALFORMED(`•\uuuuu2`);
-        MALFORMED(`•\uuuuu20`);
-        MALFORMED(`•\uuuuu202`);
-        MALFORMED(`•\uuuuu2   `);
-        MALFORMED(`•\uuuuu20  `);
-        MALFORMED(`•\uuuuu202 `);
-        MALFORMED(`•\uG`);
-        MALFORMED(`•\u2G`);
-        MALFORMED(`•\u20G`);
-        MALFORMED(`•\uG   `);
-        MALFORMED(`•\u2G  `);
-        MALFORMED(`•\u20G `);
-        MALFORMED(`•\uuuuuG`);
-        MALFORMED(`•\uuuuu2G`);
-        MALFORMED(`•\uuuuu20G`);
-        MALFORMED(`•\uuuuuG   `);
-        MALFORMED(`•\uuuuu2G  `);
-        MALFORMED(`•\uuuuu20G `);
+        malformed(`•\x`);
+        malformed(`•\+`);
+        malformed(`•\u`);
+        malformed(`•\uuuuu`);
+        malformed(`•\u2`);
+        malformed(`•\u20`);
+        malformed(`•\u202`);
+        malformed(`•\u2   `);
+        malformed(`•\u20  `);
+        malformed(`•\u202 `);
+        malformed(`•\uuuuu2`);
+        malformed(`•\uuuuu20`);
+        malformed(`•\uuuuu202`);
+        malformed(`•\uuuuu2   `);
+        malformed(`•\uuuuu20  `);
+        malformed(`•\uuuuu202 `);
+        malformed(`•\uG`);
+        malformed(`•\u2G`);
+        malformed(`•\u20G`);
+        malformed(`•\uG   `);
+        malformed(`•\u2G  `);
+        malformed(`•\u20G `);
+        malformed(`•\uuuuuG`);
+        malformed(`•\uuuuu2G`);
+        malformed(`•\uuuuu20G`);
+        malformed(`•\uuuuuG   `);
+        malformed(`•\uuuuu2G  `);
+        malformed(`•\uuuuu20G `);
+    }
+
+    /*
+     * Report difference in result.
+     */
+    static void report(String message, String inputTag, String input,
+                                       String outputTag, String output) {
+        System.err.println(message);
+        System.err.println();
+        System.err.println(inputTag);
+        System.err.println(input.replaceAll(" ", "."));
+        System.err.println();
+        System.err.println(outputTag);
+        System.err.println(output.replaceAll(" ", "."));
+        throw new RuntimeException();
     }
 
     /*
      * Raise an exception if the two inputs are not equivalent.
      */
-    static void EQ(String input, String expected) {
+    static void equal(String input, String expected) {
         if (input == null || expected == null || !expected.equals(input)) {
-            System.err.println("Failed EQ");
-            System.err.println();
-            System.err.println("Input:");
-            System.err.println(input.replaceAll(" ", "."));
-            System.err.println();
-            System.err.println("Expected:");
-            System.err.println(expected.replaceAll(" ", "."));
-            throw new RuntimeException();
+            report("Failed EQ", "Input:", input, "Expected:", expected);
         }
     }
 
     /*
      * Raise an exception if the string contains a malformed escape.
      */
-    static void WELLFORMED(String rawString) {
+    static void wellFormed(String rawString) {
         try {
             rawString.unescape();
         } catch (MalformedEscapeException ex) {
-            System.err.println("Failed WELLFORMED");
+            System.err.println("Failed wellFormed");
             System.err.println(rawString);
             throw new RuntimeException();
         }
@@ -274,10 +346,10 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the string does not contain a malformed escape.
      */
-    static void MALFORMED(String rawString) {
+    static void malformed(String rawString) {
         try {
             rawString.unescape();
-            System.err.println("Failed MALFORMED");
+            System.err.println("Failed malformed");
             System.err.println(rawString);
             throw new RuntimeException();
         } catch (MalformedEscapeException ex) {
