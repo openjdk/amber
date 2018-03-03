@@ -72,7 +72,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 
 import com.sun.tools.javac.code.Source;
-import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 
 /**
  * This pass desugars lambda expressions into static methods
@@ -1142,7 +1142,7 @@ public class LambdaToMethod extends TreeTranslator {
             Symbol bsm = rs.resolveInternalMethod(pos, attrEnv, site,
                     bsmName, bsm_staticArgs, List.nil());
 
-            DynamicFieldSymbol dynSym = new DynamicFieldSymbol(methName,
+            DynamicVarSymbol dynSym = new DynamicVarSymbol(methName,
                     syms.noSymbol,
                     bsm.isStatic() ?
                         ClassFile.REF_invokeStatic :

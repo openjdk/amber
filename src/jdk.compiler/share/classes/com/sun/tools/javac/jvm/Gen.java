@@ -819,7 +819,7 @@ public class Gen extends JCTree.Visitor {
                 tree.accept(classReferenceVisitor);
                 checkStringConstant(tree.pos(), tree.type.constValue());
                 Symbol sym = TreeInfo.symbol(tree);
-                if (sym != null && isLambdaCondy(sym)) {
+                if (sym != null && isConstantDynamic(sym)) {
                     result = items.makeDynamicItem(sym);
                 } else {
                     result = items.makeImmediateItem(tree.type, tree.type.constValue());
@@ -1662,8 +1662,8 @@ public class Gen extends JCTree.Visitor {
             // primitives special case
             if (constant instanceof VarSymbol && ((VarSymbol)constant).name == names.TYPE) {
                 m = items.makeStaticItem((Symbol)constant);
-            } else if (constant instanceof Pool.ConstantDynamic) {
-                m = items.makeCondyItem((Pool.ConstantDynamic)constant);
+            } else if (constant instanceof Pool.DynamicVariable) {
+                m = items.makeCondyItem((Pool.DynamicVariable)constant);
             } else {
                 m = items.makeImmediateItem(pt, constant);
             }
@@ -2070,7 +2070,7 @@ public class Gen extends JCTree.Visitor {
                 res = items.makeMemberItem(sym, true);
             }
             result = res;
-        } else if (isInvokeDynamic(sym) || isLambdaCondy(sym)) {
+        } else if (isInvokeDynamic(sym) || isConstantDynamic(sym)) {
             result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && sym.owner.kind == MTH) {
             result = items.makeLocalItem((VarSymbol)sym);
@@ -2085,10 +2085,10 @@ public class Gen extends JCTree.Visitor {
         }
     }
 
-    public boolean isLambdaCondy(Symbol sym) {
+    public boolean isConstantDynamic(Symbol sym) {
         return sym.kind == VAR &&
-                sym instanceof DynamicFieldSymbol &&
-                ((DynamicFieldSymbol)sym).isDynamic();
+                sym instanceof DynamicVarSymbol &&
+                ((DynamicVarSymbol)sym).isDynamic();
     }
 
     public void visitSelect(JCFieldAccess tree) {

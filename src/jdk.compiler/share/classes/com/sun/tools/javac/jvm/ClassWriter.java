@@ -406,26 +406,28 @@ public class ClassWriter extends ClassFile {
                     poolbuf.appendChar(val.index);
                     poolbuf.appendChar(pool.put(nameType(dynSym)));
                 }
-            } else if (value instanceof Pool.ConstantDynamic) {
-                Pool.ConstantDynamic cd = (Pool.ConstantDynamic)value;
-                MethodHandle handle = cd.bsm;
-                DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
-                        handle.refSym.name,
-                        syms.noSymbol,
-                        handle.refKind,
-                        (MethodSymbol)handle.refSym,
-                        handle.refSym.type,
-                        cd.args);
-                DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
-                poolbuf.appendByte(CONSTANT_Dynamic);
-                poolbuf.appendChar(val.index);
-                NameAndType nt = new NameAndType(cd.name, cd.type, cd.types);
-                poolbuf.appendChar(pool.put(nt));
             } else if (value instanceof VarSymbol) {
                 VarSymbol v = (VarSymbol)value;
-                poolbuf.appendByte(CONSTANT_Fieldref);
-                poolbuf.appendChar(pool.put(v.owner));
-                poolbuf.appendChar(pool.put(nameType(v)));
+                if (!v.isDynamic()) {
+                    poolbuf.appendByte(CONSTANT_Fieldref);
+                    poolbuf.appendChar(pool.put(v.owner));
+                    poolbuf.appendChar(pool.put(nameType(v)));
+                } else {
+                    DynamicVarSymbol dynVarSym = (DynamicVarSymbol)v;
+                    MethodHandle handle = new MethodHandle(dynVarSym.bsmKind, dynVarSym.bsm, types);
+                    DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
+                            handle.refSym.name,
+                            syms.noSymbol,
+                            handle.refKind,
+                            (MethodSymbol)handle.refSym,
+                            handle.refSym.type,
+                            dynVarSym.staticArgs);
+                    DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
+                    poolbuf.appendByte(CONSTANT_Dynamic);
+                    poolbuf.appendChar(val.index);
+                    NameAndType nt = new NameAndType(dynVarSym.name, dynVarSym.type, types);
+                    poolbuf.appendChar(pool.put(nt));
+                }
             } else if (value instanceof Name) {
                 poolbuf.appendByte(CONSTANT_Utf8);
                 byte[] bs = ((Name)value).toUtf();

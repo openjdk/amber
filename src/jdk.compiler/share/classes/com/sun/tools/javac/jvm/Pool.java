@@ -39,6 +39,7 @@ import com.sun.tools.javac.util.Name;
 
 import java.util.*;
 
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -132,8 +133,8 @@ public class Pool {
     Object makePoolValue(Object o) {
         if (o instanceof DynamicMethodSymbol) {
             return new DynamicMethod((DynamicMethodSymbol)o, types);
-        } else if (o instanceof DynamicFieldSymbol) {
-            return new Pool.ConstantDynamic((DynamicFieldSymbol)o, types);
+        } else if (o instanceof DynamicVarSymbol) {
+            return new Pool.DynamicVariable((DynamicVarSymbol)o, types);
         } else if (o instanceof MethodSymbol) {
             return new Method((MethodSymbol)o, types);
         } else if (o instanceof VarSymbol) {
@@ -300,54 +301,74 @@ public class Pool {
     /**
      * Pool entry associated with dynamic constants.
      */
-    public static class ConstantDynamic {
+    public static class DynamicVariable extends Variable {
         public MethodHandle bsm;
-        public Name name;
-        public Type type;
-        public Object[] args;
+        private Object[] uniqueStaticArgs;
         Types types;
 
-        public ConstantDynamic(Name name, MethodHandle bsm, Object[] args, Types types) {
-            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types);
+        public DynamicVariable(Name name, MethodHandle bsm, Object[] args, Types types, Symtab syms) {
+            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types, syms);
         }
 
-        public ConstantDynamic(Name name, MethodHandle bsm, Type type, Object[] args, Types types) {
-            Assert.checkNonNull(args);
-            this.bsm = bsm;
-            this.name = name;
-            this.type = type;
-            this.args = args;
-            this.types = types;
+        public DynamicVariable(Name name, MethodHandle bsm, Type type, Object[] args, Types types, Symtab syms) {
+            this(new DynamicVarSymbol(name,
+                            syms.noSymbol,
+                            bsm.refKind,
+                            (MethodSymbol)bsm.refSym,
+                            type,
+                            args), types, bsm);
         }
 
-        public ConstantDynamic(DynamicFieldSymbol dynField, Types types) {
-            this.bsm = new MethodHandle(dynField.bsmKind, dynField.bsm, types);
-            this.name = dynField.name;
-            this.type = dynField.type;
-            this.args = dynField.staticArgs;
+        public DynamicVariable(DynamicVarSymbol dynField, Types types) {
+            this(dynField, types, null);
+        }
+
+        private DynamicVariable(DynamicVarSymbol dynField, Types types, MethodHandle bsm) {
+            super(dynField, types);
+            this.bsm = bsm != null ?
+                    bsm :
+                    new MethodHandle(dynField.bsmKind, dynField.bsm, types);
             this.types = types;
+            uniqueStaticArgs = getUniqueTypeArray(staticArgs(), types);
+        }
+
+        private Object[] getUniqueTypeArray(Object[] objects, Types types) {
+            Object[] result = new Object[objects.length];
+            for (int i = 0; i < objects.length; i++) {
+                if (objects[i] instanceof Type) {
+                    result[i] = new UniqueType((Type)objects[i], types);
+                } else {
+                    result[i] = objects[i];
+                }
+            }
+            return result;
         }
 
         @Override
         public int hashCode() {
-            return bsm.hashCode() * 67 + name.hashCode() + type.hashCode() * 13;
+            int hash = bsm.hashCode() * 67 + other.name.hashCode() + type.hashCode() * 13 + uniqueType.hashCode();
+            for (Object uniqueStaticArg : uniqueStaticArgs) {
+                hash += (uniqueStaticArg.hashCode() * 23);
+            }
+            return hash;
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (obj instanceof ConstantDynamic) {
-                ConstantDynamic that = (ConstantDynamic)obj;
+            if (obj instanceof DynamicVariable) {
+                DynamicVariable that = (DynamicVariable)obj;
                 return that.bsm.equals(bsm) &&
                         types.isSameType(that.type, type) &&
-                        that.name.equals(name) &&
-                        Arrays.equals(that.args, args);
+                        that.other.name.equals(other.name) &&
+                        Arrays.equals(uniqueStaticArgs, that.uniqueStaticArgs) &&
+                        that.uniqueType.equals(uniqueType);
             } else {
                 return false;
             }
         }
 
-        public void updateType(Type type) {
-            this.type = type;
+        public Object[] staticArgs() {
+            return ((DynamicVarSymbol)other).staticArgs;
         }
     }
 

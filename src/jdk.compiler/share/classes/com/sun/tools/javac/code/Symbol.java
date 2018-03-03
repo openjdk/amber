@@ -1533,6 +1533,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return name.toString();
         }
 
+        public boolean isDynamic() {
+            return false;
+        }
+
         public Symbol asMemberOf(Type site, Types types) {
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
         }
@@ -2008,26 +2012,21 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
     /** A class for condy.
      */
-    public static class DynamicFieldSymbol extends Symbol {
-
+    public static class DynamicVarSymbol extends VarSymbol {
         public Object[] staticArgs;
         public MethodSymbol bsm;
         public int bsmKind;
 
-        public DynamicFieldSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
-            super(Kind.VAR, 0, name, type, owner);
+        public DynamicVarSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
+            super(0, name, type, owner);
             this.bsm = bsm;
             this.bsmKind = bsmKind;
             this.staticArgs = staticArgs;
         }
 
+        @Override
         public boolean isDynamic() {
             return true;
-        }
-
-        @Override
-        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
-            return v.visit(this, p);
         }
     }
 

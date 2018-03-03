@@ -39,7 +39,7 @@ import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.CompletionFailure;
-import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.ModuleSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
@@ -272,7 +272,7 @@ public class Constables {
         return head.tail;
     }
 
-    public Optional<DynamicFieldSymbol> getDynamicFieldSymbol(JCTree tree, Object constant, Env<AttrContext> attrEnv) {
+    public Optional<DynamicVarSymbol> getDynamicFieldSymbol(JCTree tree, Object constant, Env<AttrContext> attrEnv) {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
                 constantRefClass.isInstance(constant)) {
@@ -280,14 +280,14 @@ public class Constables {
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
                 Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);
-                if (condyOb instanceof Pool.ConstantDynamic) {
-                    Pool.ConstantDynamic condy = (Pool.ConstantDynamic)condyOb;
-                    DynamicFieldSymbol dynSym = new DynamicFieldSymbol(condy.name,
+                if (condyOb instanceof Pool.DynamicVariable) {
+                    Pool.DynamicVariable condy = (Pool.DynamicVariable)condyOb;
+                    DynamicVarSymbol dynSym = new DynamicVarSymbol(condy.name,
                             syms.noSymbol,
                             condy.bsm.refKind,
                             (MethodSymbol)condy.bsm.refSym,
                             condy.type,
-                            condy.args);
+                            condy.staticArgs());
                     return Optional.of(dynSym);
                 }
             }
@@ -334,7 +334,7 @@ public class Constables {
                 Object BSM_PRIMITIVE_CLASS = getFieldValueReflectively(symRefs, null, "BSM_PRIMITIVE_CLASS");
                 Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv,
                         BSM_PRIMITIVE_CLASS, currentModule);
-                return new Pool.ConstantDynamic(names.fromString(descriptor), methodHandle, new Object[0], types);
+                return new Pool.DynamicVariable(names.fromString(descriptor), methodHandle, new Object[0], types, syms);
             }
             Type type = descriptorToType(descriptor, currentModule, false);
             Symbol symToLoad;
@@ -363,7 +363,7 @@ public class Constables {
             Pool.MethodHandle methodHandle = (Pool.MethodHandle)convertConstant(tree, attrEnv, mh, currentModule);
             Object[] args = (Object[])invokeMethodReflectively(dynamicConstantClass, constant, "bootstrapArgs");
             Object[] convertedArgs = convertConstants(tree, attrEnv, args, currentModule, true);
-            return new Pool.ConstantDynamic(names.fromString(name), methodHandle, type, convertedArgs, types);
+            return new Pool.DynamicVariable(names.fromString(name), methodHandle, type, convertedArgs, types, syms);
         }
         return constant;
     }

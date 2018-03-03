@@ -30,7 +30,7 @@ import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.Code.*;
-import com.sun.tools.javac.jvm.Pool.ConstantDynamic;
+import com.sun.tools.javac.jvm.Pool.DynamicVariable;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
 
@@ -168,7 +168,7 @@ public class Items {
     /** Make an item representing a condy.
      *  @param value    The condy value.
      */
-    Item makeCondyItem(ConstantDynamic value) {
+    Item makeCondyItem(DynamicVariable value) {
         return new CondyItem(value);
     }
 
@@ -476,9 +476,9 @@ public class Items {
     /** An item representing a condy
      */
     class CondyItem extends Item {
-        ConstantDynamic value;
+        DynamicVariable value;
 
-        CondyItem(ConstantDynamic value) {
+        CondyItem(DynamicVariable value) {
             super(Code.typecode(value.type));
             this.value = value;
         }

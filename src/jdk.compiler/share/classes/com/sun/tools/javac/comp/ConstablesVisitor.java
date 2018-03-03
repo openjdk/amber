@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Symbol.DynamicFieldSymbol;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 import com.sun.tools.javac.code.Symbol.DynamicMethodSymbol;
 import com.sun.tools.javac.code.Symbol.IntrinsicsLDCMethodSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
@@ -299,7 +299,7 @@ public class ConstablesVisitor extends TreeScanner {
                     if (constables.dynamicConstantClass.isInstance(constant)) {
                         constant = constables.convertConstant(tree, attrEnv,
                                 constant, attrEnv.enclClass.sym.packge().modle);
-                        newType = ((Pool.ConstantDynamic)constant).type;
+                        newType = ((Pool.DynamicVariable)constant).type;
                     } else {
                         newType = tree.meth.type.asMethodType().restype;
                         Type unboxed = types.unboxedType(newType);
@@ -408,9 +408,9 @@ public class ConstablesVisitor extends TreeScanner {
             if (tree != null &&
                     treesToCheck.contains(tree.getTag()) &&
                     constant != null) {
-                Optional<DynamicFieldSymbol> opDynSym = constables.getDynamicFieldSymbol(tree, constant, attrEnv);
+                Optional<DynamicVarSymbol> opDynSym = constables.getDynamicFieldSymbol(tree, constant, attrEnv);
                 if (opDynSym.isPresent()) {
-                    DynamicFieldSymbol dynSym = opDynSym.get();
+                    DynamicVarSymbol dynSym = opDynSym.get();
                     JCTree ident = make.at(tree.pos()).Ident(dynSym);
                     ident.type = dynSym.type.constType(constant);
                     return (T)ident;
