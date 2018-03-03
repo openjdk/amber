@@ -47,15 +47,22 @@ import toolbox.ToolBox;
 
 public class CheckForCondyDuplicatesTest {
 
-    static final String testSource =
+    static final String testSource1 =
         "import java.lang.sym.*;\n" +
         "import java.lang.invoke.*;\n" +
 
-        "public class MultipleEntriesCP {\n" +
+        "public class Test1 {\n" +
         "    void m() {\n" +
         "        Object o1 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
         "        Object o2 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
         "    }\n" +
+        "}";
+
+    static final String testSource2 =
+        "class Test2 {\n" +
+        "   Runnable r = Test2::foo;\n" +
+        "   Runnable k = Test2::foo;\n" +
+        "   static void foo() {}\n" +
         "}";
 
     public static void main(String[] args) throws Exception {
@@ -65,14 +72,17 @@ public class CheckForCondyDuplicatesTest {
     ToolBox tb = new ToolBox();
 
     void run() throws Exception {
-        compileTestClass();
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "MultipleEntriesCP.class").toUri()));
+        compileTestClass(testSource1);
+        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "Test1.class").toUri()));
+
+        compileTestClass(testSource2);
+        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "Test2.class").toUri()));
     }
 
-    void compileTestClass() throws Exception {
+    void compileTestClass(String source) throws Exception {
         new JavacTask(tb)
                 .options("-XDdoConstantFold")
-                .sources(testSource)
+                .sources(source)
                 .run();
     }
 
@@ -84,6 +94,7 @@ public class CheckForCondyDuplicatesTest {
                 numberOfCondys++;
             }
         }
+        Assert.check(numberOfCondys > 0, "there should be at least one condy in the class file");
         Assert.check(numberOfCondys == 1, "the CP has duplicate condys");
     }
 }
