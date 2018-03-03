@@ -224,86 +224,86 @@ public class RawStringLiteralLib {
      * Test for MalformedEscapeException.
      */
     static void test3() {
-        wellFormed(`\b`);
-        wellFormed(`\f`);
-        wellFormed(`\n`);
-        wellFormed(`\r`);
-        wellFormed(`\t`);
-        wellFormed(`\0`);
-        wellFormed(`\7`);
-        wellFormed(`\12`);
-        wellFormed(`\012`);
-        wellFormed(`\u0000`);
-        wellFormed(`\u2022`);
-        wellFormed(`•\b`);
-        wellFormed(`•\f`);
-        wellFormed(`•\n`);
-        wellFormed(`•\r`);
-        wellFormed(`•\t`);
-        wellFormed(`•\0`);
-        wellFormed(`•\7`);
-        wellFormed(`•\12`);
-        wellFormed(`•\012`);
-        wellFormed(`•\u0000`);
-        wellFormed(`•\u2022`);
+        WELLFORMED(`\b`);
+        WELLFORMED(`\f`);
+        WELLFORMED(`\n`);
+        WELLFORMED(`\r`);
+        WELLFORMED(`\t`);
+        WELLFORMED(`\0`);
+        WELLFORMED(`\7`);
+        WELLFORMED(`\12`);
+        WELLFORMED(`\012`);
+        WELLFORMED(`\u0000`);
+        WELLFORMED(`\u2022`);
+        WELLFORMED(`•\b`);
+        WELLFORMED(`•\f`);
+        WELLFORMED(`•\n`);
+        WELLFORMED(`•\r`);
+        WELLFORMED(`•\t`);
+        WELLFORMED(`•\0`);
+        WELLFORMED(`•\7`);
+        WELLFORMED(`•\12`);
+        WELLFORMED(`•\012`);
+        WELLFORMED(`•\u0000`);
+        WELLFORMED(`•\u2022`);
 
-        malformed(`\x`);
-        malformed(`\+`);
-        malformed(`\u`);
-        malformed(`\uuuuu`);
-        malformed(`\u2`);
-        malformed(`\u20`);
-        malformed(`\u202`);
-        malformed(`\u2   `);
-        malformed(`\u20  `);
-        malformed(`\u202 `);
-        malformed(`\uuuuu2`);
-        malformed(`\uuuuu20`);
-        malformed(`\uuuuu202`);
-        malformed(`\uuuuu2   `);
-        malformed(`\uuuuu20  `);
-        malformed(`\uuuuu202 `);
-        malformed(`\uG`);
-        malformed(`\u2G`);
-        malformed(`\u20G`);
-        malformed(`\uG   `);
-        malformed(`\u2G  `);
-        malformed(`\u20G `);
-        malformed(`\uuuuuG`);
-        malformed(`\uuuuu2G`);
-        malformed(`\uuuuu20G`);
-        malformed(`\uuuuuG   `);
-        malformed(`\uuuuu2G  `);
-        malformed(`\uuuuu20G `);
+        MALFORMED(`\x`);
+        MALFORMED(`\+`);
+        MALFORMED(`\u`);
+        MALFORMED(`\uuuuu`);
+        MALFORMED(`\u2`);
+        MALFORMED(`\u20`);
+        MALFORMED(`\u202`);
+        MALFORMED(`\u2   `);
+        MALFORMED(`\u20  `);
+        MALFORMED(`\u202 `);
+        MALFORMED(`\uuuuu2`);
+        MALFORMED(`\uuuuu20`);
+        MALFORMED(`\uuuuu202`);
+        MALFORMED(`\uuuuu2   `);
+        MALFORMED(`\uuuuu20  `);
+        MALFORMED(`\uuuuu202 `);
+        MALFORMED(`\uG`);
+        MALFORMED(`\u2G`);
+        MALFORMED(`\u20G`);
+        MALFORMED(`\uG   `);
+        MALFORMED(`\u2G  `);
+        MALFORMED(`\u20G `);
+        MALFORMED(`\uuuuuG`);
+        MALFORMED(`\uuuuu2G`);
+        MALFORMED(`\uuuuu20G`);
+        MALFORMED(`\uuuuuG   `);
+        MALFORMED(`\uuuuu2G  `);
+        MALFORMED(`\uuuuu20G `);
 
-        malformed(`•\x`);
-        malformed(`•\+`);
-        malformed(`•\u`);
-        malformed(`•\uuuuu`);
-        malformed(`•\u2`);
-        malformed(`•\u20`);
-        malformed(`•\u202`);
-        malformed(`•\u2   `);
-        malformed(`•\u20  `);
-        malformed(`•\u202 `);
-        malformed(`•\uuuuu2`);
-        malformed(`•\uuuuu20`);
-        malformed(`•\uuuuu202`);
-        malformed(`•\uuuuu2   `);
-        malformed(`•\uuuuu20  `);
-        malformed(`•\uuuuu202 `);
-        malformed(`•\uG`);
-        malformed(`•\u2G`);
-        malformed(`•\u20G`);
-        malformed(`•\uG   `);
-        malformed(`•\u2G  `);
-        malformed(`•\u20G `);
-        malformed(`•\uuuuuG`);
-        malformed(`•\uuuuu2G`);
-        malformed(`•\uuuuu20G`);
-        malformed(`•\uuuuuG   `);
-        malformed(`•\uuuuu2G  `);
-        malformed(`•\uuuuu20G `);
+        MALFORMED(`•\x`);
+        MALFORMED(`•\+`);
+        MALFORMED(`•\u`);
+        MALFORMED(`•\uuuuu`);
+        MALFORMED(`•\u2`);
+        MALFORMED(`•\u20`);
+        MALFORMED(`•\u202`);
+        MALFORMED(`•\u2   `);
+        MALFORMED(`•\u20  `);
+        MALFORMED(`•\u202 `);
+        MALFORMED(`•\uuuuu2`);
+        MALFORMED(`•\uuuuu20`);
+        MALFORMED(`•\uuuuu202`);
+        MALFORMED(`•\uuuuu2   `);
+        MALFORMED(`•\uuuuu20  `);
+        MALFORMED(`•\uuuuu202 `);
+        MALFORMED(`•\uG`);
+        MALFORMED(`•\u2G`);
+        MALFORMED(`•\u20G`);
+        MALFORMED(`•\uG   `);
+        MALFORMED(`•\u2G  `);
+        MALFORMED(`•\u20G `);
+        MALFORMED(`•\uuuuuG`);
+        MALFORMED(`•\uuuuu2G`);
+        MALFORMED(`•\uuuuu20G`);
+        MALFORMED(`•\uuuuuG   `);
+        MALFORMED(`•\uuuuu2G  `);
+        MALFORMED(`•\uuuuu20G `);
     }
 
     /*
@@ -324,7 +324,7 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the two inputs are not equivalent.
      */
-    static void equal(String input, String expected) {
+    static void EQ(String input, String expected) {
         if (input == null || expected == null || !expected.equals(input)) {
             report("Failed EQ", "Input:", input, "Expected:", expected);
         }
@@ -333,11 +333,11 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the string contains a malformed escape.
      */
-    static void wellFormed(String rawString) {
+    static void WELLFORMED(String rawString) {
         try {
             rawString.unescape();
         } catch (MalformedEscapeException ex) {
-            System.err.println("Failed wellFormed");
+            System.err.println("Failed WELLFORMED");
             System.err.println(rawString);
             throw new RuntimeException();
         }
@@ -346,10 +346,10 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the string does not contain a malformed escape.
      */
-    static void malformed(String rawString) {
+    static void MALFORMED(String rawString) {
         try {
             rawString.unescape();
-            System.err.println("Failed malformed");
+            System.err.println("Failed MALFORMED");
             System.err.println(rawString);
             throw new RuntimeException();
         } catch (MalformedEscapeException ex) {
