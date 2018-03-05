@@ -185,7 +185,7 @@ public class ClassWriter extends ClassFile {
         types = Types.instance(context);
         fileManager = context.get(JavaFileManager.class);
         signatureGen = new CWSignatureGenerator(types);
-        constables = new Constables(context);
+        constables = Constables.instance(context);
 
         verbose        = options.isSet(VERBOSE);
         genCrt         = options.isSet(XJCOV);

@@ -114,7 +114,7 @@ public class Gen extends JCTree.Visitor {
         target = Target.instance(context);
         types = Types.instance(context);
         concat = StringConcat.instance(context);
-        constables = new Constables(context);
+        constables = Constables.instance(context);
 
         methodType = new MethodType(null, null, null, syms.methodClass);
         accessDollar = names.

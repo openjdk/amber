@@ -82,7 +82,17 @@ import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
  */
 public class Constables {
 
+    protected static final Context.Key<Constables> constablesKey = new Context.Key<>();
+
+    public static Constables instance(Context context) {
+        Constables instance = context.get(constablesKey);
+        if (instance == null)
+            instance = new Constables(context);
+        return instance;
+    }
+
     public Constables(Context context) {
+        context.put(constablesKey, this);
         types = Types.instance(context);
         names = Names.instance(context);
         syms = Symtab.instance(context);
@@ -662,8 +672,7 @@ public class Constables {
      */
     public Object foldTrackableField(final JCTree tree, final Env<AttrContext> env) {
         Symbol sym = TreeInfo.symbol(tree);
-        boolean trackableConstant = sym.attribute(syms.foldableType.tsym) != null &&
-                sym.packge().modle == syms.java_base;
+        boolean trackableConstant = isFoldable(sym);
         if (trackableConstant) {
             String className = sym.owner.type.tsym.flatName().toString();
             try {
@@ -709,11 +718,15 @@ public class Constables {
         }
     }
 
+    protected boolean isFoldable(Symbol msym) {
+        return msym.attribute(syms.foldableType.tsym) != null &&
+                msym.packge().modle == syms.java_base;
+    }
+
     public Object foldMethodInvocation(final JCMethodInvocation tree, final Env<AttrContext> env) {
         Symbol msym = TreeInfo.symbol(tree.meth);
         Object constant = null;
-        boolean trackableConstant = msym.attribute(syms.foldableType.tsym) != null &&
-                msym.packge().modle == syms.java_base;
+        boolean trackableConstant = isFoldable(msym);
         boolean isLDC = msym.owner.type.tsym == syms.intrinsicsType.tsym && msym.name == names.ldc;
         if (trackableConstant || isLDC) {
             List<Object> constantArgumentValues = extractAllConstansOrNone(tree.args);

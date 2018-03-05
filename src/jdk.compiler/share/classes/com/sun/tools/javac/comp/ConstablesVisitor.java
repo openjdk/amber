@@ -105,7 +105,7 @@ public class ConstablesVisitor extends TreeScanner {
         log = Log.instance(context);
         cfolder = ConstFold.instance(context);
         make = TreeMaker.instance(context);
-        constables = new Constables(context);
+        constables = Constables.instance(context);
         varDebugInfo =
             options.isUnset(G_CUSTOM)
             ? options.isSet(G)

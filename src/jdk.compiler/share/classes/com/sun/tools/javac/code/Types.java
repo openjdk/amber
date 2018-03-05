@@ -128,7 +128,7 @@ public class Types {
         noWarnings = new Warner(null);
         Options options = Options.instance(context);
         doConstantFold = options.isSet("doConstantFold");
-        constables = new Constables(context);
+        constables = Constables.instance(context);
     }
     // </editor-fold>
 
