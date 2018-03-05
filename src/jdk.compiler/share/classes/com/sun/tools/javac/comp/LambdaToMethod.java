@@ -736,11 +736,11 @@ public class LambdaToMethod extends TreeTranslator {
                     "getFunctionalInterfaceMethodSignature", functionalInterfaceMethodSignature),
                     "getImplClass", implClass),
                     "getImplMethodSignature", implMethodSignature),
-                make.Return(makeIndyCall(
+                make.Return(makeDynamicCall(
                     pos,
                     syms.lambdaMetafactory,
                     names.altMetafactory,
-                    staticArgs, indyType, serArgs.toList(), samSym.name)),
+                    staticArgs, targetType, indyType, serArgs.toList(), samSym.name)),
                 null);
         ListBuffer<JCStatement> stmts = kInfo.deserializeCases.get(implMethodName);
         if (stmts == null) {
@@ -1117,11 +1117,17 @@ public class LambdaToMethod extends TreeTranslator {
             }
         }
 
-        return  condyForLambda &&
-                !context.needsAltMetafactory() &&
-                indy_args.isEmpty() ?
-                makeCondy(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, tree.type, indy_args, samSym.name) :
-                makeIndyCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, indyType, indy_args, samSym.name);
+        return makeDynamicCall(tree, syms.lambdaMetafactory,
+                metafactoryName, staticArgs, tree.type, indyType, indy_args, samSym.name);
+    }
+
+    private JCExpression makeDynamicCall(DiagnosticPosition pos, Type site, Name bsmName,
+            List<Object> staticArgs, Type interfaceType, MethodType indyType, List<JCExpression> indyArgs,
+            Name methName) {
+        return condyForLambda &&
+               indyArgs.isEmpty() ?
+               makeCondy(pos, site, bsmName, staticArgs, interfaceType, methName) :
+               makeIndyCall(pos, site, bsmName, staticArgs, indyType, indyArgs, methName);
     }
 
     /* this extra flag should be temporary and used as long as it's not possible to do the build
@@ -1130,8 +1136,7 @@ public class LambdaToMethod extends TreeTranslator {
     private final boolean condyForLambda;
 
     private JCExpression makeCondy(DiagnosticPosition pos, Type site, Name bsmName,
-            List<Object> staticArgs, Type interfaceType, List<JCExpression> indyArgs,
-            Name methName) {
+            List<Object> staticArgs, Type interfaceType, Name methName) {
         int prevPos = make.pos;
         try {
             make.at(pos);
