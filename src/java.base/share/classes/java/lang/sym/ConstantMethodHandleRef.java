@@ -32,6 +32,7 @@ import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Optional;
 
+import static java.lang.sym.ConstantRefs.CR_MethodTypeRef;
 import static java.lang.sym.MethodHandleRef.Kind.CONSTRUCTOR;
 import static java.lang.sym.ConstantRefs.CR_MethodHandleRef;
 import static java.util.Objects.requireNonNull;
@@ -173,8 +174,8 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<MethodHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_METHODHANDLEREF_FACTORY, CR_MethodHandleRef,
-                                                  kind, owner, name, type);
+        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_METHODHANDLEREF, CR_MethodHandleRef)
+                                             .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
     }
 
     @Override

@@ -93,8 +93,7 @@ public class ConstantClassRef implements ClassRef {
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<Class<?>>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_CLASSREF_FACTORY,
-                                                  CR_ClassRef, descriptorString());
+        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_CLASSREF, CR_ClassRef).withArgs(descriptor));
     }
 
     @Override

@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.sym.ConstantRefs.CR_ClassRef;
 import static java.lang.sym.ConstantRefs.CR_MethodTypeRef;
 import static java.util.Objects.requireNonNull;
 
@@ -174,7 +175,7 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<MethodType>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_METHODTYPEREF_FACTORY, CR_MethodTypeRef, descriptorString());
+        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_METHODTYPEREF, CR_MethodTypeRef).withArgs(descriptorString()));
     }
 
     @Override

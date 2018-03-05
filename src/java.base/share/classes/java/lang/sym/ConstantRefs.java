@@ -298,10 +298,6 @@ public final class ConstantRefs {
     static final MethodHandleRef MHR_METHODHANDLEREF_ASTYPE
             = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandleRef, "asType", CR_MethodHandleRef, CR_MethodTypeRef);
 
-    static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY_VARARGS
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
-                                 CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef, CR_ConstantRef.array());
-
     static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
                                  CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef);

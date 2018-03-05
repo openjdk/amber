@@ -93,7 +93,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static MethodHandleRef of(Kind kind, ClassRef clazz, String name, MethodTypeRef type) {
+    static ConstantMethodHandleRef of(Kind kind, ClassRef clazz, String name, MethodTypeRef type) {
         return new ConstantMethodHandleRef(kind, clazz, name, type);
     }
 
@@ -109,7 +109,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static MethodHandleRef of(Kind kind, ClassRef clazz, String name, String descriptorString) {
+    static ConstantMethodHandleRef of(Kind kind, ClassRef clazz, String name, String descriptorString) {
         return of(kind, clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
     }
 
@@ -126,7 +126,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static MethodHandleRef of(Kind kind, ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+    static ConstantMethodHandleRef of(Kind kind, ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
         return of(kind, clazz, name, MethodTypeRef.of(returnType, paramTypes));
     }
 
@@ -143,7 +143,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    static MethodHandleRef ofDynamicCallsite(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+    static ConstantMethodHandleRef ofDynamicCallsite(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
         return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, ConstantRefs.INDY_BOOTSTRAP_ARGS));
     }
 
@@ -160,7 +160,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    static MethodHandleRef ofDynamicConstant(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
+    static ConstantMethodHandleRef ofDynamicConstant(ClassRef clazz, String name, ClassRef returnType, ClassRef... paramTypes) {
         return of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, ConstantRefs.CONDY_BOOTSTRAP_ARGS));
     }
 
@@ -175,7 +175,7 @@ public interface MethodHandleRef
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    static MethodHandleRef ofField(Kind kind, ClassRef clazz, String name, ClassRef type) {
+    static ConstantMethodHandleRef ofField(Kind kind, ClassRef clazz, String name, ClassRef type) {
         MethodTypeRef mtr;
         switch (kind) {
             case GETTER: mtr = MethodTypeRef.of(type, clazz); break;

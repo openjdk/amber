@@ -73,8 +73,7 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<E>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_ENUMREF_FACTORY, CR_EnumRef,
-                                                  constantType(), constantName());
+        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_ENUMREF, CR_EnumRef).withArgs(constantType().descriptorString(), constantName()));
     }
 
     @Override

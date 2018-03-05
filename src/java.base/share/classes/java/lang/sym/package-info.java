@@ -54,7 +54,7 @@
  *
  * <p>The subtypes of of {@link java.lang.sym.ConstantRef} describe various kinds
  * of constant values.  For each type of constant pool entry defined in JVMS 4.4,
- * there is a corresponding subtype of {@link java.lang.sym.ConstantRef:
+ * there is a corresponding subtype of {@link java.lang.sym.ConstantRef}:
  * {@code ConstantClassRef}, {@code ConstantMethodTypeRef},
  * {@code ConstantMethodHandleRef}, {@code String}, {@code Integer}, {@code Long},
  * {@code Float}, {@code Double}, and {@code DynamicConstantRef}.  These classes
