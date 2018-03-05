@@ -34,7 +34,7 @@ import java.util.Objects;
 import static java.lang.sym.ConstantRefs.CR_String;
 
 /**
- * A symbolic reference for an {@code invokedynamic} call site.
+ * A nominal reference for an {@code invokedynamic} call site.
  */
 @SuppressWarnings("rawtypes")
 public final class DynamicCallSiteRef {
@@ -46,7 +46,7 @@ public final class DynamicCallSiteRef {
     private final MethodTypeRef type;
 
     /**
-     * Construct a symbolic reference for an {@code invokedynamic} call site
+     * Construct a nominal reference for an {@code invokedynamic} call site
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
      * @param name The name that would appear in the {@code NameAndType} operand
@@ -68,9 +68,9 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site.  If
+     * Return a nominal reference for an {@code invokedynamic} call site.  If
      * the bootstrap method corresponds to a well-known bootstrap, for which a
-     * more specific symbolic reference type exists, the more specific symbolic
+     * more specific nominal reference type exists, the more specific nominal
      * reference type is returned.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
@@ -80,7 +80,7 @@ public final class DynamicCallSiteRef {
      *             of the {@code invokedynamic}
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
@@ -90,7 +90,7 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site.
+     * Return a nominal reference for an {@code invokedynamic} call site.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
      * @param name The name that would appear in the {@code NameAndType} operand
@@ -99,7 +99,7 @@ public final class DynamicCallSiteRef {
      *             of the {@code invokedynamic}
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
@@ -108,7 +108,7 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site whose
+     * Return a nominal reference for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
@@ -116,7 +116,7 @@ public final class DynamicCallSiteRef {
      *             of the {@code invokedynamic}
      * @param type The invocation type that would appear in the {@code NameAndType} operand
      *             of the {@code invokedynamic}
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
@@ -125,13 +125,13 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site whose
+     * Return a nominal reference for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments and whose name parameter is ignored.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
      * @param type The invocation type that would appear in the {@code NameAndType} operand
      *             of the {@code invokedynamic}
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
@@ -140,13 +140,13 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site whose
+     * Return a nominal reference for an {@code invokedynamic} call site whose
      * bootstrap method, name, and invocation type are the same as this one, but
      * with the specified bootstrap arguments.
      *
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
@@ -155,7 +155,7 @@ public final class DynamicCallSiteRef {
     }
 
     /**
-     * Return a symbolic reference for an {@code invokedynamic} call site whose
+     * Return a nominal reference for an {@code invokedynamic} call site whose
      * bootstrap and bootstrap arguments are the same as this one, but with the
      * specified name and invocation type
      *
@@ -163,7 +163,7 @@ public final class DynamicCallSiteRef {
      *             of the {@code invokedynamic}
      * @param type The invocation type that would appear in the {@code NameAndType} operand
      *             of the {@code invokedynamic}
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any parameter is null
      */
     @Foldable

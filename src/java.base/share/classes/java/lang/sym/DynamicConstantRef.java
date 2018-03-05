@@ -43,7 +43,7 @@ import static java.lang.sym.ConstantRefs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A symbolic reference for a dynamic constant (one described in the constant
+ * A nominal reference for a dynamic constant (one described in the constant
  * pool with {@code Constant_Dynamic_info}.)
  *
  * <p>Concrete subtypes of {@linkplain DynamicConstantRef} must be
@@ -75,7 +75,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     );
 
     /**
-     * Construct a symbolic reference for a dynamic constant
+     * Construct a nominal reference for a dynamic constant
      *
      * @param bootstrapMethod The bootstrap method for the constant
      * @param name The name that would appear in the {@code NameAndType} operand
@@ -98,12 +98,12 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant whose bootstrap, invocation
+     * Return a nominal reference for a dynamic constant whose bootstrap, invocation
      * name, and invocation type are the same as this one, but with the specified
      * bootstrap arguments
      *
      * @param bootstrapArgs the bootstrap arguments
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      */
     @Foldable
@@ -112,10 +112,10 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant.  If  the bootstrap
-     * corresponds to a well-known bootstrap, for which a more specific symbolic
+     * Return a nominal reference for a dynamic constant.  If  the bootstrap
+     * corresponds to a well-known bootstrap, for which a more specific nominal
      * reference type (e.g., ClassRef) is available, then the more specific
-     * symbolic reference will be returned.
+     * nominal reference will be returned.
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod The bootstrap method for the constant
@@ -125,7 +125,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
      *             of the {@code LDC} for this constant
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -148,7 +148,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant.
+     * Return a nominal reference for a dynamic constant.
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod The bootstrap method for the constant
@@ -158,7 +158,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
      *             of the {@code LDC} for this constant
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -168,7 +168,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * Return a nominal reference for a dynamic constant whose bootstrap has
      * no static arguments.
      *
      * @param <T> the type of the dynamic constant
@@ -177,7 +177,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
      *             of the {@code LDC} for this constant
      * @param type The type that would appear in the {@code NameAndType} operand
      *             of the {@code LDC} for this constant
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -187,14 +187,14 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * Return a nominal reference for a dynamic constant whose bootstrap has
      * no static arguments, and whose name parameter is ignored by the bootstrap
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod The bootstrap method for the constant
      * @param type The type that would appear in the {@code NameAndType} operand
      *             of the {@code LDC} for this constant
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -204,7 +204,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * Return a nominal reference for a dynamic constant whose bootstrap has
      * no static arguments, and whose type parameter is always the same as the
      * bootstrap method return type.
      *
@@ -212,7 +212,7 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
      * @param bootstrapMethod The bootstrap method for the constant
      * @param name The name that would appear in the {@code NameAndType} operand
      *             of the {@code LDC} for this constant
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -222,13 +222,13 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     }
 
     /**
-     * Return a symbolic reference for a dynamic constant whose bootstrap has
+     * Return a nominal reference for a dynamic constant whose bootstrap has
      * no static arguments, whose name parameter is ignored, and whose type
      * parameter is always the same as the bootstrap method return type.
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod The bootstrap method for the constant
-     * @return the symbolic reference
+     * @return the nominal reference
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
@@ -324,9 +324,9 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
      * Produce a {@linkplain DynamicConstantRef} describing the invocation of
      * the specified bootstrap with the specified arguments.
      *
-     * @param bootstrap symbolic reference for the bootstrap method
-     * @param type symbolic reference for the type of the resulting constant
-     * @param args symbolic references for the bootstrap arguments
+     * @param bootstrap nominal reference for the bootstrap method
+     * @param type nominal reference for the type of the resulting constant
+     * @param args nominal references for the bootstrap arguments
      * @param <T> the type of the resulting constant
      * @return the dynamic constant reference
      */
@@ -342,13 +342,13 @@ public abstract class DynamicConstantRef<T> implements ConstantRef<T>, Constable
     /**
      * Produce an {@code Optional<DynamicConstantRef<T>>} describing the invocation
      * of the specified bootstrap with the specified arguments.  The arguments will
-     * be converted to symbolic references using the provided lookup.
+     * be converted to nominal references using the provided lookup.
      *
      * @param lookup A {@link MethodHandles.Lookup} to be used to perform
      *               access control determinations
-     * @param bootstrap symbolic reference for the bootstrap method
-     * @param type symbolic reference for the type of the resulting constant
-     * @param args symbolic references for the bootstrap arguments
+     * @param bootstrap nominal reference for the bootstrap method
+     * @param type nominal reference for the type of the resulting constant
+     * @param args nominal references for the bootstrap arguments
      * @param <T> the type of the resulting constant
      * @return the dynamic constant reference
      */

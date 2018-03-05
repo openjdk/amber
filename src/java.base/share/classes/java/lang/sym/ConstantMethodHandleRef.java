@@ -101,7 +101,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     /**
-     * Return the {@code refKind} of the method handle described by this symbolic reference,
+     * Return the {@code refKind} of the method handle described by this nominal reference,
      * as defined by {@link MethodHandleInfo}
      * @return the reference kind
      */
@@ -109,7 +109,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     public int refKind() { return kind.refKind; }
 
     /**
-     * Return the {@code kind} of the method handle described by this symbolic reference
+     * Return the {@code kind} of the method handle described by this nominal reference
      * @return the {@link Kind}
      */
     @Foldable
@@ -117,7 +117,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
 
     /**
      * Return the class which declares the method or field described by
-     * this symbolic reference
+     * this nominal reference
      *
      * @return the class in which the method or field is declared
      */
@@ -127,7 +127,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     /**
-     * Return the name of the method described by this symbolic reference
+     * Return the name of the method described by this nominal reference
      *
      * @return the name of the method
      */
@@ -137,7 +137,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     /**
-     * Return the type of the method described by this symbolic reference
+     * Return the type of the method described by this nominal reference
      * @return the method type
      */
     @Foldable

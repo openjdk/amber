@@ -38,9 +38,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Predefined constants for common symbolic references.  Includes class references
- * for primitive types and common platform types, and method handle references
- * for standard bootstrap methods.
+ * Predefined constants for common nominal references to constants.  Includes
+ * class references for primitive types and common platform types, and method
+ * handle references for standard bootstrap methods.
  *
  * @see ConstantRef
  */
@@ -277,7 +277,7 @@ public final class ConstantRefs {
     @Foldable
     public static final ClassRef CR_void = ClassRef.ofDescriptor("V");
 
-    /** Symbolic reference representing the constant {@code null} */
+    /** Nominal reference representing the constant {@code null} */
     @Foldable
     public static final ConstantRef<?> NULL = DynamicConstantRef.of(ConstantRefs.BSM_NULL_CONSTANT, ConstantRefs.CR_Object);
 

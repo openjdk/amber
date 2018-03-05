@@ -30,13 +30,13 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 /**
- * A symbolic reference to a loadable constant value, as defined in JVMS 4.4.
- * Such a symbolic reference can be stored in the constant pool of a classfile
+ * A nominal reference to a loadable constant value, as defined in JVMS 4.4.
+ * Such a nominal reference can be stored in the constant pool of a classfile
  * and resolved to yield the constant value itself.
  *
  * <p>Static constants that are expressible natively in the constant pool ({@link String},
  * {@link Integer}, {@link Long}, {@link Float}, and {@link Double}) implement
- * {@link ConstantRef}, serve as symbolic references for themselves.
+ * {@link ConstantRef}, serve as nominal references for themselves.
  * Native linkable constants ({@link Class}, {@link MethodType}, and
  * {@link MethodHandle}) have counterpart {@linkplain ConstantRef} types:
  * {@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.
@@ -48,7 +48,7 @@ import java.lang.invoke.MethodType;
  *
  * <p>Constants can be reflectively resolved via {@link ConstantRef#resolveConstantRef(MethodHandles.Lookup)}.
  *
- * <p>Constants describing various useful symbolic references (such as {@link ClassRef}
+ * <p>Constants describing various useful nominal references (such as {@link ClassRef}
  * instances for platform classes) can be found in {@link ConstantRefs}.
  *
  * <p>APIs that perform generation or parsing of bytecode are encouraged to use
@@ -83,7 +83,7 @@ public interface ConstantRef<T> {
      *
      * @param lookup The {@link MethodHandles.Lookup} to be used in name resolution
      * @return the resolved object
-     * @throws ReflectiveOperationException if this symbolic reference refers
+     * @throws ReflectiveOperationException if this nominal reference refers
      * (directly or indirectly) to a class, method, or field that cannot be
      * resolved
      */

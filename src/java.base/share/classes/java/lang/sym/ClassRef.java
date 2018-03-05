@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A symbolic reference for a {@link Class}.
+ * A nominal reference for a {@link Class}.
  */
 public interface ClassRef extends ConstantRef<Class<?>>, Constable<ConstantRef<Class<?>>> {
     /**
