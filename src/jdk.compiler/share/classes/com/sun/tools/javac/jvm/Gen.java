@@ -2071,6 +2071,9 @@ public class Gen extends JCTree.Visitor {
             }
             result = res;
         } else if (isInvokeDynamic(sym) || isConstantDynamic(sym)) {
+            if (isConstantDynamic(sym)) {
+                setTypeAnnotationPositions(tree.pos);
+            }
             result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && sym.owner.kind == MTH) {
             result = items.makeLocalItem((VarSymbol)sym);

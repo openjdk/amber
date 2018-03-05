@@ -785,10 +785,10 @@ public class ClassWriter extends ClassFile {
             if (!tc.position.emitToClassfile())
                 continue;
             switch (types.getRetention(tc)) {
-            case SOURCE: break;
-            case CLASS: invisibles.append(tc); break;
-            case RUNTIME: visibles.append(tc); break;
-            default: // /* fail soft */ throw new AssertionError(vis);
+                case SOURCE: break;
+                case CLASS: invisibles.append(tc); break;
+                case RUNTIME: visibles.append(tc); break;
+                default: // /* fail soft */ throw new AssertionError(vis);
             }
         }
 
