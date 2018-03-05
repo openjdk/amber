@@ -275,7 +275,7 @@ public class Constables {
     public Optional<DynamicVarSymbol> getDynamicFieldSymbol(JCTree tree, Object constant, Env<AttrContext> attrEnv) {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
-                constantRefClass.isInstance(constant)) {
+                constableClass.isInstance(constant)) {
                 constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "toConstantRef")).get();
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
