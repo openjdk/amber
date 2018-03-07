@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -33,9 +33,9 @@ import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.sym.ConstantRefs.CR_MethodTypeRef;
-import static java.lang.sym.MethodHandleRef.Kind.CONSTRUCTOR;
-import static java.lang.sym.ConstantRefs.CR_MethodHandleRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_MethodTypeRef;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.CONSTRUCTOR;
+import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandleRef;
 import static java.util.Objects.requireNonNull;
 
 /**

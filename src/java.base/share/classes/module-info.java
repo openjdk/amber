@@ -83,7 +83,7 @@ module java.base {
     exports java.lang.module;
     exports java.lang.ref;
     exports java.lang.reflect;
-    exports java.lang.sym;
+    exports java.lang.invoke.constant;
     exports java.math;
     exports java.net;
     exports java.net.spi;

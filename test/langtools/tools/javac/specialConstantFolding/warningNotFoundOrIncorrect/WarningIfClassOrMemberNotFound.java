@@ -4,7 +4,7 @@
  * @compile/fail/ref=WarningIfClassOrMemberNotFound.out -XDdoConstantFold -Werror -XDrawDiagnostics WarningIfClassOrMemberNotFound.java
  */
 
-import java.lang.invoke.*; import java.lang.sym.*;
+import java.lang.invoke.*; import java.lang.invoke.constant.*;
 import static java.lang.invoke.Intrinsics.*;
 
 class WarningIfClassOrMemberNotFound {

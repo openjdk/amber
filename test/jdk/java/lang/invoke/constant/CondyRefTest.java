@@ -25,21 +25,21 @@
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.lang.sym.ClassRef;
-import java.lang.sym.ConstantRef;
-import java.lang.sym.DynamicConstantRef;
-import java.lang.sym.EnumRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.ConstantRefs;
-import java.lang.sym.VarHandleRef;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.DynamicConstantRef;
+import java.lang.invoke.constant.EnumRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.VarHandleRef;
 
 import org.testng.annotations.Test;
 
-import static java.lang.sym.ConstantRefs.CR_MethodHandle;
-import static java.lang.sym.ConstantRefs.CR_Object;
-import static java.lang.sym.ConstantRefs.CR_String;
-import static java.lang.sym.ConstantRefs.CR_VarHandle;
-import static java.lang.sym.ConstantRefs.CR_int;
+import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandle;
+import static java.lang.invoke.constant.ConstantRefs.CR_Object;
+import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantRefs.CR_VarHandle;
+import static java.lang.invoke.constant.ConstantRefs.CR_int;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -49,7 +49,7 @@ import static org.testng.Assert.assertTrue;
 /**
  * @test
  * @run testng CondyRefTest
- * @summary unit tests for java.lang.sym.CondyRefTest
+ * @summary unit tests for java.lang.invoke.constant.CondyRefTest
  */
 @Test
 public class CondyRefTest extends SymbolicRefTest {

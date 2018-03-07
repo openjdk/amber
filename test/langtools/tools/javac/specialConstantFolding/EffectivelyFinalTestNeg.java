@@ -5,7 +5,7 @@
  * @compile/fail/ref=EffectivelyFinalTestNeg.out -XDdoConstantFold -XDrawDiagnostics -g EffectivelyFinalTestNeg.java
  */
 
-import java.lang.invoke.*; import java.lang.sym.*;
+import java.lang.invoke.*; import java.lang.invoke.constant.*;
 
 import static java.lang.invoke.Intrinsics.*;
 

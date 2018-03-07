@@ -25,22 +25,22 @@
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.sym.ClassRef;
-import java.lang.sym.Constable;
-import java.lang.sym.ConstantRef;
-import java.lang.sym.EnumRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.EnumRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.ConstantRefs;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.sym.MethodHandleRef.Kind.GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.SETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;

@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -34,9 +34,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.sym.ConstantRefs.CR_ClassRef;
-import static java.lang.sym.ConstantRefs.CR_String;
-import static java.lang.sym.ConstantRefs.CR_VarHandleRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantRefs.CR_VarHandleRef;
 
 /**
  * A symbolic reference for a {@link VarHandle} constant.

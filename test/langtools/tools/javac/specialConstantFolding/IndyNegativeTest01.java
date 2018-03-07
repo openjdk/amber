@@ -4,7 +4,7 @@
  * @compile/fail/ref=IndyNegativeTest01.out -XDdoConstantFold -XDrawDiagnostics IndyNegativeTest01.java
  */
 
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 
 import static java.lang.invoke.Intrinsics.*;
 

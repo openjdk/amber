@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.MethodHandle;

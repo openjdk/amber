@@ -1,12 +1,12 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.ConstantRefs;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
 
 public class FindStaticSetterTest extends ConstantFoldingTest {
     static String staticStrField = "class field";

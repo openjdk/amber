@@ -34,7 +34,7 @@
 
 import java.io.File;
 import java.lang.invoke.*;
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 import java.math.BigInteger;
 
 import com.sun.tools.classfile.*;

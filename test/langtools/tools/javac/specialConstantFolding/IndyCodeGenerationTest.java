@@ -29,7 +29,7 @@
  * @run main IndyCodeGenerationTest
  */
 
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;

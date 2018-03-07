@@ -5,7 +5,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 
 public class IndyCrashTest {
     static final ClassRef HELPER_CLASS = ClassRef.ofDescriptor("LIndyCrashTest$IntrinsicTestHelper;");

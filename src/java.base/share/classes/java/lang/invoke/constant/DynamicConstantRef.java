@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.lang.sym.ConstantRefs.CR_DynamicConstantRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_DynamicConstantRef;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 

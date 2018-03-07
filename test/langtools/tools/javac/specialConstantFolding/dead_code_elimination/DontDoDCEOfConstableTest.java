@@ -97,17 +97,17 @@ public class DontDoDCEOfConstableTest extends TestRunner {
     }
 
     private final static String stubSource =
-            "package java.lang.sym;\n" +
+            "package java.lang.invoke.constant;\n" +
 
             "import java.util.Optional;\n" +
             "import jdk.internal.lang.annotation.*;\n" +
             "import java.lang.invoke.*;\n" +
-            "import static java.lang.sym.ConstantRefs.*;\n" +
+            "import static java.lang.invoke.constant.ConstantRefs.*;\n" +
 
             "/** --\n" +
             "*/\n" +
             "public class Stub {\n" +
-            "   private static final ClassRef CR_BOX = ClassRef.of(\"java.lang.sym.Stub\").inner(\"Box\");\n" +
+            "   private static final ClassRef CR_BOX = ClassRef.of(\"java.lang.invoke.constant.Stub\").inner(\"Box\");\n" +
             "   private static final MethodHandleRef MH_BOX = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
             "   /**\n" +
             "    * x\n" +
@@ -153,7 +153,7 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "}";
 
     private static final String testSource =
-            "import java.lang.sym.Stub;\n" +
+            "import java.lang.invoke.constant.Stub;\n" +
 
             "class Test {\n" +
             "    public static void main(String... args) {\n" +

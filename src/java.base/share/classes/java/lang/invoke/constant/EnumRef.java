@@ -22,16 +22,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
-import static java.lang.sym.ConstantRefs.CR_ClassRef;
-import static java.lang.sym.ConstantRefs.CR_EnumRef;
-import static java.lang.sym.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_EnumRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**

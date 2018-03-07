@@ -4,12 +4,12 @@
  * @compile/fail/ref=MethodTypeNegTest.out -XDdoConstantFold -Werror -XDrawDiagnostics MethodTypeNegTest.java
  */
 
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.ConstantRefs;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.sym.MethodHandleRef.Kind.*;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.*;
 
 
 public class MethodTypeNegTest {

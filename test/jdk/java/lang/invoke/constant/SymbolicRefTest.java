@@ -26,10 +26,10 @@
 import java.lang.Class;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.sym.ClassRef;
-import java.lang.sym.Constable;
-import java.lang.sym.ConstantRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.ConstantRefs;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;

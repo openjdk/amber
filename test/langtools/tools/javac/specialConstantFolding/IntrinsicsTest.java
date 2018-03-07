@@ -23,7 +23,7 @@
  * questions.
  */
 
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 import java.lang.invoke.*;
 import java.util.List;
 import java.util.stream.Stream;

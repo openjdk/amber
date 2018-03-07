@@ -6,11 +6,11 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.sym.BootstrapSpecifier;
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.BootstrapSpecifier;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.ConstantRefs;
 
 public class ReportIncorrectMHForIndyTest {
 

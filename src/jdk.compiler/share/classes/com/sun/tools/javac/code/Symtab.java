@@ -499,8 +499,8 @@ public class Symtab {
         varHandleType = enterClass("java.lang.invoke.VarHandle");
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
         methodHandlesLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
-        dynamicConstantRefType = enterClass("java.lang.sym.DynamicConstantRef");
-        classRefType = enterClass("java.lang.sym.ClassRef");
+        dynamicConstantRefType = enterClass("java.lang.invoke.constant.DynamicConstantRef");
+        classRefType = enterClass("java.lang.invoke.constant.ClassRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
         foldableType = enterClass("jdk.internal.lang.annotation.Foldable");

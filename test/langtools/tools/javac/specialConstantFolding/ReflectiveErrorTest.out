@@ -1,2 +1,2 @@
-ReflectiveErrorTest.java:11:56: compiler.err.reflective.error: ofDescriptor, java.lang.sym.MethodTypeRef, Invalid parameter type: ^
+ReflectiveErrorTest.java:11:56: compiler.err.reflective.error: ofDescriptor, java.lang.invoke.constant.MethodTypeRef, Invalid parameter type: ^
 1 error

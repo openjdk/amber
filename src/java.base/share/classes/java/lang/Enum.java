@@ -31,8 +31,8 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
 import java.lang.invoke.MethodHandles;
-import java.lang.sym.Constable;
-import java.lang.sym.EnumRef;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.EnumRef;
 import java.util.Optional;
 
 /**

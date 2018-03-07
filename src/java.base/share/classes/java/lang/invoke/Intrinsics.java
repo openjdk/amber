@@ -24,8 +24,8 @@
  */
 package java.lang.invoke;
 
-import java.lang.sym.ConstantRef;
-import java.lang.sym.DynamicCallSiteRef;
+import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.DynamicCallSiteRef;
 
 /**
  * Intrinsics

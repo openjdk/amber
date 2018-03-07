@@ -30,27 +30,27 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.WrongMethodTypeException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.sym.ClassRef;
-import java.lang.sym.ConstantMethodHandleRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantMethodHandleRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.ConstantRefs;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
-import static java.lang.sym.MethodHandleRef.Kind.GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.SETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_SETTER;
-import static java.lang.sym.ConstantRefs.CR_Integer;
-import static java.lang.sym.ConstantRefs.CR_List;
-import static java.lang.sym.ConstantRefs.CR_Object;
-import static java.lang.sym.ConstantRefs.CR_String;
-import static java.lang.sym.ConstantRefs.CR_int;
-import static java.lang.sym.ConstantRefs.CR_void;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.ConstantRefs.CR_Integer;
+import static java.lang.invoke.constant.ConstantRefs.CR_List;
+import static java.lang.invoke.constant.ConstantRefs.CR_Object;
+import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantRefs.CR_int;
+import static java.lang.invoke.constant.ConstantRefs.CR_void;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -58,7 +58,7 @@ import static org.testng.Assert.fail;
 /**
  * @test
  * @run testng MethodHandleRefTest
- * @summary unit tests for java.lang.sym.MethodHandleRefTest
+ * @summary unit tests for java.lang.invoke.constant.MethodHandleRefTest
  */
 @Test
 public class MethodHandleRefTest extends SymbolicRefTest {

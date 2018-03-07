@@ -36,7 +36,7 @@
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 
 import com.sun.tools.classfile.ClassFile;
 import com.sun.tools.classfile.ConstantPool.*;
@@ -48,7 +48,7 @@ import toolbox.ToolBox;
 public class CheckForCondyDuplicatesTest {
 
     static final String testSource1 =
-        "import java.lang.sym.*;\n" +
+        "import java.lang.invoke.constant.*;\n" +
         "import java.lang.invoke.*;\n" +
 
         "public class Test1 {\n" +

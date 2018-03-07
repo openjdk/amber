@@ -29,7 +29,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.sym.MethodTypeRef;
+import java.lang.invoke.constant.MethodTypeRef;
 
 public class CrashWithPrimitiveArgumentsTest {
     void test() {

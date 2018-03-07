@@ -6,16 +6,16 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodHandleRef;
-import java.lang.sym.MethodTypeRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.ConstantRefs;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.sym.MethodHandleRef.Kind.GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.SETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_GETTER;
-import static java.lang.sym.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.SETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
 
 public class DontCompileIfSymbolCantBeFoundTest {
     void test() {

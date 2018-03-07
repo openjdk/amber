@@ -27,8 +27,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.sym.ClassRef;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantRefs;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ import static org.testng.Assert.fail;
 /**
  * @test
  * @run testng ClassRefTest
- * @summary unit tests for java.lang.sym.ClassRef
+ * @summary unit tests for java.lang.invoke.constant.ClassRef
  */
 @Test
 public class ClassRefTest extends SymbolicRefTest {

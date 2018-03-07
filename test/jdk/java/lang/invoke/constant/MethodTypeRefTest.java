@@ -24,8 +24,8 @@
  */
 
 import java.lang.invoke.MethodType;
-import java.lang.sym.ClassRef;
-import java.lang.sym.MethodTypeRef;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.MethodTypeRef;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -41,7 +41,7 @@ import static org.testng.Assert.fail;
 /**
  * @test
  * @run testng MethodTypeRefTest
- * @summary unit tests for java.lang.sym.MethodTypeRef
+ * @summary unit tests for java.lang.invoke.constant.MethodTypeRef
  */
 @Test
 public class MethodTypeRefTest extends SymbolicRefTest {

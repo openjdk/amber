@@ -29,7 +29,7 @@
  * @run main IndyPositiveTest01
  */
 
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 
 import com.sun.tools.javac.util.Assert;
 import static java.lang.invoke.Intrinsics.*;

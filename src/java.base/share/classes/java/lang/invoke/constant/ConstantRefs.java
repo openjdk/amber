@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -157,27 +157,27 @@ public final class ConstantRefs {
 
     /** {@link ClassRef} representing {@link ConstantRef} */
     @Foldable
-    static final ClassRef CR_ConstantRef = ClassRef.of("java.lang.sym.ConstantRef");
+    static final ClassRef CR_ConstantRef = ClassRef.of("java.lang.invoke.constant.ConstantRef");
 
     /** {@link ClassRef} representing {@link ClassRef} */
     @Foldable
-    static final ClassRef CR_ClassRef = ClassRef.of("java.lang.sym.ClassRef");
+    static final ClassRef CR_ClassRef = ClassRef.of("java.lang.invoke.constant.ClassRef");
 
     /** {@link ClassRef} representing {@link EnumRef} */
     @Foldable
-    static final ClassRef CR_EnumRef = ClassRef.of("java.lang.sym.EnumRef");
+    static final ClassRef CR_EnumRef = ClassRef.of("java.lang.invoke.constant.EnumRef");
 
     /** {@link ClassRef} representing {@link MethodTypeRef} */
     @Foldable
-    static final ClassRef CR_MethodTypeRef = ClassRef.of("java.lang.sym.MethodTypeRef");
+    static final ClassRef CR_MethodTypeRef = ClassRef.of("java.lang.invoke.constant.MethodTypeRef");
 
     /** {@link ClassRef} representing {@link MethodHandleRef} */
     @Foldable
-    static final ClassRef CR_MethodHandleRef = ClassRef.of("java.lang.sym.MethodHandleRef");
+    static final ClassRef CR_MethodHandleRef = ClassRef.of("java.lang.invoke.constant.MethodHandleRef");
 
     /** {@link ClassRef} representing {@link VarHandleRef} */
     @Foldable
-    static final ClassRef CR_VarHandleRef = ClassRef.of("java.lang.sym.VarHandleRef");
+    static final ClassRef CR_VarHandleRef = ClassRef.of("java.lang.invoke.constant.VarHandleRef");
 
     /** {@link ClassRef} representing {@link MethodHandleRef.Kind} */
     @Foldable
@@ -185,11 +185,11 @@ public final class ConstantRefs {
 
     /** {@link ClassRef} representing {@link DynamicConstantRef} */
     @Foldable
-    static final ClassRef CR_DynamicConstantRef = ClassRef.of("java.lang.sym.DynamicConstantRef");
+    static final ClassRef CR_DynamicConstantRef = ClassRef.of("java.lang.invoke.constant.DynamicConstantRef");
 
     /** {@link ClassRef} representing {@link DynamicCallSiteRef} */
     @Foldable
-    static final ClassRef CR_DynamicCallSiteRef = ClassRef.of("java.lang.sym.DynamicCallSiteRef");
+    static final ClassRef CR_DynamicCallSiteRef = ClassRef.of("java.lang.invoke.constant.DynamicCallSiteRef");
 
     /** {@link ClassRef} representing {@link ConstantBootstraps} */
     @Foldable

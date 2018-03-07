@@ -4,7 +4,7 @@
  * @compile/fail/ref=IndyLinkageErrorTest.out -XDdoConstantFold -XDrawDiagnostics IndyLinkageErrorTest.java
  */
 
-import java.lang.sym.*;
+import java.lang.invoke.constant.*;
 import static java.lang.invoke.Intrinsics.*;
 
 public class IndyLinkageErrorTest {

@@ -30,8 +30,8 @@ import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
-import java.lang.sym.Constable;
-import java.lang.sym.VarHandleRef;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.VarHandleRef;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

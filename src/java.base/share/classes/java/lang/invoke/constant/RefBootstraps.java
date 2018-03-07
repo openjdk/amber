@@ -22,19 +22,19 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.sym;
+package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
 import java.lang.invoke.MethodHandles;
 
-import static java.lang.sym.ConstantRefs.CR_ClassRef;
-import static java.lang.sym.ConstantRefs.CR_ConstantRef;
-import static java.lang.sym.ConstantRefs.CR_DynamicConstantRef;
-import static java.lang.sym.ConstantRefs.CR_EnumRef;
-import static java.lang.sym.ConstantRefs.CR_MethodHandleRef;
-import static java.lang.sym.ConstantRefs.CR_MethodTypeRef;
-import static java.lang.sym.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_ConstantRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_DynamicConstantRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_EnumRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandleRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_MethodTypeRef;
+import static java.lang.invoke.constant.ConstantRefs.CR_String;
 
 /**
  * RefBoostraps
@@ -45,7 +45,7 @@ public final class RefBootstraps {
     private RefBootstraps() { }
 
     @Foldable
-    private static final ClassRef THIS_CLASS = ClassRef.of("java.lang.sym.RefBootstraps");
+    private static final ClassRef THIS_CLASS = ClassRef.of("java.lang.invoke.constant.RefBootstraps");
 
     /** Bootstrap for ClassRef */
     @Foldable

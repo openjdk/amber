@@ -26,8 +26,8 @@
 package java.lang;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.sym.Constable;
-import java.lang.sym.ConstantRef;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantRef;
 import java.util.Optional;
 
 import jdk.internal.math.FloatingDecimal;
