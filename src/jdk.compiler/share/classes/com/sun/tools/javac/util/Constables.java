@@ -450,7 +450,12 @@ public class Constables {
     public boolean skipCodeGeneration(JCVariableDecl tree) {
         if (tree.init != null) {
             VarSymbol v = tree.sym;
-            return (v.isLocal() &&
+            Object constant = v.getConstValue();
+            boolean canMakeItToConstant = canMakeItToConstantValue(v.type);
+            return (constant != null &&
+                (canMakeItToConstant ||
+                    constantRefClass.isInstance(constant)) &&
+                v.isLocal() &&
                 v.owner.kind == Kind.MTH &&
                 (v.isFinal() || v.isEffectivelyFinal()));
         }
