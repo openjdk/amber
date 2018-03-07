@@ -24,7 +24,8 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.Foldable;
+import jdk.internal.vm.annotation.Foldable;
+
 import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;

@@ -24,7 +24,8 @@
  */
 package java.lang.sym;
 
-import java.lang.annotation.Foldable;
+import jdk.internal.vm.annotation.Foldable;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;

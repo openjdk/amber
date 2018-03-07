@@ -22,7 +22,9 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.annotation;
+package jdk.internal.vm.annotation;
+
+import java.lang.annotation.*;
 
 import java.lang.sym.Constable;
 import java.lang.sym.ConstantRef;

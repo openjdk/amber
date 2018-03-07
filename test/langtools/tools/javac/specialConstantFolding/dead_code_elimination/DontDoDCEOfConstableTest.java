@@ -100,7 +100,7 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "package java.lang.sym;\n" +
 
             "import java.util.Optional;\n" +
-            "import java.lang.annotation.*;\n" +
+            "import jdk.internal.vm.annotation.*;\n" +
             "import java.lang.invoke.*;\n" +
             "import static java.lang.sym.ConstantRefs.*;\n" +
 

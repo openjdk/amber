@@ -503,7 +503,7 @@ public class Symtab {
         classRefType = enterClass("java.lang.sym.ClassRef");
         intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
-        foldableType = enterClass("java.lang.annotation.Foldable");
+        foldableType = enterClass("jdk.internal.vm.annotation.Foldable");
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");
