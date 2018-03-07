@@ -38,7 +38,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Bootstrap methods for linking {@code invokedynamic} call sites that implement
@@ -116,7 +119,14 @@ public class SwitchBootstraps {
     /**
      * Bootstrap method for linking an {@code invokedynamic} call site that
      * implements a {@code switch} on a {@code boolean} or {@code Boolean}.
-     * The static arguments are a varargs array of {@code boolean} labels.
+     * The static arguments are a varargs array of {@code boolean} labels,
+     *
+     * <p>The results are undefined if the labels array contains duplicates.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
      *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
@@ -137,6 +147,9 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code booleanLabels.length} if the target value does
      *         not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if the invocation type is not
+     * {@code (boolean)int} or {@code (Boolean)int}
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite booleanSwitch(MethodHandles.Lookup lookup,
@@ -147,10 +160,14 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!BOOLEAN_TYPES.contains(invocationType.parameterType(0))))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(booleanLabels);
 
-        int[] intLabels = new int[booleanLabels.length];
-        for (int i=0; i<booleanLabels.length; i++)
-            intLabels[i] = booleanLabels[i] ? 1 : 0;
+        int[] intLabels = IntStream.range(0, booleanLabels.length)
+                                   .map(i -> booleanLabels[i] ? 1 : 0)
+                                   .toArray();
+
+        assert IntStream.of(intLabels).distinct().count() == intLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(booleanLabels);
 
         return new IntSwitchCallSite(invocationType, intLabels);
     }
@@ -160,6 +177,13 @@ public class SwitchBootstraps {
      * implements a {@code switch} on an {@code int}, {@code short}, {@code byte},
      * {@code char}, or one of their box types.  The static arguments are a
      * varargs array of {@code int} labels.
+     *
+     * <p>The results are undefined if the labels array contains duplicates.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
      *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
@@ -181,6 +205,10 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code intLabels.length} if the target value does
      *         not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if the invocation type is not
+     * {@code (T)int}, where {@code T} is one of the 32-bit or smaller integral
+     * primitive types, or one of their box types
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite intSwitch(MethodHandles.Lookup lookup,
@@ -191,6 +219,10 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!INT_TYPES.contains(invocationType.parameterType(0))))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(intLabels);
+
+        assert IntStream.of(intLabels).distinct().count() == intLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(intLabels);
 
         return new IntSwitchCallSite(invocationType, intLabels);
     }
@@ -199,6 +231,14 @@ public class SwitchBootstraps {
      * Bootstrap method for linking an {@code invokedynamic} call site that
      * implements a {@code switch} on an {@code float} or {@code Float}.
      * The static arguments are a varargs array of {@code float} labels.
+     *
+     * <p>The results are undefined if the labels array contains duplicates
+     * according to {@link Float#floatToIntBits(float)}.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
      *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
@@ -220,6 +260,9 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code floatLabels.length} if the target value does
      *         not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if the invocation type is not
+     * {@code (float)int} or {@code (Float)int}
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite floatSwitch(MethodHandles.Lookup lookup,
@@ -230,10 +273,14 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!FLOAT_TYPES.contains(invocationType.parameterType(0))))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(floatLabels);
 
         int[] intLabels = new int[floatLabels.length];
         for (int i=0; i<floatLabels.length; i++)
             intLabels[i] = Float.floatToIntBits(floatLabels[i]);
+
+        assert IntStream.of(intLabels).distinct().count() == intLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(floatLabels);
 
         return new IntSwitchCallSite(invocationType, intLabels);
     }
@@ -313,6 +360,13 @@ public class SwitchBootstraps {
      * implements a {@code switch} on a {@code long} or {@code Long}.
      * The static arguments are a varargs array of {@code long} labels.
      *
+     * <p>The results are undefined if the labels array contains duplicates.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
+     *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
      *               this is stacked automatically by the VM.
@@ -333,6 +387,9 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code longLabels.length} if the target value does
      *         not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if the invocation type is not
+     * {@code (long)int} or {@code (Long)int}
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite longSwitch(MethodHandles.Lookup lookup,
@@ -343,6 +400,10 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!LONG_TYPES.contains(invocationType.parameterType(0))))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(longLabels);
+
+        assert LongStream.of(longLabels).distinct().count() == longLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(longLabels);
 
         return new LongSwitchCallSite(invocationType, longLabels);
     }
@@ -351,6 +412,14 @@ public class SwitchBootstraps {
      * Bootstrap method for linking an {@code invokedynamic} call site that
      * implements a {@code switch} on a {@code double} or {@code Double}.
      * The static arguments are a varargs array of {@code double} labels.
+     *
+     * <p>The results are undefined if the labels array contains duplicates
+     * according to {@link Double#doubleToLongBits(double)}.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
      *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
@@ -372,6 +441,9 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code doubleLabels.length} if the target value does
      *         not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if the invocation type is not
+     * {@code (double)int} or {@code (Double)int}
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite doubleSwitch(MethodHandles.Lookup lookup,
@@ -382,10 +454,14 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!DOUBLE_TYPES.contains(invocationType.parameterType(0))))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(doubleLabels);
 
         long[] longLabels = new long[doubleLabels.length];
         for (int i=0; i<doubleLabels.length; i++)
             longLabels[i] = Double.doubleToLongBits(doubleLabels[i]);
+
+        assert LongStream.of(longLabels).distinct().count() == longLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(doubleLabels);
 
         return new LongSwitchCallSite(invocationType, longLabels);
     }
@@ -432,6 +508,14 @@ public class SwitchBootstraps {
      * implements a {@code switch} on a {@code String} target.  The static
      * arguments are a varargs array of {@code String} labels.
      *
+     * <p>The results are undefined if the labels array contains duplicates
+     * according to {@link String#equals(Object)}.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
+     *
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
      *               this is stacked automatically by the VM.
@@ -451,6 +535,9 @@ public class SwitchBootstraps {
      *         matches any of the labels, {@literal -1} if the target value is
      *         {@code null}, or {@code stringLabels.length} if the target value
      *         does not match any of the labels.
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if any labels are null, or if the
+     * invocation type is not {@code (String)int}
      * @throws Throwable if there is any error linking the call site
      */
     public static CallSite stringSwitch(MethodHandles.Lookup lookup,
@@ -461,8 +548,12 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!invocationType.parameterType(0).equals(String.class)))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(stringLabels);
         if (Stream.of(stringLabels).anyMatch(Objects::isNull))
             throw new IllegalArgumentException("null label found");
+
+        assert Stream.of(stringLabels).distinct().count() == stringLabels.length
+                : "switch labels are not distinct: " + Arrays.toString(stringLabels);
 
         return new StringSwitchCallSite(invocationType, stringLabels);
     }
@@ -523,6 +614,13 @@ public class SwitchBootstraps {
      * that are the names of the enum constants corresponding to the
      * {@code case} labels.
      *
+     * <p>The results are undefined if the names array contains duplicates.
+     *
+     * @implNote
+     *
+     * The implementation only enforces the requirement that the labels array
+     * be duplicate-free if system assertions are enabled.
+     *
      * @param <E> the enum type
      * @param lookup Represents a lookup context with the accessibility
      *               privileges of the caller.  When used with {@code invokedynamic},
@@ -533,7 +631,7 @@ public class SwitchBootstraps {
      *                       structure and is stacked automatically by the VM.
      * @param invocationType The invocation type of the {@code CallSite}.  This
      *                       method type should have a single parameter of
-     *                       {@code String}, and return {@code int}.  When
+     *                       {@code Enum}, and return {@code int}.  When
      *                       used with {@code invokedynamic}, this is provided by
      *                       the {@code NameAndType} of the {@code InvokeDynamic}
      *                       structure and is stacked automatically by the VM.
@@ -545,7 +643,10 @@ public class SwitchBootstraps {
      *         {@code null}, or {@code stringLabels.length} if the target value
      *         does not match any of the labels.
      * @throws IllegalArgumentException if the specified class is not an
-     *                                  enum class
+     *                                  enum class, or any label name is null,
+     *                                  or if the invocation type is not
+     *                                  {@code (Enum)int}
+     * @throws NullPointerException if any required argument is null
      * @throws Throwable if there is any error linking the call site
      */
     public static<E extends Enum<E>> CallSite enumSwitch(MethodHandles.Lookup lookup,
@@ -557,10 +658,15 @@ public class SwitchBootstraps {
             || (!invocationType.returnType().equals(int.class))
             || (!invocationType.parameterType(0).equals(Enum.class)))
             throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(enumClass);
+        requireNonNull(enumNames);
         if (!enumClass.isEnum())
             throw new IllegalArgumentException("not an enum class");
         if (Stream.of(enumNames).anyMatch(Objects::isNull))
             throw new IllegalArgumentException("null label found");
+
+        assert Stream.of(enumNames).distinct().count() == enumNames.length
+                : "switch labels are not distinct: " + Arrays.toString(enumNames);
 
         return new EnumSwitchCallSite<>(invocationType, enumClass, enumNames);
     }
