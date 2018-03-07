@@ -24,7 +24,7 @@
  */
 package java.lang.sym;
 
-import jdk.internal.vm.annotation.Foldable;
+import jdk.internal.lang.annotation.Foldable;
 
 import java.util.stream.Stream;
 

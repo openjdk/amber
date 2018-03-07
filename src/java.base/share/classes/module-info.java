@@ -145,6 +145,8 @@ module java.base {
     exports jdk.internal.jmod to
         jdk.compiler,
         jdk.jlink;
+    exports jdk.internal.lang.annotation to
+        jdk.compiler;
     exports jdk.internal.logger to
         java.logging;
     exports jdk.internal.org.objectweb.asm to
@@ -209,8 +211,7 @@ module java.base {
     exports jdk.internal.vm.annotation to
         jdk.unsupported,
         jdk.internal.vm.ci,
-        jdk.incubator.httpclient,
-        jdk.compiler;
+        jdk.incubator.httpclient;
     exports jdk.internal.util.jar to
         jdk.jartool;
     exports sun.net to

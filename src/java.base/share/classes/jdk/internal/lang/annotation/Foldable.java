@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.internal.vm.annotation;
+package jdk.internal.lang.annotation;
 
 import java.lang.annotation.*;
 
