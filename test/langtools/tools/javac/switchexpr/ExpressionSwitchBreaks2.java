@@ -28,6 +28,7 @@
 
 public class ExpressionSwitchBreaks2 {
     private String print(int i, int j) {
+        LOOP: while (true) {
         OUTER: switch (i) {
             case 0:
                 return switch (j) {
@@ -44,6 +45,10 @@ public class ExpressionSwitchBreaks2 {
                         }
                         break "X";
                     }
+                    case 4: return "X"; //error: no returns from inside of the switch expression
+                    case 5: continue;   //error: no continue out of the switch expression
+                    case 6: continue LOOP; //error: dtto, but with a label
+                    case 7: continue UNKNOWN; //error: unknown label
                     default: {
                         String x = "X";
                         x: switch (i + j) {
@@ -54,6 +59,7 @@ public class ExpressionSwitchBreaks2 {
                 };
             case 1:
                 break "1" + undef; //error: complex value and no switch expression
+        }
         }
         return null;
     }

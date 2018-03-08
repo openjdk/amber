@@ -28,6 +28,7 @@
  */
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ExpressionSwitchBreaks1 {
     public static void main(String... args) {
@@ -46,6 +47,7 @@ public class ExpressionSwitchBreaks1 {
         check(print2(0, 1, -1), "0-1");
         check(print2(0, -1, -1), "0-X");
         check(print2(1, -1, -1), "1");
+        check(print2(2, 5, 5), "2-X-5");
         check(print2(-11, -1, -1), "X");
     }
 
@@ -86,6 +88,15 @@ public class ExpressionSwitchBreaks1 {
                 break r;
             case 1:
                 break "1";
+            case 2:
+                LOOP: while (j-- > 0) {
+                    if (k == 5) {
+                        k--;
+                        continue;
+                    }
+                    Supplier<String> getter = () -> { return "2-X-5"; };
+                    break getter.get();
+                }
             default:
                 break "X";
         };

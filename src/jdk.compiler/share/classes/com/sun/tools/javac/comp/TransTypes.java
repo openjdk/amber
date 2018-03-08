@@ -46,6 +46,7 @@ import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import static com.sun.tools.javac.comp.CompileStates.CompileState;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 
 /** This pass translates Generic Java to conventional Java.
  *
@@ -663,6 +664,13 @@ public class TransTypes extends TreeTranslator {
 
     public void visitReturn(JCReturn tree) {
         tree.expr = translate(tree.expr, currentMethod != null ? types.erasure(currentMethod.type).getReturnType() : null);
+        result = tree;
+    }
+
+    @Override
+    public void visitBreak(JCBreak tree) {
+        if (tree.isValueBreak())
+            tree.value = translate(tree.value, erasure(tree.value.type));
         result = tree;
     }
 

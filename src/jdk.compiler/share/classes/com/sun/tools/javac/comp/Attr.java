@@ -1973,7 +1973,7 @@ public class Attr extends JCTree.Visitor {
                     case WHILELOOP:
                     case FORLOOP:
                     case FOREACHLOOP:
-                        if (label == null) return Pair.of(env1.tree, null);
+                        if (label == null) return Pair.of(env1.tree, pendingError);
                         break;
                     case SWITCH:
                         if (label == null && tag == BREAK) return Pair.of(env1.tree, null);
@@ -1985,6 +1985,8 @@ public class Attr extends JCTree.Visitor {
                             } else {
                                 pendingError = Errors.BreakOutsideSwitchExpression;
                             }
+                        } else {
+                            pendingError = Errors.ContinueOutsideSwitchExpression;
                         }
                         break;
                     case LAMBDA:
@@ -2008,6 +2010,8 @@ public class Attr extends JCTree.Visitor {
         // nested within than the enclosing class.
         if (env.info.returnResult == null) {
             log.error(tree.pos(), Errors.RetOutsideMeth);
+        } else if (env.info.breakResult != null) {
+            log.error(tree.pos(), Errors.ReturnOutsideSwitchExpression);
         } else {
             // Attribute return expression, if it exists, and check that
             // it conforms to result type of enclosing method.
@@ -3081,6 +3085,7 @@ public class Attr extends JCTree.Visitor {
             } else {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dup()));
             }
+            lambdaEnv.info.breakResult = null;
             return lambdaEnv;
         }
 
