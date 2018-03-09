@@ -231,7 +231,7 @@ class ReplParser extends JavacParser {
                             //mods.flags |= Flags.STATIC;
                             return List.of(methodDeclaratorRest(
                                     pos, mods, t, name, typarams,
-                                    false, isVoid, dc));
+                                    false, isVoid, false, dc));
                         } else if (!isVoid && typarams.isEmpty()) {
                         // variable declaration
                             //mods.flags |= Flags.STATIC;

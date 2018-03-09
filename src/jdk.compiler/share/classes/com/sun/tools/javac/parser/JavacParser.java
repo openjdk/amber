@@ -3436,7 +3436,7 @@ public class JavacParser implements Parser {
 
         List<JCTypeParameter> typarams = typeParametersOpt();
 
-        Map<Name, JCTree> optHeaderFields = headerFields(mods);
+        Map<Name, JCVariableDecl> optHeaderFields = headerFields(mods);
 
         if (optHeaderFields.size() == 0) {
             log.error(token.pos, Errors.RecordMustDeclareAtLeastOneField);
@@ -3468,30 +3468,39 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
-//        JCExpression whereExpr = null;
         List<JCTree> defs = List.nil();
-//        if (token.kind == IDENTIFIER && token.name() == names.where) {
-//            nextToken();
-//            whereExpr = parseExpression();
-//        }
         if (token.kind == LBRACE) {
             defs = classInterfaceOrRecordBody(name, false, true);
         } else {
             accept(SEMI);
         }
         optHeaderFields.values().stream()
-                .filter(t -> superFieldNames.contains(((JCVariableDecl)t).name))
-                .forEach(t -> ((JCVariableDecl)t).getModifiers().flags |= Flags.HYPOTHETICAL);
-        ListBuffer<JCTree> fields = new ListBuffer<>();
+                .filter(t -> superFieldNames.contains(t.name))
+                .forEach(t -> t.getModifiers().flags |= Flags.HYPOTHETICAL);
+        java.util.List<JCVariableDecl> fields = new ArrayList<>();
         for (Name n : superFieldNames) {
-            JCTree field = optHeaderFields.get(n);
+            JCVariableDecl field = optHeaderFields.get(n);
             fields.add(field);
             optHeaderFields.remove(n);
         }
-        for (JCTree field : optHeaderFields.values()) {
+        for (JCVariableDecl field : optHeaderFields.values()) {
             fields.add(field);
         }
-        defs = defs.prependList(fields.toList());
+        for (JCTree def : defs) {
+            if (def.hasTag(METHODDEF)) {
+                JCMethodDecl methDef = (JCMethodDecl) def;
+                if (methDef.name == names.init && methDef.params.isEmpty()) {
+                    ListBuffer<JCVariableDecl> tmpParams = new ListBuffer<>();
+                    for (JCVariableDecl param : fields) {
+                        tmpParams.add(F.at(param).VarDef(F.Modifiers(Flags.PARAMETER), param.name, param.vartype, null));
+                    }
+                    methDef.params = tmpParams.toList();
+                }
+            }
+        }
+        for (int i = fields.size() - 1; i >= 0; i--) {
+            defs = defs.prepend(fields.get(i));
+        }
         JCRecordDecl result = toP(F.at(pos).RecordDef(mods, name, typarams, extending, implementing, defs, null));
         attach(result, dc);
         return result;
@@ -3514,9 +3523,9 @@ public class JavacParser implements Parser {
         return name;
     }
 
-    Map<Name, JCTree> headerFields(JCModifiers recordClassMods) {
+    Map<Name, JCVariableDecl> headerFields(JCModifiers recordClassMods) {
         accept(LPAREN);
-        Map<Name, JCTree> fields = new LinkedHashMap<>();
+        Map<Name, JCVariableDecl> fields = new LinkedHashMap<>();
         while (token.kind != RPAREN) {
             JCModifiers mods = modifiersOpt();
             mods.flags |= Flags.RECORD;
@@ -3788,21 +3797,22 @@ public class JavacParser implements Parser {
             // method returns types are un-annotated types
             type = unannotatedType(false);
         }
-        if (token.kind == LPAREN && !isInterface && type.hasTag(IDENT)) {
+        if ((token.kind == LPAREN && !isInterface ||
+                isRecord && token.kind == LBRACE) && type.hasTag(IDENT)) {
             if (isInterface || tk.name() != className)
                 log.error(pos, Errors.InvalidMethDeclRetTypeReq);
             else if (annosAfterParams.nonEmpty())
                 illegal(annosAfterParams.head.pos);
             return List.of(methodDeclaratorRest(
                 pos, mods, null, names.init, typarams,
-                isInterface, true, dc));
+                isInterface, true, isRecord, dc));
         } else {
             pos = token.pos;
             Name name = ident();
             if (token.kind == LPAREN) {
                 return List.of(methodDeclaratorRest(
                     pos, mods, type, name, typarams,
-                    isInterface, isVoid, dc));
+                    isInterface, isVoid, isRecord, dc));
             } else if (!isVoid && typarams.isEmpty()) {
                 if (!isRecord || isRecord && (mods.flags & Flags.STATIC) != 0) {
                     List<JCTree> defs =
@@ -3847,6 +3857,7 @@ public class JavacParser implements Parser {
                               Name name,
                               List<JCTypeParameter> typarams,
                               boolean isInterface, boolean isVoid,
+                              boolean isRecord,
                               Comment dc) {
         if (isInterface) {
             if ((mods.flags & Flags.STATIC) != 0) {
@@ -3860,12 +3871,15 @@ public class JavacParser implements Parser {
         try {
             this.receiverParam = null;
             // Parsing formalParameters sets the receiverParam, if present
-            List<JCVariableDecl> params = formalParameters();
-            if (!isVoid) type = bracketsOpt(type);
+            List<JCVariableDecl> params = List.nil();
             List<JCExpression> thrown = List.nil();
-            if (token.kind == THROWS) {
-                nextToken();
-                thrown = qualidentList(true);
+            if (!isRecord || name != names.init || token.kind == LPAREN) {
+                params = formalParameters();
+                if (!isVoid) type = bracketsOpt(type);
+                if (token.kind == THROWS) {
+                    nextToken();
+                    thrown = qualidentList(true);
+                }
             }
             JCBlock body = null;
             JCExpression defaultValue;
@@ -3888,7 +3902,6 @@ public class JavacParser implements Parser {
                     }
                 }
             }
-
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
                                             receiverParam, params, thrown,

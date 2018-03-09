@@ -960,8 +960,29 @@ public class TypeEnter implements Completer {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
                 }
+            } else {
+                if ((sym.flags() & RECORD) != 0) {
+                    // there are constructors but they could be incomplete
+                    for (JCTree def : tree.defs) {
+                        if (TreeInfo.isConstructor(def) &&
+                            !TreeInfo.hasConstructorInvocation(((JCMethodDecl)def).body.stats, names, true)) {
+                            RecordConstructorHelper helper = new RecordConstructorHelper(sym,
+                                    ((JCRecordDecl)tree).guard, TreeInfo.recordFields(tree).map(vd -> vd.sym),
+                                    TreeInfo.superRecordFields(tree));
+                            JCMethodDecl methDecl = (JCMethodDecl)def;
+                            JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
+                                    make.Ident(names._super), make.Idents(helper.superFields)));
+                            methDecl.body.stats = methDecl.body.stats.append(supCall);
+                            ListBuffer<JCStatement> initializations = new ListBuffer<>();
+                            for (Name initName : helper.inits()) {
+                                initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
+                                        initName), make.Ident(initName))));
+                            }
+                            methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
+                        }
+                    }
+                }
             }
-
             // enter symbols for 'this' into current scope.
             VarSymbol thisSym =
                 new VarSymbol(FINAL | HASINIT, names._this, sym.type, sym);
