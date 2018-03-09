@@ -33,13 +33,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Formatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -2599,23 +2602,24 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * and trailing white space removed.
+     * and trailing white space removed, where white space is defined
+     * as any character whose codepoint is less than or equal to
+     * {@code '\u005Cu0020'} (the space character).
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first and last characters of character sequence
      * represented by this {@code String} object both have codes
-     * greater than {@code '\u005Cu0020'} (the space character), then a
+     * that are not white space (as defined above), then a
      * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if there is no character with a code greater than
-     * {@code '\u005Cu0020'} in the string, then a
-     * {@code String} object representing an empty string is
-     * returned.
+     * Otherwise, if all characters in this string are white space (as
+     * defined above), then a  {@code String} object representing an
+     * empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is greater than {@code '\u005Cu0020'}, and let
+     * string whose code is not a white space (as defined above) and let
      * <i>m</i> be the index of the last character in the string whose code
-     * is greater than {@code '\u005Cu0020'}. A {@code String}
+     * is not a white space (as defined above). A {@code String}
      * object is returned, representing the substring of this string that
      * begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
@@ -2636,21 +2640,62 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * white space removed.
+     * and trailing white space removed, where white space is defined
+     * as any character whose codepoint is less than or equal to
+     * {@code '\u005Cu0020'} (the space character) or returns true
+     * when passed to {@link Character#isWhitespace(int)}.
      * <p>
      * If this {@code String} object represents an empty character
-     * sequence, or the first characters of character sequence
-     * represented by this {@code String} object have codes
-     * greater than {@code '\u005Cu0020'} (the space character), then a
+     * sequence, or the first and last characters of character sequence
+     * represented by this {@code String} object both have codes
+     * that are not white space (as defined above), then a
      * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if there is no character with a code greater than
-     * {@code '\u005Cu0020'} in the string, then a
-     * {@code String} object representing an empty string is
-     * returned.
+     * Otherwise, if all characters in this string are white space (as
+     * defined above), then a  {@code String} object representing an
+     * empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is greater than {@code '\u005Cu0020'}, and let
+     * string whose code is not a white space (as defined above) and let
+     * <i>m</i> be the index of the last character in the string whose code
+     * is not a white space (as defined above). A {@code String}
+     * object is returned, representing the substring of this string that
+     * begins with the character at index <i>k</i> and ends with the
+     * character at index <i>m</i>-that is, the result of
+     * {@code this.substring(k, m + 1)}.
+     * <p>
+     * This method may be used to trim white space (as defined above) from
+     * the beginning and end of a string.
+     *
+     * @return  a string whose value is this string, with all leading
+     *          and trailing white space removed, or this string if it
+     *          has no leading or trailing white space.
+     */
+    public String trimWhitespace() {
+        String ret = isLatin1() ? StringLatin1.trim(value)
+                                : StringUTF16.trimWhitespace(value);
+        return ret == null ? this : ret;
+    }
+
+    /**
+     * Returns a string whose value is this string, with all leading
+     * white space removed, where white space is defined
+     * as any character whose codepoint is less than or equal to
+     * {@code '\u005Cu0020'} (the space character) or returns true
+     * when passed to {@link Character#isWhitespace(int)}.
+     * <p>
+     * If this {@code String} object represents an empty character
+     * sequence, or the first character of the character sequence
+     * represented by this {@code String} object is not a white
+     * space (as defined above), then a reference to this
+     * {@code String} object is returned.
+     * <p>
+     * Otherwise, if all characters in this string are white space (as
+     * defined above), then a  {@code String} object representing an
+     * empty string is returned.
+     * <p>
+     * Otherwise, let <i>k</i> be the index of the first character in the
+     * string whose code is not a white space (as defined above), and let
      * <i>m</i> be the index of the last character in the string. A
      * {@code String} object is returned, representing the substring of this
      * string that begins with the character at index <i>k</i> and ends with the
@@ -2672,23 +2717,25 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all trailing
-     * white space removed.
+     * white space removed, where white space is defined
+     * as any character whose codepoint is less than or equal to
+     * {@code '\u005Cu0020'} (the space character) or returns true
+     * when passed to {@link Character#isWhitespace(int)}.
      * <p>
      * If this {@code String} object represents an empty character
-     * sequence, or the last characters of character sequence
-     * represented by this {@code String} object have codes
-     * greater than {@code '\u005Cu0020'} (the space character), then a
-     * reference to this {@code String} object is returned.
+     * sequence, or the last character of character sequence
+     * represented by this {@code String} object is not a white
+     * space (as defined above), then a reference to this
+     * {@code String} object is returned.
      * <p>
-     * Otherwise, if there is no character with a code greater than
-     * {@code '\u005Cu0020'} in the string, then a
-     * {@code String} object representing an empty string is
-     * returned.
+     * Otherwise, if all characters in this string are white space (as
+     * defined above), then a  {@code String} object representing an
+     * empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
      * string, and let
-     * <i>m</i> be the index of the last character in the string whose code
-     * is greater than {@code '\u005Cu0020'}. A {@code String}
+     * <i>m</i> be the index of the last character in the string that is
+     * not a white space (as defined above). A {@code String}
      * object is returned, representing the substring of this string that
      * begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
@@ -2709,55 +2756,50 @@ public final class String
     }
 
     /**
-     * Splits this string at line separators into a String array.
-     * <p>
-     * The array returned by this method contains each line of this
-     * string that is terminated by a line separator or end of
-     * string. The lines in the array are in the order in which
-     * they occur in this string and do not include the line
-     * separator.
+     * Returns a stream of substrings extracted from this string
+     * partitioned by line separators.
      * <p>
      * Line separators recognized are {@code "\n", "\r\n"}
      * and {@code "\r"}.
+     * <p>
+     * The stream returned by this method contains each line of
+     * this string that is terminated by a line separator or end
+     * of string. The lines in the stream are in the order in which
+     * they occur in this string and do not include the line
+     * separator.
      *
-     * @return  the array of strings computed by splitting this
-     *          string at line separators
+     * @return  the stream of strings extracted from this string
+     *          partitioned by line separators
      * @since 11
      */
-    public String[] lines() {
+    public Stream<String> lines() {
         return isLatin1() ? StringLatin1.lines(value)
                           : StringUTF16.lines(value);
     }
 
     /**
-     * Replaces line separators in the string with the
-     * system-dependent line separator returned by
-     * {@code System.lineSeparator()}
+     * When applied to a multi-line string, removes the amount of
+     * leading whitespace from each line that left justifies the
+     * multi-line string without loss of relative indentation.
      * <p>
-     * Line separators recognized are {@code "\n", "\r\n"}
-     * and {@code "\r"}.
-     *
-     * @return  a copy of this string with line separators
-     *          replaced with the system-dependent line separator
-     * @since 11
-     */
-    public String useLineSeparator() {
-        return join(System.lineSeparator(), lines());
-    }
-
-    /**
-     * When applied to multi-line strings, determines the
-     * minimal number of leading white spaces of each line
-     * and then removes that minimum number of characters
-     * from each line.
+     * This method determines a representative line in the string
+     * body that has a non-whitespace character closest to the left
+     * margin. Once that line has been determined, the number of
+     * leading whitespaces is tallied to produce a minimal trim
+     * value. Consequently, the result of the method is a string
+     * with the minimal trim value removed from each line.
+     * <p>
+     * The first line is unaffected since it is preceded by the
+     * open delimiter.
+     * <p>
+     * This method works with spaces as well as tabs as long as the
+     * leading whitespace is consistent on all lines.
      * <p>
      * Trailing white space is always removed.
      * <p>
-     * Line separators are replaced with {@code "\n"}
-     * <p>
-     * If the first line is blank then it is removed.
-     * <p>
-     * If the last line is blank then it is removed.
+     * Line separators are replaced with {@code "\n"}. If the first
+     * line is blank then it is removed. If the last line is blank
+     * then it is removed.
      *
      * @return String with indent removed.
      * @since 11
@@ -2766,166 +2808,85 @@ public final class String
         if (isEmpty()) {
             return this;
         }
-        String[] lines = lines();
-        int count = lines.length;
-        int least = Integer.MAX_VALUE;
-        for (int i = 0; i < count; i++) {
-            String line = lines[i].trimRight();
-            if (i == 0) {
-                // ignore
-            } else if (!line.isEmpty()) {
-                least = Integer.min(least, line.skipLeadingSpaces());
-            } else if (i == count - 1) {
-                least = Integer.min(least, lines[i].length());
-            }
-            lines[i] = line;
+        List<String> list = lines().map(s -> s.trimRight())
+                                   .collect(Collectors.toList());
+        int count = list.size();
+        String first = list.get(0);
+        String last = list.get(count - 1);
+        int minimal = list.stream().skip(1)
+                                   .mapToInt(s -> s.isEmpty() ? Integer.MAX_VALUE :
+                                                                s.indexOfNonSpace())
+                                   .min()
+                                   .orElse(Integer.MAX_VALUE);
+        Stream<String> stream = list.stream().skip(first.isEmpty() ? 1 : 0)
+                                             .limit(last.isEmpty() ? count - 1 : count);
+        final int trim = last.isEmpty() ? Integer.min(minimal, lastIndexOfNonSpace()) : minimal;
+        if (trim != 0 && trim != Integer.MAX_VALUE) {
+            stream = stream.map(s -> trim <= s.indexOfNonSpace() ? s.substring(trim) : s);
         }
-        if (least != 0 && least != Integer.MAX_VALUE) {
-            for (int i = 1; i < count; i++) {
-                String line = lines[i];
-                if (!line.isEmpty()) {
-                    lines[i] = line.substring(least);
-                }
-             }
-        }
-        return trimJoin(lines);
+        return stream.collect(Collectors.joining("\n"));
     }
 
-    private String trimJoin(String[] lines) {
-        int length = lines.length;
-        StringBuilder sb = new StringBuilder(length());
-        int first = lines[0].isEmpty() ? 1 : 0;
-        int last = lines[length - 1].isEmpty() ? length - 1 : length;
-        for (int i = first; i < last; i++) {
-            if (i != first) {
-                sb.append('\n');
-            }
-            sb.append(lines[i]);
-        }
-        return sb.toString();
-    }
-
-    private int skipLeadingSpaces() {
+    private int indexOfNonSpace() {
         if (isLatin1()) {
-            return StringLatin1.skipLeadingSpaces(value);
+            return StringLatin1.indexOfNonSpace(value);
         } else {
-            return StringUTF16.skipLeadingSpaces(value) >> 1;
+            return StringUTF16.indexOfNonWhitespace(value) >> 1;
+        }
+    }
+
+    private int lastIndexOfNonSpace() {
+        if (isLatin1()) {
+            return StringLatin1.lastIndexOfNonSpace(value);
+        } else {
+            return StringUTF16.lastIndexOfNonWhitespace(value) >> 1;
         }
     }
 
     /**
-     * When applied to multi-line strings selectively removes
-     * margin characters from the beginning and end of each line.
+     * When applied to a multi-line string, removes left and right
+     * margins from each line.
      * <p>
-     * Two marker strings provide control over how each line is
-     * trimmed, one for the beginning of the line and one for
-     * the end.
-     * <p>
-     * If begin marker {@code beginMarker} is the empty string
-     * then the left margin is uneffected. If the begin marker
-     * is a single space, then all leading white space is removed.
-     * Otherwise, if the begin marker is found, all characters
-     * between the line start of the end of the first
-     * occurrence of the begin marker are removed.
-     * <p>
-     * If end marker {@code endMarker} is the empty string
-     * then the right margin is uneffected. If the end marker
-     * is a single space, then all trailing white space is removed.
-     * Otherwise, if the end marker is found, all characters
-     * between the last occurrence of the end marker and the
-     * end of line are removed.
+     * Each line of the multi-line string is first trimmed. If
+     * the trimmed line contains the {@code leftMarker} at the
+     * beginning of the string then it is removed. Finally, if
+     * the line contains the {@code rightMarker} at the end of
+     * line, it is removed.
      * <p>
      * Line separators are replaced with {@code "\n"}. If the first
      * line is blank then it is removed. If the last line is blank
      * then it is removed.
      *
-     * @param  beginMarker  string representing left margin indicator
-     * @param  endMarker    string representing right margin indicator
+     * @param  leftMarker   string representing left margin marker
+     * @param  rightMarker  string representing right margin marker
      * @return  string with margins removed
      * @since 11
      */
-    public String trimMargins(String beginMarker, String endMarker) {
-        Objects.requireNonNull(beginMarker);
-        Objects.requireNonNull(endMarker);
+    public String trimMargins(String leftMarker, String rightMarker) {
+        Objects.requireNonNull(leftMarker);
+        Objects.requireNonNull(rightMarker);
         if (isEmpty()) {
             return this;
         }
-        boolean hasBeginTrim = !beginMarker.isEmpty();
-        boolean isTrimLeft = " ".equals(beginMarker);
-        int beginLength = beginMarker.length();
-        boolean hasEndTrim = !endMarker.isEmpty();
-        boolean isTrimRight = " ".equals(endMarker);
-        int endLength = endMarker.length();
-        String[] lines = lines();
-
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            if (hasBeginTrim) {
-                line = line.trimLeft();
-                if (!isTrimLeft && line.startsWith(beginMarker)) {
-                    line = line.substring(beginLength);
-                }
-            }
-            if (hasEndTrim) {
-                line = line.trimRight();
-                if (!isTrimRight && line.endsWith(endMarker)) {
-                    line = line.substring(0, line.length() - endLength);
-                }
-            }
-            lines[i] = line;
-        }
-        return trimJoin(lines);
-    }
-
-    /**
-     * When applied to multi-line strings selectively removes
-     * margin characters from the beginning of each line.
-     * <p>
-     * The marker string provided controls over how each line is
-     * trimmed.
-     * <p>
-     * If the marker {@code marker} is the empty string then
-     * the left margin is uneffected. If the marker is a
-     * single space, then all leading white space is removed.
-     * Otherwise, if the marker is found, all characters
-     * between the line start of the end of the first
-     * occurrence of the marker are removed.
-     * <p>
-     * Trailing white space is always removed.
-     * <p>
-     * Line separators are replaced with {@code "\n"}. If the first
-     * line is blank then it is removed. If the last line is blank
-     * then it is removed.
-     *
-     * @param  marker  String representing margin indicator
-     * @return  string with margins removed
-     * @since 11
-     */
-    public String trimMargins(String marker) {
-        Objects.requireNonNull(marker);
-        return trimMargins(marker, " ");
-    }
-
-    /**
-     * When applied to multi-line strings removes white space
-     * from the beginning and end of each line.
-     * <p>
-     * Line separators are replaced with {@code "\n"}. If the first
-     * line is blank then it is removed. If the last line is blank
-     * then it is removed.
-     *
-     * @return  string with margins removed
-     * @since 11
-     */
-    public String trimMargins() {
-        if (isEmpty()) {
-            return this;
-        }
-        String[] lines = lines();
-        for (int i = 0; i < lines.length; i++) {
-            lines[i] = lines[i].trim();
-        }
-        return trimJoin(lines);
+        int leftLength = leftMarker.length();
+        int rightLength = rightMarker.length();
+        List<java.lang.String> list = lines().map(s -> s.trimWhitespace())
+                                             .collect(Collectors.toList());
+        int count = list.size();
+        String first = list.get(0);
+        String last = list.get(count - 1);
+        Stream<String> stream = list.stream().skip(first.isEmpty() ? 1 : 0)
+                                             .limit(last.isEmpty() ? count - 1 : count);
+        return stream.map(s -> {
+                            if (s.startsWith(leftMarker)) {
+                                s = s.substring(leftLength);
+                            }
+                            if (s.endsWith(rightMarker)) {
+                                s = s.substring(0, s.length() - rightLength);
+                            }
+                            return s;
+                          })
+                         .collect(Collectors.joining("\n"));
     }
 
     /**
@@ -3285,9 +3246,30 @@ public final class String
     }
 
     /**
-     * Translates all escapes in the string into representations specified
-     * in sections 3.3 and 3.10.6 of the <cite>The Java&trade; Language
-     * Specification</cite>.
+     * The constants of this enumerated type provide a simple classification of the
+     * types of escape sequence catagories based on the
+     * <cite>The Java&trade; Language Specification</cite>.
+     */
+    public enum EscapeType {
+        /** Backslash escape sequences based on section 3.10.6 of the
+         * <cite>The Java&trade; Language Specification</cite>.
+         * This includes sequences for backspace, horizontal tab,
+         * line feed, form feed, carriage return, double quote,
+         * single quote, backslash and octal escape sequences.
+         */
+        BACKSLASH,
+
+        /** Unicode sequences based on section 3.3 of the
+         * <cite>The Java&trade; Language Specification</cite>.
+         * This includes sequences in the form {@code \u005Cunnnn}.
+         */
+        UNICODE
+    }
+
+    /**
+     * Translates all escape sequences in the string into character
+     * representations specified in sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
      * <p>
      * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
      * the unicode character whose code point is {@code 0xnnnn}. Care should be
@@ -3319,7 +3301,7 @@ public final class String
      *   </tr>
      *   <tr>
      *     <td>{@code \u005Cn}</td>
-     *     <td>linefeed</td>
+     *     <td>line feed</td>
      *     <td>{@code \u005Cu000A}</td>
      *   </tr>
      *   <tr>
@@ -3351,6 +3333,7 @@ public final class String
      * <p>
      * Octal escapes \u005C0 - \u005C377 are translated to their code
      * point equivalents.
+     *
      * @throws MalformedEscapeException when escape sequence is malformed.
      * @return String with all escapes translated.
      */
@@ -3359,39 +3342,44 @@ public final class String
     }
 
     /**
-     * Translates all non-unicode escapes in the string into representations
-     * specified in section 3.10.6 of the <cite>The Java&trade; Language
-     * Specification</cite>.
+     * Selectively translates escape sequences in the string into character
+     * representations specified in sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
      * <p>
-     * Backslash escape sequences are translated following the table at
-     * {@link #unescape()}.
+     * Which escape sequences that are translated is based on {@link EscapeType}
+     * {@code escapes} specified.
      * <p>
-     * Octal escapes {@code \u005C0..\u005C377} are translated to their
-     * code point equivalents.
+     * If {@link EscapeType.BACKSLASH} is specified then backslash escape
+     * sequences are translated according to the table at {@link #unescape()}.
+     * <p>
+     * If {@link EscapeType.UNICODE} is specified then Unicode escapes
+     * are translated.
+     * <p>
+     * If no EscapeType is provided then this string is returned.
+     *
+     * @param escapes  a vararg of {@link EscapeType} indicating which
+     *                 sequences to translate
+     *
      * @throws MalformedEscapeException when escape sequence is malformed.
-     * @return String with all non-unicode escapes translated.
+     * @return String with selective escapes translated.
      */
-    public String unescapeBackslash() throws MalformedEscapeException {
-        return unescape(true, false);
-    }
-
-    /**
-     * Translates all unicode escapes in the string into representations
-     * specified in section 3.3 of the <cite>The Java&trade; Language
-     * Specification</cite>.
-     * <p>
-     * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
-     * the unicode character whose code point is {@code 0xnnnn}. Care should be
-     * taken when using UTF-16 surrogate pairs to ensure that the high
-     * surrogate ({@code \u005CuD800..\u005CuDBFF}) is immediately followed by
-     * a low surrogate ({@code \u005CuDC00..\u005CuDFFF}) otherwise a {@link
-     * java.nio.charset.CharacterCodingException} may occur during UTF-8
-     * decoding.
-     * @throws MalformedEscapeException when escape sequence is malformed.
-     * @return String with all escapes unicode translated.
-     */
-    public String unescapeUnicode() throws MalformedEscapeException {
-        return unescape(false, true);
+    public String unescape(EscapeType... escapes) throws MalformedEscapeException {
+        boolean backslash = false;
+        boolean unicode = false;
+        for (EscapeType escape : escapes) {
+            switch (escape) {
+            case BACKSLASH:
+                backslash = true;
+                break;
+            case UNICODE:
+                unicode = true;
+                break;
+            }
+        }
+        if (backslash || unicode) {
+            return unescape(backslash, unicode);
+        }
+        return this;
     }
 
     private String escape(boolean backslash, boolean unicode) {
@@ -3405,17 +3393,22 @@ public final class String
     }
 
     /**
-     * Translates characters in the string that have a code point outside the
-     * range {@code \u005Cu0020..\u005Cu007F} into representations specified in
-     * sections 3.3 and 3.10.6 of the <cite>The Java&trade; Language
-     * Specification</cite>.
+     * Translates all characters in the string that would require
+     * escape sequences in a source string literal into escape
+     * sequence representations specified in sections 3.3 and 3.10.6
+     * of the <cite>The Java&trade; Language Specification</cite>.
      * <p>
-     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF} are
-     * translated into unicode escapes.
-     * <p>
-     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F} are
-     * translated into unicode escapes unless they have a character escape
+     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F}
+     * are translated to unicode escapes unless they have a special
      * sequence found in the table at {@link #unescape()}.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0020..\u005Cu007F}
+     * are unaffected unless they have a special sequence found in the
+     * table at {@link #unescape()}.
+     * <p>
+     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF}
+     * including surrogates are translated to unicode sescapes.
+     *
      * @return String with translated escape sequences.
      */
     public String escape() {
@@ -3423,31 +3416,47 @@ public final class String
     }
 
     /**
-     * Translates characters in the string that have a code point in the range
-     * {@code \u005Cu0000..\u005Cu001F} into representations specified in
-     * section 3.10.6 of the <cite>The Java&trade; Language
-     * Specification</cite>.
+     * Selectively translates characters in the string that would require
+     * escape sequences in a source string literal into escape
+     * sequence representations specified in sections 3.3 and 3.10.6
+     * of the <cite>The Java&trade; Language Specification</cite>.
      * <p>
-     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F} are
-     * translated into unicode escapes unless they have a character escape
-     * sequence found in the table at {@link #unescape()}.
-     * @return String with translated escape sequences.
-     */
-    public String escapeBackslash() {
-        return escape(true, false);
-    }
-
-    /**
-     * Translates characters in the string that have a code point in the range
-     * {@code \u005Cu0080..\u005CuFFFF} into representations specified in
-     * section 3.3 of the <cite>The Java&trade; Language Specification</cite>.
+     * Which characters that are translated is based on {@link EscapeType}
+     * {@code escapes} specified.
      * <p>
-     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF} are
-     * translated into unicode escapes.
-     * @return String with translated escape sequences.
+     * If {@link EscapeType.BACKSLASH} is specified then characters
+     * translated to backslash escape sequences according to the table
+     * at {@link #unescape()}.
+     * <p>
+     * If {@link EscapeType.UNICODE} is specified then characters
+     * in the code point range {@code \u005Cu0080..\u005CuFFFF} are
+     * translated to Unicode escapes.
+     * <p>
+     * If no EscapeType is provided then this string is returned.
+     *
+     * @param escapes  a vararg of {@link EscapeType} indicating which
+     *                 characters to translate
+     *
+     * @return String with selective characters translated to escape
+     * sequences.
      */
-     public String escapeUnicode() {
-        return escape(false, true);
+    public String escape(EscapeType... escapes) {
+        boolean backslash = false;
+        boolean unicode = false;
+        for (EscapeType escape : escapes) {
+            switch (escape) {
+            case BACKSLASH:
+                backslash = true;
+                break;
+            case UNICODE:
+                unicode = true;
+                break;
+            }
+        }
+        if (backslash || unicode) {
+            return escape(backslash, unicode);
+        }
+        return this;
     }
 
     /*

@@ -31,8 +31,12 @@ import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 import jdk.internal.HotSpotIntrinsicCandidate;
 
 import static java.lang.String.LATIN1;
@@ -509,7 +513,7 @@ final class StringLatin1 {
         return StringUTF16.newString(result, 0, resultOffset);
     }
 
-    public static int skipLeadingSpaces(byte[] value) {
+    public static int indexOfNonSpace(byte[] value) {
         int left = 0;
         while ((left < value.length) && ((value[left] & 0xff) <= ' ')) {
             left++;
@@ -517,7 +521,7 @@ final class StringLatin1 {
         return left;
     }
 
-    public static int skipTrailingSpaces(byte[] value) {
+    public static int lastIndexOfNonSpace(byte[] value) {
         int right = value.length;
         while ((0 < right) && ((value[right - 1] & 0xff) <= ' ')) {
             right--;
@@ -526,17 +530,17 @@ final class StringLatin1 {
     }
 
     public static String trim(byte[] value) {
-        int left = skipLeadingSpaces(value);
+        int left = indexOfNonSpace(value);
         if (left == value.length) {
             return "";
         }
-        int right = skipTrailingSpaces(value);
+        int right = lastIndexOfNonSpace(value);
         return ((left > 0) || (right < value.length)) ?
                 newString(value, left, right - left) : null;
     }
 
     public static String trimLeft(byte[] value) {
-        int left = skipLeadingSpaces(value);
+        int left = indexOfNonSpace(value);
         if (left == value.length) {
             return "";
         }
@@ -545,7 +549,7 @@ final class StringLatin1 {
     }
 
     public static String trimRight(byte[] value) {
-        int right = skipTrailingSpaces(value);
+        int right = lastIndexOfNonSpace(value);
         if (right == 0) {
             return "";
         }
@@ -553,27 +557,104 @@ final class StringLatin1 {
                 newString(value, 0, right) : null;
     }
 
-    static String[] lines(byte[] value) {
-        ArrayList<String> list = new ArrayList<>();
-        int length = value.length;
-        int start = 0;
-        for (int i = 0; i < length; i++) {
-            byte ch = value[i];
-            if (ch != '\n' && ch != '\r') {
-                continue;
-            }
-            int end = i;
-            if (ch == '\r') {
-                int j = i + 1;
-                if (j != length && value[j] =='\n') {
-                    i = j;
+    static class LinesSpliterator implements Spliterator<String> {
+        private byte[] value;
+        private int index;        // current index, modified on advance/split
+        private final int fence;  // one past last index
+        private final int cs;
+        private boolean isClosed;
+
+        LinesSpliterator(byte[] value, int cs) {
+            this(value, 0, value.length, cs);
+        }
+
+        LinesSpliterator(byte[] value, int start, int length, int cs) {
+            this.value = value;
+            this.index = start;
+            this.fence = start + length;
+            this.cs = cs |
+                    Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
+            this.isClosed = false;
+        }
+
+        private int indexOfLineSeparator(int start) {
+            for (int current = start; current < fence; current++) {
+                byte ch = value[current];
+                if (ch == '\n' || ch == '\r') {
+                    return current;
                 }
             }
-            list.add(newString(value, start, end - start));
-            start = i + 1;
+            return fence;
         }
-        list.add(newString(value, start, length - start));
-        return list.toArray(new String[list.size()]);
+
+        private int skipLineSeparator(int start) {
+            if (start < fence) {
+                if (value[start] == '\r') {
+                    int next = start + 1;
+                    if (next < fence && value[next] == '\n') {
+                        return next + 1;
+                    }
+                }
+                return start + 1;
+            }
+            return fence;
+        }
+
+        private String next() {
+            int start = index;
+            int end = indexOfLineSeparator(start);
+            isClosed = end == fence;
+            index = skipLineSeparator(end);
+            return newString(value, start, end - start);
+        }
+
+        @Override
+        public boolean tryAdvance(Consumer<? super String> action) {
+            if (action == null) {
+                throw new NullPointerException("tryAdvance action missing");
+            }
+            if (!isClosed) {
+                action.accept(next());
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super String> action) {
+            if (action == null) {
+                throw new NullPointerException("forEachRemaining action missing");
+            }
+            while (!isClosed) {
+                action.accept(next());
+            }
+        }
+
+        @Override
+        public Spliterator<String> trySplit() {
+            int len = value.length;
+            int mid = indexOfLineSeparator((len + index) >>> 1);
+            if (mid < len) {
+                int start = index;
+                index = skipLineSeparator(mid);
+                return new LinesSpliterator(value, start, mid - start, cs);
+            }
+            return null;
+        }
+
+        @Override
+        public long estimateSize() {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public int characteristics() {
+            return cs;
+        }
+    }
+
+    static Stream<String> lines(byte[] value) {
+        return StreamSupport.stream(new LinesSpliterator(value, 0), false);
     }
 
     public static void putChar(byte[] val, int index, int c) {
@@ -633,20 +714,20 @@ final class StringLatin1 {
         int to = 0;
 
         while (from < length) {
-            char ch = (char)value[from++];
+            char ch = (char)(value[from++] & 0xFF);
             if (ch == '\\' && from < length) {
-                ch = (char)value[from++];
+                ch = (char)(value[from++] & 0xFF);
                 if (unicode && ch == 'u') {
-                    while (from < length && (char)value[from] == 'u') {
+                    while (from < length && (char)(value[from] & 0xFF) == 'u') {
                         from++;
                     }
                     if (length <= from + 3) {
                         throw new MalformedEscapeException();
                     }
-                    int code = (Character.digit(value[from + 0], 16) << 12) |
-                               (Character.digit(value[from + 1], 16) <<  8) |
-                               (Character.digit(value[from + 2], 16) <<  4) |
-                                Character.digit(value[from + 3], 16);
+                    int code = (Character.digit((value[from + 0] & 0xFF), 16) << 12) |
+                               (Character.digit((value[from + 1] & 0xFF), 16) <<  8) |
+                               (Character.digit((value[from + 2] & 0xFF), 16) <<  4) |
+                                Character.digit((value[from + 3] & 0xFF), 16);
                     if (code < 0) {
                         throw new MalformedEscapeException();
                     }
@@ -680,7 +761,7 @@ final class StringLatin1 {
                     case '4': case '5': case '6': case '7':
                         int code = ch - '0';
                         for (int i = 0; i < 2 && from < length; i++) {
-                            int digit = Character.digit(value[from], 8);
+                            int digit = Character.digit((value[from] & 0xFF), 8);
                             if (digit < 0) {
                                 break;
                             }
@@ -707,59 +788,66 @@ final class StringLatin1 {
     }
 
     static String escape(byte[] value, boolean backslash, boolean unicode) {
-        if (!backslash) {
-            return null;
-        }
         int length = value.length;
         StringBuilder sb = new StringBuilder(value.length);
         Formatter fmt = null;
         for (int i = 0; i < length; i++) {
-            char ch = (char)value[i];
-            switch (ch) {
-            case '\b':
-                sb.append('\\');
-                sb.append('b');
-                break;
-            case '\f':
-                sb.append('\\');
-                sb.append('f');
-                break;
-            case '\n':
-                sb.append('\\');
-                sb.append('n');
-                break;
-            case '\r':
-                sb.append('\\');
-                sb.append('r');
-                break;
-            case '\t':
-                sb.append('\\');
-                sb.append('t');
-                break;
-            case '\\':
-                sb.append('\\');
-                sb.append('\\');
-                break;
-            case '\"':
-                sb.append('\\');
-                sb.append('\"');
-                break;
-            case '\'':
-                sb.append('\\');
-                sb.append('\'');
-                break;
-            default:
-                if (' ' <= ch && ch <= '~') {
-                    sb.append(ch);
-                } else {
-                    if (fmt == null) {
-                        fmt = new Formatter(sb);
-                    }
+            char ch = (char)(value[i] & 0xFF);
+            if (backslash && ch <= 0xFF) {
+                switch (ch) {
+                case '\b':
                     sb.append('\\');
-                    sb.append('u');
-                    fmt.format("%04x", (int)ch);
+                    sb.append('b');
+                    break;
+                case '\f':
+                    sb.append('\\');
+                    sb.append('f');
+                    break;
+                case '\n':
+                    sb.append('\\');
+                    sb.append('n');
+                    break;
+                case '\r':
+                    sb.append('\\');
+                    sb.append('r');
+                    break;
+                case '\t':
+                    sb.append('\\');
+                    sb.append('t');
+                    break;
+                case '\\':
+                    sb.append('\\');
+                    sb.append('\\');
+                    break;
+                case '\"':
+                    sb.append('\\');
+                    sb.append('\"');
+                    break;
+                case '\'':
+                    sb.append('\\');
+                    sb.append('\'');
+                    break;
+                default:
+                    if (ch < ' ' || ch > '~') {
+                        if (fmt == null) {
+                            fmt = new Formatter(sb);
+                        }
+                        sb.append('\\');
+                        sb.append('u');
+                        fmt.format("%04x", (int)ch);
+                    } else {
+                        sb.append(ch);
+                    }
+                    break;
                 }
-                break;
+            } else if (unicode && ch > '~') {
+                if (fmt == null) {
+                    fmt = new Formatter(sb);
+                }
+                sb.append("\\u");
+                fmt.format("%04x", (int)ch);
+            } else {
+                sb.append(ch);
             }
         }
 

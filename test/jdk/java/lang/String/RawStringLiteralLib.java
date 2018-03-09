@@ -27,7 +27,10 @@
  * @run main RawStringLiteralLib
  */
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
+import java.lang.String.EscapeType;
 
 public class RawStringLiteralLib {
     public static void main(String[] args) {
@@ -40,15 +43,15 @@ public class RawStringLiteralLib {
      * Test trim string functionality.
      */
     static void test1() {
-        EQ("   abc   ".trim(), "abc");
-        EQ("   abc   ".trimLeft(), "abc   ");
-        EQ("   abc   ".trimRight(), "   abc");
-        EQ("   abc\u2022   ".trim(), "abc\u2022");
-        EQ("   abc\u2022   ".trimLeft(), "abc\u2022   ");
-        EQ("   abc\u2022   ".trimRight(), "   abc\u2022");
-        EQ("".trim(), "");
-        EQ("".trimLeft(), "");
-        EQ("".trimRight(), "");
+        equal("   abc   ".trim(), "abc");
+        equal("   abc   ".trimLeft(), "abc   ");
+        equal("   abc   ".trimRight(), "   abc");
+        equal("   abc\u2022   ".trim(), "abc\u2022");
+        equal("   abc\u2022   ".trimLeft(), "abc\u2022   ");
+        equal("   abc\u2022   ".trimRight(), "   abc\u2022");
+        equal("".trim(), "");
+        equal("".trimLeft(), "");
+        equal("".trimRight(), "");
 
         // trimIndent
         for (String prefix : List.of("", "\n", "   \n"))
@@ -65,34 +68,49 @@ public class RawStringLiteralLib {
                                      "   // comment"))
         {
             String input = prefix + "   abc   \n" + middle + "\n   def   \n" + suffix;
-            String[] inputLines = input.lines();
-            int inputLength = inputLines.length;
             String output = input.trimIndent();
-            String[] outputLines = output.lines();
-            int outputLength = outputLines.length;
 
-            int start = inputLines[0].trim().isEmpty() ? 1 : 0;
-            int end = inputLines[inputLength - 1].trim().isEmpty() ? inputLength - 1 : inputLength;
+            Iterator<String> inputIterator = input.lines().iterator();
+            Iterator<String> outputIterator = output.lines().iterator();
+            String first = input.lines().findFirst​().orElse("").trim();
 
-            if (outputLength != (end - start)) {
-                report("Wrong number of lines", "Input:", input, "Output:", output);
+            if (first.isEmpty() && inputIterator.hasNext()) {
+                inputIterator.next();
             }
-            int indent = 0;
-            for (int i = 0; i < outputLength; i++) {
-                String line = outputLines[i];
-                int offset = inputLines[start + i].indexOf(line);
+
+            int indent = -1;
+
+            while (inputIterator.hasNext() && outputIterator.hasNext()) {
+                String in = inputIterator.next();
+                String out = outputIterator.next();
+                int offset = in.indexOf(out);
                 if (offset == -1) {
-                    report("Loss of lines", "Input:", input, "Output:", output);
+                    report("Loss of information", "Input:", in, "Output:", out);
                 }
-                if (i == 0) {
-                    indent = offset;
-                } else if (offset != indent ) {
-                    report("Inconsistent indent", "Input:", input, "Output:", output);
+                if (!out.isEmpty()) {
+                    if (indent == -1) {
+                        indent = offset;
+                    } else if (offset != indent ) {
+                        report("Inconsistent indent", "Input:", in, "Output:", out);
+                    }
+                }
+            }
+
+            if (outputIterator.hasNext()) {
+                String out = outputIterator.next();
+                report("Too many lines", "Input:", "", "Output:", out);
+            }
+
+            if (inputIterator.hasNext()) {
+                String in = inputIterator.next();
+
+                if (!in.isEmpty()) {
+                    report("Loss of information", "Input:", in, "Output:", "");
                 }
             }
         }
 
-        // trimMargin
+        // trimMargins
         for (String prefix : List.of("", "\n", "   \n"))
         for (String suffix : List.of("", "\n", "   \n"))
         for (String middle : List.of("",
@@ -105,48 +123,46 @@ public class RawStringLiteralLib {
                                      "xyz\u2022   ",
                                      "   xyz\u2022   ",
                                      "   // comment"))
-        for (String leftMargin : List.of("", " ", "|", "   |"))
-        for (String rightMargin : List.of("", " ", "|", "|   "))
+        for (String leftMargin : List.of("", " ", "|"))
+        for (String rightMargin : List.of("", " ", "|"))
         {
             String input = prefix +
                            leftMargin + "   abc   " + rightMargin + "\n" +
                            leftMargin + middle + rightMargin + "\n" +
                            leftMargin + "   def   " + rightMargin + "\n" +
                            suffix;
-            String[] inputLines = input.lines();
-            int inputLength = inputLines.length;
-            String output;
+            String output = input.trimMargins(leftMargin, rightMargin);
 
-            if (leftMargin.isEmpty() && rightMargin.isEmpty()) {
-                output = input.trimMargins();
-            } else {
-                String beginMarker = leftMargin.contains("|") ? "|" : leftMargin;
-                String endMarker = rightMargin.contains("|") ? "|" : rightMargin;
+            Iterator<String> inputIterator = input.lines().iterator();
+            Iterator<String> outputIterator = output.lines().iterator();
+            String first = input.lines().findFirst​().orElse("").trim();
 
-                if (" ".equals(endMarker)) {
-                    output = input.trimMargins(beginMarker);
-                } else {
-                    output = input.trimMargins(beginMarker, endMarker);
-                }
+            if (first.isEmpty() && inputIterator.hasNext()) {
+                inputIterator.next();
             }
 
-            String[] outputLines = output.lines();
-            int outputLength = outputLines.length;
-
-            int start = inputLines[0].trim().isEmpty() ? 1 : 0;
-            int end = inputLines[inputLength - 1].trim().isEmpty() ? inputLength - 1 : inputLength;
-
-            if (outputLength != (end - start)) {
-                report("Wrong number of lines", "Input:", input, "Output:", output);
-            }
-            int indent = 0;
-            for (int i = 0; i < outputLength; i++) {
-                String line = outputLines[i];
-                if (!inputLines[start + i].contains(line)) {
-                    report("Loss of lines", "Input:", input, "Output:", output);
+            while (inputIterator.hasNext() && outputIterator.hasNext()) {
+                String in = inputIterator.next();
+                String out = outputIterator.next();
+                if (in.indexOf(out) == -1) {
+                    report("Loss of information", "Input:", in, "Output:", out);
                 }
-                if (line.indexOf('|') != -1) {
-                    report("Margin not removed", "Input:", input, "Output:", output);
+                if (out.indexOf('|') != -1) {
+                    report("Margin not removed", "Input:", in, "Output:", out);
+                }
+
+            }
+
+            if (outputIterator.hasNext()) {
+                String out = outputIterator.next();
+                report("Too many lines", "Input:", "", "Output:", out);
+            }
+
+            if (inputIterator.hasNext()) {
+                String in = inputIterator.next();
+
+                if (!in.isEmpty()) {
+                    report("Loss of information", "Input:", in, "Output:", "");
                 }
             }
         }
@@ -156,154 +172,154 @@ public class RawStringLiteralLib {
      * Test escaping functionality.
      */
     static void test2() {
-        EQ(`a\tb\u0063`, "a\\tb\\u0063");
-        EQ(`a\tb\u0063`.unescape(), "a\tbc");
-        EQ(`a\tb\u0063`.unescapeBackslash(), "a\tb\\u0063");
-        EQ(`a\tb\u0063`.unescapeUnicode(), "a\\tbc");
-        EQ(`a\tb\u2022`, "a\\tb\\u2022");
-        EQ(`a\tb\u2022`.unescape(), "a\tb\u2022");
-        EQ(`a\tb\u2022`.unescapeBackslash(), "a\tb\\u2022");
-        EQ(`a\tb\u2022`.unescapeUnicode(), "a\\tb\u2022");
-        EQ(`\0\12\012`.unescape(), "\0\12\012");
-        EQ(`•\0\12\012`.unescape(), "\u2022\0\12\012");
+        equal(`a\tb\u0063`, "a\\tb\\u0063");
+        equal(`a\tb\u0063`.unescape(), "a\tbc");
+        equal(`a\tb\u0063`.unescape(EscapeType.BACKSLASH), "a\tb\\u0063");
+        equal(`a\tb\u0063`.unescape(EscapeType.UNICODE), "a\\tbc");
+        equal(`a\tb\u2022`, "a\\tb\\u2022");
+        equal(`a\tb\u2022`.unescape(), "a\tb\u2022");
+        equal(`a\tb\u2022`.unescape(EscapeType.BACKSLASH), "a\tb\\u2022");
+        equal(`a\tb\u2022`.unescape(EscapeType.UNICODE), "a\\tb\u2022");
+        equal(`\0\12\012`.unescape(), "\0\12\012");
+        equal(`•\0\12\012`.unescape(), "\u2022\0\12\012");
 
-        EQ("\\u0000\\u0001\\n\\u0010", "\u0000\u0001\n\u0010".escape());
-        EQ("\\u0000\\u0001\\n\\u0010", "\u0000\u0001\n\u0010".escapeBackslash());
-        EQ("\u0000\u0001\n\u0010", "\u0000\u0001\n\u0010".escapeUnicode());
-        EQ("\\u2022", "\u2022".escape());
-        EQ("\u2022", "\u2022".escapeBackslash());
-        EQ("\\u2022", "\u2022".escapeUnicode());
+        equal("\\u0000\\u0001\\n\\u0010", "\u0000\u0001\n\u0010".escape());
+        equal("\\u0000\\u0001\\n\\u0010", "\u0000\u0001\n\u0010".escape(EscapeType.BACKSLASH));
+        equal("\u0000\u0001\n\u0010", "\u0000\u0001\n\u0010".escape(EscapeType.UNICODE));
+        equal("\\u2022", "\u2022".escape());
+        equal("\u2022", "\u2022".escape(EscapeType.BACKSLASH));
+        equal("\\u2022", "\u2022".escape(EscapeType.UNICODE));
 
-        EQ(`\b`.unescape(), "\b");
-        EQ(`\f`.unescape(), "\f");
-        EQ(`\n`.unescape(), "\n");
-        EQ(`\r`.unescape(), "\r");
-        EQ(`\t`.unescape(), "\t");
-        EQ(`\0`.unescape(), "\0");
-        EQ(`\7`.unescape(), "\7");
-        EQ(`\12`.unescape(), "\12");
-        EQ(`\012`.unescape(), "\012");
-        EQ(`\u0000`.unescape(), "\u0000");
-        EQ(`\u2022`.unescape(), "\u2022");
-        EQ(`•\b`.unescape(), "•\b");
-        EQ(`•\f`.unescape(), "•\f");
-        EQ(`•\n`.unescape(), "•\n");
-        EQ(`•\r`.unescape(), "•\r");
-        EQ(`•\t`.unescape(), "•\t");
-        EQ(`•\0`.unescape(), "•\0");
-        EQ(`•\7`.unescape(), "•\7");
-        EQ(`•\12`.unescape(), "•\12");
-        EQ(`•\177`.unescape(), "•\177");
-        EQ(`•\u0000`.unescape(), "•\u0000");
-        EQ(`•\u2022`.unescape(), "•\u2022");
+        equal(`\b`.unescape(), "\b");
+        equal(`\f`.unescape(), "\f");
+        equal(`\n`.unescape(), "\n");
+        equal(`\r`.unescape(), "\r");
+        equal(`\t`.unescape(), "\t");
+        equal(`\0`.unescape(), "\0");
+        equal(`\7`.unescape(), "\7");
+        equal(`\12`.unescape(), "\12");
+        equal(`\012`.unescape(), "\012");
+        equal(`\u0000`.unescape(), "\u0000");
+        equal(`\u2022`.unescape(), "\u2022");
+        equal(`•\b`.unescape(), "•\b");
+        equal(`•\f`.unescape(), "•\f");
+        equal(`•\n`.unescape(), "•\n");
+        equal(`•\r`.unescape(), "•\r");
+        equal(`•\t`.unescape(), "•\t");
+        equal(`•\0`.unescape(), "•\0");
+        equal(`•\7`.unescape(), "•\7");
+        equal(`•\12`.unescape(), "•\12");
+        equal(`•\177`.unescape(), "•\177");
+        equal(`•\u0000`.unescape(), "•\u0000");
+        equal(`•\u2022`.unescape(), "•\u2022");
 
-        EQ(`\b`, "\b".escape());
-        EQ(`\f`, "\f".escape());
-        EQ(`\n`, "\n".escape());
-        EQ(`\r`, "\r".escape());
-        EQ(`\t`, "\t".escape());
-        EQ(`\u0000`, "\0".escape());
-        EQ(`\u0007`, "\7".escape());
-        EQ(`\u0011`, "\21".escape());
-        EQ(`\u0000`, "\u0000".escape());
-        EQ(`\u2022`, "\u2022".escape());
-        EQ(`\u2022\b`, "•\b".escape());
-        EQ(`\u2022\f`, "•\f".escape());
-        EQ(`\u2022\n`, "•\n".escape());
-        EQ(`\u2022\r`, "•\r".escape());
-        EQ(`\u2022\t`, "•\t".escape());
-        EQ(`\u2022\u0000`, "•\0".escape());
-        EQ(`\u2022\u0007`, "•\7".escape());
-        EQ(`\u2022\u0011`, "•\21".escape());
-        EQ(`\u2022\u007f`, "•\177".escape());
-        EQ(`\u2022\u0000`, "•\u0000".escape());
-        EQ(`\u2022\u2022`, "•\u2022".escape());
+        equal(`\b`, "\b".escape());
+        equal(`\f`, "\f".escape());
+        equal(`\n`, "\n".escape());
+        equal(`\r`, "\r".escape());
+        equal(`\t`, "\t".escape());
+        equal(`\u0000`, "\0".escape());
+        equal(`\u0007`, "\7".escape());
+        equal(`\u0011`, "\21".escape());
+        equal(`\u0000`, "\u0000".escape());
+        equal(`\u2022`, "\u2022".escape());
+        equal(`\u2022\b`, "•\b".escape());
+        equal(`\u2022\f`, "•\f".escape());
+        equal(`\u2022\n`, "•\n".escape());
+        equal(`\u2022\r`, "•\r".escape());
+        equal(`\u2022\t`, "•\t".escape());
+        equal(`\u2022\u0000`, "•\0".escape());
+        equal(`\u2022\u0007`, "•\7".escape());
+        equal(`\u2022\u0011`, "•\21".escape());
+        equal(`\u2022\u007f`, "•\177".escape());
+        equal(`\u2022\u0000`, "•\u0000".escape());
+        equal(`\u2022\u2022`, "•\u2022".escape());
     }
 
     /*
      * Test for MalformedEscapeException.
      */
     static void test3() {
-        WELLFORMED(`\b`);
-        WELLFORMED(`\f`);
-        WELLFORMED(`\n`);
-        WELLFORMED(`\r`);
-        WELLFORMED(`\t`);
-        WELLFORMED(`\0`);
-        WELLFORMED(`\7`);
-        WELLFORMED(`\12`);
-        WELLFORMED(`\012`);
-        WELLFORMED(`\u0000`);
-        WELLFORMED(`\u2022`);
-        WELLFORMED(`•\b`);
-        WELLFORMED(`•\f`);
-        WELLFORMED(`•\n`);
-        WELLFORMED(`•\r`);
-        WELLFORMED(`•\t`);
-        WELLFORMED(`•\0`);
-        WELLFORMED(`•\7`);
-        WELLFORMED(`•\12`);
-        WELLFORMED(`•\012`);
-        WELLFORMED(`•\u0000`);
-        WELLFORMED(`•\u2022`);
+        wellFormed(`\b`);
+        wellFormed(`\f`);
+        wellFormed(`\n`);
+        wellFormed(`\r`);
+        wellFormed(`\t`);
+        wellFormed(`\0`);
+        wellFormed(`\7`);
+        wellFormed(`\12`);
+        wellFormed(`\012`);
+        wellFormed(`\u0000`);
+        wellFormed(`\u2022`);
+        wellFormed(`•\b`);
+        wellFormed(`•\f`);
+        wellFormed(`•\n`);
+        wellFormed(`•\r`);
+        wellFormed(`•\t`);
+        wellFormed(`•\0`);
+        wellFormed(`•\7`);
+        wellFormed(`•\12`);
+        wellFormed(`•\012`);
+        wellFormed(`•\u0000`);
+        wellFormed(`•\u2022`);
 
-        MALFORMED(`\x`);
-        MALFORMED(`\+`);
-        MALFORMED(`\u`);
-        MALFORMED(`\uuuuu`);
-        MALFORMED(`\u2`);
-        MALFORMED(`\u20`);
-        MALFORMED(`\u202`);
-        MALFORMED(`\u2   `);
-        MALFORMED(`\u20  `);
-        MALFORMED(`\u202 `);
-        MALFORMED(`\uuuuu2`);
-        MALFORMED(`\uuuuu20`);
-        MALFORMED(`\uuuuu202`);
-        MALFORMED(`\uuuuu2   `);
-        MALFORMED(`\uuuuu20  `);
-        MALFORMED(`\uuuuu202 `);
-        MALFORMED(`\uG`);
-        MALFORMED(`\u2G`);
-        MALFORMED(`\u20G`);
-        MALFORMED(`\uG   `);
-        MALFORMED(`\u2G  `);
-        MALFORMED(`\u20G `);
-        MALFORMED(`\uuuuuG`);
-        MALFORMED(`\uuuuu2G`);
-        MALFORMED(`\uuuuu20G`);
-        MALFORMED(`\uuuuuG   `);
-        MALFORMED(`\uuuuu2G  `);
-        MALFORMED(`\uuuuu20G `);
+        malformed(`\x`);
+        malformed(`\+`);
+        malformed(`\u`);
+        malformed(`\uuuuu`);
+        malformed(`\u2`);
+        malformed(`\u20`);
+        malformed(`\u202`);
+        malformed(`\u2   `);
+        malformed(`\u20  `);
+        malformed(`\u202 `);
+        malformed(`\uuuuu2`);
+        malformed(`\uuuuu20`);
+        malformed(`\uuuuu202`);
+        malformed(`\uuuuu2   `);
+        malformed(`\uuuuu20  `);
+        malformed(`\uuuuu202 `);
+        malformed(`\uG`);
+        malformed(`\u2G`);
+        malformed(`\u20G`);
+        malformed(`\uG   `);
+        malformed(`\u2G  `);
+        malformed(`\u20G `);
+        malformed(`\uuuuuG`);
+        malformed(`\uuuuu2G`);
+        malformed(`\uuuuu20G`);
+        malformed(`\uuuuuG   `);
+        malformed(`\uuuuu2G  `);
+        malformed(`\uuuuu20G `);
 
-        MALFORMED(`•\x`);
-        MALFORMED(`•\+`);
-        MALFORMED(`•\u`);
-        MALFORMED(`•\uuuuu`);
-        MALFORMED(`•\u2`);
-        MALFORMED(`•\u20`);
-        MALFORMED(`•\u202`);
-        MALFORMED(`•\u2   `);
-        MALFORMED(`•\u20  `);
-        MALFORMED(`•\u202 `);
-        MALFORMED(`•\uuuuu2`);
-        MALFORMED(`•\uuuuu20`);
-        MALFORMED(`•\uuuuu202`);
-        MALFORMED(`•\uuuuu2   `);
-        MALFORMED(`•\uuuuu20  `);
-        MALFORMED(`•\uuuuu202 `);
-        MALFORMED(`•\uG`);
-        MALFORMED(`•\u2G`);
-        MALFORMED(`•\u20G`);
-        MALFORMED(`•\uG   `);
-        MALFORMED(`•\u2G  `);
-        MALFORMED(`•\u20G `);
-        MALFORMED(`•\uuuuuG`);
-        MALFORMED(`•\uuuuu2G`);
-        MALFORMED(`•\uuuuu20G`);
-        MALFORMED(`•\uuuuuG   `);
-        MALFORMED(`•\uuuuu2G  `);
-        MALFORMED(`•\uuuuu20G `);
+        malformed(`•\x`);
+        malformed(`•\+`);
+        malformed(`•\u`);
+        malformed(`•\uuuuu`);
+        malformed(`•\u2`);
+        malformed(`•\u20`);
+        malformed(`•\u202`);
+        malformed(`•\u2   `);
+        malformed(`•\u20  `);
+        malformed(`•\u202 `);
+        malformed(`•\uuuuu2`);
+        malformed(`•\uuuuu20`);
+        malformed(`•\uuuuu202`);
+        malformed(`•\uuuuu2   `);
+        malformed(`•\uuuuu20  `);
+        malformed(`•\uuuuu202 `);
+        malformed(`•\uG`);
+        malformed(`•\u2G`);
+        malformed(`•\u20G`);
+        malformed(`•\uG   `);
+        malformed(`•\u2G  `);
+        malformed(`•\u20G `);
+        malformed(`•\uuuuuG`);
+        malformed(`•\uuuuu2G`);
+        malformed(`•\uuuuu20G`);
+        malformed(`•\uuuuuG   `);
+        malformed(`•\uuuuu2G  `);
+        malformed(`•\uuuuu20G `);
     }
 
     /*
@@ -324,20 +340,20 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the two inputs are not equivalent.
      */
-    static void EQ(String input, String expected) {
+    static void equal(String input, String expected) {
         if (input == null || expected == null || !expected.equals(input)) {
-            report("Failed EQ", "Input:", input, "Expected:", expected);
+            report("Failed equal", "Input:", input, "Expected:", expected);
         }
     }
 
     /*
      * Raise an exception if the string contains a malformed escape.
      */
-    static void WELLFORMED(String rawString) {
+    static void wellFormed(String rawString) {
         try {
             rawString.unescape();
         } catch (MalformedEscapeException ex) {
-            System.err.println("Failed WELLFORMED");
+            System.err.println("Failed wellFormed");
             System.err.println(rawString);
             throw new RuntimeException();
         }
@@ -346,10 +362,10 @@ public class RawStringLiteralLib {
     /*
      * Raise an exception if the string does not contain a malformed escape.
      */
-    static void MALFORMED(String rawString) {
+    static void malformed(String rawString) {
         try {
             rawString.unescape();
-            System.err.println("Failed MALFORMED");
+            System.err.println("Failed malformed");
             System.err.println(rawString);
             throw new RuntimeException();
         } catch (MalformedEscapeException ex) {
