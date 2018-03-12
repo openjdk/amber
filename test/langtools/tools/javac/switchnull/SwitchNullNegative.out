@@ -1,5 +1,5 @@
-SwitchNullNegative.java:10:13: compiler.err.switch.null.must.be.first
+SwitchNullNegative.java:9:13: compiler.err.switch.null.must.be.reference
 SwitchNullNegative.java:17:13: compiler.err.switch.null.must.be.reference
-SwitchNullNegative.java:25:13: compiler.err.switch.null.must.be.first
-SwitchNullNegative.java:32:13: compiler.err.switch.null.must.be.reference
+SwitchNullNegative.java:27:13: compiler.err.duplicate.case.label
+SwitchNullNegative.java:36:13: compiler.err.duplicate.case.label
 4 errors

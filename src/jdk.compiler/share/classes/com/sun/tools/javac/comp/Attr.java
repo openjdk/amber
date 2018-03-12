@@ -1474,11 +1474,11 @@ public class Attr extends JCTree.Visitor {
                     if (TreeInfo.isNull(pat)) {
                         //case null:
                         //TODO: check -source
-                        if (l != cases) {
-                            log.error(c.pos(), Errors.SwitchNullMustBeFirst);
-                        }
                         if (seltype.isPrimitive()) {
                             log.error(c.pos(), Errors.SwitchNullMustBeReference);
+                        }
+                        if (!labels.add(null)) {
+                            log.error(c.pos(), Errors.DuplicateCaseLabel);
                         }
                     } else if (enumSwitch) {
                         Symbol sym = enumConstant(pat, seltype);

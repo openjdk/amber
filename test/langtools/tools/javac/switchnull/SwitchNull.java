@@ -2,8 +2,7 @@
  * @test
  * @compile SwitchNull.java
  * @run main SwitchNull
- * @compile -XDdisableIndySwitch=true SwitchNull.java
- * @run main SwitchNull
+ * @compile/fail/ref=SwitchNull.out -XDdisableIndySwitch=true -XDrawDiagnostics SwitchNull.java
  */
 
 public class SwitchNull {
@@ -15,6 +14,8 @@ public class SwitchNull {
         assertEquals(0, stringNoNPE(null));
         assertEquals(1, stringNoNPE(""));
         assertEquals(2, stringNoNPE("other"));
+        assertEquals(0, stringNoNPENotFirst1(null));
+        assertEquals(0, stringNoNPENotFirst2(null));
         assertEquals(0, boxNoNPE(null));
         assertEquals(1, boxNoNPE(1));
         assertEquals(2, boxNoNPE(2));
@@ -31,6 +32,22 @@ public class SwitchNull {
             case null: return 0;
             case "": return 1;
             default: return 2;
+        }
+    }
+
+    private int stringNoNPENotFirst1(String str) {
+        switch (str) {
+            case "": return 1;
+            case null: return 0;
+            default: return 2;
+        }
+    }
+
+    private int stringNoNPENotFirst2(String str) {
+        switch (str) {
+            case "": return 1;
+            default: return 2;
+            case null: return 0;
         }
     }
 

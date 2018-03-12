@@ -3420,7 +3420,15 @@ public class Lower extends TreeTranslator {
         Type target = enumSwitch ? tree.selector.type :
             (stringSwitch? syms.stringType : syms.intType);
 
-        if (generateNewSwitch && ((boxSwitch && hasNullCase(tree)) || stringSwitch || enumSwitch || !intSwitch)) {
+        boolean useNewSwitch = generateNewSwitch &&
+                               ((boxSwitch && hasNullCase(tree)) || stringSwitch ||
+                                enumSwitch || !intSwitch);
+        if (!useNewSwitch && (hasNullCase(tree) ||
+            (!enumSwitch && !stringSwitch && !intSwitch))) {
+            log.error(tree.pos(), Errors.NoLegacyDesugaring);
+            useNewSwitch = true;
+        }
+        if (useNewSwitch) {
             tree.selector = translate(tree.selector);
             tree.cases = translateCases(tree.cases);
 
@@ -3499,22 +3507,16 @@ public class Lower extends TreeTranslator {
                 tree.cases = tree.cases.prepend(make.Case(makeNull(), List.of(npe), CaseKind.STATEMENTS));
             }
 
-            tree.cases.head.pat = make.Literal(-1);
-
             int caseIdx = 0;
             
-            for (JCCase c : tree.cases.tail) {
+            for (JCCase c : tree.cases) {
                 if (c.pat != null) {
-                    c.pat = make.Literal(caseIdx++);
+                    c.pat = make.Literal(isNullCase(c) ? -1 : caseIdx++);
                 }
             }
 
             result = tree;
         } else {
-            if (!enumSwitch && !stringSwitch && hasNullCase(tree)) {
-                result = translate(visitBoxedIntSwitchWithNull(tree));
-                return;
-            }
             tree.selector = translate(tree.selector, target);
             tree.cases = translateCases(tree.cases);
             if (enumSwitch) {
@@ -3584,41 +3586,14 @@ public class Lower extends TreeTranslator {
                                             names.ordinal,
                                             tree.selector.type,
                                             List.nil());
-        boolean hasNull = hasNullCase(tree);
-        JCExpression selector = make.Indexed(map.mapVar,
-                                              make.App(make.Select(tree.selector,
-                                                                   ordinalMethod)));
-        if (hasNull) {
-            VarSymbol dollar_expr = new VarSymbol(FINAL|SYNTHETIC,
-                                               names.fromString("expr" + tree.pos + target.syntheticNameChar()),
-                                               tree.selector.type,
-                                               currentMethodSym);
-            JCBinary compare = make.Binary(Tag.EQ, make.Ident(dollar_expr), make.Literal(TypeTag.BOT, null).setType(syms.botType));
-            compare.operator = operators.resolveBinary(tree.pos(), Tag.EQ, compare.lhs.type, compare.rhs.type);
-            compare.type = syms.booleanType;
-
-            selector =
-                    make.LetExpr((JCVariableDecl) make.at(tree.pos())
-                                                      .VarDef(dollar_expr, tree.selector)
-                                                      .setType(dollar_expr.type),
-                                 make.Conditional(compare,
-                                                  make.Literal(-1),
-                                                  make.Indexed(map.mapVar,
-                                                               make.App(make.Select(make.Ident(dollar_expr),
-                                                                                    ordinalMethod))))
-                                     .setType(selector.type))
-                        .setType(selector.type);
-        } else {
-            selector = make.Indexed(map.mapVar,
-                                    make.App(make.Select(tree.selector,
-                                                         ordinalMethod)));
-        }
-
+        JCArrayAccess selector = make.Indexed(map.mapVar,
+                                        make.App(make.Select(tree.selector,
+                                                             ordinalMethod)));
         ListBuffer<JCCase> cases = new ListBuffer<>();
         for (JCCase c : tree.cases) {
             if (c.pat != null) {
                 VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pat);
-                JCLiteral pat = TreeInfo.isNull(c.pat) ? make.Literal(-1) : map.forConstant(label);
+                JCLiteral pat = map.forConstant(label);
                 cases.append(make.Case(pat, c.stats, CaseKind.STATEMENTS));
             } else {
                 cases.append(c);
@@ -3687,14 +3662,8 @@ public class Lower extends TreeTranslator {
             Map<Integer, Set<String>> hashToString = new LinkedHashMap<>(alternatives + 1, 1.0f);
 
             int casePosition = 0;
-            boolean hasNull = hasNullCase(tree);
 
             for(JCCase oneCase : caseList) {
-                if (casePosition == 0 && hasNull) {
-                    casePosition++;
-                    continue;
-                }
-
                 JCExpression expression = oneCase.getExpression();
 
                 if (expression != null) { // expression for a "default" case is null
@@ -3785,19 +3754,7 @@ public class Lower extends TreeTranslator {
             }
 
             switch1.cases = caseBuffer.toList();
-
-            if (hasNull) {
-                JCBinary compare = make.Binary(Tag.EQ, make.Ident(dollar_s), make.Literal(TypeTag.BOT, null).setType(syms.botType));
-                compare.operator = operators.resolveBinary(tree.pos(), Tag.EQ, compare.lhs.type, compare.rhs.type);
-                compare.type = syms.booleanType;
-
-                stmtList.append(make.If(compare,
-                                        make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                              make.Literal(0))
-                                                      .setType(dollar_tmp.type)), switch1));
-            } else {
-                stmtList.append(switch1);
-            }
+            stmtList.append(switch1);
 
             // Make isomorphic switch tree replacing string labels
             // with corresponding integer ones from the label to
@@ -3805,7 +3762,6 @@ public class Lower extends TreeTranslator {
 
             ListBuffer<JCCase> lb = new ListBuffer<>();
             JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
-            int casePosition2 = 0;
             for(JCCase oneCase : caseList ) {
                 // Rewire up old unlabeled break statements to the
                 // replacement switch being created.
@@ -3816,21 +3772,14 @@ public class Lower extends TreeTranslator {
                 if (isDefault)
                     caseExpr = null;
                 else {
-                    int idx;
-                    if (hasNull && casePosition2 == 0) {
-                        idx = 0;
-                    } else {
-                        idx = caseLabelToPosition.get(
-                            (String)TreeInfo.skipParens(oneCase.getExpression()).type.constValue());
-                    }
-                    caseExpr = make.Literal(idx);
+                    caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.
+                                                                                                getExpression()).
+                                                                    type.constValue()));
                 }
 
                 lb.append(make.Case(caseExpr,
                                     oneCase.getStatements(),
                                     CaseKind.STATEMENTS));
-
-                casePosition2++;
             }
 
             switch2.cases = lb.toList();
@@ -3838,193 +3787,14 @@ public class Lower extends TreeTranslator {
 
             return make.Block(0L, stmtList.toList());
         }
-    }
-
-    public JCTree visitBoxedIntSwitchWithNull(JCSwitch tree) {
-        boolean useDoubleSwitch = false;
-
-        if (useDoubleSwitch) {
-            List<JCCase> caseList = tree.getCases();
-            int alternatives = caseList.size();
-
-            ListBuffer<JCStatement> stmtList = new ListBuffer<>();
-
-            // Map from String case labels to their original position in
-            // the list of case labels.
-            Map<JCExpression, Integer> caseLabelToPosition = new LinkedHashMap<>(alternatives + 1, 1.0f);
-
-            int casePosition = 0;
-            boolean hasNull = true;
-
-            for(JCCase oneCase : caseList) {
-                if (casePosition == 0 && hasNull) {
-                    casePosition++;
-                    continue;
-                }
-
-                JCExpression expression = oneCase.getExpression();
-
-                if (expression != null) { // expression for a "default" case is null
-                    caseLabelToPosition.put(oneCase.pat, casePosition);
-                }
-                casePosition++;
-            }
-
-            // Synthesize a switch statement that has the effect of
-            // mapping from a label to the integer position of that
-            // label in the list of case labels.
-
-            /*XXX: fix
-             * s$ = top of stack;
-             * tmp$ = -1;
-             * switch($s.hashCode()) {
-             *     case caseLabel.hashCode:
-             *         if (s$.equals("caseLabel_1")
-             *           tmp$ = caseLabelToPosition("caseLabel_1");
-             *         else if (s$.equals("caseLabel_2"))
-             *           tmp$ = caseLabelToPosition("caseLabel_2");
-             *         ...
-             *         break;
-             * ...
-             * }
-             */
-
-            VarSymbol dollar_s = new VarSymbol(FINAL|SYNTHETIC,
-                                               names.fromString("s" + tree.pos + target.syntheticNameChar()),
-                                               tree.selector.type,
-                                               currentMethodSym);
-            stmtList.append(make.at(tree.pos()).VarDef(dollar_s, tree.getExpression()).setType(dollar_s.type));
-
-            VarSymbol dollar_tmp = new VarSymbol(SYNTHETIC,
-                                                 names.fromString("tmp" + tree.pos + target.syntheticNameChar()),
-                                                 syms.intType,
-                                                 currentMethodSym);
-            JCVariableDecl dollar_tmp_def =
-                (JCVariableDecl)make.VarDef(dollar_tmp, make.Literal(INT, -1)).setType(dollar_tmp.type);
-            dollar_tmp_def.init.type = dollar_tmp.type = syms.intType;
-            stmtList.append(dollar_tmp_def);
-            ListBuffer<JCCase> caseBuffer = new ListBuffer<>();
-            JCSwitch switch1 = make.Switch(tree.selector,
-                                        caseBuffer.toList());
-            for(Entry<JCExpression, Integer> entry : caseLabelToPosition.entrySet()) {
-                caseBuffer.append(make.Case(entry.getKey(), List.of(
-                                            make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                                  make.Literal(entry.getValue()))
-                                                          . setType(dollar_tmp.type))),
-                                            CaseKind.STATEMENTS));
-            }
-
-            switch1.cases = caseBuffer.toList();
-
-            if (hasNull) {
-                JCBinary compare = make.Binary(Tag.EQ, make.Ident(dollar_s), make.Literal(TypeTag.BOT, null).setType(syms.botType));
-                compare.operator = operators.resolveBinary(tree.pos(), Tag.EQ, compare.lhs.type, compare.rhs.type);
-                compare.type = syms.booleanType;
-
-                stmtList.append(make.If(compare,
-                                        make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                              make.Literal(0))
-                                                      .setType(dollar_tmp.type)), switch1));
-            } else {
-                stmtList.append(switch1);
-            }
-
-            // Make isomorphic switch tree replacing string labels
-            // with corresponding integer ones from the label to
-            // position map.
-
-            ListBuffer<JCCase> lb = new ListBuffer<>();
-            JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
-            int casePosition2 = 0;
-            for(JCCase oneCase : caseList ) {
-                // Rewire up old unlabeled break statements to the
-                // replacement switch being created.
-                patchTargets(oneCase, tree, switch2);
-
-                boolean isDefault = (oneCase.getExpression() == null);
-                JCExpression caseExpr;
-                if (isDefault)
-                    caseExpr = null;
-                else {
-                    caseExpr = make.Literal(casePosition2);
-                }
-
-                lb.append(make.Case(caseExpr,
-                                    oneCase.getStatements(),
-                                    CaseKind.STATEMENTS));
-
-                casePosition2++;
-            }
-
-            switch2.cases = lb.toList();
-            stmtList.append(switch2);
-
-            return make.Block(0L, stmtList.toList());
-        } else {
-            Set<Integer> usedValues = new HashSet<>();
-
-            for (JCCase oneCase: tree.cases.tail) {
-                if (oneCase.pat != null)
-                    usedValues.add(((int) oneCase.pat.type.constValue()) + 1);
-            }
-
-            int firstAux = findAux(usedValues);
-            usedValues.add(firstAux);
-            int secondAux = findAux(usedValues);
-
-            ListBuffer<JCStatement> stmtList = new ListBuffer<>();
-            VarSymbol dollar_s = new VarSymbol(FINAL|SYNTHETIC,
-                                               names.fromString("expr" + tree.pos + this.target.syntheticNameChar()),
-                                               tree.selector.type,
-                                               currentMethodSym);
-            stmtList.append(make.at(tree.pos()).VarDef(dollar_s, tree.selector).setType(dollar_s.type));
-            VarSymbol dollar_tmp = new VarSymbol(SYNTHETIC,
-                                                 names.fromString("tmp" + tree.pos + this.target.syntheticNameChar()),
-                                                 syms.intType,
-                                                 currentMethodSym);
-            JCVariableDecl dollar_tmp_def =
-                (JCVariableDecl)make.VarDef(dollar_tmp, null).setType(dollar_tmp.type);
-            stmtList.append(dollar_tmp_def);
-            JCBinary compareNull = make.Binary(Tag.EQ, make.Ident(dollar_s), make.Literal(TypeTag.BOT, null).setType(syms.botType));
-            compareNull.operator = operators.resolveBinary(tree.pos(), Tag.EQ, compareNull.lhs.type, compareNull.rhs.type);
-            compareNull.type = syms.booleanType;
-
-            JCBinary compareAux = make.Binary(Tag.EQ, make.Ident(dollar_s), make.Literal(firstAux));
-            compareAux.operator = operators.resolveBinary(tree.pos(), Tag.EQ, compareAux.lhs.type, compareAux.rhs.type);
-            compareAux.type = syms.booleanType;
-
-            stmtList.append(make.If(compareNull,
-                                    make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                          make.Literal(firstAux))
-                                                  .setType(dollar_tmp.type)),
-                                    make.If(compareAux,
-                                            make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                                  make.Literal(secondAux))
-                                                          .setType(dollar_tmp.type)),
-                                            make.Exec(make.Assign(make.Ident(dollar_tmp),
-                                                                  make.Ident(dollar_s))
-                                                          .setType(dollar_tmp.type)))));
-
-            tree.selector = make.Ident(dollar_tmp);
-            tree.cases.head.pat = make.Literal(firstAux);
-
-            stmtList.append(tree);
-
-            return make.Block(0, stmtList.toList());
-        }
-    }
-
-    private int findAux(Set<Integer> unusable) {
-        int i = 0;
-
-        while (unusable.contains(i))
-            i++;
-
-        return i;
     }
 
     private boolean hasNullCase(JCSwitch tree) {
-        return tree.cases.head != null && tree.cases.head.pat != null && TreeInfo.isNull(tree.cases.head.pat);
+        return tree.cases.stream().anyMatch(this::isNullCase);
+    }
+
+    private boolean isNullCase(JCCase c) {
+        return c.pat != null && TreeInfo.isNull(c.pat);
     }
 
     @Override

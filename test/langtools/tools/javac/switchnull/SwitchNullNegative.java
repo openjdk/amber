@@ -4,14 +4,6 @@
  */
 
 public class SwitchNullNegative {
-    private int notFirst(String str) {
-        switch (str) {
-            case "": return 1;
-            case null: return 0;
-            default: return 2;
-        }
-    }
-
     private int notReference(int i) {
         switch (i) {
             case null: return 0;
@@ -19,19 +11,30 @@ public class SwitchNullNegative {
             default: return 2;
         }
     }
-    private int notFirstExpression(String str) {
-        return switch (str) {
-            case "" -> 1;
-            case null -> 0;
-            default -> 2;
-        };
-    }
 
     private int notReferenceExpression(int i) {
         return switch (i) {
             case null -> 0;
             case 1 -> 1;
             default -> 2;
+        };
+    }
+
+    private int repeatedStatement(Integer i) {
+        return switch (i) {
+            case 0: break 0;
+            case null: break -1;
+            case null: break -1;
+            case 1: break 1;
+        };
+    }
+
+    private int repeatedExpression(Integer i) {
+        return switch (i) {
+            case 0 -> 0;
+            case null -> -1;
+            case null -> -1;
+            case 1 -> 1;
         };
     }
 }
