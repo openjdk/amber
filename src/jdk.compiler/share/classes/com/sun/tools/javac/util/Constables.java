@@ -454,7 +454,8 @@ public class Constables {
             boolean canMakeItToConstant = canMakeItToConstantValue(v.type);
             return (constant != null &&
                 (canMakeItToConstant ||
-                    constantRefClass.isInstance(constant)) &&
+                    constantRefClass.isInstance(constant) ||
+                    dynamicCallsiteRefClass.isInstance(constant)) &&
                 v.isLocal() &&
                 v.owner.kind == Kind.MTH &&
                 (v.isFinal() || v.isEffectivelyFinal()));
