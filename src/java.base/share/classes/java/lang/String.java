@@ -2845,7 +2845,7 @@ public final class String
 
     /**
      * When applied to a multi-line string, removes left and right
-     * margins from each line.
+     * margins from each line based on provided markers.
      * <p>
      * Each line of the multi-line string is first trimmed. If
      * the trimmed line contains the {@code leftMarker} at the
@@ -2862,7 +2862,7 @@ public final class String
      * @return  string with margins removed
      * @since 11
      */
-    public String trimMargins(String leftMarker, String rightMarker) {
+    public String trimMarkers(String leftMarker, String rightMarker) {
         Objects.requireNonNull(leftMarker);
         Objects.requireNonNull(rightMarker);
         if (isEmpty()) {
@@ -3246,8 +3246,8 @@ public final class String
     }
 
     /**
-     * The constants of this enumerated type provide a simple classification of the
-     * types of escape sequence catagories based on the
+     * The constants of this enumerated type provide a simple classification
+     * of the types of escape sequence catagories based on the
      * <cite>The Java&trade; Language Specification</cite>.
      */
     public enum EscapeType {
@@ -3267,9 +3267,9 @@ public final class String
     }
 
     /**
-     * Translates all escape sequences in the string into character
-     * representations specified in sections 3.3 and 3.10.6 of the
-     * <cite>The Java&trade; Language Specification</cite>.
+     * Translates all Unicode escapes and escape sequences in the string into
+     * characters represented by those escapes specified in sections 3.3 and
+     * 3.10.6 of the <cite>The Java&trade; Language Specification</cite>.
      * <p>
      * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
      * the unicode character whose code point is {@code 0xnnnn}. Care should be
@@ -3342,8 +3342,9 @@ public final class String
     }
 
     /**
-     * Selectively translates escape sequences in the string into character
-     * representations specified in sections 3.3 and 3.10.6 of the
+     * Selectively translates all Unicode escapes and escape sequences in
+     * the string into characters represented by those escapes specified in
+     * sections 3.3 and 3.10.6 of the
      * <cite>The Java&trade; Language Specification</cite>.
      * <p>
      * Which escape sequences that are translated is based on {@link EscapeType}
@@ -3393,10 +3394,10 @@ public final class String
     }
 
     /**
-     * Translates all characters in the string that would require
-     * escape sequences in a source string literal into escape
-     * sequence representations specified in sections 3.3 and 3.10.6
-     * of the <cite>The Java&trade; Language Specification</cite>.
+     * Translates all quotes, backslashes, non-ASCII and non-graphics
+     * characters into escape sequence representations specified in
+     * sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
      * <p>
      * Characters in the code point range {@code \u005Cu0000..\u005Cu001F}
      * are translated to unicode escapes unless they have a special
@@ -3416,10 +3417,10 @@ public final class String
     }
 
     /**
-     * Selectively translates characters in the string that would require
-     * escape sequences in a source string literal into escape
-     * sequence representations specified in sections 3.3 and 3.10.6
-     * of the <cite>The Java&trade; Language Specification</cite>.
+     * Selectively translates all quotes, backslashes, non-ASCII and
+     * non-graphics characters into escape sequence representations
+     * specified in sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
      * <p>
      * Which characters that are translated is based on {@link EscapeType}
      * {@code escapes} specified.

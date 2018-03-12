@@ -853,7 +853,7 @@ final class StringUTF16 {
         int left = 0;
         while (left < length) {
             char ch = getChar(value, left);
-            if (ch > ' ' && ch != '\u2007' && ch != '\u202F') {
+            if (ch > ' ' && !Character.isWhitespace(ch)) {
                 break;
             }
             left++;
@@ -866,7 +866,7 @@ final class StringUTF16 {
         int right = length;
         while (0 < right) {
             char ch = getChar(value, right - 1);
-            if (ch > ' ' && ch != '\u2007' && ch != '\u202F') {
+            if (ch > ' ' && !Character.isWhitespace(ch)) {
                 break;
             }
             right--;

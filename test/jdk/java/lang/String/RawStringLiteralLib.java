@@ -110,7 +110,7 @@ public class RawStringLiteralLib {
             }
         }
 
-        // trimMargins
+        // trimMarkers
         for (String prefix : List.of("", "\n", "   \n"))
         for (String suffix : List.of("", "\n", "   \n"))
         for (String middle : List.of("",
@@ -131,7 +131,7 @@ public class RawStringLiteralLib {
                            leftMargin + middle + rightMargin + "\n" +
                            leftMargin + "   def   " + rightMargin + "\n" +
                            suffix;
-            String output = input.trimMargins(leftMargin, rightMargin);
+            String output = input.trimMarkers(leftMargin, rightMargin);
 
             Iterator<String> inputIterator = input.lines().iterator();
             Iterator<String> outputIterator = output.lines().iterator();
