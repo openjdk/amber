@@ -31,8 +31,10 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.util.stream.Collectors.joining;
 
 /**
  * A nominal reference for an {@code invokedynamic} call site.
@@ -41,7 +43,7 @@ import static java.lang.invoke.constant.ConstantRefs.CR_String;
 public final class DynamicCallSiteRef {
     private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
-    private final MethodHandleRef bootstrapMethod;
+    private final ConstantMethodHandleRef bootstrapMethod;
     private final ConstantRef<?>[] bootstrapArgs;
     private final String name;
     private final MethodTypeRef type;
@@ -57,15 +59,22 @@ public final class DynamicCallSiteRef {
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
      * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if the bootstrap method is not a
+     * {@link ConstantMethodHandleRef}
+     * @throws IllegalArgumentException if {@code name.length()} is zero
      */
     private DynamicCallSiteRef(MethodHandleRef bootstrapMethod,
                                String name,
                                MethodTypeRef type,
                                ConstantRef<?>[] bootstrapArgs) {
+        if (!(bootstrapMethod instanceof ConstantMethodHandleRef))
+            throw new IllegalArgumentException("bootstrap method must be a ConstantMethodHandleRef");
         this.name = Objects.requireNonNull(name);
         this.type = Objects.requireNonNull(type);
-        this.bootstrapMethod = Objects.requireNonNull(bootstrapMethod);
+        this.bootstrapMethod = (ConstantMethodHandleRef) Objects.requireNonNull(bootstrapMethod);
         this.bootstrapArgs = Objects.requireNonNull(bootstrapArgs.clone());
+        if (name.length() == 0)
+            throw new IllegalArgumentException("Illegal invocation name: " + name);
     }
 
     /**
@@ -252,6 +261,11 @@ public final class DynamicCallSiteRef {
 
     @Override
     public String toString() {
-        return String.format("DynamicCallSiteRef[%s(%s) %s%s]", bootstrapMethod, Arrays.toString(bootstrapArgs), name, type);
+        return String.format("DynamicCallSiteRef[%s::%s(%s%s):%s]",
+                             bootstrapMethod.owner().simpleName(),
+                             bootstrapMethod.methodName(),
+                             name.equals("_") ? "" : name + "/",
+                             Stream.of(bootstrapArgs).map(Object::toString).collect(joining(",")),
+                             type.simpleDescriptor());
     }
 }
