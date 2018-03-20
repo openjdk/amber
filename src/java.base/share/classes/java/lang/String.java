@@ -2671,9 +2671,9 @@ public final class String
      *          and trailing white space removed, or this string if it
      *          has no leading or trailing white space.
      */
-    public String trimWhitespace() {
-        String ret = isLatin1() ? StringLatin1.trim(value)
-                                : StringUTF16.trimWhitespace(value);
+    public String strip() {
+        String ret = isLatin1() ? StringLatin1.strip(value)
+                                : StringUTF16.strip(value);
         return ret == null ? this : ret;
     }
 
@@ -2709,9 +2709,9 @@ public final class String
      *          space removed, or this string if it has no leading white space.
      * @since 11
      */
-    public String trimLeft() {
-        String ret = isLatin1() ? StringLatin1.trimLeft(value)
-                                : StringUTF16.trimLeft(value);
+    public String stripLeading() {
+        String ret = isLatin1() ? StringLatin1.stripLeading(value)
+                                : StringUTF16.stripLeading(value);
         return ret == null ? this : ret;
     }
 
@@ -2749,9 +2749,9 @@ public final class String
      *          trailing white space.
      * @since 11
      */
-    public String trimRight() {
-        String ret = isLatin1() ? StringLatin1.trimRight(value)
-                                : StringUTF16.trimRight(value);
+    public String stripTrailing() {
+        String ret = isLatin1() ? StringLatin1.stripTrailing(value)
+                                : StringUTF16.stripTrailing(value);
         return ret == null ? this : ret;
     }
 
@@ -2808,36 +2808,36 @@ public final class String
         if (isEmpty()) {
             return this;
         }
-        List<String> list = lines().map(s -> s.trimRight())
+        List<String> list = lines().map(s -> s.stripTrailing())
                                    .collect(Collectors.toList());
         int count = list.size();
         String first = list.get(0);
         String last = list.get(count - 1);
         int minimal = list.stream().skip(1)
                                    .mapToInt(s -> s.isEmpty() ? Integer.MAX_VALUE :
-                                                                s.indexOfNonSpace())
+                                                                s.indexOfNonWhitespace())
                                    .min()
                                    .orElse(Integer.MAX_VALUE);
         Stream<String> stream = list.stream().skip(first.isEmpty() ? 1 : 0)
                                              .limit(last.isEmpty() ? count - 1 : count);
-        final int trim = last.isEmpty() ? Integer.min(minimal, lastIndexOfNonSpace()) : minimal;
+        final int trim = last.isEmpty() ? Integer.min(minimal, lastIndexOfNonWhitespace()) : minimal;
         if (trim != 0 && trim != Integer.MAX_VALUE) {
-            stream = stream.map(s -> trim <= s.indexOfNonSpace() ? s.substring(trim) : s);
+            stream = stream.map(s -> trim <= s.indexOfNonWhitespace() ? s.substring(trim) : s);
         }
         return stream.collect(Collectors.joining("\n"));
     }
 
-    private int indexOfNonSpace() {
+    private int indexOfNonWhitespace() {
         if (isLatin1()) {
-            return StringLatin1.indexOfNonSpace(value);
+            return StringLatin1.indexOfNonWhitespace(value);
         } else {
             return StringUTF16.indexOfNonWhitespace(value) >> 1;
         }
     }
 
-    private int lastIndexOfNonSpace() {
+    private int lastIndexOfNonWhitespace() {
         if (isLatin1()) {
-            return StringLatin1.lastIndexOfNonSpace(value);
+            return StringLatin1.lastIndexOfNonWhitespace(value);
         } else {
             return StringUTF16.lastIndexOfNonWhitespace(value) >> 1;
         }
@@ -2870,7 +2870,7 @@ public final class String
         }
         int leftLength = leftMarker.length();
         int rightLength = rightMarker.length();
-        List<java.lang.String> list = lines().map(s -> s.trimWhitespace())
+        List<java.lang.String> list = lines().map(s -> s.strip())
                                              .collect(Collectors.toList());
         int count = list.size();
         String first = list.get(0);
@@ -3216,6 +3216,55 @@ public final class String
      * @jls 3.10.5 String Literals
      */
     public native String intern();
+
+    /**
+     * Returns a string whose value is the concatenation of this
+     * string repeated {@code count} times.
+     * <p>
+     * If this string is empty or count is zero then the empty
+     * string is returned.
+     *
+     * @param   count number of times to repeat
+     *
+     * @return  A string composed of this string repeated
+     *          {@code count} times or the empty string if this
+     *          string is empty or count is zero
+     *
+     * @throws  IllegalArgumentException if the {@code count} is
+     *          negative.
+     *
+     * @since 11
+     */
+    public String repeat(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("count is negative: " + count);
+        }
+        if (count == 1) {
+            return this;
+        }
+        final int len = value.length;
+        if (len == 0 || count == 0) {
+            return "";
+        }
+        if (len == 1) {
+            final byte[] single = new byte[count];
+            Arrays.fill(single, value[0]);
+            return new String(single, coder);
+        }
+        if (Integer.MAX_VALUE / count < len) {
+            throw new OutOfMemoryError("Repeating " + len + " bytes String " + count +
+                    " times will produce a String exceeding maximum size.");
+        }
+        final int limit = len * count;
+        final byte[] multiple = new byte[limit];
+        System.arraycopy(value, 0, multiple, 0, len);
+        int copied = len;
+        for (; copied < limit - copied; copied <<= 1) {
+            System.arraycopy(multiple, 0, multiple, copied, copied);
+        }
+        System.arraycopy(multiple, 0, multiple, copied, limit - copied);
+        return new String(multiple, coder);
+    }
 
     ////////////////////////////////////////////////////////////////
 
@@ -3586,4 +3635,28 @@ public final class String
         }
     }
 
+
+    /**
+     * Returns the string representation of the {@code codePoint}
+     * argument.
+     *
+     * @param   codePoint a {@code codePoint}.
+     * @return  a string of length {@code 1} or {@code 2} containing
+     *          as its single character the argument {@code codePoint}.
+     * @throws IllegalArgumentException if the specified
+     *          {@code codePoint} is not a {@linkplain Character#isValidCodePoint
+     *          valid Unicode code point}.
+     */
+    static String valueOfCodePoint(int codePoint) {
+        if (COMPACT_STRINGS && StringLatin1.canEncode(codePoint)) {
+            return new String(StringLatin1.toBytes((char)codePoint), LATIN1);
+        } else if (Character.isBmpCodePoint(codePoint)) {
+            return new String(StringUTF16.toBytes((char)codePoint), UTF16);
+        } else if (Character.isSupplementaryCodePoint(codePoint)) {
+            return new String(StringUTF16.toBytesSupplementary(codePoint), UTF16);
+        }
+
+        throw new IllegalArgumentException(
+            format("Not a valid Unicode code point: 0x%X", codePoint));
+    }
 }

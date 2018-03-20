@@ -44,14 +44,21 @@ public class RawStringLiteralLib {
      */
     static void test1() {
         equal("   abc   ".trim(), "abc");
-        equal("   abc   ".trimLeft(), "abc   ");
-        equal("   abc   ".trimRight(), "   abc");
+        equal("   abc   ".strip(), "abc");
+        equal("   abc   ".stripLeading(), "abc   ");
+        equal("   abc   ".stripTrailing(), "   abc");
         equal("   abc\u2022   ".trim(), "abc\u2022");
-        equal("   abc\u2022   ".trimLeft(), "abc\u2022   ");
-        equal("   abc\u2022   ".trimRight(), "   abc\u2022");
+        equal("   abc\u2022   ".strip(), "abc\u2022");
+        equal("   abc\u2022   ".stripLeading(), "abc\u2022   ");
+        equal("   abc\u2022   ".stripTrailing(), "   abc\u2022");
         equal("".trim(), "");
-        equal("".trimLeft(), "");
-        equal("".trimRight(), "");
+        equal("".strip(), "");
+        equal("".stripLeading(), "");
+        equal("".stripTrailing(), "");
+        equal("\b".trim(), "");
+        equal("\b".strip(), "\b");
+        equal("\b".stripLeading(), "\b");
+        equal("\b".stripTrailing(), "\b");
 
         // trimIndent
         for (String prefix : List.of("", "\n", "   \n"))
