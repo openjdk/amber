@@ -2804,7 +2804,7 @@ public final class String
      * @return String with indent removed.
      * @since 11
      */
-    public String trimIndent() {
+    public String stripIndent() {
         if (isEmpty()) {
             return this;
         }
@@ -2862,7 +2862,7 @@ public final class String
      * @return  string with margins removed
      * @since 11
      */
-    public String trimMarkers(String leftMarker, String rightMarker) {
+    public String stripMarkers(String leftMarker, String rightMarker) {
         Objects.requireNonNull(leftMarker);
         Objects.requireNonNull(rightMarker);
         if (isEmpty()) {

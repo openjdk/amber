@@ -60,7 +60,7 @@ public class RawStringLiteralLib {
         equal("\b".stripLeading(), "\b");
         equal("\b".stripTrailing(), "\b");
 
-        // trimIndent
+        // stripIndent
         for (String prefix : List.of("", "\n", "   \n"))
         for (String suffix : List.of("", "\n", "   \n"))
         for (String middle : List.of("",
@@ -75,7 +75,7 @@ public class RawStringLiteralLib {
                                      "   // comment"))
         {
             String input = prefix + "   abc   \n" + middle + "\n   def   \n" + suffix;
-            String output = input.trimIndent();
+            String output = input.stripIndent();
 
             Iterator<String> inputIterator = input.lines().iterator();
             Iterator<String> outputIterator = output.lines().iterator();
@@ -117,7 +117,7 @@ public class RawStringLiteralLib {
             }
         }
 
-        // trimMarkers
+        // stripMarkers
         for (String prefix : List.of("", "\n", "   \n"))
         for (String suffix : List.of("", "\n", "   \n"))
         for (String middle : List.of("",
@@ -138,7 +138,7 @@ public class RawStringLiteralLib {
                            leftMargin + middle + rightMargin + "\n" +
                            leftMargin + "   def   " + rightMargin + "\n" +
                            suffix;
-            String output = input.trimMarkers(leftMargin, rightMargin);
+            String output = input.stripMarkers(leftMargin, rightMargin);
 
             Iterator<String> inputIterator = input.lines().iterator();
             Iterator<String> outputIterator = output.lines().iterator();
