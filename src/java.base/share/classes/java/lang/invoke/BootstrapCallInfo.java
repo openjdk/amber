@@ -27,6 +27,7 @@ package java.lang.invoke;
 
 import java.lang.invoke.MethodHandles.Lookup;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * An interface providing full static information about a particular
@@ -102,10 +103,143 @@ static Object genericBSM(Lookup lookup, String name, Object type,
 }
  * }</pre></blockquote>
  *
- * @since 1.10
+ * @since 11
  */
 public
 interface BootstrapCallInfo<T> extends ConstantGroup {
+
+    /// Access
+
+    /**
+     * Returns the number of static arguments.
+     * @return the number of static arguments
+     */
+    int size();
+
+    /**
+     * Returns the selected static argument, resolving it if necessary.
+     * Throws a linkage error if resolution proves impossible.
+     * @param index which static argument to select
+     * @return the selected static argument
+     * @throws LinkageError if the selected static argument needs resolution
+     * and cannot be resolved
+     */
+    Object get(int index) throws LinkageError;
+
+    /**
+     * Returns the selected static argument,
+     * or the given sentinel value if there is none available.
+     * If the static argument cannot be resolved, the sentinel will be returned.
+     * If the static argument can (perhaps) be resolved, but has not yet been resolved,
+     * then the sentinel <em>may</em> be returned, at the implementation's discretion.
+     * To force resolution (and a possible exception), call {@link #get(int)}.
+     * @param index the selected constant
+     * @param ifNotPresent the sentinel value to return if the static argument is not present
+     * @return the selected static argument, if available, else the sentinel value
+     */
+    Object get(int index, Object ifNotPresent);
+
+    /**
+     * Returns an indication of whether a static argument may be available.
+     * If it returns {@code true}, it will always return true in the future,
+     * and a call to {@link #get(int)} will never throw an exception.
+     * <p>
+     * After a normal return from {@link #get(int)} or a present
+     * value is reported from {@link #get(int,Object)}, this method
+     * must always return true.
+     * <p>
+     * If this method returns {@code false}, nothing in particular
+     * can be inferred, since the query only concerns the internal
+     * logic of the {@code BootstrapCallInfo} object which ensures that a
+     * successful query to a constant will always remain successful.
+     * The only way to force a permanent decision about whether
+     * a static argument is available is to call {@link #get(int)} and
+     * be ready for an exception if the constant is unavailable.
+     * @param index the selected constant
+     * @return {@code true} if the selected static argument is known by
+     *     this object to be present, {@code false} if it is known
+     *     not to be present or
+     */
+    boolean isPresent(int index);
+
+
+    /// Views
+
+    /**
+     * Create a view on the static arguments as a {@link List} view.
+     * Any request for a static argument through this view will
+     * force resolution.
+     * @return a {@code List} view on the static arguments which will force resolution
+     */
+    default List<Object> asList() {
+        return new AbstractConstantGroup.AsList(this, 0, size());
+    }
+
+    /**
+     * Create a view on the static argument as a {@link List} view.
+     * Any request for a static argument through this view will
+     * return the given sentinel value, if the corresponding
+     * call to {@link #get(int,Object)} would do so.
+     * @param ifNotPresent the sentinel value to return if a static argument is not present
+     * @return a {@code List} view on the static arguments which will not force resolution
+     */
+    default List<Object> asList(Object ifNotPresent) {
+        return new AbstractConstantGroup.AsList(this, 0, size(), ifNotPresent);
+    }
+
+
+    /// Bulk operations
+
+    /**
+     * Copy a sequence of static arguments into a given buffer.
+     * This is equivalent to {@code end-offset} separate calls to {@code get},
+     * for each index in the range from {@code offset} up to but not including {@code end}.
+     * For the first static argument that cannot be resolved,
+     * a {@code LinkageError} is thrown, but only after
+     * preceding static arguments have been stored.
+     * @param start index of first static argument to retrieve
+     * @param end limiting index of static arguments to retrieve
+     * @param buf array to receive the requested static arguments
+     * @param pos position in the array to offset storing the static arguments
+     * @return the limiting index, {@code end}
+     * @throws LinkageError if a static argument cannot be resolved
+     */
+    default int copyArguments(int start, int end,
+                              Object[] buf, int pos)
+            throws LinkageError
+    {
+        int bufBase = pos - start;  // buf[bufBase + i] = get(i)
+        for (int i = start; i < end; i++) {
+            buf[bufBase + i] = get(i);
+        }
+        return end;
+    }
+
+    /**
+     * Copy a sequence of static arguments into a given buffer.
+     * This is equivalent to {@code end-offset} separate calls to {@code get},
+     * for each index in the range from {@code offset} up to but not including {@code end}.
+     * Any static arguments that cannot be resolved are replaced by the
+     * given sentinel value.
+     * @param start index of first static argument to retrieve
+     * @param end limiting index of static arguments to retrieve
+     * @param buf array to receive the requested values
+     * @param pos position in the array to offset storing the static arguments
+     * @param ifNotPresent sentinel value to store if a static argument is not available
+     * @return the limiting index, {@code end}
+     * @throws LinkageError if {@code resolve} is true and a static argument cannot be resolved
+     */
+    default int copyConstants(int start, int end,
+                              Object[] buf, int pos,
+                              Object ifNotPresent) {
+        int bufBase = pos - start;  // buf[bufBase + i] = get(i)
+        for (int i = start; i < end; i++) {
+            buf[bufBase + i] = get(i, ifNotPresent);
+        }
+        return end;
+    }
+
+
     /** Returns the bootstrap method for this call.
      * @return the bootstrap method
      */
@@ -126,36 +260,17 @@ interface BootstrapCallInfo<T> extends ConstantGroup {
      * @param bsm bootstrap method
      * @param name invocation name
      * @param type invocation type
-     * @param constants the additional static arguments for the bootstrap method
+     * @param args the additional static arguments for the bootstrap method
      * @param <T> the type of the invocation type, either {@link MethodHandle} or {@link Class}
      * @return a new bootstrap call descriptor with the given components
      */
     static <T> BootstrapCallInfo<T> makeBootstrapCallInfo(MethodHandle bsm,
                                                           String name,
                                                           T type,
-                                                          ConstantGroup constants) {
-        AbstractConstantGroup.BSCIWithCache<T> bsci = new AbstractConstantGroup.BSCIWithCache<>(bsm, name, type, constants.size());
+                                                          Object... args) {
+        AbstractConstantGroup.BSCIWithCache<T> bsci = new AbstractConstantGroup.BSCIWithCache<>(bsm, name, type, args.length);
         final Object NP = AbstractConstantGroup.BSCIWithCache.NOT_PRESENT;
-        bsci.initializeCache(constants.asList(NP), NP);
-        return bsci;
-    }
-
-    /**
-     * Make a new bootstrap call descriptor with the given components.
-     * @param bsm bootstrap method
-     * @param name invocation name
-     * @param type invocation type
-     * @param constants the additional static arguments for the bootstrap method
-     * @param <T> the type of the invocation type, either {@link MethodHandle} or {@link Class}
-     * @return a new bootstrap call descriptor with the given components
-     */
-    static <T> BootstrapCallInfo<T> makeBootstrapCallInfo(MethodHandle bsm,
-                                                          String name,
-                                                          T type,
-                                                          Object... constants) {
-        AbstractConstantGroup.BSCIWithCache<T> bsci = new AbstractConstantGroup.BSCIWithCache<>(bsm, name, type, constants.length);
-        final Object NP = AbstractConstantGroup.BSCIWithCache.NOT_PRESENT;
-        bsci.initializeCache(Arrays.asList(constants), NP);
+        bsci.initializeCache(Arrays.asList(args), NP);
         return bsci;
     }
 
@@ -227,14 +342,14 @@ interface BootstrapCallInfo<T> extends ConstantGroup {
                     newargv[0] = lookup;
                     newargv[1] = bsci.invocationName();
                     newargv[2] = bsci.invocationType();
-                    bsci.copyConstants(0, argc, newargv, NON_SPREAD_ARG_COUNT);
+                    bsci.copyArguments(0, argc, newargv, NON_SPREAD_ARG_COUNT);
                     return handle.invokeWithArguments(newargv);
                 }
                 MethodType invocationType = MethodType.genericMethodType(NON_SPREAD_ARG_COUNT + argc);
                 MethodHandle typedBSM = handle.asType(invocationType);
                 MethodHandle spreader = invocationType.invokers().spreadInvoker(NON_SPREAD_ARG_COUNT);
                 Object[] argv = new Object[argc];
-                bsci.copyConstants(0, argc, argv, 0);
+                bsci.copyArguments(0, argc, argv, 0);
                 return spreader.invokeExact(typedBSM, (Object) lookup, (Object) bsci.invocationName(), bsci.invocationType(), argv);
         }
     }

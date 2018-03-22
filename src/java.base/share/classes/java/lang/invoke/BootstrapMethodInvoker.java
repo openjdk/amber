@@ -29,8 +29,6 @@ import sun.invoke.util.Wrapper;
 import java.lang.invoke.AbstractConstantGroup.BSCIWithCache;
 import java.util.Arrays;
 
-import static java.lang.invoke.BootstrapCallInfo.makeBootstrapCallInfo;
-import static java.lang.invoke.ConstantGroup.makeConstantGroup;
 import static java.lang.invoke.MethodHandleNatives.*;
 import static java.lang.invoke.MethodHandleStatics.TRACE_METHOD_LINKAGE;
 import static java.lang.invoke.MethodHandles.Lookup;
@@ -216,7 +214,7 @@ final class BootstrapMethodInvoker {
 
         @Override Object fillCache(int i) {
             Object[] buf = { null };
-            copyConstants(i, i+1, buf, 0);
+            copyArguments(i, i + 1, buf, 0);
             Object res = wrapNull(buf[0]);
             cache[i] = res;
             int next = i + 1;
@@ -225,7 +223,7 @@ final class BootstrapMethodInvoker {
             return res;
         }
 
-        @Override public int copyConstants(int start, int end,
+        @Override public int copyArguments(int start, int end,
                                            Object[] buf, int pos) {
             int i = start, bufi = pos;
             while (i < end) {
