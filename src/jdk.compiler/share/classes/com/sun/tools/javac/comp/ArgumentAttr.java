@@ -506,7 +506,8 @@ public class ArgumentAttr extends JCTree.Visitor {
                 new SwitchExpressionScanner() {
                     @Override
                     public void visitBreak(JCBreak tree) {
-                        buf.add(tree);
+                        if (tree.target == speculativeTree)
+                            buf.add(tree);
                     }
                 }.scan(speculativeTree.cases);
                 res = buf.toList();

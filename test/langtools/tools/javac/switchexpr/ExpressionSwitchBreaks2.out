@@ -8,4 +8,6 @@ ExpressionSwitchBreaks2.java:51:29: compiler.err.undef.label: UNKNOWN
 ExpressionSwitchBreaks2.java:55:37: compiler.err.break.ambiguous.target: x
 ExpressionSwitchBreaks2.java:61:17: compiler.err.break.complex.value.no.switch.expression
 ExpressionSwitchBreaks2.java:61:29: compiler.err.cant.resolve.location: kindname.variable, undef, , , (compiler.misc.location: kindname.class, ExpressionSwitchBreaks2, null)
-10 errors
+ExpressionSwitchBreaks2.java:65:22: compiler.err.break.ambiguous.target: j
+ExpressionSwitchBreaks2.java:68:22: compiler.err.break.outside.switch.expression
+12 errors

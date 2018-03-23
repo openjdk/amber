@@ -61,6 +61,12 @@ public class ExpressionSwitchBreaks2 {
                 break "1" + undef; //error: complex value and no switch expression
         }
         }
+        j: print(switch (i) {
+            default: break j;
+        }, 0);
+        j2: print(switch (i) {
+            default: break j2;
+        }, 0);
         return null;
     }
 
