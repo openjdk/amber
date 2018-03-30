@@ -79,6 +79,7 @@ module java.base {
     exports java.io;
     exports java.lang;
     exports java.lang.annotation;
+    exports java.lang.compiler;
     exports java.lang.invoke;
     exports java.lang.module;
     exports java.lang.ref;
