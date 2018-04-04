@@ -31,7 +31,7 @@ import java.lang.invoke.MethodType;
 /**
  * PatternCarriers
  */
-public class PatternCarriers {
+public class ExtractorCarriers {
     private static final MethodHandle CARRIER_CTOR;
     private static final MethodHandle CARRIER_GET;
     static {

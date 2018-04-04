@@ -366,5 +366,7 @@ public interface Extractor {
                                                   Extractor extractor, int i) {
         return extractor.component(i);
     }
+
+    // @@@ Condy bootstraps for finding an extractor based on owner, descriptor, refKind
 }
 
