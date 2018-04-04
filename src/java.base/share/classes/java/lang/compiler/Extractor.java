@@ -24,9 +24,18 @@
  */
 package java.lang.compiler;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+
+import sun.invoke.util.BytecodeName;
+
+import static java.lang.invoke.MethodHandleInfo.REF_invokeInterface;
+import static java.lang.invoke.MethodHandleInfo.REF_invokeStatic;
+import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
+import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 
 /**
  * Supporting type for implementation of pattern matching.  An {@linkplain Extractor}
@@ -303,11 +312,11 @@ public interface Extractor {
      * @param components the {@code component} method handles
      * @return the {@linkplain Extractor}
      */
-    public static Extractor ofCarrier(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                      MethodType descriptor,
-                                      MethodHandle carrierFactory,
-                                      MethodHandle digester,
-                                      MethodHandle... components) {
+    public static Extractor makeCarrierExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
+                                                 MethodType descriptor,
+                                                 MethodHandle carrierFactory,
+                                                 MethodHandle digester,
+                                                 MethodHandle... components) {
         return ofCarrier(descriptor, carrierFactory, digester, components);
     }
 
@@ -329,13 +338,87 @@ public interface Extractor {
      * @param components the {@code component} method handles
      * @return the {@linkplain Extractor}
      */
-    public static Extractor ofCarrierPartial(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                             MethodType descriptor,
-                                             MethodHandle carrierFactory,
-                                             MethodHandle digester,
-                                             MethodHandle predicate,
-                                             MethodHandle... components) {
+    public static Extractor makeCarrierPartialExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
+                                                        MethodType descriptor,
+                                                        MethodHandle carrierFactory,
+                                                        MethodHandle digester,
+                                                        MethodHandle predicate,
+                                                        MethodHandle... components) {
         return ofCarrierPartial(descriptor, carrierFactory, digester, predicate, components);
+    }
+
+    /**
+     * Invokedynamic bootstrap for creating lazy extractors
+     *
+     * @param lookup ignored
+     * @param invocationName ignored
+     * @param invocationType ignored
+     * @param descriptor the extractor descriptor
+     * @param components the extractor components
+     * @return the extractor factory
+     * @throws Throwable if something went wrong
+     */
+
+    public static CallSite makeLazyExtractor(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+                                             MethodType descriptor, MethodHandle... components) throws Throwable {
+        return new ConstantCallSite(MethodHandles.constant(Extractor.class, ofLazy(descriptor, components)));
+    }
+
+    /**
+     * Condy bootstrap for creating lazy extractors
+     *
+     * @param lookup ignored
+     * @param constantName ignored
+     * @param constantType ignored
+     * @param descriptor the extractor descriptor
+     * @param components the extractor components
+     * @return the extractor factory
+     * @throws Throwable if something went wrong
+     */
+
+    public static Extractor makeLazyExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
+                                              MethodType descriptor, MethodHandle... components) throws Throwable {
+        return ofLazy(descriptor, components);
+    }
+
+
+    /**
+     * Condy bootstrap for finding extractors
+     *
+     * @param lookup the lookup context
+     * @param constantName ignored
+     * @param constantType ignored
+     * @param owner the class containing the extractor
+     * @param descriptor the extractor descriptor
+     * @param name the extractor name
+     * @param refKind the kind of method
+     * @return the extractor
+     * @throws Throwable if something went wrong
+     */
+    public static Extractor findExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
+                                          Class<?> owner, MethodType descriptor, String name, int refKind) throws Throwable {
+        String dd = descriptor.toMethodDescriptorString();
+        dd = dd.substring(0, dd.indexOf(')') + 1);
+        String patternMethodName
+                = BytecodeName.toBytecodeName(String.format("$pattern$%s$%s",
+                                                            (refKind == REF_newInvokeSpecial ? owner.getSimpleName() : name),
+                                                            dd));
+        MethodType factoryDesc = MethodType.methodType(Extractor.class);
+        MethodHandle mh;
+        switch (refKind) {
+            case REF_invokeStatic:
+            case REF_newInvokeSpecial:
+                mh = lookup.findStatic(owner, patternMethodName, factoryDesc);
+                break;
+            case REF_invokeVirtual:
+            case REF_invokeInterface:
+                mh = lookup.findVirtual(owner, patternMethodName, factoryDesc);
+                break;
+            default:
+                throw new IllegalAccessException(Integer.toString(refKind));
+        }
+
+        return (Extractor) mh.invoke();
     }
 
     /**
@@ -347,6 +430,8 @@ public interface Extractor {
      * @param extractor the {@linkplain Extractor}
      * @return the {@code tryMatch} method handle
      */
+
+
     public static MethodHandle extractorTryMatch(MethodHandles.Lookup lookup, String constantName, Class<MethodHandle> constantType,
                                                  Extractor extractor) {
         return extractor.tryMatch();
@@ -367,6 +452,4 @@ public interface Extractor {
         return extractor.component(i);
     }
 
-    // @@@ Condy bootstraps for finding an extractor based on owner, descriptor, refKind
 }
-

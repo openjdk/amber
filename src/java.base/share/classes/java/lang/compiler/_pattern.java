@@ -80,6 +80,16 @@ public interface _pattern<B> {
     }
 
     /**
+     * Construct a PatternDecl for a type test pattern
+     * @param clazz The type to test against
+     * @param <T> the type of a successful target
+     * @return the PatternDecl
+     */
+    static<T> _pattern<T> ofType(Class<T> clazz) {
+        return of(o -> clazz.isAssignableFrom(o.getClass()), clazz::cast);
+    }
+
+    /**
      * Construct a PatternDecl for a constant
      * @param constant the constant
      * @param <T> the type of the constant
