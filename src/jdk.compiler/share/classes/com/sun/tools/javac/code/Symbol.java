@@ -47,8 +47,11 @@ import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
+import com.sun.tools.javac.code.ClassFinder.BadEnclosingMethodAttr;
+import com.sun.tools.javac.code.Directive.RequiresFlag;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
+import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.comp.Attr;
 import com.sun.tools.javac.comp.AttrContext;
@@ -65,7 +68,6 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
-import com.sun.tools.javac.code.Scope.WriteableScope;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.FIRSTASGOP;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
@@ -397,6 +399,14 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
     public boolean isEnum() {
         return (flags() & ENUM) != 0;
+    }
+
+    public boolean isFinal() {
+        return (flags() & FINAL) != 0;
+    }
+
+    public boolean isEffectivelyFinal() {
+        return (flags() & EFFECTIVELY_FINAL) != 0;
     }
 
     /** Is this symbol declared (directly or indirectly) local
@@ -818,7 +828,7 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             for (Symbol sym : members().getSymbols(NON_RECURSIVE)) {
                 sym.apiComplete();
                 if ((sym.flags() & SYNTHETIC) == 0 && sym.owner == this && sym.kind != ERR) {
-                    list = list.prepend(sym);
+                        list = list.prepend(sym);
                 }
             }
             return list;
@@ -1548,6 +1558,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return name.toString();
         }
 
+        public boolean isDynamic() {
+            return false;
+        }
+
         public Symbol asMemberOf(Type site, Types types) {
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
         }
@@ -1982,6 +1996,22 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         public List<Type> getThrownTypes() {
             return asType().getThrownTypes();
         }
+
+        public boolean isIntrinsicsLDC() { return false; }
+    }
+
+    public static class IntrinsicsLDCMethodSymbol extends MethodSymbol {
+        private Object constant;
+
+        public IntrinsicsLDCMethodSymbol(long flags, Name name, Type type, Symbol owner, Object constant) {
+            super(flags, name, type, owner);
+            this.constant = constant;
+        }
+
+        public Object getConstant() { return constant; }
+
+        @Override
+        public boolean isIntrinsicsLDC() { return true; }
     }
 
     /** A class for invokedynamic method calls.
@@ -1989,10 +2019,30 @@ public abstract class Symbol extends AnnoConstruct implements Element {
     public static class DynamicMethodSymbol extends MethodSymbol {
 
         public Object[] staticArgs;
-        public Symbol bsm;
+        public MethodSymbol bsm;
         public int bsmKind;
 
         public DynamicMethodSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
+            super(0, name, type, owner);
+            this.bsm = bsm;
+            this.bsmKind = bsmKind;
+            this.staticArgs = staticArgs;
+        }
+
+        @Override
+        public boolean isDynamic() {
+            return true;
+        }
+    }
+
+    /** A class for condy.
+     */
+    public static class DynamicVarSymbol extends VarSymbol {
+        public Object[] staticArgs;
+        public MethodSymbol bsm;
+        public int bsmKind;
+
+        public DynamicVarSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
             super(0, name, type, owner);
             this.bsm = bsm;
             this.bsmKind = bsmKind;
@@ -2028,6 +2078,18 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             }
             accessCode = AccessCode.from(tag, opcode);
             return accessCode;
+        }
+
+        public OperatorSymbol pre(Types types) {
+            Assert.check(opcode > ByteCodes.preMask);
+            return new OperatorSymbol(types.names.empty, type, opcode >> ByteCodes.preShift, owner);
+        }
+
+        public OperatorSymbol post(Types types) {
+            Assert.check(opcode > ByteCodes.preMask);
+            return new OperatorSymbol(types.names.empty,
+                    types.createMethodTypeWithParameters(type, List.of(type.getParameterTypes().head)),
+                    opcode & ByteCodes.preMask, owner);
         }
 
         /** Access codes for dereferencing, assignment,

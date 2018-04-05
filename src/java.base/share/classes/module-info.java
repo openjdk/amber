@@ -83,6 +83,7 @@ module java.base {
     exports java.lang.module;
     exports java.lang.ref;
     exports java.lang.reflect;
+    exports java.lang.invoke.constant;
     exports java.math;
     exports java.net;
     exports java.net.spi;
@@ -144,6 +145,8 @@ module java.base {
     exports jdk.internal.jmod to
         jdk.compiler,
         jdk.jlink;
+    exports jdk.internal.lang.annotation to
+        jdk.compiler;
     exports jdk.internal.logger to
         java.logging;
     exports jdk.internal.org.objectweb.asm to

@@ -28,6 +28,9 @@ package java.lang;
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantRef;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +38,7 @@ import java.util.Comparator;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
@@ -122,7 +126,8 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public final class String
-    implements java.io.Serializable, Comparable<String>, CharSequence {
+    implements java.io.Serializable, Comparable<String>, CharSequence,
+               ConstantRef<String>, Constable<String> {
 
     /**
      * The value is used for character storage.
@@ -1779,7 +1784,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgt         the characters being searched for.
+     * @param   tgtStr      the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,
@@ -3181,4 +3186,29 @@ public final class String
         throw new IllegalArgumentException(
             format("Not a valid Unicode code point: 0x%X", codePoint));
     }
+
+    /**
+     * Returns a symbolic constant reference for this instance, which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain String} instance
+     */
+    @Override
+    public Optional<ConstantRef<String>> toConstantRef(MethodHandles.Lookup lookup) {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain String} instance
+     */
+    @Override
+    public String resolveConstantRef(MethodHandles.Lookup lookup) {
+        return this;
+    }
+
 }

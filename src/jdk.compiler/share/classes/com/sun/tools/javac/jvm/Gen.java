@@ -25,6 +25,9 @@
 
 package com.sun.tools.javac.jvm;
 
+
+import java.util.Optional;
+
 import com.sun.tools.javac.tree.TreeInfo.PosKind;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -33,6 +36,7 @@ import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.*;
+import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.*;
 
 import com.sun.tools.javac.code.Symbol.*;
@@ -73,6 +77,7 @@ public class Gen extends JCTree.Visitor {
     private final Lower lower;
     private final Annotate annotate;
     private final StringConcat concat;
+    private final Constables constables;
 
     /** Format of stackmap tables to be generated. */
     private final Code.StackMapFormat stackMap;
@@ -109,6 +114,7 @@ public class Gen extends JCTree.Visitor {
         target = Target.instance(context);
         types = Types.instance(context);
         concat = StringConcat.instance(context);
+        constables = Constables.instance(context);
 
         methodType = new MethodType(null, null, null, syms.methodClass);
         accessDollar = names.
@@ -125,9 +131,9 @@ public class Gen extends JCTree.Visitor {
             : options.isSet(G_CUSTOM, "vars");
         genCrt = options.isSet(XJCOV);
         debugCode = options.isSet("debug.code");
+        doConstantFold = options.isSet("doConstantFold");
         allowBetterNullChecks = target.hasObjects();
         pool = new Pool(types);
-
         // ignore cldc because we cannot have both stackmap formats
         this.stackMap = StackMapFormat.JSR202;
         annotate = Annotate.instance(context);
@@ -140,6 +146,7 @@ public class Gen extends JCTree.Visitor {
     private final boolean genCrt;
     private final boolean debugCode;
     private final boolean allowBetterNullChecks;
+    private final boolean doConstantFold;
 
     /** Code buffer, set by genMethod.
      */
@@ -811,7 +818,12 @@ public class Gen extends JCTree.Visitor {
                 // Short circuit any expressions which are constants
                 tree.accept(classReferenceVisitor);
                 checkStringConstant(tree.pos(), tree.type.constValue());
-                result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                Symbol sym = TreeInfo.symbol(tree);
+                if (sym != null && isConstantDynamic(sym)) {
+                    result = items.makeDynamicItem(sym);
+                } else {
+                    result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                }
             } else {
                 this.pt = pt;
                 tree.accept(this);
@@ -1010,7 +1022,9 @@ public class Gen extends JCTree.Visitor {
         code.newLocal(v);
         if (tree.init != null) {
             checkStringConstant(tree.init.pos(), v.getConstValue());
-            if (v.getConstValue() == null || varDebugInfo) {
+            if (v.getConstValue() == null ||
+                    varDebugInfo ||
+                    (doConstantFold && !constables.skipCodeGeneration(tree))) {
                 Assert.check(letExprDepth != 0 || code.state.stacksize == 0);
                 genExpr(tree.init, v.erasure(types)).load();
                 items.makeLocalItem(v).store();
@@ -1641,18 +1655,32 @@ public class Gen extends JCTree.Visitor {
 
     public void visitApply(JCMethodInvocation tree) {
         setTypeAnnotationPositions(tree.pos);
-        // Generate code for method.
-        Item m = genExpr(tree.meth, methodType);
-        // Generate code for all arguments, where the expected types are
-        // the parameters of the method's external type (that is, any implicit
-        // outer instance of a super(...) call appears as first parameter).
         MethodSymbol msym = (MethodSymbol)TreeInfo.symbol(tree.meth);
-        genArgs(tree.args,
-                msym.externalType(types).getParameterTypes());
-        if (!msym.isDynamic()) {
-            code.statBegin(tree.pos);
+        Item m;
+        if (msym.isIntrinsicsLDC()) {
+            Object constant = ((IntrinsicsLDCMethodSymbol)msym).getConstant();
+            // primitives special case
+            if (constant instanceof VarSymbol && ((VarSymbol)constant).name == names.TYPE) {
+                m = items.makeStaticItem((Symbol)constant);
+            } else if (constant instanceof Pool.DynamicVariable) {
+                m = items.makeCondyItem((Pool.DynamicVariable)constant);
+            } else {
+                m = items.makeImmediateItem(pt, constant);
+            }
+            result = m.coerce(pt).load();
+        } else {
+            // Generate code for method.
+            m = genExpr(tree.meth, methodType);
+            // Generate code for all arguments, where the expected types are
+            // the parameters of the method's external type (that is, any implicit
+            // outer instance of a super(...) call appears as first parameter).
+            genArgs(tree.args,
+                    msym.externalType(types).getParameterTypes());
+            if (!msym.isDynamic()) {
+                code.statBegin(tree.pos);
+            }
+            result = m.invoke();
         }
-        result = m.invoke();
     }
 
     public void visitConditional(JCConditional tree) {
@@ -2042,10 +2070,13 @@ public class Gen extends JCTree.Visitor {
                 res = items.makeMemberItem(sym, true);
             }
             result = res;
+        } else if (isInvokeDynamic(sym) || isConstantDynamic(sym)) {
+            if (isConstantDynamic(sym)) {
+                setTypeAnnotationPositions(tree.pos);
+            }
+            result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && sym.owner.kind == MTH) {
             result = items.makeLocalItem((VarSymbol)sym);
-        } else if (isInvokeDynamic(sym)) {
-            result = items.makeDynamicItem(sym);
         } else if ((sym.flags() & STATIC) != 0) {
             if (!isAccessSuper(env.enclMethod))
                 sym = binaryQualifier(sym, env.enclClass.type);
@@ -2055,6 +2086,12 @@ public class Gen extends JCTree.Visitor {
             sym = binaryQualifier(sym, env.enclClass.type);
             result = items.makeMemberItem(sym, (sym.flags() & PRIVATE) != 0);
         }
+    }
+
+    public boolean isConstantDynamic(Symbol sym) {
+        return sym.kind == VAR &&
+                sym instanceof DynamicVarSymbol &&
+                ((DynamicVarSymbol)sym).isDynamic();
     }
 
     public void visitSelect(JCFieldAccess tree) {

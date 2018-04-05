@@ -1,0 +1,2 @@
+ReportIncorrectMHForIndyTest.java:35:51: compiler.err.method.handle.not.suitable.indy: (java.lang.String,java.lang.String,java.lang.invoke.MethodType,java.lang.String,java.lang.Object[])java.lang.invoke.CallSite
+1 error

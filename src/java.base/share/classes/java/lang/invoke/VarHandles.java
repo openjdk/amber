@@ -25,6 +25,9 @@
 
 package java.lang.invoke;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
 
 final class VarHandles {
@@ -142,6 +145,38 @@ final class VarHandles {
                 throw new UnsupportedOperationException();
             }
         }
+    }
+
+    // Required by instance field handles
+    static Field getFieldFromRecieverAndOffset(Class<?> receiverType,
+                                               long offset,
+                                               Class<?> fieldType) {
+        for (Field f : receiverType.getDeclaredFields()) {
+            if (Modifier.isStatic(f.getModifiers())) continue;
+
+            if (offset == UNSAFE.objectFieldOffset(f)) {
+                assert f.getType() == fieldType;
+                return f;
+            }
+        }
+        throw new InternalError("Field not found at offset");
+    }
+
+    // Required by instance static field handles
+    static Field getStaticFieldFromBaseAndOffset(Object base,
+                                                 long offset,
+                                                 Class<?> fieldType) {
+        // @@@ This is a little fragile assuming the base is the class
+        Class<?> receiverType = (Class<?>) base;
+        for (Field f : receiverType.getDeclaredFields()) {
+            if (!Modifier.isStatic(f.getModifiers())) continue;
+
+            if (offset == UNSAFE.staticFieldOffset(f)) {
+                assert f.getType() == fieldType;
+                return f;
+            }
+        }
+        throw new InternalError("Static field not found at offset");
     }
 
     static VarHandle makeArrayElementHandle(Class<?> arrayClass) {

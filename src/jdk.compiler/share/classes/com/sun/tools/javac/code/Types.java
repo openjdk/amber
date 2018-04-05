@@ -100,6 +100,8 @@ public class Types {
     private final FunctionDescriptorLookupError functionDescriptorLookupError;
 
     public final Warner noWarnings;
+    private final boolean doConstantFold;
+    private final Constables constables;
 
     // <editor-fold defaultstate="collapsed" desc="Instantiating">
     public static Types instance(Context context) {
@@ -124,6 +126,9 @@ public class Types {
         diags = JCDiagnostic.Factory.instance(context);
         functionDescriptorLookupError = new FunctionDescriptorLookupError();
         noWarnings = new Warner(null);
+        Options options = Options.instance(context);
+        doConstantFold = options.isSet("doConstantFold");
+        constables = Constables.instance(context);
     }
     // </editor-fold>
 
@@ -1310,6 +1315,9 @@ public class Types {
      *   (v) is native.
     */
    public boolean isSignaturePolymorphic(MethodSymbol msym) {
+       if (doConstantFold && constables.isIntrinsicsIndy(msym)) {
+           return true;
+       }
        List<Type> argtypes = msym.type.getParameterTypes();
        return (msym.flags_field & NATIVE) != 0 &&
               (msym.owner == syms.methodHandleType.tsym || msym.owner == syms.varHandleType.tsym) &&

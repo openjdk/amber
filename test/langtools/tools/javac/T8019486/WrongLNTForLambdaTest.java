@@ -117,13 +117,13 @@ public class WrongLNTForLambdaTest {
     static final int[][] assignmentExpectedLNT = {
     //  {line-number, start-pc},
         {26,           0},       //number -> number / 1
-        {27,           6},       //number -> number / 1
+        {27,           3},       //number -> number / 1
     };
 
     static final int[][] callExpectedLNT = {
     //  {line-number, start-pc},
         {29,           0},       //number -> number / 1
-        {31,           10},       //number -> number / 1
+        {31,           7},       //number -> number / 1
     };
 
     public static void main(String[] args) throws Exception {

@@ -1608,7 +1608,7 @@ public class Attr extends JCTree.Visitor {
                 falsetype.constValue() != null &&
                 !owntype.hasTag(NONE)) {
             //constant folding
-            owntype = cfolder.coerce(condtype.isTrue() ? truetype : falsetype, owntype);
+            owntype = cfolder.coerce(ConstFold.isTrue(condtype.getTag(), condtype.constValue()) ? truetype : falsetype, owntype);
         }
         result = check(tree, owntype, KindSelector.VAL, resultInfo);
     }
@@ -3375,7 +3375,7 @@ public class Attr extends JCTree.Visitor {
 
             // If the argument is constant, fold it.
             if (argtype.constValue() != null) {
-                Type ctype = cfolder.fold1(opc, argtype);
+                Type ctype = cfolder.fold1((OperatorSymbol)operator, argtype);
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }
@@ -3398,7 +3398,7 @@ public class Attr extends JCTree.Visitor {
             int opc = ((OperatorSymbol)operator).opcode;
             // If both arguments are constants, fold them.
             if (left.constValue() != null && right.constValue() != null) {
-                Type ctype = cfolder.fold2(opc, left, right);
+                Type ctype = cfolder.fold2((OperatorSymbol)operator, left, right);
                 if (ctype != null) {
                     owntype = cfolder.coerce(ctype, owntype);
                 }

@@ -170,8 +170,12 @@ public class Symtab {
     public final Type serializedLambdaType;
     public final Type varHandleType;
     public final Type methodHandleType;
-    public final Type methodHandleLookupType;
+    public final Type methodHandlesLookupType;
+    public final Type classRefType;
+    public final Type dynamicConstantRefType;
+    public final Type intrinsicsType;
     public final Type methodTypeType;
+    public final Type foldableType;
     public final Type nativeHeaderType;
     public final Type throwableType;
     public final Type errorType;
@@ -494,8 +498,12 @@ public class Symtab {
         serializedLambdaType = enterClass("java.lang.invoke.SerializedLambda");
         varHandleType = enterClass("java.lang.invoke.VarHandle");
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
-        methodHandleLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
+        methodHandlesLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
+        dynamicConstantRefType = enterClass("java.lang.invoke.constant.DynamicConstantRef");
+        classRefType = enterClass("java.lang.invoke.constant.ClassRef");
+        intrinsicsType = enterClass("java.lang.invoke.Intrinsics");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
+        foldableType = enterClass("jdk.internal.lang.annotation.Foldable");
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");

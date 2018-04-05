@@ -90,9 +90,9 @@ import java.util.function.IntFunction;
  * a resolved from an unresolved constant in the group.
  * The most reliable sentinel is a privately created object,
  * or perhaps the {@code ConstantGroup} itself.
- * @since 1.10
+ *
+ * @since 11
  */
-// public
 interface ConstantGroup {
     /// Access
 

@@ -185,6 +185,10 @@ public class Names {
     public final Name RUNTIME;
     public final Name SOURCE;
 
+    // condy names
+    public final Name invokedynamic;
+    public final Name ldc;
+
     // other identifiers
     public final Name T;
     public final Name deprecated;
@@ -347,6 +351,10 @@ public class Names {
         CLASS = fromString("CLASS");
         RUNTIME = fromString("RUNTIME");
         SOURCE = fromString("SOURCE");
+
+        // condy names
+        invokedynamic = fromString("invokedynamic");
+        ldc = fromString("ldc");
 
         // other identifiers
         T = fromString("T");

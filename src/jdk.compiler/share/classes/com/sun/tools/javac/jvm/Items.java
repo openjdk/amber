@@ -26,9 +26,11 @@
 package com.sun.tools.javac.jvm;
 
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.Code.*;
+import com.sun.tools.javac.jvm.Pool.DynamicVariable;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
 
@@ -161,6 +163,13 @@ public class Items {
      */
     Item makeImmediateItem(Type type, Object value) {
         return new ImmediateItem(type, value);
+    }
+
+    /** Make an item representing a condy.
+     *  @param value    The condy value.
+     */
+    Item makeCondyItem(DynamicVariable value) {
+        return new CondyItem(value);
     }
 
     /** Make an item representing an assignment expression.
@@ -464,6 +473,33 @@ public class Items {
         }
     }
 
+    /** An item representing a condy
+     */
+    class CondyItem extends Item {
+        DynamicVariable value;
+
+        CondyItem(DynamicVariable value) {
+            super(Code.typecode(value.type));
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "condy(" + value + ")";
+        }
+
+        @Override
+        Item load() {
+            int idx = pool.put(value);
+            if (typecode == LONGcode || typecode == DOUBLEcode) {
+                code.emitop2(ldc2w, idx);
+            } else {
+                code.emitLdc(idx);
+            }
+            return stackItem[typecode];
+        }
+    }
+
     /** An item representing a dynamic call site.
      */
     class DynamicItem extends StaticItem {
@@ -472,8 +508,11 @@ public class Items {
         }
 
         Item load() {
-            assert false;
-            return null;
+            Assert.check(member.kind == Kind.VAR);
+            Type type = member.erasure(types);
+            int rescode = Code.typecode(type);
+            code.emitLdc(pool.put(member));
+            return stackItem[rescode];
         }
 
         void store() {
@@ -481,7 +520,7 @@ public class Items {
         }
 
         Item invoke() {
-            // assert target.hasNativeInvokeDynamic();
+            Assert.check(member.kind == Kind.MTH);
             MethodType mtype = (MethodType)member.erasure(types);
             int rescode = Code.typecode(mtype.restype);
             code.emitInvokedynamic(pool.put(member), mtype);

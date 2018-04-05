@@ -1,0 +1,7 @@
+LDCNegativeTest.java:21:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+LDCNegativeTest.java:22:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+LDCNegativeTest.java:23:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+LDCNegativeTest.java:24:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+LDCNegativeTest.java:25:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+LDCNegativeTest.java:26:12: compiler.err.intrinsics.ldc.must.have.constant.arg
+6 errors

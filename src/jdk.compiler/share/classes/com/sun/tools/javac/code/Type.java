@@ -177,18 +177,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         return null;
     }
 
-    /** Is this a constant type whose value is false?
-     */
-    public boolean isFalse() {
-        return false;
-    }
-
-    /** Is this a constant type whose value is true?
-     */
-    public boolean isTrue() {
-        return false;
-    }
-
     /**
      * Get the representation of this type used for modelling purposes.
      * By default, this is itself. For ErrorType, a different value
@@ -480,14 +468,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
     }
 
     /**
-     * The constant value of this type, converted to String
-     */
-    public String stringValue() {
-        Object cv = Assert.checkNonNull(constValue());
-        return cv.toString();
-    }
-
-    /**
      * Override this method with care. For most Type instances this should behave as ==.
      */
     @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -741,43 +721,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
                         return tsym.type;
                     }
                 };
-        }
-
-        /**
-         * The constant value of this type, converted to String
-         */
-        @Override
-        public String stringValue() {
-            Object cv = Assert.checkNonNull(constValue());
-            if (tag == BOOLEAN) {
-                return ((Integer) cv).intValue() == 0 ? "false" : "true";
-            }
-            else if (tag == CHAR) {
-                return String.valueOf((char) ((Integer) cv).intValue());
-            }
-            else {
-                return cv.toString();
-            }
-        }
-
-        /** Is this a constant type whose value is false?
-         */
-        @Override
-        public boolean isFalse() {
-            return
-                tag == BOOLEAN &&
-                constValue() != null &&
-                ((Integer)constValue()).intValue() == 0;
-        }
-
-        /** Is this a constant type whose value is true?
-         */
-        @Override
-        public boolean isTrue() {
-            return
-                tag == BOOLEAN &&
-                constValue() != null &&
-                ((Integer)constValue()).intValue() != 0;
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -2281,11 +2224,6 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
         @Override
         public Type constType(Object value) {
             return this;
-        }
-
-        @Override
-        public String stringValue() {
-            return "null";
         }
 
         @Override

@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
 import java.lang.module.ModuleReader;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
@@ -46,6 +47,8 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.Constable;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -58,19 +61,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.misc.Unsafe;
-import jdk.internal.misc.VM;
 import jdk.internal.module.Resources;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.ConstantPool;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.reflect.ReflectionFactory;
 import jdk.internal.vm.annotation.ForceInline;
+import sun.invoke.util.Wrapper;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ClassRepository;
@@ -129,7 +133,8 @@ import sun.reflect.misc.ReflectUtil;
 public final class Class<T> implements java.io.Serializable,
                               GenericDeclaration,
                               Type,
-                              AnnotatedElement {
+                              AnnotatedElement,
+                              Constable<Class<T>> {
     private static final int ANNOTATION= 0x00002000;
     private static final int ENUM      = 0x00004000;
     private static final int SYNTHETIC = 0x00001000;
@@ -250,6 +255,29 @@ public final class Class<T> implements java.io.Serializable,
                 sb.append("[]");
 
             return sb.toString();
+        }
+    }
+
+    /**
+     * Produces a bytecode descriptor representation of the class.
+     * <p>
+     * Note that this is not a strict inverse of {@link #forName};
+     * two distinct classes which share a common name but have different class loaders
+     * will appear identical when viewed within descriptor strings.
+     * <p>
+     * This method is included for the benefit of applications that must
+     * generate bytecode.
+     *
+     * @return the bytecode type descriptor representation
+     */
+    public String toDescriptorString() {
+        if (isPrimitive())
+            return new String(new char[] {Wrapper.forPrimitiveType(this).basicTypeChar()});
+        else if (isArray()) {
+            return "[" + componentType.toDescriptorString();
+        }
+        else {
+            return "L" + getName().replace('.', '/') + ";";
         }
     }
 
@@ -3823,5 +3851,15 @@ public final class Class<T> implements java.io.Serializable,
      */
     public AnnotatedType[] getAnnotatedInterfaces() {
          return TypeAnnotationParser.buildAnnotatedInterfaces(getRawTypeAnnotations(), getConstantPool(), this);
+    }
+
+    @Override
+    public Optional<ClassRef> toConstantRef(MethodHandles.Lookup lookup) {
+        try {
+            return Optional.of(ClassRef.ofDescriptor(lookup.accessClass(this).toDescriptorString()));
+        }
+        catch (IllegalAccessException e) {
+            return Optional.empty();
+        }
     }
 }

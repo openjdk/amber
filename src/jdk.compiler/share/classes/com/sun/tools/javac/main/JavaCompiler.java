@@ -299,6 +299,10 @@ public class JavaCompiler {
      */
     protected Flow flow;
 
+    /** The constables analyzer.
+     */
+    protected ConstablesVisitor constablesVisitor;
+
     /** The modules visitor
      */
     protected Modules modules;
@@ -410,6 +414,7 @@ public class JavaCompiler {
         chk = Check.instance(context);
         gen = Gen.instance(context);
         flow = Flow.instance(context);
+        constablesVisitor = ConstablesVisitor.instance(context);
         transTypes = TransTypes.instance(context);
         lower = Lower.instance(context);
         annotate = Annotate.instance(context);
@@ -1400,6 +1405,8 @@ public class JavaCompiler {
                     return;
 
                 analyzer.flush(env);
+
+                env.tree = constablesVisitor.analyzeTree(env.tree, env);
 
                 results.add(env);
             }

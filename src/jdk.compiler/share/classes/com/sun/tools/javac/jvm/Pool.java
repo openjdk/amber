@@ -39,9 +39,14 @@ import com.sun.tools.javac.util.Name;
 
 import java.util.*;
 
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
+import com.sun.tools.javac.util.Log;
+import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 
+import static com.sun.tools.javac.code.Flags.INTERFACE;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 
@@ -128,6 +133,8 @@ public class Pool {
     Object makePoolValue(Object o) {
         if (o instanceof DynamicMethodSymbol) {
             return new DynamicMethod((DynamicMethodSymbol)o, types);
+        } else if (o instanceof DynamicVarSymbol) {
+            return new Pool.DynamicVariable((DynamicVarSymbol)o, types);
         } else if (o instanceof MethodSymbol) {
             return new Method((MethodSymbol)o, types);
         } else if (o instanceof VarSymbol) {
@@ -182,10 +189,12 @@ public class Pool {
 
     static class DynamicMethod extends Method {
         public Object[] uniqueStaticArgs;
+        Method internalBSM;
 
         DynamicMethod(DynamicMethodSymbol m, Types types) {
             super(m, types);
             uniqueStaticArgs = getUniqueTypeArray(m.staticArgs, types);
+            internalBSM = new Method(m.bsm, types);
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -198,7 +207,7 @@ public class Pool {
             if (!(any instanceof DynamicMethod)) return false;
             DynamicMethodSymbol dm1 = (DynamicMethodSymbol)other;
             DynamicMethodSymbol dm2 = (DynamicMethodSymbol)((DynamicMethod)any).other;
-            return dm1.bsm == dm2.bsm &&
+            return internalBSM.equals(((DynamicMethod)any).internalBSM) &&
                         dm1.bsmKind == dm2.bsmKind &&
                         Arrays.equals(uniqueStaticArgs,
                             ((DynamicMethod)any).uniqueStaticArgs);
@@ -213,7 +222,7 @@ public class Pool {
             int hash = includeDynamicArgs ? super.hashCode() : 0;
             DynamicMethodSymbol dm = (DynamicMethodSymbol)other;
             hash += dm.bsmKind * 7 +
-                    dm.bsm.hashCode() * 11;
+                    internalBSM.hashCode() * 11;
             for (int i = 0; i < dm.staticArgs.length; i++) {
                 hash += (uniqueStaticArgs[i].hashCode() * 23);
             }
@@ -289,21 +298,98 @@ public class Pool {
         }
     }
 
+    /**
+     * Pool entry associated with dynamic constants.
+     */
+    public static class DynamicVariable extends Variable {
+        public MethodHandle bsm;
+        private Object[] uniqueStaticArgs;
+        Types types;
+
+        public DynamicVariable(Name name, MethodHandle bsm, Object[] args, Types types, Symtab syms) {
+            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types, syms);
+        }
+
+        public DynamicVariable(Name name, MethodHandle bsm, Type type, Object[] args, Types types, Symtab syms) {
+            this(new DynamicVarSymbol(name,
+                            syms.noSymbol,
+                            bsm.refKind,
+                            (MethodSymbol)bsm.refSym,
+                            type,
+                            args), types, bsm);
+        }
+
+        public DynamicVariable(DynamicVarSymbol dynField, Types types) {
+            this(dynField, types, null);
+        }
+
+        private DynamicVariable(DynamicVarSymbol dynField, Types types, MethodHandle bsm) {
+            super(dynField, types);
+            this.bsm = bsm != null ?
+                    bsm :
+                    new MethodHandle(dynField.bsmKind, dynField.bsm, types);
+            this.types = types;
+            uniqueStaticArgs = getUniqueTypeArray(staticArgs(), types);
+        }
+
+        private Object[] getUniqueTypeArray(Object[] objects, Types types) {
+            Object[] result = new Object[objects.length];
+            for (int i = 0; i < objects.length; i++) {
+                if (objects[i] instanceof Type) {
+                    result[i] = new UniqueType((Type)objects[i], types);
+                } else {
+                    result[i] = objects[i];
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = bsm.hashCode() * 67 + other.name.hashCode() + type.hashCode() * 13 + uniqueType.hashCode();
+            for (Object uniqueStaticArg : uniqueStaticArgs) {
+                hash += (uniqueStaticArg.hashCode() * 23);
+            }
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof DynamicVariable) {
+                DynamicVariable that = (DynamicVariable)obj;
+                return that.bsm.equals(bsm) &&
+                        types.isSameType(that.type, type) &&
+                        that.other.name.equals(other.name) &&
+                        Arrays.equals(uniqueStaticArgs, that.uniqueStaticArgs) &&
+                        that.uniqueType.equals(uniqueType);
+            } else {
+                return false;
+            }
+        }
+
+        public Object[] staticArgs() {
+            return ((DynamicVarSymbol)other).staticArgs;
+        }
+    }
+
     public static class MethodHandle {
 
         /** Reference kind - see ClassFile */
-        int refKind;
+        public int refKind;
 
         /** Reference symbol */
-        Symbol refSym;
+        public Symbol refSym;
 
         UniqueType uniqueType;
 
         public MethodHandle(int refKind, Symbol refSym, Types types) {
+            this(refKind, refSym, types, new StrictMethodHandleCheckHelper(refKind, refSym));
+        }
+        public MethodHandle(int refKind, Symbol refSym, Types types, MethodHandleCheckHelper mhCheckHelper) {
             this.refKind = refKind;
             this.refSym = refSym;
             this.uniqueType = new UniqueType(this.refSym.type, types);
-            checkConsistent();
+            mhCheckHelper.check();
         }
         public boolean equals(Object other) {
             if (!(other instanceof MethodHandle)) return false;
@@ -323,50 +409,113 @@ public class Pool {
                 uniqueType.hashCode();
         }
 
-        /**
-         * Check consistency of reference kind and symbol (see JVMS 4.4.8)
-         */
-        @SuppressWarnings("fallthrough")
-        private void checkConsistent() {
-            boolean staticOk = false;
-            Kind expectedKind = null;
-            Filter<Name> nameFilter = nonInitFilter;
-            boolean interfaceOwner = false;
-            switch (refKind) {
-                case ClassFile.REF_getStatic:
-                case ClassFile.REF_putStatic:
-                    staticOk = true;
-                case ClassFile.REF_getField:
-                case ClassFile.REF_putField:
-                    expectedKind = VAR;
-                    break;
-                case ClassFile.REF_newInvokeSpecial:
-                    nameFilter = initFilter;
-                    expectedKind = MTH;
-                    break;
-                case ClassFile.REF_invokeInterface:
-                    interfaceOwner = true;
-                    expectedKind = MTH;
-                    break;
-                case ClassFile.REF_invokeStatic:
-                    interfaceOwner = true;
-                    staticOk = true;
-                case ClassFile.REF_invokeVirtual:
-                    expectedKind = MTH;
-                    break;
-                case ClassFile.REF_invokeSpecial:
-                    interfaceOwner = true;
-                    expectedKind = MTH;
-                    break;
-            }
-            Assert.check(!refSym.isStatic() || staticOk);
-            Assert.check(refSym.kind == expectedKind);
-            Assert.check(nameFilter.accepts(refSym.name));
-            Assert.check(!refSym.owner.isInterface() || interfaceOwner);
-        }
-        //where
-                Filter<Name> nonInitFilter = n -> (n != n.table.names.init && n != n.table.names.clinit);
+        public abstract static class MethodHandleCheckHelper {
+            int refKind;
+            Symbol refSym;
+            public boolean staticOk = false;
+            public Kind expectedKind = null;
+            public Filter<Name> nameFilter = nonInitFilter;
+            public boolean interfaceOwner = false;
 
-                Filter<Name> initFilter = n -> n == n.table.names.init;
+            final static Filter<Name> nonInitFilter = n -> (n != n.table.names.init && n != n.table.names.clinit);
+            final static Filter<Name> initFilter = n -> n == n.table.names.init;
+
+            @SuppressWarnings("fallthrough")
+            public MethodHandleCheckHelper(int refKind, Symbol refSym) {
+                this.refKind = refKind;
+                this.refSym = refSym;
+                switch (refKind) {
+                    case ClassFile.REF_getStatic:
+                    case ClassFile.REF_putStatic:
+                        staticOk = true;
+                    case ClassFile.REF_getField:
+                    case ClassFile.REF_putField:
+                        expectedKind = VAR;
+                        break;
+                    case ClassFile.REF_newInvokeSpecial:
+                        nameFilter = initFilter;
+                        expectedKind = MTH;
+                        break;
+                    case ClassFile.REF_invokeInterface:
+                        interfaceOwner = true;
+                        expectedKind = MTH;
+                        break;
+                    case ClassFile.REF_invokeStatic:
+                        interfaceOwner = true;
+                        staticOk = true;
+                    case ClassFile.REF_invokeVirtual:
+                        expectedKind = MTH;
+                        break;
+                    case ClassFile.REF_invokeSpecial:
+                        interfaceOwner = true;
+                        expectedKind = MTH;
+                        break;
+                }
+            }
+
+            public abstract void check();
+        }
+
+        public static class DumbMethodHandleCheckHelper extends MethodHandleCheckHelper {
+            public DumbMethodHandleCheckHelper(int refKind, Symbol refSym) {
+                super(refKind, refSym);
+            }
+
+            @Override
+            public void check() {
+                // do nothing
+            }
+        }
+
+        public static class StrictMethodHandleCheckHelper extends MethodHandleCheckHelper {
+            public StrictMethodHandleCheckHelper(int refKind, Symbol refSym) {
+                super(refKind, refSym);
+            }
+
+            @Override
+            public void check() {
+                Assert.check(!refSym.isStatic() || staticOk, "incorrect static-ness for symbol " + refSym);
+                Assert.check(refSym.kind == expectedKind, "unexpected kind for symbol " + refSym +". \n"
+                        + "Expected = " + expectedKind + "\n"
+                        + "Found = " + refSym.kind);
+                Assert.check(nameFilter.accepts(refSym.name), "incorrect name for symbol " + refSym);
+                boolean isInterface = (refSym.owner.flags_field & INTERFACE) != 0;
+                Assert.check(!isInterface || interfaceOwner,
+                        interfaceOwner ?
+                                "interface owner expected for symbol ":
+                                "non interface owner expected for symbol " + refSym);
+            }
+        }
+
+        public static class WarnMethodHandleCheckHelper extends MethodHandleCheckHelper {
+            Log log;
+            DiagnosticPosition pos;
+            public WarnMethodHandleCheckHelper(Log log, DiagnosticPosition pos, int refKind, Symbol refSym) {
+                super(refKind, refSym);
+                this.log = log;
+                this.pos = pos;
+            }
+
+            @Override
+            public void check() {
+                if (refSym.isStatic() != staticOk) {
+                    log.warning(pos, Warnings.IncorrectStaticnessForSymbol(refSym));
+                }
+                if (refSym.kind != expectedKind) {
+                    log.warning(pos, Warnings.UnexpectedKindForSymbol(refSym, expectedKind, refSym.kind));
+                }
+                if (!nameFilter.accepts(refSym.name)) {
+                    log.warning(pos, Warnings.IncorrectNameForMethod(refSym, refKind));
+                }
+                boolean isInterface = (refSym.owner.flags_field & INTERFACE) != 0;
+                if (isInterface && !interfaceOwner) {
+                    if (interfaceOwner) {
+                        log.warning(pos, Warnings.InterfaceOwnerExpectedForSymbol(refSym));
+                    } else {
+                        log.warning(pos, Warnings.NonInterfaceOwnerExpectedForSymbol(refSym));
+                    }
+                }
+            }
+        }
     }
 }

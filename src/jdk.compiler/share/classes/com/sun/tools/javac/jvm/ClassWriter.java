@@ -48,7 +48,6 @@ import com.sun.tools.javac.jvm.Pool.DynamicMethod;
 import com.sun.tools.javac.jvm.Pool.Method;
 import com.sun.tools.javac.jvm.Pool.MethodHandle;
 import com.sun.tools.javac.jvm.Pool.Variable;
-import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.util.*;
 
 import static com.sun.tools.javac.code.Flags.*;
@@ -146,11 +145,16 @@ public class ClassWriter extends ClassFile {
     /** The name table. */
     private final Names names;
 
+    /** The symbol table. */
+    private final Symtab syms;
+
     /** Access to files. */
     private final JavaFileManager fileManager;
 
     /** Sole signature generator */
     private final CWSignatureGenerator signatureGen;
+
+    private final Constables constables;
 
     /** The tags and constants used in compressed stackmap. */
     static final int SAME_FRAME_SIZE = 64;
@@ -174,12 +178,14 @@ public class ClassWriter extends ClassFile {
 
         log = Log.instance(context);
         names = Names.instance(context);
+        syms = Symtab.instance(context);
         options = Options.instance(context);
         target = Target.instance(context);
         source = Source.instance(context);
         types = Types.instance(context);
         fileManager = context.get(JavaFileManager.class);
         signatureGen = new CWSignatureGenerator(types);
+        constables = Constables.instance(context);
 
         verbose        = options.isSet(VERBOSE);
         genCrt         = options.isSet(XJCOV);
@@ -386,7 +392,7 @@ public class ClassWriter extends ClassFile {
             if (value instanceof MethodSymbol) {
                 MethodSymbol m = (MethodSymbol)value;
                 if (!m.isDynamic()) {
-                    poolbuf.appendByte((m.owner.flags() & INTERFACE) != 0
+                    poolbuf.appendByte((m.owner.flags_field & INTERFACE) != 0
                               ? CONSTANT_InterfaceMethodref
                               : CONSTANT_Methodref);
                     poolbuf.appendChar(pool.put(m.owner));
@@ -395,31 +401,33 @@ public class ClassWriter extends ClassFile {
                     //invokedynamic
                     DynamicMethodSymbol dynSym = (DynamicMethodSymbol)m;
                     MethodHandle handle = new MethodHandle(dynSym.bsmKind, dynSym.bsm, types);
-                    DynamicMethod.BootstrapMethodsKey key = new DynamicMethod.BootstrapMethodsKey(dynSym, types);
-
-                    // Figure out the index for existing BSM; create a new BSM if no key
-                    DynamicMethod.BootstrapMethodsValue val = bootstrapMethods.get(key);
-                    if (val == null) {
-                        int index = bootstrapMethods.size();
-                        val = new DynamicMethod.BootstrapMethodsValue(handle, index);
-                        bootstrapMethods.put(key, val);
-                    }
-
-                    //init cp entries
-                    pool.put(names.BootstrapMethods);
-                    pool.put(handle);
-                    for (Object staticArg : dynSym.staticArgs) {
-                        pool.put(staticArg);
-                    }
+                    DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
                     poolbuf.appendByte(CONSTANT_InvokeDynamic);
                     poolbuf.appendChar(val.index);
                     poolbuf.appendChar(pool.put(nameType(dynSym)));
                 }
             } else if (value instanceof VarSymbol) {
                 VarSymbol v = (VarSymbol)value;
-                poolbuf.appendByte(CONSTANT_Fieldref);
-                poolbuf.appendChar(pool.put(v.owner));
-                poolbuf.appendChar(pool.put(nameType(v)));
+                if (!v.isDynamic()) {
+                    poolbuf.appendByte(CONSTANT_Fieldref);
+                    poolbuf.appendChar(pool.put(v.owner));
+                    poolbuf.appendChar(pool.put(nameType(v)));
+                } else {
+                    DynamicVarSymbol dynVarSym = (DynamicVarSymbol)v;
+                    MethodHandle handle = new MethodHandle(dynVarSym.bsmKind, dynVarSym.bsm, types);
+                    DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
+                            handle.refSym.name,
+                            syms.noSymbol,
+                            handle.refKind,
+                            (MethodSymbol)handle.refSym,
+                            handle.refSym.type,
+                            dynVarSym.staticArgs);
+                    DynamicMethod.BootstrapMethodsValue val = writeDynSymbol(dynSym, handle);
+                    poolbuf.appendByte(CONSTANT_Dynamic);
+                    poolbuf.appendChar(val.index);
+                    NameAndType nt = new NameAndType(dynVarSym.name, dynVarSym.type, types);
+                    poolbuf.appendChar(pool.put(nt));
+                }
             } else if (value instanceof Name) {
                 poolbuf.appendByte(CONSTANT_Utf8);
                 byte[] bs = ((Name)value).toUtf();
@@ -490,6 +498,26 @@ public class ClassWriter extends ClassFile {
         if (pool.pp > Pool.MAX_ENTRIES)
             throw new PoolOverflow();
         putChar(poolbuf, poolCountIdx, pool.pp);
+    }
+
+    DynamicMethod.BootstrapMethodsValue writeDynSymbol(DynamicMethodSymbol dynSym, MethodHandle handle) {
+        DynamicMethod.BootstrapMethodsKey key = new DynamicMethod.BootstrapMethodsKey(dynSym, types);
+
+        // Figure out the index for existing BSM; create a new BSM if no key
+        DynamicMethod.BootstrapMethodsValue val = bootstrapMethods.get(key);
+        if (val == null) {
+            int index = bootstrapMethods.size();
+            val = new DynamicMethod.BootstrapMethodsValue(handle, index);
+            bootstrapMethods.put(key, val);
+        }
+
+        //init cp entries
+        pool.put(names.BootstrapMethods);
+        pool.put(handle);
+        for (Object staticArg : dynSym.staticArgs) {
+            pool.put(staticArg);
+        }
+        return val;
     }
 
     /** Given a symbol, return its name-and-type.
@@ -757,10 +785,10 @@ public class ClassWriter extends ClassFile {
             if (!tc.position.emitToClassfile())
                 continue;
             switch (types.getRetention(tc)) {
-            case SOURCE: break;
-            case CLASS: invisibles.append(tc); break;
-            case RUNTIME: visibles.append(tc); break;
-            default: // /* fail soft */ throw new AssertionError(vis);
+                case SOURCE: break;
+                case CLASS: invisibles.append(tc); break;
+                case RUNTIME: visibles.append(tc); break;
+                default: // /* fail soft */ throw new AssertionError(vis);
             }
         }
 
@@ -1045,8 +1073,7 @@ public class ClassWriter extends ClassFile {
         try {
             c.complete();
         } catch (CompletionFailure ex) {
-            System.err.println("error: " + c + ": " + ex.getMessage());
-            throw ex;
+            System.err.println("warning: " + c + ": " + ex.getMessage());
         }
         if (!c.type.hasTag(CLASS)) return; // arrays
         if (pool != null && // pool might be null if called from xClassName
@@ -1129,7 +1156,7 @@ public class ClassWriter extends ClassFile {
         databuf.appendChar(pool.put(typeSig(v.erasure(types))));
         int acountIdx = beginAttrs();
         int acount = 0;
-        if (v.getConstValue() != null) {
+        if (v.getConstValue() != null && constables.canMakeItToConstantValue(v.type)) {
             int alenIdx = writeAttr(names.ConstantValue);
             databuf.appendChar(pool.put(v.getConstValue()));
             endAttr(alenIdx);
