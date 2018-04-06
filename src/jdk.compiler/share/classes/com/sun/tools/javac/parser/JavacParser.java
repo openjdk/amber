@@ -3521,7 +3521,7 @@ public class JavacParser implements Parser {
     protected JCClassDecl recordDeclaration(JCModifiers mods, Comment dc) {
         int pos = token.pos;
         nextToken();
-        mods.flags |= Flags.RECORD | Flags.STATIC;
+        mods.flags |= Flags.RECORD | Flags.STATIC | Flags.FINAL;
         Name name = typeName();
 
         List<JCTypeParameter> typarams = typeParametersOpt();

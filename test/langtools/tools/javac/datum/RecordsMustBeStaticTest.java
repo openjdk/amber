@@ -84,7 +84,7 @@ public class RecordsMustBeStaticTest {
         Assert.check(elements.iterator().hasNext());
         dprinter.treeTypes(true).printTree("", (JCTree)elements.iterator().next());
         String output = strOut.toString();
-        Assert.check(output.contains("flags: [static, record]"), "nested records should be static");
+        Assert.check(output.contains("flags: [static, final, record]"), "nested records should be static and final");
     }
 
     static final String source1 =
