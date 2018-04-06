@@ -124,23 +124,6 @@ public class Lower extends TreeTranslator {
         Options options = Options.instance(context);
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
-        String generationSwitch = options.get("generation_switch");
-        if (generationSwitch != null) {
-            if (generationSwitch.equals("all")) {
-                generationSwitchSet = EnumSet.allOf(GenerationSwitch.class);
-            } else {
-                String[] switches = generationSwitch.split(",");
-                for (String s :switches) {
-                    if (s.equals("oldEquals")) {
-                        generationSwitchSet.add(GenerationSwitch.OLD_EQUALS);
-                    } else if (s.equals("oldToString")) {
-                        generationSwitchSet.add(GenerationSwitch.OLD_TOSTRING);
-                    } else if (s.equals("oldHashCode")) {
-                        generationSwitchSet.add(GenerationSwitch.OLD_HASCODE);
-                    }
-                }
-            }
-        }
     }
 
     /** The currently enclosing class.
@@ -2501,15 +2484,6 @@ public class Lower extends TreeTranslator {
     }
 
     /** Translate a record. */
-
-    enum GenerationSwitch {
-        OLD_EQUALS,
-        OLD_HASCODE,
-        OLD_TOSTRING
-    }
-
-    private EnumSet<GenerationSwitch> generationSwitchSet = EnumSet.noneOf(GenerationSwitch.class);
-
     private void visitRecordDef(JCClassDecl tree) {
         boolean isAbstract = (tree.mods.flags & ABSTRACT) != 0;
         make_at(tree.pos());
@@ -2528,15 +2502,9 @@ public class Lower extends TreeTranslator {
 
         if (!isAbstract) {
             tree.defs = tree.defs.appendList(List.of(
-                    generationSwitchSet.contains(GenerationSwitch.OLD_EQUALS) ?
-                            recordOldEquals(tree, vars):
-                            recordEquals(tree, getterMethHandles),
-                    generationSwitchSet.contains(GenerationSwitch.OLD_TOSTRING) ?
-                            recordOldToString(tree, vars):
-                            recordToString(tree, vars, getterMethHandles),
-                    generationSwitchSet.contains(GenerationSwitch.OLD_HASCODE) ?
-                            recordOldHashCode(tree, vars):
-                            recordHashCode(tree, getterMethHandles),
+                    recordEquals(tree, getterMethHandles),
+                    recordToString(tree, vars, getterMethHandles),
+                    recordHashCode(tree, getterMethHandles),
                     recordExtractor(tree, getterMethHandles)
             ));
         }
