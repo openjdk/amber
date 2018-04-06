@@ -57,7 +57,9 @@ import static java.util.Objects.requireNonNull;
 public class SwitchBootstraps {
 
     // Shared INIT_HOOK for all switch call sites; looks the target method up in a map
-    private static final MethodHandle INIT_HOOK;
+    private static final MethodHandle CONSTANT_INIT_HOOK;
+    private static final MethodHandle PATTERN_INIT_HOOK;
+    private static final MethodHandle PATTERN_SWITCH_METHOD;
     private static final Map<Class<?>, MethodHandle> switchMethods = new ConcurrentHashMap<>();
 
     private static final Set<Class<?>> BOOLEAN_TYPES
@@ -89,6 +91,8 @@ public class SwitchBootstraps {
                             switchClass = IntSwitchCallSite.class;
                         else if (LONG_TYPES.contains(c) || DOUBLE_TYPES.contains(c))
                             switchClass = LongSwitchCallSite.class;
+                        else if (c == Object.class)
+                            switchClass = TypeSwitchCallSite.class;
                         else
                             throw new BootstrapMethodError("Invalid switch type: " + c);
 
@@ -103,17 +107,25 @@ public class SwitchBootstraps {
 
     static {
         try {
-            INIT_HOOK = LOOKUP.findStatic(SwitchBootstraps.class, "initHook",
-                                          MethodType.methodType(MethodHandle.class, CallSite.class));
+            CONSTANT_INIT_HOOK = LOOKUP.findStatic(SwitchBootstraps.class, "constantInitHook",
+                                                   MethodType.methodType(MethodHandle.class, CallSite.class));
+            PATTERN_INIT_HOOK = LOOKUP.findStatic(SwitchBootstraps.class, "patternInitHook",
+                                                  MethodType.methodType(MethodHandle.class, CallSite.class));
+            PATTERN_SWITCH_METHOD = LOOKUP.findVirtual(TypeSwitchCallSite.class, "doSwitch",
+                                                       MethodType.methodType(int.class, Object.class));
         }
         catch (ReflectiveOperationException e) {
             throw new ExceptionInInitializerError(e);
         }
     }
 
-    private static<T extends CallSite> MethodHandle initHook(T receiver) {
+    private static<T extends CallSite> MethodHandle constantInitHook(T receiver) {
         return switchMethods.computeIfAbsent(receiver.type().parameterType(0), lookupSwitchMethod)
                             .bindTo(receiver);
+    }
+
+    private static<T extends CallSite> MethodHandle patternInitHook(T receiver) {
+        return PATTERN_SWITCH_METHOD.bindTo(receiver);
     }
 
     /**
@@ -291,7 +303,7 @@ public class SwitchBootstraps {
 
         IntSwitchCallSite(MethodType targetType,
                           int[] intLabels) throws Throwable {
-            super(targetType, INIT_HOOK);
+            super(targetType, CONSTANT_INIT_HOOK);
 
             // expensive way to index an array
             indexes = IntStream.range(0, intLabels.length)
@@ -472,7 +484,7 @@ public class SwitchBootstraps {
 
         LongSwitchCallSite(MethodType targetType,
                            long[] longLabels) throws Throwable {
-            super(targetType, INIT_HOOK);
+            super(targetType, CONSTANT_INIT_HOOK);
 
             // expensive way to index an array
             indexes = IntStream.range(0, longLabels.length)
@@ -568,7 +580,7 @@ public class SwitchBootstraps {
 
         StringSwitchCallSite(MethodType targetType,
                              String[] stringLabels) throws Throwable {
-            super(targetType, INIT_HOOK);
+            super(targetType, CONSTANT_INIT_HOOK);
 
             // expensive way to index an array
             indexes = IntStream.range(0, stringLabels.length)
@@ -677,7 +689,7 @@ public class SwitchBootstraps {
         EnumSwitchCallSite(MethodType targetType,
                            Class<E> enumClass,
                            String... enumNames) throws Throwable {
-            super(targetType, INIT_HOOK);
+            super(targetType, CONSTANT_INIT_HOOK);
 
             ordinalMap = new int[enumClass.getEnumConstants().length];
             Arrays.fill(ordinalMap, enumNames.length);
@@ -696,6 +708,79 @@ public class SwitchBootstraps {
         @SuppressWarnings("rawtypes")
         int doSwitch(Enum target) {
             return (target == null) ? -1 : ordinalMap[target.ordinal()];
+        }
+    }
+
+    /**
+     * Bootstrap method for linking an {@code invokedynamic} call site that
+     * implements a {@code switch} on a reference-typed target.  The static
+     * arguments are a varargs array of {@code Class} labels.
+     *
+     * @param lookup Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invocationName The invocation name, which is ignored.  When used with
+     *                       {@code invokedynamic}, this is provided by the
+     *                       {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param invocationType The invocation type of the {@code CallSite}.  This
+     *                       method type should have a single parameter of
+     *                       a reference type, and return {@code int}.  When
+     *                       used with {@code invokedynamic}, this is provided by
+     *                       the {@code NameAndType} of the {@code InvokeDynamic}
+     *                       structure and is stacked automatically by the VM.
+     * @param types non-null {@link Class} values
+     * @return the index into {@code labels} of the target value, if the target
+     *         is an instance of any of the types, {@literal -1} if the target
+     *         value is {@code null}, or {@code types.length} if the target value
+     *         is not an instance of any of the types
+     * @throws NullPointerException if any required argument is null
+     * @throws IllegalArgumentException if any labels are null, or if the
+     * invocation type is not {@code (T)int for some reference type {@code T}}
+     * @throws Throwable if there is any error linking the call site
+     */
+    public static CallSite typeSwitch(MethodHandles.Lookup lookup,
+                                      String invocationName,
+                                      MethodType invocationType,
+                                      Class<?>... types) throws Throwable {
+        if (invocationType.parameterCount() != 1
+            || (!invocationType.returnType().equals(int.class))
+            || invocationType.parameterType(0).isPrimitive())
+            throw new IllegalArgumentException("Illegal invocation type " + invocationType);
+        requireNonNull(types);
+
+        types = types.clone();
+        if (Stream.of(types).anyMatch(Objects::isNull))
+            throw new IllegalArgumentException("null label found");
+
+        assert Stream.of(types).distinct().count() == types.length
+                : "switch labels are not distinct: " + Arrays.toString(types);
+
+        return new TypeSwitchCallSite(invocationType, types);
+    }
+
+    static class TypeSwitchCallSite extends ConstantCallSite {
+        private final Class<?>[] types;
+
+        TypeSwitchCallSite(MethodType targetType,
+                           Class<?>[] types) throws Throwable {
+            super(targetType, PATTERN_INIT_HOOK);
+            this.types = types;
+        }
+
+        int doSwitch(Object target) {
+            if (target == null)
+                return -1;
+
+            // Dumbest possible strategy
+            Class<?> targetClass = target.getClass();
+            for (int i = 0; i < types.length; i++) {
+                Class<?> c = types[i];
+                if (c.isAssignableFrom(targetClass))
+                    return i;
+            }
+
+            return types.length;
         }
     }
 }

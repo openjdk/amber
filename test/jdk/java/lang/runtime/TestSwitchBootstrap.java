@@ -23,6 +23,7 @@
  * questions.
  */
 
+import java.io.Serializable;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -69,6 +70,7 @@ public class TestSwitchBootstrap {
     public static final MethodHandle BSM_DOUBLE_SWITCH;
     public static final MethodHandle BSM_STRING_SWITCH;
     public static final MethodHandle BSM_ENUM_SWITCH;
+    public static final MethodHandle BSM_TYPE_SWITCH;
 
     private final static Random random = RandomFactory.getRandom();
 
@@ -88,6 +90,8 @@ public class TestSwitchBootstrap {
                                                                   MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String[].class));
             BSM_ENUM_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "enumSwitch",
                                                                 MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Class.class, String[].class));
+            BSM_TYPE_SWITCH = MethodHandles.lookup().findStatic(SwitchBootstraps.class, "typeSwitch",
+                                                                MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Class[].class));
         }
         catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -440,5 +444,23 @@ public class TestSwitchBootstrap {
         catch (IllegalArgumentException t) {
             // success
         }
+    }
+
+    private void testType(Object target, int result, Class... labels) throws Throwable {
+        MethodHandle indy = ((CallSite) BSM_TYPE_SWITCH.invoke(MethodHandles.lookup(), "", switchType(Object.class), labels)).dynamicInvoker();
+        assertEquals((int) indy.invoke(target), result);
+        assertEquals(-1, (int) indy.invoke(null));
+    }
+
+    public void testTypes() throws Throwable {
+        testType("", 0, String.class, Object.class);
+        testType("", 0, Object.class);
+        testType("", 1, Integer.class);
+        testType("", 1, Integer.class, Serializable.class);
+        testType(E1.A, 0, E1.class, Object.class);
+        testType(E2.C, 1, E1.class, Object.class);
+        testType(new Serializable() { }, 1, Comparable.class, Serializable.class);
+
+        // test failures: duplicates, nulls, dominance inversion
     }
 }
