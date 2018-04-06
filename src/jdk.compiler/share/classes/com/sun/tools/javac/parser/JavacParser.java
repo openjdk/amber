@@ -3591,7 +3591,7 @@ public class JavacParser implements Parser {
         for (int i = fields.size() - 1; i >= 0; i--) {
             defs = defs.prepend(fields.get(i));
         }
-        JCRecordDecl result = toP(F.at(pos).RecordDef(mods, name, typarams, extending, implementing, defs, null));
+        JCClassDecl result = toP(F.at(pos).ClassDef(mods, name, typarams, extending, implementing, defs));
         attach(result, dc);
         return result;
     }

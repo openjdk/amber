@@ -898,30 +898,6 @@ public class TypeEnter implements Completer {
                 List<JCVariableDecl> superFields = TreeInfo.superRecordFields(tree);
                 memberEnter.memberEnter(recordFields, env);
                 memberEnter.memberEnter(superFields, env);
-                JCRecordDecl recordDecl = (JCRecordDecl)tree;
-                if (recordDecl.guard != null) {
-                    List<VarSymbol> recordSyms = recordFields.map(vd -> vd.sym);
-                    List<Type> argtypes = superFields.map(v -> v.vartype.type).appendList(recordSyms.map(v -> v.type));
-                    MethodType guardMT = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
-                    MethodSymbol guardMS = new MethodSymbol(PRIVATE | RECORD, names.guard, guardMT, sym);
-
-                    ListBuffer<VarSymbol> params = new ListBuffer<>();
-                    for (JCVariableDecl p : superFields) {
-                        params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.vartype.type, guardMS));
-                    }
-                    for (VarSymbol p : recordSyms) {
-                        params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, guardMS));
-                    }
-                    guardMS.params = params.toList();
-
-                    JCUnary neg = make.Unary(Tag.NOT, recordDecl.guard);
-                    JCNewClass newException = make.NewClass(null, null,
-                            make.QualIdent(syms.illegalArgumentExceptionType.tsym),
-                            List.of(make.Literal(TypeTag.CLASS, "fields values are not accepted by the given guard")), null);
-                    JCStatement ifStm = make.If(neg, make.Throw(newException), null);
-                    JCMethodDecl guardDecl = make.MethodDef(guardMS, make.Block(0, List.of(ifStm)));
-                    tree.defs = tree.defs.prepend(guardDecl);
-                }
             }
         }
     }
@@ -954,7 +930,7 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, ((JCRecordDecl)tree).guard, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
                 }
                 if (helper != null) {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
@@ -967,7 +943,7 @@ public class TypeEnter implements Completer {
                         if (TreeInfo.isConstructor(def) &&
                             !TreeInfo.hasConstructorInvocation(((JCMethodDecl)def).body.stats, names, true)) {
                             RecordConstructorHelper helper = new RecordConstructorHelper(sym,
-                                    ((JCRecordDecl)tree).guard, TreeInfo.recordFields(tree).map(vd -> vd.sym),
+                                    TreeInfo.recordFields(tree).map(vd -> vd.sym),
                                     TreeInfo.superRecordFields(tree));
                             JCMethodDecl methDecl = (JCMethodDecl)def;
                             JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
@@ -1292,13 +1268,11 @@ public class TypeEnter implements Completer {
 
         List<VarSymbol> recordFields;
         List<JCVariableDecl> superFields;
-        JCExpression guard;
 
-        RecordConstructorHelper(TypeSymbol owner, JCExpression guard, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
+        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
             super(owner);
             this.recordFields = recordFields;
             this.superFields = superFields;
-            this.guard = guard;
         }
 
         @Override
@@ -1334,11 +1308,6 @@ public class TypeEnter implements Completer {
         @Override
         public List<Name> inits() {
             return recordFields.map(v -> v.name);
-        }
-
-        @Override
-        public JCExpression guard() {
-            return guard;
         }
     }
 

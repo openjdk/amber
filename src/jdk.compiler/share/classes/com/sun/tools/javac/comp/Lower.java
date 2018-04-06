@@ -3839,20 +3839,6 @@ public class Lower extends TreeTranslator {
             ListBuffer<JCStatement> stats = new ListBuffer<>();
 
             List<JCExpression> args = ((JCMethodInvocation)tree.expr).args;
-
-            JCRecordDecl recordDecl = (JCRecordDecl)classdefs.get(currentClass);
-            if (recordDecl.guard != null) {
-                MethodSymbol guardSym = lookupMethod(
-                        tree.pos(),
-                        names.guard,
-                        currentClass.type,
-                        vars.map(v -> v.type));
-                JCExpression meth = make.Ident(guardSym);
-                JCMethodInvocation app = make.Apply(null, meth, args);
-                app.type = guardSym.type.asMethodType().restype;
-                JCStatement guardCall = make.Exec(app);
-                stats.add(guardCall);
-            }
             for (VarSymbol vsym : vars) {
                 stats.add(make.Exec(
                         make.Assign(make.Select(makeThis(tree, currentClass), vsym), args.head)
@@ -3861,7 +3847,6 @@ public class Lower extends TreeTranslator {
             }
             JCTree block = make.Block(0, stats.toList());
             result = translate(block);
-            return;
         } else {
             super.visitExec(tree);
         }
