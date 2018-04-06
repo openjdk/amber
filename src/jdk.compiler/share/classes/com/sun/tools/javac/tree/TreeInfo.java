@@ -184,15 +184,7 @@ public class TreeInfo {
         return tree.defs.stream()
                 .filter(t -> t.hasTag(VARDEF))
                 .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD | HYPOTHETICAL)) == RECORD)
-                .collect(List.collector());
-    }
-
-    public static List<JCVariableDecl> superRecordFields(JCClassDecl tree) {
-        return tree.defs.stream()
-                .filter(t -> t.hasTag(VARDEF))
-                .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD | HYPOTHETICAL)) == (RECORD | HYPOTHETICAL))
+                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
                 .collect(List.collector());
     }
 

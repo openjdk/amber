@@ -4604,35 +4604,6 @@ public class Attr extends JCTree.Visitor {
                 }
 
                 if ((c.flags() & RECORD) != 0) {
-                    Type sup = types.supertype(c.type);
-                    List<JCVariableDecl> superFields = TreeInfo.superRecordFields(env.enclClass);
-                    if (sup.tsym != syms.abstractRecordType.tsym &&
-                            (sup.tsym.flags() & (ABSTRACT | RECORD)) != (ABSTRACT | RECORD)) {
-                        log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadRecordSuper));
-                    }
-
-                    if (superFields.nonEmpty()) {
-                        if (c.members().findFirst(names.init, s -> (s.flags() & RECORD) == 0) != null) {
-                            log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadSuperFields));
-                        }
-                    }
-
-                    List<VarSymbol> supRecordFields = types.recordVars(sup);
-                    for (JCTree supField : superFields) {
-                        JCVariableDecl supVarDecl = (JCVariableDecl)supField;
-                        if (supRecordFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
-                        if (supRecordFields.head.name != supVarDecl.name ||
-                                !types.isSameType(supRecordFields.head.type, supVarDecl.vartype.type)) {
-                            log.error(env.enclClass.extending.pos(),
-                                    Errors.CantExtendRecord(
-                                            Fragments.SuperFieldMismatch(
-                                                    supRecordFields.head.type, supRecordFields.head.name,
-                                                    supVarDecl.vartype.type, supVarDecl.name)));
-                            break;
-                        }
-                        supRecordFields = supRecordFields.tail;
-                    }
-
                     List<VarSymbol> vars = types.recordVars(c.type).stream()
                             .filter(v -> v.owner == c)
                             .collect(List.collector());

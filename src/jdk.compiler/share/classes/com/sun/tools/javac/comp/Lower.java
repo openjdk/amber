@@ -2485,7 +2485,6 @@ public class Lower extends TreeTranslator {
 
     /** Translate a record. */
     private void visitRecordDef(JCClassDecl tree) {
-        boolean isAbstract = (tree.mods.flags & ABSTRACT) != 0;
         make_at(tree.pos());
         List<VarSymbol> vars = types.recordVars(tree.type);
         Pool.MethodHandle[] getterMethHandles = new Pool.MethodHandle[vars.size()];
@@ -2499,15 +2498,12 @@ public class Lower extends TreeTranslator {
         }
 
         tree.defs = tree.defs.appendList(accessors(tree));
-
-        if (!isAbstract) {
-            tree.defs = tree.defs.appendList(List.of(
-                    recordEquals(tree, getterMethHandles),
-                    recordToString(tree, vars, getterMethHandles),
-                    recordHashCode(tree, getterMethHandles),
-                    recordExtractor(tree, getterMethHandles)
-            ));
-        }
+        tree.defs = tree.defs.appendList(List.of(
+                recordEquals(tree, getterMethHandles),
+                recordToString(tree, vars, getterMethHandles),
+                recordHashCode(tree, getterMethHandles),
+                recordExtractor(tree, getterMethHandles)
+        ));
     }
 
     JCTree recordToString(JCClassDecl tree, List<VarSymbol> vars, Pool.MethodHandle[] getterMethHandles) {
@@ -2728,106 +2724,6 @@ public class Lower extends TreeTranslator {
         qualifier.sym = dynSym;
         qualifier.type = msym.type.asMethodType().restype;
         return qualifier;
-    }
-
-    JCTree recordOldToString(JCClassDecl tree, List<VarSymbol> vars) {
-        make_at(tree.pos());
-
-        MethodSymbol toStringSym = lookupMethod(tree.pos(),
-                         names.toString,
-                         tree.sym.type,
-                         List.nil());
-        if ((toStringSym.flags() & RECORD) != 0) {
-            String format = vars.stream()
-                    .map(v -> v.name + "=%s")
-                    .collect(Collectors.joining(", ", tree.name + "[", "]"));
-            JCExpression formatLit = make.Literal(format);
-            JCFieldAccess meth = make.Select(make.Type(syms.stringType), names.fromString("format"));
-            meth.sym = lookupMethod(tree.pos(),
-                    meth.name,
-                    syms.stringType,
-                    List.of(syms.stringType, types.makeArrayType(syms.objectType)));
-            meth.type = meth.sym.type;
-            JCMethodInvocation app = make.Apply(List.nil(), meth,
-                    List.of(formatLit).appendList(vars.map(make::Ident)));
-            app.type = meth.type.getReturnType();
-            app.varargsElement = syms.objectType;
-            return make.MethodDef(toStringSym, make.Block(0, List.of(make.Return(app))));
-        } else {
-            return make.Block(SYNTHETIC, List.nil());
-        }
-    }
-
-    JCTree recordOldHashCode(JCClassDecl tree, List<VarSymbol> vars) {
-        make_at(tree.pos());
-
-        MethodSymbol hashCodeSym = lookupMethod(tree.pos(),
-                         names.hashCode,
-                         tree.sym.type,
-                         List.nil());
-        if ((hashCodeSym.flags() & RECORD) != 0) {
-            JCFieldAccess meth = make.Select(make.Type(syms.objectsType), names.fromString("hash"));
-            meth.sym = lookupMethod(tree.pos(),
-                    meth.name,
-                    syms.objectsType,
-                    List.of(types.makeArrayType(syms.objectType)));
-            meth.type = meth.sym.type;
-            JCMethodInvocation app = make.Apply(List.nil(), meth, vars.map(make::Ident));
-            app.type = meth.type.getReturnType();
-            app.varargsElement = syms.objectType;
-            return make.MethodDef(hashCodeSym, make.Block(0, List.of(make.Return(app))));
-        } else {
-            return make.Block(SYNTHETIC, List.nil());
-        }
-    }
-
-    JCTree recordOldEquals(JCClassDecl tree, List<VarSymbol> vars) {
-        make_at(tree.pos());
-
-        MethodSymbol oldEqualsSym = lookupMethod(tree.pos(),
-                         names.equals,
-                         tree.sym.type,
-                         List.of(syms.objectType));
-
-        if ((oldEqualsSym.flags() & RECORD) != 0) {
-            ListBuffer<JCStatement> trueStats = new ListBuffer<>();
-
-            VarSymbol o = oldEqualsSym.params.head;
-
-            VarSymbol that = new VarSymbol(SYNTHETIC, names.fromString("that" + target.syntheticNameChar()),
-                                                types.erasure(tree.type),
-                                                oldEqualsSym);
-
-            trueStats.add(make.VarDef(that,
-                    make.TypeCast(make.Type(types.erasure(tree.type)),
-                            make.Ident(o)).setType(types.erasure(tree.type))));
-
-            Symbol objectEqualsSym = lookupMethod(tree.pos(),
-                    names.equals,
-                    syms.objectsType,
-                    List.of(syms.objectType, syms.objectType));
-            for (VarSymbol v : vars) {
-                JCFieldAccess meth = make.Select(make.Type(syms.objectsType), names.equals);
-                meth.sym = objectEqualsSym;
-                meth.type = meth.sym.type;
-                JCExpression sel = make.Select(make.Ident(that), v);
-                JCMethodInvocation app = make.Apply(List.nil(), meth, List.of(make.Ident(v), sel));
-                app.type = meth.type.getReturnType();
-                JCUnary neg = make.Unary(Tag.NOT, app);
-                neg.operator = operators.resolveUnary(tree.pos(), Tag.NOT, syms.booleanType);
-                neg.type = neg.operator.getReturnType();
-                trueStats.add(make.If(neg, make.Return(make.Literal(false)), null));
-            }
-            trueStats.add(make.Return(make.Literal(true)));
-
-            JCStatement ifStat = make.If(make.TypeTest(make.Ident(o), make.Type(tree.type)).setType(syms.booleanType),
-                    make.Block(0, trueStats.toList()),
-                    make.Return(make.Literal(false)));
-
-            return make.MethodDef(oldEqualsSym, make.Block(0, List.of(ifStat)));
-        } else {
-            return make.Block(SYNTHETIC, List.nil());
-        }
     }
 
     public void visitMethodDef(JCMethodDecl tree) {

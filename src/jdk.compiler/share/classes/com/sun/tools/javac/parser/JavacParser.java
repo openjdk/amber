@@ -3130,7 +3130,7 @@ public class JavacParser implements Parser {
     }
 
     boolean isRestrictedRecordTypeName(Name name) {
-        return Feature.DATA_CLASSES.allowedInSource(source) && name == names.record;
+        return Feature.RECORDS.allowedInSource(source) && name == names.record;
     }
 
     /** VariableDeclaratorId = Ident BracketsOpt

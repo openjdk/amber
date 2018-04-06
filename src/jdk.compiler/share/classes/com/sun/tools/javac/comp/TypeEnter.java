@@ -894,10 +894,7 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             if ((sym.flags_field & RECORD) != 0) {
-                List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
-                List<JCVariableDecl> superFields = TreeInfo.superRecordFields(tree);
-                memberEnter.memberEnter(recordFields, env);
-                memberEnter.memberEnter(superFields, env);
+                memberEnter.memberEnter(TreeInfo.recordFields(tree), env);
             }
         }
     }
@@ -930,7 +927,7 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym), TreeInfo.superRecordFields(tree));
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
                 }
                 if (helper != null) {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
@@ -943,11 +940,10 @@ public class TypeEnter implements Completer {
                         if (TreeInfo.isConstructor(def) &&
                             !TreeInfo.hasConstructorInvocation(((JCMethodDecl)def).body.stats, names, true)) {
                             RecordConstructorHelper helper = new RecordConstructorHelper(sym,
-                                    TreeInfo.recordFields(tree).map(vd -> vd.sym),
-                                    TreeInfo.superRecordFields(tree));
+                                    TreeInfo.recordFields(tree).map(vd -> vd.sym));
                             JCMethodDecl methDecl = (JCMethodDecl)def;
                             JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
-                                    make.Ident(names._super), make.Idents(helper.superFields)));
+                                    make.Ident(names._super), List.nil()));
                             methDecl.body.stats = methDecl.body.stats.append(supCall);
                             ListBuffer<JCStatement> initializations = new ListBuffer<>();
                             for (Name initName : helper.inits()) {
@@ -1267,19 +1263,16 @@ public class TypeEnter implements Completer {
     class RecordConstructorHelper extends BasicConstructorHelper {
 
         List<VarSymbol> recordFields;
-        List<JCVariableDecl> superFields;
 
-        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields, List<JCVariableDecl> superFields) {
+        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields) {
             super(owner);
             this.recordFields = recordFields;
-            this.superFields = superFields;
         }
 
         @Override
         public Type constructorType() {
             if (constructorType == null) {
-                List<Type> argtypes = superFields.map(v -> v.vartype.type)
-                        .appendList(recordFields.map(v -> v.type));
+                List<Type> argtypes = recordFields.map(v -> v.type);
                 constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
@@ -1289,20 +1282,12 @@ public class TypeEnter implements Completer {
         public MethodSymbol constructorSymbol() {
             MethodSymbol csym = super.constructorSymbol();
             ListBuffer<VarSymbol> params = new ListBuffer<>();
-            for (JCVariableDecl p : superFields) {
-                params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.vartype.type, csym));
-            }
             for (VarSymbol p : recordFields) {
                 params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;
             return csym;
-        }
-
-        @Override
-        public List<Name> superArgs() {
-            return superFields.map(v -> v.name);
         }
 
         @Override
