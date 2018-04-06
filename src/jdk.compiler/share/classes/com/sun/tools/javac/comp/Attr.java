@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -1072,12 +1073,11 @@ public class Attr extends JCTree.Visitor {
                 if (tree.name == names.init && owner.type != syms.objectType) {
                     JCBlock body = tree.body;
                     if (body.stats.isEmpty() ||
-                            !TreeInfo.isSelfCall(body.stats.head)) {
-                        body.stats = body.stats.
-                                prepend(typeEnter.SuperCall(make.at(body.pos),
-                                        List.nil(),
-                                        List.nil(),
-                                        false));
+                            !TreeInfo.hasConstructorInvocation(body.stats, names,
+                                    (env.enclClass.sym.flags() & RECORD) != 0)) {
+                        JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
+                                make.Ident(names._super), make.Idents(List.nil())));
+                        body.stats = body.stats.prepend(supCall);
                     } else if ((env.enclClass.sym.flags() & ENUM) != 0 &&
                             (tree.mods.flags & GENERATEDCONSTR) == 0 &&
                             TreeInfo.isSuperCall(body.stats.head)) {
@@ -1911,85 +1911,80 @@ public class Attr extends JCTree.Visitor {
 
         ListBuffer<Type> argtypesBuf = new ListBuffer<>();
         if (isConstructorCall) {
-            // We are seeing a ...this(...) or ...super(...) call.
-            // Check that this is the first statement in a constructor.
-            if (checkFirstConstructorStat(tree, env)) {
+            // Record the fact
+            // that this is a constructor call (using isSelfCall).
+            localEnv.info.isSelfCall = true;
 
-                // Record the fact
-                // that this is a constructor call (using isSelfCall).
-                localEnv.info.isSelfCall = true;
+            // Attribute arguments, yielding list of argument types.
+            KindSelector kind = attribArgs(KindSelector.MTH, tree.args, localEnv, argtypesBuf);
+            argtypes = argtypesBuf.toList();
+            typeargtypes = attribTypes(tree.typeargs, localEnv);
 
-                // Attribute arguments, yielding list of argument types.
-                KindSelector kind = attribArgs(KindSelector.MTH, tree.args, localEnv, argtypesBuf);
-                argtypes = argtypesBuf.toList();
-                typeargtypes = attribTypes(tree.typeargs, localEnv);
-
-                // Variable `site' points to the class in which the called
-                // constructor is defined.
-                Type site = env.enclClass.sym.type;
-                if (methName == names._super) {
-                    if (site == syms.objectType) {
-                        log.error(tree.meth.pos(), Errors.NoSuperclass(site));
-                        site = types.createErrorType(syms.objectType);
-                    } else {
-                        site = types.supertype(site);
-                    }
+            // Variable `site' points to the class in which the called
+            // constructor is defined.
+            Type site = env.enclClass.sym.type;
+            if (methName == names._super) {
+                if (site == syms.objectType) {
+                    log.error(tree.meth.pos(), Errors.NoSuperclass(site));
+                    site = types.createErrorType(syms.objectType);
+                } else {
+                    site = types.supertype(site);
                 }
-
-                if (site.hasTag(CLASS)) {
-                    Type encl = site.getEnclosingType();
-                    while (encl != null && encl.hasTag(TYPEVAR))
-                        encl = encl.getUpperBound();
-                    if (encl.hasTag(CLASS)) {
-                        // we are calling a nested class
-
-                        if (tree.meth.hasTag(SELECT)) {
-                            JCTree qualifier = ((JCFieldAccess) tree.meth).selected;
-
-                            // We are seeing a prefixed call, of the form
-                            //     <expr>.super(...).
-                            // Check that the prefix expression conforms
-                            // to the outer instance type of the class.
-                            chk.checkRefType(qualifier.pos(),
-                                             attribExpr(qualifier, localEnv,
-                                                        encl));
-                        } else if (methName == names._super) {
-                            // qualifier omitted; check for existence
-                            // of an appropriate implicit qualifier.
-                            rs.resolveImplicitThis(tree.meth.pos(),
-                                                   localEnv, site, true);
-                        }
-                    } else if (tree.meth.hasTag(SELECT)) {
-                        log.error(tree.meth.pos(),
-                                  Errors.IllegalQualNotIcls(site.tsym));
-                    }
-
-                    // if we're calling a java.lang.Enum constructor,
-                    // prefix the implicit String and int parameters
-                    if (site.tsym == syms.enumSym)
-                        argtypes = argtypes.prepend(syms.intType).prepend(syms.stringType);
-
-                    // Resolve the called constructor under the assumption
-                    // that we are referring to a superclass instance of the
-                    // current instance (JLS ???).
-                    boolean selectSuperPrev = localEnv.info.selectSuper;
-                    localEnv.info.selectSuper = true;
-                    localEnv.info.pendingResolutionPhase = null;
-                    Symbol sym = rs.resolveConstructor(
-                        tree.meth.pos(), localEnv, site, argtypes, typeargtypes);
-                    localEnv.info.selectSuper = selectSuperPrev;
-
-                    // Set method symbol to resolved constructor...
-                    TreeInfo.setSymbol(tree.meth, sym);
-
-                    // ...and check that it is legal in the current context.
-                    // (this will also set the tree's type)
-                    Type mpt = newMethodTemplate(resultInfo.pt, argtypes, typeargtypes);
-                    checkId(tree.meth, site, sym, localEnv,
-                            new ResultInfo(kind, mpt));
-                }
-                // Otherwise, `site' is an error type and we do nothing
             }
+
+            if (site.hasTag(CLASS)) {
+                Type encl = site.getEnclosingType();
+                while (encl != null && encl.hasTag(TYPEVAR))
+                    encl = encl.getUpperBound();
+                if (encl.hasTag(CLASS)) {
+                    // we are calling a nested class
+
+                    if (tree.meth.hasTag(SELECT)) {
+                        JCTree qualifier = ((JCFieldAccess) tree.meth).selected;
+
+                        // We are seeing a prefixed call, of the form
+                        //     <expr>.super(...).
+                        // Check that the prefix expression conforms
+                        // to the outer instance type of the class.
+                        chk.checkRefType(qualifier.pos(),
+                                         attribExpr(qualifier, localEnv,
+                                                    encl));
+                    } else if (methName == names._super) {
+                        // qualifier omitted; check for existence
+                        // of an appropriate implicit qualifier.
+                        rs.resolveImplicitThis(tree.meth.pos(),
+                                               localEnv, site, true);
+                    }
+                } else if (tree.meth.hasTag(SELECT)) {
+                    log.error(tree.meth.pos(),
+                              Errors.IllegalQualNotIcls(site.tsym));
+                }
+
+                // if we're calling a java.lang.Enum constructor,
+                // prefix the implicit String and int parameters
+                if (site.tsym == syms.enumSym)
+                    argtypes = argtypes.prepend(syms.intType).prepend(syms.stringType);
+
+                // Resolve the called constructor under the assumption
+                // that we are referring to a superclass instance of the
+                // current instance (JLS ???).
+                boolean selectSuperPrev = localEnv.info.selectSuper;
+                localEnv.info.selectSuper = true;
+                localEnv.info.pendingResolutionPhase = null;
+                Symbol sym = rs.resolveConstructor(
+                    tree.meth.pos(), localEnv, site, argtypes, typeargtypes);
+                localEnv.info.selectSuper = selectSuperPrev;
+
+                // Set method symbol to resolved constructor...
+                TreeInfo.setSymbol(tree.meth, sym);
+
+                // ...and check that it is legal in the current context.
+                // (this will also set the tree's type)
+                Type mpt = newMethodTemplate(resultInfo.pt, argtypes, typeargtypes);
+                checkId(tree.meth, site, sym, localEnv,
+                        new ResultInfo(kind, mpt));
+            }
+            // Otherwise, `site' is an error type and we do nothing
             result = tree.type = syms.voidType;
         } else {
             // Otherwise, we are seeing a regular method call.
@@ -4608,6 +4603,44 @@ public class Attr extends JCTree.Visitor {
                     env.info.isSerializable = true;
                 }
 
+                if ((c.flags() & RECORD) != 0) {
+                    Type sup = types.supertype(c.type);
+                    List<JCVariableDecl> superFields = TreeInfo.superRecordFields(env.enclClass);
+                    if (sup.tsym != syms.abstractRecordType.tsym &&
+                            (sup.tsym.flags() & (ABSTRACT | RECORD)) != (ABSTRACT | RECORD)) {
+                        log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadRecordSuper));
+                    }
+
+                    if (superFields.nonEmpty()) {
+                        if (c.members().findFirst(names.init, s -> (s.flags() & RECORD) == 0) != null) {
+                            log.error(env.enclClass.extending.pos(), Errors.CantExtendRecord(Fragments.BadSuperFields));
+                        }
+                    }
+
+                    List<VarSymbol> supRecordFields = types.recordVars(sup);
+                    for (JCTree supField : superFields) {
+                        JCVariableDecl supVarDecl = (JCVariableDecl)supField;
+                        if (supRecordFields.isEmpty()) break; //arity mismatches will be checked inside implicit constructor
+                        if (supRecordFields.head.name != supVarDecl.name ||
+                                !types.isSameType(supRecordFields.head.type, supVarDecl.vartype.type)) {
+                            log.error(env.enclClass.extending.pos(),
+                                    Errors.CantExtendRecord(
+                                            Fragments.SuperFieldMismatch(
+                                                    supRecordFields.head.type, supRecordFields.head.name,
+                                                    supVarDecl.vartype.type, supVarDecl.name)));
+                            break;
+                        }
+                        supRecordFields = supRecordFields.tail;
+                    }
+
+                    List<VarSymbol> vars = types.recordVars(c.type).stream()
+                            .filter(v -> v.owner == c)
+                            .collect(List.collector());
+                    env.info.recordImplicitConstructor = new MethodSymbol(0, names.init,
+                            new MethodType(vars.map(v -> v.type), syms.voidType, List.nil(), syms.methodClass),
+                            c);
+                }
+
                 attribClassBody(env, c);
 
                 chk.checkDeprecatedAnnotation(env.tree.pos(), c);
@@ -4725,10 +4758,14 @@ public class Attr extends JCTree.Visitor {
                 (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
                 Symbol sym = null;
                 if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
-                if (sym == null ||
-                    sym.kind != VAR ||
-                    ((VarSymbol) sym).getConstValue() == null)
-                    log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                // static records are allowed
+                if (!(l.head.hasTag(Tag.CLASSDEF) && (((JCClassDecl)l.head).sym.flags() & Flags.RECORD) != 0)) {
+                    if (sym == null ||
+                        sym.kind != VAR ||
+                        ((VarSymbol) sym).getConstValue() == null) {
+                        log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                    }
+                }
             }
         }
 

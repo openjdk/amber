@@ -30,6 +30,7 @@ import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Attribute.Compound;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.*;
@@ -2170,6 +2171,13 @@ public class Gen extends JCTree.Visitor {
             this.endPosTable = toplevel.endPositions;
             c.pool = pool;
             pool.reset();
+            if (c.isDatum()) {
+                Attribute.Compound attribute = c.attribute(syms.dataAnnotationType.tsym);
+                if (attribute == null) {
+                    attribute = new Attribute.Compound(syms.dataAnnotationType, List.nil());
+                    c.appendAttributes(List.of(attribute));
+                }
+            }
             /* method normalizeDefs() can add references to external classes into the constant pool
              */
             cdef.defs = normalizeDefs(cdef.defs, c);

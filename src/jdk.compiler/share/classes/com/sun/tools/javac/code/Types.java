@@ -1468,6 +1468,19 @@ public class Types {
 
     // </editor-fold>
 
+    public List<VarSymbol> recordVars(Type t) {
+        List<VarSymbol> vars = List.nil();
+        while (!t.hasTag(NONE)) {
+            if (t.hasTag(CLASS)) {
+                for (Symbol s : t.tsym.members().getSymbols(s -> s.kind == VAR && (s.flags() & RECORD) != 0)) {
+                    vars = vars.prepend((VarSymbol)s);
+                }
+            }
+            t = supertype(t);
+        }
+        return vars;
+    }
+
     // <editor-fold defaultstate="collapsed" desc="Contains Type">
     public boolean containedBy(Type t, Type s) {
         switch (t.getTag()) {
@@ -5143,7 +5156,7 @@ public class Types {
             append('>');
         }
 
-        private void assembleSig(List<Type> types) {
+        public void assembleSig(List<Type> types) {
             for (List<Type> ts = types; ts.nonEmpty(); ts = ts.tail) {
                 assembleSig(ts.head);
             }

@@ -313,20 +313,33 @@ public class Flags {
      */
     public static final long ANONCONSTR_BASED = 1L<<57;
 
+    /**
+     * Flag to indicate that a class is a record. The flag is also used to mark fields that are
+     * part of the state vector of a record.
+     */
+    public static final long RECORD = 1L<<58;
+
+    /**
+     * Flag to indicate that a record field is non-final.
+     */
+    public static final long NON_FINAL = 1L<<59;
+
     /** Modifier masks.
      */
     public static final int
-        AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
-        LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
-        MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
-        ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
-        InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
-        VarFlags              = AccessFlags | FINAL | STATIC |
-                                VOLATILE | TRANSIENT | ENUM,
-        ConstructorFlags      = AccessFlags,
-        InterfaceMethodFlags  = ABSTRACT | PUBLIC,
-        MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                SYNCHRONIZED | FINAL | STRICTFP;
+        AccessFlags                 = PUBLIC | PROTECTED | PRIVATE,
+        LocalClassFlags             = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        LocalRecordFlags            = LocalClassFlags | STATIC,
+        MemberClassFlags            = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberRecordClassFlags      = MemberClassFlags | STATIC,
+        ClassFlags                  = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
+        InterfaceVarFlags           = FINAL | STATIC | PUBLIC,
+        VarFlags                    = AccessFlags | FINAL | STATIC |
+                                      VOLATILE | TRANSIENT | ENUM,
+        ConstructorFlags            = AccessFlags,
+        InterfaceMethodFlags        = ABSTRACT | PUBLIC,
+        MethodFlags                 = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                      SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
         ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
@@ -427,7 +440,9 @@ public class Flags {
         SYSTEM_MODULE(Flags.SYSTEM_MODULE),
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
-        HAS_RESOURCE(Flags.HAS_RESOURCE);
+        HAS_RESOURCE(Flags.HAS_RESOURCE),
+        RECORD(Flags.RECORD),
+        NON_FINAL(Flags.NON_FINAL);
 
         Flag(long flag) {
             this.value = flag;

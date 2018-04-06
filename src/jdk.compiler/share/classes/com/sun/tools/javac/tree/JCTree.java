@@ -814,6 +814,21 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public static class JCRecordDecl extends JCClassDecl implements ClassTree {
+        public JCExpression guard;
+        public JCRecordDecl(JCModifiers mods,
+                           Name name,
+                           List<JCTypeParameter> typarams,
+                           JCExpression extending,
+                           List<JCExpression> implementing,
+                           List<JCTree> defs,
+                           ClassSymbol sym,
+                           JCExpression guard) {
+            super(mods, name, typarams, extending, implementing, defs, sym);
+            this.guard = guard;
+        }
+    }
+
     /**
      * A method definition.
      */
@@ -922,23 +937,27 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public VarSymbol sym;
         /** explicit start pos */
         public int startPos = Position.NOPOS;
+        /** accessors */
+        public List<Pair<Accessors.Kind, Name>> accessors;
 
         protected JCVariableDecl(JCModifiers mods,
                          Name name,
                          JCExpression vartype,
                          JCExpression init,
-                         VarSymbol sym) {
+                         VarSymbol sym,
+                         List<Pair<Accessors.Kind, Name>> accessors) {
             this.mods = mods;
             this.name = name;
             this.vartype = vartype;
             this.init = init;
             this.sym = sym;
+            this.accessors = accessors;
         }
 
         protected JCVariableDecl(JCModifiers mods,
                          JCExpression nameexpr,
                          JCExpression vartype) {
-            this(mods, null, vartype, null, null);
+            this(mods, null, vartype, null, null, null);
             this.nameexpr = nameexpr;
             if (nameexpr.hasTag(Tag.IDENT)) {
                 this.name = ((JCIdent)nameexpr).name;

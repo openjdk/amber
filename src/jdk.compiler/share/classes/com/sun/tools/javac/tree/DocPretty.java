@@ -129,6 +129,19 @@ public class DocPretty implements DocTreeVisitor<Void,Void> {
         }
     }
 
+    @Override
+    public Void visitAccessor(AccessorTree node, Void aVoid) {
+        try {
+            print("{");
+            printTagName(node);
+            print(node.getDescription());
+            print("}");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return null;
+    }
+
     @Override @DefinedBy(Api.COMPILER_TREE)
     public Void visitAttribute(AttributeTree node, Void p) {
         try {

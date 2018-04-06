@@ -74,6 +74,8 @@ public class Names {
     public final Name uses;
     public final Name open;
     public final Name with;
+    public final Name get;
+    public final Name set;
 
     // field and method names
     public final Name _name;
@@ -87,6 +89,7 @@ public class Names {
     public final Name deserializeLambda;
     public final Name desiredAssertionStatus;
     public final Name equals;
+    public final Name oldEquals;
     public final Name error;
     public final Name family;
     public final Name finalize;
@@ -203,6 +206,18 @@ public class Names {
     public final Name makeConcat;
     public final Name makeConcatWithConstants;
 
+    // members of java.lang.invoke.ObjectMethodBuilders
+    public final Name makeEquals;
+    public final Name makeHashCode;
+    public final Name makeToString;
+
+    // record related
+    public final Name record;
+    public final Name where;
+    public final Name guard;
+    public final Name non;
+    public final Name makeLazyExtractor;
+
     public final Name.Table table;
 
     public Names(Context context) {
@@ -236,6 +251,8 @@ public class Names {
         uses = fromString("uses");
         open = fromString("open");
         with = fromString("with");
+        get = fromString("get");
+        set = fromString("set");
 
         // field and method names
         _name = fromString("name");
@@ -249,6 +266,7 @@ public class Names {
         deserializeLambda = fromString("$deserializeLambda$");
         desiredAssertionStatus = fromString("desiredAssertionStatus");
         equals = fromString("equals");
+        oldEquals = fromString("oldEquals");
         error = fromString("<error>");
         family = fromString("family");
         finalize = fromString("finalize");
@@ -364,6 +382,15 @@ public class Names {
         // string concat
         makeConcat = fromString("makeConcat");
         makeConcatWithConstants = fromString("makeConcatWithConstants");
+
+        makeEquals = fromString("makeEquals");
+        makeHashCode = fromString("makeHashCode");
+        makeToString = fromString("makeToString");
+        record = fromString("record");
+        where = fromString("where");
+        guard = fromString("$guard");
+        non = fromString("non");
+        makeLazyExtractor = fromString("makeLazyExtractor");
     }
 
     protected Name.Table createTable(Options options) {
