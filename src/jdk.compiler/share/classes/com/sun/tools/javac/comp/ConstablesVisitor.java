@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.sun.tools.javac.code.Source;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 import com.sun.tools.javac.code.Symbol.DynamicMethodSymbol;
@@ -42,6 +44,7 @@ import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.jvm.Pool;
+import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBinary;
@@ -98,7 +101,12 @@ public class ConstablesVisitor extends TreeScanner {
     protected ConstablesVisitor(Context context) {
         context.put(constablesVisitorKey, this);
         Options options = Options.instance(context);
-        doConstantFold = options.isSet("doConstantFold");
+        // format: -XDfolding=true, which is the default, or -XDfolding=false
+        String foldingOp = options.get("folding");
+        Source source = Source.instance(context);
+        doConstantFold = foldingOp != null ?
+                foldingOp.equals("true") :
+                Feature.CONSTABLES.allowedInSource(source);
         syms = Symtab.instance(context);
         names = Names.instance(context);
         types = Types.instance(context);
@@ -240,7 +248,7 @@ public class ConstablesVisitor extends TreeScanner {
             return;
         }
         Symbol sym = TreeInfo.symbol(tree);
-        if (sym.kind == VAR) {
+        if (sym != null && sym.kind == VAR) {
             VarSymbol v = (VarSymbol)sym;
             Object constant = v.getConstValue();
             if (constant != null && tree.type.constValue() == null) {

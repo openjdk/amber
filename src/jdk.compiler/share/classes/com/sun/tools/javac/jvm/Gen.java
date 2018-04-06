@@ -34,6 +34,7 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.TypeCompound;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.comp.*;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
@@ -131,7 +132,12 @@ public class Gen extends JCTree.Visitor {
             : options.isSet(G_CUSTOM, "vars");
         genCrt = options.isSet(XJCOV);
         debugCode = options.isSet("debug.code");
-        doConstantFold = options.isSet("doConstantFold");
+        // format: -XDfolding=true, which is the default, or -XDfolding=false
+        String foldingOp = options.get("folding");
+        Source source = Source.instance(context);
+        doConstantFold = foldingOp != null ?
+                foldingOp.equals("true") :
+                Feature.CONSTABLES.allowedInSource(source);
         allowBetterNullChecks = target.hasObjects();
         pool = new Pool(types);
         // ignore cldc because we cannot have both stackmap formats

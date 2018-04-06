@@ -127,7 +127,10 @@ public class Types {
         functionDescriptorLookupError = new FunctionDescriptorLookupError();
         noWarnings = new Warner(null);
         Options options = Options.instance(context);
-        doConstantFold = options.isSet("doConstantFold");
+        String foldingOp = options.get("folding");
+        doConstantFold = foldingOp != null ?
+                foldingOp.equals("true") :
+                Feature.CONSTABLES.allowedInSource(source);
         constables = Constables.instance(context);
     }
     // </editor-fold>

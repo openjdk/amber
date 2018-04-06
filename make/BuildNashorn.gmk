@@ -42,7 +42,7 @@ $(eval $(call SetupJavaCompiler, GENERATE_NEWBYTECODE_DEBUG, \
     JVM := $(JAVA_JAVAC), \
     JAVAC := $(NEW_JAVAC), \
     FLAGS := -g -source 11 -target 11 --upgrade-module-path "$(JDK_OUTPUTDIR)/modules/" \
-         --system none --module-source-path $(call GetModuleSrcPath), \
+         --system none --module-source-path $(call GetModuleSrcPath) -XDfolding=false, \
     SERVER_DIR := $(SJAVAC_SERVER_DIR), \
     SERVER_JVM := $(SJAVAC_SERVER_JAVA)))
 

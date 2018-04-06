@@ -182,7 +182,8 @@ public enum Source {
         UNDERSCORE_IDENTIFIER(MIN, JDK8),
         PRIVATE_INTERFACE_METHODS(JDK9, Fragments.FeaturePrivateIntfMethods, DiagKind.PLURAL),
         LOCAL_VARIABLE_TYPE_INFERENCE(JDK10),
-        CONDY_FOR_LAMBDA(JDK11);
+        CONDY_FOR_LAMBDA(JDK11),
+        CONSTABLES(JDK11);
 
         enum DiagKind {
             NORMAL,
