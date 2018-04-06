@@ -216,6 +216,7 @@ public class Names {
     public final Name where;
     public final Name guard;
     public final Name non;
+    public final Name makeLazyExtractor;
 
     public final Name.Table table;
 
@@ -389,6 +390,7 @@ public class Names {
         where = fromString("where");
         guard = fromString("$guard");
         non = fromString("non");
+        makeLazyExtractor = fromString("makeLazyExtractor");
     }
 
     protected Name.Table createTable(Options options) {

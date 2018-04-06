@@ -267,6 +267,22 @@ public interface Extractor {
      *
      * @param lookup ignored
      * @param constantName ignored
+     * @param constantType doc
+     * @param descriptor the descriptor method type
+     * @param components the {@code components} method handles
+     * @return a callsite
+     * @throws Throwable doc
+     */
+    public static CallSite makeLazyExtractor(MethodHandles.Lookup lookup, String constantName, MethodType constantType,
+                                             MethodType descriptor, MethodHandle... components) throws Throwable {
+        return new ConstantCallSite(MethodHandles.constant(Extractor.class, ofLazy(descriptor, components)));
+    }
+
+    /**
+     * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
+     *
+     * @param lookup ignored
+     * @param constantName ignored
      * @param constantType Must be {@code Extractor.class}
      * @param descriptor the descriptor method type
      * @param predicate predicate method handle, applied to target
@@ -345,23 +361,6 @@ public interface Extractor {
                                                         MethodHandle predicate,
                                                         MethodHandle... components) {
         return ofCarrierPartial(descriptor, carrierFactory, digester, predicate, components);
-    }
-
-    /**
-     * Invokedynamic bootstrap for creating lazy extractors
-     *
-     * @param lookup ignored
-     * @param invocationName ignored
-     * @param invocationType ignored
-     * @param descriptor the extractor descriptor
-     * @param components the extractor components
-     * @return the extractor factory
-     * @throws Throwable if something went wrong
-     */
-
-    public static CallSite makeLazyExtractor(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
-                                             MethodType descriptor, MethodHandle... components) throws Throwable {
-        return new ConstantCallSite(MethodHandles.constant(Extractor.class, ofLazy(descriptor, components)));
     }
 
     /**

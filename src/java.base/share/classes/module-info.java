@@ -129,10 +129,11 @@ module java.base {
     exports javax.security.auth.x500;
     exports javax.security.cert;
 
-
     // additional qualified exports may be inserted at build time
     // see make/gensrc/GenModuleInfo.gmk
 
+    exports sun.invoke.util to
+        jdk.compiler;
     exports com.sun.security.ntlm to
         java.security.sasl;
     exports jdk.internal.jimage to
