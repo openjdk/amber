@@ -34,13 +34,7 @@ import com.sun.tools.javac.util.Assert;
 
 public class UserDefinedMethodsTest {
 
-    static abstract record Sup(int x) {
-        String foo() {
-            return "Sup.foo";
-        }
-    }
-
-    static record Foo(int x, int y, public int z) extends Sup(x) {
+    static record Foo(int x, int y, public int z) {
         @Override
         public String toString() {
             return "Foo(x=#x, y=#y, z=#z)".replaceAll("#x", "" + x).replaceAll("#y", "" + y).replaceAll("#z", "" + z);
@@ -55,7 +49,6 @@ public class UserDefinedMethodsTest {
             return "bar";
         }
 
-        @Override
         String foo() {
             return "Foo.foo";
         }

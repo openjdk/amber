@@ -3528,31 +3528,10 @@ public class JavacParser implements Parser {
 
         Map<Name, JCVariableDecl> optHeaderFields = headerFields(mods);
 
-        if (optHeaderFields.size() == 0) {
+        if (optHeaderFields.isEmpty()) {
             log.error(token.pos, Errors.RecordMustDeclareAtLeastOneField);
         }
 
-        JCExpression extending = null;
-        Set<Name> superFieldNames = new LinkedHashSet<>();
-        if (token.kind == EXTENDS) {
-            nextToken();
-            extending = parseType();
-            if (token.kind == LPAREN) {
-                accept(LPAREN);
-                while (token.kind != RPAREN) {
-                    Name id = ident();
-                    if (!superFieldNames.contains(id)) {
-                        superFieldNames.add(id);
-                    } else {
-                        log.error(token.pos, Errors.DuplicateArgumentToSuper(id));
-                    }
-                    if (token.kind == COMMA) {
-                        nextToken();
-                    }
-                }
-                accept(RPAREN);
-            }
-        }
         List<JCExpression> implementing = List.nil();
         if (token.kind == IMPLEMENTS) {
             nextToken();
@@ -3564,15 +3543,7 @@ public class JavacParser implements Parser {
         } else {
             accept(SEMI);
         }
-        optHeaderFields.values().stream()
-                .filter(t -> superFieldNames.contains(t.name))
-                .forEach(t -> t.getModifiers().flags |= Flags.HYPOTHETICAL);
         java.util.List<JCVariableDecl> fields = new ArrayList<>();
-        for (Name n : superFieldNames) {
-            JCVariableDecl field = optHeaderFields.get(n);
-            fields.add(field);
-            optHeaderFields.remove(n);
-        }
         for (JCVariableDecl field : optHeaderFields.values()) {
             fields.add(field);
         }
@@ -3591,7 +3562,7 @@ public class JavacParser implements Parser {
         for (int i = fields.size() - 1; i >= 0; i--) {
             defs = defs.prepend(fields.get(i));
         }
-        JCClassDecl result = toP(F.at(pos).ClassDef(mods, name, typarams, extending, implementing, defs));
+        JCClassDecl result = toP(F.at(pos).ClassDef(mods, name, typarams, null, implementing, defs));
         attach(result, dc);
         return result;
     }

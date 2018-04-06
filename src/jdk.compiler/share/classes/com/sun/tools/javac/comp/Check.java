@@ -1199,6 +1199,10 @@ public class Check {
                 mask &= ~(ABSTRACT | FINAL);
                 implicit |= implicitEnumFinalFlag(tree);
             }
+            if ((flags & RECORD) != 0) {
+                // records can't be declared abstract
+                mask &= ~ABSTRACT;
+            }
             // Imply STRICTFP if owner has STRICTFP set.
             implicit |= sym.owner.flags_field & STRICTFP;
             break;

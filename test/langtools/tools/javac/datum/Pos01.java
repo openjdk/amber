@@ -36,9 +36,9 @@ public class Pos01 {
         }
     }
 
-    static abstract record Sup(int x, int y) { }
+    static record Sup(int x, int y) { }
 
-    static record Foo(int x, int y, public int z) extends Sup(x, y);
+    static record Foo(int x, int y, public int z);
 
     public static void main(String[] args) {
         Foo foo = new Foo(1, 2, 3);

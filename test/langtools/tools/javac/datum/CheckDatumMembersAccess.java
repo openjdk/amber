@@ -41,8 +41,6 @@ import com.sun.tools.javac.util.Assert;
 
 public class CheckDatumMembersAccess {
 
-    abstract record abtractDatum(int AbstractFieldToSearchFor) {}
-
     record Datum(int AbstractFieldToSearchFor, int newField, non-final int nonFinalField) {}
 
     public static void main(String args[]) throws Throwable {
@@ -50,24 +48,7 @@ public class CheckDatumMembersAccess {
     }
 
     void run() throws Throwable {
-        checkAbstractDatum();
         checkNonAbstractDatum();
-    }
-
-    void checkAbstractDatum() throws Throwable {
-        File testClasses = new File(System.getProperty("test.classes"));
-        File file = new File(testClasses,
-                CheckDatumMembersAccess.class.getName() + "$abtractDatum.class");
-        ClassFile classFile = ClassFile.read(file);
-        for (Field f : classFile.fields) {
-            if (f.getName(classFile.constant_pool).equals("AbstractFieldToSearchFor")) {
-                Assert.check((f.access_flags.flags & AccessFlags.ACC_PROTECTED) != 0, "fields of abstract datum should be protected");
-            }
-        }
-
-        for (Method m : classFile.methods) {
-            Assert.check((m.access_flags.flags & AccessFlags.ACC_PUBLIC) != 0, "methods of abstract datum should be public");
-        }
     }
 
     void checkNonAbstractDatum() throws Throwable {

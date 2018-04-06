@@ -1,2 +1,0 @@
-SubDatumFieldsMustBeAPrefixOfParentTest.java:9:44: compiler.err.cant.extend.record: (compiler.misc.super.field.mismatch: int, x, int, y)
-1 error

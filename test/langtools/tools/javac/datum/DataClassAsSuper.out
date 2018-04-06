@@ -1,3 +1,6 @@
-DataClassAsSuper.java:10:30: compiler.err.cant.extend.record: (compiler.misc.bad.record.super)
-DataClassAsSuper.java:15:37: compiler.err.cant.extend.record: (compiler.misc.bad.record.super)
-2 errors
+DataClassAsSuper.java:10:21: compiler.err.expected: ';'
+DataClassAsSuper.java:10:36: compiler.err.expected: token.identifier
+DataClassAsSuper.java:15:28: compiler.err.expected: ';'
+DataClassAsSuper.java:15:37: compiler.err.invalid.meth.decl.ret.type.req
+DataClassAsSuper.java:15:41: compiler.err.expected: token.identifier
+5 errors
