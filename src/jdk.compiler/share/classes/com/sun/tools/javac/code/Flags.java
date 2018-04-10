@@ -314,6 +314,12 @@ public class Flags {
     public static final long ANONCONSTR_BASED = 1L<<57;
 
     /**
+     * Flag that marks finalize block as body-only, should not be copied into catch clauses.
+     * Used to implement try-with-resources.
+     */
+    public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
+
+    /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
      * part of the state vector of a record.
      */
@@ -323,7 +329,7 @@ public class Flags {
      * Flag to indicate that a record field is non-final.
      */
     public static final long NON_FINAL = 1L<<59;
-
+    
     /** Modifier masks.
      */
     public static final int

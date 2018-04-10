@@ -161,8 +161,6 @@ module java.base {
         jdk.scripting.nashorn;
     exports jdk.internal.org.objectweb.asm.signature to
         jdk.scripting.nashorn;
-    exports jdk.internal.math to
-        java.desktop;
     exports jdk.internal.misc to
         java.desktop,
         java.logging,
@@ -190,7 +188,6 @@ module java.base {
         jdk.jartool,
         jdk.jlink;
     exports jdk.internal.perf to
-        java.desktop,
         java.management,
         jdk.management.agent,
         jdk.internal.jvmstat;
@@ -237,7 +234,6 @@ module java.base {
         jdk.sctp,
         jdk.unsupported;
     exports sun.nio.cs to
-        java.desktop,
         jdk.charsets;
     exports sun.nio.fs to
         jdk.unsupported;
