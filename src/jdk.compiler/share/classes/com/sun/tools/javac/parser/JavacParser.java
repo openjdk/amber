@@ -3628,7 +3628,13 @@ public class JavacParser implements Parser {
             nextToken();
             extending = typeList();
         }
-        List<JCTree> defs = classInterfaceOrRecordBody(name, true, false);
+        List<JCTree> defs;
+        if (token.kind == LBRACE) {
+            defs = classInterfaceOrRecordBody(name, true, false);
+        } else {
+            accept(SEMI);
+            defs = List.nil();
+        }
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, null, extending, defs));
         attach(result, dc);
