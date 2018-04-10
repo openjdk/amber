@@ -1002,6 +1002,15 @@ public class Attr extends JCTree.Visitor {
                         tree.recvparam.pos(),
                         Errors.IntfAnnotationMembersCantHaveParams);
 
+            if ((owner.flags() & RECORD) != 0) {
+                List<VarSymbol> recordFieldSymbols = types.recordVars(env.enclClass.type);
+                List<Name> forbiddenMethodNames = recordFieldSymbols.map(vd -> vd.name);
+                forbiddenMethodNames = forbiddenMethodNames.prependList(List.of(names.hashCode, names.equals));
+                if (forbiddenMethodNames.contains(m.name)) {
+                    log.error(tree, Errors.CantProvideExplicitVersion(m.name));
+                }
+            }
+
             // Attribute all value parameters.
             for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
                 attribStat(l.head, localEnv);

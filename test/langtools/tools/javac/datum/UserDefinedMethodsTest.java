@@ -40,11 +40,6 @@ public class UserDefinedMethodsTest {
             return "Foo(x=#x, y=#y, z=#z)".replaceAll("#x", "" + x).replaceAll("#y", "" + y).replaceAll("#z", "" + z);
         }
 
-        @Override
-        public int hashCode() {
-            return x + y + z;
-        }
-
         String bar() {
             return "bar";
         }
@@ -59,6 +54,5 @@ public class UserDefinedMethodsTest {
         Assert.check(foo.toString().equals("Foo(x=1, y=2, z=3)"));
         Assert.check(foo.bar().equals("bar"));
         Assert.check(foo.foo().equals("Foo.foo"));
-        Assert.check(foo.hashCode() == 6);
     }
 }
