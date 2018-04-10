@@ -840,7 +840,7 @@ public class Check {
         return buf.toList();
     }
 
-    boolean checkDenotable(Type t) {
+    public boolean checkDenotable(Type t) {
         return denotableChecker.visit(t, null);
     }
         // where
