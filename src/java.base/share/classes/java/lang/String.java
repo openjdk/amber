@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -3634,7 +3635,6 @@ public final class String
                 "begin " + begin + ", end " + end + ", length " + length);
         }
     }
-
 
     /**
      * Returns the string representation of the {@code codePoint}
