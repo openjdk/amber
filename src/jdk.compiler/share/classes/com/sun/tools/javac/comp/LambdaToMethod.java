@@ -71,6 +71,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 
+import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 
@@ -115,6 +116,15 @@ public class LambdaToMethod extends TreeTranslator {
     /** force serializable representation, for stress testing **/
     private final boolean forceSerializable;
 
+    /** true if line or local variable debug info has been requested */
+    private final boolean debugLinesOrVars;
+
+    /** dump statistics about lambda method deduplication */
+    private final boolean verboseDeduplication;
+
+    /** deduplicate lambda implementation methods */
+    private final boolean deduplicateLambdas;
+
     /** Flag for alternate metafactories indicating the lambda object is intended to be serializable */
     public static final int FLAG_SERIALIZABLE = 1 << 0;
 
@@ -151,6 +161,11 @@ public class LambdaToMethod extends TreeTranslator {
         dumpLambdaToMethodStats = options.isSet("debug.dumpLambdaToMethodStats");
         attr = Attr.instance(context);
         forceSerializable = options.isSet("forceSerializable");
+        debugLinesOrVars = options.isSet(Option.G)
+                || options.isSet(Option.G_CUSTOM, "lines")
+                || options.isSet(Option.G_CUSTOM, "vars");
+        verboseDeduplication = options.isSet("debug.dumpLambdaToMethodDeduplication");
+        deduplicateLambdas = options.getBoolean("deduplicateLambdas", true);
         Source source = Source.instance(context);
         // format: -XDforNonCapturingLambda=generateCondy, which is the default, or -XDforNonCapturingLambda=generateIndy
         String condyOp = options.get("forNonCapturingLambda");
@@ -160,12 +175,46 @@ public class LambdaToMethod extends TreeTranslator {
     }
     // </editor-fold>
 
+    class DedupedLambda {
+        private final MethodSymbol symbol;
+        private final JCTree tree;
+
+        private int hashCode;
+
+        DedupedLambda(MethodSymbol symbol, JCTree tree) {
+            this.symbol = symbol;
+            this.tree = tree;
+        }
+
+
+        @Override
+        public int hashCode() {
+            int hashCode = this.hashCode;
+            if (hashCode == 0) {
+                this.hashCode = hashCode = TreeHasher.hash(tree, symbol.params());
+            }
+            return hashCode;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof DedupedLambda)) {
+                return false;
+            }
+            DedupedLambda that = (DedupedLambda) o;
+            return types.isSameType(symbol.asType(), that.symbol.asType())
+                    && new TreeDiffer(symbol.params(), that.symbol.params()).scan(tree, that.tree);
+        }
+    }
+
     private class KlassInfo {
 
         /**
          * list of methods to append
          */
         private ListBuffer<JCTree> appendedMethodList;
+
+        private Map<DedupedLambda, DedupedLambda> dedupedLambdas;
 
         /**
          * list of deserialization cases
@@ -187,6 +236,7 @@ public class LambdaToMethod extends TreeTranslator {
         private KlassInfo(JCClassDecl clazz) {
             this.clazz = clazz;
             appendedMethodList = new ListBuffer<>();
+            dedupedLambdas = new HashMap<>();
             deserializeCases = new HashMap<>();
             MethodType type = new MethodType(List.of(syms.serializedLambdaType), syms.objectType,
                     List.nil(), syms.methodClass);
@@ -337,8 +387,20 @@ public class LambdaToMethod extends TreeTranslator {
         //captured members directly).
         lambdaDecl.body = translate(makeLambdaBody(tree, lambdaDecl));
 
+        boolean dedupe = false;
+        if (deduplicateLambdas && !debugLinesOrVars && !localContext.isSerializable()) {
+            DedupedLambda dedupedLambda = new DedupedLambda(lambdaDecl.sym, lambdaDecl.body);
+            DedupedLambda existing = kInfo.dedupedLambdas.putIfAbsent(dedupedLambda, dedupedLambda);
+            if (existing != null) {
+                sym = existing.symbol;
+                dedupe = true;
+                if (verboseDeduplication) log.note(tree, Notes.VerboseL2mDeduplicate(sym));
+            }
+        }
+        if (!dedupe) {
         //Add the method to the list of methods to be added to this class.
         kInfo.addMethod(lambdaDecl);
+        }
 
         //now that we have generated a method for the lambda expression,
         //we can translate the lambda into a method reference pointing to the newly
