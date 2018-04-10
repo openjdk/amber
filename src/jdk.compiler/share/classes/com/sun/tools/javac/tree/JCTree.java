@@ -155,17 +155,13 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         SWITCH,
 
-        /** Case parts in switch statements, of type Case.
+        /** Case parts in switch statements/expressions, of type Case.
          */
         CASE,
 
         /** Switch expression statements, of type Switch.
          */
-        SWITCH_EXPRESSIOM,
-
-        /** Case expression parts in switch expressions, of type Case.
-         */
-        CASE_EXPRESSIOM,
+        SWITCH_EXPRESSION,
 
         /** Synchronized statements, of type Synchonized.
          */
@@ -1310,7 +1306,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
         @Override
         public Tag getTag() {
-            return SWITCH_EXPRESSIOM;
+            return SWITCH_EXPRESSION;
         }
     }
 
@@ -1544,7 +1540,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public void accept(Visitor v) { v.visitBreak(this); }
         public boolean isValueBreak() {
-            return target != null && target.hasTag(SWITCH_EXPRESSIOM);
+            return target != null && target.hasTag(SWITCH_EXPRESSION);
         }
 
         @DefinedBy(Api.COMPILER_TREE)

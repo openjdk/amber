@@ -1,0 +1,3 @@
+SwitchExtra.java:186:16: compiler.err.feature.not.supported.in.source.plural: (compiler.misc.feature.switch.expressions), 9, 10
+SwitchExtra.java:91:16: compiler.err.feature.not.supported.in.source: (compiler.misc.feature.switch.extra.types), 9, 10
+2 errors

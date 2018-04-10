@@ -1355,6 +1355,7 @@ public class JavacParser implements Parser {
             }
             break;
         case SWITCH:
+            checkSourceLevel(Feature.SWITCH_EXPRESSION);
             int switchPos = token.pos;
             nextToken();
             JCExpression selector = parExpression();
@@ -1396,6 +1397,7 @@ public class JavacParser implements Parser {
             while (true) {
                 pat = term(EXPR | NOLAMBDA);
                 if (token.kind != COMMA) break;
+                checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
                 caseExprs.append(toP(F.at(casePos).Case(pat, List.nil(), CaseKind.STATEMENTS)));
             };
@@ -2803,6 +2805,7 @@ public class JavacParser implements Parser {
                 pat = parseExpression();
                 if (token.kind != COMMA) break;
                 nextToken();
+                checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 c = F.at(pos).Case(pat, List.nil(), CaseKind.STATEMENTS);
                 storeEnd(c, S.prevToken().endPos);
                 cases.append(c);

@@ -27,8 +27,6 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -158,6 +156,8 @@ public class Attr extends JCTree.Visitor {
 
         Source source = Source.instance(context);
         allowStringsInSwitch = Feature.STRINGS_IN_SWITCH.allowedInSource(source);
+        allowExtraTypesInSwitch = Feature.SWITCH_EXTRA_TYPES.allowedInSource(source);
+        allowNullCase = Feature.SWITCH_EXTRA_TYPES.allowedInSource(source);
         allowPoly = Feature.POLY.allowedInSource(source);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowLambda = Feature.LAMBDA.allowedInSource(source);
@@ -205,6 +205,16 @@ public class Attr extends JCTree.Visitor {
      * Switch: allow strings in switch?
      */
     boolean allowStringsInSwitch;
+
+    /**
+     * Switch: allow extra types in switch?
+     */
+    boolean allowExtraTypesInSwitch;
+
+    /**
+     * Switch: allow case null in switch?
+     */
+    boolean allowNullCase;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -1459,8 +1469,12 @@ public class Attr extends JCTree.Visitor {
                 log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
             }
             Type unboxedSelType = types.unboxedTypeOrType(seltype);
-            if (!enumSwitch && !stringSwitch && !unboxedSelType.isPrimitive()) {
-                log.error(selector.pos(), Errors.SwitchInvalidType(seltype));
+            if (!enumSwitch && !stringSwitch) {
+                if (!unboxedSelType.isPrimitive()) {
+                    log.error(selector.pos(), Errors.SwitchInvalidType(seltype));
+                } else if (!types.isSubtype(unboxedSelType, syms.intType) && !allowExtraTypesInSwitch) {
+                    log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.SWITCH_EXTRA_TYPES.error(sourceName));
+                }
             }
 
             // Attribute all cases and
@@ -1472,6 +1486,11 @@ public class Attr extends JCTree.Visitor {
                 JCExpression pat = c.pat;
                 if (pat != null) {
                     if (TreeInfo.isNull(pat)) {
+                        if (!allowNullCase) {
+                            log.error(DiagnosticFlag.SOURCE_LEVEL,
+                                      selector.pos(),
+                                      Feature.SWITCH_CASE_NULL.error(sourceName));
+                        }
                         //case null:
                         //TODO: check -source
                         if (seltype.isPrimitive()) {
@@ -1850,7 +1869,7 @@ public class Attr extends JCTree.Visitor {
         if (env.info.breakResult != null) {
             if (tree.value == null) {
                 tree.target = findJumpTarget(tree.pos(), tree.getTag(), null, env);
-                if (tree.target.hasTag(SWITCH_EXPRESSIOM)) {
+                if (tree.target.hasTag(SWITCH_EXPRESSION)) {
                     log.error(tree.pos(), Errors.BreakMissingValue);
                 }
             } else {
@@ -1880,7 +1899,7 @@ public class Attr extends JCTree.Visitor {
                 if (attribute) {
                     attribTree(tree.value, env, env.info.breakResult);
                     Env<AttrContext> env1 = env;
-                    while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSIOM) {
+                    while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
                         env1 = env1.next;
                     }
                     Assert.checkNonNull(env1);
@@ -1978,7 +1997,7 @@ public class Attr extends JCTree.Visitor {
                     case SWITCH:
                         if (label == null && tag == BREAK) return Pair.of(env1.tree, null);
                         break;
-                    case SWITCH_EXPRESSIOM:
+                    case SWITCH_EXPRESSION:
                         if (tag == BREAK) {
                             if (label == null) {
                                 return Pair.of(env1.tree, null);

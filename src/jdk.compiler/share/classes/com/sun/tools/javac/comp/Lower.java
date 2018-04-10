@@ -56,6 +56,7 @@ import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
@@ -3828,22 +3829,16 @@ public class Lower extends TreeTranslator {
                 public void visitClassDef(JCClassDecl tree) {}
                 @Override
                 public void visitMethodDef(JCMethodDecl tree) {}
-                @SuppressWarnings("unchecked")
-                public <T extends JCTree> List<T> translate(List<T> trees) {
-                    if (trees == null) return null;
-                    ListBuffer<T> result = new ListBuffer<>();
-                    for (List<T> l = trees; l.nonEmpty(); l = l.tail) {
-                        if (l.head.hasTag(BREAK) && ((JCBreak) l.head).target == switchExpr) {
-                            JCBreak tree = (JCBreak) l.head;
-                            tree.target = switchStatement;
-                            result.append((T) make.Exec(make.Assign(make.Ident(dollar_switchexpr), translate(tree.value)).setType(dollar_switchexpr.type)));
-                            result.append((T) tree);
-                            tree.value = null;
-                        } else {
-                            result.append(translate(l.head));
-                        }
+                @Override
+                public void visitBreak(JCBreak tree) {
+                    if (tree.target == switchExpr) {
+                        tree.target = switchStatement;
+                        result = make.Block(0, List.of(make.Exec(make.Assign(make.Ident(dollar_switchexpr), translate(tree.value)).setType(dollar_switchexpr.type)),
+                                                       tree));
+                        tree.value = null;
+                    } else {
+                        result = tree;
                     }
-                    return result.toList();
                 }
             }.translate(c.stats));
             return make.Case(c.pat, statements.toList(), CaseKind.STATEMENTS);

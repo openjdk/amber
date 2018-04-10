@@ -1,8 +1,9 @@
 /**
  * @test
+ * @compile/fail/ref=SwitchNull-old.out -source 9 -Xlint:-options -XDrawDiagnostics SwitchNull.java
+ * @compile/fail/ref=SwitchNull.out -XDdisableIndySwitch=true -XDrawDiagnostics SwitchNull.java
  * @compile SwitchNull.java
  * @run main SwitchNull
- * @compile/fail/ref=SwitchNull.out -XDdisableIndySwitch=true -XDrawDiagnostics SwitchNull.java
  */
 
 public class SwitchNull {

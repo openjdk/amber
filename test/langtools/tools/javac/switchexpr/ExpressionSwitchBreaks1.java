@@ -56,7 +56,7 @@ public class ExpressionSwitchBreaks1 {
             case 0:
                 return switch (j) {
                     case 0:
-                        break "0-0";
+                        if (true) break "0-0";
                     case 1:
                         break "0-1";
                     default:

@@ -1,0 +1,2 @@
+ExpressionSwitch.java:48:16: compiler.err.feature.not.supported.in.source.plural: (compiler.misc.feature.switch.expressions), 9, 10
+1 error

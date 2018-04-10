@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @compile/fail/ref=SwitchExtra-old.out -source 9 -Xlint:-options -XDrawDiagnostics -XDshould-stop.at=FLOW SwitchExtra.java
  * @compile SwitchExtra.java
  * @run main SwitchExtra
  */

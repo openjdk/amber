@@ -23,20 +23,21 @@
 
 /**
  * @test
- * @compile MultipleLabels.java
- * @run main MultipleLabels
+ * @compile/fail/ref=MultipleLabelsExpression-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsExpression.java
+ * @compile MultipleLabelsExpression.java
+ * @run main MultipleLabelsExpression
  */
 
 import java.util.Objects;
 import java.util.function.Function;
 
-public class MultipleLabels {
+public class MultipleLabelsExpression {
     public static void main(String... args) {
-        new MultipleLabels().run();
+        new MultipleLabelsExpression().run();
     }
 
     private void run() {
-        runTest(this::statement1);
+        runTest(this::expression1);
     }
 
     private void runTest(Function<T, String> print) {
@@ -46,19 +47,6 @@ public class MultipleLabels {
         check(T.C,  print, "B-C");
         check(T.D,  print, "D");
         check(T.E,  print, "other");
-    }
-
-    private String statement1(T t) {
-        String res;
-
-        switch (t) {
-            case null, A: res = "NULL-A"; break;
-            case B, C: res = "B-C"; break;
-            case D: res = "D"; break;
-            default: res = "other"; break;
-        }
-
-        return res;
     }
 
     private String expression1(T t) {

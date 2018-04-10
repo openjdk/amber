@@ -47,7 +47,6 @@
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
-
 import javax.tools.*;
 
 import com.sun.source.tree.Tree;

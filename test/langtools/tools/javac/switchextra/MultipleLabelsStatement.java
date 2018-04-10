@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,67 +23,53 @@
 
 /**
  * @test
- * @compile/fail/ref=ExpressionSwitch-old.out -source 9 -Xlint:-options -XDrawDiagnostics ExpressionSwitch.java
- * @compile ExpressionSwitch.java
- * @run main ExpressionSwitch
+ * @compile/fail/ref=MultipleLabelsStatement-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsStatement.java
+ * @compile MultipleLabelsStatement.java
+ * @run main MultipleLabelsStatement
  */
 
 import java.util.Objects;
+import java.util.function.Function;
 
-public class ExpressionSwitch {
+public class MultipleLabelsStatement {
     public static void main(String... args) {
-        new ExpressionSwitch().run();
+        new MultipleLabelsStatement().run();
     }
 
     private void run() {
-        check(null, "NULL");
-        check(T.A, "A");
-        check(T.B, "B");
-        check(T.C, "other");
-        exhaustive1(T.C);
-        exhaustive2(null);
+        runTest(this::statement1);
     }
 
-    private String print(T t) {
-        return switch (t) {
-            case null -> "NULL";
-            case A -> "A";
-            case B -> "B";
-            default: break "other";
-        };
+    private void runTest(Function<T, String> print) {
+        check(null, print, "NULL-A");
+        check(T.A,  print, "NULL-A");
+        check(T.B,  print, "B-C");
+        check(T.C,  print, "B-C");
+        check(T.D,  print, "D");
+        check(T.E,  print, "other");
     }
 
-    private String exhaustive1(T t) {
-        return switch (t) {
-            case A -> "A";
-            case B -> "B";
-            case C -> "C";
-            case D: break "D";
-        };
+    private String statement1(T t) {
+        String res;
+
+        switch (t) {
+            case null, A: res = "NULL-A"; break;
+            case B, C: res = "B-C"; break;
+            case D: res = "D"; break;
+            default: res = "other"; break;
+        }
+
+        return res;
     }
 
-    private String exhaustive2(T t) {
-        return switch (t) {
-            case null -> "NULL";
-            case A -> "A";
-            case B -> "B";
-            case C -> "C";
-            case D: break "D";
-        };
-    }
-
-    private void check(T t, String expected) {
-        String result = print(t);
+    private void check(T t, Function<T, String> print, String expected) {
+        String result = print.apply(t);
         if (!Objects.equals(result, expected)) {
             throw new AssertionError("Unexpected result: " + result);
         }
     }
 
     enum T {
-        A, B, C, D;
-    }
-    void t() {
-        Runnable r = () -> {};
-        r.run();
+        A, B, C, D, E;
     }
 }
