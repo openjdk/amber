@@ -1082,8 +1082,8 @@ public class Attr extends JCTree.Visitor {
                 if (tree.name == names.init && owner.type != syms.objectType) {
                     JCBlock body = tree.body;
                     if (body.stats.isEmpty() ||
-                            !TreeInfo.hasConstructorInvocation(body.stats, names,
-                                    (env.enclClass.sym.flags() & RECORD) != 0)) {
+                            TreeInfo.getConstructorInvocationName(body.stats, names,
+                                    (env.enclClass.sym.flags() & RECORD) != 0) == names.empty) {
                         JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
                                 make.Ident(names._super), make.Idents(List.nil())));
                         body.stats = body.stats.prepend(supCall);

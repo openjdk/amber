@@ -214,7 +214,6 @@ public class Names {
     // record related
     public final Name record;
     public final Name where;
-    public final Name guard;
     public final Name non;
     public final Name makeLazyExtractor;
 
@@ -388,7 +387,6 @@ public class Names {
         makeToString = fromString("makeToString");
         record = fromString("record");
         where = fromString("where");
-        guard = fromString("$guard");
         non = fromString("non");
         makeLazyExtractor = fromString("makeLazyExtractor");
     }
