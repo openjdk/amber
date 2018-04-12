@@ -67,6 +67,7 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+import static com.sun.tools.javac.jvm.Pool.DynamicMethod;
 
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
@@ -208,6 +209,8 @@ public class LambdaToMethod extends TreeTranslator {
         private ListBuffer<JCTree> appendedMethodList;
 
         private Map<DedupedLambda, DedupedLambda> dedupedLambdas;
+
+        private Map<DynamicMethod, DynamicMethodSymbol> dynMethSyms = new HashMap<>();
 
         /**
          * list of deserialization cases
@@ -1201,9 +1204,10 @@ public class LambdaToMethod extends TreeTranslator {
                                             (MethodSymbol)bsm,
                                             indyType,
                                             staticArgs.toArray());
-
             JCFieldAccess qualifier = make.Select(make.QualIdent(site.tsym), bsmName);
-            qualifier.sym = dynSym;
+            DynamicMethodSymbol existing = kInfo.dynMethSyms.putIfAbsent(
+                    new DynamicMethod(dynSym, types), dynSym);
+            qualifier.sym = existing != null ? existing : dynSym;
             qualifier.type = indyType.getReturnType();
 
             JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, indyArgs);
