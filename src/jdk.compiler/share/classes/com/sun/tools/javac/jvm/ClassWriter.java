@@ -88,6 +88,10 @@ public class ClassWriter extends ClassFile {
      */
     private boolean debugstackmap;
 
+    /** Preview language level.
+     */
+    private Preview preview;
+
     /**
      * Target class version.
      */
@@ -183,6 +187,7 @@ public class ClassWriter extends ClassFile {
         names = Names.instance(context);
         syms = Symtab.instance(context);
         options = Options.instance(context);
+        preview = Preview.instance(context);
         target = Target.instance(context);
         source = Source.instance(context);
         types = Types.instance(context);
@@ -1846,7 +1851,11 @@ public class ClassWriter extends ClassFile {
         acount += writeExtraClassAttributes(c);
 
         poolbuf.appendInt(JAVA_MAGIC);
-        poolbuf.appendChar(target.minorVersion);
+        if (preview.isEnabled()) {
+            poolbuf.appendChar(ClassFile.PREVIEW_MINOR_VERSION);
+        } else {
+            poolbuf.appendChar(target.minorVersion);
+        }
         poolbuf.appendChar(target.majorVersion);
 
         writePool(c.pool);

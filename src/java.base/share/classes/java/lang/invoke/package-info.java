@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -186,11 +186,11 @@
  * For a dynamically-computed constant the first parameter type of the bootstrap method handle
  * must be assignable to {@code MethodHandles.Lookup}, other than that constraint the same degree
  * of flexibility applies to bootstrap methods of dynamically-computed call sites and
- * dynamically-computed constants. This constraint allows for the future possibility
- * where the bootstrap method is invoked with just the parameter types of static arguments,
- * thereby supporting a wider range of methods compatible with the static arguments
- * (such as methods that don't declare or require the lookup, name, and type meta-data
- * parameters).
+ * dynamically-computed constants.
+ * Note: this constraint allows for the future possibility where the bootstrap method is
+ * invoked with just the parameter types of static arguments, thereby supporting a wider
+ * range of methods compatible with the static arguments (such as methods that don't declare
+ * or require the lookup, name, and type meta-data parameters).
  * <p> For example, for dynamically-computed call site, a the first argument
  * could be {@code Object} instead of {@code MethodHandles.Lookup}, and the return type
  * could also be {@code Object} instead of {@code CallSite}.
