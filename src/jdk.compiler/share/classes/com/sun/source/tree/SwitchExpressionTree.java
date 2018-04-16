@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,37 +25,34 @@
 
 package com.sun.source.tree;
 
-import javax.lang.model.element.Name;
+import java.util.List;
 
 /**
- * A tree node for a {@code break} statement.
+ * A tree node for a {@code switch} expression.
  *
  * For example:
  * <pre>
- *   break;
- *
- *   break <em>label</em> ;
- *
- *   break <em>expression</em> ;
+ *   switch ( <em>expression</em> ) {
+ *     <em>cases</em>
+ *   }
  * </pre>
  *
- * @jls section 14.15
+ * @jls section 15.29
  *
  * @author Peter von der Ah&eacute;
  * @author Jonathan Gibbons
- * @since 1.6
+ * @since TBD
  */
-public interface BreakTree extends StatementTree {
+public interface SwitchExpressionTree extends ExpressionTree {
     /**
-     * Returns the label for this {@code break} statement.
-     * @return the label
+     * Returns the expression for the {@code switch} expression.
+     * @return the expression
      */
-    Name getLabel();
+    ExpressionTree getExpression();
 
     /**
-     * Returns the expression for this {@code break} statement.
-     * @return the expression
-     * @since TBD
+     * Returns the cases for the {@code switch} expression.
+     * @return the cases
      */
-    ExpressionTree getValue();
+    List<? extends CaseTree> getCases();
 }

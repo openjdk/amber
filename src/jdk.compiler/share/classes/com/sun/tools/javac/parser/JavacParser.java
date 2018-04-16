@@ -28,6 +28,7 @@ package com.sun.tools.javac.parser;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 
@@ -54,7 +55,6 @@ import static com.sun.tools.javac.parser.Tokens.TokenKind.EQ;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.GT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.IMPORT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.LT;
-import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.ImplicitAndExplicitNotAllowed;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.VarAndExplicitNotAllowed;
@@ -1403,7 +1403,7 @@ public class JavacParser implements Parser {
                 if (token.kind != COMMA) break;
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
-                caseExprs.append(toP(F.at(casePos).Case(pat, List.nil(), CaseKind.STATEMENTS)));
+                caseExprs.append(toP(F.at(casePos).Case(CaseKind.STATEMENT, pat, List.nil())));
             };
         }
         List<JCStatement> stats = null;
@@ -1414,7 +1414,7 @@ public class JavacParser implements Parser {
                 if (token.kind == TokenKind.THROW) {
                     //TODO: record the arrow used?
                     stats = List.of(parseStatement());
-                    kind = CaseKind.STATEMENTS;
+                    kind = CaseKind.THROW;
                 } else {
                     JCExpression value = parseExpression();
                     stats = List.of(to(F.at(value).Break(value)));
@@ -1425,10 +1425,10 @@ public class JavacParser implements Parser {
             default:
                 accept(COLON);
                 stats = blockStatements();
-                kind = CaseKind.STATEMENTS;
+                kind = CaseKind.STATEMENT;
                 break;
         }
-        caseExprs.append(toP(F.at(casePos).Case(pat, stats, kind)));
+        caseExprs.append(toP(F.at(casePos).Case(kind, pat, stats)));
         return caseExprs.toList();
     }
 
@@ -2810,13 +2810,13 @@ public class JavacParser implements Parser {
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
-                c = F.at(pos).Case(pat, List.nil(), CaseKind.STATEMENTS);
+                c = F.at(pos).Case(CaseKind.STATEMENT, pat, List.nil());
                 storeEnd(c, S.prevToken().endPos);
                 cases.append(c);
             };
             accept(COLON);
             stats = blockStatements();
-            c = F.at(pos).Case(pat, stats, CaseKind.STATEMENTS);
+            c = F.at(pos).Case(CaseKind.STATEMENT, pat, stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();
@@ -2824,7 +2824,7 @@ public class JavacParser implements Parser {
             nextToken();
             accept(COLON);
             stats = blockStatements();
-            c = F.at(pos).Case(null, stats, CaseKind.STATEMENTS);
+            c = F.at(pos).Case(CaseKind.STATEMENT, null, stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();

@@ -47,11 +47,11 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.OpensDirective;
 import com.sun.tools.javac.code.Type.ModuleType;
-import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
 
 /**
@@ -1248,25 +1248,29 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A "case  :" of a switch.
      */
     public static class JCCase extends JCStatement implements CaseTree {
+        public final CaseKind caseKind;
         public JCExpression pat;
         public List<JCStatement> stats;
-        public final CaseKind kind;
-        protected JCCase(JCExpression pat, List<JCStatement> stats, CaseKind kind) {
+        protected JCCase(CaseKind caseKind, JCExpression pat, List<JCStatement> stats) {
+            this.caseKind = caseKind;
             this.pat = pat;
             this.stats = stats;
-            this.kind = kind;
         }
         @Override
         public void accept(Visitor v) { v.visitCase(this); }
 
-        @DefinedBy(Api.COMPILER_TREE)
+        @Override @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.CASE; }
-        @DefinedBy(Api.COMPILER_TREE)
+        @Override @DefinedBy(Api.COMPILER_TREE)
         public JCExpression getExpression() { return pat; }
         @DefinedBy(Api.COMPILER_TREE)
-        public List<JCStatement> getStatements() { return kind == CaseKind.STATEMENTS ? stats : null; }
+        public List<JCStatement> getStatements() { return stats; }
         @DefinedBy(Api.COMPILER_TREE)
-        public JCExpression getValue() { return kind == CaseKind.VALUE ? ((JCBreak) stats.head).value : null; }
+        public JCExpression getValue() { return caseKind == CaseKind.VALUE ? ((JCBreak) stats.head).value : null; }
+        @Override
+        public CaseKind getCaseKind() {
+            return caseKind;
+        }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
             return v.visitCase(this, d);
@@ -1275,16 +1279,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return CASE;
         }
-        public enum CaseKind {
-            STATEMENTS,
-            VALUE;
-        }
     }
 
     /**
      * A "switch ( ) { }" construction.
      */
-    public static class JCSwitchExpression extends JCPolyExpression implements SwitchTree {
+    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
         public JCExpression selector;
         public List<JCCase> cases;
         protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
@@ -1295,14 +1295,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void accept(Visitor v) { v.visitSwitchExpression(this); }
 
         @DefinedBy(Api.COMPILER_TREE)
-        public Kind getKind() { return Kind.SWITCH; }
+        public Kind getKind() { return Kind.SWITCH_EXPRESSION; }
         @DefinedBy(Api.COMPILER_TREE)
         public JCExpression getExpression() { return selector; }
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCCase> getCases() { return cases; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
-            return v.visitSwitch(this, d);
+            return v.visitSwitchExpression(this, d);
         }
         @Override
         public Tag getTag() {
@@ -3049,7 +3049,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCEnhancedForLoop ForeachLoop(JCVariableDecl var, JCExpression expr, JCStatement body);
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
-        JCCase Case(JCExpression pat, List<JCStatement> stats, CaseKind kind);
+        JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
+        JCCase Case(CaseKind caseKind, JCExpression pat, List<JCStatement> stats);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);
         JCTry Try(List<JCTree> resources,

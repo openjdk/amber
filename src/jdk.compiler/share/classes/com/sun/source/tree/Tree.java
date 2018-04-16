@@ -240,6 +240,12 @@ public interface Tree {
         SWITCH(SwitchTree.class),
 
         /**
+         * Used for instances of {@link SwitchExpressionTree}.
+         * @since TBD
+         */
+        SWITCH_EXPRESSION(SwitchExpressionTree.class),
+
+        /**
          * Used for instances of {@link SynchronizedTree}.
          */
         SYNCHRONIZED(SynchronizedTree.class),

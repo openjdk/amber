@@ -354,6 +354,15 @@ public interface TreeVisitor<R,P> {
     R visitSwitch(SwitchTree node, P p);
 
     /**
+     * Visits a SwitchExpressionTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since TBD
+     */
+    R visitSwitchExpression(SwitchExpressionTree node, P p);
+
+    /**
      * Visits a SynchronizedTree node.
      * @param node the node being visited
      * @param p a parameter value

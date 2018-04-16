@@ -271,6 +271,18 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @return  the result of {@code defaultAction}
      */
     @Override
+    public R visitSwitchExpression(SwitchExpressionTree node, P p) {
+        return defaultAction(node, p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation calls {@code defaultAction}.
+     *
+     * @param node {@inheritDoc}
+     * @param p {@inheritDoc}
+     * @return  the result of {@code defaultAction}
+     */
+    @Override
     public R visitCase(CaseTree node, P p) {
         return defaultAction(node, p);
     }

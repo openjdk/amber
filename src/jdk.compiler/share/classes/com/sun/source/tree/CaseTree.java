@@ -28,7 +28,7 @@ package com.sun.source.tree;
 import java.util.List;
 
 /**
- * A tree node for a {@code case} in a {@code switch} statement.
+ * A tree node for a {@code case} in a {@code switch} statement or expression.
  *
  * For example:
  * <pre>
@@ -56,19 +56,56 @@ public interface CaseTree extends Tree {
     /**
      * Returns the statements labeled by the case.
      * If this is a case in switch expression in for
-     * {@code case expression -> value}, returns null.
+     * {@code case expression -> value}, returns a list
+     * containing a single synthetic BreakTree with
+     * the given value.
      * @return the statements labeled by the case or null
      */
     List<? extends StatementTree> getStatements();
 
     /**
      * If this is a case in switch expression in for
-     * {@code case expression -> value}, the value of
+     * {@linkplain CaseKind#VALUE}, the value of
      * the case, null otherwise.
      * 
      * @return case value or null
+     * @since TBD
      */
     public default ExpressionTree getValue() {
         return null;
+    }
+
+    /**
+     * Returns the kind of this case.
+     * 
+     * @return the kind of this case
+     * @since TBD
+     */
+    public default CaseKind getCaseKind() {
+        return CaseKind.STATEMENT;
+    }
+
+    /**
+     * The syntatic form of this case:
+     * <ul>
+     *     <li>STATEMENT: {@code case <expression>: <statements>}</li>
+     *     <li>VALUE: {@code case <expression> -> <expression>}</li>
+     *     <li>THROW: {@code case <expression> -> throw ...}</li>
+     * </ul>
+     * @since TBD
+     */
+    public enum CaseKind {
+        /**
+         * Case is in the form: {@code case <expression>: <statements>}.
+         */
+        STATEMENT,
+        /**
+         * Case is in the form: {@code case <expression> -> <expression>}.
+         */
+        VALUE,
+        /**
+         * Case is in the form: {@code case <expression> -> throw ...}.
+         */
+        THROW;
     }
 }

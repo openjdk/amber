@@ -72,8 +72,8 @@ import static com.sun.tools.javac.jvm.Pool.DynamicMethod;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.type.TypeKind;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.main.Option;
-import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 
 /**
  * This pass desugars lambda expressions into static methods
@@ -721,7 +721,7 @@ public class LambdaToMethod extends TreeTranslator {
             JCBreak br = make.Break(null);
             breaks.add(br);
             List<JCStatement> stmts = entry.getValue().append(br).toList();
-            cases.add(make.Case(make.Literal(entry.getKey()), stmts, CaseKind.STATEMENTS));
+            cases.add(make.Case(CaseKind.STATEMENT, make.Literal(entry.getKey()), stmts));
         }
         JCSwitch sw = make.Switch(deserGetter("getImplMethodName", syms.stringType), cases.toList());
         for (JCBreak br : breaks) {

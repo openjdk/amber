@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -57,7 +58,6 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
-import com.sun.tools.javac.tree.JCTree.JCCase.CaseKind;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
@@ -3417,7 +3417,7 @@ public class Lower extends TreeTranslator {
             
             if (!hasNullCase(tree)) {
                 JCThrow npe = make.Throw(makeNewClass(syms.nullPointerExceptionType, List.nil()));
-                tree.cases = tree.cases.prepend(make.Case(makeNull(), List.of(npe), CaseKind.STATEMENTS));
+                tree.cases = tree.cases.prepend(make.Case(CaseKind.STATEMENT, makeNull(), List.of(npe)));
             }
 
             int caseIdx = 0;
@@ -3507,7 +3507,7 @@ public class Lower extends TreeTranslator {
             if (c.pat != null) {
                 VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pat);
                 JCLiteral pat = map.forConstant(label);
-                cases.append(make.Case(pat, c.stats, CaseKind.STATEMENTS));
+                cases.append(make.Case(CaseKind.STATEMENT, pat, c.stats));
             } else {
                 cases.append(c);
             }
@@ -3663,7 +3663,7 @@ public class Lower extends TreeTranslator {
                 breakStmt.target = switch1;
                 lb.append(elsepart).append(breakStmt);
 
-                caseBuffer.append(make.Case(make.Literal(hashCode), lb.toList(), CaseKind.STATEMENTS));
+                caseBuffer.append(make.Case(CaseKind.STATEMENT, make.Literal(hashCode), lb.toList()));
             }
 
             switch1.cases = caseBuffer.toList();
@@ -3690,9 +3690,8 @@ public class Lower extends TreeTranslator {
                                                                     type.constValue()));
                 }
 
-                lb.append(make.Case(caseExpr,
-                                    oneCase.getStatements(),
-                                    CaseKind.STATEMENTS));
+                lb.append(make.Case(CaseKind.STATEMENT, caseExpr,
+                                    oneCase.getStatements()));
             }
 
             switch2.cases = lb.toList();
@@ -3724,7 +3723,7 @@ public class Lower extends TreeTranslator {
         switchStatement.cases = tree.cases.stream().map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c)).collect(List.collector());
         if (tree.cases.stream().noneMatch(c -> c.pat == null)) {
             JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType, List.nil()));
-            switchStatement.cases = switchStatement.cases.append(make.Case(null, List.of(thr), CaseKind.STATEMENTS));
+            switchStatement.cases = switchStatement.cases.append(make.Case(CaseKind.STATEMENT, null, List.of(thr)));
         }
         stmtList.append(translate(switchStatement));
 
@@ -3753,7 +3752,7 @@ public class Lower extends TreeTranslator {
                     }
                 }
             }.translate(c.stats));
-            return make.Case(c.pat, statements.toList(), CaseKind.STATEMENTS);
+            return make.Case(CaseKind.STATEMENT, c.pat, statements.toList());
         }
 
     public void visitNewArray(JCNewArray tree) {
