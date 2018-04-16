@@ -196,9 +196,22 @@ public abstract class JavacTemplateTestBase {
     }
 
     /** Assert that a previous call to compile() failed with a specific error key */
-    protected void assertCompileFailed(String message) {
+    protected void assertCompileFailed(String key) {
         if (!diags.errorsFound())
-            fail("Expected failed compilation: " + message);
+            fail("Expected failed compilation: " + key);
+        if (!diags.containsErrorKey(key))
+            fail("Expected compilation error " + key);
+    }
+
+    /** Assert that a previous call to compile() failed with a specific error key */
+    protected void assertCompileFailedOneOf(String... keys) {
+        if (!diags.errorsFound())
+            fail("Expected failed compilation with one of: " + Arrays.asList(keys));
+        boolean found = false;
+        for (String k : keys)
+            if (diags.containsErrorKey(k))
+                found = true;
+        fail(String.format("Expected compilation error with one of %s, found %s", Arrays.asList(keys), diags.keys()));
     }
 
     /** Assert that a previous call to compile() failed with all of the specified error keys */
