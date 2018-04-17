@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,27 +26,21 @@ package java.lang.invoke.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * A symbolic reference for a {@linkplain MethodType} constant.
+ * A nominal descriptor for a {@linkplain MethodType} constant.
  */
 public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<ConstantRef<MethodType>> {
     /**
      * Create a {@linkplain MethodTypeRef} from a method descriptor string
      *
-     * @param descriptor the method descriptor string
+     * @param descriptor a method descriptor string, as per JVMS 4.3.3
      * @return a {@linkplain MethodTypeRef} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
@@ -178,11 +172,11 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
      * canonical names for parameter and return types
      * @return the human-readable descriptor for this method type
      */
-    default String simpleDescriptor() {
+    default String displayDescriptor() {
         return String.format("(%s)%s",
                              Stream.of(parameterArray())
-                                   .map(ClassRef::simpleName)
+                                   .map(ClassRef::displayName)
                                    .collect(Collectors.joining(",")),
-                             returnType().simpleName());
+                             returnType().displayName());
     }
 }

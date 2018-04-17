@@ -23,21 +23,19 @@
  * questions.
  */
 
-import java.lang.sym.BootstrapSpecifier;
-import java.lang.sym.ClassRef;
-import java.lang.sym.DynamicConstantRef;
 import java.lang.invoke.Intrinsics;
-import java.lang.sym.MethodHandleRef;
 import java.lang.invoke.VarHandle;
-import java.lang.sym.ConstantRefs;
+import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.DynamicConstantRef;
+import java.lang.invoke.constant.MethodHandleRef;
 import java.util.List;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.Intrinsics.*;
+import static java.lang.invoke.Intrinsics.ldc;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 /**
  * @test
@@ -50,23 +48,23 @@ public class ConstantRefBootstrapsTest {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
     static final MethodHandleRef BSM_NULL_CONSTANT
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "nullConstant", ConstantRefs.CR_Object);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "nullConstant", ConstantRefs.CR_Object);
     static final MethodHandleRef BSM_PRIMITIVE_CLASS
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "primitiveClass", ConstantRefs.CR_Class);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "primitiveClass", ConstantRefs.CR_Class);
     static final MethodHandleRef BSM_ENUM_CONSTANT
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "enumConstant", ConstantRefs.CR_Enum);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "enumConstant", ConstantRefs.CR_Enum);
     static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object);
     static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object, ConstantRefs.CR_Class);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object, ConstantRefs.CR_Class);
     static final MethodHandleRef BSM_INVOKE
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "invoke", ConstantRefs.CR_Object, ConstantRefs.CR_MethodHandle, ConstantRefs.CR_Object.array());
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "invoke", ConstantRefs.CR_Object, ConstantRefs.CR_MethodHandle, ConstantRefs.CR_Object.array());
     static final MethodHandleRef BSM_VARHANDLE_FIELD
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "fieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "fieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "staticFieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "staticFieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
     static final MethodHandleRef BSM_VARHANDLE_ARRAY
-            = MethodHandleRef.ofDynamicConstant(CLASS_CONDY, "arrayVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class);
+            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "arrayVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class);
 
 
     public void testNullConstant() {
@@ -94,7 +92,7 @@ public class ConstantRefBootstrapsTest {
     public void testEnumConstant() {
         MethodHandleRef.Kind k = Intrinsics.ldc(DynamicConstantRef.of(
                 BSM_ENUM_CONSTANT, "STATIC",
-                ClassRef.of("java.lang.sym.MethodHandleRef$Kind")));
+                ClassRef.of("java.lang.invoke.constant.MethodHandleRef$Kind")));
         assertEquals(k, MethodHandleRef.Kind.STATIC);
     }
 

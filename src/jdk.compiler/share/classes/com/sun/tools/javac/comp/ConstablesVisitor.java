@@ -336,7 +336,7 @@ public class ConstablesVisitor extends TreeScanner {
                     }
                     Object indyRef = constants.head;
                     String invocationName = (String)constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass,
-                            indyRef, "name");
+                            indyRef, "invocationName");
                     if (invocationName.isEmpty()) {
                         log.error(tree.args.tail.head.pos(), Errors.InvocationNameCannotBeEmpty);
                     }
@@ -362,7 +362,7 @@ public class ConstablesVisitor extends TreeScanner {
                     tree.args.forEach(arg -> arguments.add(arg.type));
                     Object[] bsmArgs = (Object[])constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass, indyRef, "bootstrapArgs");
                     Object[] convertedBsmArgs = constables.convertConstants(tree, attrEnv, bsmArgs, attrEnv.enclClass.sym.packge().modle, true);
-                    Object mt = constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass, indyRef, "type");
+                    Object mt = constables.invokeMethodReflectively(constables.dynamicCallsiteRefClass, indyRef, "invocationType");
                     String methodTypeDesc = (String)constables.invokeMethodReflectively(
                             constables.methodTypeRefClass, mt, "descriptorString");
                     MethodType mType = (MethodType)constables.descriptorToType(methodTypeDesc,

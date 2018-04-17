@@ -62,8 +62,8 @@ public class IndyCodeGenerationTest {
                 ConstantRefs.CR_MethodType,
                 ConstantRefs.CR_MethodHandle
         );
-        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
-                                                "testWithStaticArgsBSM", methodTypeForMethodHandle);
+        ConstantMethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
+                                                        "testWithStaticArgsBSM", methodTypeForMethodHandle);
         MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
                 ConstantRefs.CR_String
         );

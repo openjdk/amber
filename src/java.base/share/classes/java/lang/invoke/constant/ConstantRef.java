@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,26 +30,21 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 /**
- * A nominal reference to a loadable constant value, as defined in JVMS 4.4.
- * Such a nominal reference can be stored in the constant pool of a classfile
- * and resolved to yield the constant value itself.
+ * A nominal descriptor for a loadable constant value, as defined in JVMS 4.4.
+ * Such a descriptor can be resolved via {@link ConstantRef#resolveConstantRef(MethodHandles.Lookup)}
+ * to yield the constant value itself.
+ *
+ * <p>Class names in a nominal descriptor, like class names in the constant pool
+ * of a classfile, must be interpreted with respect to a particular to a class
+ * loader, which is not part of the nominal descriptor.
  *
  * <p>Static constants that are expressible natively in the constant pool ({@link String},
  * {@link Integer}, {@link Long}, {@link Float}, and {@link Double}) implement
- * {@link ConstantRef}, serve as nominal references for themselves.
+ * {@link ConstantRef}, and serve as nominal descriptors for themselves.
  * Native linkable constants ({@link Class}, {@link MethodType}, and
  * {@link MethodHandle}) have counterpart {@linkplain ConstantRef} types:
  * {@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.
  * Other constants are represented by subtypes of {@link DynamicConstantRef}.
- *
- * <p>Non-platform classes should not implement {@linkplain ConstantRef} directly.
- * Instead, they should extend {@link DynamicConstantRef} (as {@link EnumRef}
- * and {@link VarHandleRef} do.)
- *
- * <p>Constants can be reflectively resolved via {@link ConstantRef#resolveConstantRef(MethodHandles.Lookup)}.
- *
- * <p>Constants describing various useful nominal references (such as {@link ClassRef}
- * instances for platform classes) can be found in {@link ConstantRefs}.
  *
  * <p>APIs that perform generation or parsing of bytecode are encouraged to use
  * {@linkplain ConstantRef} to describe the operand of an {@code ldc} instruction
@@ -60,32 +55,42 @@ import java.lang.invoke.MethodType;
  * <p>The {@linkplain ConstantRef} types are also used by {@link Intrinsics}
  * to express {@code ldc} instructions.
  *
+ * <p>Constants describing various common constants (such as {@link ClassRef}
+ * instances for platform types) can be found in {@link ConstantRefs}.
+ *
  * <p>Implementations of {@linkplain ConstantRef} must be
  * <a href="../doc-files/ValueBased.html">value-based</a> classes.
+ *
+ * <p>Non-platform classes should not implement {@linkplain ConstantRef} directly.
+ * Instead, they should extend {@link DynamicConstantRef} (as {@link EnumRef}
+ * and {@link VarHandleRef} do.)
  *
  * @apiNote In the future, if the Java language permits, {@linkplain ConstantRef}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
  * explicitly permitted types.  Bytecode libraries can assume that the following
  * is an exhaustive set of direct subtypes: {@link String}, {@link Integer},
  * {@link Long}, {@link Float}, {@link Double}, {@link ClassRef},
- * {@link MethodTypeRef}, {@link MethodHandleRef}, and {@link DynamicConstantRef}.
+ * {@link MethodTypeRef}, {@link MethodHandleRef}, and {@link DynamicConstantRef};
+ * this list may be extended to reflect future changes to the constant pool format
+ * as defined in JVMS 4.4.
  *
  * @see Constable
- * @see ConstantRef
  * @see Intrinsics
  * @see ConstantRefs
  *
  */
 public interface ConstantRef<T> {
     /**
-     * Resolve this reference reflectively, using a {@link MethodHandles.Lookup}
-     * to resolve any type names into classes.
+     * Resolve this descriptor reflectively, emulating the resolution behavior
+     * of JVMS 5.4.3 and the access control behavior of JVMS 5.4.4.  The resolution
+     * and access control context is provided by the {@link MethodHandles.Lookup}
+     * parameter.  No caching of the resulting value is performed.
      *
-     * @param lookup The {@link MethodHandles.Lookup} to be used in name resolution
-     * @return the resolved object
-     * @throws ReflectiveOperationException if this nominal reference refers
-     * (directly or indirectly) to a class, method, or field that cannot be
-     * resolved
+     * @param lookup The {@link MethodHandles.Lookup} to provide name resolution
+     *               and access control context
+     * @return the resolved constant value
+     * @throws ReflectiveOperationException if a class, method, or field
+     * could not be reflectively resolved in the course of resolution
      */
     T resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 }

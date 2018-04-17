@@ -26,6 +26,7 @@
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantMethodHandleRef;
 import java.lang.invoke.constant.ConstantRef;
 import java.lang.invoke.constant.DynamicConstantRef;
 import java.lang.invoke.constant.EnumRef;
@@ -85,15 +86,15 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testDynamicConstant() throws ReflectiveOperationException {
-        MethodHandleRef bsmRef = MethodHandleRef.ofDynamicConstant(ClassRef.of("CondyRefTest"), "concatBSM",
-                                                                   CR_String, CR_String, CR_String);
+        ConstantMethodHandleRef bsmRef = ConstantRefs.ofConstantBootstrap(ClassRef.of("CondyRefTest"), "concatBSM",
+                                                                          CR_String, CR_String, CR_String);
         DynamicConstantRef<String> r = DynamicConstantRef.<String>of(bsmRef).withArgs("foo", "bar");
         testDCR(r, "foobar");
     }
 
     public void testNested() throws Throwable {
-        MethodHandleRef invoker = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.array());
-        MethodHandleRef format = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.array());
+        ConstantMethodHandleRef invoker = ConstantRefs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.array());
+        ConstantMethodHandleRef format = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.array());
 
         String s = (String) invoker.resolveConstantRef(LOOKUP)
                                    .invoke(LOOKUP, "", String.class,

@@ -24,43 +24,35 @@
  */
 package java.lang.invoke.constant;
 
-import jdk.internal.lang.annotation.Foldable;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
-import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import jdk.internal.lang.annotation.Foldable;
+
 import static java.lang.invoke.constant.ConstantRefs.CR_VarHandleRef;
 
 /**
- * A symbolic reference for a {@link VarHandle} constant.
+ * A nominal descriptor for a {@link VarHandle} constant.
  */
 public final class VarHandleRef extends DynamicConstantRef<VarHandle>
         implements Constable<ConstantRef<VarHandle>> {
-
-    private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
     /**
      * Kinds of variable handle refs
      */
     private enum Kind {
-        @Foldable
         FIELD(ConstantRefs.BSM_VARHANDLE_FIELD, ConstantRefs.MHR_VARHANDLEREF_OFFIELD),
-        @Foldable
         STATIC_FIELD(ConstantRefs.BSM_VARHANDLE_STATIC_FIELD, ConstantRefs.MHR_VARHANDLEREF_OFSTATIC),
-        @Foldable
         ARRAY(ConstantRefs.BSM_VARHANDLE_ARRAY, ConstantRefs.MHR_VARHANDLEREF_OFARRAY);
 
-        final MethodHandleRef bootstrapMethod;
-        final MethodHandleRef refFactory;
+        final ConstantMethodHandleRef bootstrapMethod;
+        final ConstantMethodHandleRef refFactory;
 
-        Kind(MethodHandleRef bootstrapMethod, MethodHandleRef refFactory) {
+        Kind(ConstantMethodHandleRef bootstrapMethod,
+             ConstantMethodHandleRef refFactory) {
             this.bootstrapMethod = bootstrapMethod;
             this.refFactory = refFactory;
         }
@@ -94,7 +86,7 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
     private VarHandleRef(Kind kind, String name, ClassRef declaringClass, ClassRef varType) {
         super(kind.bootstrapMethod, name,
               ConstantRefs.CR_VarHandle,
-              kind.toBSMArgs(declaringClass, name, varType).toArray(EMPTY_ARGS));
+              kind.toBSMArgs(declaringClass, name, varType).toArray(ConstantUtils.EMPTY_CONSTANTREF));
         this.kind = kind;
         this.declaringClass = declaringClass;
         this.varType = varType;
@@ -149,23 +141,24 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
         Objects.requireNonNull(arrayClass);
         if (!arrayClass.isArray())
             throw new IllegalArgumentException("Array class argument not an array: " + arrayClass);
-        return new VarHandleRef(Kind.ARRAY, "_", arrayClass, arrayClass.componentType());
+        return new VarHandleRef(Kind.ARRAY, ConstantRefs.DEFAULT_NAME, arrayClass, arrayClass.componentType());
     }
 
     /**
-     * Returns the type of the variable described by this symbolic reference.
+     * Returns the type of the variable described by this descriptor
      *
      * @return the variable type
      */
     @Foldable
-    public ClassRef varType() { return varType; }
+    public ClassRef varType() {
+        return varType;
+    }
 
     // @@@ should this be the of co-ordinate types? there by better mirroring
     // VarHandle this makes it slightly more involved since the array VH has
     // to inject it's index
     /**
-     * Returns the declaring class of the variable described by this symbolic
-     * reference.
+     * Returns the declaring class of the variable described by this descriptor.
      *
      * <p>If the declaring class is an array type then the declaring class
      * will be the component type of the array type.
@@ -173,7 +166,9 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
      * @return the declaring class
      */
     @Foldable
-    public ClassRef declaringClass() { return declaringClass; }
+    public ClassRef declaringClass() {
+        return declaringClass;
+    }
 
     /* @@@
     MethodTypeRef accessModeTypeRef(AccessMode accessMode)
@@ -184,7 +179,8 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
      */
 
     @Override
-    public VarHandle resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public VarHandle resolveConstantRef(MethodHandles.Lookup lookup)
+            throws ReflectiveOperationException {
         switch (kind) {
             case FIELD:
                 return lookup.findVarHandle(declaringClass.resolveConstantRef(lookup),
@@ -202,19 +198,12 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
     }
 
     @Override
-    public Optional<ConstantRef<ConstantRef<VarHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
-        try {
-            ArrayList<ConstantRef<?>> args = new ArrayList<>();
-            args.add(declaringClass.toConstantRef(lookup).orElseThrow());
-            if (kind != Kind.ARRAY) {
-                args.add(constantName());
-                args.add(varType.toConstantRef(lookup).orElseThrow());
-            }
-            return Optional.of(DynamicConstantRef.ofInvoke(kind.refFactory, CR_VarHandleRef,
-                                                           args.toArray(EMPTY_ARGS)));
-        } catch (NoSuchElementException e) {
-            return Optional.empty();
-        }
+    public Optional<? extends ConstantRef<? super ConstantRef<VarHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
+        Constable<?>[] args =
+                (kind == Kind.ARRAY)
+                ? new Constable<?>[] { declaringClass }
+                : new Constable<?>[] { declaringClass, constantName(), varType };
+        return ConstantUtils.symbolizeHelper(lookup, kind.refFactory, CR_VarHandleRef, args);
     }
 
     @Override
@@ -224,9 +213,9 @@ public final class VarHandleRef extends DynamicConstantRef<VarHandle>
             case STATIC_FIELD:
                 return String.format("VarHandleRef[%s%s.%s:%s]",
                                      (kind == Kind.STATIC_FIELD) ? "static " : "",
-                                     declaringClass.simpleName(), constantName(), varType.simpleName());
+                                     declaringClass.displayName(), constantName(), varType.displayName());
             case ARRAY:
-                return String.format("VarHandleRef[%s[]]", declaringClass.simpleName());
+                return String.format("VarHandleRef[%s[]]", declaringClass.displayName());
             default:
                 throw new InternalError("Cannot reach here");
         }

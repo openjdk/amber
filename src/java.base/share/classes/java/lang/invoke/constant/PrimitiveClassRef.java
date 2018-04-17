@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,7 +42,8 @@ final class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements Cl
     /**
      * Create a {@linkplain ClassRef} from a descriptor string for a primitive type
      *
-     * @param descriptor the descriptor string
+     * @param descriptor the descriptor string, which must be a one-character
+     * string corresponding to one of the nine base types as per JVMS 4.3
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid primitive type
      */
@@ -50,7 +51,7 @@ final class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements Cl
         super(ConstantRefs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantRefs.CR_Class);
         if (descriptor.length() != 1
             || "VIJCSBFDZ".indexOf(descriptor.charAt(0)) < 0)
-            throw new IllegalArgumentException(String.format("%s is not a valid primitive type descriptor", descriptor));
+            throw new IllegalArgumentException(String.format("not a valid primitive type descriptor: %s", descriptor));
         this.descriptor = descriptor;
     }
 
@@ -66,11 +67,11 @@ final class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements Cl
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<Class<?>>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_CLASSREF_FACTORY, ConstantRefs.CR_ClassRef, descriptorString());
+        return ConstantUtils.symbolizeHelper(lookup, ConstantRefs.MHR_CLASSREF_FACTORY, ConstantRefs.CR_ClassRef, descriptorString());
     }
 
     @Override
     public String toString() {
-        return String.format("PrimitiveClassRef[%s]", simpleName());
+        return String.format("PrimitiveClassRef[%s]", displayName());
     }
 }

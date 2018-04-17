@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,8 +24,6 @@
  */
 package java.lang.invoke.constant;
 
-import jdk.internal.lang.annotation.Foldable;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
@@ -33,15 +31,18 @@ import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_MethodTypeRef;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.CONSTRUCTOR;
+import jdk.internal.lang.annotation.Foldable;
+
 import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandleRef;
+import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
+import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.lang.invoke.constant.MethodHandleRef.Kind.CONSTRUCTOR;
 import static java.util.Objects.requireNonNull;
 
 /**
- * DirectMethodHandleRef
- *
- * @author Brian Goetz
+ * A nominal descriptor for a direct {@link MethodHandle}.  A
+ * {@linkplain ConstantMethodHandleRef} corresponds to a {@code Constant_MethodHandle_info}
+ * entry in the constant pool of a classfile.
  */
 public class ConstantMethodHandleRef implements MethodHandleRef {
 
@@ -51,14 +52,18 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     private final MethodTypeRef type;
 
     /**
-     * Construct a {@linkplain ConstantMethodHandleRef} from a kind, owner, name, and type
+     * Construct a {@linkplain ConstantMethodHandleRef} for a method or field
+     * from a kind, owner, name, and type
      * @param kind the kind of the method handle
-     * @param owner the declaring class for the method
-     * @param name the name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
+     * @param owner the declaring class or interface for the method
+     * @param name the name of the method (ignored if {@code kind} is
+     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
      * @param type the type of the method
      * @throws NullPointerException if any non-ignored argument is null
      * @throws IllegalArgumentException if {@code kind} describes a field accessor,
-     * and {@code type} is not consistent with that kind of field accessor
+     * and {@code type} is not consistent with that kind of field accessor, or if
+     * {@code kind} describes a constructor, and the return type of {@code type}
+     * is not {@code void}
      */
     ConstantMethodHandleRef(Kind kind, ClassRef owner, String name, MethodTypeRef type) {
         super();
@@ -66,8 +71,8 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
             name = "<init>";
 
         requireNonNull(kind);
-        requireNonNull(owner);
-        requireNonNull(name);
+        validateClassOrInterface(requireNonNull(owner));
+        validateMemberName(requireNonNull(name));
         requireNonNull(type);
 
         switch (kind) {
@@ -98,28 +103,29 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
 
     private static void validateConstructor(MethodTypeRef type) {
         if (!type.returnType().descriptorString().equals("V")) {
-            throw new IllegalArgumentException(String.format("Expected type of (T)V for constructor, found %s", type));
+            throw new IllegalArgumentException(String.format("Expected type of (T*)V for constructor, found %s", type));
         }
     }
 
     /**
-     * Return the {@code refKind} of the method handle described by this nominal reference,
-     * as defined by {@link MethodHandleInfo}
-     * @return the reference kind
-     */
-    @Foldable
-    public int refKind() { return kind.refKind; }
-
-    /**
-     * Return the {@code kind} of the method handle described by this nominal reference
+     * Return the {@code kind} of the method handle described by this nominal
+     * descriptor
      * @return the {@link Kind}
      */
     @Foldable
     public Kind kind() { return kind; }
 
     /**
+     * Return the {@code refKind} of the method handle described by this nominal
+     * reference, as defined by {@link MethodHandleInfo}
+     * @return the reference kind
+     */
+    @Foldable
+    public int refKind() { return kind.refKind; }
+
+    /**
      * Return the class which declares the method or field described by
-     * this nominal reference
+     * this nominal descriptor
      *
      * @return the class in which the method or field is declared
      */
@@ -129,7 +135,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     /**
-     * Return the name of the method described by this nominal reference
+     * Return the name of the method or field described by this nominal descriptor
      *
      * @return the name of the method
      */
@@ -139,7 +145,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     /**
-     * Return the type of the method described by this nominal reference
+     * Return the type of the method described by this nominal descriptor
      * @return the method type
      */
     @Foldable
@@ -147,7 +153,8 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
         return type;
     }
 
-    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup)
+            throws ReflectiveOperationException {
         Class<?> resolvedOwner = owner.resolveConstantRef(lookup);
         MethodType resolvedType = this.type.resolveConstantRef(lookup);
         switch (kind) {
@@ -197,6 +204,6 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
 
     @Override
     public String toString() {
-        return String.format("MethodHandleRef[%s/%s::%s%s]", kind, owner.simpleName(), name, type.simpleDescriptor());
+        return String.format("MethodHandleRef[%s/%s::%s%s]", kind, owner.displayName(), name, type.displayDescriptor());
     }
 }

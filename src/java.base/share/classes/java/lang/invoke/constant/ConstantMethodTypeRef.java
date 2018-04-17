@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,14 +35,13 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
 import static java.lang.invoke.constant.ConstantRefs.CR_MethodTypeRef;
 import static java.util.Objects.requireNonNull;
 
 /**
- * ConstantMethodTypeRef
- *
- * @author Brian Goetz
+ * A nominal descriptor for a {@link MethodType}.  A {@linkplain ConstantMethodTypeRef}
+ * corresponds to a {@code Constant_MethodType_info} entry in the constant pool
+ * of a classfile.
  */
 public final class ConstantMethodTypeRef implements MethodTypeRef {
 
@@ -71,7 +70,7 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
     /**
      * Create a {@linkplain ConstantMethodTypeRef} from a method descriptor string
      *
-     * @param descriptor the method descriptor string
+     * @param descriptor the method descriptor string, as per JVMS 4.3.3
      * @return a {@linkplain ConstantMethodTypeRef} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
@@ -85,21 +84,23 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
         Matcher matcher = pattern.matcher(descriptor);
         if (!matcher.matches())
             throw new IllegalArgumentException(String.format("%s is not a valid method descriptor", descriptor));
-        String paramTypes = matcher.group(1);
-        String returnType = matcher.group(2);
-        if (!TYPE_DESC.matcher(returnType).matches())
-            throw new IllegalArgumentException(String.format("Invalid return type %s", returnType));
+        String paramTypesStr = matcher.group(1);
+        String returnTypeStr = matcher.group(2);
+        if (!TYPE_DESC.matcher(returnTypeStr).matches())
+            throw new IllegalArgumentException(String.format("Invalid return type %s", returnTypeStr));
         List<String> params = new ArrayList<>();
-        matcher = TYPE_DESC.matcher(paramTypes);
-        while (matcher.regionStart() < paramTypes.length()) {
+        matcher = TYPE_DESC.matcher(paramTypesStr);
+        while (matcher.regionStart() < paramTypesStr.length()) {
             if (matcher.lookingAt()) {
                 params.add(matcher.group());
                 matcher.region(matcher.end(), matcher.regionEnd());
             }
             else
-                throw new IllegalArgumentException(String.format("Invalid parameter type: %s", paramTypes.substring(matcher.regionStart(), matcher.regionEnd())));
+                throw new IllegalArgumentException(String.format("Invalid parameter type: %s",
+                                                                 paramTypesStr.substring(matcher.regionStart(), matcher.regionEnd())));
         }
-        return new ConstantMethodTypeRef(ClassRef.ofDescriptor(returnType), params.stream().map(ClassRef::ofDescriptor).toArray(ClassRef[]::new));
+        ClassRef[] paramTypes = params.stream().map(ClassRef::ofDescriptor).toArray(ClassRef[]::new);
+        return new ConstantMethodTypeRef(ClassRef.ofDescriptor(returnTypeStr), paramTypes);
     }
 
     @Foldable
@@ -199,6 +200,6 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
 
     @Override
     public String toString() {
-        return String.format("MethodTypeRef[%s]", simpleDescriptor());
+        return String.format("MethodTypeRef[%s]", displayDescriptor());
     }
 }

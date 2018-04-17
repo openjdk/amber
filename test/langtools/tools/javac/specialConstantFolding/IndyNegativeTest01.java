@@ -18,7 +18,7 @@ public class IndyNegativeTest01 {
                 ConstantRefs.CR_String,
                 ConstantRefs.CR_Object.array()
         );
-        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
+        ConstantMethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                 "makeConcatWithConstants", methodTypeForMethodHandle);
         MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
                 ConstantRefs.CR_String,

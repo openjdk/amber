@@ -109,7 +109,7 @@ public class ClassRefTest extends SymbolicRefTest {
                 testClassRef(c, p.clazz);
                 assertTrue(c.isPrimitive());
                 assertEquals(p.descriptor, c.descriptorString());
-                assertEquals(p.name, c.simpleName());
+                assertEquals(p.name, c.displayName());
                 refs.forEach(cc -> assertEquals(c, cc));
                 if (p != Primitives.VOID) {
                     testClassRef(c.array(), p.arrayClass);
@@ -139,7 +139,7 @@ public class ClassRefTest extends SymbolicRefTest {
             testClassRef(r, String.class);
             assertFalse(r.isPrimitive());
             assertEquals("Ljava/lang/String;", r.descriptorString());
-            assertEquals("String", r.simpleName());
+            assertEquals("String", r.displayName());
             assertEquals(r.array().resolveConstantRef(LOOKUP), String[].class);
             stringClassRefs.forEach(rr -> assertEquals(r, rr));
         }
@@ -150,8 +150,30 @@ public class ClassRefTest extends SymbolicRefTest {
         ClassRef thisClassRef = ClassRef.ofDescriptor("LClassRefTest;");
         assertEquals(thisClassRef, ClassRef.of("", "ClassRefTest"));
         assertEquals(thisClassRef, ClassRef.of("ClassRefTest"));
-        assertEquals(thisClassRef.simpleName(), "ClassRefTest");
+        assertEquals(thisClassRef.displayName(), "ClassRefTest");
         testClassRef(thisClassRef, ClassRefTest.class);
+    }
+
+    private void testBadPackageName(ClassRef cr) {
+        try {
+            cr.packageName();
+            fail("");
+        }
+        catch (IllegalStateException e) {
+            // good
+        }
+    }
+
+    public void testPackageName() {
+        assertEquals("com.foo", ClassRef.of("com.foo.Bar").packageName());
+        assertEquals("com.foo", ClassRef.of("com.foo.Bar").inner("Baz").packageName());
+        assertEquals("", ClassRef.of("Bar").packageName());
+        assertEquals("", ClassRef.of("Bar").inner("Baz").packageName());
+
+        testBadPackageName(ConstantRefs.CR_int);
+        testBadPackageName(ConstantRefs.CR_int.array());
+        testBadPackageName(ConstantRefs.CR_String.array());
+        testBadPackageName(ClassRef.of("Bar").array());
     }
 
     public void testArrayClassRef() throws ReflectiveOperationException {

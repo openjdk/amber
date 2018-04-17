@@ -41,9 +41,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ConstantBootstraps {
     // implements the upcall from the JVM, MethodHandleNatives.linkDynamicConstant:
-    /*non-public*/
     /**
-     * (temporarily public)
      * makeConstant
      *
      * @param bootstrapMethod doc
@@ -53,13 +51,13 @@ public final class ConstantBootstraps {
      * @param callerClass doc
      * @return doc
      */
-    /* @@@ */ public static Object makeConstant(MethodHandle bootstrapMethod,
-                               // Callee information:
-                               String name, Class<?> type,
-                               // Extra arguments for BSM, if any:
-                               Object info,
-                               // Caller information:
-                               Class<?> callerClass) {
+    /*non-public*/ static Object makeConstant(MethodHandle bootstrapMethod,
+                                              // Callee information:
+                                              String name, Class<?> type,
+                                              // Extra arguments for BSM, if any:
+                                              Object info,
+                                              // Caller information:
+                                              Class<?> callerClass) {
         // Restrict bootstrap methods to those whose first parameter is Lookup
         // The motivation here is, in the future, to possibly support BSMs
         // that do not accept the meta-data of lookup/name/type, thereby

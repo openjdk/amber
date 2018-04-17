@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,37 +32,45 @@ import java.util.Optional;
 
 /**
  * Represents a type which is <em>constable</em>.  A constable type is one whose
- * values can be represented in the constant pool of a Java classfile.
+ * values are constants that can be represented in the constant pool of a Java
+ * classfile as described in JVMS 4.4, and whose instances can describe themselves
+ * nominally as a {@link ConstantRef}.
  *
- * <p>The basic constable types are types whose values have a native representation
- * in the constant pool: ({@link String}, {@link Integer}, {@link Long}, {@link Float},
+ * <p>Some constable types have a native representation in the constant pool:
+ * ({@link String}, {@link Integer}, {@link Long}, {@link Float},
  * {@link Double}, {@link Class}, {@link MethodType}, and {@link MethodHandle}).
+ * The types {@link String}, {@link Integer}, {@link Long}, {@link Float},
+ * and {@link Double} serve as their own nominal descriptors; {@link Class},
+ * {@link MethodType}, and {@link MethodHandle} have corresponding nominal
+ * descriptors {@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.
  *
  * <p>Other reference types can be constable if their instances can describe
  * themselves in nominal form as a {@link ConstantRef}. Examples in the Java SE
- * Platform API are types that support Java language features, such as {@link Enum},
- * and runtime support classes, such as {@link VarHandle}.
+ * Platform API are types that support Java language features such as {@link Enum},
+ * and runtime support classes such as {@link VarHandle}.  These are typically
+ * described with a {@link DynamicConstantRef}, which describes dynamically
+ * generated constants (JVMS 4.4.10).
  *
  * <p>The nominal form of an instance of a constable type is obtained via
  * {@link #toConstantRef(MethodHandles.Lookup)}. A {@linkplain Constable} need
- * not be able to (or may choose not to) render all its instances in the form of
- * a {@link ConstantRef}; this method returns an {@link Optional} to indicate
- * whether a nominal reference could be created for a particular instance. (For
- * example, {@link MethodHandle} will produce nominal references for direct
- * method handles, but not necessarily for method handles resulting from method
- * handle combinators such as {@link MethodHandle#asType(MethodType)}.)
+ * not be able to (or may choose not to) describe all its instances in the form of
+ * a {@link ConstantRef}; this method returns an {@link Optional} that can be
+ * empty to indicate that a nominal descriptor could not be created for an instance.
+ * (For example, {@link MethodHandle} will produce nominal descriptors for direct
+ * method handles, but not necessarily those produced by method handles
+ * combinators.)
  *
- * @param <T> the type of the class implementing {@linkplain Constable}
+ * @param <T> the type of the constant value
  */
 public interface Constable<T> {
     /**
-     * Return a nominal reference for this instance, if one can be
+     * Return a nominal descriptor for this instance, if one can be
      * constructed.
      *
      * @implSpec This method behaves as if {@link #toConstantRef(MethodHandles.Lookup)}
      * were called with a lookup parameter of {@code MethodHandles.publicLookup()}.
      *
-     * @return An {@link Optional} describing the resulting nominal reference,
+     * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed
      */
     default Optional<? extends ConstantRef<? super T>> toConstantRef() {
@@ -70,14 +78,14 @@ public interface Constable<T> {
     }
 
     /**
-     * Return a nominal reference for this instance, if one can be
+     * Return a nominal descriptor for this instance, if one can be
      * constructed.  This object (and any classes needed to construct its
      * nominal description) must be accessible from the class described by the
      * {@code lookup} parameter.
      *
      * @param lookup A {@link MethodHandles.Lookup} to be used to perform
      *               access control determinations
-     * @return An {@link Optional} describing the resulting nominal reference,
+     * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed or this object
      * is not accessible from {@code lookup}
      */

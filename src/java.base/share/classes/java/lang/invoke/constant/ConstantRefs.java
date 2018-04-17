@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,16 +38,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC;
+
 /**
- * Predefined constants for common nominal references to constants.  Includes
- * class references for primitive types and common platform types, and method
- * handle references for standard bootstrap methods.
+ * Predefined values of nominal descriptors for common constants, including
+ * descriptors for primitive class types and other common platform types,
+ * and descriptors for method handles for standard bootstrap methods.
  *
  * @see ConstantRef
  */
 public final class ConstantRefs {
     // No instances
     private ConstantRefs() { }
+
+    /** Invocation name to use when no name is needed, such as the name of a
+     * constructor, or the invocation name of a dynamic constant or dynamic
+     * callsite when the bootstrap is known to ignore the invocation name.
+     */
+    public static final String DEFAULT_NAME = "_";
 
     // Don't change the order of these declarations!
 
@@ -209,38 +217,45 @@ public final class ConstantRefs {
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_PRIMITIVE_CLASS
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "primitiveClass", CR_Class);
+    public static final ConstantMethodHandleRef BSM_PRIMITIVE_CLASS
+            = ofConstantBootstrap(CR_ConstantBootstraps, "primitiveClass",
+                                  CR_Class);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#enumConstant(Lookup, String, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_ENUM_CONSTANT
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "enumConstant", CR_Enum);
+    public static final ConstantMethodHandleRef BSM_ENUM_CONSTANT
+            = ofConstantBootstrap(CR_ConstantBootstraps, "enumConstant",
+                                  CR_Enum);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_NULL_CONSTANT
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "nullConstant", ConstantRefs.CR_Object);
+    public static final ConstantMethodHandleRef BSM_NULL_CONSTANT
+            = ofConstantBootstrap(CR_ConstantBootstraps, "nullConstant",
+                                  ConstantRefs.CR_Object);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#fieldVarHandle(Lookup, String, Class, Class, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_VARHANDLE_FIELD
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "fieldVarHandle", CR_VarHandle, CR_Class, CR_Class);
+    public static final ConstantMethodHandleRef BSM_VARHANDLE_FIELD
+            = ofConstantBootstrap(CR_ConstantBootstraps, "fieldVarHandle",
+                                  CR_VarHandle, CR_Class, CR_Class);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#staticFieldVarHandle(Lookup, String, Class, Class, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "staticFieldVarHandle", CR_VarHandle, CR_Class, CR_Class);
+    public static final ConstantMethodHandleRef BSM_VARHANDLE_STATIC_FIELD
+            = ofConstantBootstrap(CR_ConstantBootstraps, "staticFieldVarHandle",
+                                  CR_VarHandle, CR_Class, CR_Class);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#arrayVarHandle(Lookup, String, Class, Class)} */
     @Foldable
-    public static final MethodHandleRef BSM_VARHANDLE_ARRAY
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "arrayVarHandle", CR_VarHandle, CR_Class);
+    public static final ConstantMethodHandleRef BSM_VARHANDLE_ARRAY
+            = ofConstantBootstrap(CR_ConstantBootstraps, "arrayVarHandle",
+                                  CR_VarHandle, CR_Class);
 
     /** {@link MethodHandleRef} representing {@link ConstantBootstraps#invoke(Lookup, String, Class, MethodHandle, Object...)} */
     @Foldable
-    public static final MethodHandleRef BSM_INVOKE
-            = MethodHandleRef.ofDynamicConstant(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.array());
+    public static final ConstantMethodHandleRef BSM_INVOKE
+            = ofConstantBootstrap(CR_ConstantBootstraps, "invoke",
+                                  CR_Object, CR_MethodHandle, CR_Object.array());
 
     /** {@link ClassRef} representing the primitive type {@code int} */
     @Foldable
@@ -278,47 +293,94 @@ public final class ConstantRefs {
     @Foldable
     public static final ClassRef CR_void = ClassRef.ofDescriptor("V");
 
-    /** Nominal reference representing the constant {@code null} */
+    /** Nominal descriptor representing the constant {@code null} */
     @Foldable
-    public static final ConstantRef<?> NULL = DynamicConstantRef.of(ConstantRefs.BSM_NULL_CONSTANT, ConstantRefs.CR_Object);
+    public static final ConstantRef<?> NULL
+            = DynamicConstantRef.of(ConstantRefs.BSM_NULL_CONSTANT,
+                                    ConstantRefs.CR_Object);
 
     // Used by XxxRef classes, but need to be hear to avoid bootstrap cycles
-    static final MethodHandleRef MHR_METHODTYPEREF_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodTypeRef, "ofDescriptor", CR_MethodTypeRef, CR_String);
+    static final ConstantMethodHandleRef MHR_METHODTYPEREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodTypeRef, "ofDescriptor",
+                                 CR_MethodTypeRef, CR_String);
 
-    static final MethodHandleRef MHR_CLASSREF_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_ClassRef, "ofDescriptor", CR_ClassRef, CR_String);
+    static final ConstantMethodHandleRef MHR_CLASSREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_ClassRef, "ofDescriptor",
+                                 CR_ClassRef, CR_String);
 
-    static final MethodHandleRef MHR_METHODHANDLEREF_FACTORY
+    static final ConstantMethodHandleRef MHR_METHODHANDLEREF_FACTORY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_MethodHandleRef, "of",
                                  CR_MethodHandleRef, CR_MethodHandleRef_Kind, CR_ClassRef, CR_String, CR_MethodTypeRef);
 
-    static final MethodHandleRef MHR_METHODHANDLE_ASTYPE
-            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandle, "asType", CR_MethodHandle, CR_MethodType);
+    static final ConstantMethodHandleRef MHR_METHODHANDLE_ASTYPE
+            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandle, "asType",
+                                 CR_MethodHandle, CR_MethodType);
 
-    static final MethodHandleRef MHR_METHODHANDLEREF_ASTYPE
-            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandleRef, "asType", CR_MethodHandleRef, CR_MethodTypeRef);
+    static final ConstantMethodHandleRef MHR_METHODHANDLEREF_ASTYPE
+            = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_MethodHandleRef, "asType",
+                                 CR_MethodHandleRef, CR_MethodTypeRef);
 
-    static final MethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
+    static final ConstantMethodHandleRef MHR_DYNAMICCONSTANTREF_FACTORY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_DynamicConstantRef, "of",
                                  CR_DynamicConstantRef, CR_MethodHandleRef, CR_String, CR_ClassRef);
 
-    static final MethodHandleRef MHR_DYNAMICCONSTANTREF_WITHARGS
+    static final ConstantMethodHandleRef MHR_DYNAMICCONSTANTREF_WITHARGS
             = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_DynamicConstantRef, "withArgs",
                                  CR_DynamicConstantRef, CR_ConstantRef.array());
 
-    static final MethodHandleRef MHR_ENUMREF_FACTORY
-            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_EnumRef, "of", CR_EnumRef, CR_ClassRef, CR_String);
+    static final ConstantMethodHandleRef MHR_ENUMREF_FACTORY
+            = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_EnumRef, "of",
+                                 CR_EnumRef, CR_ClassRef, CR_String);
 
-    static final MethodHandleRef MHR_VARHANDLEREF_OFFIELD
+    static final ConstantMethodHandleRef MHR_VARHANDLEREF_OFFIELD
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofField",
                                  CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
 
-    static final MethodHandleRef MHR_VARHANDLEREF_OFSTATIC
+    static final ConstantMethodHandleRef MHR_VARHANDLEREF_OFSTATIC
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofStaticField",
                                  CR_VarHandleRef, CR_ClassRef, CR_String, CR_ClassRef);
 
-    static final MethodHandleRef MHR_VARHANDLEREF_OFARRAY
+    static final ConstantMethodHandleRef MHR_VARHANDLEREF_OFARRAY
             = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_VarHandleRef, "ofArray",
                                  CR_VarHandleRef, CR_ClassRef);
+
+    /**
+     * Return a {@code MethodHandleRef} corresponding to a bootstrap method for
+     * an {@code invokedynamic} callsite, which is a static method whose leading
+     * parameter types are {@code Lookup}, {@code String}, and {@code MethodType}.
+     *
+     * @param clazz the class declaring the method
+     * @param name the name of the method, as per JVMS 4.2.2
+     * @param returnType the return type of the method
+     * @param paramTypes the types of the static bootstrap arguments, if any
+     * @return the {@code MethodHandleRef}
+     * @throws NullPointerException if any of the arguments are null
+     */
+    @Foldable
+    public static ConstantMethodHandleRef ofCallsiteBootstrap(ClassRef clazz,
+                                                              String name,
+                                                              ClassRef returnType,
+                                                              ClassRef... paramTypes) {
+        return MethodHandleRef.of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
+    }
+
+    /**
+     * Return a {@code MethodHandleRef} corresponding to a bootstrap method for a
+     * dynamic constant, which is a static method whose leading arguments are
+     * {@code Lookup}, {@code String}, and {@code Class}.
+     *
+     * @param clazz the class declaring the method
+     * @param name the name of the method, as per JVMS 4.2.2
+     * @param returnType the return type of the method
+     * @param paramTypes the types of the static bootstrap arguments, if any
+     * @return the {@code MethodHandleRef}
+     * @throws NullPointerException if any of the arguments are null
+     */
+    @Foldable
+    public static ConstantMethodHandleRef ofConstantBootstrap(ClassRef clazz,
+                                                              String name,
+                                                              ClassRef returnType,
+                                                              ClassRef... paramTypes) {
+        return MethodHandleRef.of(STATIC, clazz, name, MethodTypeRef.of(returnType, paramTypes).insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
+    }
 }

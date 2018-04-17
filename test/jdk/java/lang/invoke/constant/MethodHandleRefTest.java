@@ -260,7 +260,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         Field[] fields = ConstantRefs.class.getDeclaredFields();
         for (Field f : fields) {
             try {
-                if (f.getType().equals(MethodHandleRef.class)
+                if (f.getType().equals(ConstantMethodHandleRef.class)
                     && ((f.getModifiers() & Modifier.STATIC) != 0)
                     && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
                     MethodHandleRef r = (MethodHandleRef) f.get(null);

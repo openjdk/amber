@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,9 +36,9 @@ import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandle;
 import static java.util.Objects.requireNonNull;
 
 /**
- * AsTypeMethodHandleRef
- *
- * @author Brian Goetz
+ * A nominal descriptor for a {@link MethodHandle} constant that performs
+ * a {@link MethodHandle#asType(MethodType)} adaptation on another
+ * {@link MethodHandle}.
  */
 final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
         implements MethodHandleRef {
@@ -47,9 +47,8 @@ final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
     private final MethodTypeRef type;
 
     AsTypeMethodHandleRef(MethodHandleRef underlying, MethodTypeRef type) {
-        super(BSM_INVOKE, "_", CR_MethodHandle,
+        super(BSM_INVOKE, ConstantRefs.DEFAULT_NAME, CR_MethodHandle,
               ConstantRefs.MHR_METHODHANDLE_ASTYPE, underlying, type);
-        // Any type checking we can do?
         this.underlying = requireNonNull(underlying);
         this.type = requireNonNull(type);
     }
@@ -61,7 +60,8 @@ final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
     }
 
     @Override
-    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup)
+            throws ReflectiveOperationException {
         MethodHandle handle = underlying.resolveConstantRef(lookup);
         MethodType methodType = type.resolveConstantRef(lookup);
         return handle.asType(methodType);
@@ -69,14 +69,14 @@ final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<MethodHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return DynamicConstantRef.symbolizeHelper(lookup, ConstantRefs.MHR_METHODHANDLEREF_ASTYPE, ConstantRefs.CR_MethodHandleRef,
-                                                  underlying, type);
+        return ConstantUtils.symbolizeHelper(lookup, ConstantRefs.MHR_METHODHANDLEREF_ASTYPE, ConstantRefs.CR_MethodHandleRef,
+                                             underlying, type);
     }
 
     @Override
     public String toString() {
-        return underlying.toString() + String.format(".asType%s", type.simpleDescriptor());
+        return  String.format("%s.asType%s", underlying.toString(), type.displayDescriptor());
     }
 
-    // @@@ canonical?
+    // @@@ canonical support -- detect DCR with BSM=MHR_METHODHANDLEREF_ASTYPE
 }

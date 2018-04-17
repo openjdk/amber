@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,11 +31,14 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
+import static java.lang.invoke.constant.ConstantUtils.dropFirstAndLastChar;
+import static java.lang.invoke.constant.ConstantUtils.internalToBinary;
+import static java.util.Objects.requireNonNull;
 
 /**
- * ConstantClassRef
- *
- * @author Brian Goetz
+ * A nominal descriptor for a class, interface, or array type.  A
+ * {@linkplain ConstantClassRef} corresponds to a {@code Constant_Class_info}
+ * entry in the constant pool of a classfile.
  */
 public class ConstantClassRef implements ClassRef {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
@@ -43,21 +46,23 @@ public class ConstantClassRef implements ClassRef {
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassRef} from a descriptor string for a reference
-     * type
+     * Create a {@linkplain ClassRef} from a descriptor string for a class or
+     * interface type
      *
-     * @param descriptor the descriptor string
-     * @throws IllegalArgumentException if the descriptor string does not
-     * describe a valid reference type name
+     * @param descriptor a field descriptor string for a class or interface type,
+     *                   as per JVMS 4.3.2
+     * @throws IllegalArgumentException if the descriptor string is not a valid
+     * field descriptor string, or does not describe a class or interface type
      */
     ConstantClassRef(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
         // Follow the trail from MethodType.fromMethodDescriptorString to
         // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
         // be extracted and/or shared
-        if (descriptor == null
-            || !TYPE_DESC.matcher(descriptor).matches())
-            throw new IllegalArgumentException(String.format("%s is not a valid type descriptor", descriptor));
+        // @@@ regex actually permits primitive types
+        requireNonNull(descriptor);
+        if (!TYPE_DESC.matcher(descriptor).matches())
+            throw new IllegalArgumentException(String.format("not a valid type descriptor: %s", descriptor));
         this.descriptor = descriptor;
     }
 
@@ -66,25 +71,19 @@ public class ConstantClassRef implements ClassRef {
         return descriptor;
     }
 
-    private int arrayDepth() {
-        int depth = 0;
-        while (descriptorString().charAt(depth) == '[')
-            depth++;
-        return depth;
-    }
-
     @Override
-    public Class<?> resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public Class<?> resolveConstantRef(MethodHandles.Lookup lookup)
+            throws ReflectiveOperationException {
         ClassRef c = this;
-        int depth = arrayDepth();
+        int depth = ConstantUtils.arrayDepth(descriptorString());
         for (int i=0; i<depth; i++)
             c = c.componentType();
 
         if (c.descriptorString().length() == 1)
             return Class.forName(descriptorString(), true, lookup.lookupClass().getClassLoader());
         else {
-            Class<?> clazz = Class.forName(c.descriptorString().substring(1, c.descriptorString().length() - 1)
-                                            .replace('/', '.'), true, lookup.lookupClass().getClassLoader());
+            Class<?> clazz = Class.forName(internalToBinary(dropFirstAndLastChar(c.descriptorString())),
+                                           true, lookup.lookupClass().getClassLoader());
             for (int i = 0; i < depth; i++)
                 clazz = Array.newInstance(clazz, 0).getClass();
             return clazz;
@@ -112,6 +111,6 @@ public class ConstantClassRef implements ClassRef {
 
     @Override
     public String toString() {
-        return String.format("ClassRef[%s]", simpleName());
+        return String.format("ClassRef[%s]", displayName());
     }
 }

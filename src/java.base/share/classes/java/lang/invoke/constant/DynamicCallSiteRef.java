@@ -34,28 +34,30 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantUtils.EMPTY_CONSTANTREF;
+import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A nominal reference for an {@code invokedynamic} call site.
+ * A nominal descriptor for an {@code invokedynamic} call site.
  */
 @SuppressWarnings("rawtypes")
 public final class DynamicCallSiteRef {
-    private static final ConstantRef<?>[] EMPTY_ARGS = new ConstantRef<?>[0];
 
     private final ConstantMethodHandleRef bootstrapMethod;
     private final ConstantRef<?>[] bootstrapArgs;
-    private final String name;
-    private final MethodTypeRef type;
+    private final String invocationName;
+    private final MethodTypeRef invocationType;
 
     /**
-     * Construct a nominal reference for an {@code invokedynamic} call site
+     * Construct a nominal descriptor for an {@code invokedynamic} call site
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
+     * @param invocationName The name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
+     * @param invocationType The invocation type that would appear in the
+     * {@code NameAndType} operand of the {@code invokedynamic}
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
      * @throws NullPointerException if any parameter is null
@@ -63,122 +65,133 @@ public final class DynamicCallSiteRef {
      * {@link ConstantMethodHandleRef}
      * @throws IllegalArgumentException if {@code name.length()} is zero
      */
-    private DynamicCallSiteRef(MethodHandleRef bootstrapMethod,
-                               String name,
-                               MethodTypeRef type,
+    private DynamicCallSiteRef(ConstantMethodHandleRef bootstrapMethod,
+                               String invocationName,
+                               MethodTypeRef invocationType,
                                ConstantRef<?>[] bootstrapArgs) {
-        if (!(bootstrapMethod instanceof ConstantMethodHandleRef))
-            throw new IllegalArgumentException("bootstrap method must be a ConstantMethodHandleRef");
-        this.name = Objects.requireNonNull(name);
-        this.type = Objects.requireNonNull(type);
-        this.bootstrapMethod = (ConstantMethodHandleRef) Objects.requireNonNull(bootstrapMethod);
-        this.bootstrapArgs = Objects.requireNonNull(bootstrapArgs.clone());
-        if (name.length() == 0)
-            throw new IllegalArgumentException("Illegal invocation name: " + name);
+        this.invocationName = validateMemberName(requireNonNull(invocationName));
+        this.invocationType = requireNonNull(invocationType);
+        this.bootstrapMethod = requireNonNull(bootstrapMethod);
+        this.bootstrapArgs = requireNonNull(bootstrapArgs.clone());
+        if (invocationName.length() == 0)
+            throw new IllegalArgumentException("Illegal invocation name: " + invocationName);
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site.  If
+     * Return a nominal descriptor for an {@code invokedynamic} call site.  If
      * the bootstrap method corresponds to a well-known bootstrap, for which a
-     * more specific nominal reference type exists, the more specific nominal
-     * reference type is returned.
+     * more specific nominal descriptor invocationType exists, the more specific nominal
+     * descriptor invocationType is returned.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
+     * @param invocationName The invocationName that would appear in the
+     * {@code NameAndType} operand of the {@code invokedynamic}
+     * @param invocationType The invocation invocationType that would appear in
+     * the {@code NameAndType} operand of the {@code invokedynamic}
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the nominal reference
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef ofCanonical(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, ConstantRef<?>... bootstrapArgs) {
-        DynamicCallSiteRef ref = new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
+    public static DynamicCallSiteRef ofCanonical(ConstantMethodHandleRef bootstrapMethod,
+                                                 String invocationName,
+                                                 MethodTypeRef invocationType,
+                                                 ConstantRef<?>... bootstrapArgs) {
+        DynamicCallSiteRef ref = new DynamicCallSiteRef(bootstrapMethod,
+                                                        invocationName, invocationType,
+                                                        bootstrapArgs);
         return ref.canonicalize();
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site.
+     * Return a nominal descriptor for an {@code invokedynamic} call site.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
+     * @param invocationName The invocationName that would appear in the
+     * {@code NameAndType} operand of the {@code invokedynamic}
+     * @param invocationType The invocation invocationType that would appear in
+     * the {@code NameAndType} operand of the {@code invokedynamic}
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the nominal reference
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef of(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type, ConstantRef<?>... bootstrapArgs) {
-        return new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
+    public static DynamicCallSiteRef of(ConstantMethodHandleRef bootstrapMethod,
+                                        String invocationName,
+                                        MethodTypeRef invocationType,
+                                        ConstantRef<?>... bootstrapArgs) {
+        return new DynamicCallSiteRef(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site whose
+     * Return a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @return the nominal reference
+     * @param invocationName The invocationName that would appear in the
+     * {@code NameAndType} operand of the {@code invokedynamic}
+     * @param invocationType The invocation invocationType that would appear
+     * in the {@code NameAndType} operand of the {@code invokedynamic}
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef of(MethodHandleRef bootstrapMethod, String name, MethodTypeRef type) {
-        return new DynamicCallSiteRef(bootstrapMethod, name, type, EMPTY_ARGS);
+    public static DynamicCallSiteRef of(ConstantMethodHandleRef bootstrapMethod,
+                                        String invocationName,
+                                        MethodTypeRef invocationType) {
+        return new DynamicCallSiteRef(bootstrapMethod, invocationName, invocationType, EMPTY_CONSTANTREF);
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site whose
-     * bootstrap method has no static arguments and whose name parameter is ignored.
+     * Return a nominal descriptor for an {@code invokedynamic} call site whose
+     * bootstrap method has no static arguments and for which the name parameter
+     * is {@link ConstantRefs#DEFAULT_NAME}.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @return the nominal reference
+     * @param invocationType The invocation type that would appear in
+     * the {@code NameAndType} operand of the {@code invokedynamic}
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public static DynamicCallSiteRef of(MethodHandleRef bootstrapMethod, MethodTypeRef type) {
-        return of(bootstrapMethod, "_", type);
+    public static DynamicCallSiteRef of(ConstantMethodHandleRef bootstrapMethod,
+                                        MethodTypeRef invocationType) {
+        return of(bootstrapMethod, ConstantRefs.DEFAULT_NAME, invocationType);
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site whose
+     * Return a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method, name, and invocation type are the same as this one, but
      * with the specified bootstrap arguments.
      *
      * @param bootstrapArgs The static arguments to the bootstrap, that would
      *                      appear in the {@code BootstrapMethods} attribute
-     * @return the nominal reference
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
     public DynamicCallSiteRef withArgs(ConstantRef<?>... bootstrapArgs) {
-        return new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
+        return new DynamicCallSiteRef(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
     /**
-     * Return a nominal reference for an {@code invokedynamic} call site whose
+     * Return a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap and bootstrap arguments are the same as this one, but with the
-     * specified name and invocation type
+     * specified invocationName and invocation invocationType
      *
-     * @param name The name that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @param type The invocation type that would appear in the {@code NameAndType} operand
-     *             of the {@code invokedynamic}
-     * @return the nominal reference
+     * @param invocationName The invocationName that would appear in the
+     * {@code NameAndType} operand of the {@code invokedynamic}
+     * @param invocationType The invocation invocationType that would appear in
+     * the {@code NameAndType} operand of the {@code invokedynamic}
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public DynamicCallSiteRef withNameAndType(String name, MethodTypeRef type) {
-        return new DynamicCallSiteRef(bootstrapMethod, name, type, bootstrapArgs);
+    public DynamicCallSiteRef withNameAndType(String invocationName,
+                                              MethodTypeRef invocationType) {
+        return new DynamicCallSiteRef(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
     private DynamicCallSiteRef canonicalize() {
@@ -192,8 +205,8 @@ public final class DynamicCallSiteRef {
      * @return the invocation name
      */
     @Foldable
-    public String name() {
-        return name;
+    public String invocationName() {
+        return invocationName;
     }
 
     /**
@@ -202,8 +215,8 @@ public final class DynamicCallSiteRef {
      * @return the invocation type
      */
     @Foldable
-    public MethodTypeRef type() {
-        return type;
+    public MethodTypeRef invocationType() {
+        return invocationType;
     }
 
     /**
@@ -220,25 +233,22 @@ public final class DynamicCallSiteRef {
     public ConstantRef<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
     /**
-     * Reflectively invokes the bootstrap method, and returns a dynamic invoker
-     * {@link MethodHandle} for the returned {@link CallSite}
+     * Reflectively invokes the bootstrap method with the specified arguments,
+     * and return the resulting {@link CallSite}
      *
      * @param lookup The {@link MethodHandles.Lookup} used to resolve class names
-     * @return the dynamic invoker
+     * @return the {@link CallSite}
      * @throws Throwable if any exception is thrown by the bootstrap method
-     *
-     * @see CallSite#dynamicInvoker()
      */
-    public MethodHandle dynamicInvoker(MethodHandles.Lookup lookup) throws Throwable {
+    public CallSite resolveCallSiteRef(MethodHandles.Lookup lookup) throws Throwable {
         assert bootstrapMethod.methodType().parameterType(1).equals(CR_String);
         MethodHandle bsm = bootstrapMethod.resolveConstantRef(lookup);
         Object[] args = new Object[bootstrapArgs.length + 3];
         args[0] = lookup;
-        args[1] = name;
-        args[2] = type.resolveConstantRef(lookup);
+        args[1] = invocationName;
+        args[2] = invocationType.resolveConstantRef(lookup);
         System.arraycopy(bootstrapArgs, 0, args, 3, bootstrapArgs.length);
-        CallSite callSite = (CallSite) bsm.invokeWithArguments(args);
-        return callSite.dynamicInvoker();
+        return (CallSite) bsm.invokeWithArguments(args);
     }
 
     @Override
@@ -248,13 +258,13 @@ public final class DynamicCallSiteRef {
         DynamicCallSiteRef specifier = (DynamicCallSiteRef) o;
         return Objects.equals(bootstrapMethod, specifier.bootstrapMethod) &&
                Arrays.equals(bootstrapArgs, specifier.bootstrapArgs) &&
-               Objects.equals(name, specifier.name) &&
-               Objects.equals(type, specifier.type);
+               Objects.equals(invocationName, specifier.invocationName) &&
+               Objects.equals(invocationType, specifier.invocationType);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(bootstrapMethod, name, type);
+        int result = Objects.hash(bootstrapMethod, invocationName, invocationType);
         result = 31 * result + Arrays.hashCode(bootstrapArgs);
         return result;
     }
@@ -262,10 +272,10 @@ public final class DynamicCallSiteRef {
     @Override
     public String toString() {
         return String.format("DynamicCallSiteRef[%s::%s(%s%s):%s]",
-                             bootstrapMethod.owner().simpleName(),
+                             bootstrapMethod.owner().displayName(),
                              bootstrapMethod.methodName(),
-                             name.equals("_") ? "" : name + "/",
+                             invocationName.equals(ConstantRefs.DEFAULT_NAME) ? "" : invocationName + "/",
                              Stream.of(bootstrapArgs).map(Object::toString).collect(joining(",")),
-                             type.simpleDescriptor());
+                             invocationType.displayDescriptor());
     }
 }

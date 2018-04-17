@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,20 +29,19 @@ import jdk.internal.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
 import static java.lang.invoke.constant.ConstantRefs.CR_EnumRef;
-import static java.lang.invoke.constant.ConstantRefs.CR_String;
+import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A symbolic reference for an {@code enum} constant.
+ * A nominal descriptor for an {@code enum} constant.
  *
  * @param <E> the type of the enum constant
  */
 public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
 
     /**
-     * Construct a symbolic reference for the specified enum class and name
+     * Construct a nominal descriptor for the specified enum class and name
      *
      * @param constantType the enum class
      * @param constantName the name of the enum constant
@@ -53,32 +52,35 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
     }
 
     /**
-     * Return a symbolic reference for the specified enum class and name
+     * Return a nominal descriptor for the specified enum class and name
      *
      * @param <E> the type of the enum constant
      * @param enumClass the enum class
-     * @param constantName the name of the enum constant
-     * @return the symbolic reference
+     * @param constantName the name of the enum constant, as per JVMS 4.2.2
+     * @return the nominal descriptor
      * @throws NullPointerException if any argument is null
      */
     @Foldable
-    public static<E extends Enum<E>> EnumRef<E> of(ClassRef enumClass, String constantName) {
-        return new EnumRef<>(enumClass, constantName);
+    public static<E extends Enum<E>> EnumRef<E> of(ClassRef enumClass,
+                                                   String constantName) {
+        return new EnumRef<>(enumClass, validateMemberName(constantName));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public E resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
+    public E resolveConstantRef(MethodHandles.Lookup lookup)
+            throws ReflectiveOperationException {
         return Enum.valueOf((Class<E>) constantType().resolveConstantRef(lookup), constantName());
     }
 
     @Override
     public Optional<? extends ConstantRef<? super ConstantRef<E>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_ENUMREF, CR_EnumRef).withArgs(constantType().descriptorString(), constantName()));
+        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_ENUMREF, CR_EnumRef)
+                                             .withArgs(constantType().descriptorString(), constantName()));
     }
 
     @Override
     public String toString() {
-        return String.format("EnumRef[%s.%s]", constantType().simpleName(), constantName());
+        return String.format("EnumRef[%s.%s]", constantType().displayName(), constantName());
     }
 }

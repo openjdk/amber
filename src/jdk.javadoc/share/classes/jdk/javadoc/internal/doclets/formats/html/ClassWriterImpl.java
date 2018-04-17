@@ -74,6 +74,11 @@ import jdk.javadoc.internal.doclets.toolkit.util.VisibleMemberMap;
  */
 public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWriter {
 
+    private static final Set<String> suppressSubtypesSet
+            = Set.of("java.lang.Object",
+                     "java.lang.invoke.constant.Constable",
+                     "org.omg.CORBA.Object");
+
     protected final TypeElement typeElement;
 
     protected final ClassTree classtree;
@@ -373,8 +378,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     @Override
     public void addSubClassInfo(Content classInfoTree) {
         if (utils.isClass(typeElement)) {
-            if (typeElement.getQualifiedName().toString().equals("java.lang.Object") ||
-                    typeElement.getQualifiedName().toString().equals("org.omg.CORBA.Object")) {
+            if (suppressSubtypesSet.contains(typeElement.getQualifiedName().toString())) {
                 return;    // Don't generate the list, too huge
             }
             Set<TypeElement> subclasses = classtree.directSubClasses(typeElement, false);

@@ -34,12 +34,18 @@ import java.lang.invoke.constant.DynamicCallSiteRef;
  */
 public final class Intrinsics {
     /**
-     * Instructs the compiler to generate an {@code ldc} instruction for the given
-     * {@code Constable} instance. A compiler error will be issued if it cannot
-     * be proved that the argument is a constant
-     * @param <T> the type to which this constant pool entry resolves
-     * @param constant a constant to be ldc'ed
-     * @return the constant wrapped inside the {@code Constable} object
+     * Instructs the compiler to generate an {@code ldc} instruction for the
+     * constant described by the given {@link ConstantRef}. A compile-time error
+     * will be issued if this {@code ConstantRef} is not itself a constant.
+     *
+     * @implNote The implementation of this method always throws an
+     * {@link UnsupportedOperationException} at runtime and therefore cannot be
+     * called reflectively; invocations of this method should always be
+     * intrinsified at compile time.
+     *
+     * @param <T> the type of the constant
+     * @param constant a nominal descriptor for the constant to be loaded
+     * @return the constant value
      */
     public static <T> T ldc(ConstantRef<T> constant) {
         throw new UnsupportedOperationException("no reflective access");
@@ -47,15 +53,28 @@ public final class Intrinsics {
 
     /**
      * Instructs the compiler to generate an {@code invokedynamic} instruction given
-     * a {@code BootstrapSpecifier} and arguments. The compiler should be able to
-     * prove that the given {@code BootstrapSpecifier} is a constant, in other case
-     * an error should be issued.
-     * @param indy the bootstrap specifier
-     * @param args the arguments
-     * @return the result of invoking the indy
-     * @throws java.lang.Throwable the targeted method can throw any exception
+     * nominal descriptions of a {@link DynamicCallSiteRef} and a set of boostrap
+     * arguments. A compile-time error will be issued if the {@link DynamicCallSiteRef}
+     * is not itself a constant.
+     *
+     * <p>Like {@link MethodHandle.PolymorphicSignature} methods such as
+     * {@link MethodHandle#invoke(Object...)}, the signature of parameters and
+     * return value of {@linkplain #invokedynamic(DynamicCallSiteRef, Object...)}
+     * is specified as {@linkplain Object}, but the invocation type of the
+     * {@code invokedynamic} instruction will be derived from the {@code callSiteRef}
+     * and will not necessarily requiring boxing of arguments and return value.
+     *
+     * @implNote The implementation of this method always throws an
+     * {@link UnsupportedOperationException} at runtime and therefore cannot be
+     * called reflectively; invocations of this method should always be
+     * intrinsified at compile time.
+     *
+     * @param callSiteRef a nominal descriptor for a dynamic call site
+     * @param args the dynamic arguments to the {@code invokedynamic} instruction
+     * @return the result of the invocation
+     * @throws java.lang.Throwable the targeted method throws any exception
      */
-    public static Object invokedynamic(DynamicCallSiteRef indy,
+    public static Object invokedynamic(DynamicCallSiteRef callSiteRef,
                                        Object... args)
             throws Throwable {
         throw new UnsupportedOperationException("no reflective access");

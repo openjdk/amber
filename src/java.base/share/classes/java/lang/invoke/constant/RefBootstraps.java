@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,30 +49,35 @@ public final class RefBootstraps {
 
     /** Bootstrap for ClassRef */
     @Foldable
-    public static final MethodHandleRef BSM_CLASSREF = MethodHandleRef.ofDynamicConstant(THIS_CLASS, "classRef", CR_ClassRef,
-                                                                                         CR_String);
+    public static final ConstantMethodHandleRef BSM_CLASSREF
+            = ConstantRefs.ofConstantBootstrap(THIS_CLASS, "classRef", CR_ClassRef,
+                                               CR_String);
 
     /** Bootstrap for MethodTypeRef */
     @Foldable
-    public static final MethodHandleRef BSM_METHODTYPEREF = MethodHandleRef.ofDynamicConstant(THIS_CLASS, "methodTypeRef", CR_MethodTypeRef,
-                                                                                              CR_String);
+    public static final ConstantMethodHandleRef BSM_METHODTYPEREF
+            = ConstantRefs.ofConstantBootstrap(THIS_CLASS, "methodTypeRef", CR_MethodTypeRef,
+                                               CR_String);
 
     /** Bootstrap for MethodHandleRef */
     @Foldable
-    public static final MethodHandleRef BSM_METHODHANDLEREF = MethodHandleRef.ofDynamicConstant(THIS_CLASS, "methodHandleRef", CR_MethodHandleRef,
-                                                                                                CR_String, CR_String, CR_String, CR_String);
+    public static final ConstantMethodHandleRef BSM_METHODHANDLEREF
+            = ConstantRefs.ofConstantBootstrap(THIS_CLASS, "methodHandleRef", CR_MethodHandleRef,
+                                               CR_String, CR_String, CR_String, CR_String);
 
     /** Bootstrap for DynamicConstantRef */
     @Foldable
-    public static final MethodHandleRef BSM_DYNAMICCONSTANTREF = MethodHandleRef.ofDynamicConstant(THIS_CLASS, "dynamicConstantRef", CR_DynamicConstantRef,
-                                                                                                   CR_String, CR_String, CR_String, CR_String, CR_String,
-
-                                                                                                   CR_ConstantRef.array());
+    public static final ConstantMethodHandleRef BSM_DYNAMICCONSTANTREF
+            = ConstantRefs.ofConstantBootstrap(THIS_CLASS, "dynamicConstantRef", CR_DynamicConstantRef,
+                                               CR_String, CR_String, CR_String, CR_String, CR_String,
+                                               CR_ConstantRef.array());
 
     /** Bootstrap for ClassRef */
     @Foldable
-    public static final MethodHandleRef BSM_ENUMREF = MethodHandleRef.ofDynamicConstant(THIS_CLASS, "enumRef", CR_EnumRef,
-                                                                                        CR_String, CR_String);
+    public static final ConstantMethodHandleRef BSM_ENUMREF
+            = ConstantRefs.ofConstantBootstrap(THIS_CLASS, "enumRef", CR_EnumRef,
+                                               CR_String, CR_String);
+
     /**
      * Bootstrap for ClassRef
      *
@@ -117,7 +122,9 @@ public final class RefBootstraps {
      */
     public static MethodHandleRef methodHandleRef(MethodHandles.Lookup lookup, String name, Class<ClassRef> clazz,
                                                   String bsmKindName, String bsmOwner, String bsmName, String bsmDesc) {
-        return MethodHandleRef.of(MethodHandleRef.Kind.valueOf(bsmKindName), ClassRef.ofDescriptor(bsmOwner), bsmName, MethodTypeRef.ofDescriptor(bsmDesc));
+        return MethodHandleRef.of(MethodHandleRef.Kind.valueOf(bsmKindName),
+                                  ClassRef.ofDescriptor(bsmOwner), bsmName,
+                                  MethodTypeRef.ofDescriptor(bsmDesc));
     }
 
     /**
@@ -138,7 +145,9 @@ public final class RefBootstraps {
                                                            String bsmOwner, String bsmName, String bsmDesc,
                                                            String invName, String invType,
                                                            ConstantRef<?>... args) {
-        return DynamicConstantRef.of(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor(bsmOwner), bsmName, MethodTypeRef.ofDescriptor(bsmDesc)),
+        return DynamicConstantRef.of(MethodHandleRef.of(MethodHandleRef.Kind.STATIC,
+                                                        ClassRef.ofDescriptor(bsmOwner), bsmName,
+                                                        MethodTypeRef.ofDescriptor(bsmDesc)),
                                      invName, ClassRef.ofDescriptor(invType), args);
 
     }
