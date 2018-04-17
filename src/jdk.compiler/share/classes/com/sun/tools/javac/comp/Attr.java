@@ -1887,23 +1887,36 @@ public class Attr extends JCTree.Visitor {
                     if (jumpTarget.fst != null) {
                         JCTree speculative = deferredAttr.attribSpeculative(tree.value, env, unknownExprInfo);
                         if (!speculative.type.hasTag(ERROR)) {
-                            log.error(tree.pos(), Errors.BreakAmbiguousTarget(label));
-                        }
-                        tree.target = jumpTarget.fst;
-                        attribute = false;
-                        if (jumpTarget.snd != null) {
-                            log.error(tree.pos(), jumpTarget.snd);
+                            log.warning(tree.pos(), Warnings.BreakAmbiguousTarget(label));
+                            if (jumpTarget.snd == null) {
+                                tree.target = jumpTarget.fst;
+                                attribute = false;
+                            } else {
+                                //nothing
+                            }
+                        } else {
+                            if (jumpTarget.snd != null) {
+                                log.error(tree.pos(), jumpTarget.snd);
+                            }
+                            tree.target = jumpTarget.fst;
+                            attribute = false;
                         }
                     }
                 }
                 if (attribute) {
                     attribTree(tree.value, env, env.info.breakResult);
-                    Env<AttrContext> env1 = env;
-                    while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
-                        env1 = env1.next;
+                    JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), null, env);
+                    if (immediateTarget.getTag() != SWITCH_EXPRESSION) {
+                        log.error(tree.pos(), Errors.BreakExprNotImmediate);
+                        Env<AttrContext> env1 = env;
+                        while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
+                            env1 = env1.next;
+                        }
+                        Assert.checkNonNull(env1);
+                        tree.target = env1.tree;
+                    } else {
+                        tree.target = immediateTarget;
                     }
-                    Assert.checkNonNull(env1);
-                    tree.target = env1.tree;
                 }
             }
         } else {

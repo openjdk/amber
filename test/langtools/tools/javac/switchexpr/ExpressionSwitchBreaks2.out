@@ -1,13 +1,14 @@
 ExpressionSwitchBreaks2.java:38:25: compiler.err.break.missing.value
 ExpressionSwitchBreaks2.java:40:25: compiler.err.break.outside.switch.expression
-ExpressionSwitchBreaks2.java:44:37: compiler.err.break.ambiguous.target: x
+ExpressionSwitchBreaks2.java:44:37: compiler.warn.break.ambiguous.target: x
 ExpressionSwitchBreaks2.java:48:29: compiler.err.return.outside.switch.expression
 ExpressionSwitchBreaks2.java:49:29: compiler.err.continue.outside.switch.expression
 ExpressionSwitchBreaks2.java:50:29: compiler.err.continue.outside.switch.expression
 ExpressionSwitchBreaks2.java:51:29: compiler.err.undef.label: UNKNOWN
-ExpressionSwitchBreaks2.java:55:37: compiler.err.break.ambiguous.target: x
+ExpressionSwitchBreaks2.java:55:37: compiler.err.break.expr.not.immediate
 ExpressionSwitchBreaks2.java:61:17: compiler.err.break.complex.value.no.switch.expression
 ExpressionSwitchBreaks2.java:61:29: compiler.err.cant.resolve.location: kindname.variable, undef, , , (compiler.misc.location: kindname.class, ExpressionSwitchBreaks2, null)
-ExpressionSwitchBreaks2.java:65:22: compiler.err.break.ambiguous.target: j
+ExpressionSwitchBreaks2.java:65:22: compiler.warn.break.ambiguous.target: j
 ExpressionSwitchBreaks2.java:68:22: compiler.err.break.outside.switch.expression
-12 errors
+10 errors
+2 warnings

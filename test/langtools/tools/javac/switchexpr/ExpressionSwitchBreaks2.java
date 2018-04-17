@@ -52,7 +52,7 @@ public class ExpressionSwitchBreaks2 {
                     default: {
                         String x = "X";
                         x: switch (i + j) {
-                            case 0: break x; //error: cannot disambiguate
+                            case 0: break ""; //error: cannot break from switch expression that is not immediatelly enclosing
                         }
                         break "X";
                     }

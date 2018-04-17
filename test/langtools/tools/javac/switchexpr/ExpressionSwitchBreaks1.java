@@ -74,29 +74,34 @@ public class ExpressionSwitchBreaks1 {
                     case 0:
                         String res;
                         INNER: switch (k) {
-                            case 0: break "0-0-0";
+                            case 0: res = "0-0-0"; break;
                             case 1: res = "0-0-1"; break;
                             case 2: res = "0-0-2"; break INNER;
                             default: r = "0-0-X"; break OUTER;
                         }
-                        break res;
+                        r = res;
+                        break;
                     case 1:
-                        break "0-1";
+                        r = "0-1";
+                        break;
                     default:
-                        break "0-X";
+                        r = "0-X";
+                        break;
                 }
                 break r;
             case 1:
                 break "1";
             case 2:
+                int LOOP = 0;
                 LOOP: while (j-- > 0) {
                     if (k == 5) {
                         k--;
                         continue;
                     }
-                    Supplier<String> getter = () -> { return "2-X-5"; };
-                    break getter.get();
+                    break LOOP; //may produce a warning
                 }
+                Supplier<String> getter = () -> { return "2-X-5"; };
+                break getter.get();
             default:
                 break "X";
         };

@@ -13,13 +13,14 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
     private static final String RUNNABLE = "Runnable r = () -> { # };";
     private static final String INT_FN = "java.util.function.IntSupplier r = () -> { # };";
     private static final String LABEL = "label: #";
-    private static final String FOR = "for (int i=0; i<10; i++) { # };";
-    private static final String WHILE = "while (cond) { # };";
+    private static final String DEF_LABEL_VAR = "int label = 0; { # }";
+    private static final String FOR = "for (int i=0; i<10; i++) { # }";
+    private static final String WHILE = "while (cond) { # }";
     private static final String DO = "do { # } while (cond);";
     private static final String SSWITCH = "switch (x) { case 0: # };";
     private static final String ESWITCH = "int res = switch (x) { case 0: # default -> 0; };";
-    private static final String IF = "if (cond) { # };";
-    private static final String BLOCK = "{ # };";
+    private static final String IF = "if (cond) { # }";
+    private static final String BLOCK = "{ # }";
     private static final String BREAK_Z = "break 0;";
     private static final String BREAK_N = "break;";
     private static final String BREAK_L = "break label;";
@@ -61,6 +62,18 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
             throw new RuntimeException(e);
         }
         assertCompileSucceeded();
+    }
+
+    private void assertOKWithWarning(String warning, String... constructs) {
+        reset();
+        program(constructs);
+        try {
+            compile();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        assertCompileSucceededWithWarning(warning);
     }
 
     private void assertFail(String expectedDiag, String... constructs) {
@@ -105,5 +118,21 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
         assertFail("compiler.err.cont.outside.loop", ESWITCH, CONTINUE_N);
         assertFail("compiler.err.return.outside.switch.expression", ESWITCH, RETURN_N);
         assertFail("compiler.err.return.outside.switch.expression", ESWITCH, RETURN_Z);
+    }
+
+    public void testNestedInExpSwitch() {
+        assertOK(ESWITCH, IF, BREAK_Z);
+        assertOK(ESWITCH, BLOCK, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, SSWITCH, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, FOR, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, WHILE, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, DO, BREAK_Z);
+    }
+
+    public void testBreakExpressionLabelDisambiguation() {
+        assertOK(DEF_LABEL_VAR, ESWITCH, BREAK_L);
+        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH, LABEL, FOR, BREAK_L); //label break
+        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH, BREAK_L); //expression break
+        //
     }
 }
