@@ -26,6 +26,7 @@
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ConstantMethodHandleRef;
 import java.lang.invoke.constant.ConstantRefs;
 import java.lang.invoke.constant.DynamicConstantRef;
 import java.lang.invoke.constant.MethodHandleRef;
@@ -47,23 +48,23 @@ import static org.testng.Assert.assertNull;
 public class ConstantRefBootstrapsTest {
     static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
 
-    static final MethodHandleRef BSM_NULL_CONSTANT
+    static final ConstantMethodHandleRef BSM_NULL_CONSTANT
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "nullConstant", ConstantRefs.CR_Object);
-    static final MethodHandleRef BSM_PRIMITIVE_CLASS
+    static final ConstantMethodHandleRef BSM_PRIMITIVE_CLASS
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "primitiveClass", ConstantRefs.CR_Class);
-    static final MethodHandleRef BSM_ENUM_CONSTANT
+    static final ConstantMethodHandleRef BSM_ENUM_CONSTANT
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "enumConstant", ConstantRefs.CR_Enum);
-    static final MethodHandleRef BSM_GET_STATIC_FINAL_SELF
+    static final ConstantMethodHandleRef BSM_GET_STATIC_FINAL_SELF
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object);
-    static final MethodHandleRef BSM_GET_STATIC_FINAL_DECL
+    static final ConstantMethodHandleRef BSM_GET_STATIC_FINAL_DECL
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object, ConstantRefs.CR_Class);
-    static final MethodHandleRef BSM_INVOKE
+    static final ConstantMethodHandleRef BSM_INVOKE
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "invoke", ConstantRefs.CR_Object, ConstantRefs.CR_MethodHandle, ConstantRefs.CR_Object.array());
-    static final MethodHandleRef BSM_VARHANDLE_FIELD
+    static final ConstantMethodHandleRef BSM_VARHANDLE_FIELD
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "fieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
-    static final MethodHandleRef BSM_VARHANDLE_STATIC_FIELD
+    static final ConstantMethodHandleRef BSM_VARHANDLE_STATIC_FIELD
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "staticFieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
-    static final MethodHandleRef BSM_VARHANDLE_ARRAY
+    static final ConstantMethodHandleRef BSM_VARHANDLE_ARRAY
             = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "arrayVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class);
 
 
