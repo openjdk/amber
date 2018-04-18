@@ -31,7 +31,7 @@ import java.lang.invoke.MethodType;
 
 /**
  * A nominal descriptor for a loadable constant value, as defined in JVMS 4.4.
- * Such a descriptor can be resolved via {@link ConstantRef#resolveConstantRef(MethodHandles.Lookup)}
+ * Such a descriptor can be resolved via {@link ConstantDesc#resolveConstantDesc(MethodHandles.Lookup)}
  * to yield the constant value itself.
  *
  * <p>Class names in a nominal descriptor, like class names in the constant pool
@@ -40,46 +40,46 @@ import java.lang.invoke.MethodType;
  *
  * <p>Static constants that are expressible natively in the constant pool ({@link String},
  * {@link Integer}, {@link Long}, {@link Float}, and {@link Double}) implement
- * {@link ConstantRef}, and serve as nominal descriptors for themselves.
+ * {@link ConstantDesc}, and serve as nominal descriptors for themselves.
  * Native linkable constants ({@link Class}, {@link MethodType}, and
- * {@link MethodHandle}) have counterpart {@linkplain ConstantRef} types:
- * {@link ClassRef}, {@link MethodTypeRef}, and {@link MethodHandleRef}.
- * Other constants are represented by subtypes of {@link DynamicConstantRef}.
+ * {@link MethodHandle}) have counterpart {@linkplain ConstantDesc} types:
+ * {@link ClassDesc}, {@link MethodTypeDesc}, and {@link MethodHandleDesc}.
+ * Other constants are represented by subtypes of {@link DynamicConstantDesc}.
  *
  * <p>APIs that perform generation or parsing of bytecode are encouraged to use
- * {@linkplain ConstantRef} to describe the operand of an {@code ldc} instruction
+ * {@linkplain ConstantDesc} to describe the operand of an {@code ldc} instruction
  * (including dynamic constants), the static bootstrap arguments of
  * dynamic constants and {@code invokedynamic} instructions, and other
  * bytecodes or classfile structures that make use of the constant pool.
  *
- * <p>The {@linkplain ConstantRef} types are also used by {@link Intrinsics}
+ * <p>The {@linkplain ConstantDesc} types are also used by {@link Intrinsics}
  * to express {@code ldc} instructions.
  *
- * <p>Constants describing various common constants (such as {@link ClassRef}
- * instances for platform types) can be found in {@link ConstantRefs}.
+ * <p>Constants describing various common constants (such as {@link ClassDesc}
+ * instances for platform types) can be found in {@link ConstantDescs}.
  *
- * <p>Implementations of {@linkplain ConstantRef} must be
+ * <p>Implementations of {@linkplain ConstantDesc} must be
  * <a href="../doc-files/ValueBased.html">value-based</a> classes.
  *
- * <p>Non-platform classes should not implement {@linkplain ConstantRef} directly.
- * Instead, they should extend {@link DynamicConstantRef} (as {@link EnumRef}
- * and {@link VarHandleRef} do.)
+ * <p>Non-platform classes should not implement {@linkplain ConstantDesc} directly.
+ * Instead, they should extend {@link DynamicConstantDesc} (as {@link EnumDesc}
+ * and {@link VarHandleDesc} do.)
  *
- * @apiNote In the future, if the Java language permits, {@linkplain ConstantRef}
+ * @apiNote In the future, if the Java language permits, {@linkplain ConstantDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
  * explicitly permitted types.  Bytecode libraries can assume that the following
  * is an exhaustive set of direct subtypes: {@link String}, {@link Integer},
- * {@link Long}, {@link Float}, {@link Double}, {@link ClassRef},
- * {@link MethodTypeRef}, {@link MethodHandleRef}, and {@link DynamicConstantRef};
+ * {@link Long}, {@link Float}, {@link Double}, {@link ClassDesc},
+ * {@link MethodTypeDesc}, {@link MethodHandleDesc}, and {@link DynamicConstantDesc};
  * this list may be extended to reflect future changes to the constant pool format
  * as defined in JVMS 4.4.
  *
  * @see Constable
  * @see Intrinsics
- * @see ConstantRefs
+ * @see ConstantDescs
  *
  */
-public interface ConstantRef<T> {
+public interface ConstantDesc<T> {
     /**
      * Resolve this descriptor reflectively, emulating the resolution behavior
      * of JVMS 5.4.3 and the access control behavior of JVMS 5.4.4.  The resolution
@@ -92,5 +92,5 @@ public interface ConstantRef<T> {
      * @throws ReflectiveOperationException if a class, method, or field
      * could not be reflectively resolved in the course of resolution
      */
-    T resolveConstantRef(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
+    T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 }

@@ -25,11 +25,11 @@
 
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.VarHandle;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.ConstantMethodHandleRef;
-import java.lang.invoke.constant.ConstantRefs;
-import java.lang.invoke.constant.DynamicConstantRef;
-import java.lang.invoke.constant.MethodHandleRef;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.ConstantMethodHandleDesc;
+import java.lang.invoke.constant.DynamicConstantDesc;
+import java.lang.invoke.constant.MethodHandleDesc;
 import java.util.List;
 
 import org.testng.annotations.Test;
@@ -46,84 +46,84 @@ import static org.testng.Assert.assertNull;
  */
 @Test
 public class ConstantRefBootstrapsTest {
-    static final ClassRef CLASS_CONDY = ClassRef.of("java.lang.invoke.ConstantBootstraps");
+    static final ClassDesc CLASS_CONDY = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
-    static final ConstantMethodHandleRef BSM_NULL_CONSTANT
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "nullConstant", ConstantRefs.CR_Object);
-    static final ConstantMethodHandleRef BSM_PRIMITIVE_CLASS
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "primitiveClass", ConstantRefs.CR_Class);
-    static final ConstantMethodHandleRef BSM_ENUM_CONSTANT
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "enumConstant", ConstantRefs.CR_Enum);
-    static final ConstantMethodHandleRef BSM_GET_STATIC_FINAL_SELF
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object);
-    static final ConstantMethodHandleRef BSM_GET_STATIC_FINAL_DECL
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantRefs.CR_Object, ConstantRefs.CR_Class);
-    static final ConstantMethodHandleRef BSM_INVOKE
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "invoke", ConstantRefs.CR_Object, ConstantRefs.CR_MethodHandle, ConstantRefs.CR_Object.array());
-    static final ConstantMethodHandleRef BSM_VARHANDLE_FIELD
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "fieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
-    static final ConstantMethodHandleRef BSM_VARHANDLE_STATIC_FIELD
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "staticFieldVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class, ConstantRefs.CR_Class);
-    static final ConstantMethodHandleRef BSM_VARHANDLE_ARRAY
-            = ConstantRefs.ofConstantBootstrap(CLASS_CONDY, "arrayVarHandle", ConstantRefs.CR_VarHandle, ConstantRefs.CR_Class);
+    static final ConstantMethodHandleDesc BSM_NULL_CONSTANT
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "nullConstant", ConstantDescs.CR_Object);
+    static final ConstantMethodHandleDesc BSM_PRIMITIVE_CLASS
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "primitiveClass", ConstantDescs.CR_Class);
+    static final ConstantMethodHandleDesc BSM_ENUM_CONSTANT
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "enumConstant", ConstantDescs.CR_Enum);
+    static final ConstantMethodHandleDesc BSM_GET_STATIC_FINAL_SELF
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantDescs.CR_Object);
+    static final ConstantMethodHandleDesc BSM_GET_STATIC_FINAL_DECL
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "getStaticFinal", ConstantDescs.CR_Object, ConstantDescs.CR_Class);
+    static final ConstantMethodHandleDesc BSM_INVOKE
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "invoke", ConstantDescs.CR_Object, ConstantDescs.CR_MethodHandle, ConstantDescs.CR_Object.array());
+    static final ConstantMethodHandleDesc BSM_VARHANDLE_FIELD
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "fieldVarHandle", ConstantDescs.CR_VarHandle, ConstantDescs.CR_Class, ConstantDescs.CR_Class);
+    static final ConstantMethodHandleDesc BSM_VARHANDLE_STATIC_FIELD
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "staticFieldVarHandle", ConstantDescs.CR_VarHandle, ConstantDescs.CR_Class, ConstantDescs.CR_Class);
+    static final ConstantMethodHandleDesc BSM_VARHANDLE_ARRAY
+            = ConstantDescs.ofConstantBootstrap(CLASS_CONDY, "arrayVarHandle", ConstantDescs.CR_VarHandle, ConstantDescs.CR_Class);
 
 
     public void testNullConstant() {
-        Object supposedlyNull = Intrinsics.ldc(DynamicConstantRef.of(BSM_NULL_CONSTANT, ConstantRefs.CR_Object));
+        Object supposedlyNull = Intrinsics.ldc(DynamicConstantDesc.of(BSM_NULL_CONSTANT, ConstantDescs.CR_Object));
         assertNull(supposedlyNull);
 
-        supposedlyNull = Intrinsics.ldc(DynamicConstantRef.of(BSM_NULL_CONSTANT, ConstantRefs.CR_MethodType));
+        supposedlyNull = Intrinsics.ldc(DynamicConstantDesc.of(BSM_NULL_CONSTANT, ConstantDescs.CR_MethodType));
         assertNull(supposedlyNull);
     }
 
 
     public void testPrimitiveClass() {
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_int.descriptorString())), int.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_long.descriptorString())), long.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_short.descriptorString())), short.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_byte.descriptorString())), byte.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_char.descriptorString())), char.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_float.descriptorString())), float.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_double.descriptorString())), double.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_boolean.descriptorString())), boolean.class);
-        assertEquals(ldc(DynamicConstantRef.of(BSM_PRIMITIVE_CLASS, ConstantRefs.CR_void.descriptorString())), void.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_int.descriptorString())), int.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_long.descriptorString())), long.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_short.descriptorString())), short.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_byte.descriptorString())), byte.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_char.descriptorString())), char.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_float.descriptorString())), float.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_double.descriptorString())), double.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_boolean.descriptorString())), boolean.class);
+        assertEquals(ldc(DynamicConstantDesc.of(BSM_PRIMITIVE_CLASS, ConstantDescs.CR_void.descriptorString())), void.class);
     }
 
 
     public void testEnumConstant() {
-        MethodHandleRef.Kind k = Intrinsics.ldc(DynamicConstantRef.of(
+        MethodHandleDesc.Kind k = Intrinsics.ldc(DynamicConstantDesc.of(
                 BSM_ENUM_CONSTANT, "STATIC",
-                ClassRef.of("java.lang.invoke.constant.MethodHandleRef$Kind")));
-        assertEquals(k, MethodHandleRef.Kind.STATIC);
+                ClassDesc.of("java.lang.invoke.constant.MethodHandleRef$Kind")));
+        assertEquals(k, MethodHandleDesc.Kind.STATIC);
     }
 
 
     public void testGetStaticFinalDecl() {
-        DynamicConstantRef<Class<Integer>> intClass =
-                DynamicConstantRef.<Class<Integer>>of(BSM_GET_STATIC_FINAL_DECL, "TYPE", ConstantRefs.CR_Class).withArgs(ConstantRefs.CR_Integer);
+        DynamicConstantDesc<Class<Integer>> intClass =
+                DynamicConstantDesc.<Class<Integer>>of(BSM_GET_STATIC_FINAL_DECL, "TYPE", ConstantDescs.CR_Class).withArgs(ConstantDescs.CR_Integer);
         Class<Integer> c = Intrinsics.ldc(intClass);
         assertEquals(c, int.class);
     }
 
     public void testGetStaticFinalSelf() {
-        DynamicConstantRef<Integer> integerMaxValue = DynamicConstantRef.of(BSM_GET_STATIC_FINAL_SELF, "MAX_VALUE", ConstantRefs.CR_int);
+        DynamicConstantDesc<Integer> integerMaxValue = DynamicConstantDesc.of(BSM_GET_STATIC_FINAL_SELF, "MAX_VALUE", ConstantDescs.CR_int);
         int v = Intrinsics.ldc(integerMaxValue);
         assertEquals(v, Integer.MAX_VALUE);
     }
 
 
     public void testInvoke() {
-        DynamicConstantRef<List<Integer>> list
-                = DynamicConstantRef.<List<Integer>>of(BSM_INVOKE, ConstantRefs.CR_List)
-                .withArgs(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ConstantRefs.CR_List, "of", ConstantRefs.CR_List, ConstantRefs.CR_Object.array()), 1, 2, 3, 4);
+        DynamicConstantDesc<List<Integer>> list
+                = DynamicConstantDesc.<List<Integer>>of(BSM_INVOKE, ConstantDescs.CR_List)
+                .withArgs(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ConstantDescs.CR_List, "of", ConstantDescs.CR_List, ConstantDescs.CR_Object.array()), 1, 2, 3, 4);
 
         List<Integer> l = ldc(list);
         assertEquals(l, List.of(1, 2, 3, 4));
     }
 
     public void testInvokeAsType() {
-        DynamicConstantRef<Integer> valueOf = DynamicConstantRef.<Integer>of(BSM_INVOKE, ConstantRefs.CR_int)
-                .withArgs(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ConstantRefs.CR_Integer, "valueOf", ConstantRefs.CR_Integer, ConstantRefs.CR_String),
+        DynamicConstantDesc<Integer> valueOf = DynamicConstantDesc.<Integer>of(BSM_INVOKE, ConstantDescs.CR_int)
+                .withArgs(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ConstantDescs.CR_Integer, "valueOf", ConstantDescs.CR_Integer, ConstantDescs.CR_String),
                           "42");
 
         int v = ldc(valueOf);
@@ -132,8 +132,8 @@ public class ConstantRefBootstrapsTest {
 
 
     public void testVarHandleField() {
-        VarHandle fh = Intrinsics.ldc(DynamicConstantRef.<VarHandle>of(BSM_VARHANDLE_FIELD, "f")
-                                              .withArgs(ClassRef.of("CondyTestHelper"), ConstantRefs.CR_String));
+        VarHandle fh = Intrinsics.ldc(DynamicConstantDesc.<VarHandle>of(BSM_VARHANDLE_FIELD, "f")
+                                              .withArgs(ClassDesc.of("CondyTestHelper"), ConstantDescs.CR_String));
 
         CondyTestHelper instance = new CondyTestHelper();
         assertEquals(null, fh.get(instance));
@@ -142,8 +142,8 @@ public class ConstantRefBootstrapsTest {
     }
 
     public void testVarHandleStaticField() {
-        VarHandle sfh = Intrinsics.ldc(DynamicConstantRef.<VarHandle>of(BSM_VARHANDLE_STATIC_FIELD, "sf")
-                                       .withArgs(ClassRef.of("CondyTestHelper"), ConstantRefs.CR_String));
+        VarHandle sfh = Intrinsics.ldc(DynamicConstantDesc.<VarHandle>of(BSM_VARHANDLE_STATIC_FIELD, "sf")
+                                       .withArgs(ClassDesc.of("CondyTestHelper"), ConstantDescs.CR_String));
 
         assertEquals(null, sfh.get());
         sfh.set("42");
@@ -151,7 +151,7 @@ public class ConstantRefBootstrapsTest {
     }
 
     public void testVarHandleArray() {
-        VarHandle ah = Intrinsics.ldc(DynamicConstantRef.<VarHandle>of(BSM_VARHANDLE_ARRAY).withArgs(ConstantRefs.CR_String.array()));
+        VarHandle ah = Intrinsics.ldc(DynamicConstantDesc.<VarHandle>of(BSM_VARHANDLE_ARRAY).withArgs(ConstantDescs.CR_String.array()));
 
         String[] sa = { "A" };
         assertEquals("A", ah.get(sa, 0));

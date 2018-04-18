@@ -29,7 +29,7 @@ import jdk.internal.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_EnumRef;
+import static java.lang.invoke.constant.ConstantDescs.CR_EnumDesc;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 
@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <E> the type of the enum constant
  */
-public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
+public final class EnumDesc<E extends Enum<E>> extends DynamicConstantDesc<E> {
 
     /**
      * Construct a nominal descriptor for the specified enum class and name
@@ -47,8 +47,8 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
      * @param constantName the name of the enum constant
      * @throws NullPointerException if any argument is null
      */
-    private EnumRef(ClassRef constantType, String constantName) {
-        super(ConstantRefs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(constantType));
+    private EnumDesc(ClassDesc constantType, String constantName) {
+        super(ConstantDescs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(constantType));
     }
 
     /**
@@ -61,26 +61,26 @@ public final class EnumRef<E extends Enum<E>> extends DynamicConstantRef<E> {
      * @throws NullPointerException if any argument is null
      */
     @Foldable
-    public static<E extends Enum<E>> EnumRef<E> of(ClassRef enumClass,
-                                                   String constantName) {
-        return new EnumRef<>(enumClass, validateMemberName(constantName));
+    public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
+                                                    String constantName) {
+        return new EnumDesc<>(enumClass, validateMemberName(constantName));
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public E resolveConstantRef(MethodHandles.Lookup lookup)
+    public E resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        return Enum.valueOf((Class<E>) constantType().resolveConstantRef(lookup), constantName());
+        return Enum.valueOf((Class<E>) constantType().resolveConstantDesc(lookup), constantName());
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<E>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_ENUMREF, CR_EnumRef)
-                                             .withArgs(constantType().descriptorString(), constantName()));
+    public Optional<? extends ConstantDesc<? super ConstantDesc<E>>> describeConstable(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_ENUMDESC, CR_EnumDesc)
+                                              .withArgs(constantType().descriptorString(), constantName()));
     }
 
     @Override
     public String toString() {
-        return String.format("EnumRef[%s.%s]", constantType().displayName(), constantName());
+        return String.format("EnumDesc[%s.%s]", constantType().displayName(), constantName());
     }
 }

@@ -27,7 +27,7 @@ package java.lang;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.ConstantDesc;
 import java.util.Optional;
 
 import jdk.internal.math.FloatingDecimal;
@@ -51,7 +51,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @since 1.0
  */
 public final class Float extends Number
-        implements Comparable<Float>, ConstantRef<Float>, Constable<Float> {
+        implements Comparable<Float>, ConstantDesc<Float>, Constable<Float> {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by
@@ -996,19 +996,19 @@ public final class Float extends Number
      * @return the {@linkplain Float} instance
      */
     @Override
-    public Optional<ConstantRef<Float>> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<Float>> describeConstable(MethodHandles.Lookup lookup) {
         return Optional.of(this);
     }
 
     /**
-     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * Resolve this instance as a {@link ConstantDesc}, the result of which is
      * the instance itself.
      *
      * @param lookup ignored
      * @return the {@linkplain Float} instance
      */
     @Override
-    public Float resolveConstantRef(MethodHandles.Lookup lookup) {
+    public Float resolveConstantDesc(MethodHandles.Lookup lookup) {
         return this;
     }
 

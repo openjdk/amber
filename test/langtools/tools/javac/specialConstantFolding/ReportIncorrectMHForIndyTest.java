@@ -7,10 +7,10 @@
 
 import java.lang.invoke.*;
 import java.lang.invoke.constant.BootstrapSpecifier;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.MethodTypeRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
 
 public class ReportIncorrectMHForIndyTest {
 
@@ -22,16 +22,16 @@ public class ReportIncorrectMHForIndyTest {
 
     String test(String x, String y) throws Throwable {
         // correct method type
-        MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                ConstantRefs.CR_CallSite,
-                ConstantRefs.CR_String,  // bad argument must be of type MethodHandles.Lookup
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_MethodType,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_Object.array()
+        MethodTypeDesc methodTypeForMethodHandle = MethodTypeDesc.of(
+                ConstantDescs.CR_CallSite,
+                ConstantDescs.CR_String,  // bad argument must be of type MethodHandles.Lookup
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_MethodType,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_Object.array()
         );
-        MethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LReportIncorrectMHForIndyTest;"),
-                                                "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LReportIncorrectMHForIndyTest;"),
+                                                  "makeConcatWithConstants", methodTypeForMethodHandle);
         // should this call fail if the mh is incorrect?
         BootstrapSpecifier indyDescr = BootstrapSpecifier.of(mh);
         return "";

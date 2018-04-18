@@ -44,13 +44,13 @@ import com.sun.tools.javac.util.Assert;
 public class MultipleBSMEntriesTest {
     // library code starts
     static class MultiplyCallSite extends MutableCallSite {
-        private static final MethodTypeRef TYPE = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/math/BigInteger;"), ConstantRefs.CR_long, ConstantRefs.CR_long);
-        private static final ClassRef ME = ClassRef.ofDescriptor("LMultipleBSMEntriesTest$MultiplyCallSite;");
+        private static final MethodTypeDesc TYPE = MethodTypeDesc.of(ClassDesc.ofDescriptor("Ljava/math/BigInteger;"), ConstantDescs.CR_long, ConstantDescs.CR_long);
+        private static final ClassDesc ME = ClassDesc.ofDescriptor("LMultipleBSMEntriesTest$MultiplyCallSite;");
 
         private static final MethodHandle FAST = Intrinsics.ldc(
-                MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ME, "fast", TYPE));
+                MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
         private static final MethodHandle SLOW = Intrinsics.ldc(
-                MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ME, "slow", TYPE));
+                MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ME, "slow", TYPE));
 
         MultiplyCallSite(MethodType type) {
             super(type);
@@ -72,22 +72,22 @@ public class MultipleBSMEntriesTest {
         }
     }
 
-    public static final ClassRef CR_BigInt = ClassRef.ofDescriptor("Ljava/math/BigInteger;");
-    public static final MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
+    public static final ClassDesc CR_BigInt = ClassDesc.ofDescriptor("Ljava/math/BigInteger;");
+    public static final MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
             CR_BigInt,
-            ConstantRefs.CR_long,
-            ConstantRefs.CR_long
+            ConstantDescs.CR_long,
+            ConstantDescs.CR_long
     );
 
-    public static final DynamicCallSiteRef MULT = DynamicCallSiteRef.of(
-            MethodHandleRef.of(
-                    MethodHandleRef.Kind.STATIC,
-                    ClassRef.ofDescriptor("LMultipleBSMEntriesTest;"),
+    public static final DynamicCallSiteDesc MULT = DynamicCallSiteDesc.of(
+            MethodHandleDesc.of(
+                    MethodHandleDesc.Kind.STATIC,
+                    ClassDesc.ofDescriptor("LMultipleBSMEntriesTest;"),
                     "multiplyFactory",
-                    ConstantRefs.CR_CallSite,
-                    ConstantRefs.CR_MethodHandles_Lookup,
-                    ConstantRefs.CR_String,
-                    ConstantRefs.CR_MethodType),
+                    ConstantDescs.CR_CallSite,
+                    ConstantDescs.CR_MethodHandles_Lookup,
+                    ConstantDescs.CR_String,
+                    ConstantDescs.CR_MethodType),
             " ",
             methodTypeForIndy
 

@@ -28,7 +28,7 @@ package java.lang;
 import java.lang.annotation.Native;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.ConstantDesc;
 import java.math.*;
 import java.util.Objects;
 import java.util.Optional;
@@ -62,7 +62,7 @@ import static java.lang.String.UTF16;
  * @since   1.0
  */
 public final class Long extends Number
-        implements Comparable<Long>, ConstantRef<Long>, Constable<Long> {
+        implements Comparable<Long>, ConstantDesc<Long>, Constable<Long> {
     /**
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.
@@ -1979,19 +1979,19 @@ public final class Long extends Number
      * @return the {@linkplain Long} instance
      */
     @Override
-    public Optional<ConstantRef<Long>> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<Long>> describeConstable(MethodHandles.Lookup lookup) {
         return Optional.of(this);
     }
 
     /**
-     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * Resolve this instance as a {@link ConstantDesc}, the result of which is
      * the instance itself.
      *
      * @param lookup ignored
      * @return the {@linkplain Long} instance
      */
     @Override
-    public Long resolveConstantRef(MethodHandles.Lookup lookup) {
+    public Long resolveConstantDesc(MethodHandles.Lookup lookup) {
         return this;
     }
 

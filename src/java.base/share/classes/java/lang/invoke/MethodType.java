@@ -27,12 +27,13 @@ package java.lang.invoke;
 
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
+
+import java.lang.invoke.constant.MethodTypeDesc;
 import java.lang.ref.WeakReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
-import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.MethodTypeRef;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -1171,12 +1172,12 @@ class MethodType implements Constable<MethodType>, java.io.Serializable {
     }
 
     @Override
-    public Optional<MethodTypeRef> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<MethodTypeDesc> describeConstable(MethodHandles.Lookup lookup) {
         try {
-            return Optional.of(MethodTypeRef.of(returnType().toConstantRef(lookup).orElseThrow(),
-                                                Stream.of(parameterArray())
-                                                      .map(p -> p.toConstantRef(lookup).orElseThrow())
-                                                      .toArray(ClassRef[]::new)));
+            return Optional.of(MethodTypeDesc.of(returnType().describeConstable(lookup).orElseThrow(),
+                                                 Stream.of(parameterArray())
+                                                      .map(p -> p.describeConstable(lookup).orElseThrow())
+                                                      .toArray(ClassDesc[]::new)));
         }
         catch (NoSuchElementException e) {
             return Optional.empty();

@@ -35,7 +35,7 @@ import java.util.Set;
  * @author Brian Goetz
  */
 class ConstantUtils {
-    static final ConstantRef<?>[] EMPTY_CONSTANTREF = new ConstantRef<?>[0];
+    static final ConstantDesc<?>[] EMPTY_CONSTANTDESC = new ConstantDesc<?>[0];
     static final Constable<?>[] EMPTY_CONSTABLE = new Constable<?>[0];
 
     private static final Set<String> pointyNames = Set.of("<init>", "<clinit>");
@@ -64,7 +64,7 @@ class ConstantUtils {
         return name;
     }
 
-    static void validateClassOrInterface(ClassRef clazz) {
+    static void validateClassOrInterface(ClassDesc clazz) {
         if (!clazz.isClassOrInterface())
             throw new IllegalArgumentException("not a class or interface type: " + clazz);
     }
@@ -93,10 +93,10 @@ class ConstantUtils {
     }
 
     /**
-     * Produce an {@code Optional<DynamicConstantRef<T>>} describing the invocation
+     * Produce an {@code Optional<DynamicConstantDesc<T>>} describing the invocation
      * of the specified bootstrap with the specified arguments.  The arguments will
      * be converted to nominal descriptors using the provided lookup.  Helper
-     * method for implementing {@link DynamicConstantRef#toConstantRef(MethodHandles.Lookup)}.
+     * method for implementing {@link DynamicConstantDesc#describeConstable(MethodHandles.Lookup)}.
      *
      * @param lookup A {@link MethodHandles.Lookup} to be used to perform
      *               access control determinations
@@ -106,17 +106,17 @@ class ConstantUtils {
      * @param <T> the type of the resulting constant
      * @return the nominal descriptor for the dynamic constant
      */
-    static<T> Optional<DynamicConstantRef<T>> symbolizeHelper(MethodHandles.Lookup lookup,
-                                                              MethodHandleRef bootstrap,
-                                                              ClassRef type,
-                                                              Constable<?>... args) {
+    static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandles.Lookup lookup,
+                                                               MethodHandleDesc bootstrap,
+                                                               ClassDesc type,
+                                                               Constable<?>... args) {
         try {
-            ConstantRef<?>[] quotedArgs = new ConstantRef<?>[args.length + 1];
+            ConstantDesc<?>[] quotedArgs = new ConstantDesc<?>[args.length + 1];
             quotedArgs[0] = bootstrap;
             for (int i=0; i<args.length; i++)
-                quotedArgs[i+1] = args[i].toConstantRef(lookup).orElseThrow();
-            return Optional.of(DynamicConstantRef.of(ConstantRefs.BSM_INVOKE, ConstantRefs.DEFAULT_NAME,
-                                                     type, quotedArgs));
+                quotedArgs[i+1] = args[i].describeConstable(lookup).orElseThrow();
+            return Optional.of(DynamicConstantDesc.of(ConstantDescs.BSM_INVOKE, ConstantDescs.DEFAULT_NAME,
+                                                      type, quotedArgs));
         }
         catch (NoSuchElementException e) {
             return Optional.empty();

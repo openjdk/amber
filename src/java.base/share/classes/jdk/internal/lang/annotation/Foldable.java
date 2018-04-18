@@ -27,7 +27,7 @@ package jdk.internal.lang.annotation;
 import java.lang.annotation.*;
 
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.ConstantDesc;
 import java.lang.invoke.Intrinsics;
 
 /**
@@ -35,7 +35,7 @@ import java.lang.invoke.Intrinsics;
  * Such a method must be a <em>pure function</em> of its inputs, all inputs
  * (including the receiver, if applied to an instance method) must be value-based
  * types, and the output must be a value-based type that is representable
- * in the constant pool ({@link Constable} or {@link ConstantRef}).
+ * in the constant pool ({@link Constable} or {@link ConstantDesc}).
  *
  * <p>For accesses of fields annotated as {@linkplain Foldable}, and invocations
  * of methods annotated as {@linkplain Foldable} whose arguments (and, for instance
@@ -45,7 +45,7 @@ import java.lang.invoke.Intrinsics;
  * intrinsification via methods in {@link Intrinsics}.
  *
  * @see Constable
- * @see ConstantRef
+ * @see ConstantDesc
  * @see Intrinsics
  */
 @Retention(RetentionPolicy.CLASS)

@@ -100,14 +100,14 @@ public class Constables {
         log = Log.instance(context);
         constablesVisitor = ConstablesVisitor.instance(context);
         try {
-            directMethodHandleRefClass = Class.forName("java.lang.invoke.constant.ConstantMethodHandleRef", false, null);
-            methodTypeRefClass = Class.forName("java.lang.invoke.constant.MethodTypeRef", false, null);
-            classRefClass = Class.forName("java.lang.invoke.constant.ClassRef", false, null);
-            constantRefClass = Class.forName("java.lang.invoke.constant.ConstantRef", false, null);
+            directMethodHandleRefClass = Class.forName("java.lang.invoke.constant.ConstantMethodHandleDesc", false, null);
+            methodTypeRefClass = Class.forName("java.lang.invoke.constant.MethodTypeDesc", false, null);
+            classRefClass = Class.forName("java.lang.invoke.constant.ClassDesc", false, null);
+            constantRefClass = Class.forName("java.lang.invoke.constant.ConstantDesc", false, null);
             constableClass = Class.forName("java.lang.invoke.constant.Constable", false, null);
-            dynamicCallsiteRefClass = Class.forName("java.lang.invoke.constant.DynamicCallSiteRef", false, null);
-            dynamicConstantClass = Class.forName("java.lang.invoke.constant.DynamicConstantRef", false, null);
-            symRefs = Class.forName("java.lang.invoke.constant.ConstantRefs", false, null);
+            dynamicCallsiteRefClass = Class.forName("java.lang.invoke.constant.DynamicCallSiteDesc", false, null);
+            dynamicConstantClass = Class.forName("java.lang.invoke.constant.DynamicConstantDesc", false, null);
+            symRefs = Class.forName("java.lang.invoke.constant.ConstantDescs", false, null);
         } catch (ClassNotFoundException ex) {
             directMethodHandleRefClass = null;
             methodTypeRefClass = null;
@@ -286,7 +286,7 @@ public class Constables {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
                 constableClass.isInstance(constant)) {
-                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "toConstantRef")).get();
+                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "describeConstable")).get();
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
                 Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);

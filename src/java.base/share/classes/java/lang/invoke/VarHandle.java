@@ -31,11 +31,10 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.VarHandleRef;
+import java.lang.invoke.constant.VarHandleDesc;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -1986,7 +1985,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
     }
 
     @Override
-    public Optional<VarHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<VarHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
         // partial function for field and array only
         return Optional.empty();
     }

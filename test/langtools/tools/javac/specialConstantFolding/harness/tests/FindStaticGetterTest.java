@@ -1,12 +1,12 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.MethodHandleDesc;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
 
 public class FindStaticGetterTest extends ConstantFoldingTest {
     static String staticStrField = "class field";
@@ -22,13 +22,13 @@ public class FindStaticGetterTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_getStatic"})
     void test1() throws Throwable {
-        final MethodHandle mhStaticGetter = ldc(MethodHandleRef.ofField(STATIC_GETTER, ClassRef.ofDescriptor("LFindStaticGetterTest;"), "staticStrField", ConstantRefs.CR_String));
+        final MethodHandle mhStaticGetter = ldc(MethodHandleDesc.ofField(STATIC_GETTER, ClassDesc.ofDescriptor("LFindStaticGetterTest;"), "staticStrField", ConstantDescs.CR_String));
         check(mhStaticGetter.invoke().toString().equals("class field"));
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_getStatic"})
     void test2() throws Throwable {
-        MethodHandle mhStaticGetter = ldc(MethodHandleRef.ofField(STATIC_GETTER, ClassRef.ofDescriptor("LFindStaticGetterTest;"), "staticStrField", ConstantRefs.CR_String));
+        MethodHandle mhStaticGetter = ldc(MethodHandleDesc.ofField(STATIC_GETTER, ClassDesc.ofDescriptor("LFindStaticGetterTest;"), "staticStrField", ConstantDescs.CR_String));
         check(mhStaticGetter.invoke().toString().equals("class field"));
     }
 }

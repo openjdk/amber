@@ -8,7 +8,7 @@ import java.lang.invoke.*;
 import java.lang.invoke.constant.*;
 
 public class IndyCrashTest {
-    static final ClassRef HELPER_CLASS = ClassRef.ofDescriptor("LIndyCrashTest$IntrinsicTestHelper;");
+    static final ClassDesc HELPER_CLASS = ClassDesc.ofDescriptor("LIndyCrashTest$IntrinsicTestHelper;");
 
     static class IntrinsicTestHelper {
         public static int sf;
@@ -22,12 +22,12 @@ public class IndyCrashTest {
     }
 
     public void testSimpleIndy() throws Throwable {
-        ConstantMethodHandleRef bsmMH = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
-        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_MethodType
+        ConstantMethodHandleDesc bsmMH = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
+        MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_MethodType
         );
-        DynamicCallSiteRef bsm = DynamicCallSiteRef.of(bsmMH, "foo", methodTypeForIndy);
-        String result = (String)Intrinsics.invokedynamic(bsm, MethodTypeRef.ofDescriptor("()Ljava/lang/String;"));
+        DynamicCallSiteDesc bsm = DynamicCallSiteDesc.of(bsmMH, "foo", methodTypeForIndy);
+        String result = (String)Intrinsics.invokedynamic(bsm, MethodTypeDesc.ofDescriptor("()Ljava/lang/String;"));
     }
 }

@@ -6,28 +6,28 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.MethodTypeRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.GETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.SETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
 
 public class DontCompileIfSymbolCantBeFoundTest {
     void test() {
-        final MethodHandle mhVirtual = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", MethodTypeRef.ofDescriptor("()Ljava/lang/String;")));
-        final MethodHandle mhStatic = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", "()Ljava/lang/String;"));
-        final MethodHandle mhSpecial = ldc(MethodHandleRef.ofSpecial(ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", MethodTypeRef.ofDescriptor("()Ljava/lang/String;"), ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest")));
+        final MethodHandle mhVirtual = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", MethodTypeDesc.ofDescriptor("()Ljava/lang/String;")));
+        final MethodHandle mhStatic = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", "()Ljava/lang/String;"));
+        final MethodHandle mhSpecial = ldc(MethodHandleDesc.ofSpecial(ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchMethod", MethodTypeDesc.ofDescriptor("()Ljava/lang/String;"), ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest")));
 
-        final MethodHandle mhStaticSetter = ldc(MethodHandleRef.ofField(STATIC_SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
-        final MethodHandle mhSetter = ldc(MethodHandleRef.ofField(SETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
-        final MethodHandle mhGetter = ldc(MethodHandleRef.ofField(GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
-        final MethodHandle mhStaticGetter = ldc(MethodHandleRef.ofField(STATIC_GETTER, ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantRefs.CR_String));
+        final MethodHandle mhStaticSetter = ldc(MethodHandleDesc.ofField(STATIC_SETTER, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantDescs.CR_String));
+        final MethodHandle mhSetter = ldc(MethodHandleDesc.ofField(SETTER, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantDescs.CR_String));
+        final MethodHandle mhGetter = ldc(MethodHandleDesc.ofField(GETTER, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantDescs.CR_String));
+        final MethodHandle mhStaticGetter = ldc(MethodHandleDesc.ofField(STATIC_GETTER, ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), "noSuchField", ConstantDescs.CR_String));
 
-        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleRef.ofConstructor(ClassRef.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), VOID, ConstantRefs.CR_String));
+        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleDesc.ofConstructor(ClassDesc.ofDescriptor("DontCompileIfSymbolCantBeFoundTest"), VOID, ConstantDescs.CR_String));
     }
 }

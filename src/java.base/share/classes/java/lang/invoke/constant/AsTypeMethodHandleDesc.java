@@ -31,8 +31,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantRefs.BSM_INVOKE;
-import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandle;
+import static java.lang.invoke.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandle;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,36 +40,36 @@ import static java.util.Objects.requireNonNull;
  * a {@link MethodHandle#asType(MethodType)} adaptation on another
  * {@link MethodHandle}.
  */
-final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
-        implements MethodHandleRef {
+final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
+        implements MethodHandleDesc {
 
-    private final MethodHandleRef underlying;
-    private final MethodTypeRef type;
+    private final MethodHandleDesc underlying;
+    private final MethodTypeDesc type;
 
-    AsTypeMethodHandleRef(MethodHandleRef underlying, MethodTypeRef type) {
-        super(BSM_INVOKE, ConstantRefs.DEFAULT_NAME, CR_MethodHandle,
-              ConstantRefs.MHR_METHODHANDLE_ASTYPE, underlying, type);
+    AsTypeMethodHandleDesc(MethodHandleDesc underlying, MethodTypeDesc type) {
+        super(BSM_INVOKE, ConstantDescs.DEFAULT_NAME, CR_MethodHandle,
+              ConstantDescs.MHR_METHODHANDLE_ASTYPE, underlying, type);
         this.underlying = requireNonNull(underlying);
         this.type = requireNonNull(type);
     }
 
     @Override
     @Foldable
-    public MethodTypeRef methodType() {
+    public MethodTypeDesc methodType() {
         return type;
     }
 
     @Override
-    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup)
+    public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        MethodHandle handle = underlying.resolveConstantRef(lookup);
-        MethodType methodType = type.resolveConstantRef(lookup);
+        MethodHandle handle = underlying.resolveConstantDesc(lookup);
+        MethodType methodType = type.resolveConstantDesc(lookup);
         return handle.asType(methodType);
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<MethodHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return ConstantUtils.symbolizeHelper(lookup, ConstantRefs.MHR_METHODHANDLEREF_ASTYPE, ConstantRefs.CR_MethodHandleRef,
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
+        return ConstantUtils.symbolizeHelper(lookup, ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
                                              underlying, type);
     }
 
@@ -78,5 +78,5 @@ final class AsTypeMethodHandleRef extends DynamicConstantRef<MethodHandle>
         return  String.format("%s.asType%s", underlying.toString(), type.displayDescriptor());
     }
 
-    // @@@ canonical support -- detect DCR with BSM=MHR_METHODHANDLEREF_ASTYPE
+    // @@@ canonical support -- detect DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE
 }

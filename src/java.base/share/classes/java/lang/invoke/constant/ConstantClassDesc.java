@@ -30,23 +30,23 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_ClassRef;
+import static java.lang.invoke.constant.ConstantDescs.CR_ClassDesc;
 import static java.lang.invoke.constant.ConstantUtils.dropFirstAndLastChar;
 import static java.lang.invoke.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A nominal descriptor for a class, interface, or array type.  A
- * {@linkplain ConstantClassRef} corresponds to a {@code Constant_Class_info}
+ * {@linkplain ConstantClassDesc} corresponds to a {@code Constant_Class_info}
  * entry in the constant pool of a classfile.
  */
-public class ConstantClassRef implements ClassRef {
+public class ConstantClassDesc implements ClassDesc {
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
 
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassRef} from a descriptor string for a class or
+     * Create a {@linkplain ClassDesc} from a descriptor string for a class or
      * interface type
      *
      * @param descriptor a field descriptor string for a class or interface type,
@@ -54,7 +54,7 @@ public class ConstantClassRef implements ClassRef {
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * field descriptor string, or does not describe a class or interface type
      */
-    ConstantClassRef(String descriptor) {
+    ConstantClassDesc(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
         // Follow the trail from MethodType.fromMethodDescriptorString to
         // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
@@ -72,9 +72,9 @@ public class ConstantClassRef implements ClassRef {
     }
 
     @Override
-    public Class<?> resolveConstantRef(MethodHandles.Lookup lookup)
+    public Class<?> resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        ClassRef c = this;
+        ClassDesc c = this;
         int depth = ConstantUtils.arrayDepth(descriptorString());
         for (int i=0; i<depth; i++)
             c = c.componentType();
@@ -91,8 +91,8 @@ public class ConstantClassRef implements ClassRef {
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<Class<?>>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_CLASSREF, CR_ClassRef).withArgs(descriptor));
+    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_CLASSDESC, CR_ClassDesc).withArgs(descriptor));
     }
 
     @Override
@@ -100,7 +100,7 @@ public class ConstantClassRef implements ClassRef {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ClassRef constant = (ClassRef) o;
+        ClassDesc constant = (ClassDesc) o;
         return Objects.equals(descriptor, constant.descriptorString());
     }
 
@@ -111,6 +111,6 @@ public class ConstantClassRef implements ClassRef {
 
     @Override
     public String toString() {
-        return String.format("ClassRef[%s]", displayName());
+        return String.format("ClassDesc[%s]", displayName());
     }
 }

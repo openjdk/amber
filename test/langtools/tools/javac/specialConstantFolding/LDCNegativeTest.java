@@ -12,18 +12,18 @@ public class LDCNegativeTest {
     public String y = "I";
 
     public String x() { return ""; }
-    public ClassRef c() { return null; }
-    public ClassRef d = ConstantRefs.CR_int;
+    public ClassDesc c() { return null; }
+    public ClassDesc d = ConstantDescs.CR_int;
 
     void foo() {
         // all these fail
         String z = "I";
         ldc(c());
         ldc(d);
-        ldc(ClassRef.ofDescriptor(y));
-        ldc(ClassRef.ofDescriptor(z));
-        ldc(ClassRef.ofDescriptor(x()));
-        ldc(MethodTypeRef.ofDescriptor("()V").changeReturnType(ClassRef.ofDescriptor(y)));
+        ldc(ClassDesc.ofDescriptor(y));
+        ldc(ClassDesc.ofDescriptor(z));
+        ldc(ClassDesc.ofDescriptor(x()));
+        ldc(MethodTypeDesc.ofDescriptor("()V").changeReturnType(ClassDesc.ofDescriptor(y)));
         z = "Z";
     }
 }

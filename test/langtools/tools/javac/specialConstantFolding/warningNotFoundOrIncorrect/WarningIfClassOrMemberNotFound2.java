@@ -6,14 +6,13 @@
 
 import java.lang.invoke.*;
 import java.lang.invoke.constant.*;
-import static java.lang.invoke.Intrinsics.*;
 
 public class WarningIfClassOrMemberNotFound2 {
-    private static final ClassRef THIS = ClassRef.of("WarningIfClassOrMemberNotFound2");
+    private static final ClassDesc THIS = ClassDesc.of("WarningIfClassOrMemberNotFound2");
     public int m(int i) { return i; }
 
     public void test() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, THIS, "m", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
         Intrinsics.ldc(negIMethodRef);
     }
 }

@@ -15,41 +15,41 @@ public class EffectivelyFinalTestNeg {
     }
 
     void test2() throws Throwable {
-        ClassRef c1 = ConstantRefs.CR_String;
-        ClassRef c2 = ConstantRefs.CR_Integer;
+        ClassDesc c1 = ConstantDescs.CR_String;
+        ClassDesc c2 = ConstantDescs.CR_Integer;
         c1 = null;
-        MethodType mt = ldc(MethodTypeRef.of(c1, c2));
+        MethodType mt = ldc(MethodTypeDesc.of(c1, c2));
     }
 
     void test2_1() throws Throwable {
-        ClassRef i = ConstantRefs.CR_String;
-        MethodType mt = ldc(MethodTypeRef.of(i));
+        ClassDesc i = ConstantDescs.CR_String;
+        MethodType mt = ldc(MethodTypeDesc.of(i));
         i = null;
     }
 
     void test3(EffectivelyFinalTestNeg f) throws Throwable {
-        ClassRef c = ConstantRefs.CR_String;
+        ClassDesc c = ConstantDescs.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
-        MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
+        MethodTypeDesc mt = MethodTypeDesc.of(c);
+        MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
         c = null;
     }
 
     void test4(EffectivelyFinalTestNeg f) throws Throwable {
-        ClassRef c = ConstantRefs.CR_String;
+        ClassDesc c = ConstantDescs.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
-        MethodTypeRef mt = MethodTypeRef.of(c);
-        final MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
+        MethodTypeDesc mt = MethodTypeDesc.of(c);
+        final MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTestNeg;"), "foo", mt));
         c = null;
     }
 
-    final ClassRef cField = ClassRef.ofDescriptor("LEffectivelyFinalTestNeg;");
+    final ClassDesc cField = ClassDesc.ofDescriptor("LEffectivelyFinalTestNeg;");
 
     void test5(EffectivelyFinalTestNeg f) throws Throwable {
-        ClassRef c = ConstantRefs.CR_String;
+        ClassDesc c = ConstantDescs.CR_String;
         // you can't trust m1 as it depends on c1 which is not effectively final
-        MethodTypeRef mt = MethodTypeRef.of(c);
-        MethodHandle mh = ldc(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, cField, "foo", mt));
+        MethodTypeDesc mt = MethodTypeDesc.of(c);
+        MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, cField, "foo", mt));
         c = null;
     }
 }

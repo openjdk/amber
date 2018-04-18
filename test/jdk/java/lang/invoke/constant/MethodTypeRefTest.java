@@ -24,8 +24,8 @@
  */
 
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -46,40 +46,40 @@ import static org.testng.Assert.fail;
 @Test
 public class MethodTypeRefTest extends SymbolicRefTest {
 
-    private void testMethodTypeRef(MethodTypeRef r) throws ReflectiveOperationException {
+    private void testMethodTypeRef(MethodTypeDesc r) throws ReflectiveOperationException {
         testSymbolicRef(r);
 
         // Tests accessors (rType, pType, pCount, pList, pArray, descriptorString),
         // factories (ofDescriptor, of), equals
-        assertEquals(r, MethodTypeRef.ofDescriptor(r.descriptorString()));
-        assertEquals(r, MethodTypeRef.of(r.returnType(), r.parameterArray()));
-        assertEquals(r, MethodTypeRef.of(r.returnType(), r.parameterList().toArray(new ClassRef[0])));
-        assertEquals(r, MethodTypeRef.of(r.returnType(), r.parameterList().stream().toArray(ClassRef[]::new)));
-        assertEquals(r, MethodTypeRef.of(r.returnType(), IntStream.range(0, r.parameterCount())
-                                                                  .mapToObj(r::parameterType)
-                                                                  .toArray(ClassRef[]::new)));
+        assertEquals(r, MethodTypeDesc.ofDescriptor(r.descriptorString()));
+        assertEquals(r, MethodTypeDesc.of(r.returnType(), r.parameterArray()));
+        assertEquals(r, MethodTypeDesc.of(r.returnType(), r.parameterList().toArray(new ClassDesc[0])));
+        assertEquals(r, MethodTypeDesc.of(r.returnType(), r.parameterList().stream().toArray(ClassDesc[]::new)));
+        assertEquals(r, MethodTypeDesc.of(r.returnType(), IntStream.range(0, r.parameterCount())
+                                                                   .mapToObj(r::parameterType)
+                                                                   .toArray(ClassDesc[]::new)));
     }
 
-    private void testMethodTypeRef(MethodTypeRef r, MethodType mt) throws ReflectiveOperationException {
+    private void testMethodTypeRef(MethodTypeDesc r, MethodType mt) throws ReflectiveOperationException {
         testMethodTypeRef(r);
 
-        assertEquals(r.resolveConstantRef(LOOKUP), mt);
-        assertEquals(mt.toConstantRef(LOOKUP).get(), r);
+        assertEquals(r.resolveConstantDesc(LOOKUP), mt);
+        assertEquals(mt.describeConstable(LOOKUP).get(), r);
 
         assertEquals(r.descriptorString(), mt.toMethodDescriptorString());
         assertEquals(r.parameterCount(), mt.parameterCount());
         assertEquals(r.parameterList(), mt.parameterList().stream().map(SymbolicRefTest::classToRef).collect(toList()));
-        assertEquals(r.parameterArray(), Stream.of(mt.parameterArray()).map(SymbolicRefTest::classToRef).toArray(ClassRef[]::new));
+        assertEquals(r.parameterArray(), Stream.of(mt.parameterArray()).map(SymbolicRefTest::classToRef).toArray(ClassDesc[]::new));
         for (int i=0; i<r.parameterCount(); i++)
             assertEquals(r.parameterType(i), classToRef(mt.parameterType(i)));
         assertEquals(r.returnType(), classToRef(mt.returnType()));
     }
 
-    private void assertMethodType(ClassRef returnType,
-                                  ClassRef... paramTypes) throws ReflectiveOperationException {
-        String descriptor = Stream.of(paramTypes).map(ClassRef::descriptorString).collect(joining("", "(", ")"))
+    private void assertMethodType(ClassDesc returnType,
+                                  ClassDesc... paramTypes) throws ReflectiveOperationException {
+        String descriptor = Stream.of(paramTypes).map(ClassDesc::descriptorString).collect(joining("", "(", ")"))
                             + returnType.descriptorString();
-        MethodTypeRef mtRef = MethodTypeRef.of(returnType, paramTypes);
+        MethodTypeDesc mtRef = MethodTypeDesc.of(returnType, paramTypes);
 
         // MTRef accessors
         assertEquals(descriptor, mtRef.descriptorString());
@@ -96,57 +96,57 @@ public class MethodTypeRefTest extends SymbolicRefTest {
 
         // changeReturnType
         for (String r : returnDescs) {
-            ClassRef rc = ClassRef.ofDescriptor(r);
-            MethodTypeRef newRef = mtRef.changeReturnType(rc);
-            assertEquals(newRef, MethodTypeRef.of(rc, paramTypes));
-            testMethodTypeRef(newRef, mt.changeReturnType(rc.resolveConstantRef(LOOKUP)));
+            ClassDesc rc = ClassDesc.ofDescriptor(r);
+            MethodTypeDesc newRef = mtRef.changeReturnType(rc);
+            assertEquals(newRef, MethodTypeDesc.of(rc, paramTypes));
+            testMethodTypeRef(newRef, mt.changeReturnType(rc.resolveConstantDesc(LOOKUP)));
         }
 
         // changeParamType
         for (int i=0; i<paramTypes.length; i++) {
             for (String p : paramDescs) {
-                ClassRef pc = ClassRef.ofDescriptor(p);
-                ClassRef[] ps = paramTypes.clone();
+                ClassDesc pc = ClassDesc.ofDescriptor(p);
+                ClassDesc[] ps = paramTypes.clone();
                 ps[i] = pc;
-                MethodTypeRef newRef = mtRef.changeParameterType(i, pc);
-                assertEquals(newRef, MethodTypeRef.of(returnType, ps));
-                testMethodTypeRef(newRef, mt.changeParameterType(i, pc.resolveConstantRef(LOOKUP)));
+                MethodTypeDesc newRef = mtRef.changeParameterType(i, pc);
+                assertEquals(newRef, MethodTypeDesc.of(returnType, ps));
+                testMethodTypeRef(newRef, mt.changeParameterType(i, pc.resolveConstantDesc(LOOKUP)));
             }
         }
 
         // dropParamType
         for (int i=0; i<paramTypes.length; i++) {
             int k = i;
-            ClassRef[] ps = IntStream.range(0, paramTypes.length)
-                                     .filter(j -> j != k)
-                                     .mapToObj(j -> paramTypes[j])
-                                     .toArray(ClassRef[]::new);
-            MethodTypeRef newRef = mtRef.dropParameterTypes(i, i + 1);
-            assertEquals(newRef, MethodTypeRef.of(returnType, ps));
+            ClassDesc[] ps = IntStream.range(0, paramTypes.length)
+                                      .filter(j -> j != k)
+                                      .mapToObj(j -> paramTypes[j])
+                                      .toArray(ClassDesc[]::new);
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(i, i + 1);
+            assertEquals(newRef, MethodTypeDesc.of(returnType, ps));
             testMethodTypeRef(newRef, mt.dropParameterTypes(i, i+1));
         }
 
         // addParam
         for (int i=0; i <= paramTypes.length; i++) {
-            for (ClassRef p : paramTypes) {
+            for (ClassDesc p : paramTypes) {
                 int k = i;
-                ClassRef[] ps = IntStream.range(0, paramTypes.length + 1)
-                                         .mapToObj(j -> (j < k) ? paramTypes[j] : (j == k) ? p : paramTypes[j-1])
-                                         .toArray(ClassRef[]::new);
-                MethodTypeRef newRef = mtRef.insertParameterTypes(i, p);
-                assertEquals(newRef, MethodTypeRef.of(returnType, ps));
-                testMethodTypeRef(newRef, mt.insertParameterTypes(i, p.resolveConstantRef(LOOKUP)));
+                ClassDesc[] ps = IntStream.range(0, paramTypes.length + 1)
+                                          .mapToObj(j -> (j < k) ? paramTypes[j] : (j == k) ? p : paramTypes[j-1])
+                                          .toArray(ClassDesc[]::new);
+                MethodTypeDesc newRef = mtRef.insertParameterTypes(i, p);
+                assertEquals(newRef, MethodTypeDesc.of(returnType, ps));
+                testMethodTypeRef(newRef, mt.insertParameterTypes(i, p.resolveConstantDesc(LOOKUP)));
             }
         }
     }
 
     public void testMethodTypeRef() throws ReflectiveOperationException {
         for (String r : returnDescs) {
-            assertMethodType(ClassRef.ofDescriptor(r));
+            assertMethodType(ClassDesc.ofDescriptor(r));
             for (String p1 : paramDescs) {
-                assertMethodType(ClassRef.ofDescriptor(r), ClassRef.ofDescriptor(p1));
+                assertMethodType(ClassDesc.ofDescriptor(r), ClassDesc.ofDescriptor(p1));
                 for (String p2 : paramDescs) {
-                    assertMethodType(ClassRef.ofDescriptor(r), ClassRef.ofDescriptor(p1), ClassRef.ofDescriptor(p2));
+                    assertMethodType(ClassDesc.ofDescriptor(r), ClassDesc.ofDescriptor(p1), ClassDesc.ofDescriptor(p2));
                 }
             }
         }
@@ -159,7 +159,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
 
         for (String d : badDescriptors) {
             try {
-                MethodTypeRef r = MethodTypeRef.ofDescriptor(d);
+                MethodTypeDesc r = MethodTypeDesc.ofDescriptor(d);
                 fail(d);
             }
             catch (IllegalArgumentException e) {

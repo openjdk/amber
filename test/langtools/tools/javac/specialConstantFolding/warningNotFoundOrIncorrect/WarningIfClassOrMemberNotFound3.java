@@ -6,25 +6,24 @@
 
 import java.lang.invoke.*;
 import java.lang.invoke.constant.*;
-import static java.lang.invoke.Intrinsics.*;
 
 public class WarningIfClassOrMemberNotFound3 {
     interface I {}
 
-    private static final ClassRef THE_INTERFACE = ClassRef.of("WarningIfClassOrMemberNotFound3$I");
+    private static final ClassDesc THE_INTERFACE = ClassDesc.of("WarningIfClassOrMemberNotFound3$I");
 
     public void test1() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, THE_INTERFACE, "", MethodTypeRef.ofDescriptor("()V"));
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, "", MethodTypeDesc.ofDescriptor("()V"));
         Intrinsics.ldc(negIMethodRef);
     }
 
     public void test2() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, "strField", ConstantRefs.CR_String);
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 
     public void test3() {
-        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, "strField", ConstantRefs.CR_String);
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 }

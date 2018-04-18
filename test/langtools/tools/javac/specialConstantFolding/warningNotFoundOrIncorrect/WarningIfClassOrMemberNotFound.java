@@ -9,22 +9,22 @@ import static java.lang.invoke.Intrinsics.*;
 
 class WarningIfClassOrMemberNotFound {
     void m() {
-        final MethodTypeRef mt1 = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
-        MethodHandle mh1 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LNonExistentClass1;"), "foo", mt1));
+        final MethodTypeDesc mt1 = MethodTypeDesc.of(ClassDesc.ofDescriptor("Ljava/lang/String;"));
+        MethodHandle mh1 = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LNonExistentClass1;"), "foo", mt1));
 
-        ClassRef cr = ClassRef.ofDescriptor("LNonExistentClass2;");
+        ClassDesc cr = ClassDesc.ofDescriptor("LNonExistentClass2;");
         Class<?> c = ldc(cr);
 
-        ClassRef crArr = ClassRef.ofDescriptor("[[[LNonExistentClass3;");
+        ClassDesc crArr = ClassDesc.ofDescriptor("[[[LNonExistentClass3;");
         Class<?> cArr = ldc(crArr);
 
-        final MethodTypeRef mt2 = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
+        final MethodTypeDesc mt2 = MethodTypeDesc.of(ClassDesc.ofDescriptor("Ljava/lang/String;"));
         // now the class exists but the method doesn't
-        MethodHandle mh2 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LWarningIfClassOrMemberNotFound;"), "bar", mt2));
+        MethodHandle mh2 = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LWarningIfClassOrMemberNotFound;"), "bar", mt2));
 
-        final MethodTypeRef mt3 = MethodTypeRef.of(ClassRef.ofDescriptor("Ljava/lang/String;"));
+        final MethodTypeDesc mt3 = MethodTypeDesc.of(ClassDesc.ofDescriptor("Ljava/lang/String;"));
         // now the class exists and so is the method but the arguments are incorrect
-        MethodHandle mh3 = ldc(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LWarningIfClassOrMemberNotFound;"), "foo", mt3));
+        MethodHandle mh3 = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LWarningIfClassOrMemberNotFound;"), "foo", mt3));
     }
 
     String foo(String s) { return s; }

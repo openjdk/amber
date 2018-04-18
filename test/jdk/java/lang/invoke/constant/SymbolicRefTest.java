@@ -26,10 +26,10 @@
 import java.lang.Class;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ConstantDesc;
+import java.lang.invoke.constant.ConstantDescs;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -55,23 +55,23 @@ public abstract class SymbolicRefTest {
     static String[] returnDescs = Stream.concat(Stream.of(paramDescs), Stream.of("V")).toArray(String[]::new);
 
     enum Primitives {
-        INT("I", "int", int.class, int[].class, ConstantRefs.CR_int),
-        LONG("J", "long", long.class, long[].class, ConstantRefs.CR_long),
-        SHORT("S", "short", short.class, short[].class, ConstantRefs.CR_short),
-        BYTE("B", "byte", byte.class, byte[].class, ConstantRefs.CR_byte),
-        CHAR("C", "char", char.class, char[].class, ConstantRefs.CR_char),
-        FLOAT("F", "float", float.class, float[].class, ConstantRefs.CR_float),
-        DOUBLE("D", "double", double.class, double[].class, ConstantRefs.CR_double),
-        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, ConstantRefs.CR_boolean),
-        VOID("V", "void", void.class, null, ConstantRefs.CR_void);
+        INT("I", "int", int.class, int[].class, ConstantDescs.CR_int),
+        LONG("J", "long", long.class, long[].class, ConstantDescs.CR_long),
+        SHORT("S", "short", short.class, short[].class, ConstantDescs.CR_short),
+        BYTE("B", "byte", byte.class, byte[].class, ConstantDescs.CR_byte),
+        CHAR("C", "char", char.class, char[].class, ConstantDescs.CR_char),
+        FLOAT("F", "float", float.class, float[].class, ConstantDescs.CR_float),
+        DOUBLE("D", "double", double.class, double[].class, ConstantDescs.CR_double),
+        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, ConstantDescs.CR_boolean),
+        VOID("V", "void", void.class, null, ConstantDescs.CR_void);
 
         public final String descriptor;
         public final String name;
         public final Class<?> clazz;
         public final Class<?> arrayClass;
-        public final ClassRef classRef;
+        public final ClassDesc classRef;
 
-        Primitives(String descriptor, String name, Class<?> clazz, Class<?> arrayClass, ClassRef ref) {
+        Primitives(String descriptor, String name, Class<?> clazz, Class<?> arrayClass, ClassDesc ref) {
             this.descriptor = descriptor;
             this.name = name;
             this.clazz = clazz;
@@ -84,28 +84,28 @@ public abstract class SymbolicRefTest {
         return MethodType.methodType(clazz).toMethodDescriptorString().substring(2);
     }
 
-    static ClassRef classToRef(Class<?> c) {
-        return ClassRef.ofDescriptor(c.toDescriptorString());
+    static ClassDesc classToRef(Class<?> c) {
+        return ClassDesc.ofDescriptor(c.toDescriptorString());
     }
 
-    static<T> void testSymbolicRef(ConstantRef<T> ref) throws ReflectiveOperationException {
+    static<T> void testSymbolicRef(ConstantDesc<T> ref) throws ReflectiveOperationException {
         testSymbolicRef(ref, false);
     }
 
-    static<T> void testSymbolicRefForwardOnly(ConstantRef<T> ref) throws ReflectiveOperationException {
+    static<T> void testSymbolicRefForwardOnly(ConstantDesc<T> ref) throws ReflectiveOperationException {
         testSymbolicRef(ref, true);
     }
 
-    private static<T> void testSymbolicRef(ConstantRef<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
+    private static<T> void testSymbolicRef(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
         if (!forwardOnly) {
             // Round trip sym -> resolve -> toSymbolicRef
-            ConstantRef<? super ConstantRef<T>> s = ((Constable<ConstantRef<T>>) ref.resolveConstantRef(LOOKUP)).toConstantRef(LOOKUP).orElseThrow();
+            ConstantDesc<? super ConstantDesc<T>> s = ((Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP)).describeConstable(LOOKUP).orElseThrow();
             assertEquals(ref, s);
         }
 
         // Round trip sym -> quoted sym -> resolve
-        Optional<ConstantRef<ConstantRef<T>>> opt = (Optional<ConstantRef<ConstantRef<T>>>) ((Constable) ref).toConstantRef(LOOKUP);
-        ConstantRef<T> sr = opt.orElseThrow().resolveConstantRef(LOOKUP);
+        Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable(LOOKUP);
+        ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
         assertEquals(sr, ref);
     }
 }

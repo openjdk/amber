@@ -102,13 +102,13 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "import java.util.Optional;\n" +
             "import jdk.internal.lang.annotation.*;\n" +
             "import java.lang.invoke.*;\n" +
-            "import static java.lang.invoke.constant.ConstantRefs.*;\n" +
+            "import static java.lang.invoke.constant.ConstantDescs.*;\n" +
 
             "/** --\n" +
             "*/\n" +
             "public class Stub {\n" +
-            "   private static final ClassRef CR_BOX = ClassRef.of(\"java.lang.invoke.constant.Stub\").inner(\"Box\");\n" +
-            "   private static final MethodHandleRef MH_BOX = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
+            "   private static final ClassDesc CR_BOX = ClassDesc.of(\"java.lang.invoke.constant.Stub\").inner(\"Box\");\n" +
+            "   private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
             "   /**\n" +
             "    * x\n" +
             "    * @return x\n" +
@@ -146,8 +146,8 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "       public Box(String s) {\n" +
             "           this.s = s;\n" +
             "       }        @Override\n" +
-            "       public Optional<? extends ConstantRef<? super Box>> toConstantRef(MethodHandles.Lookup lookup) {\n" +
-            "           return DynamicConstantRef.symbolizeHelper(lookup, MH_BOX, CR_BOX, s);\n" +
+            "       public Optional<? extends ConstantDesc<? super Box>> toConstantDesc(MethodHandles.Lookup lookup) {\n" +
+            "           return DynamicConstantDesc.symbolizeHelper(lookup, MH_BOX, CR_BOX, s);\n" +
             "       }\n" +
             "   }\n" +
             "}";

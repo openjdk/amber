@@ -41,43 +41,43 @@ import static java.util.stream.Collectors.joining;
  * A nominal descriptor for a {@link Class} constant.
  *
  * <p>For common system types, including all the primitive types, there are
- * predefined {@linkplain ClassRef} constants in {@link ConstantRefs}.  To create
- * a {@linkplain ClassRef} for a class or interface type, use {@link #of} or
- * {@link #ofDescriptor(String)}; to create a {@linkplain ClassRef} for an array
+ * predefined {@linkplain ClassDesc} constants in {@link ConstantDescs}.  To create
+ * a {@linkplain ClassDesc} for a class or interface type, use {@link #of} or
+ * {@link #ofDescriptor(String)}; to create a {@linkplain ClassDesc} for an array
  * type, use {@link #ofDescriptor(String)}, or first obtain a
- * {@linkplain ClassRef} for the component type and then call the {@link #array()}
+ * {@linkplain ClassDesc} for the component type and then call the {@link #array()}
  * method.
  *
- * @see ConstantRefs
+ * @see ConstantDescs
  */
-public interface ClassRef
-        extends ConstantRef<Class<?>>, Constable<ConstantRef<Class<?>>> {
+public interface ClassDesc
+        extends ConstantDesc<Class<?>>, Constable<ConstantDesc<Class<?>>> {
     /**
-     * Create a {@linkplain ClassRef} from a class name.
+     * Create a {@linkplain ClassDesc} from a class name.
      *
      * @param name the fully qualified (dot-separated) binary class name
-     * @return a {@linkplain ClassRef} describing the desired class
+     * @return a {@linkplain ClassDesc} describing the desired class
      * @throws IllegalArgumentException if the name string does not
      * describe a valid class name
      */
     @Foldable
-    static ClassRef of(String name) {
+    static ClassDesc of(String name) {
         ConstantUtils.validateBinaryClassName(requireNonNull(name));
-        return ClassRef.ofDescriptor("L" + binaryToInternal(name) + ";");
+        return ClassDesc.ofDescriptor("L" + binaryToInternal(name) + ";");
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a package name and an unqualified
+     * Create a {@linkplain ClassDesc} from a package name and an unqualified
      * class name.
      *
      * @param packageName the package name (dot-separated)
      * @param className the unqualified class name
-     * @return a {@linkplain ClassRef} describing the desired class
+     * @return a {@linkplain ClassDesc} describing the desired class
      * @throws IllegalArgumentException if the package name or class name are
      * not in the correct format
      */
     @Foldable
-    static ClassRef of(String packageName, String className) {
+    static ClassDesc of(String packageName, String className) {
         ConstantUtils.validateBinaryClassName(requireNonNull(packageName));
         validateMemberName(requireNonNull(className));
         return ofDescriptor(String.format("L%s%s%s;",
@@ -87,79 +87,79 @@ public interface ClassRef
     }
 
     /**
-     * Create a {@linkplain ClassRef} from a descriptor string for a class
+     * Create a {@linkplain ClassDesc} from a descriptor string for a class
      *
      * @param descriptor a field descriptor string, as per JVMS 4.3.2
-     * @return a {@linkplain ClassRef} describing the desired class
+     * @return a {@linkplain ClassDesc} describing the desired class
      * @throws NullPointerException if the descriptor string is null
      * @throws IllegalArgumentException if the descriptor string is not
      * a valid class descriptor
      */
     @Foldable
-    static ClassRef ofDescriptor(String descriptor) {
+    static ClassDesc ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
         return (descriptor.length() == 1)
-               ? new PrimitiveClassRef(descriptor)
-               : new ConstantClassRef(descriptor);
+               ? new PrimitiveClassDesc(descriptor)
+               : new ConstantClassDesc(descriptor);
     }
 
     /**
-     * Create a {@linkplain ClassRef} describing an array of the type
-     * described by this {@linkplain ClassRef}
+     * Create a {@linkplain ClassDesc} describing an array of the type
+     * described by this {@linkplain ClassDesc}
      *
-     * @return a {@linkplain ClassRef} describing the array type
+     * @return a {@linkplain ClassDesc} describing the array type
      */
     @Foldable
-    default ClassRef array() {
-        return ClassRef.ofDescriptor("[" + descriptorString());
+    default ClassDesc array() {
+        return ClassDesc.ofDescriptor("[" + descriptorString());
     }
 
     /**
-     * Create a {@linkplain ClassRef} describing an array of the type
-     * described by this {@linkplain ClassRef}, of the specified rank
+     * Create a {@linkplain ClassDesc} describing an array of the type
+     * described by this {@linkplain ClassDesc}, of the specified rank
      *
      * @param rank the rank of the array
-     * @return a {@linkplain ClassRef} describing the array type
+     * @return a {@linkplain ClassDesc} describing the array type
      * @throws IllegalArgumentException if the rank is zero or negative
      */
     @Foldable
-    default ClassRef array(int rank) {
+    default ClassDesc array(int rank) {
         if (rank <= 0)
             throw new IllegalArgumentException();
-        ClassRef cr = this;
+        ClassDesc cr = this;
         for (int i=0; i<rank; i++)
             cr = cr.array();
         return cr;
     }
 
     /**
-     * Create a {@linkplain ClassRef} describing an inner class of the
-     * class or interface type described by this {@linkplain ClassRef}
+     * Create a {@linkplain ClassDesc} describing an inner class of the
+     * class or interface type described by this {@linkplain ClassDesc}
      * @param innerName the unqualified name of the inner class
-     * @return a {@linkplain ClassRef} describing the inner class
-     * @throws IllegalStateException if this {@linkplain ClassRef} does not
+     * @return a {@linkplain ClassDesc} describing the inner class
+     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      */
     @Foldable
-    default ClassRef inner(String innerName) {
+    default ClassDesc inner(String innerName) {
         validateMemberName(innerName);
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return ClassRef.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), innerName));
+        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), innerName));
     }
 
     /**
-     * Create a {@linkplain ClassRef} describing a multiply nested inner class of the
-     * class or interface type described by this {@linkplain ClassRef}
+     * Create a {@linkplain ClassDesc} describing a multiply nested inner class of the
+     * class or interface type described by this {@linkplain ClassDesc}
      *
      * @param firstInnerName the name of the first level of inner class
      * @param moreInnerNames the name(s) of the remaining levels of inner class
-     * @return a {@linkplain ClassRef} describing the inner class
-     * @throws IllegalStateException if this {@linkplain ClassRef} does not
+     * @return a {@linkplain ClassDesc} describing the inner class
+     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      */
     @Foldable
-    default ClassRef inner(String firstInnerName, String... moreInnerNames) {
+    default ClassDesc inner(String firstInnerName, String... moreInnerNames) {
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
         return moreInnerNames.length == 0
@@ -168,53 +168,53 @@ public interface ClassRef
     }
 
     /**
-     * Returns whether this {@linkplain ClassRef} describes an array type
+     * Returns whether this {@linkplain ClassDesc} describes an array type
      *
-     * @return whether this {@linkplain ClassRef} describes an array type
+     * @return whether this {@linkplain ClassDesc} describes an array type
      */
     default boolean isArray() {
         return descriptorString().startsWith("[");
     }
 
     /**
-     * Returns whether this {@linkplain ClassRef} describes a primitive type
+     * Returns whether this {@linkplain ClassDesc} describes a primitive type
      *
-     * @return whether this {@linkplain ClassRef} describes a primitive type
+     * @return whether this {@linkplain ClassDesc} describes a primitive type
      */
     default boolean isPrimitive() {
         return descriptorString().length() == 1;
     }
 
     /**
-     * Returns whether this {@linkplain ClassRef} describes a class or interface type
+     * Returns whether this {@linkplain ClassDesc} describes a class or interface type
      *
-     * @return whether this {@linkplain ClassRef} describes a class or interface type
+     * @return whether this {@linkplain ClassDesc} describes a class or interface type
      */
     default boolean isClassOrInterface() {
         return descriptorString().startsWith("L");
     }
 
     /**
-     * Returns the component type of this {@linkplain ClassRef}, if it describes
+     * Returns the component type of this {@linkplain ClassDesc}, if it describes
      * an array type
      *
-     * @return a {@linkplain ClassRef} describing the component type
-     * @throws IllegalStateException if this {@linkplain ClassRef} does not
+     * @return a {@linkplain ClassDesc} describing the component type
+     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe an array type
      */
     @Foldable
-    default ClassRef componentType() {
+    default ClassDesc componentType() {
         if (!isArray())
             throw new IllegalStateException("not an array");
-        return ClassRef.ofDescriptor(descriptorString().substring(1));
+        return ClassDesc.ofDescriptor(descriptorString().substring(1));
     }
 
     /**
-     * Returns the package name of this {@linkplain ClassRef}, if it describes
+     * Returns the package name of this {@linkplain ClassDesc}, if it describes
      * a class or interface type
      *
      * @return the package name, or the empty string if no package
-     * @throws IllegalStateException if this {@linkplain ClassRef} does not
+     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      */
     default String packageName() {
@@ -239,7 +239,7 @@ public interface ClassRef
         }
         else if (descriptorString().startsWith(("["))) {
             int depth = ConstantUtils.arrayDepth(descriptorString());
-            ClassRef c = this;
+            ClassDesc c = this;
             for (int i=0; i<depth; i++)
                 c = c.componentType();
             String name = c.displayName();

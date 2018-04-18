@@ -1,6 +1,6 @@
 /* /nodynamiccopyright/ */
 
-import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ClassDesc;
 
 import static java.lang.invoke.Intrinsics.*;
 
@@ -12,8 +12,8 @@ public class StringFoldingTest extends ConstantFoldingTest {
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_Class_info", "java/lang/String"})
     @InstructionInfo(bytecodePosition=3, values={"CONSTANT_Class_info", "java/lang/String"})
     void test() {
-        Class<?> c1 = (Class<?>)ldc(ClassRef.ofDescriptor("Ljava/lang/String;" + ""));
-        ClassRef c2 = ClassRef.ofDescriptor("Ljava/lang/String;");
-        Class<?> c3 = (Class<?>)ldc(ClassRef.ofDescriptor("" + c2.descriptorString()));
+        Class<?> c1 = (Class<?>)ldc(ClassDesc.ofDescriptor("Ljava/lang/String;" + ""));
+        ClassDesc c2 = ClassDesc.ofDescriptor("Ljava/lang/String;");
+        Class<?> c3 = (Class<?>)ldc(ClassDesc.ofDescriptor("" + c2.descriptorString()));
     }
 }

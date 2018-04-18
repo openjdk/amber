@@ -51,13 +51,13 @@ public class CheckForCorrectMRefTest {
             "import java.lang.invoke.constant.*;\n" +
 
             "public class Test1 {\n" +
-            "    private static final ClassRef THIS = ClassRef.of(\"Test1\");\n" +
+            "    private static final ClassDesc THIS = ClassDesc.of(\"Test1\");\n" +
             "    public int m(int i) { return i; }\n" +
 
             "    public void test() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.of(\n" +
-            "            MethodHandleRef.Kind.INTERFACE_VIRTUAL, THIS, \"m\", MethodTypeRef.ofDescriptor(\"(I)I\"));\n" +
-            "        Intrinsics.ldc(negIMethodRef);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.of(\n" +
+            "            MethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, \"m\", MethodTypeDesc.ofDescriptor(\"(I)I\"));\n" +
+            "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
             "}";
 
@@ -68,21 +68,21 @@ public class CheckForCorrectMRefTest {
             "public class Test2 {\n" +
             "    interface I {}\n" +
 
-            "    private static final ClassRef THE_INTERFACE = ClassRef.of(\"Test2$I\");\n" +
+            "    private static final ClassDesc THE_INTERFACE = ClassDesc.of(\"Test2$I\");\n" +
 
             "    public void test1() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, THE_INTERFACE, \"\", MethodTypeRef.ofDescriptor(\"()V\"));\n" +
-            "        Intrinsics.ldc(negIMethodRef);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, \"\", MethodTypeDesc.ofDescriptor(\"()V\"));\n" +
+            "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
 
             "    public void test2() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, THE_INTERFACE, \"strField\", ConstantRefs.CR_String);\n" +
-            "        Intrinsics.ldc(negIMethodRef);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
+            "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
 
             "    public void test3() {\n" +
-            "        MethodHandleRef negIMethodRef = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, THE_INTERFACE, \"strField\", ConstantRefs.CR_String);\n" +
-            "        Intrinsics.ldc(negIMethodRef);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
+            "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
             "}";
 

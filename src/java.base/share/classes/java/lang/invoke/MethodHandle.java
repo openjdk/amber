@@ -28,10 +28,10 @@ package java.lang.invoke;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
-import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -1515,15 +1515,15 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     }
 
     @Override
-    public Optional<MethodHandleRef> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<MethodHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
         MethodHandleInfo info;
-        ClassRef owner;
+        ClassDesc owner;
         String name;
-        MethodTypeRef type;
+        MethodTypeDesc type;
         try {
             info = lookup.revealDirect(this);
-            owner = info.getDeclaringClass().toConstantRef(lookup).orElseThrow();
-            type = info.getMethodType().toConstantRef(lookup).orElseThrow();
+            owner = info.getDeclaringClass().describeConstable(lookup).orElseThrow();
+            type = info.getMethodType().describeConstable(lookup).orElseThrow();
             name = info.getName();
         }
         catch (Exception e) {
@@ -1532,23 +1532,23 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
 
         switch (info.getReferenceKind()) {
             case REF_getField:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, owner, name, type.returnType()));
             case REF_putField:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, owner, name, type.parameterType(0)));
+                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, owner, name, type.parameterType(0)));
             case REF_getStatic:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_GETTER, owner, name, type.returnType()));
             case REF_putStatic:
-                return Optional.of(MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
+                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
             case REF_invokeVirtual:
-                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, owner, name, type));
             case REF_invokeStatic:
-                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.STATIC, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, owner, name, type));
             case REF_invokeSpecial:
-                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, owner, name, type));
             case REF_invokeInterface:
-                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
             case REF_newInvokeSpecial:
-                return Optional.of(MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, owner, name, type));
             default:
                 return Optional.empty();
         }

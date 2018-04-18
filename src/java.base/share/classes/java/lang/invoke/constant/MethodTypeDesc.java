@@ -36,43 +36,43 @@ import static java.util.Objects.requireNonNull;
 /**
  * A nominal descriptor for a {@linkplain MethodType} constant.
  */
-public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<ConstantRef<MethodType>> {
+public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<ConstantDesc<MethodType>> {
     /**
-     * Create a {@linkplain MethodTypeRef} from a method descriptor string
+     * Create a {@linkplain MethodTypeDesc} from a method descriptor string
      *
      * @param descriptor a method descriptor string, as per JVMS 4.3.3
-     * @return a {@linkplain MethodTypeRef} describing the desired method type
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
      */
     @Foldable
-    static MethodTypeRef ofDescriptor(String descriptor) {
-        return ConstantMethodTypeRef.ofDescriptor(descriptor);
+    static MethodTypeDesc ofDescriptor(String descriptor) {
+        return ConstantMethodTypeDesc.ofDescriptor(descriptor);
     }
 
     /**
-     * Returns a {@linkplain MethodTypeRef} for the specified return type and
+     * Returns a {@linkplain MethodTypeDesc} for the specified return type and
      * parameter types.
      *
-     * @param returnDescriptor a {@linkplain ClassRef} describing the return type
-     * @param paramDescriptors {@linkplain ClassRef}s describing the argument types
-     * @return a {@linkplain MethodTypeRef} describing the desired method type
+     * @param returnDescriptor a {@linkplain ClassDesc} describing the return type
+     * @param paramDescriptors {@linkplain ClassDesc}s describing the argument types
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
      */
     @Foldable
-    static MethodTypeRef of(ClassRef returnDescriptor, ClassRef... paramDescriptors) {
-        return new ConstantMethodTypeRef(returnDescriptor, paramDescriptors);
+    static MethodTypeDesc of(ClassDesc returnDescriptor, ClassDesc... paramDescriptors) {
+        return new ConstantMethodTypeDesc(returnDescriptor, paramDescriptors);
     }
 
     /**
-     * Get the return type of the method type described by this {@linkplain MethodTypeRef}
+     * Get the return type of the method type described by this {@linkplain MethodTypeDesc}
      * @return the return type
      */
     @Foldable
-    ClassRef returnType();
+    ClassDesc returnType();
 
     /**
      * Get the number of parameters of the method type described by
-     * this {@linkplain MethodTypeRef}
+     * this {@linkplain MethodTypeDesc}
      * @return the number of parameters
      */
     @Foldable
@@ -80,7 +80,7 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
 
     /**
      * Get the parameter type of the {@code index}'th parameter of the method type
-     * described by this {@linkplain MethodTypeRef}
+     * described by this {@linkplain MethodTypeDesc}
      *
      * @param index the index of the parameter to retrieve
      * @return the parameter type
@@ -88,34 +88,34 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
      * range {[0, parameterCount())}
      */
     @Foldable
-    ClassRef parameterType(int index);
+    ClassDesc parameterType(int index);
 
     /**
      * Get the parameter types as a {@link List}
      *
      * @return the parameter types
      */
-    List<ClassRef> parameterList();
+    List<ClassDesc> parameterList();
 
     /**
      * Get the parameter types as an array
      *
      * @return the parameter types
      */
-    ClassRef[] parameterArray();
+    ClassDesc[] parameterArray();
 
     /**
-     * Return a {@linkplain MethodTypeRef} that is identical to
+     * Return a {@linkplain MethodTypeDesc} that is identical to
      * this one, except with the specified return type
      *
      * @param returnType the new return type
      * @return the new method type descriptor
      */
     @Foldable
-    MethodTypeRef changeReturnType(ClassRef returnType);
+    MethodTypeDesc changeReturnType(ClassDesc returnType);
 
     /**
-     * Return a {@linkplain MethodTypeRef} that is identical to this one,
+     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a single parameter type has been changed to the provided
      * value
      *
@@ -126,10 +126,10 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
      * range {[0, parameterCount)}
      */
     @Foldable
-    MethodTypeRef changeParameterType(int index, ClassRef paramType);
+    MethodTypeDesc changeParameterType(int index, ClassDesc paramType);
 
     /**
-     * Return a {@linkplain MethodTypeRef} that is identical to this one,
+     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a range of parameter types have been removed
      *
      * @param start the index of the first parameter to remove
@@ -140,10 +140,10 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
      * {@code [0, parameterCount]}
      */
     @Foldable
-    MethodTypeRef dropParameterTypes(int start, int end);
+    MethodTypeDesc dropParameterTypes(int start, int end);
 
     /**
-     * Return a {@linkplain MethodTypeRef} that is identical to this one,
+     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a range of additional parameter types have been inserted
      *
      * @param pos the index at which to insert the first inserted parameter
@@ -153,7 +153,7 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
      * range {[0, parameterCount]}
      */
     @Foldable
-    MethodTypeRef insertParameterTypes(int pos, ClassRef... paramTypes);
+    MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes);
 
     /**
      * Return the method type descriptor string
@@ -162,7 +162,7 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
     default String descriptorString() {
         return String.format("(%s)%s",
                              Stream.of(parameterArray())
-                                   .map(ClassRef::descriptorString)
+                                   .map(ClassDesc::descriptorString)
                                    .collect(Collectors.joining()),
                              returnType().descriptorString());
     }
@@ -175,7 +175,7 @@ public interface MethodTypeRef extends ConstantRef<MethodType>, Constable<Consta
     default String displayDescriptor() {
         return String.format("(%s)%s",
                              Stream.of(parameterArray())
-                                   .map(ClassRef::displayName)
+                                   .map(ClassDesc::displayName)
                                    .collect(Collectors.joining(",")),
                              returnType().displayName());
     }

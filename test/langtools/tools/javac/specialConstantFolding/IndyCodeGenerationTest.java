@@ -48,32 +48,32 @@ public class IndyCodeGenerationTest {
     }
 
     String testWithStaticArgs() throws Throwable {
-        MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                ConstantRefs.CR_CallSite,
-                ConstantRefs.CR_MethodHandles_Lookup,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_MethodType,
-                ConstantRefs.CR_int,
-                ConstantRefs.CR_long,
-                ConstantRefs.CR_float,
-                ConstantRefs.CR_double,
-                ConstantRefs.CR_Class,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_MethodType,
-                ConstantRefs.CR_MethodHandle
+        MethodTypeDesc methodTypeForMethodHandle = MethodTypeDesc.of(
+                ConstantDescs.CR_CallSite,
+                ConstantDescs.CR_MethodHandles_Lookup,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_MethodType,
+                ConstantDescs.CR_int,
+                ConstantDescs.CR_long,
+                ConstantDescs.CR_float,
+                ConstantDescs.CR_double,
+                ConstantDescs.CR_Class,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_MethodType,
+                ConstantDescs.CR_MethodHandle
         );
-        ConstantMethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("LIndyCodeGenerationTest;"),
-                                                        "testWithStaticArgsBSM", methodTypeForMethodHandle);
-        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
-                ConstantRefs.CR_String
+        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LIndyCodeGenerationTest;"),
+                                                          "testWithStaticArgsBSM", methodTypeForMethodHandle);
+        MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
+                ConstantDescs.CR_String
         );
-        DynamicCallSiteRef bs = DynamicCallSiteRef.of(mh,
-                                                      "name",
-                                                      methodTypeForIndy,
-                                                      1, 2L, 3.0f, 4.0d,
-                                                      ConstantRefs.CR_int,
-                                                      "something",
-                                                      MethodTypeRef.ofDescriptor("(IJFD)V"), mh);
+        DynamicCallSiteDesc bs = DynamicCallSiteDesc.of(mh,
+                                                        "name",
+                                                        methodTypeForIndy,
+                                                        1, 2L, 3.0f, 4.0d,
+                                                        ConstantDescs.CR_int,
+                                                        "something",
+                                                        MethodTypeDesc.ofDescriptor("(IJFD)V"), mh);
         return (String)invokedynamic(bs);
     }
 

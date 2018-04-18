@@ -34,13 +34,13 @@ import java.lang.invoke.constant.*;
 
 public class TwoVisitsAreNeededCauseOfForwardRefTest {
     static class Inner {
-        private static final MethodTypeRef TYPE = MethodTypeRef.of(ClassRef_BigInt,
-                                                                   ConstantRefs.CR_long, ConstantRefs.CR_long);
-        private static final ClassRef ME = ClassRef.ofDescriptor("LTwoVisitsAreNeededCauseOfForwardRefTest$Inner;");
+        private static final MethodTypeDesc TYPE = MethodTypeDesc.of(ClassRef_BigInt,
+                                                                     ConstantDescs.CR_long, ConstantDescs.CR_long);
+        private static final ClassDesc ME = ClassDesc.ofDescriptor("LTwoVisitsAreNeededCauseOfForwardRefTest$Inner;");
 
-        private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleRef.of(
-                MethodHandleRef.Kind.VIRTUAL, ME, "fast", TYPE));
+        private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleDesc.of(
+                MethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
     }
 
-    public static final ClassRef ClassRef_BigInt = ClassRef.ofDescriptor("Ljava/math/BigInteger;");
+    public static final ClassDesc ClassRef_BigInt = ClassDesc.ofDescriptor("Ljava/math/BigInteger;");
 }

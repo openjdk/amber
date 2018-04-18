@@ -29,11 +29,11 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.MethodTypeRef;
+import java.lang.invoke.constant.MethodTypeDesc;
 
 public class CrashWithPrimitiveArgumentsTest {
     void test() {
-        MethodTypeRef mtc = MethodTypeRef.ofDescriptor("(I)Ljava/lang/String;");
+        MethodTypeDesc mtc = MethodTypeDesc.ofDescriptor("(I)Ljava/lang/String;");
         Class<?> c = Intrinsics.ldc(mtc.parameterType(0));
     }
 }

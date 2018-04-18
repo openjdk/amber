@@ -33,26 +33,26 @@ import java.util.Optional;
 
 import jdk.internal.lang.annotation.Foldable;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_MethodHandleRef;
+import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandleDesc;
 import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.CONSTRUCTOR;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A nominal descriptor for a direct {@link MethodHandle}.  A
- * {@linkplain ConstantMethodHandleRef} corresponds to a {@code Constant_MethodHandle_info}
+ * {@linkplain ConstantMethodHandleDesc} corresponds to a {@code Constant_MethodHandle_info}
  * entry in the constant pool of a classfile.
  */
-public class ConstantMethodHandleRef implements MethodHandleRef {
+public class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     private final Kind kind;
-    private final ClassRef owner;
+    private final ClassDesc owner;
     private final String name;
-    private final MethodTypeRef type;
+    private final MethodTypeDesc type;
 
     /**
-     * Construct a {@linkplain ConstantMethodHandleRef} for a method or field
+     * Construct a {@linkplain ConstantMethodHandleDesc} for a method or field
      * from a kind, owner, name, and type
      * @param kind the kind of the method handle
      * @param owner the declaring class or interface for the method
@@ -65,7 +65,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
      * {@code kind} describes a constructor, and the return type of {@code type}
      * is not {@code void}
      */
-    ConstantMethodHandleRef(Kind kind, ClassRef owner, String name, MethodTypeRef type) {
+    ConstantMethodHandleDesc(Kind kind, ClassDesc owner, String name, MethodTypeDesc type) {
         super();
         if (kind == CONSTRUCTOR)
             name = "<init>";
@@ -89,7 +89,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
         this.type = type;
     }
 
-    private static void validateFieldType(MethodTypeRef type, boolean isSetter, boolean isVirtual) {
+    private static void validateFieldType(MethodTypeDesc type, boolean isSetter, boolean isVirtual) {
         boolean isVoid = type.returnType().descriptorString().equals("V");
         int expectedParams = (isSetter ? 1 : 0) + (isVirtual ? 1 : 0);
         if (isVoid != isSetter
@@ -101,7 +101,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
         }
     }
 
-    private static void validateConstructor(MethodTypeRef type) {
+    private static void validateConstructor(MethodTypeDesc type) {
         if (!type.returnType().descriptorString().equals("V")) {
             throw new IllegalArgumentException(String.format("Expected type of (T*)V for constructor, found %s", type));
         }
@@ -130,7 +130,7 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
      * @return the class in which the method or field is declared
      */
     @Foldable
-    public ClassRef owner() {
+    public ClassDesc owner() {
         return owner;
     }
 
@@ -149,14 +149,14 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
      * @return the method type
      */
     @Foldable
-    public MethodTypeRef methodType() {
+    public MethodTypeDesc methodType() {
         return type;
     }
 
-    public MethodHandle resolveConstantRef(MethodHandles.Lookup lookup)
+    public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        Class<?> resolvedOwner = owner.resolveConstantRef(lookup);
-        MethodType resolvedType = this.type.resolveConstantRef(lookup);
+        Class<?> resolvedOwner = owner.resolveConstantDesc(lookup);
+        MethodType resolvedType = this.type.resolveConstantDesc(lookup);
         switch (kind) {
             case STATIC:
                 return lookup.findStatic(resolvedOwner, name, resolvedType);
@@ -181,20 +181,20 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<MethodHandle>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_METHODHANDLEREF, CR_MethodHandleRef)
-                                             .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_METHODHANDLEDESC, CR_MethodHandleDesc)
+                                              .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ConstantMethodHandleRef ref = (ConstantMethodHandleRef) o;
-        return kind == ref.kind &&
-               Objects.equals(owner, ref.owner) &&
-               Objects.equals(name, ref.name) &&
-               Objects.equals(type, ref.type);
+        ConstantMethodHandleDesc desc = (ConstantMethodHandleDesc) o;
+        return kind == desc.kind &&
+               Objects.equals(owner, desc.owner) &&
+               Objects.equals(name, desc.name) &&
+               Objects.equals(type, desc.type);
     }
 
     @Override
@@ -204,6 +204,6 @@ public class ConstantMethodHandleRef implements MethodHandleRef {
 
     @Override
     public String toString() {
-        return String.format("MethodHandleRef[%s/%s::%s%s]", kind, owner.displayName(), name, type.displayDescriptor());
+        return String.format("MethodHandleDesc[%s/%s::%s%s]", kind, owner.displayName(), name, type.displayDescriptor());
     }
 }

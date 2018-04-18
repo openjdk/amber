@@ -4,38 +4,35 @@
  * @compile/fail/ref=MethodTypeNegTest.out -XDdoConstantFold -Werror -XDrawDiagnostics MethodTypeNegTest.java
  */
 
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.ConstantRefs;
-
-import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.*;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.MethodHandleDesc;
 
 
 public class MethodTypeNegTest {
-    private static final ClassRef CR_THIS = ClassRef.of("MethodTypeNegTest");
+    private static final ClassDesc CR_THIS = ClassDesc.of("MethodTypeNegTest");
 
     void test() {
         // for setters result must be void...
-        MethodHandleRef r1 = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_THIS, "nonexistent", ConstantRefs.CR_int);
-        MethodHandleRef r2 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_THIS, "nonexistent", ConstantRefs.CR_int);
+        MethodHandleDesc r1 = MethodHandleDesc.of(MethodHandleDesc.Kind.SETTER, CR_THIS, "nonexistent", ConstantDescs.CR_int);
+        MethodHandleDesc r2 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC_SETTER, CR_THIS, "nonexistent", ConstantDescs.CR_int);
 
         // ...and static setters should have only one argument and instance setters two
-        MethodHandleRef r3 = MethodHandleRef.of(MethodHandleRef.Kind.SETTER, CR_THIS, "nonexistent", ConstantRefs.CR_void, ConstantRefs.CR_int);
-        MethodHandleRef r4 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_SETTER, CR_THIS, "nonexistent", ConstantRefs.CR_void, ConstantRefs.CR_int, ConstantRefs.CR_int);
+        MethodHandleDesc r3 = MethodHandleDesc.of(MethodHandleDesc.Kind.SETTER, CR_THIS, "nonexistent", ConstantDescs.CR_void, ConstantDescs.CR_int);
+        MethodHandleDesc r4 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC_SETTER, CR_THIS, "nonexistent", ConstantDescs.CR_void, ConstantDescs.CR_int, ConstantDescs.CR_int);
 
         // for constructors result type must be void
-        MethodHandleRef r5 = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_THIS, "", ConstantRefs.CR_int);
+        MethodHandleDesc r5 = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_THIS, "", ConstantDescs.CR_int);
 
         // for getters result must be different from void...
-        MethodHandleRef r6 = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_THIS, "nonexistent", ConstantRefs.CR_void);
-        MethodHandleRef r7 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_THIS, "nonexistent", ConstantRefs.CR_void);
+        MethodHandleDesc r6 = MethodHandleDesc.of(MethodHandleDesc.Kind.GETTER, CR_THIS, "nonexistent", ConstantDescs.CR_void);
+        MethodHandleDesc r7 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC_GETTER, CR_THIS, "nonexistent", ConstantDescs.CR_void);
 
         // ...and instance setters should have only one argument, static ones none
-        MethodHandleRef r8 = MethodHandleRef.of(MethodHandleRef.Kind.GETTER, CR_THIS, "nonexistent", ConstantRefs.CR_int, ConstantRefs.CR_int, ConstantRefs.CR_int);
-        MethodHandleRef r9 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_THIS, "nonexistent", ConstantRefs.CR_int, ConstantRefs.CR_int, ConstantRefs.CR_int);
+        MethodHandleDesc r8 = MethodHandleDesc.of(MethodHandleDesc.Kind.GETTER, CR_THIS, "nonexistent", ConstantDescs.CR_int, ConstantDescs.CR_int, ConstantDescs.CR_int);
+        MethodHandleDesc r9 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC_GETTER, CR_THIS, "nonexistent", ConstantDescs.CR_int, ConstantDescs.CR_int, ConstantDescs.CR_int);
 
         // no argument can be void
-        MethodHandleRef r10 = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_THIS, "nonexistent", ConstantRefs.CR_int, ConstantRefs.CR_void);
+        MethodHandleDesc r10 = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_THIS, "nonexistent", ConstantDescs.CR_int, ConstantDescs.CR_void);
     }
 }

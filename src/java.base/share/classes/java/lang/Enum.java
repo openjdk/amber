@@ -32,7 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.EnumRef;
+import java.lang.invoke.constant.EnumDesc;
 import java.util.Optional;
 
 /**
@@ -207,10 +207,10 @@ public abstract class Enum<E extends Enum<E>>
     }
 
     @Override
-    public Optional<EnumRef<E>> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<EnumDesc<E>> describeConstable(MethodHandles.Lookup lookup) {
         return getDeclaringClass()
-                .toConstantRef(lookup)
-                .map(c -> EnumRef.of(c, name));
+                .describeConstable(lookup)
+                .map(c -> EnumDesc.of(c, name));
     }
 
     /**

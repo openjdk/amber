@@ -35,48 +35,48 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.lang.invoke.constant.ConstantRefs.CR_MethodTypeRef;
+import static java.lang.invoke.constant.ConstantDescs.CR_MethodTypeDesc;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A nominal descriptor for a {@link MethodType}.  A {@linkplain ConstantMethodTypeRef}
+ * A nominal descriptor for a {@link MethodType}.  A {@linkplain ConstantMethodTypeDesc}
  * corresponds to a {@code Constant_MethodType_info} entry in the constant pool
  * of a classfile.
  */
-public final class ConstantMethodTypeRef implements MethodTypeRef {
+public final class ConstantMethodTypeDesc implements MethodTypeDesc {
 
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
     private static final Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
 
-    private final ClassRef returnType;
-    private final ClassRef[] argTypes;
+    private final ClassDesc returnType;
+    private final ClassDesc[] argTypes;
 
     /**
-     * Construct a {@linkplain MethodTypeRef} with the specified return type
+     * Construct a {@linkplain MethodTypeDesc} with the specified return type
      * and parameter types
      *
-     * @param returnType a {@link ClassRef} describing the return type
-     * @param argTypes {@link ClassRef}s describing the parameter types
+     * @param returnType a {@link ClassDesc} describing the return type
+     * @param argTypes {@link ClassDesc}s describing the parameter types
      */
-    ConstantMethodTypeRef(ClassRef returnType, ClassRef[] argTypes) {
+    ConstantMethodTypeDesc(ClassDesc returnType, ClassDesc[] argTypes) {
         this.returnType = requireNonNull(returnType);
         this.argTypes = requireNonNull(argTypes);
 
-        for (ClassRef cr : argTypes)
+        for (ClassDesc cr : argTypes)
             if (cr.isPrimitive() && cr.descriptorString().equals("V"))
                 throw new IllegalArgumentException("Void parameters not permitted");
     }
 
     /**
-     * Create a {@linkplain ConstantMethodTypeRef} from a method descriptor string
+     * Create a {@linkplain ConstantMethodTypeDesc} from a method descriptor string
      *
      * @param descriptor the method descriptor string, as per JVMS 4.3.3
-     * @return a {@linkplain ConstantMethodTypeRef} describing the desired method type
+     * @return a {@linkplain ConstantMethodTypeDesc} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
      */
     @Foldable
-    static MethodTypeRef ofDescriptor(String descriptor) {
+    static MethodTypeDesc ofDescriptor(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
         // Follow the trail from MethodType.fromMethodDescriptorString to
         // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
@@ -99,13 +99,13 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
                 throw new IllegalArgumentException(String.format("Invalid parameter type: %s",
                                                                  paramTypesStr.substring(matcher.regionStart(), matcher.regionEnd())));
         }
-        ClassRef[] paramTypes = params.stream().map(ClassRef::ofDescriptor).toArray(ClassRef[]::new);
-        return new ConstantMethodTypeRef(ClassRef.ofDescriptor(returnTypeStr), paramTypes);
+        ClassDesc[] paramTypes = params.stream().map(ClassDesc::ofDescriptor).toArray(ClassDesc[]::new);
+        return new ConstantMethodTypeDesc(ClassDesc.ofDescriptor(returnTypeStr), paramTypes);
     }
 
     @Foldable
     @Override
-    public ClassRef returnType() {
+    public ClassDesc returnType() {
         return returnType;
     }
 
@@ -117,67 +117,67 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
 
     @Foldable
     @Override
-    public ClassRef parameterType(int index) {
+    public ClassDesc parameterType(int index) {
         return argTypes[index];
     }
 
     @Override
-    public List<ClassRef> parameterList() {
+    public List<ClassDesc> parameterList() {
         return List.of(argTypes);
     }
 
     @Override
-    public ClassRef[] parameterArray() {
+    public ClassDesc[] parameterArray() {
         return argTypes.clone();
     }
 
     @Foldable
     @Override
-    public MethodTypeRef changeReturnType(ClassRef returnType) {
-        return MethodTypeRef.of(returnType, argTypes);
+    public MethodTypeDesc changeReturnType(ClassDesc returnType) {
+        return MethodTypeDesc.of(returnType, argTypes);
     }
 
     @Foldable
     @Override
-    public MethodTypeRef changeParameterType(int index, ClassRef paramType) {
-        ClassRef[] newArgs = argTypes.clone();
+    public MethodTypeDesc changeParameterType(int index, ClassDesc paramType) {
+        ClassDesc[] newArgs = argTypes.clone();
         newArgs[index] = paramType;
-        return MethodTypeRef.of(returnType, newArgs);
+        return MethodTypeDesc.of(returnType, newArgs);
     }
 
     @Foldable
     @Override
-    public MethodTypeRef dropParameterTypes(int start, int end) {
+    public MethodTypeDesc dropParameterTypes(int start, int end) {
         if (start < 0 || start >= argTypes.length || end < 0 || end > argTypes.length)
             throw new IndexOutOfBoundsException();
         else if (start > end)
             throw new IllegalArgumentException(String.format("Range (%d, %d) not valid for size %d", start, end, argTypes.length));
-        ClassRef[] newArgs = new ClassRef[argTypes.length - (end - start)];
+        ClassDesc[] newArgs = new ClassDesc[argTypes.length - (end - start)];
         System.arraycopy(argTypes, 0, newArgs, 0, start);
         System.arraycopy(argTypes, end, newArgs, start, argTypes.length - end);
-        return MethodTypeRef.of(returnType, newArgs);
+        return MethodTypeDesc.of(returnType, newArgs);
     }
 
     @Foldable
     @Override
-    public MethodTypeRef insertParameterTypes(int pos, ClassRef... paramTypes) {
+    public MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes) {
         if (pos < 0 || pos > argTypes.length)
             throw new IndexOutOfBoundsException(pos);
-        ClassRef[] newArgs = new ClassRef[argTypes.length + paramTypes.length];
+        ClassDesc[] newArgs = new ClassDesc[argTypes.length + paramTypes.length];
         System.arraycopy(argTypes, 0, newArgs, 0, pos);
         System.arraycopy(paramTypes, 0, newArgs, pos, paramTypes.length);
         System.arraycopy(argTypes, pos, newArgs, pos+paramTypes.length, argTypes.length - pos);
-        return MethodTypeRef.of(returnType, newArgs);
+        return MethodTypeDesc.of(returnType, newArgs);
     }
 
     @Override
-    public MethodType resolveConstantRef(MethodHandles.Lookup lookup) {
+    public MethodType resolveConstantDesc(MethodHandles.Lookup lookup) {
         return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<MethodType>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantRef.of(RefBootstraps.BSM_METHODTYPEREF, CR_MethodTypeRef).withArgs(descriptorString()));
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable(MethodHandles.Lookup lookup) {
+        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_METHODTYPEDESC, CR_MethodTypeDesc).withArgs(descriptorString()));
     }
 
     @Override
@@ -185,7 +185,7 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ConstantMethodTypeRef constant = (ConstantMethodTypeRef) o;
+        ConstantMethodTypeDesc constant = (ConstantMethodTypeDesc) o;
 
         return returnType.equals(constant.returnType)
                && Arrays.equals(argTypes, constant.argTypes);
@@ -200,6 +200,6 @@ public final class ConstantMethodTypeRef implements MethodTypeRef {
 
     @Override
     public String toString() {
-        return String.format("MethodTypeRef[%s]", displayDescriptor());
+        return String.format("MethodTypeDesc[%s]", displayDescriptor());
     }
 }

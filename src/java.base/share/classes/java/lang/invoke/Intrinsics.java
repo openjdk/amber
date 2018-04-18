@@ -24,8 +24,8 @@
  */
 package java.lang.invoke;
 
-import java.lang.invoke.constant.ConstantRef;
-import java.lang.invoke.constant.DynamicCallSiteRef;
+import java.lang.invoke.constant.ConstantDesc;
+import java.lang.invoke.constant.DynamicCallSiteDesc;
 
 /**
  * Intrinsics
@@ -35,7 +35,7 @@ import java.lang.invoke.constant.DynamicCallSiteRef;
 public final class Intrinsics {
     /**
      * Instructs the compiler to generate an {@code ldc} instruction for the
-     * constant described by the given {@link ConstantRef}. A compile-time error
+     * constant described by the given {@link ConstantDesc}. A compile-time error
      * will be issued if this {@code ConstantRef} is not itself a constant.
      *
      * @implNote The implementation of this method always throws an
@@ -47,19 +47,19 @@ public final class Intrinsics {
      * @param constant a nominal descriptor for the constant to be loaded
      * @return the constant value
      */
-    public static <T> T ldc(ConstantRef<T> constant) {
+    public static <T> T ldc(ConstantDesc<T> constant) {
         throw new UnsupportedOperationException("no reflective access");
     }
 
     /**
      * Instructs the compiler to generate an {@code invokedynamic} instruction given
-     * nominal descriptions of a {@link DynamicCallSiteRef} and a set of boostrap
-     * arguments. A compile-time error will be issued if the {@link DynamicCallSiteRef}
+     * nominal descriptions of a {@link DynamicCallSiteDesc} and a set of boostrap
+     * arguments. A compile-time error will be issued if the {@link DynamicCallSiteDesc}
      * is not itself a constant.
      *
      * <p>Like {@link MethodHandle.PolymorphicSignature} methods such as
      * {@link MethodHandle#invoke(Object...)}, the signature of parameters and
-     * return value of {@linkplain #invokedynamic(DynamicCallSiteRef, Object...)}
+     * return value of {@linkplain #invokedynamic(DynamicCallSiteDesc, Object...)}
      * is specified as {@linkplain Object}, but the invocation type of the
      * {@code invokedynamic} instruction will be derived from the {@code callSiteRef}
      * and will not necessarily requiring boxing of arguments and return value.
@@ -74,7 +74,7 @@ public final class Intrinsics {
      * @return the result of the invocation
      * @throws java.lang.Throwable the targeted method throws any exception
      */
-    public static Object invokedynamic(DynamicCallSiteRef callSiteRef,
+    public static Object invokedynamic(DynamicCallSiteDesc callSiteRef,
                                        Object... args)
             throws Throwable {
         throw new UnsupportedOperationException("no reflective access");

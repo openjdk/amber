@@ -32,23 +32,21 @@ import sun.invoke.util.Wrapper;
 import static java.util.Objects.requireNonNull;
 
 /**
- * PrimitiveClassRef
- *
- * @author Brian Goetz
+ * PrimitiveClassDesc
  */
-final class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements ClassRef {
+final class PrimitiveClassDesc extends DynamicConstantDesc<Class<?>> implements ClassDesc {
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassRef} from a descriptor string for a primitive type
+     * Create a {@linkplain ClassDesc} from a descriptor string for a primitive type
      *
      * @param descriptor the descriptor string, which must be a one-character
      * string corresponding to one of the nine base types as per JVMS 4.3
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid primitive type
      */
-    PrimitiveClassRef(String descriptor) {
-        super(ConstantRefs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantRefs.CR_Class);
+    PrimitiveClassDesc(String descriptor) {
+        super(ConstantDescs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantDescs.CR_Class);
         if (descriptor.length() != 1
             || "VIJCSBFDZ".indexOf(descriptor.charAt(0)) < 0)
             throw new IllegalArgumentException(String.format("not a valid primitive type descriptor: %s", descriptor));
@@ -61,17 +59,17 @@ final class PrimitiveClassRef extends DynamicConstantRef<Class<?>> implements Cl
     }
 
     @Override
-    public Class<?> resolveConstantRef(MethodHandles.Lookup lookup) {
+    public Class<?> resolveConstantDesc(MethodHandles.Lookup lookup) {
         return Wrapper.forBasicType(descriptorString().charAt(0)).primitiveType();
     }
 
     @Override
-    public Optional<? extends ConstantRef<? super ConstantRef<Class<?>>>> toConstantRef(MethodHandles.Lookup lookup) {
-        return ConstantUtils.symbolizeHelper(lookup, ConstantRefs.MHR_CLASSREF_FACTORY, ConstantRefs.CR_ClassRef, descriptorString());
+    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable(MethodHandles.Lookup lookup) {
+        return ConstantUtils.symbolizeHelper(lookup, ConstantDescs.MHR_CLASSDESC_FACTORY, ConstantDescs.CR_ClassDesc, descriptorString());
     }
 
     @Override
     public String toString() {
-        return String.format("PrimitiveClassRef[%s]", displayName());
+        return String.format("PrimitiveClassDesc[%s]", displayName());
     }
 }

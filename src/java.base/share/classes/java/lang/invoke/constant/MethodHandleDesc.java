@@ -39,17 +39,16 @@ import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 import static java.lang.invoke.MethodHandleInfo.REF_putField;
 import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
-import static java.lang.invoke.constant.ConstantRefs.CR_void;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.CONSTRUCTOR;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC;
+import static java.lang.invoke.constant.ConstantDescs.CR_void;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
 
 /**
  * A nominal descriptor for a {@link MethodHandle} constant.
  */
-public interface MethodHandleRef
-        extends ConstantRef<MethodHandle>, Constable<ConstantRef<MethodHandle>> {
+public interface MethodHandleDesc
+        extends ConstantDesc<MethodHandle>, Constable<ConstantDesc<MethodHandle>> {
     /**
-     * Kinds of method handle refs
+     * Kinds of method handle descriptors
      */
     public enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
@@ -83,7 +82,7 @@ public interface MethodHandleRef
 
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -93,27 +92,27 @@ public interface MethodHandleRef
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
      *
-     * <p>For constructor and field access, the methods {@link #ofField(Kind, ClassRef, String, ClassRef)}
-     * and {@link #ofConstructor(ClassRef, ClassRef...)} may be more convenient.
+     * <p>For constructor and field access, the methods {@link #ofField(Kind, ClassDesc, String, ClassDesc)}
+     * and {@link #ofConstructor(ClassDesc, ClassDesc...)} may be more convenient.
      *
      * @param kind The kind of method handle to be described
      * @param clazz the class declaring the method, constructor, or field
      * @param name the name of the method or field (ignored if {@code kind} is
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
      * @param type the invocation type of the method handle
-     * @return the {@code MethodHandleRef}
+     * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static ConstantMethodHandleRef of(Kind kind,
-                                      ClassRef clazz,
-                                      String name,
-                                      MethodTypeRef type) {
-        return new ConstantMethodHandleRef(kind, clazz, name, type);
+    static ConstantMethodHandleDesc of(Kind kind,
+                                       ClassDesc clazz,
+                                       String name,
+                                       MethodTypeDesc type) {
+        return new ConstantMethodHandleDesc(kind, clazz, name, type);
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -122,7 +121,7 @@ public interface MethodHandleRef
      * of field access and the type of the field; instance field accessors must
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(Kind, ClassRef, String, ClassRef)} will construct
+     * The method {@link #ofField(Kind, ClassDesc, String, ClassDesc)} will construct
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
@@ -131,19 +130,19 @@ public interface MethodHandleRef
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
      * @param descriptorString method descriptor string for the invocation type
      * of the method handle, as per JVMS 4.3.3
-     * @return the {@code MethodHandleRef}
+     * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static ConstantMethodHandleRef of(Kind kind,
-                                      ClassRef clazz,
-                                      String name,
-                                      String descriptorString) {
-        return of(kind, clazz, name, MethodTypeRef.ofDescriptor(descriptorString));
+    static ConstantMethodHandleDesc of(Kind kind,
+                                       ClassDesc clazz,
+                                       String name,
+                                       String descriptorString) {
+        return of(kind, clazz, name, MethodTypeDesc.ofDescriptor(descriptorString));
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to an invocation of a
+     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -152,7 +151,7 @@ public interface MethodHandleRef
      * of field access and the type of the field; instance field accessors must
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(Kind, ClassRef, String, ClassRef)} will construct
+     * The method {@link #ofField(Kind, ClassDesc, String, ClassDesc)} will construct
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
@@ -161,59 +160,59 @@ public interface MethodHandleRef
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
      * @param returnType the return type of the method handle
      * @param paramTypes the parameter types of the method handle
-     * @return the {@code MethodHandleRef}
+     * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
     @Foldable
-    static ConstantMethodHandleRef of(Kind kind,
-                                      ClassRef clazz,
-                                      String name,
-                                      ClassRef returnType,
-                                      ClassRef... paramTypes) {
-        return of(kind, clazz, name, MethodTypeRef.of(returnType, paramTypes));
+    static ConstantMethodHandleDesc of(Kind kind,
+                                       ClassDesc clazz,
+                                       String name,
+                                       ClassDesc returnType,
+                                       ClassDesc... paramTypes) {
+        return of(kind, clazz, name, MethodTypeDesc.of(returnType, paramTypes));
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to accessing a field
+     * Return a {@linkplain MethodHandleDesc} corresponding to accessing a field
      *
      * @param kind the kind of the method handle; must be one of {@code GETTER},
      *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
      * @param clazz the class declaring the field
      * @param fieldName the name of the field, as per JVMS 4.2.2
      * @param fieldType the type of the field
-     * @return the {@code MethodHandleRef}
+     * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    static ConstantMethodHandleRef ofField(Kind kind,
-                                           ClassRef clazz,
-                                           String fieldName,
-                                           ClassRef fieldType) {
-        MethodTypeRef mtr;
+    static ConstantMethodHandleDesc ofField(Kind kind,
+                                            ClassDesc clazz,
+                                            String fieldName,
+                                            ClassDesc fieldType) {
+        MethodTypeDesc mtr;
         switch (kind) {
-            case GETTER: mtr = MethodTypeRef.of(fieldType, clazz); break;
-            case SETTER: mtr = MethodTypeRef.of(CR_void, clazz, fieldType); break;
-            case STATIC_GETTER: mtr = MethodTypeRef.of(fieldType); break;
-            case STATIC_SETTER: mtr = MethodTypeRef.of(CR_void, fieldType); break;
+            case GETTER: mtr = MethodTypeDesc.of(fieldType, clazz); break;
+            case SETTER: mtr = MethodTypeDesc.of(CR_void, clazz, fieldType); break;
+            case STATIC_GETTER: mtr = MethodTypeDesc.of(fieldType); break;
+            case STATIC_SETTER: mtr = MethodTypeDesc.of(CR_void, fieldType); break;
             default:
                 throw new IllegalArgumentException(kind.toString());
         }
-        return MethodHandleRef.of(kind, clazz, fieldName, mtr);
+        return MethodHandleDesc.of(kind, clazz, fieldName, mtr);
     }
 
     /**
-     * Return a {@code MethodHandleRef} corresponding to invocation of a constructor
+     * Return a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
      *
      * @param clazz the class declaring the constuctor
      * @param paramTypes the parameter types of the constructor
-     * @return the {@code MethodHandleRef}
+     * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
-    static ConstantMethodHandleRef ofConstructor(ClassRef clazz,
-                                                 ClassRef... paramTypes) {
-        return MethodHandleRef.of(CONSTRUCTOR, clazz, ConstantRefs.DEFAULT_NAME,
-                                  MethodTypeRef.of(CR_void, paramTypes));
+    static ConstantMethodHandleDesc ofConstructor(ClassDesc clazz,
+                                                  ClassDesc... paramTypes) {
+        return MethodHandleDesc.of(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
+                                   MethodTypeDesc.of(CR_void, paramTypes));
     }
 
     /**
@@ -221,17 +220,17 @@ public interface MethodHandleRef
      * @return the method type
      */
     @Foldable
-    MethodTypeRef methodType();
+    MethodTypeDesc methodType();
 
     /**
-     * Return a {@linkplain MethodHandleRef} that describes this method handle
+     * Return a {@linkplain MethodHandleDesc} that describes this method handle
      * adapted to a different type, as if by {@link MethodHandle#asType(MethodType)}.
      *
      * @param type the new type
      * @return the adapted descriptor
      */
     @Foldable
-    default MethodHandleRef asType(MethodTypeRef type) {
-        return (methodType().equals(type)) ? this : new AsTypeMethodHandleRef(this, type);
+    default MethodHandleDesc asType(MethodTypeDesc type) {
+        return (methodType().equals(type)) ? this : new AsTypeMethodHandleDesc(this, type);
     }
 }

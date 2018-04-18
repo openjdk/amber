@@ -1,12 +1,12 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.ClassRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.MethodHandleDesc;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
 
 public class FindStaticSetterTest extends ConstantFoldingTest {
     static String staticStrField = "class field";
@@ -22,14 +22,14 @@ public class FindStaticSetterTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_putStatic"})
     void test1() throws Throwable {
-        final MethodHandle mhStaticSetter = ldc(MethodHandleRef.ofField(STATIC_SETTER, ClassRef.ofDescriptor("LFindStaticSetterTest;"), "staticStrField", ConstantRefs.CR_String));
+        final MethodHandle mhStaticSetter = ldc(MethodHandleDesc.ofField(STATIC_SETTER, ClassDesc.ofDescriptor("LFindStaticSetterTest;"), "staticStrField", ConstantDescs.CR_String));
         mhStaticSetter.invoke("new class field value");
         check(FindStaticSetterTest.staticStrField.equals("new class field value"));
     }
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_putStatic"})
     void test2() throws Throwable {
-        MethodHandle mhStaticSetter = ldc(MethodHandleRef.ofField(STATIC_SETTER, ClassRef.ofDescriptor("LFindStaticSetterTest;"), "staticStrField", ConstantRefs.CR_String));
+        MethodHandle mhStaticSetter = ldc(MethodHandleDesc.ofField(STATIC_SETTER, ClassDesc.ofDescriptor("LFindStaticSetterTest;"), "staticStrField", ConstantDescs.CR_String));
         mhStaticSetter.invoke("new class field value");
         check(FindStaticSetterTest.staticStrField.equals("new class field value"));
     }

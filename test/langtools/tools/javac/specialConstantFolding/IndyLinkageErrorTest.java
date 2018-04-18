@@ -9,23 +9,23 @@ import static java.lang.invoke.Intrinsics.*;
 
 public class IndyLinkageErrorTest {
     String test(String x, String y) throws Throwable {
-        MethodTypeRef methodTypeForMethodHandle = MethodTypeRef.of(
-                ConstantRefs.CR_CallSite,
-                ConstantRefs.CR_MethodHandles_Lookup,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_MethodType,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_Object.array()
+        MethodTypeDesc methodTypeForMethodHandle = MethodTypeDesc.of(
+                ConstantDescs.CR_CallSite,
+                ConstantDescs.CR_MethodHandles_Lookup,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_MethodType,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_Object.array()
         );
-        ConstantMethodHandleRef mh = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
-                                                "makeConcatWithConstants", methodTypeForMethodHandle);
-        MethodTypeRef methodTypeForIndy = MethodTypeRef.of(
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_String,
-                ConstantRefs.CR_String
+        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
+                                                          "makeConcatWithConstants", methodTypeForMethodHandle);
+        MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_String,
+                ConstantDescs.CR_String
         );
         final String param = "" + '\u0001' + '\u0001';
-        DynamicCallSiteRef indyDescr = DynamicCallSiteRef.of(mh, "", methodTypeForIndy, param);
+        DynamicCallSiteDesc indyDescr = DynamicCallSiteDesc.of(mh, "", methodTypeForIndy, param);
         return (String)invokedynamic(indyDescr, x, y);
     }
 }

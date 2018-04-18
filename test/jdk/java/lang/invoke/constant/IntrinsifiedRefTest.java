@@ -25,22 +25,22 @@
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassRef;
+import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
-import java.lang.invoke.constant.EnumRef;
-import java.lang.invoke.constant.MethodHandleRef;
-import java.lang.invoke.constant.MethodTypeRef;
-import java.lang.invoke.constant.ConstantRefs;
+import java.lang.invoke.constant.ConstantDesc;
+import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.EnumDesc;
+import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.GETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.SETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_GETTER;
-import static java.lang.invoke.constant.MethodHandleRef.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
@@ -55,40 +55,40 @@ import static org.testng.Assert.fail;
 public class IntrinsifiedRefTest {
     public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    private static final ClassRef CR_THIS = ClassRef.of("IntrinsifiedRefTest");
-    private static final ClassRef CR_TESTCLASS = CR_THIS.inner("TestClass");
-    private static final ClassRef CR_TESTINTF = CR_THIS.inner("TestInterface");
-    private static final ClassRef CR_TESTSUPERCLASS = CR_THIS.inner("TestSuperclass");
-    private static final ClassRef CR_TESTENUM = CR_THIS.inner("TestEnum");
+    private static final ClassDesc CR_THIS = ClassDesc.of("IntrinsifiedRefTest");
+    private static final ClassDesc CR_TESTCLASS = CR_THIS.inner("TestClass");
+    private static final ClassDesc CR_TESTINTF = CR_THIS.inner("TestInterface");
+    private static final ClassDesc CR_TESTSUPERCLASS = CR_THIS.inner("TestSuperclass");
+    private static final ClassDesc CR_TESTENUM = CR_THIS.inner("TestEnum");
     private static final String NONEXISTENT_CLASS = "foo.Bar";
     private static final String INACCESSIBLE_CLASS = "java.lang.invoke.DirectMethodHandle";
 
-    private static final MethodHandleRef MHR_TESTCLASS_CTOR = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored!>", MethodTypeRef.ofDescriptor("()V"));
-    private static final MethodHandleRef MHR_TESTCLASS_SM = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "sm", "(I)I");
-    private static final MethodHandleRef MHR_TESTINTF_SM = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTINTF, "sm", "(I)I");
-    private static final MethodHandleRef MHR_TESTCLASS_M = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "m", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTINTF_M = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CR_TESTINTF, "m", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTCLASS_PM_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTCLASS, "pm", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTINTF_PM_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTINTF, "pm", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTCLASS_PSM = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "psm", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTINTF_PSM = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTINTF, "psm", MethodTypeRef.ofDescriptor("(I)I"));
-    private static final MethodHandleRef MHR_TESTSUPER_M_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTSUPERCLASS, "m", "(I)I");
-    private static final MethodHandleRef MHR_TESTINTF_M_SPECIAL = MethodHandleRef.of(MethodHandleRef.Kind.SPECIAL, CR_TESTINTF, "m", "(I)I");
-    private static final MethodHandleRef MHR_TESTCLASS_SF_SETTER = MethodHandleRef.ofField(STATIC_SETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTINTF_SF_GETTER = MethodHandleRef.ofField(STATIC_GETTER, CR_TESTINTF, "sf", ConstantRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_F_SETTER = MethodHandleRef.ofField(SETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
-    private static final MethodHandleRef MHR_TESTCLASS_F_GETTER = MethodHandleRef.ofField(GETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
+    private static final MethodHandleDesc MHR_TESTCLASS_CTOR = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored!>", MethodTypeDesc.ofDescriptor("()V"));
+    private static final MethodHandleDesc MHR_TESTCLASS_SM = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTCLASS, "sm", "(I)I");
+    private static final MethodHandleDesc MHR_TESTINTF_SM = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTINTF, "sm", "(I)I");
+    private static final MethodHandleDesc MHR_TESTCLASS_M = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_TESTCLASS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTINTF_M = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, CR_TESTINTF, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTCLASS_PM_SPECIAL = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, CR_TESTCLASS, "pm", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTINTF_PM_SPECIAL = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, CR_TESTINTF, "pm", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTCLASS_PSM = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTCLASS, "psm", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTINTF_PSM = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTINTF, "psm", MethodTypeDesc.ofDescriptor("(I)I"));
+    private static final MethodHandleDesc MHR_TESTSUPER_M_SPECIAL = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, CR_TESTSUPERCLASS, "m", "(I)I");
+    private static final MethodHandleDesc MHR_TESTINTF_M_SPECIAL = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, CR_TESTINTF, "m", "(I)I");
+    private static final MethodHandleDesc MHR_TESTCLASS_SF_SETTER = MethodHandleDesc.ofField(STATIC_SETTER, CR_TESTCLASS, "sf", ConstantDescs.CR_int);
+    private static final MethodHandleDesc MHR_TESTCLASS_SF_GETTER = MethodHandleDesc.ofField(STATIC_GETTER, CR_TESTCLASS, "sf", ConstantDescs.CR_int);
+    private static final MethodHandleDesc MHR_TESTINTF_SF_GETTER = MethodHandleDesc.ofField(STATIC_GETTER, CR_TESTINTF, "sf", ConstantDescs.CR_int);
+    private static final MethodHandleDesc MHR_TESTCLASS_F_SETTER = MethodHandleDesc.ofField(SETTER, CR_TESTCLASS, "f", ConstantDescs.CR_int);
+    private static final MethodHandleDesc MHR_TESTCLASS_F_GETTER = MethodHandleDesc.ofField(GETTER, CR_TESTCLASS, "f", ConstantDescs.CR_int);
 
 
 
-    private static <T extends Constable> void assertIntrinsic(ConstantRef<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
+    private static <T extends Constable> void assertIntrinsic(ConstantDesc<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
         assertEquals(target, intrinsified);
-        assertEquals(ref.resolveConstantRef(LOOKUP), intrinsified);
-        assertEquals(intrinsified.toConstantRef(LOOKUP).orElseThrow(), ref);
+        assertEquals(ref.resolveConstantDesc(LOOKUP), intrinsified);
+        assertEquals(intrinsified.describeConstable(LOOKUP).orElseThrow(), ref);
     }
 
-    private static<T extends Constable> void assertIntrinsicFail(ConstantRef<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
+    private static<T extends Constable> void assertIntrinsicFail(ConstantDesc<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
         try {
             T t = supplier.get();
             fail("Expected failure resolving " + ref);
@@ -105,84 +105,84 @@ public class IntrinsifiedRefTest {
     }
 
     public void testLdcClass() throws ReflectiveOperationException {
-        ClassRef cr1 = ClassRef.ofDescriptor("Ljava/lang/String;");
-        ClassRef cr2 = ClassRef.of("java.lang.String");
-        ClassRef cr3 = ClassRef.of("java.lang", "String");
+        ClassDesc cr1 = ClassDesc.ofDescriptor("Ljava/lang/String;");
+        ClassDesc cr2 = ClassDesc.of("java.lang.String");
+        ClassDesc cr3 = ClassDesc.of("java.lang", "String");
 
         assertIntrinsic(cr1, ldc(cr1), String.class);
         assertIntrinsic(cr2, ldc(cr2), String.class);
         assertIntrinsic(cr3, ldc(cr3), String.class);
 
-        ClassRef cr4 = ClassRef.ofDescriptor("[Ljava/lang/String;");
-        ClassRef cr5 = cr2.array();
+        ClassDesc cr4 = ClassDesc.ofDescriptor("[Ljava/lang/String;");
+        ClassDesc cr5 = cr2.array();
         assertIntrinsic(cr4, ldc(cr4), String[].class);
         assertIntrinsic(cr5, ldc(cr5), String[].class);
 
-        ClassRef cr6 = ClassRef.ofDescriptor("I");
+        ClassDesc cr6 = ClassDesc.ofDescriptor("I");
         assertIntrinsic(cr6, ldc(cr6), int.class);
-        assertIntrinsic(ConstantRefs.CR_int, ldc(ConstantRefs.CR_int), int.class);
+        assertIntrinsic(ConstantDescs.CR_int, ldc(ConstantDescs.CR_int), int.class);
 
-        ClassRef cr7 = ClassRef.ofDescriptor("[I");
-        ClassRef cr8 = ConstantRefs.CR_int.array();
+        ClassDesc cr7 = ClassDesc.ofDescriptor("[I");
+        ClassDesc cr8 = ConstantDescs.CR_int.array();
         assertIntrinsic(cr7, ldc(cr7), int[].class);
         assertIntrinsic(cr8, ldc(cr8), int[].class);
     }
 
     public void negLdcClass() {
-        ClassRef cr = ClassRef.of(NONEXISTENT_CLASS);
+        ClassDesc cr = ClassDesc.of(NONEXISTENT_CLASS);
         assertIntrinsicFail(cr, () -> ldc(cr), NoClassDefFoundError.class);
 
-        ClassRef cr2 = ClassRef.of(INACCESSIBLE_CLASS);
+        ClassDesc cr2 = ClassDesc.of(INACCESSIBLE_CLASS);
         assertIntrinsicFail(cr2, () -> ldc(cr2), IllegalAccessError.class);
     }
 
     public void testLdcMethodType() throws ReflectiveOperationException {
-        MethodTypeRef mtr1 = MethodTypeRef.ofDescriptor("()V");
-        MethodTypeRef mtr2 = MethodTypeRef.of(ConstantRefs.CR_void);
+        MethodTypeDesc mtr1 = MethodTypeDesc.ofDescriptor("()V");
+        MethodTypeDesc mtr2 = MethodTypeDesc.of(ConstantDescs.CR_void);
         assertIntrinsic(mtr1, ldc(mtr1), MethodType.methodType(void.class));
         assertIntrinsic(mtr2, ldc(mtr2), MethodType.methodType(void.class));
 
-        MethodTypeRef mtr3 = MethodTypeRef.ofDescriptor("(I)I");
-        MethodTypeRef mtr4 = MethodTypeRef.of(ConstantRefs.CR_int, ConstantRefs.CR_int);
+        MethodTypeDesc mtr3 = MethodTypeDesc.ofDescriptor("(I)I");
+        MethodTypeDesc mtr4 = MethodTypeDesc.of(ConstantDescs.CR_int, ConstantDescs.CR_int);
         assertIntrinsic(mtr3, ldc(mtr3), MethodType.methodType(int.class, int.class));
         assertIntrinsic(mtr4, ldc(mtr4), MethodType.methodType(int.class, int.class));
 
-        MethodTypeRef mtr5 = MethodTypeRef.ofDescriptor("(Ljava/lang/String;)Ljava/lang/String;");
-        MethodTypeRef mtr6 = MethodTypeRef.of(ConstantRefs.CR_String, ConstantRefs.CR_String);
+        MethodTypeDesc mtr5 = MethodTypeDesc.ofDescriptor("(Ljava/lang/String;)Ljava/lang/String;");
+        MethodTypeDesc mtr6 = MethodTypeDesc.of(ConstantDescs.CR_String, ConstantDescs.CR_String);
         assertIntrinsic(mtr5, ldc(mtr5), MethodType.methodType(String.class, String.class));
         assertIntrinsic(mtr6, ldc(mtr6), MethodType.methodType(String.class, String.class));
 
-        MethodTypeRef mtr7 = MethodTypeRef.ofDescriptor("([I)[Ljava/lang/String;");
+        MethodTypeDesc mtr7 = MethodTypeDesc.ofDescriptor("([I)[Ljava/lang/String;");
         assertIntrinsic(mtr7, ldc(mtr7), MethodType.methodType(String[].class, int[].class));
     }
 
     public void negLdcMethodType() {
-        MethodTypeRef mtr1 = MethodTypeRef.of(ClassRef.of(NONEXISTENT_CLASS));
+        MethodTypeDesc mtr1 = MethodTypeDesc.of(ClassDesc.of(NONEXISTENT_CLASS));
         assertIntrinsicFail(mtr1, () -> ldc(mtr1), NoClassDefFoundError.class);
 
-        MethodTypeRef mtr2 = MethodTypeRef.of(ClassRef.of(INACCESSIBLE_CLASS));
+        MethodTypeDesc mtr2 = MethodTypeDesc.of(ClassDesc.of(INACCESSIBLE_CLASS));
         assertIntrinsicFail(mtr2, () -> ldc(mtr2), IllegalAccessError.class);
     }
 
     public void testLdcEnum() throws ReflectiveOperationException {
-        EnumRef<TestEnum> enr1 = EnumRef.of(CR_TESTENUM, "A");
+        EnumDesc<TestEnum> enr1 = EnumDesc.of(CR_TESTENUM, "A");
         assertIntrinsic(enr1, ldc(enr1), TestEnum.A);
 
-        EnumRef<TestEnum> enr2 = EnumRef.of(CR_TESTENUM, "B");
+        EnumDesc<TestEnum> enr2 = EnumDesc.of(CR_TESTENUM, "B");
         assertIntrinsic(enr2, ldc(enr2), TestEnum.B);
     }
 
     public void negLdcEnum() {
-        EnumRef<TestEnum> enr1 = EnumRef.of(CR_TESTENUM, "C");
+        EnumDesc<TestEnum> enr1 = EnumDesc.of(CR_TESTENUM, "C");
         assertIntrinsicFail(enr1, () -> ldc(enr1), IllegalArgumentException.class);
 
-        EnumRef<TestEnum> enr2 = EnumRef.of(ClassRef.of(NONEXISTENT_CLASS), "A");
+        EnumDesc<TestEnum> enr2 = EnumDesc.of(ClassDesc.of(NONEXISTENT_CLASS), "A");
         assertIntrinsicFail(enr2, () -> ldc(enr2), NoClassDefFoundError.class);
 
-        EnumRef<TestEnum> enr3 = EnumRef.of(CR_THIS, "A");
+        EnumDesc<TestEnum> enr3 = EnumDesc.of(CR_THIS, "A");
         assertIntrinsicFail(enr3, () -> ldc(enr3), IllegalArgumentException.class);
 
-        EnumRef<TestEnum> enr4 = EnumRef.of(ClassRef.of(INACCESSIBLE_CLASS), "A");
+        EnumDesc<TestEnum> enr4 = EnumDesc.of(ClassDesc.of(INACCESSIBLE_CLASS), "A");
         assertIntrinsicFail(enr4, () -> ldc(enr4), IllegalAccessError.class);
     }
 
@@ -231,12 +231,12 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(MHR_TESTINTF_M_SPECIAL, () -> ldc(MHR_TESTINTF_M_SPECIAL), IncompatibleClassChangeError.class);
 
         // Method kind mismatches -- intf, virtual, static
-        MethodHandleRef intfMethodAsVirtual = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTINTF, "m", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef intfMethodAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTINTF, "m", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef virtualMethodAsIntf = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CR_TESTCLASS, "m", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef virtualMethodAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "m", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef staticMethodAsVirtual = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "sm", MethodTypeRef.ofDescriptor("(I)I"));
-        MethodHandleRef staticMethodAsIntf = MethodHandleRef.of(MethodHandleRef.Kind.INTERFACE_VIRTUAL, CR_TESTINTF, "sm", MethodTypeRef.ofDescriptor("(I)I"));
+        MethodHandleDesc intfMethodAsVirtual = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_TESTINTF, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc intfMethodAsStatic = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTINTF, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc virtualMethodAsIntf = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, CR_TESTCLASS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc virtualMethodAsStatic = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTCLASS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc staticMethodAsVirtual = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_TESTCLASS, "sm", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc staticMethodAsIntf = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, CR_TESTINTF, "sm", MethodTypeDesc.ofDescriptor("(I)I"));
 
         assertIntrinsicFail(intfMethodAsVirtual, () -> ldc(intfMethodAsVirtual), IncompatibleClassChangeError.class);
         assertIntrinsicFail(intfMethodAsStatic, () -> ldc(intfMethodAsStatic), IncompatibleClassChangeError.class);
@@ -246,35 +246,35 @@ public class IntrinsifiedRefTest {
         assertIntrinsicFail(staticMethodAsIntf, () -> ldc(staticMethodAsIntf), IncompatibleClassChangeError.class);
 
         // Field kind mismatch -- instance/static
-        MethodHandleRef staticFieldAsInstance = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "sf", ConstantRefs.CR_int);
-        MethodHandleRef instanceFieldAsStatic = MethodHandleRef.of(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "f", ConstantRefs.CR_int);
+        MethodHandleDesc staticFieldAsInstance = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, CR_TESTCLASS, "sf", ConstantDescs.CR_int);
+        MethodHandleDesc instanceFieldAsStatic = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC_GETTER, CR_TESTCLASS, "f", ConstantDescs.CR_int);
 
         assertIntrinsicFail(staticFieldAsInstance, () -> ldc(staticFieldAsInstance), IncompatibleClassChangeError.class);
         assertIntrinsicFail(instanceFieldAsStatic, () -> ldc(instanceFieldAsStatic), IncompatibleClassChangeError.class);
 
         // Setter for final field
-        MethodHandleRef finalStaticSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", ConstantRefs.CR_int);
-        MethodHandleRef finalSetter = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "ff", ConstantRefs.CR_int);
+        MethodHandleDesc finalStaticSetter = MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_SETTER, CR_TESTCLASS, "sff", ConstantDescs.CR_int);
+        MethodHandleDesc finalSetter = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, CR_TESTCLASS, "ff", ConstantDescs.CR_int);
 
         assertIntrinsicFail(finalStaticSetter, () -> ldc(finalStaticSetter), IllegalAccessError.class);
         assertIntrinsicFail(finalSetter, () -> ldc(finalSetter), IllegalAccessError.class);
 
         // Nonexistent owner
-        MethodHandleRef r1 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.of(NONEXISTENT_CLASS), "m", "()V");
+        MethodHandleDesc r1 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.of(NONEXISTENT_CLASS), "m", "()V");
         assertIntrinsicFail(r1, () -> ldc(r1), NoClassDefFoundError.class);
 
         // Inaccessible owner
-        MethodHandleRef r2 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, ClassRef.of(INACCESSIBLE_CLASS), "m", "()V");
+        MethodHandleDesc r2 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.of(INACCESSIBLE_CLASS), "m", "()V");
         assertIntrinsicFail(r2, () -> ldc(r2), IllegalAccessError.class);
 
         // Nonexistent method, ctor, field
-        MethodHandleRef r3 = MethodHandleRef.of(MethodHandleRef.Kind.STATIC, CR_TESTCLASS, "nonexistent", "()V");
-        MethodHandleRef r4 = MethodHandleRef.of(MethodHandleRef.Kind.VIRTUAL, CR_TESTCLASS, "nonexistent", "()V");
-        MethodHandleRef r5 = MethodHandleRef.of(MethodHandleRef.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored>", "(I)V");
-        MethodHandleRef r6 = MethodHandleRef.ofField(MethodHandleRef.Kind.GETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
-        MethodHandleRef r7 = MethodHandleRef.ofField(MethodHandleRef.Kind.SETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
-        MethodHandleRef r8 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
-        MethodHandleRef r9 = MethodHandleRef.ofField(MethodHandleRef.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", ConstantRefs.CR_int);
+        MethodHandleDesc r3 = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_TESTCLASS, "nonexistent", "()V");
+        MethodHandleDesc r4 = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_TESTCLASS, "nonexistent", "()V");
+        MethodHandleDesc r5 = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_TESTCLASS, "<ignored>", "(I)V");
+        MethodHandleDesc r6 = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, CR_TESTCLASS, "nonexistent", ConstantDescs.CR_int);
+        MethodHandleDesc r7 = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, CR_TESTCLASS, "nonexistent", ConstantDescs.CR_int);
+        MethodHandleDesc r8 = MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_GETTER, CR_TESTCLASS, "nonexistent", ConstantDescs.CR_int);
+        MethodHandleDesc r9 = MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_SETTER, CR_TESTCLASS, "nonexistent", ConstantDescs.CR_int);
 
         assertIntrinsicFail(r3, () -> ldc(r3), NoSuchMethodError.class);
         assertIntrinsicFail(r4, () -> ldc(r4), NoSuchMethodError.class);
@@ -286,8 +286,8 @@ public class IntrinsifiedRefTest {
     }
 
     public void testLdcDynamicConstants() throws ReflectiveOperationException {
-        assertNull(ldc(ConstantRefs.NULL));
-        assertIntrinsic(ConstantRefs.CR_int, ldc(ConstantRefs.CR_int), int.class);
+        assertNull(ldc(ConstantDescs.NULL));
+        assertIntrinsic(ConstantDescs.CR_int, ldc(ConstantDescs.CR_int), int.class);
         // @@@ VarHandle
         // @@@ invoke (including multiple deep)
     }

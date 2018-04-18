@@ -30,7 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantRef;
+import java.lang.invoke.constant.ConstantDesc;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +41,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.IntStream;
@@ -127,7 +126,7 @@ import jdk.internal.vm.annotation.Stable;
 
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence,
-               ConstantRef<String>, Constable<String> {
+               ConstantDesc<String>, Constable<String> {
 
     /**
      * The value is used for character storage.
@@ -3195,19 +3194,19 @@ public final class String
      * @return the {@linkplain String} instance
      */
     @Override
-    public Optional<ConstantRef<String>> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<String>> describeConstable(MethodHandles.Lookup lookup) {
         return Optional.of(this);
     }
 
     /**
-     * Resolve this instance as a {@link ConstantRef}, the result of which is
+     * Resolve this instance as a {@link ConstantDesc}, the result of which is
      * the instance itself.
      *
      * @param lookup ignored
      * @return the {@linkplain String} instance
      */
     @Override
-    public String resolveConstantRef(MethodHandles.Lookup lookup) {
+    public String resolveConstantDesc(MethodHandles.Lookup lookup) {
         return this;
     }
 

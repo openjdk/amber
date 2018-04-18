@@ -27,6 +27,7 @@ package java.lang;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.constant.ClassDesc;
 import java.lang.module.ModuleReader;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
@@ -47,7 +48,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.lang.invoke.constant.ClassRef;
 import java.lang.invoke.constant.Constable;
 import java.net.URL;
 import java.security.AccessController;
@@ -3854,9 +3854,9 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     @Override
-    public Optional<ClassRef> toConstantRef(MethodHandles.Lookup lookup) {
+    public Optional<ClassDesc> describeConstable(MethodHandles.Lookup lookup) {
         try {
-            return Optional.of(ClassRef.ofDescriptor(lookup.accessClass(this).toDescriptorString()));
+            return Optional.of(ClassDesc.ofDescriptor(lookup.accessClass(this).toDescriptorString()));
         }
         catch (IllegalAccessException e) {
             return Optional.empty();
