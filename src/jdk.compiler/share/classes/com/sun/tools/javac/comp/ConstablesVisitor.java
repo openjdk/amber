@@ -428,5 +428,10 @@ public class ConstablesVisitor extends TreeScanner {
             }
             return tree;
         }
+
+        @Override
+        public void visitTree(JCTree tree) {
+            result = tree;
+        }
     }
 }
