@@ -159,7 +159,7 @@ public class ConstablesVisitor extends TreeScanner {
             if (elementToConstantMap.get(v) != null) {
                 return;
             }
-            Object constant = getConstant(tree.init);
+            Object constant = getConstant(tree.init, v.type);
             if (constant != null &&
                     (v.isFinal() || v.isEffectivelyFinal())) {
                 elementToConstantMap.remove(tree.init);
@@ -172,6 +172,15 @@ public class ConstablesVisitor extends TreeScanner {
         Symbol sym = TreeInfo.symbol(tree);
         Object result = tree.type.constValue() != null ?
                 tree.type.constValue() :
+                elementToConstantMap.get(tree);
+        return result == null ? elementToConstantMap.get(sym) : result;
+    }
+
+    // this one coerces
+    Object getConstant(JCTree tree, Type targetType) {
+        Symbol sym = TreeInfo.symbol(tree);
+        Object result = tree.type.constValue() != null ?
+                cfolder.coerce(tree.type, targetType).constValue() :
                 elementToConstantMap.get(tree);
         return result == null ? elementToConstantMap.get(sym) : result;
     }
@@ -219,7 +228,9 @@ public class ConstablesVisitor extends TreeScanner {
             truePartConstant != null &&
             falsePartConstant != null &&
             !tree.type.hasTag(NONE)) {
-            Object constant = ConstFold.isTrue(tree.cond.type.getTag(), condConstant) ? truePartConstant : falsePartConstant;
+            Object constant = ConstFold.isTrue(tree.cond.type.getTag(), condConstant) ?
+                    getConstant(tree.truepart, tree.type) :
+                    getConstant(tree.falsepart, tree.type);
             elementToConstantMap.put(tree, constant);
         }
         if (condConstant != null) {
@@ -233,7 +244,7 @@ public class ConstablesVisitor extends TreeScanner {
         if (elementToConstantMap.get(tree) == null &&
                 tree.type.constValue() == null &&
                 getConstant(tree.expr) != null) {
-            elementToConstantMap.put(tree, getConstant(tree.expr));
+            elementToConstantMap.put(tree, getConstant(tree.expr, tree.type));
         }
     }
 
