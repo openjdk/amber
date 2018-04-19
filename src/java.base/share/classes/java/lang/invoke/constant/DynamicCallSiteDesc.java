@@ -40,7 +40,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A nominal descriptor for an {@code invokedynamic} call site.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for an
+ * {@code invokedynamic} call site.
  */
 @SuppressWarnings("rawtypes")
 public final class DynamicCallSiteDesc {
@@ -51,19 +52,22 @@ public final class DynamicCallSiteDesc {
     private final MethodTypeDesc invocationType;
 
     /**
-     * Construct a nominal descriptor for an {@code invokedynamic} call site
+     * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
+     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     *                        bootstrap method for the {@code invokedynamic}
      * @param invocationName The name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}, as per
+     *                       JVMS 4.2.2
+     * @param invocationType a {@link MethodTypeDesc} describing the invocation
+     *                       type that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
-     * @param invocationType The invocation type that would appear in the
-     * {@code NameAndType} operand of the {@code invokedynamic}
-     * @param bootstrapArgs The static arguments to the bootstrap, that would
-     *                      appear in the {@code BootstrapMethods} attribute
+     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
+     *                      to the bootstrap, that would appear in the
+     *                      {@code BootstrapMethods} attribute
      * @throws NullPointerException if any parameter is null
-     * @throws IllegalArgumentException if the bootstrap method is not a
-     * {@link ConstantMethodHandleDesc}
-     * @throws IllegalArgumentException if {@code name.length()} is zero
+     * @throws IllegalArgumentException if the invocation name has the incorrect
+     * format
      */
     private DynamicCallSiteDesc(ConstantMethodHandleDesc bootstrapMethod,
                                 String invocationName,
@@ -78,44 +82,22 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site.  If
-     * the bootstrap method corresponds to a well-known bootstrap, for which a
-     * more specific nominal descriptor invocationType exists, the more specific nominal
-     * descriptor invocationType is returned.
+     * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param invocationName The invocationName that would appear in the
-     * {@code NameAndType} operand of the {@code invokedynamic}
-     * @param invocationType The invocation invocationType that would appear in
-     * the {@code NameAndType} operand of the {@code invokedynamic}
-     * @param bootstrapArgs The static arguments to the bootstrap, that would
-     *                      appear in the {@code BootstrapMethods} attribute
-     * @return the nominal descriptor
+     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     *                        bootstrap method for the {@code invokedynamic}
+     * @param invocationName The name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}, as per
+     *                       JVMS 4.2.2
+     * @param invocationType a {@link MethodTypeDesc} describing the invocation
+     *                       type that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
+     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
+     *                      to the bootstrap, that would appear in the
+     *                      {@code BootstrapMethods} attribute
      * @throws NullPointerException if any parameter is null
-     */
-    @Foldable
-    public static DynamicCallSiteDesc ofCanonical(ConstantMethodHandleDesc bootstrapMethod,
-                                                  String invocationName,
-                                                  MethodTypeDesc invocationType,
-                                                  ConstantDesc<?>... bootstrapArgs) {
-        return new DynamicCallSiteDesc(bootstrapMethod,
-                                       invocationName, invocationType,
-                                       bootstrapArgs)
-                .canonicalize();
-    }
-
-    /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site.
-     *
-     * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param invocationName The invocationName that would appear in the
-     * {@code NameAndType} operand of the {@code invokedynamic}
-     * @param invocationType The invocation invocationType that would appear in
-     * the {@code NameAndType} operand of the {@code invokedynamic}
-     * @param bootstrapArgs The static arguments to the bootstrap, that would
-     *                      appear in the {@code BootstrapMethods} attribute
-     * @return the nominal descriptor
-     * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if the invocation name has the incorrect
+     * format
      */
     @Foldable
     public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
@@ -126,7 +108,7 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site whose
+     * Create a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
@@ -145,15 +127,18 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site whose
+     * Create a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments and for which the name parameter
      * is {@link ConstantDescs#DEFAULT_NAME}.
      *
-     * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
-     * @param invocationType The invocation type that would appear in
-     * the {@code NameAndType} operand of the {@code invokedynamic}
-     * @return the nominal descriptor
+     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     *                        bootstrap method for the {@code invokedynamic}
+     * @param invocationType a {@link MethodTypeDesc} describing the invocation
+     *                       type that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
      * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if the invocation name has the incorrect
+     * format
      */
     @Foldable
     public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
@@ -166,8 +151,9 @@ public final class DynamicCallSiteDesc {
      * bootstrap method, name, and invocation type are the same as this one, but
      * with the specified bootstrap arguments.
      *
-     * @param bootstrapArgs The static arguments to the bootstrap, that would
-     *                      appear in the {@code BootstrapMethods} attribute
+     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
+     *                      to the bootstrap, that would appear in the
+     *                      {@code BootstrapMethods} attribute
      * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
@@ -181,12 +167,16 @@ public final class DynamicCallSiteDesc {
      * bootstrap and bootstrap arguments are the same as this one, but with the
      * specified invocationName and invocation invocationType
      *
-     * @param invocationName The invocationName that would appear in the
-     * {@code NameAndType} operand of the {@code invokedynamic}
-     * @param invocationType The invocation invocationType that would appear in
-     * the {@code NameAndType} operand of the {@code invokedynamic}
+     * @param invocationName The name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}, as per
+     *                       JVMS 4.2.2
+     * @param invocationType a {@link MethodTypeDesc} describing the invocation
+     *                       type that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
      * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if the invocation name has the incorrect
+     * format
      */
     @Foldable
     public DynamicCallSiteDesc withNameAndType(String invocationName,
@@ -200,8 +190,9 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Returns the invocation name that would appear in the {@code NameAndType} operand
-     * of the {@code invokedynamic}
+     * Returns the invocation name that would appear in the {@code NameAndType}
+     * operand of the {@code invokedynamic}.
+     * \
      * @return the invocation name
      */
     @Foldable
@@ -210,8 +201,9 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Returns the invocation type that would appear in the {@code NameAndType} operand
-     * of the {@code invokedynamic}
+     * Returns a {@link MethodTypeDesc} describing the invocation type that
+     * would appear in the {@code NameAndType} operand of the {@code invokedynamic}.
+     *
      * @return the invocation type
      */
     @Foldable
@@ -220,14 +212,18 @@ public final class DynamicCallSiteDesc {
     }
 
     /**
-     * Returns the bootstrap method for the {@code invokedynamic}
+     * Returns a {@link MethodHandleDesc} descripbing the bootstrap method for
+     * the {@code invokedynamic}.
+     *
      * @return the bootstrap method for the {@code invokedynamic}
      */
     @Foldable
     public MethodHandleDesc bootstrapMethod() { return bootstrapMethod; }
 
     /**
-     * Returns the bootstrap arguments for the {@code invokedynamic}
+     * Returns {@link ConstantDesc}s describing the bootstrap arguments for the
+     * {@code invokedynamic}.
+     *
      * @return the bootstrap arguments for the {@code invokedynamic}
      */
     public ConstantDesc<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }

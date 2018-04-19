@@ -36,14 +36,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodTypeDesc;
+import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A nominal descriptor for a {@link MethodType}.  A {@linkplain ConstantMethodTypeDesc}
- * corresponds to a {@code Constant_MethodType_info} entry in the constant pool
- * of a classfile.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
+ * {@link MethodType}.  A {@linkplain ConstantMethodTypeDesc} corresponds to a
+ * {@code Constant_MethodType_info} entry in the constant pool of a classfile.
  */
 public final class ConstantMethodTypeDesc implements MethodTypeDesc {
+    @Foldable
+    private static final ConstantMethodHandleDesc BSM_METHODTYPEDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodTypeDesc"),
+                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
 
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
     private static final Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
@@ -68,7 +73,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
     }
 
     /**
-     * Create a {@linkplain ConstantMethodTypeDesc} from a method descriptor string
+     * Create a {@linkplain ConstantMethodTypeDesc} given a method descriptor string.
      *
      * @param descriptor the method descriptor string, as per JVMS 4.3.3
      * @return a {@linkplain ConstantMethodTypeDesc} describing the desired method type
@@ -76,7 +81,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      * method descriptor
      */
     @Foldable
-    static MethodTypeDesc ofDescriptor(String descriptor) {
+    static ConstantMethodTypeDesc ofDescriptor(String descriptor) {
         // @@@ Replace validation with a lower-overhead mechanism than regex
         // Follow the trail from MethodType.fromMethodDescriptorString to
         // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
@@ -177,7 +182,22 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
 
     @Override
     public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_METHODTYPEDESC, CR_MethodTypeDesc).withArgs(descriptorString()));
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, CR_MethodTypeDesc).withArgs(descriptorString()));
+    }
+
+    /**
+     * Constant bootstrap method for representing a {@linkplain MethodTypeDesc} in
+     * the constant pool of a classfile.
+     *
+     * @param lookup ignored
+     * @param name ignored
+     * @param clazz ignored
+     * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
+     * @return the {@linkplain MethodTypeDesc}
+     */
+    public static MethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+                                                   String descriptor) {
+        return MethodTypeDesc.ofDescriptor(descriptor);
     }
 
     @Override

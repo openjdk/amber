@@ -43,12 +43,13 @@ import static java.lang.invoke.constant.ConstantDescs.CR_void;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
 
 /**
- * A nominal descriptor for a {@link MethodHandle} constant.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
+ * {@link MethodHandle} constant.
  */
 public interface MethodHandleDesc
         extends ConstantDesc<MethodHandle>, Constable<ConstantDesc<MethodHandle>> {
     /**
-     * Kinds of method handle descriptors
+     * Kinds of method handles that can be described with {@linkplain MethodHandleDesc}.
      */
     public enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
@@ -82,7 +83,7 @@ public interface MethodHandleDesc
 
 
     /**
-     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
+     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -96,12 +97,16 @@ public interface MethodHandleDesc
      * and {@link #ofConstructor(ClassDesc, ClassDesc...)} may be more convenient.
      *
      * @param kind The kind of method handle to be described
-     * @param clazz the class declaring the method, constructor, or field
+     * @param clazz a {@link ClassDesc} describing the class containing the
+     *              method, constructor, or field
      * @param name the name of the method or field (ignored if {@code kind} is
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
-     * @param type the invocation type of the method handle
+     * @param type a {@link MethodTypeDesc} describing the invocation type of
+     *             the method handle
      * @return the {@linkplain MethodHandleDesc}
-     * @throws NullPointerException if any of the non-ignored arguments are null
+     * @throws NullPointerException if any non-ignored arguments are null
+     * @throws IllegalArgumentException if the {@code name} has the incorrect
+     * format
      */
     @Foldable
     static ConstantMethodHandleDesc of(Kind kind,
@@ -112,7 +117,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
+     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -125,10 +130,11 @@ public interface MethodHandleDesc
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
-     * @param clazz the class declaring the method, constructor, or field
+     * @param clazz a {@link ClassDesc} describing the class containing the
+     *              method, constructor, or field
      * @param name the name of the method or field (ignored if {@code kind} is
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
-     * @param descriptorString method descriptor string for the invocation type
+     * @param descriptorString a method descriptor string for the invocation type
      * of the method handle, as per JVMS 4.3.3
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
@@ -142,7 +148,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@linkplain MethodHandleDesc} corresponding to an invocation of a
+     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
@@ -155,11 +161,14 @@ public interface MethodHandleDesc
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
-     * @param clazz the class declaring the method, constructor, or field
+     * @param clazz a {@link ClassDesc} describing the class containing the
+     *              method, constructor, or field
      * @param name the name of the method or field (ignored if {@code kind} is
      * {@code CONSTRUCTOR}), as per JVMS 4.2.2
-     * @param returnType the return type of the method handle
-     * @param paramTypes the parameter types of the method handle
+     * @param returnType a {@link ClassDesc} describing the return type of the
+     *                   method handle
+     * @param paramTypes {@link ClassDesc}s describing the parameter types of
+     *                                    the method handle
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
      */
@@ -173,13 +182,15 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@linkplain MethodHandleDesc} corresponding to accessing a field
+     * Create a {@linkplain MethodHandleDesc} corresponding to a method handle
+     * that accesses a field.
      *
-     * @param kind the kind of the method handle; must be one of {@code GETTER},
+     * @param kind the kind of the method handle to be described; must be one of {@code GETTER},
      *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
-     * @param clazz the class declaring the field
+     * @param clazz a {@link ClassDesc} describing the class containing the
+     *              method, constructor, or field
      * @param fieldName the name of the field, as per JVMS 4.2.2
-     * @param fieldType the type of the field
+     * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
@@ -203,8 +214,10 @@ public interface MethodHandleDesc
     /**
      * Return a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
      *
-     * @param clazz the class declaring the constuctor
-     * @param paramTypes the parameter types of the constructor
+     * @param clazz a {@link ClassDesc} describing the class containing the
+     *              method, constructor, or field
+     * @param paramTypes {@link ClassDesc}s describing the parameter types of
+     *                   the constructor
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
@@ -216,21 +229,23 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return the type of the method handle described by this nominal descriptor
-     * @return the method type
-     */
-    @Foldable
-    MethodTypeDesc methodType();
-
-    /**
      * Return a {@linkplain MethodHandleDesc} that describes this method handle
      * adapted to a different type, as if by {@link MethodHandle#asType(MethodType)}.
      *
-     * @param type the new type
-     * @return the adapted descriptor
+     * @param type a {@link MethodHandleDesc} describing the new method type
+     * @return a {@linkplain MethodHandleDesc} for the adapted method handle
      */
     @Foldable
     default MethodHandleDesc asType(MethodTypeDesc type) {
         return (methodType().equals(type)) ? this : new AsTypeMethodHandleDesc(this, type);
     }
+
+    /**
+     * Return a {@link MethodTypeDesc} describing the type of the method handle
+     * described by this nominal descriptor
+     *
+     * @return a {@linkplain MethodHandleDesc} describing the method handle type
+     */
+    @Foldable
+    MethodTypeDesc methodType();
 }

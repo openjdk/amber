@@ -35,7 +35,8 @@ import jdk.internal.lang.annotation.Foldable;
 import static java.lang.invoke.constant.ConstantDescs.CR_VarHandleDesc;
 
 /**
- * A nominal descriptor for a {@link VarHandle} constant.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
+ * {@link VarHandle} constant.
  */
 public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
         implements Constable<ConstantDesc<VarHandle>> {
@@ -75,12 +76,15 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     private final ClassDesc varType;
 
     /**
-     * Construct a {@linkplain VarHandleDesc}
+     * Construct a {@linkplain VarHandleDesc} given a kind, name, and declaring
+     * class.
      *
      * @param kind the kind of of the var handle
-     * @param name the name of the field, for field var handles
-     * @param declaringClass the name of the declaring class, for field var handles
-     * @param varType the type of the variable
+     * @param name the name of the field, , as per JVMS 4.2.2, for field var
+     *             handles; otherwise ignored
+     * @param declaringClass a {@link ClassDesc} describing the declaring class,
+     *                       for field var handles
+     * @param varType a {@link ClassDesc} describing the type of the variable
      * @throws NullPointerException if any required argument is null
      */
     private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
@@ -93,13 +97,14 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     }
 
     /**
-     * Returns a {@code VarHandleDesc} corresponding to a {@link VarHandle}
+     * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
      * for an instance field.
      *
-     * @param declaringClass the class in which the field is declared
-     * @param name the name of the field
-     * @param fieldType the type of the field
-     * @return the {@code VarHandleDesc}
+     * @param name the name of the field, as per JVMS 4.2.2
+     * @param declaringClass a {@link ClassDesc} describing the declaring class,
+     *                       for field var handles
+     * @param fieldType a {@link ClassDesc} describing the type of the field
+     * @return the {@linkplain VarHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
@@ -111,13 +116,14 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     }
 
     /**
-     * Returns a {@code VarHandleDesc} corresponding to a {@link VarHandle}
+     * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
      * for a static field.
      *
-     * @param declaringClass the class in which the field is declared
-     * @param name the name of the field
-     * @param fieldType the type of the field
-     * @return the {@code VarHandleDesc}
+     * @param name the name of the field, as per JVMS 4.2.2
+     * @param declaringClass a {@link ClassDesc} describing the declaring class,
+     *                       for field var handles
+     * @param fieldType a {@link ClassDesc} describing the type of the field
+     * @return the {@linkplain VarHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
@@ -129,11 +135,11 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     }
 
     /**
-     * Returns a {@code VarHandleDesc} corresponding to a {@link VarHandle}
+     * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
      * for for an array type.
      *
-     * @param arrayClass the type of the array
-     * @return the {@code VarHandleDesc}
+     * @param arrayClass a {@link ClassDesc} describing the type of the array
+     * @return the {@linkplain VarHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
     @Foldable
@@ -145,7 +151,8 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     }
 
     /**
-     * Returns the type of the variable described by this descriptor
+     * Returns a {@link ClassDesc} describing the type of the variable described
+     * by this descriptor.
      *
      * @return the variable type
      */
@@ -153,30 +160,6 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     public ClassDesc varType() {
         return varType;
     }
-
-    // @@@ should this be the of co-ordinate types? there by better mirroring
-    // VarHandle this makes it slightly more involved since the array VH has
-    // to inject it's index
-    /**
-     * Returns the declaring class of the variable described by this descriptor.
-     *
-     * <p>If the declaring class is an array type then the declaring class
-     * will be the component type of the array type.
-     *
-     * @return the declaring class
-     */
-    @Foldable
-    public ClassDesc declaringClass() {
-        return declaringClass;
-    }
-
-    /* @@@
-    MethodTypeDesc accessModeTypeRef(AccessMode accessMode)
-     */
-
-    /* @@@
-    MethodHandleDesc toMethodHandleRef(AccessMode accessMode)
-     */
 
     @Override
     public VarHandle resolveConstantDesc(MethodHandles.Lookup lookup)

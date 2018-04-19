@@ -34,14 +34,17 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A nominal descriptor for a {@linkplain MethodType} constant.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
+ * {@linkplain MethodType} constant.
  */
-public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<ConstantDesc<MethodType>> {
+public interface MethodTypeDesc
+        extends ConstantDesc<MethodType>, Constable<ConstantDesc<MethodType>> {
     /**
-     * Create a {@linkplain MethodTypeDesc} from a method descriptor string
+     * Create a {@linkplain MethodTypeDesc} given a method descriptor string
      *
      * @param descriptor a method descriptor string, as per JVMS 4.3.3
      * @return a {@linkplain MethodTypeDesc} describing the desired method type
+     * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
      */
@@ -51,21 +54,23 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
     }
 
     /**
-     * Returns a {@linkplain MethodTypeDesc} for the specified return type and
-     * parameter types.
+     * Returns a {@linkplain MethodTypeDesc} given the return type and parameter
+     * types.
      *
-     * @param returnDescriptor a {@linkplain ClassDesc} describing the return type
-     * @param paramDescriptors {@linkplain ClassDesc}s describing the argument types
+     * @param returnDesc a {@linkplain ClassDesc} describing the return type
+     * @param paramDescs {@linkplain ClassDesc}s describing the argument types
      * @return a {@linkplain MethodTypeDesc} describing the desired method type
+     * @throws NullPointerException if any argument is {@code null}
      */
     @Foldable
-    static MethodTypeDesc of(ClassDesc returnDescriptor, ClassDesc... paramDescriptors) {
-        return new ConstantMethodTypeDesc(returnDescriptor, paramDescriptors);
+    static MethodTypeDesc of(ClassDesc returnDesc, ClassDesc... paramDescs) {
+        return new ConstantMethodTypeDesc(returnDesc, paramDescs);
     }
 
     /**
      * Get the return type of the method type described by this {@linkplain MethodTypeDesc}
-     * @return the return type
+     *
+     * @return a {@link ClassDesc} describing the return type of the method type
      */
     @Foldable
     ClassDesc returnType();
@@ -83,7 +88,7 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
      * described by this {@linkplain MethodTypeDesc}
      *
      * @param index the index of the parameter to retrieve
-     * @return the parameter type
+     * @return a {@link ClassDesc} describing the desired parameter type
      * @throws IndexOutOfBoundsException if the index is outside the half-open
      * range {[0, parameterCount())}
      */
@@ -91,37 +96,38 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
     ClassDesc parameterType(int index);
 
     /**
-     * Get the parameter types as a {@link List}
+     * Get the parameter types as a {@link List}.
      *
-     * @return the parameter types
+     * @return a {@link List} of {@link ClassDesc} describing the parameter types
      */
     List<ClassDesc> parameterList();
 
     /**
-     * Get the parameter types as an array
+     * Get the parameter types as an array.
      *
-     * @return the parameter types
+     * @return an array of {@link ClassDesc} describing the parameter types
      */
     ClassDesc[] parameterArray();
 
     /**
      * Return a {@linkplain MethodTypeDesc} that is identical to
-     * this one, except with the specified return type
+     * this one, except with the specified return type.
      *
-     * @param returnType the new return type
-     * @return the new method type descriptor
+     * @param returnType a {@link ClassDesc} describing the new return type
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
+     * @throws NullPointerException if any argument is {@code null}
      */
     @Foldable
     MethodTypeDesc changeReturnType(ClassDesc returnType);
 
     /**
      * Return a {@linkplain MethodTypeDesc} that is identical to this one,
-     * except that a single parameter type has been changed to the provided
-     * value
+     * except that a single parameter type has been changed to the specified type.
      *
      * @param index the index of the parameter to change
-     * @param paramType the new parameter type
-     * @return the new method type descriptor
+     * @param paramType a {@link ClassDesc} describing the new parameter type
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
+     * @throws NullPointerException if any argument is {@code null}
      * @throws IndexOutOfBoundsException if the index is outside the half-open
      * range {[0, parameterCount)}
      */
@@ -130,11 +136,11 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
 
     /**
      * Return a {@linkplain MethodTypeDesc} that is identical to this one,
-     * except that a range of parameter types have been removed
+     * except that a range of parameter types have been removed.
      *
      * @param start the index of the first parameter to remove
      * @param end the index after the last parameter to remove
-     * @return the new method type descriptor
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
      * @throws IndexOutOfBoundsException if {@code start} is outside the half-open
      * range {[0, parameterCount)}, or {@code end} is outside the closed range
      * {@code [0, parameterCount]}
@@ -144,11 +150,13 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
 
     /**
      * Return a {@linkplain MethodTypeDesc} that is identical to this one,
-     * except that a range of additional parameter types have been inserted
+     * except that a range of additional parameter types have been inserted.
      *
      * @param pos the index at which to insert the first inserted parameter
-     * @param paramTypes the new parameter types to insert
-     * @return the new method type descriptor
+     * @param paramTypes {@link ClassDesc}s describing the new parameter types
+     *                   to insert
+     * @return a {@linkplain MethodTypeDesc} describing the desired method type
+     * @throws NullPointerException if any argument is {@code null}
      * @throws IndexOutOfBoundsException if {@code pos} is outside the closed
      * range {[0, parameterCount]}
      */
@@ -156,7 +164,8 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
     MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes);
 
     /**
-     * Return the method type descriptor string
+     * Return the method type descriptor string, as per JVMS 4.3.3.
+     *
      * @return the method type descriptor string
      */
     default String descriptorString() {
@@ -170,6 +179,7 @@ public interface MethodTypeDesc extends ConstantDesc<MethodType>, Constable<Cons
     /**
      * Return a human-readable descriptor for this method type, using the
      * canonical names for parameter and return types
+     *
      * @return the human-readable descriptor for this method type
      */
     default String displayDescriptor() {

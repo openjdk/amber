@@ -41,23 +41,26 @@
  * constant pool entries in nominal form that is convenient for APIs to model
  * operands of bytecode instructions.
  *
+ * <h2><a id="nominal"></a>Nominal Descriptors</h2>
+ *
  * <p>A {@link java.lang.invoke.constant.ConstantDesc} is a description of a constant
  * value.  Such a description is the <em>nominal form</em> of the constant value;
- * it is not the value itself, but rather a "recipe" for storing the value in
- * a constant pool entry, or reconstituting the value given a class loading
- * context.  Every {@link java.lang.invoke.constant.ConstantDesc} knows how to <em>resolve</em>
- * itself -- compute the value that it describes -- via the
- * {@link java.lang.invoke.constant.ConstantDesc#resolveConstantDesc(java.lang.invoke.MethodHandles.Lookup)}
- * method.  This allows an API which accepts {@link java.lang.invoke.constant.ConstantDesc}
+ * it is not the value itself, but rather a "recipe" for describing the value,
+ * storing the value in a constant pool entry, or reconstituting the value given
+ * a class loading context.  Every {@link java.lang.invoke.constant.ConstantDesc}
+ * knows how to <em>resolve</em> itself -- compute the value that it describes --
+ * via {@link java.lang.invoke.constant.ConstantDesc#resolveConstantDesc(java.lang.invoke.MethodHandles.Lookup)}.
+ * This allows an API which accepts {@link java.lang.invoke.constant.ConstantDesc}
  * objects to evaluate them reflectively, provided that the classes and methods
  * referenced in their nominal description are present and accessible.
  *
  * <p>The subtypes of of {@link java.lang.invoke.constant.ConstantDesc} describe various kinds
  * of constant values.  For each type of loadable constant pool entry defined in JVMS 4.4,
  * there is a corresponding subtype of {@link java.lang.invoke.constant.ConstantDesc}:
- * {@code ConstantClassDesc}, {@code ConstantMethodTypeDesc},
- * {@code ConstantMethodHandleDesc}, {@code String}, {@code Integer}, {@code Long},
- * {@code Float}, {@code Double}, and {@code DynamicConstantDesc}.  These classes
+ * {@link java.lang.invoke.constant.ConstantClassDesc}, {@link java.lang.invoke.constant.ConstantMethodTypeDesc},
+ * {@link java.lang.invoke.constant.ConstantMethodHandleDesc}, {@link java.lang.String},
+ * {@link java.lang.Integer}, {@link java.lang.Long}, {@link java.lang.Float},
+ * {@link java.lang.Double}, and {@link java.lang.invoke.constant.DynamicConstantDesc}.  These classes
  * provides type-specific accessor methods to extract the nominal information for
  * that kind of constant.  When a bytecode-writing API encounters a {@link java.lang.invoke.constant.ConstantDesc},
  * it should examine it to see which of these types it is, cast it, extract

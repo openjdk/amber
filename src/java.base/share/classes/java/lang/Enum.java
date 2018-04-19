@@ -207,7 +207,7 @@ public abstract class Enum<E extends Enum<E>>
     }
 
     @Override
-    public Optional<EnumDesc<E>> describeConstable(MethodHandles.Lookup lookup) {
+    public final Optional<EnumDesc<E>> describeConstable(MethodHandles.Lookup lookup) {
         return getDeclaringClass()
                 .describeConstable(lookup)
                 .map(c -> EnumDesc.of(c, name));

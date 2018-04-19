@@ -41,9 +41,10 @@ import java.util.Set;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC;
 
 /**
- * Predefined values of nominal descriptors for common constants, including
- * descriptors for primitive class types and other common platform types,
- * and descriptors for method handles for standard bootstrap methods.
+ * Predefined values of <a href="package-summary.html#nominal">nominal descriptor</a>
+ * for common constants, including descriptors for primitive class types and
+ * other common platform types, and descriptors for method handles for standard
+ * bootstrap methods.
  *
  * @see ConstantDesc
  */

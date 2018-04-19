@@ -34,11 +34,14 @@ import static java.util.Objects.requireNonNull;
 /**
  * PrimitiveClassDesc
  */
-final class PrimitiveClassDesc extends DynamicConstantDesc<Class<?>> implements ClassDesc {
+final class PrimitiveClassDesc
+        extends DynamicConstantDesc<Class<?>> implements ClassDesc {
+
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassDesc} from a descriptor string for a primitive type
+     * Create a {@linkplain ClassDesc} given a descriptor string for a primitive
+     * type.
      *
      * @param descriptor the descriptor string, which must be a one-character
      * string corresponding to one of the nine base types as per JVMS 4.3

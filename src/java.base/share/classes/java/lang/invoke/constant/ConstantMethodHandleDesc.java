@@ -34,17 +34,23 @@ import java.util.Optional;
 import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandleDesc;
+import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A nominal descriptor for a direct {@link MethodHandle}.  A
- * {@linkplain ConstantMethodHandleDesc} corresponds to a {@code Constant_MethodHandle_info}
- * entry in the constant pool of a classfile.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a direct
+ * {@link MethodHandle}.  A {@linkplain ConstantMethodHandleDesc} corresponds to
+ * a {@code Constant_MethodHandle_info} entry in the constant pool of a classfile.
  */
 public class ConstantMethodHandleDesc implements MethodHandleDesc {
+    @Foldable
+    private static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),
+                                                "constantBootstrap", CR_MethodHandleDesc,
+                                                CR_String, CR_String, CR_String, CR_String);
 
     private final Kind kind;
     private final ClassDesc owner;
@@ -54,6 +60,7 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
     /**
      * Construct a {@linkplain ConstantMethodHandleDesc} for a method or field
      * from a kind, owner, name, and type
+     *
      * @param kind the kind of the method handle
      * @param owner the declaring class or interface for the method
      * @param name the name of the method (ignored if {@code kind} is
@@ -109,7 +116,8 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     /**
      * Return the {@code kind} of the method handle described by this nominal
-     * descriptor
+     * descriptor.
+     *
      * @return the {@link Kind}
      */
     @Foldable
@@ -117,17 +125,18 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     /**
      * Return the {@code refKind} of the method handle described by this nominal
-     * reference, as defined by {@link MethodHandleInfo}
+     * reference, as defined by {@link MethodHandleInfo}.
+     *
      * @return the reference kind
      */
     @Foldable
     public int refKind() { return kind.refKind; }
 
     /**
-     * Return the class which declares the method or field described by
-     * this nominal descriptor
+     * Return a {@link ClassDesc} describing the class declaring the
+     * method or field described by this nominal descriptor.
      *
-     * @return the class in which the method or field is declared
+     * @return the class declaring the method or field
      */
     @Foldable
     public ClassDesc owner() {
@@ -135,9 +144,9 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
     }
 
     /**
-     * Return the name of the method or field described by this nominal descriptor
+     * Return the name of the method or field described by this nominal descriptor.
      *
-     * @return the name of the method
+     * @return the name of the method or field
      */
     @Foldable
     public String methodName() {
@@ -145,7 +154,9 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
     }
 
     /**
-     * Return the type of the method described by this nominal descriptor
+     * Return a {@link MethodTypeDesc} describing the invocation type of the
+     * method handle described by this nominal descriptor
+     *
      * @return the method type
      */
     @Foldable
@@ -182,8 +193,30 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     @Override
     public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantDesc.of(DescBootstraps.BSM_METHODHANDLEDESC, CR_MethodHandleDesc)
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC, CR_MethodHandleDesc)
                                               .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
+    }
+
+    /**
+     * Constant bootstrap method for representing a {@linkplain MethodHandleDesc} in
+     * the constant pool of a classfile.
+     *
+     * @param lookup ignored
+     * @param name ignored
+     * @param clazz ignored
+     * @param bsmKindName The name of an {@code enum} constant from {@link Kind}
+     * @param memberOwner A field type descriptor for the class declaring the
+     *                 method, field, or constructor, as per JVMS 4.3.2
+     * @param memberName The name of the method or field, as per JVMS 4.2.2
+     * @param memberType A method type descriptor for the method handle being
+     *                described, as per JVMS 4.3.3
+     * @return the {@linkplain MethodHandleDesc}
+     */
+    public static MethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+                                                     String bsmKindName, String memberOwner, String memberName, String memberType) {
+        return MethodHandleDesc.of(MethodHandleDesc.Kind.valueOf(bsmKindName),
+                                   ClassDesc.ofDescriptor(memberOwner), name,
+                                   MethodTypeDesc.ofDescriptor(memberType));
     }
 
     @Override

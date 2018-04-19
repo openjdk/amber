@@ -36,9 +36,9 @@ import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandle;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A nominal descriptor for a {@link MethodHandle} constant that performs
- * a {@link MethodHandle#asType(MethodType)} adaptation on another
- * {@link MethodHandle}.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
+ * {@link MethodHandle} constant that performs a {@link MethodHandle#asType(MethodType)}
+ * adaptation on another {@link MethodHandle}.
  */
 final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
         implements MethodHandleDesc {

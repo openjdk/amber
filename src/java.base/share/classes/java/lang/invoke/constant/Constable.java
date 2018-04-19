@@ -68,7 +68,7 @@ public interface Constable<T> {
      * constructed.
      *
      * @implSpec This method behaves as if {@link #describeConstable(MethodHandles.Lookup)}
-     * were called with a lookup parameter of {@code MethodHandles.publicLookup()}.
+     * were called with a lookup parameter of {@link MethodHandles#publicLookup()}.
      *
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed

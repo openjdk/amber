@@ -30,9 +30,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 /**
- * A nominal descriptor for a loadable constant value, as defined in JVMS 4.4.
- * Such a descriptor can be resolved via {@link ConstantDesc#resolveConstantDesc(MethodHandles.Lookup)}
- * to yield the constant value itself.
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for a loadable
+ * constant value, as defined in JVMS 4.4. Such a descriptor can be resolved via
+ * {@link ConstantDesc#resolveConstantDesc(MethodHandles.Lookup)} to yield the
+ * constant value itself.
  *
  * <p>Class names in a nominal descriptor, like class names in the constant pool
  * of a classfile, must be interpreted with respect to a particular to a class
