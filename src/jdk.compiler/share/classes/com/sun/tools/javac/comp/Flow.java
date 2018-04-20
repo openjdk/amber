@@ -610,12 +610,14 @@ public class Flow {
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = true;
                 JCCase c = l.head;
-                if (c.pat == null)
+                if (c.pats.isEmpty())
                     hasDefault = true;
                 else {
-                    scan(c.pat);
-                    if (constants != null) {
-                        constants.remove(c.pat.type.constValue());
+                    for (JCExpression pat : c.pats) {
+                        scan(pat);
+                        if (constants != null) {
+                            constants.remove(pat.type.constValue());
+                        }
                     }
                 }
                 scanStats(c.stats);
@@ -655,15 +657,17 @@ public class Flow {
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = true;
                 JCCase c = l.head;
-                if (c.pat == null)
+                if (c.pats.isEmpty())
                     hasDefault = true;
                 else {
-                    scan(c.pat);
-                    if (constants != null) {
-                        if (c.pat.hasTag(IDENT))
-                            constants.remove(((JCIdent) c.pat).name);
-                        if (c.pat.type != null)
-                            constants.remove(c.pat.type.constValue());
+                    for (JCExpression pat : c.pats) {
+                        scan(pat);
+                        if (constants != null) {
+                            if (pat.hasTag(IDENT))
+                                constants.remove(((JCIdent) pat).name);
+                            if (pat.type != null)
+                                constants.remove(pat.type.constValue());
+                        }
                     }
                 }
                 scanStats(c.stats);
@@ -1116,9 +1120,7 @@ public class Flow {
             scan(selector);
             for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
-                if (c.pat != null) {
-                    scan(c.pat);
-                }
+                scan(c.pats);
                 scan(c.stats);
             }
             resolveBreaks(tree, prevPendingExits);
@@ -2200,10 +2202,12 @@ public class Flow {
                 inits.assign(initsSwitch);
                 uninits.assign(uninits.andSet(uninitsSwitch));
                 JCCase c = l.head;
-                if (c.pat == null) {
+                if (c.pats.isEmpty()) {
                     hasDefault = true;
                 } else {
-                    scanExpr(c.pat);
+                    for (JCExpression pat : c.pats) {
+                        scanExpr(pat);
+                    }
                 }
                 if (hasDefault) {
                     inits.assign(initsSwitch);

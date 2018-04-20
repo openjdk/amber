@@ -176,7 +176,7 @@ public class TreeScanner extends Visitor {
     }
 
     public void visitCase(JCCase tree) {
-        scan(tree.pat);
+        scan(tree.pats);
         scan(tree.stats);
     }
 

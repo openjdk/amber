@@ -1249,11 +1249,13 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      */
     public static class JCCase extends JCStatement implements CaseTree {
         public final CaseKind caseKind;
-        public JCExpression pat;
+        public List<JCExpression> pats;
         public List<JCStatement> stats;
-        protected JCCase(CaseKind caseKind, JCExpression pat, List<JCStatement> stats) {
+        protected JCCase(CaseKind caseKind, List<JCExpression> pats, List<JCStatement> stats) {
+            Assert.checkNonNull(pats);
+            Assert.check(pats.isEmpty() || pats.head != null);
             this.caseKind = caseKind;
-            this.pat = pat;
+            this.pats = pats;
             this.stats = stats;
         }
         @Override
@@ -1261,8 +1263,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.CASE; }
+        @Override @Deprecated @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getExpression() { return pats.head; }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        public JCExpression getExpression() { return pat; }
+        public List<JCExpression> getExpressions() { return pats; }
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCStatement> getStatements() { return stats; }
         @DefinedBy(Api.COMPILER_TREE)
@@ -3050,7 +3054,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
         JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
-        JCCase Case(CaseKind caseKind, JCExpression pat, List<JCStatement> stats);
+        JCCase Case(CaseKind caseKind, List<JCExpression> pat, List<JCStatement> stats);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);
         JCTry Try(List<JCTree> resources,

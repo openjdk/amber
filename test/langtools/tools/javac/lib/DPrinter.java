@@ -736,7 +736,7 @@ public class DPrinter {
 
         @Override
         public void visitCase(JCCase tree) {
-            printTree("pat", tree.pat);
+            printList("pat", tree.pats);
             printList("stats", tree.stats);
         }
 

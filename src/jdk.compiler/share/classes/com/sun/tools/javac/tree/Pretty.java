@@ -835,11 +835,11 @@ public class Pretty extends JCTree.Visitor {
 
     public void visitCase(JCCase tree) {
         try {
-            if (tree.pat == null) {
+            if (tree.pats.isEmpty()) {
                 print("default");
             } else {
                 print("case ");
-                printExpr(tree.pat);
+                printExprs(tree.pats);
             }
             print(": "); //XXX
             println();

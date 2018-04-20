@@ -147,9 +147,9 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCase(CaseTree node, P p) {
         JCCase t = (JCCase) node;
-        JCExpression pat = copy(t.pat, p);
+        List<JCExpression> pats = copy(t.pats, p);
         List<JCStatement> stats = copy(t.stats, p);
-        return M.at(t.pos).Case(t.caseKind, pat, stats);
+        return M.at(t.pos).Case(t.caseKind, pats, stats);
     }
 
     @DefinedBy(Api.COMPILER_TREE)

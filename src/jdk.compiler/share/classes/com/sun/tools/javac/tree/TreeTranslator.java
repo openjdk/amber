@@ -207,7 +207,7 @@ public class TreeTranslator extends JCTree.Visitor {
     }
 
     public void visitCase(JCCase tree) {
-        tree.pat = translate(tree.pat);
+        tree.pats = translate(tree.pats);
         tree.stats = translate(tree.stats);
         result = tree;
     }

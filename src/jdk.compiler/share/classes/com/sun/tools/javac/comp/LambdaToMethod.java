@@ -721,7 +721,7 @@ public class LambdaToMethod extends TreeTranslator {
             JCBreak br = make.Break(null);
             breaks.add(br);
             List<JCStatement> stmts = entry.getValue().append(br).toList();
-            cases.add(make.Case(CaseKind.STATEMENT, make.Literal(entry.getKey()), stmts));
+            cases.add(make.Case(CaseKind.STATEMENT, List.of(make.Literal(entry.getKey())), stmts));
         }
         JCSwitch sw = make.Switch(deserGetter("getImplMethodName", syms.stringType), cases.toList());
         for (JCBreak br : breaks) {

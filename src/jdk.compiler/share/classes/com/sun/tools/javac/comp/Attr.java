@@ -1483,37 +1483,38 @@ public class Attr extends JCTree.Visitor {
             boolean hasDefault = false;      // Is there a default label?
             for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
-                JCExpression pat = c.pat;
-                if (pat != null) {
-                    if (TreeInfo.isNull(pat)) {
-                        if (!allowNullCase) {
-                            log.error(DiagnosticFlag.SOURCE_LEVEL,
-                                      selector.pos(),
-                                      Feature.SWITCH_CASE_NULL.error(sourceName));
-                        }
-                        //case null:
-                        //TODO: check -source
-                        if (seltype.isPrimitive()) {
-                            log.error(c.pos(), Errors.SwitchNullMustBeReference);
-                        }
-                        if (!labels.add(null)) {
-                            log.error(c.pos(), Errors.DuplicateCaseLabel);
-                        }
-                    } else if (enumSwitch) {
-                        Symbol sym = enumConstant(pat, seltype);
-                        if (sym == null) {
-                            log.error(pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
-                        } else if (!labels.add(sym)) {
-                            log.error(c.pos(), Errors.DuplicateCaseLabel);
-                        }
-                    } else {
-                        Type pattype = attribExpr(pat, switchEnv, unboxedSelType);
-                        if (!pattype.hasTag(ERROR)) {
-                            if (pattype.constValue() == null) {
-                                log.error(pat.pos(),
-                                          (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
-                            } else if (!labels.add(pattype.constValue())) {
+                if (c.getExpressions().nonEmpty()) {
+                    for (JCExpression pat : c.getExpressions()) {
+                        if (TreeInfo.isNull(pat)) {
+                            if (!allowNullCase) {
+                                log.error(DiagnosticFlag.SOURCE_LEVEL,
+                                          selector.pos(),
+                                          Feature.SWITCH_CASE_NULL.error(sourceName));
+                            }
+                            //case null:
+                            //TODO: check -source
+                            if (seltype.isPrimitive()) {
+                                log.error(c.pos(), Errors.SwitchNullMustBeReference);
+                            }
+                            if (!labels.add(null)) {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
+                            }
+                        } else if (enumSwitch) {
+                            Symbol sym = enumConstant(pat, seltype);
+                            if (sym == null) {
+                                log.error(pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
+                            } else if (!labels.add(sym)) {
+                                log.error(c.pos(), Errors.DuplicateCaseLabel);
+                            }
+                        } else {
+                            Type pattype = attribExpr(pat, switchEnv, unboxedSelType);
+                            if (!pattype.hasTag(ERROR)) {
+                                if (pattype.constValue() == null) {
+                                    log.error(pat.pos(),
+                                              (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
+                                } else if (!labels.add(pattype.constValue())) {
+                                    log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                }
                             }
                         }
                     }

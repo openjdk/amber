@@ -1391,19 +1391,17 @@ public class JavacParser implements Parser {
     private List<JCCase> switchExpressionStatementGroup() {
         ListBuffer<JCCase> caseExprs = new ListBuffer<>();
         int casePos = token.pos;
-        JCExpression pat;
+        ListBuffer<JCExpression> pats = new ListBuffer<>();
 
         if (token.kind == DEFAULT) {
             nextToken();
-            pat = null;
         } else {
             accept(CASE);
             while (true) {
-                pat = term(EXPR | NOLAMBDA);
+                pats.append(term(EXPR | NOLAMBDA));
                 if (token.kind != COMMA) break;
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
-                caseExprs.append(toP(F.at(casePos).Case(CaseKind.STATEMENT, pat, List.nil())));
             };
         }
         List<JCStatement> stats = null;
@@ -1428,7 +1426,7 @@ public class JavacParser implements Parser {
                 kind = CaseKind.STATEMENT;
                 break;
         }
-        caseExprs.append(toP(F.at(casePos).Case(kind, pat, stats)));
+        caseExprs.append(toP(F.at(casePos).Case(kind, pats.toList(), stats)));
         return caseExprs.toList();
     }
 
@@ -2804,19 +2802,16 @@ public class JavacParser implements Parser {
         switch (token.kind) {
         case CASE:
             nextToken();
-            JCExpression pat;
+            ListBuffer<JCExpression> pats = new ListBuffer<>();
             while (true) {
-                pat = parseExpression();
+                pats.append(parseExpression());
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
-                c = F.at(pos).Case(CaseKind.STATEMENT, pat, List.nil());
-                storeEnd(c, S.prevToken().endPos);
-                cases.append(c);
             };
             accept(COLON);
             stats = blockStatements();
-            c = F.at(pos).Case(CaseKind.STATEMENT, pat, stats);
+            c = F.at(pos).Case(CaseKind.STATEMENT, pats.toList(), stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();
@@ -2824,7 +2819,7 @@ public class JavacParser implements Parser {
             nextToken();
             accept(COLON);
             stats = blockStatements();
-            c = F.at(pos).Case(CaseKind.STATEMENT, null, stats);
+            c = F.at(pos).Case(CaseKind.STATEMENT, List.nil(), stats);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();

@@ -265,7 +265,7 @@ public class TreeDiffer extends TreeScanner {
     @Override
     public void visitCase(JCCase tree) {
         JCCase that = (JCCase) parameter;
-        result = scan(tree.pat, that.pat) && scan(tree.stats, that.stats);
+        result = scan(tree.pats, that.pats) && scan(tree.stats, that.stats);
     }
 
     @Override

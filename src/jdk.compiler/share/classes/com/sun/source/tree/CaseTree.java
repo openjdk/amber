@@ -49,9 +49,20 @@ public interface CaseTree extends Tree {
     /**
      * Returns the expression for the case, or
      * {@code null} if this is the default case.
+     * If this case has multiple lables, returns the first label.
      * @return the expression for the case, or null
+     * @deprecated Use {@link #getExpressions()}
      */
+    @Deprecated
     ExpressionTree getExpression();
+
+    /**
+     * Returns the labels for this case.
+     * For default case, returns an empty list.
+     * @return labels for this case
+     * @since TBD
+     */
+    List<? extends ExpressionTree> getExpressions();
 
     /**
      * Returns the statements labeled by the case.
