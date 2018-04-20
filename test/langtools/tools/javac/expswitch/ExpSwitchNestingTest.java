@@ -18,7 +18,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
     private static final String WHILE = "while (cond) { # }";
     private static final String DO = "do { # } while (cond);";
     private static final String SSWITCH = "switch (x) { case 0: # };";
-    private static final String ESWITCH = "int res = switch (x) { case 0: # default -> 0; };";
+    private static final String ESWITCH = "int res = switch (x) { case 0 -> { # } default -> 0; };";
     private static final String IF = "if (cond) { # }";
     private static final String BLOCK = "{ # }";
     private static final String BREAK_Z = "break 0;";

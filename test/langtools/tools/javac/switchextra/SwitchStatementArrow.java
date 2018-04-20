@@ -23,45 +23,49 @@
 
 /**
  * @test
- * @compile ExpressionSwitchFallThrough.java
- * @run main ExpressionSwitchFallThrough
+ * @compile SwitchStatementArrow.java
+ * @run main SwitchStatementArrow
  */
+// * @compile/fail/ref=MultipleLabelsStatement-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsStatement.java
 
 import java.util.Objects;
 import java.util.function.Function;
 
-public class ExpressionSwitchFallThrough {
+public class SwitchStatementArrow {
     public static void main(String... args) {
-        new ExpressionSwitchFallThrough().run();
+        new SwitchStatementArrow().run();
     }
 
     private void run() {
-        runTest(this::expression1);
-        runTest(this::expression2);
+        runTest(this::statement1);
     }
 
     private void runTest(Function<T, String> print) {
-        check(T.A,  print, "ab");
-        check(T.B,  print, "b");
-        check(T.C,  print, "");
+        check(null, print, "NULL-A");
+        check(T.A,  print, "NULL-A");
+        check(T.B,  print, "B-C");
+        check(T.C,  print, "B-C");
+        try {
+            print.apply(T.D);
+            throw new AssertionError();
+        } catch (IllegalStateException ex) {
+            if (!Objects.equals("D", ex.getMessage()))
+                throw new AssertionError(ex);
+        }
+        check(T.E,  print, "other");
     }
 
-    private String expression1(T t) {
-        String help = "";
-        return switch (t) {
-            case A: help = "a";
-            case B: help += "b";
-            default: break help;
-        };
-    }
+    private String statement1(T t) {
+        String res;
 
-    private String expression2(T t) {
-        String help = "";
-        return switch (t) {
-            case A: help = "a";
-            case B: help += "b";
-            default: break help;
-        };
+        switch (t) {
+            case null, A -> { res = "NULL-A"; }
+            case B, C -> res = "B-C";
+            case D -> throw new IllegalStateException("D");
+            default -> { res = "other"; break; }
+        }
+
+        return res;
     }
 
     private void check(T t, Function<T, String> print, String expected) {
@@ -72,6 +76,6 @@ public class ExpressionSwitchFallThrough {
     }
 
     enum T {
-        A, B, C;
+        A, B, C, D, E;
     }
 }

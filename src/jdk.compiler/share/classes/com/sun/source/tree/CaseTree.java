@@ -76,13 +76,13 @@ public interface CaseTree extends Tree {
 
     /**
      * If this is a case in switch expression in for
-     * {@linkplain CaseKind#VALUE}, the value of
+     * {@linkplain CaseKind#ARROW}, the right-hand-side of
      * the case, null otherwise.
      * 
      * @return case value or null
      * @since TBD
      */
-    public default ExpressionTree getValue() {
+    public default Tree getBody() {
         return null;
     }
 
@@ -113,10 +113,6 @@ public interface CaseTree extends Tree {
         /**
          * Case is in the form: {@code case <expression> -> <expression>}.
          */
-        VALUE,
-        /**
-         * Case is in the form: {@code case <expression> -> throw ...}.
-         */
-        THROW;
+        ARROW;
     }
 }

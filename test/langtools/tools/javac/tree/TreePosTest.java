@@ -444,8 +444,8 @@ public class TreePosTest {
 
         @Override
         public void visitCase(JCCase tree) {
-            if (tree.getCaseKind() == CaseKind.VALUE) {
-                scan(tree.getValue());
+            if (tree.getCaseKind() == CaseKind.ARROW) {
+                scan(tree.getBody());
             } else {
                 super.visitCase(tree);
             }

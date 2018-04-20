@@ -48,17 +48,17 @@ public class ExpressionSwitch {
         return switch (t) {
             case null -> "NULL";
             case A -> "A";
-            case B -> "B";
-            default: break "other";
+            case B -> { break "B"; }
+            default -> { break "other"; }
         };
     }
 
     private String exhaustive1(T t) {
         return switch (t) {
             case A -> "A";
-            case B -> "B";
+            case B -> { break "B"; }
             case C -> "C";
-            case D: break "D";
+            case D -> "D";
         };
     }
 
@@ -68,7 +68,7 @@ public class ExpressionSwitch {
             case A -> "A";
             case B -> "B";
             case C -> "C";
-            case D: break "D";
+            case D -> "D";
         };
     }
 

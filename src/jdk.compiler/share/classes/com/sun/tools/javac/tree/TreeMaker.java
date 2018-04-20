@@ -273,8 +273,8 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCase Case(CaseKind caseKind, List<JCExpression> pats, List<JCStatement> stats) {
-        JCCase tree = new JCCase(caseKind, pats, stats);
+    public JCCase Case(CaseKind caseKind, List<JCExpression> pats, List<JCStatement> stats, JCTree body) {
+        JCCase tree = new JCCase(caseKind, pats, stats, body);
         tree.pos = pos;
         return tree;
     }

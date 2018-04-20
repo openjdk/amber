@@ -1251,12 +1251,15 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public final CaseKind caseKind;
         public List<JCExpression> pats;
         public List<JCStatement> stats;
-        protected JCCase(CaseKind caseKind, List<JCExpression> pats, List<JCStatement> stats) {
+        public JCTree body;
+        public boolean completesNormally;
+        protected JCCase(CaseKind caseKind, List<JCExpression> pats, List<JCStatement> stats, JCTree body) {
             Assert.checkNonNull(pats);
             Assert.check(pats.isEmpty() || pats.head != null);
             this.caseKind = caseKind;
             this.pats = pats;
             this.stats = stats;
+            this.body = body;
         }
         @Override
         public void accept(Visitor v) { v.visitCase(this); }
@@ -1270,7 +1273,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCStatement> getStatements() { return stats; }
         @DefinedBy(Api.COMPILER_TREE)
-        public JCExpression getValue() { return caseKind == CaseKind.VALUE ? ((JCBreak) stats.head).value : null; }
+        public JCTree getBody() { return body; }
         @Override
         public CaseKind getCaseKind() {
             return caseKind;
@@ -3054,7 +3057,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
         JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
-        JCCase Case(CaseKind caseKind, List<JCExpression> pat, List<JCStatement> stats);
+        JCCase Case(CaseKind caseKind, List<JCExpression> pat, List<JCStatement> stats, JCTree body);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);
         JCTry Try(List<JCTree> resources,

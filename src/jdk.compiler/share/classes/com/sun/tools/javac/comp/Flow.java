@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -621,8 +622,9 @@ public class Flow {
                     }
                 }
                 scanStats(c.stats);
+                c.completesNormally = alive;
                 // Warn about fall-through if lint switch fallthrough enabled.
-                if (alive &&
+                if (alive && c.caseKind == CaseKind.STATEMENT &&
                     lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
                     c.stats.nonEmpty() && l.tail.nonEmpty())
                     log.warning(Lint.LintCategory.FALLTHROUGH,
@@ -671,6 +673,7 @@ public class Flow {
                     }
                 }
                 scanStats(c.stats);
+                c.completesNormally = alive;
             }
             if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);

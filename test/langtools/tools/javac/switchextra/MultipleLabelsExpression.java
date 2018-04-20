@@ -52,7 +52,7 @@ public class MultipleLabelsExpression {
     private String expression1(T t) {
         return switch (t) {
             case null, A -> "NULL-A";
-            case B, C: break "B-C";
+            case B, C -> { break "B-C"; }
             case D -> "D";
             default -> "other";
         };

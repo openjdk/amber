@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
+import com.sun.source.tree.Tree;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Source.Feature;
@@ -1405,18 +1406,19 @@ public class JavacParser implements Parser {
             };
         }
         List<JCStatement> stats = null;
+        JCTree body = null;
         CaseKind kind;
         switch (token.kind) {
             case ARROW:
                 nextToken();
-                if (token.kind == TokenKind.THROW) {
-                    //TODO: record the arrow used?
+                if (token.kind == TokenKind.THROW || token.kind == TokenKind.LBRACE) {
                     stats = List.of(parseStatement());
-                    kind = CaseKind.THROW;
+                    body = stats.head;
+                    kind = CaseKind.ARROW;
                 } else {
                     JCExpression value = parseExpression();
                     stats = List.of(to(F.at(value).Break(value)));
-                    kind = CaseKind.VALUE;
+                    kind = CaseKind.ARROW;
                     accept(SEMI);
                 }
                 break;
@@ -1426,7 +1428,7 @@ public class JavacParser implements Parser {
                 kind = CaseKind.STATEMENT;
                 break;
         }
-        caseExprs.append(toP(F.at(casePos).Case(kind, pats.toList(), stats)));
+        caseExprs.append(toP(F.at(casePos).Case(kind, pats.toList(), stats, body)));
         return caseExprs.toList();
     }
 
@@ -2800,29 +2802,51 @@ public class JavacParser implements Parser {
         JCCase c;
         ListBuffer<JCCase> cases = new ListBuffer<JCCase>();
         switch (token.kind) {
-        case CASE:
+        case CASE: {
             nextToken();
             ListBuffer<JCExpression> pats = new ListBuffer<>();
             while (true) {
-                pats.append(parseExpression());
+                pats.append(term(EXPR | NOLAMBDA));
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
             };
-            accept(COLON);
-            stats = blockStatements();
-            c = F.at(pos).Case(CaseKind.STATEMENT, pats.toList(), stats);
+            CaseKind caseKind;
+            JCTree body = null;
+            if (token.kind == ARROW) {
+                accept(ARROW);
+                caseKind = CaseKind.ARROW;
+                stats = List.of(parseStatementAsBlock());
+                body = stats.head;
+            } else {
+                accept(COLON);
+                caseKind = CaseKind.STATEMENT;
+                stats = blockStatements();
+            }
+            c = F.at(pos).Case(caseKind, pats.toList(), stats, body);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();
-        case DEFAULT:
+        }
+        case DEFAULT: {
             nextToken();
-            accept(COLON);
-            stats = blockStatements();
-            c = F.at(pos).Case(CaseKind.STATEMENT, List.nil(), stats);
+            CaseKind caseKind;
+            JCTree body = null;
+            if (token.kind == COLON) {
+                accept(COLON);
+                caseKind = CaseKind.STATEMENT;
+                stats = blockStatements();
+            } else {
+                accept(ARROW);
+                caseKind = CaseKind.ARROW;
+                stats = List.of(parseStatementAsBlock());
+                body = stats.head;
+            }
+            c = F.at(pos).Case(caseKind, List.nil(), stats, body);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
             return cases.append(c).toList();
+        }
         }
         throw new AssertionError("should not reach here");
     }
