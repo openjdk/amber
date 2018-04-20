@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.invoke.constant.ConstantDescs.BSM_METHODTYPEDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodTypeDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.util.Objects.requireNonNull;
@@ -45,10 +46,6 @@ import static java.util.Objects.requireNonNull;
  * {@code Constant_MethodType_info} entry in the constant pool of a classfile.
  */
 public final class ConstantMethodTypeDesc implements MethodTypeDesc {
-    @Foldable
-    private static final ConstantMethodHandleDesc BSM_METHODTYPEDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodTypeDesc"),
-                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
 
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
     private static final Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");

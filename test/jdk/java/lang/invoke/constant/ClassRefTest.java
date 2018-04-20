@@ -43,6 +43,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
+ * @compile -XDfolding=false ClassRefTest.java
  * @run testng ClassRefTest
  * @summary unit tests for java.lang.invoke.constant.ClassRef
  */

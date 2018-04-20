@@ -345,6 +345,30 @@ public final class ConstantDescs {
             = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofArray",
                                   CR_VarHandleDesc, CR_ClassDesc);
 
+    static final ConstantMethodHandleDesc BSM_CLASSDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantClassDesc"),
+                                                "constantBootstrap", CR_ClassDesc, CR_String);
+
+    static final ConstantMethodHandleDesc BSM_METHODTYPEDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodTypeDesc"),
+                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
+
+    static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),
+                                                "constantBootstrap", CR_MethodHandleDesc,
+                                                CR_String, CR_String, CR_String, CR_String);
+
+    static final ConstantMethodHandleDesc BSM_ENUMDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "EnumDesc"),
+                                                "constantBootstrap", CR_EnumDesc, CR_String, CR_String);
+
+    static final ConstantMethodHandleDesc BSM_DYNAMICCONSTANTDESC
+            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "DynamicConstantDesc"),
+                                                "constantBootstrap",
+                                                CR_DynamicConstantDesc,
+                                                CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.array());
+
+
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for
      * an {@code invokedynamic} callsite, which is a static method whose leading

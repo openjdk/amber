@@ -95,6 +95,7 @@ public final class DynamicCallSiteDesc {
      * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
      *                      to the bootstrap, that would appear in the
      *                      {@code BootstrapMethods} attribute
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format
@@ -136,6 +137,7 @@ public final class DynamicCallSiteDesc {
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
+     * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format

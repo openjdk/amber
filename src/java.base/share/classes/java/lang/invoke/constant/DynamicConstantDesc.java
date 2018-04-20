@@ -37,9 +37,13 @@ import java.util.stream.Stream;
 
 import jdk.internal.lang.annotation.Foldable;
 
+import static java.lang.invoke.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
+import static java.lang.invoke.constant.ConstantDescs.CR_Class;
 import static java.lang.invoke.constant.ConstantDescs.CR_ConstantDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_DynamicConstantDesc;
+import static java.lang.invoke.constant.ConstantDescs.CR_Enum;
 import static java.lang.invoke.constant.ConstantDescs.CR_String;
+import static java.lang.invoke.constant.ConstantDescs.CR_VarHandle;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -57,33 +61,18 @@ import static java.util.stream.Collectors.joining;
 public abstract class DynamicConstantDesc<T>
         implements ConstantDesc<T>, Constable<ConstantDesc<T>> {
 
-    @Foldable
-    private static final ConstantMethodHandleDesc BSM_DYNAMICCONSTANTDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "DynamicConstantDesc"),
-                                                "constantBootstrap",
-                                                CR_DynamicConstantDesc,
-                                                CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.array());
-
     private final ConstantMethodHandleDesc bootstrapMethod;
     private final ConstantDesc<?>[] bootstrapArgs;
     private final String constantName;
     private final ClassDesc constantType;
 
-    @SuppressWarnings("rawtypes")
-    private static final Map<MethodHandleDesc, Function<DynamicConstantDesc, ConstantDesc<?>>> canonicalMap
-            = Map.ofEntries(Map.entry(ConstantDescs.BSM_PRIMITIVE_CLASS, d -> ClassDesc.ofDescriptor(d.constantName)),
-                            Map.entry(ConstantDescs.BSM_ENUM_CONSTANT, d -> EnumDesc.of(d.constantType, d.constantName)),
-                            Map.entry(ConstantDescs.BSM_NULL_CONSTANT, d -> ConstantDescs.NULL),
-                            Map.entry(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD,
-                                      d -> VarHandleDesc.ofStaticField((ClassDesc) d.bootstrapArgs[0],
-                                                                       (String) d.bootstrapArgs[1],
-                                                                       (ClassDesc) d.bootstrapArgs[2])),
-                            Map.entry(ConstantDescs.BSM_VARHANDLE_FIELD,
-                                      d -> VarHandleDesc.ofField((ClassDesc) d.bootstrapArgs[0],
-                                                                 (String) d.bootstrapArgs[1],
-                                                                 (ClassDesc) d.bootstrapArgs[2])),
-                            Map.entry(ConstantDescs.BSM_VARHANDLE_ARRAY,
-                                      d -> VarHandleDesc.ofArray((ClassDesc) d.bootstrapArgs[0]))
+    private static final Map<MethodHandleDesc, Function<DynamicConstantDesc<?>, ConstantDesc<?>>> canonicalMap
+            = Map.ofEntries(Map.entry(ConstantDescs.BSM_PRIMITIVE_CLASS, DynamicConstantDesc::canonicalizePrimitiveClass),
+                            Map.entry(ConstantDescs.BSM_ENUM_CONSTANT, DynamicConstantDesc::canonicalizeEnum),
+                            Map.entry(ConstantDescs.BSM_NULL_CONSTANT, DynamicConstantDesc::canonicalizeNull),
+                            Map.entry(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, DynamicConstantDesc::canonicalizeStaticFieldVarHandle),
+                            Map.entry(ConstantDescs.BSM_VARHANDLE_FIELD, DynamicConstantDesc::canonicalizeFieldVarHandle),
+                            Map.entry(ConstantDescs.BSM_VARHANDLE_ARRAY, DynamicConstantDesc::canonicalizeArrayVarHandle)
     );
 
     /**
@@ -172,19 +161,7 @@ public abstract class DynamicConstantDesc<T>
                                                  ClassDesc constantType,
                                                  ConstantDesc<?>[] bootstrapArgs) {
         return DynamicConstantDesc.<T>of(bootstrapMethod, constantName, constantType, bootstrapArgs)
-                .canonicalize();
-    }
-
-    private ConstantDesc<T> canonicalize() {
-        // @@@ Existing map-based approach is cute but not very robust; need to add more checking of target DCDesc
-        @SuppressWarnings("rawtypes")
-        Function<DynamicConstantDesc, ConstantDesc<?>> f = canonicalMap.get(bootstrapMethod);
-        if (f != null) {
-            @SuppressWarnings("unchecked")
-            ConstantDesc<T> converted = (ConstantDesc<T>) f.apply(this);
-            return converted;
-        }
-        return this;
+                .tryCanonicalize();
     }
 
     /**
@@ -212,7 +189,7 @@ public abstract class DynamicConstantDesc<T>
                                                String constantName,
                                                ClassDesc constantType,
                                                ConstantDesc<?>[] bootstrapArgs) {
-        return new DynamicConstantDesc<T>(bootstrapMethod, constantName, constantType, bootstrapArgs) { };
+        return new DynamicConstantDesc<>(bootstrapMethod, constantName, constantType, bootstrapArgs) {};
     }
 
     /**
@@ -440,6 +417,68 @@ public abstract class DynamicConstantDesc<T>
                                                           MethodTypeDesc.ofDescriptor(bsmDesc)),
                                       constantName, ClassDesc.ofDescriptor(constantType), args);
 
+    }
+
+    private ConstantDesc<T> tryCanonicalize() {
+        Function<DynamicConstantDesc<?>, ConstantDesc<?>> f = canonicalMap.get(bootstrapMethod);
+        if (f != null) {
+            try {
+                @SuppressWarnings("unchecked")
+                ConstantDesc<T> converted = (ConstantDesc<T>) f.apply(this);
+                return converted;
+            }
+            catch (Throwable t) {
+                return this;
+            }
+        }
+        return this;
+    }
+
+    private static ConstantDesc<?> canonicalizeNull(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 0)
+            return desc;
+        return ConstantDescs.NULL;
+    }
+
+    private static ConstantDesc<?> canonicalizeEnum(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 0
+            || !desc.constantType().equals(CR_Enum)
+            || desc.constantName == null)
+            return desc;
+        return EnumDesc.of(desc.constantType, desc.constantName);
+    }
+
+    private static ConstantDesc<?> canonicalizePrimitiveClass(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 0
+            || !desc.constantType().equals(CR_Class)
+            || desc.constantName == null)
+            return desc;
+        return ClassDesc.ofDescriptor(desc.constantName);
+    }
+
+    private static ConstantDesc<?> canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 3
+            || !desc.constantType().equals(CR_VarHandle))
+            return desc;
+        return VarHandleDesc.ofStaticField((ClassDesc) desc.bootstrapArgs[0],
+                                           (String) desc.bootstrapArgs[1],
+                                           (ClassDesc) desc.bootstrapArgs[2]);
+    }
+
+    private static ConstantDesc<?> canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 3
+            || !desc.constantType().equals(CR_VarHandle))
+            return desc;
+        return VarHandleDesc.ofField((ClassDesc) desc.bootstrapArgs[0],
+                                     (String) desc.bootstrapArgs[1],
+                                     (ClassDesc) desc.bootstrapArgs[2]);
+    }
+
+    private static ConstantDesc<?> canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
+        if (desc.bootstrapArgs.length != 1
+            || !desc.constantType().equals(CR_VarHandle))
+            return desc;
+        return VarHandleDesc.ofArray((ClassDesc) desc.bootstrapArgs[0]);
     }
 
     @Override

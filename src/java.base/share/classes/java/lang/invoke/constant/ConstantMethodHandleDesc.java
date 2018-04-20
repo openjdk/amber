@@ -33,8 +33,8 @@ import java.util.Optional;
 
 import jdk.internal.lang.annotation.Foldable;
 
+import static java.lang.invoke.constant.ConstantDescs.BSM_METHODHANDLEDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandleDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
@@ -46,11 +46,6 @@ import static java.util.Objects.requireNonNull;
  * a {@code Constant_MethodHandle_info} entry in the constant pool of a classfile.
  */
 public class ConstantMethodHandleDesc implements MethodHandleDesc {
-    @Foldable
-    private static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),
-                                                "constantBootstrap", CR_MethodHandleDesc,
-                                                CR_String, CR_String, CR_String, CR_String);
 
     private final Kind kind;
     private final ClassDesc owner;
@@ -73,7 +68,6 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
      * is not {@code void}
      */
     ConstantMethodHandleDesc(Kind kind, ClassDesc owner, String name, MethodTypeDesc type) {
-        super();
         if (kind == CONSTRUCTOR)
             name = "<init>";
 
@@ -215,7 +209,7 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
     public static MethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                      String bsmKindName, String memberOwner, String memberName, String memberType) {
         return MethodHandleDesc.of(MethodHandleDesc.Kind.valueOf(bsmKindName),
-                                   ClassDesc.ofDescriptor(memberOwner), name,
+                                   ClassDesc.ofDescriptor(memberOwner), memberName,
                                    MethodTypeDesc.ofDescriptor(memberType));
     }
 

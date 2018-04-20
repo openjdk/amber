@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 
 import jdk.internal.lang.annotation.Foldable;
 
+import static java.lang.invoke.constant.ConstantDescs.BSM_CLASSDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ClassDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.dropFirstAndLastChar;
@@ -45,9 +46,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class ConstantClassDesc implements ClassDesc {
     @Foldable
-    private static final ConstantMethodHandleDesc BSM_CLASSDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantClassDesc"),
-                                                "constantBootstrap", CR_ClassDesc, CR_String);
     private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
 
     private final String descriptor;

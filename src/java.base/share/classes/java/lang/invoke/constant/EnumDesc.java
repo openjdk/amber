@@ -29,6 +29,7 @@ import jdk.internal.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
+import static java.lang.invoke.constant.ConstantDescs.BSM_ENUMDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_EnumDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
@@ -42,11 +43,6 @@ import static java.util.Objects.requireNonNull;
  */
 public final class EnumDesc<E extends Enum<E>>
         extends DynamicConstantDesc<E> {
-
-    @Foldable
-    private static final ConstantMethodHandleDesc BSM_ENUMDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "EnumDesc"),
-                                                "constantBootstrap", CR_EnumDesc, CR_String, CR_String);
 
     /**
      * Construct a nominal descriptor for the specified {@code enum} class and name.
