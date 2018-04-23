@@ -286,7 +286,11 @@ public class Constables {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
                 constableClass.isInstance(constant)) {
-                constant = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "describeConstable")).get();
+                Optional<?> optional = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "describeConstable"));
+                if (!optional.isPresent()) {
+                    return Optional.empty();
+                }
+                constant = optional.get();
                 // now this should be a condy that the compiler can understand
                 // a Pool.ConstantDynamic
                 Object condyOb = convertConstant(tree, attrEnv, constant, attrEnv.enclClass.sym.packge().modle);
