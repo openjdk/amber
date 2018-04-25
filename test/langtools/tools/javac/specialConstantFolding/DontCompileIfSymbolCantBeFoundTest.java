@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @summary checking that the compiler issues an error if the symbol cant be found
  * @ignore generate warnings instead of errors
- * @compile/fail/ref=DontCompileIfSymbolCantBeFoundTest.out -XDdoConstantFold -XDrawDiagnostics DontCompileIfSymbolCantBeFoundTest.java
+ * @compile/fail/ref=DontCompileIfSymbolCantBeFoundTest.out -XDrawDiagnostics DontCompileIfSymbolCantBeFoundTest.java
  */
 
 import java.lang.invoke.*;

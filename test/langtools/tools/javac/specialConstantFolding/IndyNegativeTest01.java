@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary adding indy negative test
- * @compile/fail/ref=IndyNegativeTest01.out -XDdoConstantFold -XDrawDiagnostics IndyNegativeTest01.java
+ * @compile/fail/ref=IndyNegativeTest01.out -XDrawDiagnostics IndyNegativeTest01.java
  */
 
 import java.lang.invoke.constant.*;

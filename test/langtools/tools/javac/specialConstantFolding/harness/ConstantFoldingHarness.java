@@ -108,7 +108,7 @@ public class ConstantFoldingHarness {
     void checkAndExecute() throws Throwable {
         String classPathValue = generateClassPath();
         JavacTask ct = (JavacTask) comp.getTask(
-                null, fm, null, Arrays.asList("-cp", classPathValue, "-XDdoConstantFold"),
+                null, fm, null, Arrays.asList("-cp", classPathValue),
                 null, Arrays.asList(jfo));
         System.err.println("------------------------------------------------------------------");
         System.err.println("compiling code " + jfo);

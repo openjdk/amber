@@ -25,7 +25,7 @@
  * @test 8168964
  * @summary introducing indy
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @compile -XDdoConstantFold IndyCodeGenerationTest.java
+ * @compile IndyCodeGenerationTest.java
  * @run main IndyCodeGenerationTest
  */
 

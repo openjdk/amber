@@ -1,11 +1,11 @@
-MethodTypeNegTest.java:20:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (RT)V for getter, found MethodTypeDesc[()int]
-MethodTypeNegTest.java:21:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T)V for getter, found MethodTypeDesc[()int]
-MethodTypeNegTest.java:24:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (RT)V for getter, found MethodTypeDesc[(int)void]
-MethodTypeNegTest.java:25:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T)V for getter, found MethodTypeDesc[(int,int)void]
-MethodTypeNegTest.java:28:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T*)V for constructor, found MethodTypeDesc[()int]
-MethodTypeNegTest.java:31:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (R)T for getter, found MethodTypeDesc[()void]
-MethodTypeNegTest.java:32:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of ()T for getter, found MethodTypeDesc[()void]
-MethodTypeNegTest.java:35:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (R)T for getter, found MethodTypeDesc[(int,int)int]
-MethodTypeNegTest.java:36:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of ()T for getter, found MethodTypeDesc[(int,int)int]
-MethodTypeNegTest.java:39:51: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Void parameters not permitted
+MethodTypeNegTest.java:17:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (RT)V for getter, found MethodTypeDesc[()int]
+MethodTypeNegTest.java:18:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T)V for getter, found MethodTypeDesc[()int]
+MethodTypeNegTest.java:21:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (RT)V for getter, found MethodTypeDesc[(int)void]
+MethodTypeNegTest.java:22:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T)V for getter, found MethodTypeDesc[(int,int)void]
+MethodTypeNegTest.java:25:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (T*)V for constructor, found MethodTypeDesc[()int]
+MethodTypeNegTest.java:28:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (R)T for getter, found MethodTypeDesc[()void]
+MethodTypeNegTest.java:29:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of ()T for getter, found MethodTypeDesc[()void]
+MethodTypeNegTest.java:32:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of (R)T for getter, found MethodTypeDesc[(int,int)int]
+MethodTypeNegTest.java:33:50: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Expected type of ()T for getter, found MethodTypeDesc[(int,int)int]
+MethodTypeNegTest.java:36:51: compiler.err.reflective.error: of, java.lang.invoke.constant.MethodHandleDesc, Void parameters not permitted
 10 errors

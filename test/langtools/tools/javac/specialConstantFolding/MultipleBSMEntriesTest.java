@@ -26,7 +26,7 @@
  * @summary javac is generating duplicate bootstrap specifiers to the BSM attribute
  * @modules jdk.compiler/com.sun.tools.javac.util
             jdk.jdeps/com.sun.tools.classfile
- * @compile -XDdoConstantFold MultipleBSMEntriesTest.java
+ * @compile MultipleBSMEntriesTest.java
  * @run main MultipleBSMEntriesTest
  * @author tvaleev
  * @author vromero

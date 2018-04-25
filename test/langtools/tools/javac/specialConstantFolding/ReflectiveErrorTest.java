@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary testing message for reflective error
- * @compile/fail/ref=ReflectiveErrorTest.out -XDdoConstantFold -XDrawDiagnostics ReflectiveErrorTest.java
+ * @compile/fail/ref=ReflectiveErrorTest.out -XDrawDiagnostics ReflectiveErrorTest.java
  */
 
 import java.lang.invoke.constant.*;

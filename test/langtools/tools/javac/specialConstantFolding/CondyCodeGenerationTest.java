@@ -26,7 +26,7 @@
 /*
  * @test
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @compile -XDdoConstantFold CondyCodeGenerationTest.java
+ * @compile CondyCodeGenerationTest.java
  * @run main CondyCodeGenerationTest
  */
 

@@ -53,8 +53,8 @@ public class CheckForCondyDuplicatesTest {
 
         "public class Test1 {\n" +
         "    void m() {\n" +
-        "        Object o1 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
-        "        Object o2 = Intrinsics.ldc(ConstantRefs.NULL);\n" +
+        "        Object o1 = Intrinsics.ldc(ConstantDescs.NULL);\n" +
+        "        Object o2 = Intrinsics.ldc(ConstantDescs.NULL);\n" +
         "    }\n" +
         "}";
 
@@ -81,7 +81,6 @@ public class CheckForCondyDuplicatesTest {
 
     void compileTestClass(String source) throws Exception {
         new JavacTask(tb)
-                .options("-XDdoConstantFold")
                 .sources(source)
                 .run();
     }

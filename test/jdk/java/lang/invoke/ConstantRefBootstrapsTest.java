@@ -40,7 +40,7 @@ import static org.testng.Assert.assertNull;
 
 /**
  * @test
- * @compile -XDdoConstantFold ConstantRefBootstrapsTest.java
+ * @compile ConstantRefBootstrapsTest.java
  * @run testng ConstantRefBootstrapsTest
  * @summary integration tests for dynamic constant bootstraps and Intrinsics.ldc()
  */

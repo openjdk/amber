@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary warn if a member is incorrect at compile time
- * @compile/fail/ref=WarningIfMemberIncorrect.out -XDdoConstantFold -Werror -XDrawDiagnostics WarningIfMemberIncorrect.java
+ * @compile/fail/ref=WarningIfMemberIncorrect.out -Werror -XDrawDiagnostics WarningIfMemberIncorrect.java
  */
 
 import java.lang.invoke.*; import java.lang.invoke.constant.*;

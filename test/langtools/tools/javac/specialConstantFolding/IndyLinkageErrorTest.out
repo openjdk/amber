@@ -1,2 +1,3 @@
-IndyLinkageErrorTest.java:29:49: compiler.err.invocation.name.cannot.be.empty
-1 error
+IndyLinkageErrorTest.java:28:63: compiler.err.reflective.error: of, java.lang.invoke.constant.DynamicCallSiteDesc, zero-length member name
+IndyLinkageErrorTest.java:29:38: compiler.err.intrinsics.indy.must.have.constant.arg
+2 errors

@@ -24,8 +24,8 @@
 /*
  * @test 8168964
  * @summary javac is crashing while reflectevely invoking a method with primitive arguments
- * @compile -XDdoConstantFold CrashWithPrimitiveArgumentsTest.java
- * @compile -XDdoConstantFold -g CrashWithPrimitiveArgumentsTest.java
+ * @compile CrashWithPrimitiveArgumentsTest.java
+ * @compile -g CrashWithPrimitiveArgumentsTest.java
  */
 
 import java.lang.invoke.*;

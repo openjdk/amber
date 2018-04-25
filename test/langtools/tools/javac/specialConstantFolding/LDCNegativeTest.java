@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary adding several ldc negative tests
- * @compile/fail/ref=LDCNegativeTest.out -XDdoConstantFold -XDrawDiagnostics LDCNegativeTest.java
+ * @compile/fail/ref=LDCNegativeTest.out -XDrawDiagnostics LDCNegativeTest.java
  */
 
 import java.lang.invoke.constant.*;

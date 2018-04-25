@@ -47,7 +47,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile -XDdoConstantFold IntrinsifiedRefTest.java
+ * @compile IntrinsifiedRefTest.java
  * @run testng IntrinsifiedRefTest
  * @summary Integration test for intrinsification of XxxRef
  */

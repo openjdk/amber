@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary check that method type's shape matches the reference kind
- * @compile/fail/ref=MethodTypeNegTest.out -XDdoConstantFold -Werror -XDrawDiagnostics MethodTypeNegTest.java
+ * @compile/fail/ref=MethodTypeNegTest.out -Werror -XDrawDiagnostics MethodTypeNegTest.java
  */
 
 import java.lang.invoke.constant.ClassDesc;

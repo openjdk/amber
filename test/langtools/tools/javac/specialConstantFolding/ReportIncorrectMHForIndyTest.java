@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @summary report incorrect method handles for indy
  * @ignore
- * @compile/fail/ref=ReportIncorrectMHForIndyTest.out -XDdoConstantFold -XDrawDiagnostics ReportIncorrectMHForIndyTest.java
+ * @compile/fail/ref=ReportIncorrectMHForIndyTest.out -XDrawDiagnostics ReportIncorrectMHForIndyTest.java
  */
 
 import java.lang.invoke.*;

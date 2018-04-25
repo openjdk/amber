@@ -32,6 +32,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantDesc;
 import java.lang.invoke.constant.EnumDesc;
 import java.util.Optional;
 

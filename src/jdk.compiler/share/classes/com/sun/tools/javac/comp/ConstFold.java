@@ -360,29 +360,29 @@ strictfp public class ConstFold {
      *                    ttype.
      *  @param ttype      The target type of the coercion.
      */
-     Type coerce(Type etype, Type ttype) {
-         // WAS if (etype.baseType() == ttype.baseType())
-         if (etype.tsym.type == ttype.tsym.type)
-             return etype;
-         if (etype.isNumeric()) {
-             Object n = etype.constValue();
-             switch (ttype.getTag()) {
-             case BYTE:
-                 return syms.byteType.constType(0 + (byte)intValue(n));
-             case CHAR:
-                 return syms.charType.constType(0 + (char)intValue(n));
-             case SHORT:
-                 return syms.shortType.constType(0 + (short)intValue(n));
-             case INT:
-                 return syms.intType.constType(intValue(n));
-             case LONG:
-                 return syms.longType.constType(longValue(n));
-             case FLOAT:
-                 return syms.floatType.constType(floatValue(n));
-             case DOUBLE:
-                 return syms.doubleType.constType(doubleValue(n));
-             }
-         }
-         return ttype;
-     }
+    Type coerce(Type etype, Type ttype) {
+        // WAS if (etype.baseType() == ttype.baseType())
+        if (etype.tsym.type == ttype.tsym.type)
+            return etype;
+        if (etype.isNumeric()) {
+            Object n = etype.constValue();
+            switch (ttype.getTag()) {
+            case BYTE:
+                return syms.byteType.constType(0 + (byte)intValue(n));
+            case CHAR:
+                return syms.charType.constType(0 + (char)intValue(n));
+            case SHORT:
+                return syms.shortType.constType(0 + (short)intValue(n));
+            case INT:
+                return syms.intType.constType(intValue(n));
+            case LONG:
+                return syms.longType.constType(longValue(n));
+            case FLOAT:
+                return syms.floatType.constType(floatValue(n));
+            case DOUBLE:
+                return syms.doubleType.constType(doubleValue(n));
+            }
+        }
+        return ttype;
+    }
 }

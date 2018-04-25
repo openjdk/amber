@@ -25,7 +25,7 @@
  * @test 8168964
  * @summary introducing indy
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @compile -XDdoConstantFold IndyPositiveTest01.java
+ * @compile IndyPositiveTest01.java
  * @run main IndyPositiveTest01
  */
 

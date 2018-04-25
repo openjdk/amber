@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary the VM is failing with linkage error if invocationName is an empty string
- * @compile/fail/ref=IndyLinkageErrorTest.out -XDdoConstantFold -XDrawDiagnostics IndyLinkageErrorTest.java
+ * @compile/fail/ref=IndyLinkageErrorTest.out -XDrawDiagnostics IndyLinkageErrorTest.java
  */
 
 import java.lang.invoke.constant.*;

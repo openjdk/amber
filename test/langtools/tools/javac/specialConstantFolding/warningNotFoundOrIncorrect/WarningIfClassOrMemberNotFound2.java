@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary warn if a class or member is not found at compile time
- * @compile/fail/ref=WarningIfClassOrMemberNotFound2.out -XDdoConstantFold -Werror -XDrawDiagnostics WarningIfClassOrMemberNotFound2.java
+ * @compile/fail/ref=WarningIfClassOrMemberNotFound2.out -Werror -XDrawDiagnostics WarningIfClassOrMemberNotFound2.java
  */
 
 import java.lang.invoke.*;

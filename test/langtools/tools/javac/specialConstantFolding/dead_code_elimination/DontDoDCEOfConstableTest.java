@@ -98,56 +98,77 @@ public class DontDoDCEOfConstableTest extends TestRunner {
 
     private final static String stubSource =
             "package java.lang.invoke.constant;\n" +
-
+            "\n" +
             "import java.util.Optional;\n" +
             "import jdk.internal.lang.annotation.*;\n" +
             "import java.lang.invoke.*;\n" +
             "import static java.lang.invoke.constant.ConstantDescs.*;\n" +
-
+            "\n" +
             "/** --\n" +
             "*/\n" +
             "public class Stub {\n" +
             "   private static final ClassDesc CR_BOX = ClassDesc.of(\"java.lang.invoke.constant.Stub\").inner(\"Box\");\n" +
-            "   private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
+            "   private static final ConstantMethodHandleDesc MH_BOX = ConstantDescs.ofConstantBootstrap(CR_BOX, \"constantBootstrap\", CR_BOX, CR_String);\n" +
+            "   //private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
             "   /**\n" +
             "    * x\n" +
             "    * @return x\n" +
             "    */\n" +
             "   @Foldable\n" +
-            "   public static String string() { return \"foo\"; }    /**\n" +
+            "   public static String string() { return \"foo\"; }    \n" +
+            "    /**\n" +
             "    * x\n" +
             "    * @param s s\n" +
             "    * @return x\n" +
             "    */\n" +
             "   @Foldable\n" +
-            "   public static String substring(String s) { return s.substring(1); }    /**\n" +
+            "   public static String substring(String s) { return s.substring(1); }    \n" +
+            "   /**\n" +
             "    * x\n" +
             "    * @param s s\n" +
             "    * @return x\n" +
             "    */\n" +
             "   @Foldable\n" +
-            "   public static Box box(String s) { return new Box(s); }    /**\n" +
+            "   public static Box box(String s) { return new Box(s); }    \n" +
+            "    /**\n" +
             "    * x\n" +
             "    * @param b x\n" +
             "    * @return x\n" +
             "    */\n" +
             "   @Foldable\n" +
-            "   public static String unbox(Box b) { return b.s; }    /**\n" +
-            "    * box\n" +
+            "   public static String unbox(Box b) { return b.s; }    \n" +
+            "    /**\n" +
+            "     * box\n" +
             "     */\n" +
             "   public static class Box implements Constable<Box> {\n" +
             "       /**\n" +
             "        * x\n" +
             "        */\n" +
-            "       String s;        /**\n" +
+            "       String s;        \n" +
+            "        /**\n" +
             "        * x\n" +
             "        * @param s x\n" +
             "        */\n" +
             "       public Box(String s) {\n" +
             "           this.s = s;\n" +
-            "       }        @Override\n" +
-            "       public Optional<? extends ConstantDesc<? super Box>> toConstantDesc(MethodHandles.Lookup lookup) {\n" +
-            "           return DynamicConstantDesc.symbolizeHelper(lookup, MH_BOX, CR_BOX, s);\n" +
+            "       }\n" +
+            "\n" +
+            "       /**\n" +
+            "        * -\n" +
+            "        * @param lookup x\n" +
+            "        * @param name x\n" +
+            "        * @param clazz x\n" +
+            "        * @param s x\n" +
+            "        * @return x\n" +
+            "        */\n" +
+            "       public static Box constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz, String s) {\n" +
+            "           return new Box(s);\n" +
+            "       }\n" +
+            "\n" +
+            "       @Override\n" +
+            "       public Optional<? extends ConstantDesc<? super Box>> describeConstable(MethodHandles.Lookup lookup) {\n" +
+            "           return Optional.of(DynamicConstantDesc.of(MH_BOX, CR_BOX)\n" +
+            "                   .withArgs(s));\n" +
             "       }\n" +
             "   }\n" +
             "}";
@@ -176,7 +197,7 @@ public class DontDoDCEOfConstableTest extends TestRunner {
         tb.createDirectories(classes);
 
         new toolbox.JavacTask(tb)
-            .options("-XDdoConstantFold", "--patch-module", "java.base=" + patch.toString())
+            .options("--patch-module", "java.base=" + patch.toString())
             .outdir(classes)
             .files(findJavaFiles(src))
             .run()

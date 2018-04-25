@@ -101,7 +101,6 @@ public class CheckForCorrectMRefTest {
     void compileTestClass(String source) throws Exception {
         ToolBox tb = new ToolBox();
         new JavacTask(tb)
-                .options("-XDdoConstantFold")
                 .sources(source)
                 .run();
     }

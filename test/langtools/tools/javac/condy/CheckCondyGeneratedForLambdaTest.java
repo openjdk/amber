@@ -75,7 +75,6 @@ public class CheckCondyGeneratedForLambdaTest {
 
     void compileTestClass() throws Exception {
         new JavacTask(tb)
-                .options("-XDdoConstantFold")
                 .sources(testSource)
                 .run();
     }

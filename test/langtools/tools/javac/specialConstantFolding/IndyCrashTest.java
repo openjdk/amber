@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary javac is crashing for incorrect indy
- * @compile/fail/ref=IndyCrashTest.out -XDdoConstantFold -XDrawDiagnostics IndyCrashTest.java
+ * @compile/fail/ref=IndyCrashTest.out -XDrawDiagnostics IndyCrashTest.java
  */
 
 import java.lang.invoke.*;

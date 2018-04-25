@@ -1190,6 +1190,7 @@ public class LambdaToMethod extends TreeTranslator {
             List<Object> staticArgs, Type interfaceType, MethodType indyType, List<JCExpression> indyArgs,
             Name methName) {
         return condyForLambda &&
+               !context.needsAltMetafactory() &&
                indyArgs.isEmpty() ?
                makeCondy(pos, site, bsmName, staticArgs, interfaceType, methName) :
                makeIndyCall(pos, site, bsmName, staticArgs, indyType, indyArgs, methName);

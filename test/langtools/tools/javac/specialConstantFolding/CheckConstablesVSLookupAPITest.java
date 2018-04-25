@@ -127,7 +127,6 @@ public class CheckConstablesVSLookupAPITest extends ComboInstance<CheckConstable
     @Override
     public void doWork() throws IOException {
         Result<?> constablesCompilationResult = newCompilationTask()
-                .withOption("-XDdoConstantFold")
                 .withSourceFromTemplate(constablesTemplate)
                 .analyze();
 

@@ -26,7 +26,7 @@
  * @summary two visits of the ConstablesVisitor are needed due to forward reference
  * @modules jdk.compiler/com.sun.tools.javac.util
             jdk.jdeps/com.sun.tools.classfile
- * @compile -XDdoConstantFold TwoVisitsAreNeededCauseOfForwardRefTest.java
+ * @compile TwoVisitsAreNeededCauseOfForwardRefTest.java
  */
 
 import java.lang.invoke.*;

@@ -195,6 +195,7 @@ public class TestLambdaBytecode extends ComboInstance<TestLambdaBytecode> {
     public void doWork() throws IOException {
         newCompilationTask()
                 .withSourceFromTemplate(source_template)
+                .withOption("-XDforNonCapturingLambda=generateIndy")
                 .generate(this::verifyBytecode);
     }
 
