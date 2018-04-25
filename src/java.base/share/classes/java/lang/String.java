@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2603,35 +2603,35 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * and trailing white space removed, where white space is defined
+     * and trailing space removed, where space is defined
      * as any character whose codepoint is less than or equal to
      * {@code '\u005Cu0020'} (the space character).
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first and last characters of character sequence
      * represented by this {@code String} object both have codes
-     * that are not white space (as defined above), then a
+     * that are not space (as defined above), then a
      * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if all characters in this string are white space (as
+     * Otherwise, if all characters in this string are space (as
      * defined above), then a  {@code String} object representing an
      * empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is not a white space (as defined above) and let
+     * string whose code is not a space (as defined above) and let
      * <i>m</i> be the index of the last character in the string whose code
-     * is not a white space (as defined above). A {@code String}
+     * is not a space (as defined above). A {@code String}
      * object is returned, representing the substring of this string that
      * begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim white space (as defined above) from
+     * This method may be used to trim space (as defined above) from
      * the beginning and end of a string.
      *
      * @return  a string whose value is this string, with all leading
-     *          and trailing white space removed, or this string if it
-     *          has no leading or trailing white space.
+     *          and trailing space removed, or this string if it
+     *          has no leading or trailing space.
      */
     public String trim() {
         String ret = isLatin1() ? StringLatin1.trim(value)
@@ -2642,8 +2642,7 @@ public final class String
     /**
      * Returns a string whose value is this string, with all leading
      * and trailing white space removed, where white space is defined
-     * as any character whose codepoint is less than or equal to
-     * {@code '\u005Cu0020'} (the space character) or returns true
+     * as any character whose codepoint returns true
      * when passed to {@link Character#isWhitespace(int)}.
      * <p>
      * If this {@code String} object represents an empty character
@@ -2671,6 +2670,8 @@ public final class String
      * @return  a string whose value is this string, with all leading
      *          and trailing white space removed, or this string if it
      *          has no leading or trailing white space.
+     *
+     * @since 11
      */
     public String strip() {
         String ret = isLatin1() ? StringLatin1.strip(value)
@@ -2681,8 +2682,7 @@ public final class String
     /**
      * Returns a string whose value is this string, with all leading
      * white space removed, where white space is defined
-     * as any character whose codepoint is less than or equal to
-     * {@code '\u005Cu0020'} (the space character) or returns true
+     * as any character whose codepoint returns true
      * when passed to {@link Character#isWhitespace(int)}.
      * <p>
      * If this {@code String} object represents an empty character
@@ -2708,6 +2708,7 @@ public final class String
      *
      * @return  a string whose value is this string, with all leading white
      *          space removed, or this string if it has no leading white space.
+     *
      * @since 11
      */
     public String stripLeading() {
@@ -2719,8 +2720,7 @@ public final class String
     /**
      * Returns a string whose value is this string, with all trailing
      * white space removed, where white space is defined
-     * as any character whose codepoint is less than or equal to
-     * {@code '\u005Cu0020'} (the space character) or returns true
+     * as any character whose codepoint returns true
      * when passed to {@link Character#isWhitespace(int)}.
      * <p>
      * If this {@code String} object represents an empty character
@@ -2748,12 +2748,28 @@ public final class String
      * @return  a string whose value is this string, with all trailing white
      *          space removed, or this string if it has no
      *          trailing white space.
+     *
      * @since 11
      */
     public String stripTrailing() {
         String ret = isLatin1() ? StringLatin1.stripTrailing(value)
                                 : StringUTF16.stripTrailing(value);
         return ret == null ? this : ret;
+    }
+
+    /**
+     * Returns {@code true} if the string is empty or contains only white
+     * space, where white space is defined as any character whose codepoint
+     * returns true when passed to
+     * {@link Character#isWhitespace(int)}.otherwise {@code false}.
+     *
+     * @return {@code true} if the string is empty or contains only white
+     * space (as defined above) otherwise {@code false}.
+     *
+     * @since 11
+     */
+    public boolean isBlank() {
+        return indexOfNonWhitespace() == length();
     }
 
     /**
@@ -2769,8 +2785,19 @@ public final class String
      * they occur in this string and do not include the line
      * separator.
      *
+     * @implNote This method provides better performance than
+     *           split("\R") by supplying elements lazily and
+     *           by faster search of new line separators.
+     *
+     * @apiNote Unlike BufferedReader::lines() treats new line
+     *          character sequences as line separators and not
+     *          as line terminators. This is to reflect the
+     *          behaviour of the commonly used split("\R") code
+     *          pattern.
+     *
      * @return  the stream of strings extracted from this string
      *          partitioned by line separators
+     *
      * @since 11
      */
     public Stream<String> lines() {
@@ -2787,16 +2814,14 @@ public final class String
      * body that has a non-whitespace character closest to the left
      * margin. Once that line has been determined, the number of
      * leading whitespaces is tallied to produce a minimal trim
-     * value. Consequently, the result of the method is a string
-     * with the minimal trim value removed from each line.
+     * value. Consequently, the result of the method is a
+     * multi-line string justified to the left margin.
      * <p>
-     * The first line is unaffected since it is preceded by the
-     * open delimiter.
+     * The first line is does not affect the result since it is
+     * preceded by the open delimiter.
      * <p>
      * This method works with spaces as well as tabs as long as the
      * leading whitespace is consistent on all lines.
-     * <p>
-     * Trailing white space is always removed.
      * <p>
      * Line separators are replaced with {@code "\n"}. If the first
      * line is blank then it is removed. If the last line is blank
@@ -2809,19 +2834,19 @@ public final class String
         if (isEmpty()) {
             return this;
         }
-        List<String> list = lines().map(s -> s.stripTrailing())
-                                   .collect(Collectors.toList());
+        List<String> list = lines().collect(Collectors.toList());
         int count = list.size();
-        String first = list.get(0);
+        boolean firstIsBlank = list.get(0).isBlank();
         String last = list.get(count - 1);
+        boolean lastIsBlank = last.isBlank();
         int minimal = list.stream().skip(1)
-                                   .mapToInt(s -> s.isEmpty() ? Integer.MAX_VALUE :
-                                                                s.indexOfNonWhitespace())
+                                   .mapToInt(s -> s.isBlank() ? Integer.MAX_VALUE : s.indexOfNonWhitespace())
                                    .min()
                                    .orElse(Integer.MAX_VALUE);
-        Stream<String> stream = list.stream().skip(first.isEmpty() ? 1 : 0)
-                                             .limit(last.isEmpty() ? count - 1 : count);
-        final int trim = last.isEmpty() ? Integer.min(minimal, lastIndexOfNonWhitespace()) : minimal;
+        final int trim = lastIsBlank ? Integer.min(minimal, last.indexOfNonWhitespace()) : minimal;
+        int lower = firstIsBlank ? 1 : 0;
+        int upper = (lastIsBlank ? count - 1 : count) - lower;
+        Stream<String> stream = list.stream().skip(lower).limit(upper);
         if (trim != 0 && trim != Integer.MAX_VALUE) {
             stream = stream.map(s -> trim <= s.indexOfNonWhitespace() ? s.substring(trim) : s);
         }
@@ -2848,11 +2873,11 @@ public final class String
      * When applied to a multi-line string, removes left and right
      * margins from each line based on provided markers.
      * <p>
-     * Each line of the multi-line string is first trimmed. If
-     * the trimmed line contains the {@code leftMarker} at the
-     * beginning of the string then it is removed. Finally, if
-     * the line contains the {@code rightMarker} at the end of
-     * line, it is removed.
+     * Each line of the multi-line string is first stripped of leading and
+     * tailing spaces. If a stripped line contains the {@code leftMarker}
+     * at the beginning then it is removed. Finally, if a stripped
+     * line contains the {@code rightMarker} at the end of line, it is
+     * removed.
      * <p>
      * Line separators are replaced with {@code "\n"}. If the first
      * line is blank then it is removed. If the last line is blank
@@ -2860,7 +2885,9 @@ public final class String
      *
      * @param  leftMarker   string representing left margin marker
      * @param  rightMarker  string representing right margin marker
+     *
      * @return  string with margins removed
+     *
      * @since 11
      */
     public String stripMarkers(String leftMarker, String rightMarker) {
@@ -2874,20 +2901,21 @@ public final class String
         List<java.lang.String> list = lines().map(s -> s.strip())
                                              .collect(Collectors.toList());
         int count = list.size();
-        String first = list.get(0);
-        String last = list.get(count - 1);
-        Stream<String> stream = list.stream().skip(first.isEmpty() ? 1 : 0)
-                                             .limit(last.isEmpty() ? count - 1 : count);
+        boolean firstIsBlank = list.get(0).isEmpty();
+        boolean lastIsBlank = list.get(count - 1).isEmpty();
+        int lower = firstIsBlank ? 1 : 0;
+        int upper = (lastIsBlank ? count - 1 : count) - lower;
+        Stream<String> stream = list.stream().skip(lower).limit(upper);
         return stream.map(s -> {
-                            if (s.startsWith(leftMarker)) {
-                                s = s.substring(leftLength);
-                            }
-                            if (s.endsWith(rightMarker)) {
-                                s = s.substring(0, s.length() - rightLength);
-                            }
-                            return s;
+                              if (s.startsWith(leftMarker)) {
+                                  s = s.substring(leftLength);
+                              }
+                              if (s.endsWith(rightMarker)) {
+                                  s = s.substring(0, s.length() - rightLength);
+                              }
+                              return s;
                           })
-                         .collect(Collectors.joining("\n"));
+                      .collect(Collectors.joining("\n"));
     }
 
     /**

@@ -37,6 +37,7 @@ public class RawStringLiteralLib {
         test1();
         test2();
         test3();
+        test4();
     }
 
     /*
@@ -79,9 +80,9 @@ public class RawStringLiteralLib {
 
             Iterator<String> inputIterator = input.lines().iterator();
             Iterator<String> outputIterator = output.lines().iterator();
-            String first = input.lines().findFirst​().orElse("").trim();
+            String first = input.lines().findFirst().orElse("");
 
-            if (first.isEmpty() && inputIterator.hasNext()) {
+            if (first.isBlank() && inputIterator.hasNext()) {
                 inputIterator.next();
             }
 
@@ -94,7 +95,7 @@ public class RawStringLiteralLib {
                 if (offset == -1) {
                     report("Loss of information", "Input:", in, "Output:", out);
                 }
-                if (!out.isEmpty()) {
+                if (!out.isBlank()) {
                     if (indent == -1) {
                         indent = offset;
                     } else if (offset != indent ) {
@@ -111,7 +112,7 @@ public class RawStringLiteralLib {
             if (inputIterator.hasNext()) {
                 String in = inputIterator.next();
 
-                if (!in.isEmpty()) {
+                if (!in.isBlank()) {
                     report("Loss of information", "Input:", in, "Output:", "");
                 }
             }
@@ -142,9 +143,9 @@ public class RawStringLiteralLib {
 
             Iterator<String> inputIterator = input.lines().iterator();
             Iterator<String> outputIterator = output.lines().iterator();
-            String first = input.lines().findFirst​().orElse("").trim();
+            String first = input.lines().findFirst().orElse("");
 
-            if (first.isEmpty() && inputIterator.hasNext()) {
+            if (first.isBlank() && inputIterator.hasNext()) {
                 inputIterator.next();
             }
 
@@ -327,6 +328,28 @@ public class RawStringLiteralLib {
         malformed(`•\uuuuuG   `);
         malformed(`•\uuuuu2G  `);
         malformed(`•\uuuuu20G `);
+    }
+
+    /*
+     * Test isBlank
+     */
+    static void test4() {
+        if (!"".isBlank()) {
+            System.err.println("Empty string not blank");
+            throw new RuntimeException();
+        }
+        if (!"   ".isBlank()) {
+            System.err.println("Spaces not blank");
+            throw new RuntimeException();
+        }
+        if (!"  \t ".isBlank()) {
+            System.err.println("Tabs not blank");
+            throw new RuntimeException();
+        }
+        if (" a ".isBlank()) {
+            System.err.println("Characters are blank");
+            throw new RuntimeException();
+        }
     }
 
     /*
