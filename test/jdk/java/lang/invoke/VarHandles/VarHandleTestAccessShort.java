@@ -278,7 +278,6 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
         cases.add(new VarHandleAccessTestCase("Array index out of bounds",
                                               vhArray, VarHandleTestAccessShort::testArrayIndexOutOfBounds,
                                               false));
-
         // Work around issue with jtreg summary reporting which truncates
         // the String result of Object.toString to 30 characters, hence
         // the first dummy argument
@@ -1360,5 +1359,6 @@ public class VarHandleTestAccessShort extends VarHandleBaseTest {
             });
         }
     }
+
 }
 
