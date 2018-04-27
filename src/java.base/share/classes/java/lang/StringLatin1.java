@@ -531,20 +531,17 @@ final class StringLatin1 {
         return StringUTF16.newString(result, 0, resultOffset);
     }
 
-    public static int indexOfNonSpace(byte[] value) {
-        int left = 0;
-        while ((left < value.length) && ((value[left] & 0xff) <= ' ')) {
-            left++;
+    public static String trim(byte[] value) {
+        int len = value.length;
+        int st = 0;
+        while ((st < len) && ((value[st] & 0xff) <= ' ')) {
+            st++;
         }
-        return left;
-    }
-
-    public static int lastIndexOfNonSpace(byte[] value) {
-        int right = value.length;
-        while ((0 < right) && ((value[right - 1] & 0xff) <= ' ')) {
-            right--;
+        while ((st < len) && ((value[len - 1] & 0xff) <= ' ')) {
+            len--;
         }
-        return right;
+        return ((st > 0) || (len < value.length)) ?
+                newString(value, st, len - st) : null;
     }
 
     public static int indexOfNonWhitespace(byte[] value) {
@@ -571,16 +568,6 @@ final class StringLatin1 {
             right--;
         }
         return right;
-    }
-
-    public static String trim(byte[] value) {
-        int left = indexOfNonSpace(value);
-        if (left == value.length) {
-            return "";
-        }
-        int right = lastIndexOfNonSpace(value);
-        return ((left > 0) || (right < value.length)) ?
-                newString(value, left, right - left) : null;
     }
 
     public static String strip(byte[] value) {
@@ -616,7 +603,6 @@ final class StringLatin1 {
         private int index;        // current index, modified on advance/split
         private final int fence;  // one past last index
         private final int cs;
-        private boolean isClosed;
 
         LinesSpliterator(byte[] value, int cs) {
             this(value, 0, value.length, cs);
@@ -628,7 +614,6 @@ final class StringLatin1 {
             this.fence = start + length;
             this.cs = cs |
                     Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
-            this.isClosed = false;
         }
 
         private int indexOfLineSeparator(int start) {
@@ -657,7 +642,6 @@ final class StringLatin1 {
         private String next() {
             int start = index;
             int end = indexOfLineSeparator(start);
-            isClosed = end == fence;
             index = skipLineSeparator(end);
             return newString(value, start, end - start);
         }
@@ -667,7 +651,7 @@ final class StringLatin1 {
             if (action == null) {
                 throw new NullPointerException("tryAdvance action missing");
             }
-            if (!isClosed) {
+            if (index != fence) {
                 action.accept(next());
                 return true;
             }
@@ -679,7 +663,7 @@ final class StringLatin1 {
             if (action == null) {
                 throw new NullPointerException("forEachRemaining action missing");
             }
-            while (!isClosed) {
+            while (index != fence) {
                 action.accept(next());
             }
         }

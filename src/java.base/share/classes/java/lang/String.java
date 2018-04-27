@@ -2641,35 +2641,37 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * and trailing white space removed, where white space is defined
-     * as any character whose codepoint returns true
-     * when passed to {@link Character#isWhitespace(int)}.
+     * and trailing {@link Character#isWhitespace(int) white space} is
+     * removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first and last characters of character sequence
-     * represented by this {@code String} object both have codes
-     * that are not white space (as defined above), then a
+     * represented by this {@code String} object both have characters
+     * that are not {@link Character#isWhitespace(int) white space}, then a
      * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if all characters in this string are white space (as
-     * defined above), then a  {@code String} object representing an
-     * empty string is returned.
+     * Otherwise, if all characters in this string are
+     * {@link Character#isWhitespace(int) white space}, then a
+     * {@code String} object representing an empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is not a white space (as defined above) and let
-     * <i>m</i> be the index of the last character in the string whose code
-     * is not a white space (as defined above). A {@code String}
+     * string whose code is not a {@link Character#isWhitespace(int) white space}
+     * and let <i>m</i> be the index of the last character in the string whose code
+     * is not a {@link Character#isWhitespace(int) white space}. A {@code String}
      * object is returned, representing the substring of this string that
      * begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim white space (as defined above) from
+     * This method may be used to trim
+     * {@link Character#isWhitespace(int) white space} from
      * the beginning and end of a string.
      *
      * @return  a string whose value is this string, with all leading
      *          and trailing white space removed, or this string if it
      *          has no leading or trailing white space.
+     *
+     * @see Character#isWhitespace(int)
      *
      * @since 11
      */
@@ -2681,33 +2683,35 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * white space removed, where white space is defined
-     * as any character whose codepoint returns true
-     * when passed to {@link Character#isWhitespace(int)}.
+     * {@link Character#isWhitespace(int) white space} is removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first character of the character sequence
-     * represented by this {@code String} object is not a white
-     * space (as defined above), then a reference to this
-     * {@code String} object is returned.
+     * represented by this {@code String} object is not a
+     * {@link Character#isWhitespace(int) white space}, then a
+     * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if all characters in this string are white space (as
-     * defined above), then a  {@code String} object representing an
-     * empty string is returned.
+     * Otherwise, if all characters in this string are
+     * {@link Character#isWhitespace(int) white space}, then a
+     * {@code String} object representing an empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is not a white space (as defined above), and let
+     * string whose code is not a
+     * {@link Character#isWhitespace(int) white space}, and let
      * <i>m</i> be the index of the last character in the string. A
      * {@code String} object is returned, representing the substring of this
      * string that begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim white space (as defined above) from
+     * This method may be used to trim
+     * {@link Character#isWhitespace(int) white space} from
      * the beginning of a string.
      *
      * @return  a string whose value is this string, with all leading white
      *          space removed, or this string if it has no leading white space.
+     *
+     * @see Character#isWhitespace(int)
      *
      * @since 11
      */
@@ -2719,35 +2723,36 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all trailing
-     * white space removed, where white space is defined
-     * as any character whose codepoint returns true
-     * when passed to {@link Character#isWhitespace(int)}.
+     * {@link Character#isWhitespace(int) white space} is removed.
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the last character of character sequence
-     * represented by this {@code String} object is not a white
-     * space (as defined above), then a reference to this
-     * {@code String} object is returned.
+     * represented by this {@code String} object is not a
+     * {@link Character#isWhitespace(int) white space}, then a
+     * reference to this {@code String} object is returned.
      * <p>
-     * Otherwise, if all characters in this string are white space (as
-     * defined above), then a  {@code String} object representing an
-     * empty string is returned.
+     * Otherwise, if all characters in this string are
+     * {@link Character#isWhitespace(int) white space}, then a
+     * {@code String} object representing an empty string is returned.
      * <p>
      * Otherwise, let <i>k</i> be the index of the first character in the
      * string, and let
      * <i>m</i> be the index of the last character in the string that is
-     * not a white space (as defined above). A {@code String}
+     * not a {@link Character#isWhitespace(int) white space}. A {@code String}
      * object is returned, representing the substring of this string that
      * begins with the character at index <i>k</i> and ends with the
      * character at index <i>m</i>-that is, the result of
      * {@code this.substring(k, m + 1)}.
      * <p>
-     * This method may be used to trim white space (as defined above) from
+     * This method may be used to trim
+     * {@link Character#isWhitespace(int) white space} from
      * the end of a string.
      *
      * @return  a string whose value is this string, with all trailing white
      *          space removed, or this string if it has no
      *          trailing white space.
+     *
+     * @see Character#isWhitespace(int)
      *
      * @since 11
      */
@@ -2758,13 +2763,15 @@ public final class String
     }
 
     /**
-     * Returns {@code true} if the string is empty or contains only white
-     * space, where white space is defined as any character whose codepoint
-     * returns true when passed to
-     * {@link Character#isWhitespace(int)}.otherwise {@code false}.
+     * Returns {@code true} if the string is empty or contains only
+     * {@link Character#isWhitespace(int) white space} characters,
+     * otherwise {@code false}.
      *
-     * @return {@code true} if the string is empty or contains only white
-     * space (as defined above) otherwise {@code false}.
+     * @return {@code true} if the string is empty or contains only
+     *         {@link Character#isWhitespace(int)  white space} characters,
+     *         otherwise {@code false}
+     *
+     * @see Character#isWhitespace(int)
      *
      * @since 11
      */
@@ -2774,13 +2781,14 @@ public final class String
 
     /**
      * Returns a stream of substrings extracted from this string
-     * partitioned by line separators.
+     * partitioned by line terminators.
      * <p>
-     * Line separators recognized are {@code "\n", "\r\n"}
-     * and {@code "\r"}.
+     * Line terminators recognized are line feed {@code "\n"},
+     * carriage return {@code "\r"} and a carriage return followed
+     * immediately by a line feed {@code "\r\n"}.
      * <p>
      * The stream returned by this method contains each line of
-     * this string that is terminated by a line separator or end
+     * this string that is terminated by a line terminator or end
      * of string. The lines in the stream are in the order in which
      * they occur in this string and do not include the line
      * separator.
@@ -2789,14 +2797,8 @@ public final class String
      *           split("\R") by supplying elements lazily and
      *           by faster search of new line separators.
      *
-     * @apiNote Unlike BufferedReader::lines() treats new line
-     *          character sequences as line separators and not
-     *          as line terminators. This is to reflect the
-     *          behaviour of the commonly used split("\R") code
-     *          pattern.
-     *
      * @return  the stream of strings extracted from this string
-     *          partitioned by line separators
+     *          partitioned by line terminators
      *
      * @since 11
      */
@@ -2806,28 +2808,27 @@ public final class String
     }
 
     /**
-     * When applied to a multi-line string, removes the amount of
-     * leading whitespace from each line that left justifies the
-     * multi-line string without loss of relative indentation.
+     * When applied to a multi-line string, left justifies the
+     * the lines without loss of relative indentation.
      * <p>
-     * This method determines a representative line in the string
-     * body that has a non-whitespace character closest to the left
-     * margin. Once that line has been determined, the number of
-     * leading whitespaces is tallied to produce a minimal trim
-     * value. Consequently, the result of the method is a
-     * multi-line string justified to the left margin.
-     * <p>
-     * The first line is does not affect the result since it is
+     * The first line does not affect the result since it is
      * preceded by the open delimiter.
      * <p>
-     * This method works with spaces as well as tabs as long as the
-     * leading whitespace is consistent on all lines.
+     * This method works with all
+     * {@link Character#isWhitespace(int) white space}
+     * characters as long as the leading white space is
+     * consistent on all lines.  Otherwise, the result is indeterminant.
      * <p>
-     * Line separators are replaced with {@code "\n"}. If the first
-     * line is blank then it is removed. If the last line is blank
-     * then it is removed.
+     * Line terminators, line feed {@code "\n"},
+     * carriage return {@code "\r"} and a carriage return followed
+     * immediately by a line feed {@code "\r\n"}, are replaced with
+     * line feed {@code "\n"}. If the first line is blank then it is
+     * removed. If the last line is blank then it is removed.
      *
-     * @return String with indent removed.
+     * @return string with indent removed.
+     *
+     * @see Character#isWhitespace(int)
+     *
      * @since 11
      */
     public String stripIndent() {
@@ -2839,18 +2840,17 @@ public final class String
         boolean firstIsBlank = list.get(0).isBlank();
         String last = list.get(count - 1);
         boolean lastIsBlank = last.isBlank();
-        int minimal = list.stream().skip(1)
-                                   .mapToInt(s -> s.isBlank() ? Integer.MAX_VALUE : s.indexOfNonWhitespace())
-                                   .min()
-                                   .orElse(Integer.MAX_VALUE);
-        final int trim = lastIsBlank ? Integer.min(minimal, last.indexOfNonWhitespace()) : minimal;
+        final int minimal = list.stream().skip(1)
+                                         .mapToInt(s -> s.isEmpty() ? Integer.MAX_VALUE : s.indexOfNonWhitespace())
+                                         .min()
+                                         .orElse(Integer.MAX_VALUE);
         int lower = firstIsBlank ? 1 : 0;
         int upper = (lastIsBlank ? count - 1 : count) - lower;
         Stream<String> stream = list.stream().skip(lower).limit(upper);
-        if (trim != 0 && trim != Integer.MAX_VALUE) {
-            stream = stream.map(s -> trim <= s.indexOfNonWhitespace() ? s.substring(trim) : s);
+        if (minimal != 0 && minimal != Integer.MAX_VALUE) {
+            stream = stream.map(s -> minimal <= s.indexOfNonWhitespace() ? s.substring(minimal) : s);
         }
-        return stream.collect(Collectors.joining("\n"));
+        return stream.collect(Collectors.joining("\n", "", "\n"));
     }
 
     private int indexOfNonWhitespace() {
@@ -2879,14 +2879,18 @@ public final class String
      * line contains the {@code rightMarker} at the end of line, it is
      * removed.
      * <p>
-     * Line separators are replaced with {@code "\n"}. If the first
-     * line is blank then it is removed. If the last line is blank
-     * then it is removed.
+     * Line terminators, line feed {@code "\n"},
+     * carriage return {@code "\r"} and a carriage return followed
+     * immediately by a line feed {@code "\r\n"}, are replaced with
+     * line feed {@code "\n"}. If the first line is blank then it is
+     * removed. If the last line is blank then it is removed.
      *
      * @param  leftMarker   string representing left margin marker
      * @param  rightMarker  string representing right margin marker
      *
      * @return  string with margins removed
+     *
+     * @see Character#isWhitespace(int)
      *
      * @since 11
      */
@@ -2915,7 +2919,7 @@ public final class String
                               }
                               return s;
                           })
-                      .collect(Collectors.joining("\n"));
+                     .collect(Collectors.joining("\n", "", "\n"));
     }
 
     /**

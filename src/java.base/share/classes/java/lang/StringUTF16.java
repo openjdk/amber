@@ -847,30 +847,19 @@ final class StringUTF16 {
         return newString(result, 0, resultOffset);
     }
 
-    public static int indexOfNonSpace(byte[] value) {
+    public static String trim(byte[] value) {
         int length = value.length >> 1;
-        int left = 0;
-        while (left < length) {
-            char ch = getChar(value, left);
-            if (ch > ' ') {
-                break;
-            }
-            left++;
+        int len = length;
+        int st = 0;
+        while (st < len && getChar(value, st) <= ' ') {
+            st++;
         }
-        return left;
-    }
-
-    public static int lastIndexOfNonSpace(byte[] value) {
-        int length = value.length >> 1;
-        int right = length;
-        while (0 < right) {
-            char ch = getChar(value, right - 1);
-            if (ch > ' ') {
-                break;
-            }
-            right--;
+        while (st < len && getChar(value, len - 1) <= ' ') {
+            len--;
         }
-        return right;
+        return ((st > 0) || (len < length )) ?
+                new String(Arrays.copyOfRange(value, st << 1, len << 1), UTF16) :
+                null;
     }
 
     public static int indexOfNonWhitespace(byte[] value) {
@@ -897,17 +886,6 @@ final class StringUTF16 {
             right--;
         }
         return right;
-    }
-
-    public static String trim(byte[] value) {
-        int length = value.length >> 1;
-        int left = indexOfNonSpace(value);
-        if (left == length) {
-            return "";
-        }
-        int right = lastIndexOfNonSpace(value);
-        return ((left > 0) || (right < length)) ?
-                new String(Arrays.copyOfRange(value, left << 1, right << 1), UTF16) : null;
     }
 
     public static String strip(byte[] value) {
@@ -947,7 +925,6 @@ final class StringUTF16 {
         private int index;        // current index, modified on advance/split
         private final int fence;  // one past last index
         private final int cs;
-        private boolean isClosed;
 
         LinesSpliterator(byte[] value, int cs) {
             this(value, 0, value.length >>> 1, cs);
@@ -959,7 +936,6 @@ final class StringUTF16 {
             this.fence = start + length;
             this.cs = cs |
                       Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
-            this.isClosed = false;
         }
 
         private int indexOfLineSeparator(int start) {
@@ -988,7 +964,6 @@ final class StringUTF16 {
         private String next() {
             int start = index;
             int end = indexOfLineSeparator(start);
-            isClosed = end == fence;
             index = skipLineSeparator(end);
             return newString(value, start, end - start);
         }
@@ -998,7 +973,7 @@ final class StringUTF16 {
             if (action == null) {
                 throw new NullPointerException("tryAdvance action missing");
             }
-            if (!isClosed) {
+            if (index != fence) {
                 action.accept(next());
                 return true;
             }
@@ -1010,7 +985,7 @@ final class StringUTF16 {
             if (action == null) {
                 throw new NullPointerException("forEachRemaining action missing");
             }
-            while (!isClosed) {
+            while (index != fence) {
                 action.accept(next());
             }
         }
