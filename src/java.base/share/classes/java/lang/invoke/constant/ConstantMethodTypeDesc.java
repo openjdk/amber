@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_METHODTYPEDESC;
+import static java.lang.invoke.constant.ConstantDescs.CR_ConstantMethodTypeDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodTypeDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.util.Objects.requireNonNull;
@@ -179,7 +180,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
 
     @Override
     public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, CR_MethodTypeDesc).withArgs(descriptorString()));
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, CR_ConstantMethodTypeDesc).withArgs(descriptorString()));
     }
 
     /**
@@ -192,9 +193,9 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
      * @return the {@linkplain MethodTypeDesc}
      */
-    public static MethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+    public static ConstantMethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                    String descriptor) {
-        return MethodTypeDesc.ofDescriptor(descriptor);
+        return (ConstantMethodTypeDesc)MethodTypeDesc.ofDescriptor(descriptor);
     }
 
     @Override

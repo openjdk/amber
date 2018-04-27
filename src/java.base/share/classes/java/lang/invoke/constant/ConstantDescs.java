@@ -180,9 +180,17 @@ public final class ConstantDescs {
     @Foldable
     static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
 
+    /** {@link ClassDesc} representing {@link ConstantMethodTypeDesc} */
+    @Foldable
+    static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
+
     /** {@link ClassDesc} representing {@link MethodHandleDesc} */
     @Foldable
     static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.MethodHandleDesc");
+
+    /** {@link ClassDesc} representing {@link ConstantMethodHandleDesc} */
+    @Foldable
+    static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
     @Foldable
@@ -355,7 +363,7 @@ public final class ConstantDescs {
 
     static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
             = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),
-                                                "constantBootstrap", CR_MethodHandleDesc,
+                                                "constantBootstrap", CR_ConstantMethodHandleDesc,
                                                 CR_String, CR_String, CR_String, CR_String);
 
     static final ConstantMethodHandleDesc BSM_ENUMDESC

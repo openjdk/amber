@@ -34,6 +34,7 @@ import java.util.Optional;
 import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_METHODHANDLEDESC;
+import static java.lang.invoke.constant.ConstantDescs.CR_ConstantMethodHandleDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandleDesc;
 import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
@@ -187,7 +188,7 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     @Override
     public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
-        return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC, CR_MethodHandleDesc)
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC, CR_ConstantMethodHandleDesc)
                                               .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
     }
 
@@ -206,7 +207,7 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
      *                described, as per JVMS 4.3.3
      * @return the {@linkplain MethodHandleDesc}
      */
-    public static MethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+    public static ConstantMethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                      String bsmKindName, String memberOwner, String memberName, String memberType) {
         return MethodHandleDesc.of(MethodHandleDesc.Kind.valueOf(bsmKindName),
                                    ClassDesc.ofDescriptor(memberOwner), memberName,
