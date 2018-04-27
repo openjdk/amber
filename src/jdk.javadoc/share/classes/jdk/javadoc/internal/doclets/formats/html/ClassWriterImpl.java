@@ -52,7 +52,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.CommentHelper;
 import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPaths;
 import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
-import jdk.javadoc.internal.doclets.toolkit.util.VisibleMemberMap;
 
 /**
  * Generate the Class Information Page.
@@ -127,7 +126,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             Content moduleNameDiv = HtmlTree.DIV(HtmlStyle.subTitle, classModuleLabel);
             moduleNameDiv.addContent(Contents.SPACE);
             moduleNameDiv.addContent(getModuleLink(mdle,
-                    new StringContent(mdle.getQualifiedName().toString())));
+                    new StringContent(mdle.getQualifiedName())));
             div.addContent(moduleNameDiv);
         }
         PackageElement pkg = utils.containingPackage(typeElement);
@@ -378,7 +377,8 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     @Override
     public void addSubClassInfo(Content classInfoTree) {
         if (utils.isClass(typeElement)) {
-            if (suppressSubtypesSet.contains(typeElement.getQualifiedName().toString())) {
+            if (typeElement.getQualifiedName().contentEquals("java.lang.Object") ||
+                    typeElement.getQualifiedName().contentEquals("org.omg.CORBA.Object")) {
                 return;    // Don't generate the list, too huge
             }
             Set<TypeElement> subclasses = classtree.directSubClasses(typeElement, false);
@@ -419,8 +419,8 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         if (!utils.isInterface(typeElement)) {
             return;
         }
-        if (typeElement.getQualifiedName().toString().equals("java.lang.Cloneable") ||
-                typeElement.getQualifiedName().toString().equals("java.io.Serializable")) {
+        if (typeElement.getQualifiedName().contentEquals("java.lang.Cloneable") ||
+                typeElement.getQualifiedName().contentEquals("java.io.Serializable")) {
             return;   // Don't generate the list, too big
         }
         Set<TypeElement> implcl = classtree.implementingClasses(typeElement);
