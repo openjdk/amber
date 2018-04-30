@@ -442,7 +442,6 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeEnum(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0
-            || !desc.constantType().equals(CR_Enum)
             || desc.constantName == null)
             return desc;
         return EnumDesc.of(desc.constantType, desc.constantName);
