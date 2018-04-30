@@ -359,7 +359,7 @@ public final class ConstantDescs {
 
     static final ConstantMethodHandleDesc BSM_METHODTYPEDESC
             = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodTypeDesc"),
-                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
+                                                "constantBootstrap", CR_ConstantMethodTypeDesc, CR_String);
 
     static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
             = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),

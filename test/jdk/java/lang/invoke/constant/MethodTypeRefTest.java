@@ -40,6 +40,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
+ * @compile -XDfolding=false MethodTypeRefTest.java
  * @run testng MethodTypeRefTest
  * @summary unit tests for java.lang.invoke.constant.MethodTypeRef
  */
