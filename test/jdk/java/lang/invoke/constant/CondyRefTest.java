@@ -171,8 +171,6 @@ public class CondyRefTest extends SymbolicRefTest {
         Class<?> clazz = prototype.getClass();
 
         assertTrue(canonical != nonCanonical);
-        System.out.println("clazz " + clazz);
-        System.out.println("canonical.getClass() " + canonical.getClass());
         assertTrue(clazz.isAssignableFrom(canonical.getClass()));
         assertFalse(clazz.isAssignableFrom(nonCanonical.getClass()));
         assertTrue(prototype.equals(canonical));
