@@ -207,8 +207,20 @@ public abstract class Enum<E extends Enum<E>>
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
     }
 
+    /**
+     * Return a nominal descriptor for this instance, if one can be
+     * constructed.  This object (and any classes needed to construct its
+     * nominal description) must be accessible from the class described by the
+     * {@code lookup} parameter.
+     *
+     * @param lookup A {@link MethodHandles.Lookup} to be used to perform
+     *               access control determinations
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed or this object
+     * is not accessible from {@code lookup}
+     */
     @Override
-    public final Optional<EnumDesc<E>> describeConstable(MethodHandles.Lookup lookup) {
+    public final Optional<? extends ConstantDesc<? super E>> describeConstable(MethodHandles.Lookup lookup) {
         return getDeclaringClass()
                 .describeConstable(lookup)
                 .map(c -> EnumDesc.of(c, name));

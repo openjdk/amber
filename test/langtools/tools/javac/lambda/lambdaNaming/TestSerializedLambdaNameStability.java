@@ -163,6 +163,7 @@ public class TestSerializedLambdaNameStability {
             Path srcFile = Paths.get(sourceBaseDir, context, srcName + ".java");
             new JavacTask(tb)
                     .outdir(compiledDir)
+                    .options("-XDfolding=false")
                     .files(srcFile)
                     .run();
             Path cfFile = Paths.get(compiledDir, name + ".class");

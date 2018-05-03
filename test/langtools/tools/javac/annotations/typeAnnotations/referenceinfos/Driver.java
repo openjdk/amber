@@ -60,7 +60,7 @@ public class Driver {
     }
 
     private final String[][] extraParamsCombinations = new String[][] {
-        new String[] { },
+        new String[] { "-XDfolding=false" },
         new String[] { "-g" },
     };
 

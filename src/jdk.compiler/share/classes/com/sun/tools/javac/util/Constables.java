@@ -811,7 +811,12 @@ public class Constables {
                     IllegalAccessException |
                     IllegalArgumentException |
                     InvocationTargetException ex) {
-                log.error(tree, Errors.ReflectiveError(methodName.toString(), className, ex.getCause().getLocalizedMessage()));
+                if (ex.getCause() != null && ex.getCause().getLocalizedMessage() != null) {
+                    log.error(tree, Errors.ReflectiveError(methodName.toString(), className, ex.getCause().getLocalizedMessage()));
+                } else {
+                    log.error(tree, Errors.ReflectiveError(methodName.toString(), className, ex.toString()));
+                }
+
                 return null;
             }
         }
