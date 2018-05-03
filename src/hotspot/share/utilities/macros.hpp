@@ -172,12 +172,12 @@
 #define INCLUDE_JVMCI 1
 #endif
 
-#ifdef INCLUDE_AOT
-# if INCLUDE_AOT && !(INCLUDE_JVMCI)
-#   error "Must have JVMCI for AOT"
-# endif
-#else
-# define INCLUDE_AOT 0
+#ifndef INCLUDE_AOT
+#define INCLUDE_AOT 1
+#endif
+
+#if INCLUDE_AOT && !INCLUDE_JVMCI
+#  error "Must have JVMCI for AOT"
 #endif
 
 #if INCLUDE_JVMCI
@@ -206,8 +206,10 @@
   #define TIERED
 #endif
 #define COMPILER1_PRESENT(code) code
+#define NOT_COMPILER1(code)
 #else // COMPILER1
 #define COMPILER1_PRESENT(code)
+#define NOT_COMPILER1(code) code
 #endif // COMPILER1
 
 // COMPILER2 variant
