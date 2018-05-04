@@ -1827,11 +1827,10 @@ public final class Integer extends Number
      * Returns a symbolic constant reference for this instance, which is
      * the instance itself.
      *
-     * @param lookup ignored
      * @return the {@linkplain Integer} instance
      */
     @Override
-    public Optional<ConstantDesc<Integer>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<Integer>> describeConstable() {
         return Optional.of(this);
     }
 

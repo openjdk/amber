@@ -38,6 +38,7 @@ import java.util.Optional;
 
 import static java.lang.invoke.MethodHandleInfo.*;
 import static java.lang.invoke.MethodHandleStatics.*;
+import static java.lang.invoke.MethodHandles.Lookup.IMPL_LOOKUP;
 
 /**
  * A method handle is a typed, directly executable reference to an underlying method,
@@ -1515,15 +1516,15 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     }
 
     @Override
-    public Optional<MethodHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<MethodHandleDesc> describeConstable() {
         MethodHandleInfo info;
         ClassDesc owner;
         String name;
         MethodTypeDesc type;
         try {
-            info = lookup.revealDirect(this);
-            owner = info.getDeclaringClass().describeConstable(lookup).orElseThrow();
-            type = info.getMethodType().describeConstable(lookup).orElseThrow();
+            info = IMPL_LOOKUP.revealDirect(this);
+            owner = info.getDeclaringClass().describeConstable().orElseThrow();
+            type = info.getMethodType().describeConstable().orElseThrow();
             name = info.getName();
         }
         catch (Exception e) {

@@ -264,7 +264,7 @@ public final class ConstantDescs {
     @Foldable
     public static final ConstantMethodHandleDesc BSM_INVOKE
             = ofConstantBootstrap(CR_ConstantBootstraps, "invoke",
-                                  CR_Object, CR_MethodHandle, CR_Object.array());
+                                  CR_Object, CR_MethodHandle, CR_Object.arrayType());
 
     /** {@link ClassDesc} representing the primitive type {@code int} */
     @Foldable
@@ -335,7 +335,7 @@ public final class ConstantDescs {
 
     static final ConstantMethodHandleDesc MHR_DYNAMICCONSTANTDESC_WITHARGS
             = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_DynamicConstantDesc, "withArgs",
-                                  CR_DynamicConstantDesc, CR_ConstantDesc.array());
+                                  CR_DynamicConstantDesc, CR_ConstantDesc.arrayType());
 
     static final ConstantMethodHandleDesc MHR_ENUMDESC_FACTORY
             = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_EnumDesc, "of",
@@ -374,7 +374,7 @@ public final class ConstantDescs {
             = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "DynamicConstantDesc"),
                                                 "constantBootstrap",
                                                 CR_DynamicConstantDesc,
-                                                CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.array());
+                                                CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.arrayType());
 
 
     /**

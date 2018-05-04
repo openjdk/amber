@@ -115,11 +115,11 @@ public class IntrinsicsTest {
     public void testClassCombinators() {
         ClassDesc cs = ClassDesc.ofDescriptor("Ljava/lang/String;");
         assertEquals(String.class, Intrinsics.ldc(cs));
-        assertEquals(String[].class, Intrinsics.ldc(cs.array()));
+        assertEquals(String[].class, Intrinsics.ldc(cs.arrayType()));
 
-        assertEquals(String[][].class, Intrinsics.ldc(cs.array().array()));
-        assertEquals(String.class, Intrinsics.ldc(cs.array().componentType()));
-        assertEquals(String[].class, Intrinsics.ldc(cs.array().array().componentType()));
+        assertEquals(String[][].class, Intrinsics.ldc(cs.arrayType().arrayType()));
+        assertEquals(String.class, Intrinsics.ldc(cs.arrayType().componentType()));
+        assertEquals(String[].class, Intrinsics.ldc(cs.arrayType().arrayType().componentType()));
     }
 
     public void testMethodTypeCombinators() {
@@ -142,7 +142,7 @@ public class IntrinsicsTest {
 
     public void testInterfaceSpecial() throws Throwable {
         MethodHandleDesc mhr = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ConstantDescs.CR_List, "of",
-                                                   MethodTypeDesc.of(ConstantDescs.CR_List, ConstantDescs.CR_Object.array()));
+                                                   MethodTypeDesc.of(ConstantDescs.CR_List, ConstantDescs.CR_Object.arrayType()));
         MethodHandle mh = Intrinsics.ldc(mhr);
         assertEquals(List.of("a", "b"), (List<String>) mh.invoke("a", "b"));
     }

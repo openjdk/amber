@@ -46,7 +46,7 @@ public class IndyPositiveTest01 {
                 ConstantDescs.CR_String,
                 ConstantDescs.CR_MethodType,
                 ConstantDescs.CR_String,
-                ConstantDescs.CR_Object.array()
+                ConstantDescs.CR_Object.arrayType()
         );
         ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                           "makeConcatWithConstants", methodTypeForMethodHandle);

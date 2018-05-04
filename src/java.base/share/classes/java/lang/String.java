@@ -3190,11 +3190,10 @@ public final class String
      * Returns a symbolic constant reference for this instance, which is
      * the instance itself.
      *
-     * @param lookup ignored
      * @return the {@linkplain String} instance
      */
     @Override
-    public Optional<ConstantDesc<String>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<String>> describeConstable() {
         return Optional.of(this);
     }
 

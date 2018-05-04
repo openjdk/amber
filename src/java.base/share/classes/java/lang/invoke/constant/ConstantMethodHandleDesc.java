@@ -35,7 +35,6 @@ import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_METHODHANDLEDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ConstantMethodHandleDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandleDesc;
 import static java.lang.invoke.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
@@ -187,7 +186,7 @@ public class ConstantMethodHandleDesc implements MethodHandleDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable() {
         return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC, CR_ConstantMethodHandleDesc)
                                               .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
     }

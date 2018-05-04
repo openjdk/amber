@@ -67,8 +67,8 @@ final class PrimitiveClassDesc
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable(MethodHandles.Lookup lookup) {
-        return ConstantUtils.symbolizeHelper(lookup, ConstantDescs.MHR_CLASSDESC_FACTORY, ConstantDescs.CR_ClassDesc, descriptorString());
+    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable() {
+        return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_CLASSDESC_FACTORY, ConstantDescs.CR_ClassDesc, descriptorString());
     }
 
     @Override

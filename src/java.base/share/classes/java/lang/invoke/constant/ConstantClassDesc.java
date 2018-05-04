@@ -34,7 +34,6 @@ import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_CLASSDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ClassDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.dropFirstAndLastChar;
 import static java.lang.invoke.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
@@ -96,7 +95,7 @@ public class ConstantClassDesc implements ClassDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable() {
         return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, CR_ClassDesc).withArgs(descriptor));
     }
 

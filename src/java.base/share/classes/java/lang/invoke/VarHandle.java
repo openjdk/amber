@@ -1985,7 +1985,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
     }
 
     @Override
-    public Optional<VarHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<VarHandleDesc> describeConstable() {
         // partial function for field and array only
         return Optional.empty();
     }

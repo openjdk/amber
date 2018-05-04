@@ -24,7 +24,6 @@
  */
 package java.lang.invoke.constant;
 
-import java.lang.invoke.MethodHandles;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -96,25 +95,22 @@ class ConstantUtils {
      * Produce an {@code Optional<DynamicConstantDesc<T>>} describing the invocation
      * of the specified bootstrap with the specified arguments.  The arguments will
      * be converted to nominal descriptors using the provided lookup.  Helper
-     * method for implementing {@link DynamicConstantDesc#describeConstable(MethodHandles.Lookup)}.
+     * method for implementing {@link Constable#describeConstable()}.
      *
-     * @param lookup A {@link MethodHandles.Lookup} to be used to perform
-     *               access control determinations
+     * @param <T> the type of the resulting constant
      * @param bootstrap nominal descriptor for the bootstrap method
      * @param type nominal descriptor for the type of the resulting constant
      * @param args nominal descriptors for the bootstrap arguments
-     * @param <T> the type of the resulting constant
      * @return the nominal descriptor for the dynamic constant
      */
-    static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandles.Lookup lookup,
-                                                               MethodHandleDesc bootstrap,
+    static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
                                                                ClassDesc type,
                                                                Constable<?>... args) {
         try {
             ConstantDesc<?>[] quotedArgs = new ConstantDesc<?>[args.length + 1];
             quotedArgs[0] = bootstrap;
             for (int i=0; i<args.length; i++)
-                quotedArgs[i+1] = args[i].describeConstable(lookup).orElseThrow();
+                quotedArgs[i+1] = args[i].describeConstable().orElseThrow();
             return Optional.of(DynamicConstantDesc.of(ConstantDescs.BSM_INVOKE, ConstantDescs.DEFAULT_NAME,
                                                       type, quotedArgs));
         }

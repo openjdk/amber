@@ -25,7 +25,6 @@
 package java.lang.invoke.constant;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.util.Optional;
@@ -52,7 +51,7 @@ import java.util.Optional;
  * generated constants (JVMS 4.4.10).
  *
  * <p>The nominal form of an instance of a constable type is obtained via
- * {@link #describeConstable(MethodHandles.Lookup)}. A {@linkplain Constable} need
+ * {@link #describeConstable()}. A {@linkplain Constable} need
  * not be able to (or may choose not to) describe all its instances in the form of
  * a {@link ConstantDesc}; this method returns an {@link Optional} that can be
  * empty to indicate that a nominal descriptor could not be created for an instance.
@@ -67,27 +66,8 @@ public interface Constable<T> {
      * Return a nominal descriptor for this instance, if one can be
      * constructed.
      *
-     * @implSpec This method behaves as if {@link #describeConstable(MethodHandles.Lookup)}
-     * were called with a lookup parameter of {@link MethodHandles#publicLookup()}.
-     *
      * @return An {@link Optional} containing the resulting nominal descriptor,
-     * or an empty {@link Optional} if one cannot be constructed
+     * or an empty {@link Optional} if one cannot be constructed.
      */
-    default Optional<? extends ConstantDesc<? super T>> describeConstable() {
-        return describeConstable(MethodHandles.publicLookup());
-    }
-
-    /**
-     * Return a nominal descriptor for this instance, if one can be
-     * constructed.  This object (and any classes needed to construct its
-     * nominal description) must be accessible from the class described by the
-     * {@code lookup} parameter.
-     *
-     * @param lookup A {@link MethodHandles.Lookup} to be used to perform
-     *               access control determinations
-     * @return An {@link Optional} containing the resulting nominal descriptor,
-     * or an empty {@link Optional} if one cannot be constructed or this object
-     * is not accessible from {@code lookup}
-     */
-    Optional<? extends ConstantDesc<? super T>> describeConstable(MethodHandles.Lookup lookup);
+    Optional<? extends ConstantDesc<? super T>> describeConstable();
 }

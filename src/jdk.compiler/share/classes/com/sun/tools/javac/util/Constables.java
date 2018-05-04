@@ -286,7 +286,7 @@ public class Constables {
         if (constant != null) {
             if (!canMakeItToConstantValue(tree.type) &&
                 constableClass.isInstance(constant)) {
-                Optional<?> optional = ((Optional<?>)invokeMethodReflectively(constant.getClass(), constant, "describeConstable"));
+                Optional<?> optional = ((Optional<?>)invokeMethodReflectively(constableClass, constant, "describeConstable"));
                 if (!optional.isPresent()) {
                     return Optional.empty();
                 }

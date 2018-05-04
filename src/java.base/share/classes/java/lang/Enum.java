@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.Constable;
 import java.lang.invoke.constant.ConstantDesc;
 import java.lang.invoke.constant.EnumDesc;
@@ -213,16 +212,14 @@ public abstract class Enum<E extends Enum<E>>
      * nominal description) must be accessible from the class described by the
      * {@code lookup} parameter.
      *
-     * @param lookup A {@link MethodHandles.Lookup} to be used to perform
-     *               access control determinations
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed or this object
      * is not accessible from {@code lookup}
      */
     @Override
-    public final Optional<? extends ConstantDesc<? super E>> describeConstable(MethodHandles.Lookup lookup) {
+    public final Optional<? extends ConstantDesc<? super E>> describeConstable() {
         return getDeclaringClass()
-                .describeConstable(lookup)
+                .describeConstable()
                 .map(c -> EnumDesc.of(c, name));
     }
 

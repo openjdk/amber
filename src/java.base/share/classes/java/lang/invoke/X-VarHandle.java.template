@@ -75,9 +75,9 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
-            var receiverTypeRef = receiverType.describeConstable(lookup);
-            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.describeConstable(lookup);
+        public Optional<VarHandleDesc> describeConstable() {
+            var receiverTypeRef = receiverType.describeConstable();
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.describeConstable();
             if (!receiverTypeRef.isPresent() || !fieldTypeRef.isPresent())
                 return Optional.empty();
 
@@ -360,14 +360,14 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
-            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.describeConstable(lookup);
+        public Optional<VarHandleDesc> describeConstable() {
+            var fieldTypeRef = {#if[Object]?fieldType:$type$.class}.describeConstable();
             if (!fieldTypeRef.isPresent())
                 return Optional.empty();
 
             var staticField = VarHandles.getStaticFieldFromBaseAndOffset(
                 base, fieldOffset, {#if[Object]?fieldType:$type$.class});
-            var receiverTypeRef = staticField.getDeclaringClass().describeConstable(lookup);
+            var receiverTypeRef = staticField.getDeclaringClass().describeConstable();
             if (!receiverTypeRef.isPresent())
                 return Optional.empty();
             return Optional.of(VarHandleDesc.ofStaticField(receiverTypeRef.get(), staticField.getName(), fieldTypeRef.get()));
@@ -638,8 +638,8 @@ final class VarHandle$Type$s {
         }
 
         @Override
-        public Optional<VarHandleDesc> describeConstable(MethodHandles.Lookup lookup) {
-            var arrayTypeRef = {#if[Object]?arrayType:$type$[].class}.describeConstable(lookup);
+        public Optional<VarHandleDesc> describeConstable() {
+            var arrayTypeRef = {#if[Object]?arrayType:$type$[].class}.describeConstable();
             if (!arrayTypeRef.isPresent())
                 return Optional.empty();
 

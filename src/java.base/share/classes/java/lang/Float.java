@@ -992,11 +992,10 @@ public final class Float extends Number
      * Returns a symbolic constant reference for this instance, which is
      * the instance itself.
      *
-     * @param lookup ignored
      * @return the {@linkplain Float} instance
      */
     @Override
-    public Optional<ConstantDesc<Float>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<Float>> describeConstable() {
         return Optional.of(this);
     }
 

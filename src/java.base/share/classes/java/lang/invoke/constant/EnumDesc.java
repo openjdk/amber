@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_ENUMDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_EnumDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 
@@ -78,7 +77,7 @@ public final class EnumDesc<E extends Enum<E>>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<E>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<E>>> describeConstable() {
         return Optional.of(DynamicConstantDesc.of(BSM_ENUMDESC, CR_EnumDesc)
                                               .withArgs(constantType().descriptorString(), constantName()));
     }

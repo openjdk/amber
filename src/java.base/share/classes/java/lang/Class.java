@@ -28,6 +28,7 @@ package java.lang;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.FieldDescriptor;
 import java.lang.module.ModuleReader;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
@@ -134,6 +135,7 @@ public final class Class<T> implements java.io.Serializable,
                               GenericDeclaration,
                               Type,
                               AnnotatedElement,
+                              FieldDescriptor<Class<?>>,
                               Constable<Class<T>> {
     private static final int ANNOTATION= 0x00002000;
     private static final int ENUM      = 0x00004000;
@@ -255,29 +257,6 @@ public final class Class<T> implements java.io.Serializable,
                 sb.append("[]");
 
             return sb.toString();
-        }
-    }
-
-    /**
-     * Produces a bytecode descriptor representation of the class.
-     * <p>
-     * Note that this is not a strict inverse of {@link #forName};
-     * two distinct classes which share a common name but have different class loaders
-     * will appear identical when viewed within descriptor strings.
-     * <p>
-     * This method is included for the benefit of applications that must
-     * generate bytecode.
-     *
-     * @return the bytecode type descriptor representation
-     */
-    public String toDescriptorString() {
-        if (isPrimitive())
-            return new String(new char[] {Wrapper.forPrimitiveType(this).basicTypeChar()});
-        else if (isArray()) {
-            return "[" + componentType.toDescriptorString();
-        }
-        else {
-            return "L" + getName().replace('.', '/') + ";";
         }
     }
 
@@ -3853,13 +3832,41 @@ public final class Class<T> implements java.io.Serializable,
          return TypeAnnotationParser.buildAnnotatedInterfaces(getRawTypeAnnotations(), getConstantPool(), this);
     }
 
+    /**
+     * Produce the type descriptor string for this class as per JVMS 4.3.2.
+     * <p>
+     * Note that this is not a strict inverse of {@link #forName};
+     * distinct classes which share a common name but have different class loaders
+     * will have identical descriptor strings.
+     *
+     * @return the type descriptor representation
+     */
     @Override
-    public Optional<ClassDesc> describeConstable(MethodHandles.Lookup lookup) {
-        try {
-            return Optional.of(ClassDesc.ofDescriptor(lookup.accessClass(this).toDescriptorString()));
+    public String descriptorString() {
+        if (isPrimitive())
+            return new String(new char[] {Wrapper.forPrimitiveType(this).basicTypeChar()});
+        else if (isArray()) {
+            return "[" + componentType.descriptorString();
         }
-        catch (IllegalAccessException e) {
-            return Optional.empty();
+        else {
+            return "L" + getName().replace('.', '/') + ";";
         }
+    }
+
+    @Override
+    public Class<?> componentType() {
+        if (!isArray())
+            throw new IllegalStateException("not an array class");
+        return componentType;
+    }
+
+    @Override
+    public Class<?> arrayType() {
+        return Array.newInstance(this, 0).getClass();
+    }
+
+    @Override
+    public Optional<ClassDesc> describeConstable() {
+        return Optional.of(ClassDesc.ofDescriptor(descriptorString()));
     }
 }

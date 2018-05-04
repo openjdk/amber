@@ -38,7 +38,9 @@ import static java.util.Objects.requireNonNull;
  * {@linkplain MethodType} constant.
  */
 public interface MethodTypeDesc
-        extends ConstantDesc<MethodType>, Constable<ConstantDesc<MethodType>> {
+        extends ConstantDesc<MethodType>,
+                Constable<ConstantDesc<MethodType>>,
+                MethodDescriptor<ClassDesc, MethodTypeDesc> {
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string
      *

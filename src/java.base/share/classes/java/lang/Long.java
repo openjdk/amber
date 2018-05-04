@@ -1973,11 +1973,10 @@ public final class Long extends Number
      * Returns a symbolic constant reference for this instance, which is
      * the instance itself.
      *
-     * @param lookup ignored
      * @return the {@linkplain Long} instance
      */
     @Override
-    public Optional<ConstantDesc<Long>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<ConstantDesc<Long>> describeConstable() {
         return Optional.of(this);
     }
 

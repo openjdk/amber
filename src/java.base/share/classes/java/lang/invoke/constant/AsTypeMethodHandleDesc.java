@@ -68,8 +68,8 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable(MethodHandles.Lookup lookup) {
-        return ConstantUtils.symbolizeHelper(lookup, ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable() {
+        return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
                                              underlying, type);
     }
 

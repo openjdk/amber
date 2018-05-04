@@ -181,12 +181,12 @@ public final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<VarHandle>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<VarHandle>>> describeConstable() {
         Constable<?>[] args =
                 (kind == Kind.ARRAY)
                 ? new Constable<?>[] { declaringClass }
                 : new Constable<?>[] { declaringClass, constantName(), varType };
-        return ConstantUtils.symbolizeHelper(lookup, kind.descFactory, CR_VarHandleDesc, args);
+        return ConstantUtils.symbolizeHelper(kind.descFactory, CR_VarHandleDesc, args);
     }
 
     @Override

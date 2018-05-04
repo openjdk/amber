@@ -39,10 +39,7 @@ import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_Class;
-import static java.lang.invoke.constant.ConstantDescs.CR_ConstantDesc;
 import static java.lang.invoke.constant.ConstantDescs.CR_DynamicConstantDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_Enum;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.lang.invoke.constant.ConstantDescs.CR_VarHandle;
 import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
@@ -376,7 +373,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<T>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<T>>> describeConstable() {
         ConstantDesc<?>[] args = new ConstantDesc<?>[bootstrapArgs.length + 5];
         args[0] = bootstrapMethod.owner().descriptorString();
         args[1] = bootstrapMethod.methodName();

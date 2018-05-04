@@ -37,8 +37,6 @@ import java.util.regex.Pattern;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_METHODTYPEDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ConstantMethodTypeDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_MethodTypeDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -179,7 +177,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable(MethodHandles.Lookup lookup) {
+    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable() {
         return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, CR_ConstantMethodTypeDesc).withArgs(descriptorString()));
     }
 

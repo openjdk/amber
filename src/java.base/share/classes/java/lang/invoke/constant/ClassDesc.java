@@ -46,13 +46,15 @@ import static java.util.stream.Collectors.joining;
  * a {@linkplain ClassDesc} for a class or interface type, use {@link #of} or
  * {@link #ofDescriptor(String)}; to create a {@linkplain ClassDesc} for an array
  * type, use {@link #ofDescriptor(String)}, or first obtain a
- * {@linkplain ClassDesc} for the component type and then call the {@link #array()}
- * or {@link #array(int)} methods.
+ * {@linkplain ClassDesc} for the component type and then call the {@link #arrayType()}
+ * or {@link #arrayType(int)} methods.
  *
  * @see ConstantDescs
  */
 public interface ClassDesc
-        extends ConstantDesc<Class<?>>, Constable<ConstantDesc<Class<?>>> {
+        extends ConstantDesc<Class<?>>,
+                Constable<ConstantDesc<Class<?>>>,
+                FieldDescriptor<ClassDesc> {
 
     /**
      * Create a {@linkplain ClassDesc} given a class name.
@@ -114,8 +116,8 @@ public interface ClassDesc
      * @return a {@linkplain ClassDesc} describing the array type
      */
     @Foldable
-    default ClassDesc array() {
-        return array(1);
+    default ClassDesc arrayType() {
+        return arrayType(1);
     }
 
     /**
@@ -127,7 +129,7 @@ public interface ClassDesc
      * @throws IllegalArgumentException if the rank is zero or negative
      */
     @Foldable
-    default ClassDesc array(int rank) {
+    default ClassDesc arrayType(int rank) {
         if (rank <= 0)
             throw new IllegalArgumentException();
         return ClassDesc.ofDescriptor("[".repeat(rank) + descriptorString());
