@@ -866,11 +866,11 @@ final class StringUTF16 {
         int length = value.length >> 1;
         int left = 0;
         while (left < length) {
-            char ch = getChar(value, left);
-            if (ch != ' ' && ch != '\t' && !Character.isWhitespace(ch)) {
+            int codepoint = codePointAt(value, left, length);
+            if (codepoint != ' ' && codepoint != '\t' && !Character.isWhitespace(codepoint)) {
                 break;
             }
-            left++;
+            left += Character.charCount(codepoint);
         }
         return left;
     }
@@ -879,11 +879,11 @@ final class StringUTF16 {
         int length = value.length >> 1;
         int right = length;
         while (0 < right) {
-            char ch = getChar(value, right - 1);
-            if (ch != ' ' && ch != '\t' && !Character.isWhitespace(ch)) {
+            int codepoint = codePointBefore(value, right);
+            if (codepoint != ' ' && codepoint != '\t' && !Character.isWhitespace(codepoint)) {
                 break;
             }
-            right--;
+            right -= Character.charCount(codepoint);
         }
         return right;
     }
@@ -992,11 +992,11 @@ final class StringUTF16 {
 
         @Override
         public Spliterator<String> trySplit() {
-            int len = value.length;
-            int mid = indexOfLineSeparator((len + index) >>> 1);
-            if (mid < len) {
+            int half = (fence + index) >>> 1;
+            int mid = skipLineSeparator(indexOfLineSeparator(half));
+            if (mid < fence) {
                 int start = index;
-                index = skipLineSeparator(mid);
+                index = mid;
                 return new LinesSpliterator(value, start, mid - start, cs);
             }
             return null;
@@ -1004,7 +1004,7 @@ final class StringUTF16 {
 
         @Override
         public long estimateSize() {
-            return Long.MAX_VALUE;
+            return fence - index + 1;
         }
 
         @Override

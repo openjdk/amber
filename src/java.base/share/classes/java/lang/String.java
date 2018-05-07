@@ -2641,35 +2641,23 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * and trailing {@link Character#isWhitespace(int) white space} is
-     * removed.
+     * {@link Character#isWhitespace(int) white space} removed.
      * <p>
-     * If this {@code String} object represents an empty character
-     * sequence, or the first and last characters of character sequence
-     * represented by this {@code String} object both have characters
-     * that are not {@link Character#isWhitespace(int) white space}, then a
-     * reference to this {@code String} object is returned.
+     * If this {@code String} object represents an empty string,
+     * or if all code points in this string are
+     * {@link Character#isWhitespace(int) white space}, then an empty string
+     * is returned.
      * <p>
-     * Otherwise, if all characters in this string are
-     * {@link Character#isWhitespace(int) white space}, then a
-     * {@code String} object representing an empty string is returned.
-     * <p>
-     * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is not a {@link Character#isWhitespace(int) white space}
-     * and let <i>m</i> be the index of the last character in the string whose code
-     * is not a {@link Character#isWhitespace(int) white space}. A {@code String}
-     * object is returned, representing the substring of this string that
-     * begins with the character at index <i>k</i> and ends with the
-     * character at index <i>m</i>-that is, the result of
-     * {@code this.substring(k, m + 1)}.
+     * Otherwise, returns a substring of this string beginning with the first
+     * code point that is not a {@link Character#isWhitespace(int) white space}
+     * up to to and including the last code point of this string.
      * <p>
      * This method may be used to trim
      * {@link Character#isWhitespace(int) white space} from
-     * the beginning and end of a string.
+     * the beginning of a string.
      *
-     * @return  a string whose value is this string, with all leading
-     *          and trailing white space removed, or this string if it
-     *          has no leading or trailing white space.
+     * @return  a string whose value is this string, with all leading white
+     *          space removed, or this string if it has no leading white space.
      *
      * @see Character#isWhitespace(int)
      *
@@ -2683,26 +2671,16 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * {@link Character#isWhitespace(int) white space} is removed.
+     * {@link Character#isWhitespace(int) white space} removed.
      * <p>
-     * If this {@code String} object represents an empty character
-     * sequence, or the first character of the character sequence
-     * represented by this {@code String} object is not a
-     * {@link Character#isWhitespace(int) white space}, then a
-     * reference to this {@code String} object is returned.
+     * If this {@code String} object represents an empty string,
+     * or if all code points in this string are
+     * {@link Character#isWhitespace(int) white space}, then an empty string
+     * is returned.
      * <p>
-     * Otherwise, if all characters in this string are
-     * {@link Character#isWhitespace(int) white space}, then a
-     * {@code String} object representing an empty string is returned.
-     * <p>
-     * Otherwise, let <i>k</i> be the index of the first character in the
-     * string whose code is not a
-     * {@link Character#isWhitespace(int) white space}, and let
-     * <i>m</i> be the index of the last character in the string. A
-     * {@code String} object is returned, representing the substring of this
-     * string that begins with the character at index <i>k</i> and ends with the
-     * character at index <i>m</i>-that is, the result of
-     * {@code this.substring(k, m + 1)}.
+     * Otherwise, returns a substring of this string beginning with the first
+     * code point that is not a {@link Character#isWhitespace(int) white space}
+     * up to to and including the last code point of this string.
      * <p>
      * This method may be used to trim
      * {@link Character#isWhitespace(int) white space} from
@@ -2723,26 +2701,16 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all trailing
-     * {@link Character#isWhitespace(int) white space} is removed.
+     * {@link Character#isWhitespace(int) white space} removed.
      * <p>
-     * If this {@code String} object represents an empty character
-     * sequence, or the last character of character sequence
-     * represented by this {@code String} object is not a
-     * {@link Character#isWhitespace(int) white space}, then a
-     * reference to this {@code String} object is returned.
+     * If this {@code String} object represents an empty string,
+     * or if all characters in this string are
+     * {@link Character#isWhitespace(int) white space}, then an empty string
+     * is returned.
      * <p>
-     * Otherwise, if all characters in this string are
-     * {@link Character#isWhitespace(int) white space}, then a
-     * {@code String} object representing an empty string is returned.
-     * <p>
-     * Otherwise, let <i>k</i> be the index of the first character in the
-     * string, and let
-     * <i>m</i> be the index of the last character in the string that is
-     * not a {@link Character#isWhitespace(int) white space}. A {@code String}
-     * object is returned, representing the substring of this string that
-     * begins with the character at index <i>k</i> and ends with the
-     * character at index <i>m</i>-that is, the result of
-     * {@code this.substring(k, m + 1)}.
+     * Otherwise, returns a substring of this string beginning with the first
+     * code point of this string up to and including the last code point
+     * that is not a  {@link Character#isWhitespace(int) white space}.
      * <p>
      * This method may be used to trim
      * {@link Character#isWhitespace(int) white space} from
@@ -2764,11 +2732,11 @@ public final class String
 
     /**
      * Returns {@code true} if the string is empty or contains only
-     * {@link Character#isWhitespace(int) white space} characters,
+     * {@link Character#isWhitespace(int) white space} codepoints,
      * otherwise {@code false}.
      *
      * @return {@code true} if the string is empty or contains only
-     *         {@link Character#isWhitespace(int)  white space} characters,
+     *         {@link Character#isWhitespace(int) white space} codepoints,
      *         otherwise {@code false}
      *
      * @see Character#isWhitespace(int)
@@ -2783,19 +2751,24 @@ public final class String
      * Returns a stream of substrings extracted from this string
      * partitioned by line terminators.
      * <p>
-     * Line terminators recognized are line feed {@code "\n"},
-     * carriage return {@code "\r"} and a carriage return followed
-     * immediately by a line feed {@code "\r\n"}.
+     * Line terminators recognized are line feed
+     * {@code "\n"} ({@code '\u000A'}),
+     * carriage return
+     * {@code "\r"} ({@code '\u000D'})
+     * and a carriage return followed immediately by a line feed
+     * {@code "\r\n"} ({@code '\u000D' '\u000A'}).
      * <p>
      * The stream returned by this method contains each line of
-     * this string that is terminated by a line terminator or end
-     * of string. The lines in the stream are in the order in which
-     * they occur in this string and do not include the line
-     * separator.
+     * this string that is terminated by a line terminator except that
+     * the last line can either be terminated by a line terminator or the
+     * end of the string.
+     * The lines in the stream are in the order in which
+     * they occur in this string and do not include the line terminators
+     * partitioning the lines.
      *
      * @implNote This method provides better performance than
      *           split("\R") by supplying elements lazily and
-     *           by faster search of new line separators.
+     *           by faster search of new line terminators.
      *
      * @return  the stream of strings extracted from this string
      *          partitioned by line terminators

@@ -670,11 +670,11 @@ final class StringLatin1 {
 
         @Override
         public Spliterator<String> trySplit() {
-            int len = value.length;
-            int mid = indexOfLineSeparator((len + index) >>> 1);
-            if (mid < len) {
+            int half = (fence + index) >>> 1;
+            int mid = skipLineSeparator(indexOfLineSeparator(half));
+            if (mid < fence) {
                 int start = index;
-                index = skipLineSeparator(mid);
+                index = mid;
                 return new LinesSpliterator(value, start, mid - start, cs);
             }
             return null;
@@ -682,7 +682,7 @@ final class StringLatin1 {
 
         @Override
         public long estimateSize() {
-            return Long.MAX_VALUE;
+            return fence - index + 1;
         }
 
         @Override
