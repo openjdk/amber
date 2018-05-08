@@ -217,7 +217,7 @@ public abstract class Enum<E extends Enum<E>>
      * is not accessible from {@code lookup}
      */
     @Override
-    public final Optional<? extends ConstantDesc<? super E>> describeConstable() {
+    public final Optional<EnumDesc<E>> describeConstable() {
         return getDeclaringClass()
                 .describeConstable()
                 .map(c -> EnumDesc.of(c, name));
