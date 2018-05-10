@@ -2709,6 +2709,9 @@ public class Attr extends JCTree.Visitor {
                 Type target = null;
                 for (Type bound : ict.getExplicitComponents()) {
                     TypeSymbol boundSym = bound.tsym;
+                    if (bound.tsym == syms.objectType.tsym) {
+                        continue;
+                    }
                     if (types.isFunctionalInterface(boundSym) &&
                             types.findDescriptorSymbol(boundSym) == desc) {
                         target = bound;
