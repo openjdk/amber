@@ -34,8 +34,6 @@
 #include "gc/parallel/pcTasks.hpp"
 #include "gc/parallel/psAdaptiveSizePolicy.hpp"
 #include "gc/parallel/psCompactionManager.inline.hpp"
-#include "gc/parallel/psMarkSweep.hpp"
-#include "gc/parallel/psMarkSweepDecorator.hpp"
 #include "gc/parallel/psOldGen.hpp"
 #include "gc/parallel/psParallelCompact.inline.hpp"
 #include "gc/parallel/psPromotionManager.inline.hpp"
@@ -72,6 +70,7 @@
 #include "utilities/debug.hpp"
 #include "utilities/events.hpp"
 #include "utilities/formatBuffer.hpp"
+#include "utilities/macros.hpp"
 #include "utilities/stack.inline.hpp"
 
 #include <math.h>
@@ -1038,12 +1037,6 @@ void PSParallelCompact::post_compact()
 #if COMPILER2_OR_JVMCI
   DerivedPointerTable::update_pointers();
 #endif
-
-  ReferenceProcessorPhaseTimes pt(&_gc_timer, ref_processor()->num_queues());
-
-  ref_processor()->enqueue_discovered_references(NULL, &pt);
-
-  pt.print_enqueue_phase();
 
   if (ZapUnusedHeapArea) {
     heap->gen_mangle_unused_area();
@@ -2056,6 +2049,17 @@ GCTaskManager* const PSParallelCompact::gc_task_manager() {
   return ParallelScavengeHeap::gc_task_manager();
 }
 
+class PCAddThreadRootsMarkingTaskClosure : public ThreadClosure {
+private:
+  GCTaskQueue* _q;
+
+public:
+  PCAddThreadRootsMarkingTaskClosure(GCTaskQueue* q) : _q(q) { }
+  void do_thread(Thread* t) {
+    _q->enqueue(new ThreadRootsMarkingTask(t));
+  }
+};
+
 void PSParallelCompact::marking_phase(ParCompactionManager* cm,
                                       bool maximum_heap_compaction,
                                       ParallelOldTracer *gc_tracer) {
@@ -2084,7 +2088,8 @@ void PSParallelCompact::marking_phase(ParCompactionManager* cm,
     q->enqueue(new MarkFromRootsTask(MarkFromRootsTask::universe));
     q->enqueue(new MarkFromRootsTask(MarkFromRootsTask::jni_handles));
     // We scan the thread roots in parallel
-    Threads::create_thread_roots_marking_tasks(q);
+    PCAddThreadRootsMarkingTaskClosure cl(q);
+    Threads::java_threads_and_vm_thread_do(&cl);
     q->enqueue(new MarkFromRootsTask(MarkFromRootsTask::object_synchronizer));
     q->enqueue(new MarkFromRootsTask(MarkFromRootsTask::management));
     q->enqueue(new MarkFromRootsTask(MarkFromRootsTask::system_dictionary));
