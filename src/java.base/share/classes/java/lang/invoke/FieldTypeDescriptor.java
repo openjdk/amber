@@ -1,11 +1,11 @@
-package java.lang.invoke.constant;
+package java.lang.invoke;
 
 /**
  * Represents a field type descriptor, as per JVMS 4.3.2.
  *
- * @param <F> the class implementing {@linkplain FieldDescriptor}
+ * @param <F> the class implementing {@linkplain FieldTypeDescriptor}
  */
-public interface FieldDescriptor<F extends FieldDescriptor<F>> extends TypeDescriptor {
+public interface FieldTypeDescriptor<F extends FieldTypeDescriptor<F>> extends TypeDescriptor {
     /**
      * Does this field descriptor describe an array type?
      * @return whether this field descriptor describes an array type

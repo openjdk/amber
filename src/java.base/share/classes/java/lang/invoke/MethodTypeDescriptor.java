@@ -1,4 +1,4 @@
-package java.lang.invoke.constant;
+package java.lang.invoke;
 
 import java.util.List;
 
@@ -6,9 +6,9 @@ import java.util.List;
  * Represents a method type descriptor, as per JVMS 4.3.3
  *
  * @param <F> the type representing field type descriptors
- * @param <M> the class implementing {@linkplain MethodDescriptor}
+ * @param <M> the class implementing {@linkplain MethodTypeDescriptor}
  */
-public interface MethodDescriptor<F extends FieldDescriptor<F>, M extends MethodDescriptor<F, M>>
+public interface MethodTypeDescriptor<F extends FieldTypeDescriptor<F>, M extends MethodTypeDescriptor<F, M>>
         extends TypeDescriptor {
 
     /**

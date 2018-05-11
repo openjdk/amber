@@ -27,6 +27,7 @@ package java.lang.invoke.constant;
 import jdk.internal.lang.annotation.Foldable;
 
 import java.lang.invoke.MethodType;
+import java.lang.invoke.MethodTypeDescriptor;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,7 +41,7 @@ import static java.util.Objects.requireNonNull;
 public interface MethodTypeDesc
         extends ConstantDesc<MethodType>,
                 Constable<ConstantDesc<MethodType>>,
-                MethodDescriptor<ClassDesc, MethodTypeDesc> {
+                MethodTypeDescriptor<ClassDesc, MethodTypeDesc> {
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string
      *

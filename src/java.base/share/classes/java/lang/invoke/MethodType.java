@@ -28,7 +28,7 @@ package java.lang.invoke;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
-import java.lang.invoke.constant.MethodDescriptor;
+import java.lang.invoke.MethodTypeDescriptor;
 import java.lang.invoke.constant.MethodTypeDesc;
 import java.lang.ref.WeakReference;
 import java.lang.ref.Reference;
@@ -102,7 +102,7 @@ import sun.invoke.util.VerifyType;
 public final
 class MethodType
         implements Constable<MethodType>,
-                   MethodDescriptor<Class<?>, MethodType>,
+                   MethodTypeDescriptor<Class<?>, MethodType>,
                    java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 

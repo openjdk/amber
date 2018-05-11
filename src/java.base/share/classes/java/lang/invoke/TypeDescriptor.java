@@ -1,4 +1,4 @@
-package java.lang.invoke.constant;
+package java.lang.invoke;
 
 /**
  * An entity that has a field or method type descriptor, as per JVMS 4.3.2 or 4.3.3.
