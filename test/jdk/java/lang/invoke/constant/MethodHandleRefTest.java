@@ -94,12 +94,12 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         testMethodHandleRef(r);
 
         assertMHEquals(r.resolveConstantDesc(LOOKUP), mh);
-        assertEquals(mh.describeConstable(LOOKUP).orElseThrow(), r);
+        assertEquals(mh.describeConstable().orElseThrow(), r);
 
         // compare extractable properties: refKind, owner, name, type
         MethodHandleInfo mhi = LOOKUP.revealDirect(mh);
         ConstantMethodHandleDesc rr = (ConstantMethodHandleDesc) r;
-        assertEquals(mhi.getDeclaringClass().toDescriptorString(), rr.owner().descriptorString());
+        assertEquals(mhi.getDeclaringClass().descriptorString(), rr.owner().descriptorString());
         assertEquals(mhi.getName(), rr.methodName());
         assertEquals(mhi.getReferenceKind(), rr.kind().refKind);
         assertEquals(mhi.getMethodType().toMethodDescriptorString(), r.methodType().descriptorString());
@@ -108,7 +108,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
     public void testSimpleMHs() throws ReflectiveOperationException {
         testMethodHandleRef(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, CR_String, "isEmpty", "()Z"),
                             LOOKUP.findVirtual(String.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
-        testMethodHandleRef(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.array()),
+        testMethodHandleRef(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType()),
                             LOOKUP.findStatic(String.class, "format", MethodType.methodType(String.class, String.class, Object[].class)));
         testMethodHandleRef(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, CR_List, "isEmpty", "()Z"),
                             LOOKUP.findVirtual(List.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));

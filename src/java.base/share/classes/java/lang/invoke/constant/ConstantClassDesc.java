@@ -28,9 +28,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Pattern;
-
-import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_CLASSDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ClassDesc;
@@ -44,9 +41,6 @@ import static java.util.Objects.requireNonNull;
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
 public class ConstantClassDesc implements ClassDesc {
-    @Foldable
-    private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
-
     private final String descriptor;
 
     /**
@@ -59,14 +53,11 @@ public class ConstantClassDesc implements ClassDesc {
      * field descriptor string, or does not describe a class or interface type
      */
     ConstantClassDesc(String descriptor) {
-        // @@@ Replace validation with a lower-overhead mechanism than regex
-        // Follow the trail from MethodType.fromMethodDescriptorString to
-        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
-        // be extracted and/or shared
-        // @@@ regex actually permits primitive types
         requireNonNull(descriptor);
-        if (!TYPE_DESC.matcher(descriptor).matches())
-            throw new IllegalArgumentException(String.format("not a valid type descriptor: %s", descriptor));
+        int len = ConstantUtils.matchSig(descriptor, 0, descriptor.length());
+        if (len == 0 || len == 1
+            || len != descriptor.length())
+            throw new IllegalArgumentException(String.format("not a valid reference type descriptor: %s", descriptor));
         this.descriptor = descriptor;
     }
 

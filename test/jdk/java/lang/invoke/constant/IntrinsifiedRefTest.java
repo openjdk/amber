@@ -85,7 +85,7 @@ public class IntrinsifiedRefTest {
     private static <T extends Constable> void assertIntrinsic(ConstantDesc<T> ref, T intrinsified, T target) throws ReflectiveOperationException {
         assertEquals(target, intrinsified);
         assertEquals(ref.resolveConstantDesc(LOOKUP), intrinsified);
-        assertEquals(intrinsified.describeConstable(LOOKUP).orElseThrow(), ref);
+        assertEquals(intrinsified.describeConstable().orElseThrow(), ref);
     }
 
     private static<T extends Constable> void assertIntrinsicFail(ConstantDesc<T> ref, Supplier<T> supplier, Class<? extends Throwable> exception) {
@@ -114,7 +114,7 @@ public class IntrinsifiedRefTest {
         assertIntrinsic(cr3, ldc(cr3), String.class);
 
         ClassDesc cr4 = ClassDesc.ofDescriptor("[Ljava/lang/String;");
-        ClassDesc cr5 = cr2.array();
+        ClassDesc cr5 = cr2.arrayType();
         assertIntrinsic(cr4, ldc(cr4), String[].class);
         assertIntrinsic(cr5, ldc(cr5), String[].class);
 
@@ -123,7 +123,7 @@ public class IntrinsifiedRefTest {
         assertIntrinsic(ConstantDescs.CR_int, ldc(ConstantDescs.CR_int), int.class);
 
         ClassDesc cr7 = ClassDesc.ofDescriptor("[I");
-        ClassDesc cr8 = ConstantDescs.CR_int.array();
+        ClassDesc cr8 = ConstantDescs.CR_int.arrayType();
         assertIntrinsic(cr7, ldc(cr7), int[].class);
         assertIntrinsic(cr8, ldc(cr8), int[].class);
     }

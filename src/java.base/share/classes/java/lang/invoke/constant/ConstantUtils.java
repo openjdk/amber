@@ -24,9 +24,13 @@
  */
 package java.lang.invoke.constant;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+
+import sun.invoke.util.Wrapper;
 
 /**
  * ConstantUtils
@@ -116,6 +120,71 @@ class ConstantUtils {
         }
         catch (NoSuchElementException e) {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Parse a method descriptor string, and return a list of field descriptor
+     * strings, return type first, then parameter types
+     *
+     * @param descriptor the descriptor string
+     * @return the list of types
+     * @throws IllegalArgumentException if the descriptor string is not valid
+     */
+    static List<String> parseMethodDescriptor(String descriptor) {
+        int cur = 0, end = descriptor.length();
+        ArrayList<String> ptypes = new ArrayList<>();
+
+        if (cur >= end || descriptor.charAt(cur) != '(')
+            throw new IllegalArgumentException("Bad method descriptor: " + descriptor);
+
+        ++cur;  // skip '('
+        while (cur < end && descriptor.charAt(cur) != ')') {
+            int len = matchSig(descriptor, cur, end);
+            if (len == 0 || descriptor.charAt(cur) == 'V')
+                throw new IllegalArgumentException("Bad method descriptor: " + descriptor);
+            ptypes.add(descriptor.substring(cur, cur + len));
+            cur += len;
+        }
+        if (cur >= end)
+            throw new IllegalArgumentException("Bad method descriptor: " + descriptor);
+        ++cur;  // skip ')'
+
+        int rLen = matchSig(descriptor, cur, end);
+        if (rLen == 0 || cur + rLen != end)
+            throw new IllegalArgumentException("Bad method descriptor: " + descriptor);
+        ptypes.add(0, descriptor.substring(cur, cur + rLen));
+        return ptypes;
+    }
+
+    /**
+     * Validate that the characters at [start, end) within the provided string
+     * describe a valid field type descriptor.
+     *
+     * @param str the descriptor string
+     * @param start the starting index into the string
+     * @param end the ending index within the string
+     * @return the length of the descriptor, or 0 if it is not a descriptor
+     * @throws IllegalArgumentException if the descriptor string is not valid
+     */
+    static int matchSig(String str, int start, int end) {
+        if (start >= end || start >= str.length() || end > str.length())
+            return 0;
+        char c = str.charAt(start);
+        if (c == 'L') {
+            int endc = str.indexOf(';', start);
+            int badc = str.indexOf('.', start);
+            if (badc >= 0 && badc < endc)
+                return 0;
+            badc = str.indexOf('[', start);
+            if (badc >= 0 && badc < endc)
+                return 0;
+            return (endc < 0) ? 0 : endc - start + 1;
+        } else if (c == '[') {
+            int t = matchSig(str, start+1, end);
+            return (t > 0) ? t + 1 : 0;
+        } else {
+            return ("IJCSBFDZV".indexOf(c) >= 0) ? 1 : 0;
         }
     }
 }

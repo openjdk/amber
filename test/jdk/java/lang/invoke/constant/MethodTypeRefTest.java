@@ -65,7 +65,7 @@ public class MethodTypeRefTest extends SymbolicRefTest {
         testMethodTypeRef(r);
 
         assertEquals(r.resolveConstantDesc(LOOKUP), mt);
-        assertEquals(mt.describeConstable(LOOKUP).get(), r);
+        assertEquals(mt.describeConstable().get(), r);
 
         assertEquals(r.descriptorString(), mt.toMethodDescriptorString());
         assertEquals(r.parameterCount(), mt.parameterCount());

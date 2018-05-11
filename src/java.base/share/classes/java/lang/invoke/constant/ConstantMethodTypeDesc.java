@@ -24,16 +24,13 @@
  */
 package java.lang.invoke.constant;
 
-import jdk.internal.lang.annotation.Foldable;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.invoke.constant.ConstantDescs.BSM_METHODTYPEDESC;
 import static java.lang.invoke.constant.ConstantDescs.CR_ConstantMethodTypeDesc;
@@ -45,10 +42,6 @@ import static java.util.Objects.requireNonNull;
  * {@code Constant_MethodType_info} entry in the constant pool of a classfile.
  */
 public final class ConstantMethodTypeDesc implements MethodTypeDesc {
-
-    private static final Pattern TYPE_DESC = Pattern.compile("(\\[*)(V|I|J|S|B|C|F|D|Z|L[^/.\\[;][^.\\[;]*;)");
-    private static final Pattern pattern = Pattern.compile("\\((.*)\\)(.*)");
-
     private final ClassDesc returnType;
     private final ClassDesc[] argTypes;
 
@@ -78,30 +71,10 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      */
     @Foldable
     static ConstantMethodTypeDesc ofDescriptor(String descriptor) {
-        // @@@ Replace validation with a lower-overhead mechanism than regex
-        // Follow the trail from MethodType.fromMethodDescriptorString to
-        // parsing code in sun/invoke/util/BytecodeDescriptor.java which could
-        // be extracted and/or shared
-        Matcher matcher = pattern.matcher(descriptor);
-        if (!matcher.matches())
-            throw new IllegalArgumentException(String.format("%s is not a valid method descriptor", descriptor));
-        String paramTypesStr = matcher.group(1);
-        String returnTypeStr = matcher.group(2);
-        if (!TYPE_DESC.matcher(returnTypeStr).matches())
-            throw new IllegalArgumentException(String.format("Invalid return type %s", returnTypeStr));
-        List<String> params = new ArrayList<>();
-        matcher = TYPE_DESC.matcher(paramTypesStr);
-        while (matcher.regionStart() < paramTypesStr.length()) {
-            if (matcher.lookingAt()) {
-                params.add(matcher.group());
-                matcher.region(matcher.end(), matcher.regionEnd());
-            }
-            else
-                throw new IllegalArgumentException(String.format("Invalid parameter type: %s",
-                                                                 paramTypesStr.substring(matcher.regionStart(), matcher.regionEnd())));
-        }
-        ClassDesc[] paramTypes = params.stream().map(ClassDesc::ofDescriptor).toArray(ClassDesc[]::new);
-        return new ConstantMethodTypeDesc(ClassDesc.ofDescriptor(returnTypeStr), paramTypes);
+        requireNonNull(descriptor);
+        List<String> types = ConstantUtils.parseMethodDescriptor(descriptor);
+        ClassDesc[] paramTypes = types.stream().skip(1).map(ClassDesc::ofDescriptor).toArray(ClassDesc[]::new);
+        return new ConstantMethodTypeDesc(ClassDesc.ofDescriptor(types.get(0)), paramTypes);
     }
 
     @Foldable

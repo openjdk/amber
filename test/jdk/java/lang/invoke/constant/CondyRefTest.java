@@ -66,7 +66,7 @@ public class CondyRefTest extends SymbolicRefTest {
     private void testVarHandleRef(DynamicConstantDesc<VarHandle> r, VarHandle vh) throws ReflectiveOperationException  {
         testSymbolicRef(r);
         assertEquals(r.resolveConstantDesc(LOOKUP), vh);
-        assertEquals(vh.describeConstable(LOOKUP).orElseThrow(), r);
+        assertEquals(vh.describeConstable().orElseThrow(), r);
     }
 
     private static<E extends Enum<E>> void testEnumRef(EnumDesc<E> r, E e) throws ReflectiveOperationException {
@@ -94,8 +94,8 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testNested() throws Throwable {
-        ConstantMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.array());
-        ConstantMethodHandleDesc format = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.array());
+        ConstantMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.arrayType());
+        ConstantMethodHandleDesc format = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType());
 
         String s = (String) invoker.resolveConstantDesc(LOOKUP)
                                    .invoke(LOOKUP, "", String.class,
@@ -148,7 +148,7 @@ public class CondyRefTest extends SymbolicRefTest {
         assertEquals(9, (int) varHandle.get(instance));
         assertEquals(instance.f, 9);
 
-        vhc = VarHandleDesc.ofArray(CR_int.array());
+        vhc = VarHandleDesc.ofArray(CR_int.arrayType());
         varHandle = MethodHandles.arrayElementVarHandle(int[].class);
         testVarHandleRef(vhc, varHandle);
 
@@ -207,9 +207,9 @@ public class CondyRefTest extends SymbolicRefTest {
         assertLifted(VarHandleDesc.ofField(testClass, "f", CR_int),
                      DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantDesc<?>[] {testClass, "f", CR_int }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantDesc<?>[] {testClass, "f", CR_int }));
-        assertLifted(VarHandleDesc.ofArray(CR_int.array()),
-                     DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.array() }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.array() }));
+        assertLifted(VarHandleDesc.ofArray(CR_int.arrayType()),
+                     DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.arrayType() }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.arrayType() }));
     }
 
 }

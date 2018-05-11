@@ -85,7 +85,7 @@ public abstract class SymbolicRefTest {
     }
 
     static ClassDesc classToRef(Class<?> c) {
-        return ClassDesc.ofDescriptor(c.toDescriptorString());
+        return ClassDesc.ofDescriptor(c.descriptorString());
     }
 
     static<T> void testSymbolicRef(ConstantDesc<T> ref) throws ReflectiveOperationException {
@@ -99,12 +99,12 @@ public abstract class SymbolicRefTest {
     private static<T> void testSymbolicRef(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
         if (!forwardOnly) {
             // Round trip sym -> resolve -> toSymbolicRef
-            ConstantDesc<? super ConstantDesc<T>> s = ((Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP)).describeConstable(LOOKUP).orElseThrow();
+            ConstantDesc<? super ConstantDesc<T>> s = ((Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP)).describeConstable().orElseThrow();
             assertEquals(ref, s);
         }
 
         // Round trip sym -> quoted sym -> resolve
-        Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable(LOOKUP);
+        Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable();
         ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
         assertEquals(sr, ref);
     }
