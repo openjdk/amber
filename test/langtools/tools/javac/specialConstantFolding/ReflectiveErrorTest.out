@@ -1,2 +1,2 @@
-ReflectiveErrorTest.java:11:58: compiler.err.reflective.error: ofDescriptor, java.lang.invoke.constant.MethodTypeDesc, Invalid parameter type: ^
+ReflectiveErrorTest.java:11:58: compiler.err.reflective.error: ofDescriptor, java.lang.invoke.constant.MethodTypeDesc, Bad method descriptor: (Ljava/lang/String;^)D
 1 error
