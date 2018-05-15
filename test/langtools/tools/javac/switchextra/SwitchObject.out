@@ -1,2 +1,2 @@
-SwitchObject.java:8:16: compiler.err.switch.invalid.type: java.lang.Object
+SwitchObject.java:8:16: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.Object, int)
 1 error

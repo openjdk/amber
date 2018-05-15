@@ -29,6 +29,7 @@
  * @modules
  *      jdk.compiler/com.sun.tools.javac.api
  *      jdk.compiler/com.sun.tools.javac.main
+ *      jdk.compiler/com.sun.tools.javac.platform
  *      jdk.jdeps/com.sun.tools.classfile
  * @build toolbox.ToolBox toolbox.JavacTask
  * @run main JavaBaseTest
@@ -67,6 +68,10 @@ public class JavaBaseTest {
     );
 
     final List<String> targets = List.of("9", "10", "current");
+    
+    {
+        JDKPlatformProvider.
+    }
 
     enum Mode { SOURCE, CLASS };
 

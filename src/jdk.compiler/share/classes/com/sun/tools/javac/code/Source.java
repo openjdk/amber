@@ -183,9 +183,7 @@ public enum Source {
         PRIVATE_INTERFACE_METHODS(JDK9, Fragments.FeaturePrivateIntfMethods, DiagKind.PLURAL),
         LOCAL_VARIABLE_TYPE_INFERENCE(JDK10),
         SWITCH_MULTIPLE_CASE_LABELS(JDK10, Fragments.FeatureMultipleCaseLabels, DiagKind.PLURAL),
-        SWITCH_EXPRESSION(JDK10, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
-        SWITCH_CASE_NULL(JDK10, Fragments.FeatureCaseNull, DiagKind.NORMAL),
-        SWITCH_EXTRA_TYPES(JDK10, Fragments.FeatureSwitchExtraTypes, DiagKind.NORMAL);
+        SWITCH_EXPRESSION(JDK10, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL);
 
         enum DiagKind {
             NORMAL,

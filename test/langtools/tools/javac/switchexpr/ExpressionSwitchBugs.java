@@ -55,8 +55,8 @@ public class ExpressionSwitchBugs {
         i = 0;
         check(42, id(switch (42) {
             case 42: if (i == 0) {
-                break 41 + switch (true) {
-                    case true -> 1;
+                break 41 + switch (0) {
+                    case 0 -> 1;
                     default -> -1;
                 };
             }

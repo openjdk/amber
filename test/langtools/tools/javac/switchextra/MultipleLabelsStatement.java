@@ -41,8 +41,7 @@ public class MultipleLabelsStatement {
     }
 
     private void runTest(Function<T, String> print) {
-        check(null, print, "NULL-A");
-        check(T.A,  print, "NULL-A");
+        check(T.A,  print, "A");
         check(T.B,  print, "B-C");
         check(T.C,  print, "B-C");
         check(T.D,  print, "D");
@@ -53,7 +52,7 @@ public class MultipleLabelsStatement {
         String res;
 
         switch (t) {
-            case null, A: res = "NULL-A"; break;
+            case A: res = "A"; break;
             case B, C: res = "B-C"; break;
             case D: res = "D"; break;
             default: res = "other"; break;

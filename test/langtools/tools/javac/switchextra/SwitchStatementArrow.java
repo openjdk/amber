@@ -41,8 +41,7 @@ public class SwitchStatementArrow {
     }
 
     private void runTest(Function<T, String> print) {
-        check(null, print, "NULL-A");
-        check(T.A,  print, "NULL-A");
+        check(T.A,  print, "A");
         check(T.B,  print, "B-C");
         check(T.C,  print, "B-C");
         try {
@@ -59,7 +58,7 @@ public class SwitchStatementArrow {
         String res;
 
         switch (t) {
-            case null, A -> { res = "NULL-A"; }
+            case A -> { res = "A"; }
             case B, C -> res = "B-C";
             case D -> throw new IllegalStateException("D");
             default -> { res = "other"; break; }

@@ -41,8 +41,7 @@ public class MultipleLabelsExpression {
     }
 
     private void runTest(Function<T, String> print) {
-        check(null, print, "NULL-A");
-        check(T.A,  print, "NULL-A");
+        check(T.A,  print, "A");
         check(T.B,  print, "B-C");
         check(T.C,  print, "B-C");
         check(T.D,  print, "D");
@@ -51,7 +50,7 @@ public class MultipleLabelsExpression {
 
     private String expression1(T t) {
         return switch (t) {
-            case null, A -> "NULL-A";
+            case A -> "A";
             case B, C -> { break "B-C"; }
             case D -> "D";
             default -> "other";

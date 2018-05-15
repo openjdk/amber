@@ -1,0 +1,5 @@
+SwitchNoExtraTypes.java:9:16: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: boolean, int)
+SwitchNoExtraTypes.java:15:16: compiler.err.prob.found.req: (compiler.misc.possible.loss.of.precision: long, int)
+SwitchNoExtraTypes.java:21:16: compiler.err.prob.found.req: (compiler.misc.possible.loss.of.precision: float, int)
+SwitchNoExtraTypes.java:27:16: compiler.err.prob.found.req: (compiler.misc.possible.loss.of.precision: double, int)
+4 errors

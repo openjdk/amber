@@ -1,7 +1,0 @@
-SwitchNull.java:32:9: compiler.err.no.legacy.desugaring
-SwitchNull.java:40:9: compiler.err.no.legacy.desugaring
-SwitchNull.java:48:9: compiler.err.no.legacy.desugaring
-SwitchNull.java:56:9: compiler.err.no.legacy.desugaring
-SwitchNull.java:64:9: compiler.err.no.legacy.desugaring
-SwitchNull.java:72:9: compiler.err.no.legacy.desugaring
-6 errors

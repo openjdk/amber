@@ -1,6 +1,3 @@
-
-import java.util.Objects;
-
 /*
  * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -29,7 +26,8 @@ import java.util.Objects;
  * @compile ExpressionSwitchFallThrough1.java
  * @run main ExpressionSwitchFallThrough1
  */
-// * @compile/fail/ref=ExpressionSwitchFallThrough.out -XDrawDiagnistics ExpressionSwitchFallThrough.java
+
+import java.util.Objects;
 
 public class ExpressionSwitchFallThrough1 {
     public static void main(String... args) {
@@ -37,11 +35,9 @@ public class ExpressionSwitchFallThrough1 {
     }
 
     private void test() {
-        assertEquals("NULL01", printExprFallThrough(null));
         assertEquals("01", printExprFallThrough(0));
         assertEquals("1", printExprFallThrough(1));
         assertEquals("other", printExprFallThrough(3));
-        assertEquals("NULL01", printStatementFallThrough(null));
         assertEquals("01", printStatementFallThrough(0));
         assertEquals("1", printStatementFallThrough(1));
         assertEquals("other", printStatementFallThrough(3));
@@ -50,7 +46,6 @@ public class ExpressionSwitchFallThrough1 {
     private String printExprFallThrough(Integer p) {
         String result = "";
         return switch (p) {
-            case null: result += "NULL";
             case 0: result += "0";
             case 1: result += "1";
                 break result;
@@ -61,7 +56,6 @@ public class ExpressionSwitchFallThrough1 {
     private String printStatementFallThrough(Integer p) {
         String result = "";
         switch (p) {
-            case null: result += "NULL";
             case 0: result += "0";
             case 1: result += "1";
                 break ;

@@ -157,8 +157,6 @@ public class Attr extends JCTree.Visitor {
 
         Source source = Source.instance(context);
         allowStringsInSwitch = Feature.STRINGS_IN_SWITCH.allowedInSource(source);
-        allowExtraTypesInSwitch = Feature.SWITCH_EXTRA_TYPES.allowedInSource(source);
-        allowNullCase = Feature.SWITCH_EXTRA_TYPES.allowedInSource(source);
         allowPoly = Feature.POLY.allowedInSource(source);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowLambda = Feature.LAMBDA.allowedInSource(source);
@@ -206,16 +204,6 @@ public class Attr extends JCTree.Visitor {
      * Switch: allow strings in switch?
      */
     boolean allowStringsInSwitch;
-
-    /**
-     * Switch: allow extra types in switch?
-     */
-    boolean allowExtraTypesInSwitch;
-
-    /**
-     * Switch: allow case null in switch?
-     */
-    boolean allowNullCase;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -1469,14 +1457,8 @@ public class Attr extends JCTree.Visitor {
             if (stringSwitch && !allowStringsInSwitch) {
                 log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
             }
-            Type unboxedSelType = types.unboxedTypeOrType(seltype);
-            if (!enumSwitch && !stringSwitch) {
-                if (!unboxedSelType.isPrimitive()) {
-                    log.error(selector.pos(), Errors.SwitchInvalidType(seltype));
-                } else if (!types.isSubtype(unboxedSelType, syms.intType) && !allowExtraTypesInSwitch) {
-                    log.error(DiagnosticFlag.SOURCE_LEVEL, selector.pos(), Feature.SWITCH_EXTRA_TYPES.error(sourceName));
-                }
-            }
+            if (!enumSwitch && !stringSwitch)
+                seltype = chk.checkType(selector.pos(), seltype, syms.intType);
 
             // Attribute all cases and
             // check that there are no duplicate case labels or default clauses.
@@ -1496,19 +1478,8 @@ public class Attr extends JCTree.Visitor {
                 if (c.getExpressions().nonEmpty()) {
                     for (JCExpression pat : c.getExpressions()) {
                         if (TreeInfo.isNull(pat)) {
-                            if (!allowNullCase) {
-                                log.error(DiagnosticFlag.SOURCE_LEVEL,
-                                          selector.pos(),
-                                          Feature.SWITCH_CASE_NULL.error(sourceName));
-                            }
-                            //case null:
-                            //TODO: check -source
-                            if (seltype.isPrimitive()) {
-                                log.error(c.pos(), Errors.SwitchNullMustBeReference);
-                            }
-                            if (!labels.add(null)) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
-                            }
+                            log.error(pat.pos(),
+                                      Errors.SwitchNullNotAllowed);
                         } else if (enumSwitch) {
                             Symbol sym = enumConstant(pat, seltype);
                             if (sym == null) {
@@ -1517,7 +1488,7 @@ public class Attr extends JCTree.Visitor {
                                 log.error(c.pos(), Errors.DuplicateCaseLabel);
                             }
                         } else {
-                            Type pattype = attribExpr(pat, switchEnv, unboxedSelType);
+                            Type pattype = attribExpr(pat, switchEnv, seltype);
                             if (!pattype.hasTag(ERROR)) {
                                 if (pattype.constValue() == null) {
                                     log.error(pat.pos(),
