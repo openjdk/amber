@@ -949,3 +949,4 @@ final class StringLatin1 {
         }
     }
 }
+
