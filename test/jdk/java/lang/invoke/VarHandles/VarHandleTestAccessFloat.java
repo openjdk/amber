@@ -103,6 +103,41 @@ public class VarHandleTestAccessFloat extends VarHandleBaseTest {
         return vhs.toArray(new VarHandle[0]);
     }
 
+    VarHandle[] allocate(boolean same) {
+        List<VarHandle> vhs = new ArrayList<>();
+
+        String postfix = same ? "" : "2";
+        VarHandle vh;
+        try {
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessFloat.class, "final_v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessFloat.class, "v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessFloat.class, "static_final_v" + postfix, float.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessFloat.class, "static_v" + postfix, float.class);
+            vhs.add(vh);
+
+            if (same) {
+                vh = MethodHandles.arrayElementVarHandle(float[].class);
+            }
+            else {
+                vh = MethodHandles.arrayElementVarHandle(String[].class);
+            }
+            vhs.add(vh);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+        return vhs.toArray(new VarHandle[0]);
+    }
+
     @BeforeClass
     public void setup() throws Exception {
         vhFinalField = MethodHandles.lookup().findVarHandle(

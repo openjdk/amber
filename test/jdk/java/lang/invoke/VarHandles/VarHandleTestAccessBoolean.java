@@ -103,6 +103,41 @@ public class VarHandleTestAccessBoolean extends VarHandleBaseTest {
         return vhs.toArray(new VarHandle[0]);
     }
 
+    VarHandle[] allocate(boolean same) {
+        List<VarHandle> vhs = new ArrayList<>();
+
+        String postfix = same ? "" : "2";
+        VarHandle vh;
+        try {
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessBoolean.class, "final_v" + postfix, boolean.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findVarHandle(
+                    VarHandleTestAccessBoolean.class, "v" + postfix, boolean.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessBoolean.class, "static_final_v" + postfix, boolean.class);
+            vhs.add(vh);
+
+            vh = MethodHandles.lookup().findStaticVarHandle(
+                VarHandleTestAccessBoolean.class, "static_v" + postfix, boolean.class);
+            vhs.add(vh);
+
+            if (same) {
+                vh = MethodHandles.arrayElementVarHandle(boolean[].class);
+            }
+            else {
+                vh = MethodHandles.arrayElementVarHandle(String[].class);
+            }
+            vhs.add(vh);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+        return vhs.toArray(new VarHandle[0]);
+    }
+
     @BeforeClass
     public void setup() throws Exception {
         vhFinalField = MethodHandles.lookup().findVarHandle(
