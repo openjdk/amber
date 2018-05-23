@@ -81,6 +81,7 @@ final class VarHandle$Type$s {
             if (!receiverTypeRef.isPresent() || !fieldTypeRef.isPresent())
                 return Optional.empty();
 
+            // Reflect on this VarHandle to extract the field name
             String name = VarHandles.getFieldFromReceiverAndOffset(
                 receiverType, fieldOffset, {#if[Object]?fieldType:$type$.class}).getName();
             return Optional.of(VarHandleDesc.ofField(receiverTypeRef.get(), name, fieldTypeRef.get()));
@@ -365,6 +366,7 @@ final class VarHandle$Type$s {
             if (!fieldTypeRef.isPresent())
                 return Optional.empty();
 
+            // Reflect on this VarHandle to extract the field name
             var staticField = VarHandles.getStaticFieldFromBaseAndOffset(
                 base, fieldOffset, {#if[Object]?fieldType:$type$.class});
             var receiverTypeRef = staticField.getDeclaringClass().describeConstable();
@@ -635,6 +637,20 @@ final class VarHandle$Type$s {
             this.arrayType = {#if[Object]?arrayType:$type$[].class};
             this.componentType = arrayType.getComponentType();
 #end[Object]
+        }
+
+        @Override
+        final boolean internalEquals(VarHandle vh) {
+            // Equality of access mode types of AccessMode.GET is sufficient for
+            // equality checks
+            return true;
+        }
+
+        @Override
+        final int internalHashCode() {
+            // The hash code of the access mode types of AccessMode.GET is
+            // sufficient for hash code generation
+            return 0;
         }
 
         @Override
