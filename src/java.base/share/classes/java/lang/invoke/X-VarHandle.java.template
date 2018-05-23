@@ -81,7 +81,7 @@ final class VarHandle$Type$s {
             if (!receiverTypeRef.isPresent() || !fieldTypeRef.isPresent())
                 return Optional.empty();
 
-            String name = VarHandles.getFieldFromRecieverAndOffset(
+            String name = VarHandles.getFieldFromReceiverAndOffset(
                 receiverType, fieldOffset, {#if[Object]?fieldType:$type$.class}).getName();
             return Optional.of(VarHandleDesc.ofField(receiverTypeRef.get(), name, fieldTypeRef.get()));
         }

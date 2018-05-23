@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -195,13 +196,7 @@ public class ClassRefTest extends SymbolicRefTest {
             assertEquals(a1.descriptorString(), "[" + a0.descriptorString());
             assertEquals(a2.descriptorString(), "[[" + a0.descriptorString());
 
-            try {
-                assertEquals(a0, a0.componentType());
-                fail("Didn't throw ISE");
-            }
-            catch (IllegalStateException expected) {
-                // succeed
-            }
+            assertNull(a0.componentType());
             assertEquals(a0, a1.componentType());
             assertEquals(a1, a2.componentType());
 

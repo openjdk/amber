@@ -989,10 +989,10 @@ public final class Float extends Number
     }
 
     /**
-     * Returns a symbolic constant reference for this instance, which is
-     * the instance itself.
+     * Returns a nominal descriptor for this instance, which is the instance
+     * itself.
      *
-     * @return the {@linkplain Float} instance
+     * @return an {@link Optional} describing the {@linkplain Float} instance
      */
     @Override
     public Optional<ConstantDesc<Float>> describeConstable() {

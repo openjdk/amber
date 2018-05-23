@@ -64,7 +64,7 @@ import java.util.Optional;
 public interface Constable<T> {
     /**
      * Return a nominal descriptor for this instance, if one can be
-     * constructed.
+     * constructed, or an empty {@link Optional} if one cannot be.
      *
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed.

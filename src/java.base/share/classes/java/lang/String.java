@@ -3280,10 +3280,10 @@ public final class String
     }
 
     /**
-     * Returns a symbolic constant reference for this instance, which is
-     * the instance itself.
+     * Returns a nominal descriptor for this instance, which is the instance
+     * itself.
      *
-     * @return the {@linkplain String} instance
+     * @return an {@link Optional} describing the {@linkplain String} instance
      */
     @Override
     public Optional<ConstantDesc<String>> describeConstable() {

@@ -20,9 +20,9 @@ public interface FieldTypeDescriptor<F extends FieldTypeDescriptor<F>> extends T
 
     /**
      * If this field descriptor describes an array type, return
-     * a descriptor for its component type.
-     * @return the component type
-     * @throws IllegalStateException if this descriptor does not describe an array type
+     * a descriptor for its component type, otherwise return {@code null}.
+     * @return the component type, or {@code null} if this field descriptor does
+     * not describe an array type
      */
     F componentType();
 
