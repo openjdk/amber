@@ -30,14 +30,16 @@ import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
+import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.VarHandleDesc;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
-import static java.lang.invoke.MethodHandleStatics.newInternalError;
 
 /**
  * A VarHandle is a dynamically strongly typed reference to a variable, or to a
@@ -437,7 +439,7 @@ import static java.lang.invoke.MethodHandleStatics.newInternalError;
  * @see MethodType
  * @since 9
  */
-public abstract class VarHandle {
+public abstract class VarHandle implements Constable<VarHandle> {
     final VarForm vform;
 
     VarHandle(VarForm vform) {
@@ -1857,6 +1859,37 @@ public abstract class VarHandle {
         }
     }
 
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        VarHandle that = (VarHandle) o;
+        return accessModeType(AccessMode.GET).equals(that.accessModeType(AccessMode.GET)) &&
+               internalEquals(that);
+    }
+
+    boolean internalEquals(VarHandle vh) {
+        return true;
+    }
+
+    @Override
+    public final int hashCode() {
+        return 31 * accessModeType(AccessMode.GET).hashCode() + internalHashCode();
+    }
+
+    int internalHashCode() {
+        return 0;
+    }
+
+    @Override
+    public final String toString() {
+        // @@@ defer to concrete type for additional description
+        return String.format("VarHandle[varType=%s, cooordType=%s]",
+                             varType().getName(),
+                             coordinateTypes());
+    }
+
     /**
      * Returns the variable type of variables referenced by this VarHandle.
      *
@@ -1949,6 +1982,12 @@ public abstract class VarHandle {
             return MethodHandles.varHandleInvoker(accessMode, accessModeType(accessMode)).
                     bindTo(this);
         }
+    }
+
+    @Override
+    public Optional<VarHandleDesc> describeConstable() {
+        // partial function for field and array only
+        return Optional.empty();
     }
 
     @Stable
