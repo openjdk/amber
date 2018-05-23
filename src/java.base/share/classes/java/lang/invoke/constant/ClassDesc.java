@@ -251,7 +251,7 @@ public interface ClassDesc
     }
 
     /**
-     * Return the descriptor string for this type, as per JVMS 4.3.2
+     * Return a field type descriptor string for this type, as per JVMS 4.3.2
      *
      * @return the descriptor string
      */

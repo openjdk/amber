@@ -74,6 +74,4 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     public String toString() {
         return  String.format("%s.asType%s", underlying.toString(), type.displayDescriptor());
     }
-
-    // @@@ canonical support -- detect DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE
 }

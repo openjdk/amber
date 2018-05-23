@@ -32,7 +32,8 @@ import sun.invoke.util.Wrapper;
 import static java.util.Objects.requireNonNull;
 
 /**
- * PrimitiveClassDesc
+ * A <a href="package-summary.html#nominal">nominal descriptor</a> for the class
+ * constant corresponding to a primitive type (e.g., {@code int.class}).
  */
 final class PrimitiveClassDesc
         extends DynamicConstantDesc<Class<?>> implements ClassDesc {

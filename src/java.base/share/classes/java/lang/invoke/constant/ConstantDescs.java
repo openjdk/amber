@@ -137,49 +137,49 @@ public final class ConstantDescs {
     public static final ClassDesc CR_Map = ClassDesc.of("java.util.Map");
 
     /** {@link ClassDesc} representing {@link ConstantDesc} */
-    static final ClassDesc CR_ConstantDesc = ClassDesc.of("java.lang.invoke.constant.ConstantDesc");
+    public static final ClassDesc CR_ConstantDesc = ClassDesc.of("java.lang.invoke.constant.ConstantDesc");
 
     /** {@link ClassDesc} representing {@link ClassDesc} */
-    static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.invoke.constant.ClassDesc");
+    public static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.invoke.constant.ClassDesc");
 
     /** {@link ClassDesc} representing {@link EnumDesc} */
-    static final ClassDesc CR_EnumDesc = ClassDesc.of("java.lang.invoke.constant.EnumDesc");
+    public static final ClassDesc CR_EnumDesc = ClassDesc.of("java.lang.invoke.constant.EnumDesc");
 
     /** {@link ClassDesc} representing {@link MethodTypeDesc} */
-    static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
+    public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
 
     /** {@link ClassDesc} representing {@link ConstantMethodTypeDesc} */
-    static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
+    public static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
 
     /** {@link ClassDesc} representing {@link MethodHandleDesc} */
-    static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.MethodHandleDesc");
+    public static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.MethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link ConstantMethodHandleDesc} */
-    static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodHandleDesc");
+    public static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
-    static final ClassDesc CR_VarHandleDesc = ClassDesc.of("java.lang.invoke.constant.VarHandleDesc");
+    public static final ClassDesc CR_VarHandleDesc = ClassDesc.of("java.lang.invoke.constant.VarHandleDesc");
 
     /** {@link ClassDesc} representing {@link MethodHandleDesc.Kind} */
-    static final ClassDesc CR_MethodHandleDesc_Kind = CR_MethodHandleDesc.inner("Kind");
+    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_MethodHandleDesc.inner("Kind");
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
-    static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.invoke.constant.DynamicConstantDesc");
+    public static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.invoke.constant.DynamicConstantDesc");
 
     /** {@link ClassDesc} representing {@link DynamicCallSiteDesc} */
-    static final ClassDesc CR_DynamicCallSiteDesc = ClassDesc.of("java.lang.invoke.constant.DynamicCallSiteDesc");
+    public static final ClassDesc CR_DynamicCallSiteDesc = ClassDesc.of("java.lang.invoke.constant.DynamicCallSiteDesc");
 
     /** {@link ClassDesc} representing {@link ConstantBootstraps} */
-    static final ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
+    public static final ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
     // Used by MethodHandleDesc, but initialized here before reference to
     // MethodHandleDesc to avoid static initalization circularities
-    static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
+    /* non-public */ static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CR_MethodHandles_Lookup,
             ConstantDescs.CR_String,
             ConstantDescs.CR_MethodType };
 
-    static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
+    /* non-public */ static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CR_MethodHandles_Lookup,
             ConstantDescs.CR_String,
             ConstantDescs.CR_Class };
@@ -251,7 +251,7 @@ public final class ConstantDescs {
             = DynamicConstantDesc.of(ConstantDescs.BSM_NULL_CONSTANT,
                                      ConstantDescs.CR_Object);
 
-    // Used by XxxDesc classes, but need to be hear to avoid bootstrap cycles
+    // Used by XxxDesc classes, but need to be here to avoid bootstrap cycles
     static final ConstantMethodHandleDesc MHR_METHODTYPEDESC_FACTORY
             = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_MethodTypeDesc, "ofDescriptor",
                                   CR_MethodTypeDesc, CR_String);

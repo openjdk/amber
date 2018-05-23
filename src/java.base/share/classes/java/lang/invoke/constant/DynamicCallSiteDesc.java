@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.joining;
  * <p>Concrete subtypes of {@linkplain DynamicCallSiteDesc} must be
  * <a href="../doc-files/ValueBased.html">value-based</a>.
  */
-@SuppressWarnings("rawtypes")
 public class DynamicCallSiteDesc {
 
     private final ConstantMethodHandleDesc bootstrapMethod;

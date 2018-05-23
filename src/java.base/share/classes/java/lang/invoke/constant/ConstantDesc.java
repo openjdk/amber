@@ -52,9 +52,6 @@ import java.lang.invoke.MethodType;
  * dynamic constants and {@code invokedynamic} instructions, and other
  * bytecodes or classfile structures that make use of the constant pool.
  *
- * <p>The {@linkplain ConstantDesc} types are also used by Intrinsics
- * to express {@code ldc} instructions.
- *
  * <p>Constants describing various common constants (such as {@link ClassDesc}
  * instances for platform types) can be found in {@link ConstantDescs}.
  *
@@ -71,12 +68,12 @@ import java.lang.invoke.MethodType;
  *
  * @apiNote In the future, if the Java language permits, {@linkplain ConstantDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except by
- * explicitly permitted types.  Bytecode libraries can assume that the following
- * is an exhaustive set of direct subtypes: {@link String}, {@link Integer},
- * {@link Long}, {@link Float}, {@link Double}, {@link ClassDesc},
- * {@link MethodTypeDesc}, {@link MethodHandleDesc}, and {@link DynamicConstantDesc};
- * this list may be extended to reflect future changes to the constant pool format
- * as defined in JVMS 4.4.
+ * explicitly permitted types.  Clients can assume that the following
+ * set of concrete subtypes is exhaustive: {@link String}, {@link Integer},
+ * {@link Long}, {@link Float}, {@link Double}, {@link ConstantClassDesc},
+ * {@link ConstantMethodTypeDesc}, {@link ConstantMethodHandleDesc}, and
+ * {@link DynamicConstantDesc}; this list may be extended to reflect future
+ * changes to the constant pool format as defined in JVMS 4.4.
  *
  * @see Constable
  * @see ConstantDescs
