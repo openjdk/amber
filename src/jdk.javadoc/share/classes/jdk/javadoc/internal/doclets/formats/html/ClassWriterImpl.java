@@ -45,12 +45,10 @@ import jdk.javadoc.internal.doclets.formats.html.markup.Navigation.PageMode;
 import jdk.javadoc.internal.doclets.formats.html.markup.StringContent;
 import jdk.javadoc.internal.doclets.toolkit.ClassWriter;
 import jdk.javadoc.internal.doclets.toolkit.Content;
-import jdk.javadoc.internal.doclets.toolkit.builders.MemberSummaryBuilder;
 import jdk.javadoc.internal.doclets.toolkit.taglets.ParamTaglet;
 import jdk.javadoc.internal.doclets.toolkit.util.ClassTree;
 import jdk.javadoc.internal.doclets.toolkit.util.CommentHelper;
 import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
-import jdk.javadoc.internal.doclets.toolkit.util.DocPaths;
 import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
 
 /**
@@ -72,11 +70,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
  * @author Bhavesh Patel (Modified)
  */
 public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWriter {
-
-    private static final Set<String> suppressSubtypesSet
-            = Set.of("java.lang.Object",
-                     "java.lang.invoke.constant.Constable",
-                     "org.omg.CORBA.Object");
 
     protected final TypeElement typeElement;
 
