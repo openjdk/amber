@@ -116,6 +116,13 @@ public class MethodHandleRefTest extends SymbolicRefTest {
                             LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
         testMethodHandleRef(MethodHandleDesc.ofConstructor(ClassDesc.of("java.util.ArrayList")),
                             LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
+        // bad constructor non void return type
+        try {
+            MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_int);
+            fail("should have failed: non void return type for constructor");
+        } catch (IllegalArgumentException ex) {
+            // good
+        }
     }
 
     public void testAsType() throws Throwable {
