@@ -36,8 +36,8 @@ import java.util.Optional;
  * nominally as a {@link ConstantDesc}.
  *
  * <p>Some constable types have a native representation in the constant pool:
- * ({@link String}, {@link Integer}, {@link Long}, {@link Float},
- * {@link Double}, {@link Class}, {@link MethodType}, and {@link MethodHandle}).
+ * {@link String}, {@link Integer}, {@link Long}, {@link Float},
+ * {@link Double}, {@link Class}, {@link MethodType}, and {@link MethodHandle}.
  * The types {@link String}, {@link Integer}, {@link Long}, {@link Float},
  * and {@link Double} serve as their own nominal descriptors; {@link Class},
  * {@link MethodType}, and {@link MethodHandle} have corresponding nominal
@@ -64,7 +64,7 @@ import java.util.Optional;
 public interface Constable<T> {
     /**
      * Return a nominal descriptor for this instance, if one can be
-     * constructed.
+     * constructed, or an empty {@link Optional} if one cannot be.
      *
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed.

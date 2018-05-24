@@ -1824,10 +1824,10 @@ public final class Integer extends Number
     }
 
     /**
-     * Returns a symbolic constant reference for this instance, which is
-     * the instance itself.
+     * Returns a nominal descriptor for this instance, which is the instance
+     * itself.
      *
-     * @return the {@linkplain Integer} instance
+     * @return an {@link Optional} describing the {@linkplain Integer} instance
      */
     @Override
     public Optional<ConstantDesc<Integer>> describeConstable() {

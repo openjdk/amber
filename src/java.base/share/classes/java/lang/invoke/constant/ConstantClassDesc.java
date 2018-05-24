@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
  * interface, or array type.  A {@linkplain ConstantClassDesc} corresponds to a
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
-public class ConstantClassDesc implements ClassDesc {
+public final class ConstantClassDesc implements ClassDesc {
     private final String descriptor;
 
     /**

@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * {@link MethodHandle}.  A {@linkplain ConstantMethodHandleDesc} corresponds to
  * a {@code Constant_MethodHandle_info} entry in the constant pool of a classfile.
  */
-public class ConstantMethodHandleDesc implements MethodHandleDesc {
+public final class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     private final Kind kind;
     private final ClassDesc owner;

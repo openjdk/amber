@@ -42,9 +42,11 @@ import static java.util.stream.Collectors.joining;
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for an
  * {@code invokedynamic} call site.
+ *
+ * <p>Concrete subtypes of {@linkplain DynamicCallSiteDesc} must be
+ * <a href="../doc-files/ValueBased.html">value-based</a>.
  */
-@SuppressWarnings("rawtypes")
-public final class DynamicCallSiteDesc {
+public class DynamicCallSiteDesc {
 
     private final ConstantMethodHandleDesc bootstrapMethod;
     private final ConstantDesc<?>[] bootstrapArgs;

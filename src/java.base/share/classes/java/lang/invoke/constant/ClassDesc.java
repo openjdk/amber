@@ -58,7 +58,12 @@ public interface ClassDesc
                 FieldTypeDescriptor<ClassDesc> {
 
     /**
-     * Create a {@linkplain ClassDesc} given a class name.
+     * Create a {@linkplain ClassDesc} given the name of a class or interface
+     * type, such as {@code "java.lang.String"}.  (To create a descriptor for an
+     * array type, either use {@link #ofDescriptor(String)}
+     * or {@link #arrayType()}; to create a descriptor for a primitive type, use
+     * {@link #ofDescriptor(String)} or use the predefined constants in
+     * {@link ConstantDescs}).
      *
      * @param name the fully qualified (dot-separated) binary class name
      * @return a {@linkplain ClassDesc} describing the desired class
@@ -204,24 +209,22 @@ public interface ClassDesc
 
     /**
      * Returns the component type of this {@linkplain ClassDesc}, if it describes
-     * an array type.
+     * an array type, or {@code null} otherwise.
      *
-     * @return a {@linkplain ClassDesc} describing the component type
-     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
-     * describe an array type
+     * @return a {@linkplain ClassDesc} describing the component type, or {@code null}
+     * if this descriptor does not describe an array type
      */
     @Foldable
     default ClassDesc componentType() {
-        if (!isArray())
-            throw new IllegalStateException("not an array");
-        return ClassDesc.ofDescriptor(descriptorString().substring(1));
+        return isArray() ? ClassDesc.ofDescriptor(descriptorString().substring(1)) : null;
     }
 
     /**
      * Returns the package name of this {@linkplain ClassDesc}, if it describes
      * a class or interface type.
      *
-     * @return the package name, or the empty string if no package
+     * @return the package name, or the empty string if the class is in the
+     * default package
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      */
@@ -257,7 +260,7 @@ public interface ClassDesc
     }
 
     /**
-     * Return the descriptor string for this type, as per JVMS 4.3.2
+     * Return a field type descriptor string for this type, as per JVMS 4.3.2
      *
      * @return the descriptor string
      */

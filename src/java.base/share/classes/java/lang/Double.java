@@ -1077,10 +1077,10 @@ public final class Double extends Number
     }
 
     /**
-     * Returns a symbolic constant reference for this instance, which is
-     * the instance itself.
+     * Returns a nominal descriptor for this instance, which is the instance
+     * itself.
      *
-     * @return the {@linkplain Double} instance
+     * @return an {@link Optional} describing the {@linkplain Double} instance
      */
     @Override
     public Optional<ConstantDesc<Double>> describeConstable() {

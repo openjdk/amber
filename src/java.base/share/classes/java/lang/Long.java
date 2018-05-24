@@ -1970,10 +1970,10 @@ public final class Long extends Number
     }
 
     /**
-     * Returns a symbolic constant reference for this instance, which is
-     * the instance itself.
+     * Returns a nominal descriptor for this instance, which is the instance
+     * itself.
      *
-     * @return the {@linkplain Long} instance
+     * @return an {@link Optional} describing the {@linkplain Long} instance
      */
     @Override
     public Optional<ConstantDesc<Long>> describeConstable() {

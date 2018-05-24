@@ -148,7 +148,7 @@ final class VarHandles {
     }
 
     // Required by instance field handles
-    static Field getFieldFromRecieverAndOffset(Class<?> receiverType,
+    static Field getFieldFromReceiverAndOffset(Class<?> receiverType,
                                                long offset,
                                                Class<?> fieldType) {
         for (Field f : receiverType.getDeclaredFields()) {

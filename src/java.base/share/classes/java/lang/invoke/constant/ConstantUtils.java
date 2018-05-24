@@ -33,9 +33,7 @@ import java.util.Set;
 import sun.invoke.util.Wrapper;
 
 /**
- * ConstantUtils
- *
- * @author Brian Goetz
+ * Helper methods for the implementation of {@code java.lang.invoke.constant}.
  */
 class ConstantUtils {
     static final ConstantDesc<?>[] EMPTY_CONSTANTDESC = new ConstantDesc<?>[0];

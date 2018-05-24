@@ -1869,22 +1869,19 @@ public abstract class VarHandle implements Constable<VarHandle> {
                internalEquals(that);
     }
 
-    boolean internalEquals(VarHandle vh) {
-        return true;
-    }
+    abstract boolean internalEquals(VarHandle vh);
 
     @Override
     public final int hashCode() {
         return 31 * accessModeType(AccessMode.GET).hashCode() + internalHashCode();
     }
 
-    int internalHashCode() {
-        return 0;
-    }
+    abstract int internalHashCode();
 
     @Override
     public final String toString() {
         // @@@ defer to concrete type for additional description
+        // see https://bugs.openjdk.java.net/browse/JDK-8199149
         return String.format("VarHandle[varType=%s, cooordType=%s]",
                              varType().getName(),
                              coordinateTypes());

@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -45,7 +46,7 @@ import static org.testng.Assert.fail;
  * @test
  * @compile -XDfolding=false ClassRefTest.java
  * @run testng ClassRefTest
- * @summary unit tests for java.lang.invoke.constant.ClassRef
+ * @summary unit tests for java.lang.invoke.constant.ClassDesc
  */
 @Test
 public class ClassRefTest extends SymbolicRefTest {
@@ -159,8 +160,7 @@ public class ClassRefTest extends SymbolicRefTest {
         try {
             cr.packageName();
             fail("");
-        }
-        catch (IllegalStateException e) {
+        } catch (IllegalStateException e) {
             // good
         }
     }
@@ -175,6 +175,15 @@ public class ClassRefTest extends SymbolicRefTest {
         testBadPackageName(ConstantDescs.CR_int.arrayType());
         testBadPackageName(ConstantDescs.CR_String.arrayType());
         testBadPackageName(ClassDesc.of("Bar").arrayType());
+    }
+
+    private void testBadArrayRank(ClassDesc cr) {
+        try {
+            cr.arrayType(-1);
+            fail("");
+        } catch (IllegalArgumentException e) {
+            // good
+        }
     }
 
     public void testArrayClassRef() throws ReflectiveOperationException {
@@ -195,13 +204,7 @@ public class ClassRefTest extends SymbolicRefTest {
             assertEquals(a1.descriptorString(), "[" + a0.descriptorString());
             assertEquals(a2.descriptorString(), "[[" + a0.descriptorString());
 
-            try {
-                assertEquals(a0, a0.componentType());
-                fail("Didn't throw ISE");
-            }
-            catch (IllegalStateException expected) {
-                // succeed
-            }
+            assertNull(a0.componentType());
             assertEquals(a0, a1.componentType());
             assertEquals(a1, a2.componentType());
 
@@ -213,6 +216,10 @@ public class ClassRefTest extends SymbolicRefTest {
             assertEquals(classToDescriptor(a0.resolveConstantDesc(LOOKUP)), a0.descriptorString());
             assertEquals(classToDescriptor(a1.resolveConstantDesc(LOOKUP)), a1.descriptorString());
             assertEquals(classToDescriptor(a2.resolveConstantDesc(LOOKUP)), a2.descriptorString());
+
+            testBadArrayRank(ConstantDescs.CR_int);
+            testBadArrayRank(ConstantDescs.CR_String);
+            testBadArrayRank(ClassDesc.of("Bar"));
         }
     }
 
@@ -229,6 +236,21 @@ public class ClassRefTest extends SymbolicRefTest {
             catch (IllegalArgumentException e) {
                 // good
             }
+        }
+
+        ClassDesc barDesc = ClassDesc.of("Bar");
+        for (Primitives p : Primitives.values()) {
+            testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any");
+            testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any", "other");
+        }
+    }
+
+    private void testBadInnerClasses(ClassDesc cr, String firstInnerName, String... moreInnerNames) {
+        try {
+            cr.inner(firstInnerName, moreInnerNames);
+            fail("");
+        } catch (IllegalStateException e) {
+            // good
         }
     }
 }

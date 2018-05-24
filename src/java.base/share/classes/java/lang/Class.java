@@ -3879,9 +3879,7 @@ public final class Class<T> implements java.io.Serializable,
 
     @Override
     public Class<?> componentType() {
-        if (!isArray())
-            throw new IllegalStateException("not an array class");
-        return componentType;
+        return isArray() ? componentType : null;
     }
 
     @Override
