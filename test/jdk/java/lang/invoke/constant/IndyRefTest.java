@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,17 +23,51 @@
  * questions.
  */
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.constant.ClassDesc;
+import java.lang.invoke.constant.ConstantMethodHandleDesc;
+import java.lang.invoke.constant.DynamicCallSiteDesc;
+import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.invoke.constant.MethodTypeDesc;
+
 import org.testng.annotations.Test;
 
+import static java.lang.invoke.constant.ConstantDescs.*;
+import static org.testng.Assert.assertEquals;
+
 /**
- * IndyRefTest
- *
- * @author Brian Goetz
+ * @test
+ * @compile -XDfolding=false IndyRefTest.java
+ * @run testng IndyRefTest
+ * @summary unit tests for java.lang.invoke.constant.IndyRefTest
  */
 @Test
 public class IndyRefTest {
-    // @@@ non-intrinsified: get dynamic invoker, and invoke
-    // test toSymRef and back
-    // test canonicalization; StringConcat?
-    // @@@ intrinsified tests too
+    public static CallSite bootstrap(MethodHandles.Lookup lookup, String name, MethodType type,
+                                     Object... args) {
+        if (args.length == 0)
+            return new ConstantCallSite(MethodHandles.constant(String.class, "Foo"));
+        else
+            return new ConstantCallSite(MethodHandles.constant(String.class, (String) args[0]));
+    }
+
+    public void testIndyRef() throws Throwable {
+        ClassDesc c = ClassDesc.of("IndyRefTest");
+        MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
+        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DynamicCallSiteDesc csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
+        CallSite cs = csd.resolveCallSiteDesc(MethodHandles.lookup());
+        MethodHandle target = cs.getTarget();
+        assertEquals("Foo", target.invoke());
+
+        DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String), "Bar");
+        CallSite cs2 = csd2.resolveCallSiteDesc(MethodHandles.lookup());
+        MethodHandle target2 = cs2.getTarget();
+        assertEquals("Bar", target2.invoke());
+    }
 }
+

@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 
 import org.testng.annotations.Test;
 
+import static java.lang.invoke.constant.ConstantDescs.CR_int;
+import static java.lang.invoke.constant.ConstantDescs.CR_void;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
@@ -127,6 +129,8 @@ public class MethodTypeRefTest extends SymbolicRefTest {
             testMethodTypeRef(newRef, mt.dropParameterTypes(i, i+1));
         }
 
+        badDropParametersTypes(CR_void, paramDescs);
+
         // addParam
         for (int i=0; i <= paramTypes.length; i++) {
             for (ClassDesc p : paramTypes) {
@@ -138,6 +142,69 @@ public class MethodTypeRefTest extends SymbolicRefTest {
                 assertEquals(newRef, MethodTypeDesc.of(returnType, ps));
                 testMethodTypeRef(newRef, mt.insertParameterTypes(i, p.resolveConstantDesc(LOOKUP)));
             }
+        }
+
+        badInsertParametersTypes(CR_void, paramDescs);
+    }
+
+    private void badInsertParametersTypes(ClassDesc returnType, String... paramDescTypes) {
+        ClassDesc[] paramTypes =
+                IntStream.rangeClosed(0, paramDescTypes.length - 1)
+                        .mapToObj(i -> ClassDesc.ofDescriptor(paramDescTypes[i])).toArray(ClassDesc[]::new);
+        MethodTypeDesc mtRef = MethodTypeDesc.of(returnType, paramTypes);
+        try {
+            MethodTypeDesc newRef = mtRef.insertParameterTypes(-1, paramTypes);
+            fail("pos < 0 should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+
+        try {
+            MethodTypeDesc newRef = mtRef.insertParameterTypes(paramTypes.length + 1, paramTypes);
+            fail("pos > current arguments length should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+    }
+
+    private void badDropParametersTypes(ClassDesc returnType, String... paramDescTypes) {
+        ClassDesc[] paramTypes =
+                IntStream.rangeClosed(0, paramDescTypes.length - 1)
+                        .mapToObj(i -> ClassDesc.ofDescriptor(paramDescTypes[i])).toArray(ClassDesc[]::new);
+        MethodTypeDesc mtRef = MethodTypeDesc.of(returnType, paramTypes);
+        try {
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(-1, 0);
+            fail("start index < 0 should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+
+        try {
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(paramTypes.length, 0);
+            fail("start index = arguments.length should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+
+        try {
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(paramTypes.length + 1, 0);
+            fail("start index > arguments.length should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+
+        try {
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(0, paramTypes.length + 1);
+            fail("end index > arguments.length should have failed");
+        } catch (IndexOutOfBoundsException ex) {
+            // good
+        }
+
+        try {
+            MethodTypeDesc newRef = mtRef.dropParameterTypes(1, 0);
+            fail("start index > end index should have failed");
+        } catch (IllegalArgumentException ex) {
+            // good
         }
     }
 
@@ -166,6 +233,16 @@ public class MethodTypeRefTest extends SymbolicRefTest {
             catch (IllegalArgumentException e) {
                 // good
             }
+        }
+
+        // try with void arguments, this will stress another code path in particular
+        // ConstantMethodTypeDesc::init
+        try {
+            MethodTypeDesc r = MethodTypeDesc.of(CR_int, CR_void);
+            fail("can't reach here");
+        }
+        catch (IllegalArgumentException e) {
+            // good
         }
     }
 }
