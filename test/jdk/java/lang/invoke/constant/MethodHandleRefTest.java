@@ -114,6 +114,8 @@ public class MethodHandleRefTest extends SymbolicRefTest {
                             LOOKUP.findVirtual(List.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
         testMethodHandleRef(MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_void),
                             LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
+        testMethodHandleRef(MethodHandleDesc.ofConstructor(ClassDesc.of("java.util.ArrayList")),
+                            LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
     }
 
     public void testAsType() throws Throwable {
