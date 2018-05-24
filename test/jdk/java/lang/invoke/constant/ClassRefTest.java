@@ -95,6 +95,7 @@ public class ClassRefTest extends SymbolicRefTest {
                 }
             }
             catch (Throwable e) {
+                System.out.println(e.getMessage());
                 fail("Error testing field " + f.getName(), e);
             }
         }

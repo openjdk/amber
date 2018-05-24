@@ -24,9 +24,11 @@
  */
 package java.lang.invoke.constant;
 
+import java.lang.Enum.EnumDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.invoke.VarHandle.VarHandleDesc;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

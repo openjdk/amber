@@ -23,16 +23,16 @@
  * questions.
  */
 
+import java.lang.Enum.EnumDesc;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.invoke.VarHandle.VarHandleDesc;
 import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.ConstantDesc;
 import java.lang.invoke.constant.ConstantDescs;
 import java.lang.invoke.constant.ConstantMethodHandleDesc;
 import java.lang.invoke.constant.DynamicConstantDesc;
-import java.lang.invoke.constant.EnumDesc;
 import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.VarHandleDesc;
 
 import org.testng.annotations.Test;
 
