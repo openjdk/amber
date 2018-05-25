@@ -71,7 +71,7 @@
  * {@link java.lang.invoke.constant.DynamicConstantDesc#ofCanonical(ConstantMethodHandleDesc, java.lang.String, ClassDesc, ConstantDesc[])},
  * which will inspect the bootstrap and, for well-known bootstraps, return
  * a more specific subtype of {@link java.lang.invoke.constant.DynamicConstantDesc}, such as
- * {@link java.lang.invoke.constant.EnumDesc}.
+ * {@link java.lang.Enum.EnumDesc}.
  *
  * <p>Another way to obtain the nominal description of a value is to ask the value
  * itself.  A {@link java.lang.invoke.constant.Constable} is a type whose values

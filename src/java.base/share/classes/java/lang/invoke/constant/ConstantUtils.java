@@ -30,13 +30,12 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 
-import sun.invoke.util.Wrapper;
-
 /**
  * Helper methods for the implementation of {@code java.lang.invoke.constant}.
  */
-class ConstantUtils {
-    static final ConstantDesc<?>[] EMPTY_CONSTANTDESC = new ConstantDesc<?>[0];
+public class ConstantUtils {
+    /** an empty constant descriptor */
+    public static final ConstantDesc<?>[] EMPTY_CONSTANTDESC = new ConstantDesc<?>[0];
     static final Constable<?>[] EMPTY_CONSTABLE = new Constable<?>[0];
 
     private static final Set<String> pointyNames = Set.of("<init>", "<clinit>");
@@ -50,7 +49,12 @@ class ConstantUtils {
         return name;
     }
 
-    static String validateMemberName(String name) {
+    /**
+     * validates a member name
+     * @param name the name of the member
+     * @return the name passed if valid
+     */
+    public static String validateMemberName(String name) {
         if (name.length() == 0)
             throw new IllegalArgumentException("zero-length member name");
         for (int i=0; i<name.length(); i++) {
@@ -105,7 +109,7 @@ class ConstantUtils {
      * @param args nominal descriptors for the bootstrap arguments
      * @return the nominal descriptor for the dynamic constant
      */
-    static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
+    public static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
                                                                ClassDesc type,
                                                                Constable<?>... args) {
         try {

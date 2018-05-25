@@ -25,9 +25,11 @@
 package java.lang.invoke.constant;
 
 import java.lang.invoke.Intrinsics;
+import java.lang.Enum.EnumDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle.VarHandleDesc;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a loadable
