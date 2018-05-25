@@ -182,6 +182,9 @@ public final class ConstantDescs {
     @Foldable
     public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
 
+    /** {@link ClassDesc} representing {@link ConstantClassDesc} */
+    public static final ClassDesc CR_ConstantClassDesc = ClassDesc.of("java.lang.invoke.constant.ConstantClassDesc");
+
     /** {@link ClassDesc} representing {@link ConstantMethodTypeDesc} */
     @Foldable
     public static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
