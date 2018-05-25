@@ -145,10 +145,13 @@ public final class ConstantDescs {
     public static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.invoke.constant.ClassDesc");
 
     /** {@link ClassDesc} representing {@link EnumDesc} */
-    public static final ClassDesc CR_EnumDesc = ClassDesc.of("java.lang.Enum").inner("EnumDesc");
+    public static final ClassDesc CR_EnumDesc = CR_Enum.inner("EnumDesc");
 
     /** {@link ClassDesc} representing {@link MethodTypeDesc} */
     public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
+
+    /** {@link ClassDesc} representing {@link ConstantClassDesc} */
+    public static final ClassDesc CR_ConstantClassDesc = ClassDesc.of("java.lang.invoke.constant.ConstantClassDesc");
 
     /** {@link ClassDesc} representing {@link ConstantMethodTypeDesc} */
     public static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
@@ -160,7 +163,7 @@ public final class ConstantDescs {
     public static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
-    public static final ClassDesc CR_VarHandleDesc = ClassDesc.of("java.lang.invoke.VarHandle").inner("VarHandleDesc");
+    public static final ClassDesc CR_VarHandleDesc = CR_VarHandle.inner("VarHandleDesc");
 
     /** {@link ClassDesc} representing {@link MethodHandleDesc.Kind} */
     public static final ClassDesc CR_MethodHandleDesc_Kind = CR_MethodHandleDesc.inner("Kind");
@@ -301,15 +304,15 @@ public final class ConstantDescs {
                                   CR_VarHandleDesc, CR_ClassDesc);
 
     static final ConstantMethodHandleDesc BSM_CLASSDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantClassDesc"),
+            = ConstantDescs.ofConstantBootstrap(CR_ConstantClassDesc,
                                                 "constantBootstrap", CR_ClassDesc, CR_String);
 
     static final ConstantMethodHandleDesc BSM_METHODTYPEDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodTypeDesc"),
+            = ConstantDescs.ofConstantBootstrap(CR_ConstantMethodTypeDesc,
                                                 "constantBootstrap", CR_ConstantMethodTypeDesc, CR_String);
 
     static final ConstantMethodHandleDesc BSM_METHODHANDLEDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "ConstantMethodHandleDesc"),
+            = ConstantDescs.ofConstantBootstrap(CR_ConstantMethodHandleDesc,
                                                 "constantBootstrap", CR_ConstantMethodHandleDesc,
                                                 CR_String, CR_String, CR_String, CR_String);
 
@@ -318,7 +321,7 @@ public final class ConstantDescs {
             = ConstantDescs.ofConstantBootstrap(CR_EnumDesc, "constantBootstrap", CR_EnumDesc, CR_String, CR_String);
 
     static final ConstantMethodHandleDesc BSM_DYNAMICCONSTANTDESC
-            = ConstantDescs.ofConstantBootstrap(ClassDesc.of("java.lang.invoke.constant", "DynamicConstantDesc"),
+            = ConstantDescs.ofConstantBootstrap(CR_DynamicConstantDesc,
                                                 "constantBootstrap",
                                                 CR_DynamicConstantDesc,
                                                 CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.arrayType());

@@ -30,8 +30,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 
-import sun.invoke.util.Wrapper;
-
 /**
  * Helper methods for the implementation of {@code java.lang.invoke.constant}.
  */
