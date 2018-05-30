@@ -223,7 +223,7 @@ public class TestUncheckedCalls extends ComboInstance<TestUncheckedCalls> {
         return Stream.of(decls)
                 .filter(d -> d.hasKind(DeclKind.NONE))
                 .flatMap(d -> Stream.of(d.returnKind(), d.argumentsKind(), d.typeVarsKind()))
-                .noneMatch(tk -> tk.ordinal() != 0);
+                .noneMatch((Enum<? extends Enum<?>> tk) -> tk.ordinal() != 0);
     }
 
     boolean tvarFilter() {
