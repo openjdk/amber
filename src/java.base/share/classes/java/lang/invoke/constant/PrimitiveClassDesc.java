@@ -68,7 +68,7 @@ final class PrimitiveClassDesc
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable() {
+    public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
         return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_CLASSDESC_FACTORY, ConstantDescs.CR_ClassDesc, descriptorString());
     }
 

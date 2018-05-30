@@ -1976,7 +1976,7 @@ public final class Long extends Number
      * @return an {@link Optional} describing the {@linkplain Long} instance
      */
     @Override
-    public Optional<ConstantDesc<Long>> describeConstable() {
+    public Optional<Long> describeConstable() {
         return Optional.of(this);
     }
 

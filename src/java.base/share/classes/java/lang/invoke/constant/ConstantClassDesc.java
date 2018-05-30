@@ -86,8 +86,9 @@ public final class ConstantClassDesc implements ClassDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<Class<?>>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, CR_ClassDesc).withArgs(descriptor));
+    public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
+        return Optional.of(DynamicConstantDesc.<ConstantDesc<Class<?>>>of(BSM_CLASSDESC, CR_ClassDesc)
+                                   .withArgs(descriptor));
     }
 
     /**

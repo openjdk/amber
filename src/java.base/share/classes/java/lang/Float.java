@@ -995,7 +995,7 @@ public final class Float extends Number
      * @return an {@link Optional} describing the {@linkplain Float} instance
      */
     @Override
-    public Optional<ConstantDesc<Float>> describeConstable() {
+    public Optional<Float> describeConstable() {
         return Optional.of(this);
     }
 

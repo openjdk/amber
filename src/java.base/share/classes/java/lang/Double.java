@@ -1083,7 +1083,7 @@ public final class Double extends Number
      * @return an {@link Optional} describing the {@linkplain Double} instance
      */
     @Override
-    public Optional<ConstantDesc<Double>> describeConstable() {
+    public Optional<Double> describeConstable() {
         return Optional.of(this);
     }
 

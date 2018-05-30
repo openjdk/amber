@@ -68,7 +68,7 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable() {
+    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
         return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
                                              underlying, type);
     }

@@ -30,6 +30,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 
 import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.ConstantDesc;
 import java.lang.invoke.constant.MethodHandleDesc;
 import java.lang.invoke.constant.MethodTypeDesc;
 import java.util.Arrays;
@@ -1516,7 +1517,7 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     }
 
     @Override
-    public Optional<MethodHandleDesc> describeConstable() {
+    public Optional<? extends ConstantDesc<MethodHandle>> describeConstable() {
         MethodHandleInfo info;
         ClassDesc owner;
         String name;

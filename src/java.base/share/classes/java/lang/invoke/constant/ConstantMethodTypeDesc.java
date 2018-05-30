@@ -150,8 +150,9 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodType>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, CR_ConstantMethodTypeDesc).withArgs(descriptorString()));
+    public Optional<? extends ConstantDesc<ConstantDesc<MethodType>>> describeConstable() {
+        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodType>>of(BSM_METHODTYPEDESC, CR_ConstantMethodTypeDesc)
+                                   .withArgs(descriptorString()));
     }
 
     /**

@@ -26,9 +26,9 @@
 package java.lang;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.FieldTypeDescriptor;
+import java.lang.invoke.constant.ConstantDesc;
 import java.lang.module.ModuleReader;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
@@ -136,7 +136,7 @@ public final class Class<T> implements java.io.Serializable,
                               Type,
                               AnnotatedElement,
                               FieldTypeDescriptor<Class<?>>,
-                              Constable<Class<T>> {
+                              Constable<Class<?>> {
     private static final int ANNOTATION= 0x00002000;
     private static final int ENUM      = 0x00004000;
     private static final int SYNTHETIC = 0x00001000;
