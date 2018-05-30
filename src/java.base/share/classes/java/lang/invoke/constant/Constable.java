@@ -69,5 +69,5 @@ public interface Constable<T> {
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed.
      */
-    Optional<? extends ConstantDesc<? super T>> describeConstable();
+    Optional<? extends ConstantDesc<T>> describeConstable();
 }

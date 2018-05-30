@@ -319,8 +319,8 @@ public abstract class Enum<E extends Enum<E>>
         }
 
         @Override
-        public Optional<? extends ConstantDesc<? super ConstantDesc<E>>> describeConstable() {
-            return Optional.of(DynamicConstantDesc.of(BSM_ENUMDESC, CR_EnumDesc)
+        public Optional<? extends ConstantDesc<ConstantDesc<E>>> describeConstable() {
+            return Optional.of(DynamicConstantDesc.<ConstantDesc<E>>of(BSM_ENUMDESC, CR_EnumDesc)
                                                   .withArgs(constantType().descriptorString(), constantName()));
         }
 

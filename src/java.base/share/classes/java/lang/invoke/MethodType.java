@@ -25,16 +25,12 @@
 
 package java.lang.invoke;
 
-import jdk.internal.vm.annotation.Stable;
-import sun.invoke.util.Wrapper;
-
-import java.lang.invoke.MethodTypeDescriptor;
-import java.lang.invoke.constant.MethodTypeDesc;
-import java.lang.ref.WeakReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
 import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.Constable;
+import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -42,13 +38,17 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
+import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.BytecodeDescriptor;
-import static java.lang.invoke.MethodHandleStatics.*;
 import sun.invoke.util.VerifyType;
+import sun.invoke.util.Wrapper;
+
+import static java.lang.invoke.MethodHandleStatics.UNSAFE;
+import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 
 /**
  * A method type represents the arguments and return type accepted and

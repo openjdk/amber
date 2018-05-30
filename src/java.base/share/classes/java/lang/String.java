@@ -3286,7 +3286,7 @@ public final class String
      * @return an {@link Optional} describing the {@linkplain String} instance
      */
     @Override
-    public Optional<ConstantDesc<String>> describeConstable() {
+    public Optional<String> describeConstable() {
         return Optional.of(this);
     }
 

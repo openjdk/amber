@@ -363,7 +363,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<T>>> describeConstable() {
+    public Optional<? extends ConstantDesc<ConstantDesc<T>>> describeConstable() {
         ConstantDesc<?>[] args = new ConstantDesc<?>[bootstrapArgs.length + 5];
         args[0] = bootstrapMethod.owner().descriptorString();
         args[1] = bootstrapMethod.methodName();

@@ -179,8 +179,8 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<? super ConstantDesc<MethodHandle>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC, CR_ConstantMethodHandleDesc)
+    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
+        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodHandle>>of(BSM_METHODHANDLEDESC, CR_ConstantMethodHandleDesc)
                                               .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
     }
 

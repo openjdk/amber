@@ -2269,7 +2269,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
         }
 
         @Override
-        public Optional<? extends ConstantDesc<? super ConstantDesc<VarHandle>>> describeConstable() {
+        public Optional<? extends ConstantDesc<ConstantDesc<VarHandle>>> describeConstable() {
             Constable<?>[] args =
                     (kind == Kind.ARRAY)
                     ? new Constable<?>[] { declaringClass }

@@ -1830,7 +1830,7 @@ public final class Integer extends Number
      * @return an {@link Optional} describing the {@linkplain Integer} instance
      */
     @Override
-    public Optional<ConstantDesc<Integer>> describeConstable() {
+    public Optional<Integer> describeConstable() {
         return Optional.of(this);
     }
 
