@@ -75,10 +75,9 @@ public final class ConstantClassDesc implements ClassDesc {
             c = c.componentType();
 
         if (c.descriptorString().length() == 1)
-            return Class.forName(descriptorString(), true, lookup.lookupClass().getClassLoader());
+            return lookup.findClass(descriptorString());
         else {
-            Class<?> clazz = Class.forName(internalToBinary(dropFirstAndLastChar(c.descriptorString())),
-                                           true, lookup.lookupClass().getClassLoader());
+            Class<?> clazz = lookup.findClass(internalToBinary(dropFirstAndLastChar(c.descriptorString())));
             for (int i = 0; i < depth; i++)
                 clazz = Array.newInstance(clazz, 0).getClass();
             return clazz;
