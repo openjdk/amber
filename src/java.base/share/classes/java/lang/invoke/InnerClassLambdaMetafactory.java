@@ -187,26 +187,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     CallSite buildCallSite() throws LambdaConversionException {
         final Class<?> innerClass = spinInnerClass();
         if (invokedType.parameterCount() == 0) {
-            final Constructor<?>[] ctrs = AccessController.doPrivileged(
-                    new PrivilegedAction<>() {
-                @Override
-                public Constructor<?>[] run() {
-                    Constructor<?>[] ctrs = innerClass.getDeclaredConstructors();
-                    if (ctrs.length == 1) {
-                        // The lambda implementing inner class constructor is private, set
-                        // it accessible (by us) before creating the constant sole instance
-                        ctrs[0].setAccessible(true);
-                    }
-                    return ctrs;
-                }
-                    });
-            if (ctrs.length != 1) {
-                throw new LambdaConversionException("Expected one lambda constructor for "
-                        + innerClass.getCanonicalName() + ", got " + ctrs.length);
-            }
-
             try {
-                Object inst = ctrs[0].newInstance();
+                Object inst = getConstructor(innerClass).newInstance();
                 return new ConstantCallSite(MethodHandles.constant(samBase, inst));
             }
             catch (ReflectiveOperationException e) {
@@ -223,6 +205,55 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
                 throw new LambdaConversionException("Exception finding constructor", e);
             }
         }
+    }
+
+    /**
+     * Builds an instance of the functional interface directly.
+     *
+     * Generate a class file which implements the functional interface, define
+     * the class, create an instance of the class.
+     *
+     * @return an instance of the functional interface
+     * @throws ReflectiveOperationException
+     * @throws LambdaConversionException If properly formed functional interface
+     * is not found or if the functional interface expects parameters
+     */
+    @Override
+    Object buildFunctionalInterfaceInstance() throws LambdaConversionException {
+        if (invokedType.parameterCount() == 0) {
+            final Class<?> innerClass = spinInnerClass();
+            try {
+                return getConstructor(innerClass).newInstance();
+            }
+            catch (ReflectiveOperationException e) {
+                throw new LambdaConversionException("Exception instantiating lambda object", e);
+            }
+        } else {
+            throw new LambdaConversionException("Building functional interface instances directly " +
+                    "only supported when there are no parameters");
+        }
+    }
+
+    private Constructor<?> getConstructor(Class<?> innerClass) throws LambdaConversionException {
+        final Constructor<?>[] ctrs = AccessController.doPrivileged(
+                new PrivilegedAction<>() {
+                    @Override
+                    public Constructor<?>[] run() {
+                        Constructor<?>[] ctrs1 = innerClass.getDeclaredConstructors();
+                        if (ctrs1.length == 1) {
+                            // The lambda implementing inner class constructor is private, set
+                            // it accessible (by us) before creating the constant sole instance
+                            ctrs1[0].setAccessible(true);
+                        }
+                        return ctrs1;
+                    }
+                });
+
+        if (ctrs.length != 1) {
+            throw new LambdaConversionException("Expected one lambda constructor for "
+                    + innerClass.getCanonicalName() + ", got " + ctrs.length);
+        }
+        return ctrs[0];
     }
 
     /**

@@ -377,16 +377,13 @@ public final class LambdaMetafactory {
                                      MethodHandle implMethod,
                                      MethodType instantiatedMethodType)
             throws LambdaConversionException {
-        try {
-            return metafactory(caller, invokedName, MethodType.methodType(functionalInterface),
-                               samMethodType, implMethod, instantiatedMethodType).getTarget().invoke();
-        }
-        catch (LambdaConversionException | LinkageError e) {
-            throw e;
-        }
-        catch (Throwable e) {
-            throw new LambdaConversionException("Exception invoking lambda metafactory", e);
-        }
+        AbstractValidatingLambdaMetafactory mf;
+        mf = new InnerClassLambdaMetafactory(caller, MethodType.methodType(functionalInterface),
+                                             invokedName, samMethodType,
+                                             implMethod, instantiatedMethodType,
+                                             false, EMPTY_CLASS_ARRAY, EMPTY_MT_ARRAY);
+        mf.validateMetafactoryArgs();
+        return mf.buildFunctionalInterfaceInstance();
     }
 
     // @@@ Special case version of altMetafactory, supporting FLAG_METHODREF
