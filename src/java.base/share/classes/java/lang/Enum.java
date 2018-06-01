@@ -292,6 +292,7 @@ public abstract class Enum<E extends Enum<E>>
          * @param constantType a {@link ClassDesc} describing the {@code enum} class
          * @param constantName the name of the enum constant, as per JVMS 4.2.2
          * @throws NullPointerException if any argument is null
+         * @jvms 4.2.2 Unqualified Names
          */
         private EnumDesc(ClassDesc constantType, String constantName) {
             super(ConstantDescs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(constantType));
@@ -305,6 +306,7 @@ public abstract class Enum<E extends Enum<E>>
          * @param constantName the name of the enum constant, as per JVMS 4.2.2
          * @return the nominal descriptor
          * @throws NullPointerException if any argument is null
+         * @jvms 4.2.2 Unqualified Names
          */
         public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
                                                         String constantName) {
@@ -335,6 +337,7 @@ public abstract class Enum<E extends Enum<E>>
          *                        per JVMS 4.3.2
          * @param constantName The name of the {@code enum} constant
          * @return the {@linkplain EnumDesc}
+         * @jvms 4.3.2 Field Descriptors
          */
         public static EnumDesc<?> constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                     String classDescriptor, String constantName) {

@@ -2178,6 +2178,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          *                       for field var handles
          * @param varType a {@link ClassDesc} describing the type of the variable
          * @throws NullPointerException if any required argument is null
+         * @jvms 4.2.2 Unqualified Names
          */
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
@@ -2198,6 +2199,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * @param fieldType a {@link ClassDesc} describing the type of the field
          * @return the {@linkplain VarHandleDesc}
          * @throws NullPointerException if any of the arguments are null
+         * @jvms 4.2.2 Unqualified Names
          */
         public static VarHandleDesc ofField(ClassDesc declaringClass, String name, ClassDesc fieldType) {
             Objects.requireNonNull(declaringClass);
@@ -2216,6 +2218,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * @param fieldType a {@link ClassDesc} describing the type of the field
          * @return the {@linkplain VarHandleDesc}
          * @throws NullPointerException if any of the arguments are null
+         * @jvms 4.2.2 Unqualified Names
          */
         public static VarHandleDesc ofStaticField(ClassDesc declaringClass, String name, ClassDesc fieldType) {
             Objects.requireNonNull(declaringClass);
