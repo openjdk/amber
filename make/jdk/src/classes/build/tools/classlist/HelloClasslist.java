@@ -38,6 +38,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 import java.util.logging.*;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -65,6 +67,8 @@ public class HelloClasslist {
 
         Stream.of(helloWorld.split(","))
               .forEach(System.out::println);
+
+        Collections.sort(strings, Comparator.comparingInt(s -> s.length()));
 
         String newDate = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(
                 LocalDateTime.now(ZoneId.of("GMT")));
