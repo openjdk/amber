@@ -2150,13 +2150,13 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 this.descFactory = descFactory;
             }
 
-            List<ConstantDesc<?>> toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
+            ConstantDesc<?>[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
                 switch (this) {
                     case FIELD:
                     case STATIC_FIELD:
-                        return List.of(declaringClass, name, varType);
+                        return new ConstantDesc<?>[] { declaringClass, name, varType };
                     case ARRAY:
-                        return List.of(declaringClass);
+                        return new ConstantDesc<?>[] { declaringClass };
                     default:
                         throw new InternalError("Cannot reach here");
                 }
@@ -2183,7 +2183,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
                   ConstantDescs.CR_VarHandle,
-                  kind.toBSMArgs(declaringClass, name, varType).toArray(ConstantUtils.EMPTY_CONSTANTDESC));
+                  kind.toBSMArgs(declaringClass, name, varType));
             this.kind = kind;
             this.declaringClass = declaringClass;
             this.varType = varType;

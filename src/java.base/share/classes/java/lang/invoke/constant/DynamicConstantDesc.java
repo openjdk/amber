@@ -321,26 +321,10 @@ public abstract class DynamicConstantDesc<T>
 
     private static Object[] resolveArgs(MethodHandles.Lookup lookup, ConstantDesc<?>[] args)
             throws ReflectiveOperationException {
-        try {
-            return Stream.of(args)
-                    .map(arg -> {
-                        try {
-                            return arg.resolveConstantDesc(lookup);
-                        }
-                        catch (ReflectiveOperationException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .toArray();
-        }
-        catch (RuntimeException e) {
-            if (e.getCause() instanceof ReflectiveOperationException) {
-                throw (ReflectiveOperationException) e.getCause();
-            }
-            else {
-                throw e;
-            }
-        }
+        Object[] result = new Object[args.length];
+        for (int i = 0; i < args.length; i++)
+            result[i] = args[i].resolveConstantDesc(lookup);
+        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -353,12 +337,13 @@ public abstract class DynamicConstantDesc<T>
                 throw new BootstrapMethodError(
                         "Invalid bootstrap method declared for resolving a dynamic constant: " + bootstrapMethod);
             }
-            Object[] staticArgs = resolveArgs(lookup, bootstrapArgs);
-            Object[] bsmArgs = new Object[3 + staticArgs.length];
+            Object[] bsmArgs = new Object[3 + bootstrapArgs.length];
             bsmArgs[0] = lookup;
             bsmArgs[1] = constantName;
             bsmArgs[2] = constantType.resolveConstantDesc(lookup);
-            System.arraycopy(staticArgs, 0, bsmArgs, 3, staticArgs.length);
+            for (int i = 0; i < bootstrapArgs.length; i++)
+                bsmArgs[3 + i] = bootstrapArgs[i].resolveConstantDesc(lookup);
+
             return (T) bsm.invokeWithArguments(bsmArgs);
         } catch (Error e) {
             throw e;

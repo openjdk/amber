@@ -132,7 +132,7 @@ public interface ClassDesc
      */
     default ClassDesc arrayType(int rank) {
         if (rank <= 0)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("rank: " + rank);
         return ClassDesc.ofDescriptor("[".repeat(rank) + descriptorString());
     }
 
@@ -234,13 +234,13 @@ public interface ClassDesc
      * @return the human-readable name
      */
     default String displayName() {
-        if (descriptorString().length() == 1)
+        if (isPrimitive())
             return Wrapper.forBasicType(descriptorString().charAt(0)).primitiveSimpleName();
-        else if (descriptorString().startsWith("L")) {
+        else if (isClassOrInterface()) {
             return descriptorString().substring(Math.max(1, descriptorString().lastIndexOf('/') + 1),
                                                 descriptorString().length() - 1);
         }
-        else if (descriptorString().startsWith(("["))) {
+        else if (isArray()) {
             int depth = ConstantUtils.arrayDepth(descriptorString());
             ClassDesc c = this;
             for (int i=0; i<depth; i++)
