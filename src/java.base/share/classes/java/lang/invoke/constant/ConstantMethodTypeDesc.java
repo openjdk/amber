@@ -66,6 +66,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      * @return a {@linkplain ConstantMethodTypeDesc} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
+     * @jvms 4.3.3 Method Descriptors
      */
     static ConstantMethodTypeDesc ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
@@ -154,6 +155,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      * @param clazz ignored
      * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
      * @return the {@linkplain MethodTypeDesc}
+     * @jvms 4.3.3 Method Descriptors
      */
     public static ConstantMethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                    String descriptor) {

@@ -80,6 +80,7 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
  * @see Constable
  * @see ConstantDescs
  *
+ * @jvms 4.4 The Constant Pool
  */
 public interface ConstantDesc<T> {
     /**
@@ -93,6 +94,8 @@ public interface ConstantDesc<T> {
      * @return the resolved constant value
      * @throws ReflectiveOperationException if a class, method, or field
      * could not be reflectively resolved in the course of resolution
+     * @jvms 5.4.3 Resolution
+     * @jvms 5.4.4 Access Control
      */
     T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 }

@@ -48,6 +48,7 @@ public interface MethodTypeDesc
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
+     * @jvms 4.3.3 Method Descriptors
      */
     static MethodTypeDesc ofDescriptor(String descriptor) {
         return ConstantMethodTypeDesc.ofDescriptor(descriptor);
@@ -159,6 +160,7 @@ public interface MethodTypeDesc
      * Return the method type descriptor string, as per JVMS 4.3.3.
      *
      * @return the method type descriptor string
+     * @jvms 4.3.3 Method Descriptors
      */
     default String descriptorString() {
         return String.format("(%s)%s",

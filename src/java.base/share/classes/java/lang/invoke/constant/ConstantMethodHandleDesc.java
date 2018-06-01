@@ -64,6 +64,7 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
      * and {@code type} is not consistent with that kind of field accessor, or if
      * {@code kind} describes a constructor, and the return type of {@code type}
      * is not {@code void}
+     * @jvms 4.2.2 Unqualified Names
      */
     ConstantMethodHandleDesc(Kind kind, ClassDesc owner, String name, MethodTypeDesc type) {
         if (kind == CONSTRUCTOR)
@@ -198,6 +199,9 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
      * @param memberType A method type descriptor for the method handle being
      *                described, as per JVMS 4.3.3
      * @return the {@linkplain MethodHandleDesc}
+     * @jvms 4.2.2 Unqualified Names
+     * @jvms 4.3.2 Field Descriptors
+     * @jvms 4.3.3 Method Descriptors
      */
     public static ConstantMethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                      String bsmKindName, String memberOwner, String memberName, String memberType) {

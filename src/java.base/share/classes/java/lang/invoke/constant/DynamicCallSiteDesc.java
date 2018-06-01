@@ -68,6 +68,7 @@ public class DynamicCallSiteDesc {
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     private DynamicCallSiteDesc(ConstantMethodHandleDesc bootstrapMethod,
                                 String invocationName,
@@ -99,6 +100,7 @@ public class DynamicCallSiteDesc {
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
                                          String invocationName,
@@ -175,6 +177,7 @@ public class DynamicCallSiteDesc {
      * @throws NullPointerException if any parameter is null
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public DynamicCallSiteDesc withNameAndType(String invocationName,
                                                MethodTypeDesc invocationType) {

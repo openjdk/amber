@@ -48,6 +48,7 @@ final class PrimitiveClassDesc
      * string corresponding to one of the nine base types as per JVMS 4.3
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid primitive type
+     * @jvms 4.3 Descriptors
      */
     PrimitiveClassDesc(String descriptor) {
         super(ConstantDescs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantDescs.CR_Class);

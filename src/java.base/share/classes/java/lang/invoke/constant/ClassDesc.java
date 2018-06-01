@@ -103,6 +103,7 @@ public interface ClassDesc
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the name string is not in the
      * correct format
+     * @jvms 4.3.2 Field Descriptors
      */
     static ClassDesc ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
@@ -254,6 +255,7 @@ public interface ClassDesc
      * Return a field type descriptor string for this type, as per JVMS 4.3.2
      *
      * @return the descriptor string
+     * @jvms 4.3.2 Field Descriptors
      */
     String descriptorString();
 }

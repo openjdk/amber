@@ -89,6 +89,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     protected DynamicConstantDesc(ConstantMethodHandleDesc bootstrapMethod,
                                   String constantName,
@@ -150,6 +151,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public static<T> ConstantDesc<T> ofCanonical(ConstantMethodHandleDesc bootstrapMethod,
                                                  String constantName,
@@ -178,6 +180,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
                                                String constantName,
@@ -203,6 +206,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
                                                String constantName,
@@ -244,6 +248,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
                                                String constantName) {
@@ -394,6 +399,9 @@ public abstract class DynamicConstantDesc<T>
      *                     of the {@code LDC} for this constant, as per JVMS 4.3.2
      * @param args The static arguments to the bootstrap method
      * @return the {@linkplain DynamicConstantDesc}
+     * @jvms 4.2.2 Unqualified Names
+     * @jvms 4.3.2 Field Descriptors
+     * @jvms 4.3.3 Method Descriptors
      */
     public static DynamicConstantDesc<?> constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                            String bsmOwner, String bsmName, String bsmDesc,

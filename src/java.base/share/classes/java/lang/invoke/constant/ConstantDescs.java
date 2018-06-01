@@ -338,6 +338,7 @@ public final class ConstantDescs {
      * @param paramTypes the types of the static bootstrap arguments, if any
      * @return the {@link MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
+     * @jvms 4.2.2 Unqualified Names
      */
     public static ConstantMethodHandleDesc ofCallsiteBootstrap(ClassDesc clazz,
                                                                String name,
@@ -357,6 +358,7 @@ public final class ConstantDescs {
      * @param paramTypes the types of the static bootstrap arguments, if any
      * @return the {@link MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
+     * @jvms 4.2.2 Unqualified Names
      */
     public static ConstantMethodHandleDesc ofConstantBootstrap(ClassDesc clazz,
                                                                String name,
