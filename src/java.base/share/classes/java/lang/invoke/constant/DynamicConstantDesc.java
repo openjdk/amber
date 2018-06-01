@@ -319,14 +319,6 @@ public abstract class DynamicConstantDesc<T>
         return List.of(bootstrapArgs);
     }
 
-    private static Object[] resolveArgs(MethodHandles.Lookup lookup, ConstantDesc<?>[] args)
-            throws ReflectiveOperationException {
-        Object[] result = new Object[args.length];
-        for (int i = 0; i < args.length; i++)
-            result[i] = args[i].resolveConstantDesc(lookup);
-        return result;
-    }
-
     @SuppressWarnings("unchecked")
     public T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         // TODO replace with public supported method
