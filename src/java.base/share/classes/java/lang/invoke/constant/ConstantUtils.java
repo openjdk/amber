@@ -24,11 +24,8 @@
  */
 package java.lang.invoke.constant;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Helper methods for the implementation of {@code java.lang.invoke.constant}.
@@ -55,6 +52,7 @@ public class ConstantUtils {
      * @return the name passed if valid
      */
     public static String validateMemberName(String name) {
+        requireNonNull(name);
         if (name.length() == 0)
             throw new IllegalArgumentException("zero-length member name");
         for (int i=0; i<name.length(); i++) {
@@ -112,6 +110,9 @@ public class ConstantUtils {
     public static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
                                                                ClassDesc type,
                                                                Constable<?>... args) {
+        requireNonNull(bootstrap);
+        requireNonNull(type);
+        requireNonNull(args);
         try {
             ConstantDesc<?>[] quotedArgs = new ConstantDesc<?>[args.length + 1];
             quotedArgs[0] = bootstrap;

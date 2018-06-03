@@ -184,11 +184,6 @@ public class DynamicCallSiteDesc {
         return new DynamicCallSiteDesc(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
-    private DynamicCallSiteDesc canonicalize() {
-        // @@@ MethodDesc
-        return this;
-    }
-
     /**
      * Returns the invocation name that would appear in the {@code NameAndType}
      * operand of the {@code invokedynamic}.

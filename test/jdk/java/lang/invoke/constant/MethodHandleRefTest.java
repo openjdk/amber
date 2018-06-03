@@ -45,6 +45,7 @@ import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
 import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
+import static java.lang.invoke.constant.MethodHandleDesc.Kind.VIRTUAL;
 import static java.lang.invoke.constant.ConstantDescs.CR_Integer;
 import static java.lang.invoke.constant.ConstantDescs.CR_List;
 import static java.lang.invoke.constant.ConstantDescs.CR_Object;
@@ -128,10 +129,11 @@ public class MethodHandleRefTest extends SymbolicRefTest {
     public void testAsType() throws Throwable {
         MethodHandleDesc mhr = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.of("java.lang.Integer"), "valueOf",
                                                    MethodTypeDesc.of(CR_Integer, CR_int));
-            MethodHandleDesc takesInteger = mhr.asType(MethodTypeDesc.of(CR_Integer, CR_Integer));
+        MethodHandleDesc takesInteger = mhr.asType(MethodTypeDesc.of(CR_Integer, CR_Integer));
         testMethodHandleRef(takesInteger);
         MethodHandle mh1 = takesInteger.resolveConstantDesc(LOOKUP);
         assertEquals((Integer) 3, (Integer) mh1.invokeExact((Integer) 3));
+        assertEquals(takesInteger.toString(), "MethodHandleDesc[STATIC/Integer::valueOf(int)Integer].asType(Integer)Integer");
 
         try {
             Integer i = (Integer) mh1.invokeExact(3);
@@ -263,6 +265,11 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(SETTER, thisClass, "x", s), s));
         badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_GETTER, thisClass, "x", s), s));
         badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_SETTER, thisClass, "x", s), s));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testBadOwners() {
+        MethodHandleDesc.of(VIRTUAL, ClassDesc.ofDescriptor("I"), "x", MethodTypeDesc.ofDescriptor("()I"));
     }
 
     public void testSymbolicRefsConstants() throws ReflectiveOperationException {
