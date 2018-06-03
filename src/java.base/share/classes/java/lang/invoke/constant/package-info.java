@@ -90,7 +90,7 @@
  * reading and writing APIs, and and is used by the
  * {@link java.lang.invoke.Intrinsics#invokedynamic(DynamicCallSiteDesc, java.lang.Object...)}
  * API for expressing {@code invokedynamic} call sites in Java source files.
- *
+ * @jvms 4.4 The Constant Pool
  */
 package java.lang.invoke.constant;
 

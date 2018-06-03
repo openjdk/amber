@@ -91,6 +91,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     protected DynamicConstantDesc(ConstantMethodHandleDesc bootstrapMethod,
                                   String constantName,
@@ -153,6 +154,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     public static<T> ConstantDesc<T> ofCanonical(ConstantMethodHandleDesc bootstrapMethod,
@@ -182,6 +184,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
@@ -208,6 +211,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
@@ -251,6 +255,7 @@ public abstract class DynamicConstantDesc<T>
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     public static<T> DynamicConstantDesc<T> of(ConstantMethodHandleDesc bootstrapMethod,
@@ -326,30 +331,6 @@ public abstract class DynamicConstantDesc<T>
         return List.of(bootstrapArgs);
     }
 
-    private static Object[] resolveArgs(MethodHandles.Lookup lookup, ConstantDesc<?>[] args)
-            throws ReflectiveOperationException {
-        try {
-            return Stream.of(args)
-                    .map(arg -> {
-                        try {
-                            return arg.resolveConstantDesc(lookup);
-                        }
-                        catch (ReflectiveOperationException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .toArray();
-        }
-        catch (RuntimeException e) {
-            if (e.getCause() instanceof ReflectiveOperationException) {
-                throw (ReflectiveOperationException) e.getCause();
-            }
-            else {
-                throw e;
-            }
-        }
-    }
-
     @SuppressWarnings("unchecked")
     public T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         // TODO replace with public supported method
@@ -360,12 +341,13 @@ public abstract class DynamicConstantDesc<T>
                 throw new BootstrapMethodError(
                         "Invalid bootstrap method declared for resolving a dynamic constant: " + bootstrapMethod);
             }
-            Object[] staticArgs = resolveArgs(lookup, bootstrapArgs);
-            Object[] bsmArgs = new Object[3 + staticArgs.length];
+            Object[] bsmArgs = new Object[3 + bootstrapArgs.length];
             bsmArgs[0] = lookup;
             bsmArgs[1] = constantName;
             bsmArgs[2] = constantType.resolveConstantDesc(lookup);
-            System.arraycopy(staticArgs, 0, bsmArgs, 3, staticArgs.length);
+            for (int i = 0; i < bootstrapArgs.length; i++)
+                bsmArgs[3 + i] = bootstrapArgs[i].resolveConstantDesc(lookup);
+
             return (T) bsm.invokeWithArguments(bsmArgs);
         } catch (Error e) {
             throw e;
@@ -406,6 +388,9 @@ public abstract class DynamicConstantDesc<T>
      *                     of the {@code LDC} for this constant, as per JVMS 4.3.2
      * @param args The static arguments to the bootstrap method
      * @return the {@linkplain DynamicConstantDesc}
+     * @jvms 4.2.2 Unqualified Names
+     * @jvms 4.3.2 Field Descriptors
+     * @jvms 4.3.3 Method Descriptors
      */
     public static DynamicConstantDesc<?> constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                                            String bsmOwner, String bsmName, String bsmDesc,

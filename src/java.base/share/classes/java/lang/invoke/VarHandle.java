@@ -2150,13 +2150,13 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 this.descFactory = descFactory;
             }
 
-            List<ConstantDesc<?>> toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
+            ConstantDesc<?>[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
                 switch (this) {
                     case FIELD:
                     case STATIC_FIELD:
-                        return List.of(declaringClass, name, varType);
+                        return new ConstantDesc<?>[] { declaringClass, name, varType };
                     case ARRAY:
-                        return List.of(declaringClass);
+                        return new ConstantDesc<?>[] { declaringClass };
                     default:
                         throw new InternalError("Cannot reach here");
                 }
@@ -2178,11 +2178,12 @@ public abstract class VarHandle implements Constable<VarHandle> {
          *                       for field var handles
          * @param varType a {@link ClassDesc} describing the type of the variable
          * @throws NullPointerException if any required argument is null
+         * @jvms 4.2.2 Unqualified Names
          */
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
                   ConstantDescs.CR_VarHandle,
-                  kind.toBSMArgs(declaringClass, name, varType).toArray(ConstantUtils.EMPTY_CONSTANTDESC));
+                  kind.toBSMArgs(declaringClass, name, varType));
             this.kind = kind;
             this.declaringClass = declaringClass;
             this.varType = varType;
@@ -2198,6 +2199,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * @param fieldType a {@link ClassDesc} describing the type of the field
          * @return the {@linkplain VarHandleDesc}
          * @throws NullPointerException if any of the arguments are null
+         * @jvms 4.2.2 Unqualified Names
          */
         public static VarHandleDesc ofField(ClassDesc declaringClass, String name, ClassDesc fieldType) {
             Objects.requireNonNull(declaringClass);
@@ -2216,6 +2218,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * @param fieldType a {@link ClassDesc} describing the type of the field
          * @return the {@linkplain VarHandleDesc}
          * @throws NullPointerException if any of the arguments are null
+         * @jvms 4.2.2 Unqualified Names
          */
         public static VarHandleDesc ofStaticField(ClassDesc declaringClass, String name, ClassDesc fieldType) {
             Objects.requireNonNull(declaringClass);

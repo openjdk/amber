@@ -58,6 +58,8 @@ import java.util.Optional;
  * (For example, {@link MethodHandle} will produce nominal descriptors for direct
  * method handles, but not necessarily those produced by method handles
  * combinators.)
+ * @jvms 4.4 The Constant Pool
+ * @jvms 4.4.10 The CONSTANT_InvokeDynamic_info Structure
  *
  * @param <T> the type of the constant value
  */

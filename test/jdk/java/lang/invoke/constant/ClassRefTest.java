@@ -26,6 +26,7 @@
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.constant.ClassDesc;
 import java.lang.invoke.constant.ConstantDescs;
+import java.lang.invoke.constant.ConstantUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -239,7 +240,17 @@ public class ClassRefTest extends SymbolicRefTest {
             }
         }
 
-        ClassDesc barDesc = ClassDesc.of("Bar");
+        List<String> badBinaryNames = List.of("I;", "[]", "Ljava/lang/String",
+                "Ljava.lang.String;", "java/lang/String");
+        for (String d : badBinaryNames) {
+            try {
+                ClassDesc constant = ClassDesc.of(d);
+                fail(d);
+            } catch (IllegalArgumentException e) {
+                // good
+            }
+        }
+
         for (Primitives p : Primitives.values()) {
             testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any");
             testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any", "other");

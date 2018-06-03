@@ -107,6 +107,7 @@ public interface MethodHandleDesc
      * @throws NullPointerException if any non-ignored arguments are null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
      * format
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     static ConstantMethodHandleDesc of(Kind kind,
@@ -138,6 +139,8 @@ public interface MethodHandleDesc
      * of the method handle, as per JVMS 4.3.3
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
+     * @jvms 4.2.2 Unqualified Names
+     * @jvms 4.3.3 Method Descriptors
      */
     @Foldable
     static ConstantMethodHandleDesc of(Kind kind,
@@ -171,6 +174,7 @@ public interface MethodHandleDesc
      *                                    the method handle
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     static ConstantMethodHandleDesc of(Kind kind,
@@ -193,6 +197,7 @@ public interface MethodHandleDesc
      * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
+     * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
     static ConstantMethodHandleDesc ofField(Kind kind,

@@ -3864,6 +3864,7 @@ public final class Class<T> implements java.io.Serializable,
      * will have identical descriptor strings.
      *
      * @return the type descriptor representation
+     * @jvms 4.3.2 Field Descriptors
      */
     @Override
     public String descriptorString() {

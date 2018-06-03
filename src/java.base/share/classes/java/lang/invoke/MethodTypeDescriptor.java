@@ -7,6 +7,7 @@ import java.util.List;
  *
  * @param <F> the type representing field type descriptors
  * @param <M> the class implementing {@linkplain MethodTypeDescriptor}
+ * @jvms 4.3.3 Method Descriptors
  */
 public interface MethodTypeDescriptor<F extends FieldTypeDescriptor<F>, M extends MethodTypeDescriptor<F, M>>
         extends TypeDescriptor {

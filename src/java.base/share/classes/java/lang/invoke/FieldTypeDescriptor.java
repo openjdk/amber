@@ -4,6 +4,7 @@ package java.lang.invoke;
  * Represents a field type descriptor, as per JVMS 4.3.2.
  *
  * @param <F> the class implementing {@linkplain FieldTypeDescriptor}
+ * @jvms 4.3.2 Field Descriptors
  */
 public interface FieldTypeDescriptor<F extends FieldTypeDescriptor<F>> extends TypeDescriptor {
     /**

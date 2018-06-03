@@ -51,6 +51,7 @@ public final class ConstantClassDesc implements ClassDesc {
      *                   as per JVMS 4.3.2
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * field descriptor string, or does not describe a class or interface type
+     * @jvms 4.3.2 Field Descriptors
      */
     ConstantClassDesc(String descriptor) {
         requireNonNull(descriptor);
@@ -74,12 +75,12 @@ public final class ConstantClassDesc implements ClassDesc {
         for (int i=0; i<depth; i++)
             c = c.componentType();
 
-        if (c.descriptorString().length() == 1)
+        if (c.isPrimitive())
             return lookup.findClass(descriptorString());
         else {
             Class<?> clazz = lookup.findClass(internalToBinary(dropFirstAndLastChar(c.descriptorString())));
             for (int i = 0; i < depth; i++)
-                clazz = Array.newInstance(clazz, 0).getClass();
+                clazz = clazz.arrayType();
             return clazz;
         }
     }
@@ -99,6 +100,7 @@ public final class ConstantClassDesc implements ClassDesc {
      * @param clazz ignored
      * @param descriptor a field descriptor string for the class, as per JVMS 4.3.2
      * @return the {@linkplain ClassDesc}
+     * @jvms 4.3.2 Field Descriptors
      */
     public static ClassDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
                                               String descriptor) {
