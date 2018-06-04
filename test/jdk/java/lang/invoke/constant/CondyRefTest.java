@@ -44,7 +44,9 @@ import static java.lang.invoke.constant.ConstantDescs.CR_int;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -170,26 +172,26 @@ public class CondyRefTest extends SymbolicRefTest {
                                  ConstantDesc<T> canonical) {
         Class<?> clazz = prototype.getClass();
 
-        assertTrue(canonical != nonCanonical);
+        assertNotSame(canonical, nonCanonical);
         assertTrue(clazz.isAssignableFrom(canonical.getClass()));
         assertFalse(clazz.isAssignableFrom(nonCanonical.getClass()));
-        assertTrue(prototype.equals(canonical));
-        assertTrue(canonical.equals(prototype));
+        assertEquals(prototype, canonical);
+        assertEquals(canonical, prototype);
         if (prototype instanceof DynamicConstantDesc) {
-            assertTrue(canonical.equals(nonCanonical));
-            assertTrue(nonCanonical.equals(canonical));
-            assertTrue(prototype.equals(nonCanonical));
-            assertTrue(nonCanonical.equals(prototype));
+            assertEquals(canonical, nonCanonical);
+            assertEquals(nonCanonical, canonical);
+            assertEquals(prototype, nonCanonical);
+            assertEquals(nonCanonical, prototype);
         }
     }
 
     public void testLifting() {
         DynamicConstantDesc<Object> unliftedNull = DynamicConstantDesc.of(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS);
         assertEquals(ConstantDescs.NULL, unliftedNull);
-        assertTrue(ConstantDescs.NULL != unliftedNull);
-        assertTrue(ConstantDescs.NULL == DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS));
-        assertTrue(ConstantDescs.NULL == DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_String, EMPTY_ARGS));
-        assertTrue(ConstantDescs.NULL == DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "wahoo", CR_Object, EMPTY_ARGS));
+        assertNotSame(ConstantDescs.NULL, unliftedNull);
+        assertSame(ConstantDescs.NULL, DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS));
+        assertSame(ConstantDescs.NULL, DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_String, EMPTY_ARGS));
+        assertSame(ConstantDescs.NULL, DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "wahoo", CR_Object, EMPTY_ARGS));
 
         assertLifted(CR_int,
                      DynamicConstantDesc.of(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS),
