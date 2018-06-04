@@ -53,6 +53,7 @@ import static java.lang.constant.ConstantDescs.CR_String;
 import static java.lang.constant.ConstantDescs.CR_int;
 import static java.lang.constant.ConstantDescs.CR_void;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -178,7 +179,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         TestClass instance2 = (TestClass) ctorRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact();
         TestInterface instanceI = instance;
 
-        assertTrue(instance != instance2);
+        assertNotSame(instance, instance2);
 
         assertEquals(5, (int) staticMethodRef.resolveConstantDesc(LOOKUP).invokeExact(5));
         assertEquals(5, (int) staticMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(5));
