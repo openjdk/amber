@@ -28,11 +28,11 @@ package java.lang.invoke;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
 
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;

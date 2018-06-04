@@ -26,10 +26,10 @@
 import java.lang.Class;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.ConstantDescs;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;

@@ -28,30 +28,30 @@ import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.WrongMethodTypeException;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.ConstantMethodHandleDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.MethodHandleDesc;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.VIRTUAL;
-import static java.lang.invoke.constant.ConstantDescs.CR_Integer;
-import static java.lang.invoke.constant.ConstantDescs.CR_List;
-import static java.lang.invoke.constant.ConstantDescs.CR_Object;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
-import static java.lang.invoke.constant.ConstantDescs.CR_int;
-import static java.lang.invoke.constant.ConstantDescs.CR_void;
+import static java.lang.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.VIRTUAL;
+import static java.lang.constant.ConstantDescs.CR_Integer;
+import static java.lang.constant.ConstantDescs.CR_List;
+import static java.lang.constant.ConstantDescs.CR_Object;
+import static java.lang.constant.ConstantDescs.CR_String;
+import static java.lang.constant.ConstantDescs.CR_int;
+import static java.lang.constant.ConstantDescs.CR_void;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
@@ -61,7 +61,7 @@ import static org.testng.Assert.fail;
  * @test
  * @compile -XDfolding=false MethodHandleRefTest.java
  * @run testng MethodHandleRefTest
- * @summary unit tests for java.lang.invoke.constant.MethodHandleDesc
+ * @summary unit tests for java.lang.constant.MethodHandleDesc
  */
 @Test
 public class MethodHandleRefTest extends SymbolicRefTest {

@@ -193,22 +193,22 @@ public class TypeNameTest extends KullaTesting {
 
         assertEval("<Z> Z choose(Z z1, Z z2) { return z1; }");
         assertType("choose(1, 1L);",
-                "Number&Comparable<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<? extends Number&Comparable<?>" +
-                "&java.lang.invoke.constant.ConstantDesc<?>&java.lang.invoke.constant.Constable<? extends Number&Comparable<?>" +
-                "&java.lang.invoke.constant.ConstantDesc<?>&java.lang.invoke.constant.Constable<?>>>&java.lang.invoke.constant.Constable<? extends Number&Comparable<?>" +
-                "&java.lang.invoke.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<?>>&java.lang.invoke.constant.Constable<?>>>&java.lang.invoke.constant.ConstantDesc" +
-                "<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<?>>>&java.lang.invoke.constant.ConstantDesc<?>&java.lang.invoke.constant.Constable" +
-                "<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<?>>&java.lang.invoke.constant.ConstantDesc<?>&java.lang.invoke.constant.Constable<?>>>" +
-                "&java.lang.invoke.constant.Constable<? extends Number&Comparable<? extends Number&Comparable<?>" +
-                "&java.lang.invoke.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<?>>&java.lang.invoke.constant.Constable<?>>" +
-                "&java.lang.invoke.constant.ConstantDesc<? extends Number&Comparable<? extends Number&Comparable<?>" +
-                "&java.lang.invoke.constant.ConstantDesc<?>&java.lang.invoke.constant.Constable<?>>&java.lang.invoke.constant.ConstantDesc<?>" +
-                "&java.lang.invoke.constant.Constable<?>>&java.lang.invoke.constant.Constable<?>>",
+                "Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>" +
+                "&java.lang.constant.ConstantDesc<?>&java.lang.constant.Constable<? extends Number&Comparable<?>" +
+                "&java.lang.constant.ConstantDesc<?>&java.lang.constant.Constable<?>>>&java.lang.constant.Constable<? extends Number&Comparable<?>" +
+                "&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<?>>&java.lang.constant.Constable<?>>>&java.lang.constant.ConstantDesc" +
+                "<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<?>>>&java.lang.constant.ConstantDesc<?>&java.lang.constant.Constable" +
+                "<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<?>>&java.lang.constant.ConstantDesc<?>&java.lang.constant.Constable<?>>>" +
+                "&java.lang.constant.Constable<? extends Number&Comparable<? extends Number&Comparable<?>" +
+                "&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<?>>&java.lang.constant.Constable<?>>" +
+                "&java.lang.constant.ConstantDesc<? extends Number&Comparable<? extends Number&Comparable<?>" +
+                "&java.lang.constant.ConstantDesc<?>&java.lang.constant.Constable<?>>&java.lang.constant.ConstantDesc<?>" +
+                "&java.lang.constant.Constable<?>>&java.lang.constant.Constable<?>>",
                 "Object");
     }
 

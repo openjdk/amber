@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import java.lang.Enum.EnumDesc;
 import java.lang.invoke.MethodHandle;
@@ -37,11 +37,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.lang.invoke.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
-import static java.lang.invoke.constant.ConstantDescs.CR_Class;
-import static java.lang.invoke.constant.ConstantDescs.CR_DynamicConstantDesc;
-import static java.lang.invoke.constant.ConstantDescs.CR_VarHandle;
-import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.lang.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
+import static java.lang.constant.ConstantDescs.CR_Class;
+import static java.lang.constant.ConstantDescs.CR_DynamicConstantDesc;
+import static java.lang.constant.ConstantDescs.CR_VarHandle;
+import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 

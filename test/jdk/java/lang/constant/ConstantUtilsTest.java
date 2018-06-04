@@ -24,7 +24,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.*;
+import java.lang.constant.*;
 import java.util.*;
 
 import org.testng.annotations.Test;
@@ -35,7 +35,7 @@ import static org.testng.Assert.*;
  * @test
  * @compile -XDfolding=false ConstantUtilsTest.java
  * @run testng ConstantUtilsTest
- * @summary unit tests for methods of java.lang.invoke.constant.ConstantUtils that are not covered by other unit tests
+ * @summary unit tests for methods of java.lang.constant.ConstantUtils that are not covered by other unit tests
  */
 @Test
 public class ConstantUtilsTest {

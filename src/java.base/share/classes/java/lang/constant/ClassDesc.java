@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import java.lang.invoke.FieldTypeDescriptor;
 
@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
 
-import static java.lang.invoke.constant.ConstantUtils.binaryToInternal;
-import static java.lang.invoke.constant.ConstantUtils.dropLastChar;
-import static java.lang.invoke.constant.ConstantUtils.internalToBinary;
-import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.lang.constant.ConstantUtils.binaryToInternal;
+import static java.lang.constant.ConstantUtils.dropLastChar;
+import static java.lang.constant.ConstantUtils.internalToBinary;
+import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 

@@ -26,9 +26,8 @@
 package java.lang;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.constant.ClassDesc;
+import java.lang.constant.ClassDesc;
 import java.lang.invoke.FieldTypeDescriptor;
-import java.lang.invoke.constant.ConstantDesc;
 import java.lang.module.ModuleReader;
 import java.lang.ref.SoftReference;
 import java.io.IOException;
@@ -49,7 +48,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.lang.invoke.constant.Constable;
+import java.lang.constant.Constable;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;

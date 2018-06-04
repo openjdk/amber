@@ -27,8 +27,8 @@ package java.lang;
 
 import java.lang.annotation.Native;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import java.util.Objects;
 import java.util.Optional;
 

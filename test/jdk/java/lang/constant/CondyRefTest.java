@@ -27,20 +27,20 @@ import java.lang.Enum.EnumDesc;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.VarHandleDesc;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.ConstantMethodHandleDesc;
-import java.lang.invoke.constant.DynamicConstantDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandle;
-import static java.lang.invoke.constant.ConstantDescs.CR_Object;
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
-import static java.lang.invoke.constant.ConstantDescs.CR_VarHandle;
-import static java.lang.invoke.constant.ConstantDescs.CR_int;
+import static java.lang.constant.ConstantDescs.CR_MethodHandle;
+import static java.lang.constant.ConstantDescs.CR_Object;
+import static java.lang.constant.ConstantDescs.CR_String;
+import static java.lang.constant.ConstantDescs.CR_VarHandle;
+import static java.lang.constant.ConstantDescs.CR_int;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -53,7 +53,7 @@ import static org.testng.Assert.assertTrue;
  * @test
  * @compile -XDfolding=false CondyRefTest.java
  * @run testng CondyRefTest
- * @summary unit tests for java.lang.invoke.constant.CondyRefTest
+ * @summary unit tests for java.lang.constant.CondyRefTest
  */
 @Test
 public class CondyRefTest extends SymbolicRefTest {

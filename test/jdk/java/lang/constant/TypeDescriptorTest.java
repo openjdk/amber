@@ -24,11 +24,11 @@
  */
 
 import java.lang.invoke.FieldTypeDescriptor;
-import java.lang.invoke.constant.ClassDesc;
+import java.lang.constant.ClassDesc;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.constant.ConstantDescs.*;
+import static java.lang.constant.ConstantDescs.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;

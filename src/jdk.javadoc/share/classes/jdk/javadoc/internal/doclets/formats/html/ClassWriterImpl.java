@@ -77,7 +77,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
 
     private static final Set<String> suppressImplementingSet
             = Set.of( "java.lang.Cloneable",
-                    "java.lang.invoke.constant.Constable",
+                    "java.lang.constant.Constable",
                     "java.io.Serializable");
 
     protected final TypeElement typeElement;

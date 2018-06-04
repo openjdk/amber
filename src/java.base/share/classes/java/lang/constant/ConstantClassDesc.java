@@ -22,17 +22,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantDescs.BSM_CLASSDESC;
-import static java.lang.invoke.constant.ConstantDescs.CR_ClassDesc;
-import static java.lang.invoke.constant.ConstantUtils.dropFirstAndLastChar;
-import static java.lang.invoke.constant.ConstantUtils.internalToBinary;
+import static java.lang.constant.ConstantDescs.BSM_CLASSDESC;
+import static java.lang.constant.ConstantDescs.CR_ClassDesc;
+import static java.lang.constant.ConstantUtils.dropFirstAndLastChar;
+import static java.lang.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
 
 /**
