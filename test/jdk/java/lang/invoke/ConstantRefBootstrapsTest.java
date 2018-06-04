@@ -25,11 +25,11 @@
 
 import java.lang.invoke.Intrinsics;
 import java.lang.invoke.VarHandle;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.ConstantMethodHandleDesc;
-import java.lang.invoke.constant.DynamicConstantDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
 import java.util.List;
 
 import org.testng.annotations.Test;
@@ -93,7 +93,7 @@ public class ConstantRefBootstrapsTest {
     public void testEnumConstant() {
         MethodHandleDesc.Kind k = Intrinsics.ldc(DynamicConstantDesc.of(
                 BSM_ENUM_CONSTANT, "STATIC",
-                ClassDesc.of("java.lang.invoke.constant.MethodHandleRef$Kind")));
+                ClassDesc.of("java.lang.constant.MethodHandleRef$Kind")));
         assertEquals(k, MethodHandleDesc.Kind.STATIC);
     }
 

@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -33,9 +33,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static java.lang.invoke.constant.ConstantDescs.CR_String;
-import static java.lang.invoke.constant.ConstantUtils.EMPTY_CONSTANTDESC;
-import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.lang.constant.ConstantDescs.CR_String;
+import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
+import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 

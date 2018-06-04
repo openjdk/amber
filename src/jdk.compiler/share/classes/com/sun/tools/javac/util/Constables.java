@@ -100,14 +100,14 @@ public class Constables {
         log = Log.instance(context);
         constablesVisitor = ConstablesVisitor.instance(context);
         try {
-            directMethodHandleRefClass = Class.forName("java.lang.invoke.constant.ConstantMethodHandleDesc", false, null);
-            methodTypeRefClass = Class.forName("java.lang.invoke.constant.MethodTypeDesc", false, null);
-            classRefClass = Class.forName("java.lang.invoke.constant.ClassDesc", false, null);
-            constantRefClass = Class.forName("java.lang.invoke.constant.ConstantDesc", false, null);
-            constableClass = Class.forName("java.lang.invoke.constant.Constable", false, null);
-            dynamicCallsiteRefClass = Class.forName("java.lang.invoke.constant.DynamicCallSiteDesc", false, null);
-            dynamicConstantClass = Class.forName("java.lang.invoke.constant.DynamicConstantDesc", false, null);
-            symRefs = Class.forName("java.lang.invoke.constant.ConstantDescs", false, null);
+            directMethodHandleRefClass = Class.forName("java.lang.constant.ConstantMethodHandleDesc", false, null);
+            methodTypeRefClass = Class.forName("java.lang.constant.MethodTypeDesc", false, null);
+            classRefClass = Class.forName("java.lang.constant.ClassDesc", false, null);
+            constantRefClass = Class.forName("java.lang.constant.ConstantDesc", false, null);
+            constableClass = Class.forName("java.lang.constant.Constable", false, null);
+            dynamicCallsiteRefClass = Class.forName("java.lang.constant.DynamicCallSiteDesc", false, null);
+            dynamicConstantClass = Class.forName("java.lang.constant.DynamicConstantDesc", false, null);
+            symRefs = Class.forName("java.lang.constant.ConstantDescs", false, null);
         } catch (ClassNotFoundException ex) {
             directMethodHandleRefClass = null;
             methodTypeRefClass = null;

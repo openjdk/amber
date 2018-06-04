@@ -25,22 +25,22 @@
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.EnumDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.Enum.EnumDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_SETTER;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;

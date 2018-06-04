@@ -4,9 +4,9 @@
  * @compile/fail/ref=MethodTypeNegTest.out -Werror -XDrawDiagnostics MethodTypeNegTest.java
  */
 
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.MethodHandleDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodHandleDesc;
 
 
 public class MethodTypeNegTest {

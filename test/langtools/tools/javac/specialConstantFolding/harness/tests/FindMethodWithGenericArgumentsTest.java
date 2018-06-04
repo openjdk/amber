@@ -1,10 +1,10 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.List;
 import static java.lang.invoke.Intrinsics.*;
 

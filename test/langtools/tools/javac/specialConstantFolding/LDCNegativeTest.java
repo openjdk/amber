@@ -4,7 +4,7 @@
  * @compile/fail/ref=LDCNegativeTest.out -XDrawDiagnostics LDCNegativeTest.java
  */
 
-import java.lang.invoke.constant.*;
+import java.lang.constant.*;
 
 import static java.lang.invoke.Intrinsics.*;
 

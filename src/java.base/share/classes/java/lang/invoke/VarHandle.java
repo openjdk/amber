@@ -30,13 +30,13 @@ import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.ConstantMethodHandleDesc;
-import java.lang.invoke.constant.ConstantUtils;
-import java.lang.invoke.constant.DynamicConstantDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.ConstantUtils;
+import java.lang.constant.DynamicConstantDesc;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
-import static java.lang.invoke.constant.ConstantDescs.CR_VarHandleDesc;
+import static java.lang.constant.ConstantDescs.CR_VarHandleDesc;
 
 /**
  * A VarHandle is a dynamically strongly typed reference to a variable, or to a

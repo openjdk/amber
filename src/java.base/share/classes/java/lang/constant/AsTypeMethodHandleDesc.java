@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -31,8 +31,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.invoke.constant.ConstantDescs.CR_MethodHandle;
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.CR_MethodHandle;
 import static java.util.Objects.requireNonNull;
 
 /**

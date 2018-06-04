@@ -97,17 +97,17 @@ public class DontDoDCEOfConstableTest extends TestRunner {
     }
 
     private final static String stubSource =
-            "package java.lang.invoke.constant;\n" +
+            "package java.lang.constant;\n" +
             "\n" +
             "import java.util.Optional;\n" +
             "import jdk.internal.lang.annotation.*;\n" +
             "import java.lang.invoke.*;\n" +
-            "import static java.lang.invoke.constant.ConstantDescs.*;\n" +
+            "import static java.lang.constant.ConstantDescs.*;\n" +
             "\n" +
             "/** --\n" +
             "*/\n" +
             "public class Stub {\n" +
-            "   private static final ClassDesc CR_BOX = ClassDesc.of(\"java.lang.invoke.constant.Stub\").inner(\"Box\");\n" +
+            "   private static final ClassDesc CR_BOX = ClassDesc.of(\"java.lang.constant.Stub\").inner(\"Box\");\n" +
             "   private static final ConstantMethodHandleDesc MH_BOX = ConstantDescs.ofConstantBootstrap(CR_BOX, \"constantBootstrap\", CR_BOX, CR_String);\n" +
             "   //private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
             "   /**\n" +
@@ -174,7 +174,7 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "}";
 
     private static final String testSource =
-            "import java.lang.invoke.constant.Stub;\n" +
+            "import java.lang.constant.Stub;\n" +
 
             "class Test {\n" +
             "    public static void main(String... args) {\n" +

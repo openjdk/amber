@@ -30,7 +30,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.*;
+import java.lang.constant.*;
 
 public class TwoVisitsAreNeededCauseOfForwardRefTest {
     static class Inner {

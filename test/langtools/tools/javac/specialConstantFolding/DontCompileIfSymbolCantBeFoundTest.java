@@ -6,16 +6,16 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.SETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_GETTER;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC_SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.SETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_GETTER;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC_SETTER;
 
 public class DontCompileIfSymbolCantBeFoundTest {
     void test() {

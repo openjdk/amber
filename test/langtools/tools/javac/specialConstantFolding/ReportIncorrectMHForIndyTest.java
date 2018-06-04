@@ -6,11 +6,11 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.BootstrapSpecifier;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.BootstrapSpecifier;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 
 public class ReportIncorrectMHForIndyTest {
 

@@ -28,15 +28,15 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantMethodHandleDesc;
-import java.lang.invoke.constant.DynamicCallSiteDesc;
-import java.lang.invoke.constant.MethodHandleDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DynamicCallSiteDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.constant.ConstantDescs.*;
+import static java.lang.constant.ConstantDescs.*;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 
@@ -44,7 +44,7 @@ import static org.testng.Assert.assertNotEquals;
  * @test
  * @compile -XDfolding=false IndyRefTest.java
  * @run testng IndyRefTest
- * @summary unit tests for java.lang.invoke.constant.IndyRefTest
+ * @summary unit tests for java.lang.constant.IndyRefTest
  */
 @Test
 public class IndyRefTest {

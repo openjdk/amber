@@ -22,13 +22,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Helper methods for the implementation of {@code java.lang.invoke.constant}.
+ * Helper methods for the implementation of {@code java.lang.constant}.
  */
 public class ConstantUtils {
     /** an empty constant descriptor */

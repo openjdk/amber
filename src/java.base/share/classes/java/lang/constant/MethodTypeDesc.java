@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 

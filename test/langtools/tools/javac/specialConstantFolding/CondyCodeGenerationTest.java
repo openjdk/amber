@@ -30,15 +30,15 @@
  * @run main CondyCodeGenerationTest
  */
 
-import java.lang.invoke.constant.*;
-import java.lang.invoke.constant.ClassDesc;
+import java.lang.constant.*;
+import java.lang.constant.ClassDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC;
 
 public class CondyCodeGenerationTest {
     public static void main(String[] args) throws Throwable {

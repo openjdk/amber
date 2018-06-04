@@ -4,7 +4,7 @@
  * @compile/fail/ref=WarningIfMemberIncorrect.out -Werror -XDrawDiagnostics WarningIfMemberIncorrect.java
  */
 
-import java.lang.invoke.*; import java.lang.invoke.constant.*;
+import java.lang.invoke.*; import java.lang.constant.*;
 import static java.lang.invoke.Intrinsics.*;
 
 class WarningIfMemberIncorrect {

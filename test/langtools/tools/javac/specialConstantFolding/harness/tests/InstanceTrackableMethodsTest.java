@@ -1,6 +1,6 @@
 /* /nodynamiccopyright/ */
 
-import java.lang.invoke.constant.ClassDesc;
+import java.lang.constant.ClassDesc;
 
 import static java.lang.invoke.Intrinsics.*;
 

@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
@@ -39,8 +39,8 @@ import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 import static java.lang.invoke.MethodHandleInfo.REF_putField;
 import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
-import static java.lang.invoke.constant.ConstantDescs.CR_void;
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
+import static java.lang.constant.ConstantDescs.CR_void;
+import static java.lang.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a

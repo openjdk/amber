@@ -48,7 +48,7 @@ public class CheckForCorrectMRefTest {
 
     static final String source1 =
             "import java.lang.invoke.*;\n" +
-            "import java.lang.invoke.constant.*;\n" +
+            "import java.lang.constant.*;\n" +
 
             "public class Test1 {\n" +
             "    private static final ClassDesc THIS = ClassDesc.of(\"Test1\");\n" +
@@ -63,7 +63,7 @@ public class CheckForCorrectMRefTest {
 
     static final String source2 =
             "import java.lang.invoke.*;\n" +
-            "import java.lang.invoke.constant.*;\n" +
+            "import java.lang.constant.*;\n" +
 
             "public class Test2 {\n" +
             "    interface I {}\n" +

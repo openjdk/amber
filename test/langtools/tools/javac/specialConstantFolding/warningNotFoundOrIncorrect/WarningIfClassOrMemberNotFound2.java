@@ -5,7 +5,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.*;
+import java.lang.constant.*;
 
 public class WarningIfClassOrMemberNotFound2 {
     private static final ClassDesc THIS = ClassDesc.of("WarningIfClassOrMemberNotFound2");

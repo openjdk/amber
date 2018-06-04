@@ -24,9 +24,9 @@
  */
 
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.ConstantUtils;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.ConstantUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -47,7 +47,7 @@ import static org.testng.Assert.fail;
  * @test
  * @compile -XDfolding=false ClassRefTest.java
  * @run testng ClassRefTest
- * @summary unit tests for java.lang.invoke.constant.ClassDesc
+ * @summary unit tests for java.lang.constant.ClassDesc
  */
 @Test
 public class ClassRefTest extends SymbolicRefTest {

@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.invoke.constant;
+package java.lang.constant;
 
 import jdk.internal.lang.annotation.Foldable;
 
@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.lang.invoke.constant.MethodHandleDesc.Kind.STATIC;
+import static java.lang.constant.MethodHandleDesc.Kind.STATIC;
 
 /**
  * Predefined values of <a href="package-summary.html#nominal">nominal descriptor</a>
@@ -168,11 +168,11 @@ public final class ConstantDescs {
 
     /** {@link ClassDesc} representing {@link ConstantDesc} */
     @Foldable
-    public static final ClassDesc CR_ConstantDesc = ClassDesc.of("java.lang.invoke.constant.ConstantDesc");
+    public static final ClassDesc CR_ConstantDesc = ClassDesc.of("java.lang.constant.ConstantDesc");
 
     /** {@link ClassDesc} representing {@link ClassDesc} */
     @Foldable
-    public static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.invoke.constant.ClassDesc");
+    public static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.constant.ClassDesc");
 
     /** {@link ClassDesc} representing {@link EnumDesc} */
     @Foldable
@@ -180,22 +180,22 @@ public final class ConstantDescs {
 
     /** {@link ClassDesc} representing {@link MethodTypeDesc} */
     @Foldable
-    public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.MethodTypeDesc");
+    public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.constant.MethodTypeDesc");
 
     /** {@link ClassDesc} representing {@link ConstantClassDesc} */
-    public static final ClassDesc CR_ConstantClassDesc = ClassDesc.of("java.lang.invoke.constant.ConstantClassDesc");
+    public static final ClassDesc CR_ConstantClassDesc = ClassDesc.of("java.lang.constant.ConstantClassDesc");
 
     /** {@link ClassDesc} representing {@link ConstantMethodTypeDesc} */
     @Foldable
-    public static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodTypeDesc");
+    public static final ClassDesc CR_ConstantMethodTypeDesc = ClassDesc.of("java.lang.constant.ConstantMethodTypeDesc");
 
     /** {@link ClassDesc} representing {@link MethodHandleDesc} */
     @Foldable
-    public static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.MethodHandleDesc");
+    public static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.constant.MethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link ConstantMethodHandleDesc} */
     @Foldable
-    public static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.invoke.constant.ConstantMethodHandleDesc");
+    public static final ClassDesc CR_ConstantMethodHandleDesc = ClassDesc.of("java.lang.constant.ConstantMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
     @Foldable
@@ -207,11 +207,11 @@ public final class ConstantDescs {
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
     @Foldable
-    public static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.invoke.constant.DynamicConstantDesc");
+    public static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.constant.DynamicConstantDesc");
 
     /** {@link ClassDesc} representing {@link DynamicCallSiteDesc} */
     @Foldable
-    public static final ClassDesc CR_DynamicCallSiteDesc = ClassDesc.of("java.lang.invoke.constant.DynamicCallSiteDesc");
+    public static final ClassDesc CR_DynamicCallSiteDesc = ClassDesc.of("java.lang.constant.DynamicCallSiteDesc");
 
     /** {@link ClassDesc} representing {@link ConstantBootstraps} */
     @Foldable

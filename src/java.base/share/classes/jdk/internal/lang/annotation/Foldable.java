@@ -26,8 +26,8 @@ package jdk.internal.lang.annotation;
 
 import java.lang.annotation.*;
 
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import java.lang.invoke.Intrinsics;
 
 /**

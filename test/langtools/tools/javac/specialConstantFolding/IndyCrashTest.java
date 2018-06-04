@@ -5,7 +5,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.*;
+import java.lang.constant.*;
 
 public class IndyCrashTest {
     static final ClassDesc HELPER_CLASS = ClassDesc.ofDescriptor("LIndyCrashTest$IntrinsicTestHelper;");

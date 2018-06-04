@@ -24,8 +24,8 @@
  */
 
 import java.lang.invoke.MethodType;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import org.testng.annotations.Test;
 
-import static java.lang.invoke.constant.ConstantDescs.CR_int;
-import static java.lang.invoke.constant.ConstantDescs.CR_void;
+import static java.lang.constant.ConstantDescs.CR_int;
+import static java.lang.constant.ConstantDescs.CR_void;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
@@ -44,7 +44,7 @@ import static org.testng.Assert.fail;
  * @test
  * @compile -XDfolding=false MethodTypeRefTest.java
  * @run testng MethodTypeRefTest
- * @summary unit tests for java.lang.invoke.constant.MethodTypeRef
+ * @summary unit tests for java.lang.constant.MethodTypeRef
  */
 @Test
 public class MethodTypeRefTest extends SymbolicRefTest {

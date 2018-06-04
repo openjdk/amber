@@ -24,8 +24,8 @@
  */
 package java.lang.invoke;
 
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.DynamicCallSiteDesc;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicCallSiteDesc;
 
 /**
  * Intrinsics

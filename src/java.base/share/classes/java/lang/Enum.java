@@ -31,16 +31,16 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.constant.ClassDesc;
-import java.lang.invoke.constant.Constable;
-import java.lang.invoke.constant.ConstantDesc;
-import java.lang.invoke.constant.ConstantDescs;
-import java.lang.invoke.constant.DynamicConstantDesc;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DynamicConstantDesc;
 import java.util.Optional;
 
-import static java.lang.invoke.constant.ConstantDescs.BSM_ENUMDESC;
-import static java.lang.invoke.constant.ConstantDescs.CR_EnumDesc;
-import static java.lang.invoke.constant.ConstantUtils.validateMemberName;
+import static java.lang.constant.ConstantDescs.BSM_ENUMDESC;
+import static java.lang.constant.ConstantDescs.CR_EnumDesc;
+import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 
 /**

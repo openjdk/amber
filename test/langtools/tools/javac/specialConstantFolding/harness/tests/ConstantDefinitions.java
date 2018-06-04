@@ -1,8 +1,8 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.MethodTypeDesc;
-import java.lang.invoke.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
+import java.lang.constant.ConstantDescs;
 
 import static java.lang.invoke.Intrinsics.*;
 

@@ -29,7 +29,7 @@
  */
 
 import java.lang.invoke.*;
-import java.lang.invoke.constant.MethodTypeDesc;
+import java.lang.constant.MethodTypeDesc;
 
 public class CrashWithPrimitiveArgumentsTest {
     void test() {
