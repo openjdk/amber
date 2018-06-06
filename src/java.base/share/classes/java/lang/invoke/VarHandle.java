@@ -1889,7 +1889,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
     public final String toString() {
         // @@@ defer to concrete type for additional description
         // see https://bugs.openjdk.java.net/browse/JDK-8199149
-        return String.format("VarHandle[varType=%s, cooordType=%s]",
+        return String.format("VarHandle[varType=%s, coord=%s]",
                              varType().getName(),
                              coordinateTypes());
     }
