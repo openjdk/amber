@@ -162,15 +162,15 @@ public class MethodHandleRefTest extends SymbolicRefTest {
     public void testMethodHandleRef() throws Throwable {
         MethodHandleDesc ctorRef = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, testClass, "<ignored!>", CR_void);
         MethodHandleDesc staticMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, testClass, "sm", "(I)I");
-        MethodHandleDesc staticIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, testInterface, "sm", "(I)I");
+        MethodHandleDesc staticIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_STATIC, testInterface, "sm", "(I)I");
         MethodHandleDesc instanceMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, testClass, "m", "(I)I");
         MethodHandleDesc instanceIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, testInterface, "m", "(I)I");
         MethodHandleDesc superMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, testSuperclass, "m", "(I)I");
-        MethodHandleDesc superIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, testInterface, "m", "(I)I");
+        MethodHandleDesc superIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_SPECIAL, testInterface, "m", "(I)I");
         MethodHandleDesc privateMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, testClass, "pm", "(I)I");
-        MethodHandleDesc privateIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, testInterface, "pm", "(I)I");
+        MethodHandleDesc privateIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_SPECIAL, testInterface, "pm", "(I)I");
         MethodHandleDesc privateStaticMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, testClass, "psm", "(I)I");
-        MethodHandleDesc privateStaticIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, testInterface, "psm", "(I)I");
+        MethodHandleDesc privateStaticIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_STATIC, testInterface, "psm", "(I)I");
 
         for (MethodHandleDesc r : List.of(ctorRef, staticMethodRef, staticIMethodRef, instanceMethodRef, instanceIMethodRef))
             testMethodHandleRef(r);

@@ -52,12 +52,16 @@ public interface MethodHandleDesc
     public enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
         STATIC(REF_invokeStatic),
+        /** A method handle for a method invoked as with {@code invokestatic} */
+        INTERFACE_STATIC(REF_invokeStatic, true),
         /** A method handle for a method invoked as with {@code invokevirtual} */
         VIRTUAL(REF_invokeVirtual),
         /** A method handle for a method invoked as with {@code invokeinterface} */
-        INTERFACE_VIRTUAL(REF_invokeInterface),
+        INTERFACE_VIRTUAL(REF_invokeInterface, true),
         /** A method handle for a method invoked as with {@code invokespecial} */
         SPECIAL(REF_invokeSpecial),
+        /** A method handle for an interface method invoked as with {@code invokespecial} */
+        INTERFACE_SPECIAL(REF_invokeSpecial, true),
         /** A method handle for a constructor */
         CONSTRUCTOR(REF_newInvokeSpecial),
         /** A method handle for a read accessor for an instance field  */
@@ -73,10 +77,14 @@ public interface MethodHandleDesc
          * as defined by {@link MethodHandleInfo}
          */
         public final int refKind;
+        /** Is this an interface
+         */
+        public final boolean isInterface;
 
         Kind(int refKind) {
-            this.refKind = refKind;
+            this(refKind, false);
         }
+        Kind(int refKind, boolean isInterface) { this.refKind = refKind; this.isInterface = isInterface; }
     }
 
 

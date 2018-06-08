@@ -158,11 +158,13 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
         MethodType resolvedType = this.type.resolveConstantDesc(lookup);
         switch (kind) {
             case STATIC:
+            case INTERFACE_STATIC:
                 return lookup.findStatic(resolvedOwner, name, resolvedType);
             case INTERFACE_VIRTUAL:
             case VIRTUAL:
                 return lookup.findVirtual(resolvedOwner, name, resolvedType);
             case SPECIAL:
+            case INTERFACE_SPECIAL:
                 return lookup.findSpecial(resolvedOwner, name, resolvedType, lookup.lookupClass());
             case CONSTRUCTOR:
                 return lookup.findConstructor(resolvedOwner, resolvedType);
