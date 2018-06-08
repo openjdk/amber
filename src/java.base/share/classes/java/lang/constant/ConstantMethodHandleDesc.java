@@ -124,6 +124,13 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
     public int refKind() { return kind.refKind; }
 
     /**
+     * Indicates if the method is declared by an interface
+     *
+     * @return true if the method is declared by an interface
+     */
+    public boolean isOwnerInterface() { return kind.isInterface; }
+
+    /**
      * Return a {@link ClassDesc} describing the class declaring the
      * method or field described by this nominal descriptor.
      *
