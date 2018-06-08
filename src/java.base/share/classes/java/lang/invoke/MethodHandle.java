@@ -1522,8 +1522,10 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
         ClassDesc owner;
         String name;
         MethodTypeDesc type;
+        boolean isInterface;
         try {
             info = IMPL_LOOKUP.revealDirect(this);
+            isInterface = info.getDeclaringClass().isInterface();
             owner = info.getDeclaringClass().describeConstable().orElseThrow();
             type = info.getMethodType().describeConstable().orElseThrow();
             name = info.getName();
@@ -1544,9 +1546,13 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
             case REF_invokeVirtual:
                 return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, owner, name, type));
             case REF_invokeStatic:
-                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, owner, name, type));
+                return isInterface ?
+                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_STATIC, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, owner, name, type));
             case REF_invokeSpecial:
-                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, owner, name, type));
+                return isInterface ?
+                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_SPECIAL, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, owner, name, type));
             case REF_invokeInterface:
                 return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
             case REF_newInvokeSpecial:

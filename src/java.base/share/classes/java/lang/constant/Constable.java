@@ -56,7 +56,7 @@ import java.util.Optional;
  * a {@link ConstantDesc}; this method returns an {@link Optional} that can be
  * empty to indicate that a nominal descriptor could not be created for an instance.
  * (For example, {@link MethodHandle} will produce nominal descriptors for direct
- * method handles, but not necessarily those produced by method handles
+ * method handles, but not necessarily those produced by method handle
  * combinators.)
  * @jvms 4.4 The Constant Pool
  * @jvms 4.4.10 The CONSTANT_InvokeDynamic_info Structure

@@ -3868,7 +3868,7 @@ public final class Class<T> implements java.io.Serializable,
     @Override
     public String descriptorString() {
         if (isPrimitive())
-            return new String(new char[] {Wrapper.forPrimitiveType(this).basicTypeChar()});
+            return Wrapper.forPrimitiveType(this).basicTypeString();
         else if (isArray()) {
             return "[" + componentType.descriptorString();
         }

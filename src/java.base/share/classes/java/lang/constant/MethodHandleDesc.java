@@ -54,12 +54,16 @@ public interface MethodHandleDesc
     public enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
         @Foldable STATIC(REF_invokeStatic),
+        /** A method handle for a method invoked as with {@code invokestatic} */
+        @Foldable INTERFACE_STATIC(REF_invokeStatic, true),
         /** A method handle for a method invoked as with {@code invokevirtual} */
         @Foldable VIRTUAL(REF_invokeVirtual),
         /** A method handle for a method invoked as with {@code invokeinterface} */
-        @Foldable INTERFACE_VIRTUAL(REF_invokeInterface),
+        @Foldable INTERFACE_VIRTUAL(REF_invokeInterface, true),
         /** A method handle for a method invoked as with {@code invokespecial} */
         @Foldable SPECIAL(REF_invokeSpecial),
+        /** A method handle for an interface method invoked as with {@code invokespecial} */
+        @Foldable INTERFACE_SPECIAL(REF_invokeSpecial, true),
         /** A method handle for a constructor */
         @Foldable CONSTRUCTOR(REF_newInvokeSpecial),
         /** A method handle for a read accessor for an instance field  */
@@ -75,10 +79,14 @@ public interface MethodHandleDesc
          * as defined by {@link MethodHandleInfo}
          */
         public final int refKind;
+        /** Is this an interface
+         */
+        public final boolean isInterface;
 
         Kind(int refKind) {
-            this.refKind = refKind;
+            this(refKind, false);
         }
+        Kind(int refKind, boolean isInterface) { this.refKind = refKind; this.isInterface = isInterface; }
     }
 
 

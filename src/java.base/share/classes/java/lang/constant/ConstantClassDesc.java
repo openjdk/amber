@@ -112,12 +112,12 @@ public final class ConstantClassDesc implements ClassDesc {
         if (o == null || getClass() != o.getClass()) return false;
 
         ClassDesc constant = (ClassDesc) o;
-        return Objects.equals(descriptor, constant.descriptorString());
+        return descriptor.equals(constant.descriptorString());
     }
 
     @Override
     public int hashCode() {
-        return descriptor != null ? descriptor.hashCode() : 0;
+        return descriptor.hashCode();
     }
 
     @Override
