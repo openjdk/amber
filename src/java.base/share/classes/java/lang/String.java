@@ -38,7 +38,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.StringJoiner;
-import java.util.regex.Matcher;
+import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -47,6 +48,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
+
+import static java.util.function.Predicate.not;
 
 /**
  * The {@code String} class represents character strings. All
@@ -2605,7 +2608,7 @@ public final class String
      * Returns a string whose value is this string, with all leading
      * and trailing space removed, where space is defined
      * as any character whose codepoint is less than or equal to
-     * {@code '\u005Cu0020'} (the space character).
+     * {@code 'U+0020'} (the space character).
      * <p>
      * If this {@code String} object represents an empty character
      * sequence, or the first and last characters of character sequence
@@ -2641,7 +2644,8 @@ public final class String
 
     /**
      * Returns a string whose value is this string, with all leading
-     * {@link Character#isWhitespace(int) white space} removed.
+     * and trailing {@link Character#isWhitespace(int) white space}
+     * removed.
      * <p>
      * If this {@code String} object represents an empty string,
      * or if all code points in this string are
@@ -2650,14 +2654,15 @@ public final class String
      * <p>
      * Otherwise, returns a substring of this string beginning with the first
      * code point that is not a {@link Character#isWhitespace(int) white space}
-     * up to to and including the last code point of this string.
+     * up to and including the last code point that is not a
+     * {@link Character#isWhitespace(int) white space}.
      * <p>
-     * This method may be used to trim
+     * This method may be used to strip
      * {@link Character#isWhitespace(int) white space} from
-     * the beginning of a string.
+     * the beginning and end of a string.
      *
-     * @return  a string whose value is this string, with all leading white
-     *          space removed, or this string if it has no leading white space.
+     * @return  a string whose value is this string, with all leading
+     *          and trailing white space removed
      *
      * @see Character#isWhitespace(int)
      *
@@ -2687,7 +2692,7 @@ public final class String
      * the beginning of a string.
      *
      * @return  a string whose value is this string, with all leading white
-     *          space removed, or this string if it has no leading white space.
+     *          space removed
      *
      * @see Character#isWhitespace(int)
      *
@@ -2710,15 +2715,14 @@ public final class String
      * <p>
      * Otherwise, returns a substring of this string beginning with the first
      * code point of this string up to and including the last code point
-     * that is not a  {@link Character#isWhitespace(int) white space}.
+     * that is not a {@link Character#isWhitespace(int) white space}.
      * <p>
      * This method may be used to trim
      * {@link Character#isWhitespace(int) white space} from
      * the end of a string.
      *
      * @return  a string whose value is this string, with all trailing white
-     *          space removed, or this string if it has no
-     *          trailing white space.
+     *          space removed
      *
      * @see Character#isWhitespace(int)
      *
@@ -2752,11 +2756,66 @@ public final class String
      * partitioned by line terminators.
      * <p>
      * Line terminators recognized are line feed
-     * {@code "\n"} ({@code '\u000A'}),
+     * {@code "\n"} ({@code U+000A}),
      * carriage return
-     * {@code "\r"} ({@code '\u000D'})
+     * {@code "\r"} ({@code U+000D})
      * and a carriage return followed immediately by a line feed
-     * {@code "\r\n"} ({@code '\u000D' '\u000A'}).
+     * {@code "\r\n"} ({@code U+000D U+000A}).
+     * <p>
+     * The stream returned by this method contains each line of
+     * this string that is terminated by a line terminator except that
+     * the last line can either be terminated by a line terminator or the
+     * end of the string.
+     * The lines in the stream are in the order in which
+     * they occur in this string and do not include the line terminators
+     * partitioning the lines.
+     * <p>
+     * The {@code maxLeading} and {@code maxTrailing} arguments can be
+     * used to remove incidental blank lines from the beginning and
+     * end of a multi-line sequence. A value of {@code 1} will remove
+     * at most one blank line. A value of {@link Integer.MAX_VALUE}
+     * will all leading or trailing blank lines.
+     *
+     * @implNote This method provides better performance than
+     *           split("\R") by supplying elements lazily and
+     *           by faster search of new line terminators.
+     *
+     * @param  maxLeading   the maximum number of leading blank lines
+     *                      to remove
+     *
+     * @param  maxTrailing  the maximum number of trailing blank lines
+     *                      to remove
+     *
+     * @return  the stream of strings extracted from this string
+     *          partitioned by line terminators
+     *
+     * @throws  IllegalArgumentException if {@code maxLeading} or
+     *          {@code maxTrailing} is negative.
+     *
+     * @since 12
+     */
+    public Stream<String> lines(int maxLeading, int maxTrailing) {
+        if (maxLeading < 0) {
+            throw new IllegalArgumentException("maxLeading is negative: " + maxLeading);
+        }
+        if (maxTrailing < 0) {
+            throw new IllegalArgumentException("maxTrailing is negative: " + maxTrailing);
+        }
+        Stream<String> stream = isLatin1() ? StringLatin1.lines(value, maxLeading, maxTrailing)
+                                           : StringUTF16.lines(value, maxLeading, maxTrailing);
+        return stream;
+    }
+
+    /**
+     * Returns a stream of substrings extracted from this string
+     * partitioned by line terminators.
+     * <p>
+     * Line terminators recognized are line feed
+     * {@code "\n"} ({@code U+000A}),
+     * carriage return
+     * {@code "\r"} ({@code U+000D})
+     * and a carriage return followed immediately by a line feed
+     * {@code "\r\n"} ({@code U+000D U+000A}).
      * <p>
      * The stream returned by this method contains each line of
      * this string that is terminated by a line terminator except that
@@ -2776,123 +2835,523 @@ public final class String
      * @since 11
      */
     public Stream<String> lines() {
-        return isLatin1() ? StringLatin1.lines(value)
-                          : StringUTF16.lines(value);
+        return lines(0, 0);
     }
 
     /**
-     * When applied to a multi-line string, left justifies the
-     * the lines without loss of relative indentation.
+     * When applied to a string, modifies the indentation
+     * of each line based on parameter {@code n}.
      * <p>
-     * The first line does not affect the result since it is
-     * preceded by the open delimiter.
+     * If {@code n > 0} then {@code n} spaces {@code u+0020}
+     * are inserted at the beginning of each line.
+     * {@link String#isBlank() blank lines} are unaffected.
      * <p>
-     * This method works with all
-     * {@link Character#isWhitespace(int) white space}
-     * characters as long as the leading white space is
-     * consistent on all lines.  Otherwise, the result is indeterminant.
+     * If {@code n < 0} then {@code n}
+     * {@link Character#isWhitespace(int) white space characters}
+     * are removed from the beginning of each line. If a given line
+     * does not contain sufficient white space then all leading
+     * {@link Character#isWhitespace(int) white space characters}
+     * are removed.
      * <p>
-     * Line terminators, line feed {@code "\n"},
-     * carriage return {@code "\r"} and a carriage return followed
-     * immediately by a line feed {@code "\r\n"}, are replaced with
-     * line feed {@code "\n"}. If the first line is blank then it is
-     * removed. If the last line is blank then it is removed.
+     * If {@code n == 0} then indentation remains unchanged, but other
+     * transformations, such as line termination, still take effect.
+     * <p>
+     * @apinote All
+     *          {@link Character#isWhitespace(int) white space characters},
+     *          including tab, are treated as a single space.
+     * <p>
+     * @apiNote The all line terminators in the result will be
+     *          replaced with line feed {@code "\n"} ({@code U+000A}).
      *
-     * @return string with indent removed.
+     * @param n  number of leading white space characters
+     *           to adjust
+     *
+     * @return string with indentation modified.
      *
      * @see Character#isWhitespace(int)
+     * @see String#lines()
      *
-     * @since 11
+     * @since 12
      */
-    public String stripIndent() {
-        if (isEmpty()) {
+    public String indent(int n) {
+        return isEmpty() ? "" :  indent(n, false);
+    }
+
+    private String indent(int n, boolean skipBlanks) {
+        if (isMultiline()) {
+            Stream<String> stream = skipBlanks ? lines(1, 1) : lines();
+            if (n > 0) {
+                final String spaces = " ".repeat(n);
+                stream = stream.map(s -> s.isBlank() ? s : spaces + s);
+            } else if (n == Integer.MIN_VALUE) {
+                stream = stream.map(s -> s.stripLeading());
+            } else if (n < 0) {
+                stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+            }
+            return stream.collect(Collectors.joining("\n", "", "\n"));
+        } else {
+            if (n > 0) {
+                return " ".repeat(n) + this;
+            }
+            if (n == Integer.MIN_VALUE) {
+                return stripLeading();
+            }
+            if (n < 0) {
+                return substring(Math.min(-n, indexOfNonWhitespace()));
+            }
             return this;
         }
-        List<String> list = lines().collect(Collectors.toList());
-        int count = list.size();
-        boolean firstIsBlank = list.get(0).isBlank();
-        String last = list.get(count - 1);
-        boolean lastIsBlank = last.isBlank();
-        final int minimal = list.stream().skip(1)
-                                         .mapToInt(s -> s.isEmpty() ? Integer.MAX_VALUE : s.indexOfNonWhitespace())
-                                         .min()
-                                         .orElse(Integer.MAX_VALUE);
-        int lower = firstIsBlank ? 1 : 0;
-        int upper = (lastIsBlank ? count - 1 : count) - lower;
-        Stream<String> stream = list.stream().skip(lower).limit(upper);
-        if (minimal != 0 && minimal != Integer.MAX_VALUE) {
-            stream = stream.map(s -> minimal <= s.indexOfNonWhitespace() ? s.substring(minimal) : s);
-        }
-        return stream.collect(Collectors.joining("\n", "", "\n"));
+    }
+
+    private boolean isMultiline() {
+        return isLatin1() ? StringLatin1.isMultiline(value)
+                          : StringUTF16.isMultiline(value);
     }
 
     private int indexOfNonWhitespace() {
-        if (isLatin1()) {
-            return StringLatin1.indexOfNonWhitespace(value);
-        } else {
-            return StringUTF16.indexOfNonWhitespace(value) >> 1;
-        }
+        return isLatin1() ? StringLatin1.indexOfNonWhitespace(value)
+                          : StringUTF16.indexOfNonWhitespace(value);
     }
 
     private int lastIndexOfNonWhitespace() {
-        if (isLatin1()) {
-            return StringLatin1.lastIndexOfNonWhitespace(value);
-        } else {
-            return StringUTF16.lastIndexOfNonWhitespace(value) >> 1;
-        }
+        return isLatin1() ? StringLatin1.lastIndexOfNonWhitespace(value)
+                          : StringUTF16.lastIndexOfNonWhitespace(value);
     }
 
     /**
-     * When applied to a multi-line string, removes left and right
-     * margins from each line based on provided markers.
+     * When applied to a string, left justifies
+     * lines without loss of relative indentation. This is
+     * accomplished by removing an equal number of
+     * {@link Character#isWhitespace(int) white space} characters
+     * from each line so that at least one line has a non-white
+     * space character in the left-most position.
+     * The result is then realigned by indenting {@code n}
+     * {@link Character#isWhitespace(int) white space}
+     * characters.
+     * First and last blank lines introduced to allow
+     * bracketing  delimiters to appear on separate source lines
+     * are also removed.
      * <p>
-     * Each line of the multi-line string is first stripped of leading and
-     * tailing spaces. If a stripped line contains the {@code leftMarker}
-     * at the beginning then it is removed. Finally, if a stripped
-     * line contains the {@code rightMarker} at the end of line, it is
-     * removed.
+     * @apinote All
+     *          {@link Character#isWhitespace(int) white space characters},
+     *          including tab, are treated as a single space.
      * <p>
-     * Line terminators, line feed {@code "\n"},
-     * carriage return {@code "\r"} and a carriage return followed
-     * immediately by a line feed {@code "\r\n"}, are replaced with
-     * line feed {@code "\n"}. If the first line is blank then it is
-     * removed. If the last line is blank then it is removed.
+     * @apiNote The all line terminators in the result will be
+     *          replaced with line feed {@code "\n"} ({@code U+000A}).
      *
-     * @param  leftMarker   string representing left margin marker
-     * @param  rightMarker  string representing right margin marker
+     * @param n  number of leading white space characters
+     *           to adjust
      *
-     * @return  string with margins removed
+     * @return string aligned to left margin
      *
      * @see Character#isWhitespace(int)
+     * @see String#indent(int)
+     * @see String#lines()
+     * @see String#lines(int, int)
      *
-     * @since 11
+     * @since 12
      */
-    public String stripMarkers(String leftMarker, String rightMarker) {
-        Objects.requireNonNull(leftMarker);
-        Objects.requireNonNull(rightMarker);
+    public String align(int n) {
         if (isEmpty()) {
-            return this;
+            return "";
         }
-        int leftLength = leftMarker.length();
-        int rightLength = rightMarker.length();
-        List<java.lang.String> list = lines().map(s -> s.strip())
-                                             .collect(Collectors.toList());
-        int count = list.size();
-        boolean firstIsBlank = list.get(0).isEmpty();
-        boolean lastIsBlank = list.get(count - 1).isEmpty();
-        int lower = firstIsBlank ? 1 : 0;
-        int upper = (lastIsBlank ? count - 1 : count) - lower;
-        Stream<String> stream = list.stream().skip(lower).limit(upper);
-        return stream.map(s -> {
-                              if (s.startsWith(leftMarker)) {
-                                  s = s.substring(leftLength);
-                              }
-                              if (s.endsWith(rightMarker)) {
-                                  s = s.substring(0, s.length() - rightLength);
-                              }
-                              return s;
-                          })
-                     .collect(Collectors.joining("\n", "", "\n"));
+        int min = lines().skip(1)
+                         .filter(not(String::isBlank))
+                         .mapToInt(String::indexOfNonWhitespace)
+                         .min()
+                         .orElse(0);
+        return indent(n - min, true);
+    }
+
+    /**
+     * When applied to a string, left justifies
+     * lines without loss of relative indentation. This is
+     * accomplished by removing an equal number of
+     * {@link Character#isWhitespace(int) white space} characters
+     * from each line so that at least one line has a non-white
+     * space character in the left-most position.
+     * First and last blank lines introduced to allow
+     * bracketing  delimiters to appear on separate source lines
+     * are also removed.
+     * <p>
+     * @apinote All
+     *          {@link Character#isWhitespace(int) white space characters},
+     *          including tab, are treated as a single space.
+     * <p>
+     * @apiNote The all line terminators in the result will be
+     *          replaced with line feed {@code "\n"} ({@code U+000A}).
+     *
+     * @return string left justified
+     *
+     * @see Character#isWhitespace(int)
+     * @see String#indent(int)
+     * @see String#lines()
+     * @see String#lines(int, int)
+     *
+     * @since 12
+     */
+    public String align() {
+        return align(0);
+    }
+
+    /**
+     * This method allows the application of a function to {@code this}
+     * string. The function should expect a single String argument
+     * and produce an object result.
+     *
+     * @param f    functional interface to a apply
+     *
+     * @param <R>  class of the result
+     *
+     * @return     the result of applying the function to this string
+     *
+     * @see java.util.function.Function
+     *
+     * @since 12
+     */
+    public <R> R apply(Function<String, R> f) {
+        return f.apply(this);
+    }
+
+    /**
+     * This method allows the application of a function to {@code this}
+     * string. The function should expect a single String argument
+     * and produce a String result.
+     *
+     * @param f    functional interface to a apply
+     *
+     * @return     the string result of applying the function to this string
+     *
+     * @see java.util.function.Function
+     *
+     * @since 12
+     */
+    public String transform(Function<String, String> f) {
+        return f.apply(this);
+    }
+
+    private String unescape(boolean backslash, boolean unicode) throws MalformedEscapeException {
+        return isLatin1() ? StringLatin1.unescape(value, backslash, unicode)
+                          : StringUTF16.unescape(toCharArray(), backslash, unicode);
+    }
+
+    /**
+     * The constants of this enumerated type provide a simple classification
+     * of the types of escape sequence catagories based on the
+     * <cite>The Java&trade; Language Specification</cite>.
+     */
+    public enum EscapeType {
+        /** Backslash escape sequences based on section 3.10.6 of the
+         * <cite>The Java&trade; Language Specification</cite>.
+         * This includes sequences for backspace, horizontal tab,
+         * line feed, form feed, carriage return, double quote,
+         * single quote, backslash and octal escape sequences.
+         */
+        BACKSLASH,
+
+        /** Unicode sequences based on section 3.3 of the
+         * <cite>The Java&trade; Language Specification</cite>.
+         * This includes sequences in the form {@code \u005Cunnnn}.
+         */
+        UNICODE
+    }
+
+    /**
+     * Translates all Unicode escapes and escape sequences in the string into
+     * characters represented by those escapes specified in sections 3.3 and
+     * 3.10.6 of the <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
+     * the unicode character whose code point is {@code 0xnnnn}. Care should be
+     * taken when using UTF-16 surrogate pairs to ensure that the high
+     * surrogate ({@code \u005CuD800..\u005CuDBFF}) is immediately followed by
+     * a low surrogate ({@code \u005CuDC00..\u005CuDFFF}) otherwise a {@link
+     * java.nio.charset.CharacterCodingException} may occur during UTF-8
+     * decoding.
+     * <p>
+     * Backslash escape sequences are translated as follows;
+     * <table class="plain">
+     *   <caption style="display:none">Escape sequences</caption>
+     *   <thead>
+     *   <tr>
+     *     <th scope="col">Escape</th>
+     *     <th scope="col">Name</th>
+     *     <th scope="col">Unicode</th>
+     *   </tr>
+     *   </thead>
+     *   <tr>
+     *     <td>{@code \u005Cb}</td>
+     *     <td>backspace</td>
+     *     <td>{@code \u005Cu0008}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Ct}</td>
+     *     <td>horizontal tab</td>
+     *     <td>{@code \u005Cu0009}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cn}</td>
+     *     <td>line feed</td>
+     *     <td>{@code \u005Cu000A}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cf}</td>
+     *     <td>form feed</td>
+     *     <td>{@code \u005Cu000C}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cr}</td>
+     *     <td>carriage return</td>
+     *     <td>{@code \u005Cu000D}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C"}</td>
+     *     <td>double quote</td>
+     *     <td>{@code \u005Cu0022}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C'}</td>
+     *     <td>single quote</td>
+     *     <td>{@code \u005Cu0027}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C\u005C}</td>
+     *     <td>backslash</td>
+     *     <td>{@code \u005Cu005C}</td>
+     *   </tr>
+     * </table>
+     * <p>
+     * Octal escapes \u005C0 - \u005C377 are translated to their code
+     * point equivalents.
+     *
+     * @return String with all escapes translated.
+     *
+     * @throws MalformedEscapeException when escape sequence is malformed.
+     *
+     * @since 12
+     */
+    public String unescape() throws MalformedEscapeException {
+        return unescape(true, true);
+    }
+
+    /**
+     * Selectively translates all Unicode escapes and escape sequences in
+     * the string into characters represented by those escapes specified in
+     * sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Which escape sequences that are translated is based on {@link EscapeType}
+     * {@code escapes} specified.
+     * <p>
+     * If {@link EscapeType.BACKSLASH} is specified then backslash escape
+     * sequences are translated according to the table at {@link #unescape()}.
+     * <p>
+     * If {@link EscapeType.UNICODE} is specified then Unicode escapes
+     * are translated.
+     * <p>
+     * If no EscapeType is provided then this string is returned.
+     *
+     * @param escapes  a vararg of {@link EscapeType} indicating which
+     *                 sequences to translate
+     *
+     * @return String with selective escapes translated.
+     *
+     * @throws MalformedEscapeException when escape sequence is malformed.
+     *
+     * @since 12
+     */
+    public String unescape(EscapeType... escapes) throws MalformedEscapeException {
+        boolean backslash = false;
+        boolean unicode = false;
+        for (EscapeType escape : escapes) {
+            switch (escape) {
+                case BACKSLASH:
+                    backslash = true;
+                    break;
+                case UNICODE:
+                    unicode = true;
+                    break;
+            }
+        }
+        if (backslash || unicode) {
+            return unescape(backslash, unicode);
+        }
+        return this;
+    }
+
+    private String escape(boolean backslash, boolean unicode) {
+        String  result = isLatin1() ? StringLatin1.escape(value, backslash, unicode)
+                                    : StringUTF16.escape(toCharArray(), backslash, unicode);
+        return result == null ? this : result;
+    }
+
+    /**
+     * Translates all quotes, backslashes, non-ASCII and non-graphics
+     * characters into escape sequence representations specified in
+     * sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Characters in the code point range {@code U+0000..U+001F}
+     * are translated to unicode escapes unless they have a special
+     * sequence found in the table at {@link #unescape()}.
+     * <p>
+     * Characters in the code point range {@code U+0020..U+007F}
+     * are unaffected unless they have a special sequence found in the
+     * table at {@link #unescape()}.
+     * <p>
+     * Characters in the code point range {@code U+0080..U+FFFF}
+     * including surrogates are translated to unicode sescapes.
+     *
+     * @return String with translated escape sequences.
+     *
+     * @since 12
+     */
+    public String escape() {
+        return escape(true, true);
+    }
+
+    /**
+     * Selectively translates all quotes, backslashes, non-ASCII and
+     * non-graphics characters into escape sequence representations
+     * specified in sections 3.3 and 3.10.6 of the
+     * <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Which characters that are translated is based on {@link EscapeType}
+     * {@code escapes} specified.
+     * <p>
+     * If {@link EscapeType.BACKSLASH} is specified then characters
+     * translated to backslash escape sequences according to the table
+     * at {@link #unescape()}.
+     * <p>
+     * If {@link EscapeType.UNICODE} is specified then characters
+     * in the code point range {@code U+0080..U+FFFF} are
+     * translated to Unicode escapes.
+     * <p>
+     * If no EscapeType is provided then this string is returned.
+     *
+     * @param escapes  a vararg of {@link EscapeType} indicating which
+     *                 characters to translate
+     *
+     * @return String with selective characters translated to escape
+     * sequences.
+     *
+     * @since 12
+     */
+    public String escape(EscapeType... escapes) {
+        boolean backslash = false;
+        boolean unicode = false;
+        for (EscapeType escape : escapes) {
+            switch (escape) {
+                case BACKSLASH:
+                    backslash = true;
+                    break;
+                case UNICODE:
+                    unicode = true;
+                    break;
+            }
+        }
+        if (backslash || unicode) {
+            return escape(backslash, unicode);
+        }
+        return this;
+    }
+
+    /**
+     * Replaces tab {@code U+0009} characters with enough space
+     * {@code U+0020} characters to align to tab stops at
+     * intervals {@code n}.
+     *
+     * @param n  number of characters between tab stops
+     *
+     * @return this string with tabs replaced with spaces
+     *
+     * @throws IllegalArgumentException if n is less that equals to zero.
+     *
+     * @since 12
+     */
+    public String detab(int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be greater than zero: " + n);
+        }
+        int length = length();
+        int column = 0;
+        int spaces = 0;
+        final StringBuilder sb = new StringBuilder(length * 2);
+        for (int pos = 0; pos < length; pos++) {
+            char ch = charAt(pos);
+            if (ch == ' ') {
+                spaces++;
+            } else if (ch == '\t') {
+                spaces += n - (column + spaces) % n;
+            } else if (ch == '\n' || ch == '\r') {
+                sb.append(ch);
+                column = 0;
+                spaces = 0;
+            } else {
+                if (0 < spaces) {
+                    column += spaces;
+                    while (0 < spaces) {
+                        spaces--;
+                        sb.append(' ');
+                    }
+                }
+                sb.append(ch);
+                column++;
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Replaces some space {@code U+0020} characters with tab
+     * {@code U+0020} characters if can align to tab stops at
+     * intervals {@code n}.
+     *
+     * @param n  number of characters between tab stops
+     *
+     * @return this string with some spaces replaced with tabs
+     *
+     * @throws IllegalArgumentException if n is less that equals to zero.
+     *
+     * @since 12
+     */
+    public String entab(int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("n must be greater than zero: " + n);
+        }
+        int length = length();
+        int column = 0;
+        int spaces = 0;
+        final StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            char ch = charAt(i);
+            if (ch == ' ') {
+                spaces++;
+            } else if (ch == '\t') {
+                spaces += n - (column + spaces) % n;
+            } else if (ch == '\n' || ch == '\r') {
+                sb.append(ch);
+                column = 0;
+                spaces = 0;
+            } else {
+                if (0 < spaces) {
+                    int nexttab = n - column % n;
+                    column += spaces;
+                    while (nexttab <= spaces) {
+                        spaces -= nexttab;
+                        nexttab = n;
+                        sb.append('\t');
+                    }
+                    while (0 < spaces) {
+                        spaces--;
+                        sb.append(' ');
+                    }
+                }
+                sb.append(ch);
+                column++;
+            }
+        }
+        return sb.toString();
     }
 
     /**
@@ -3033,6 +3492,86 @@ public final class String
      */
     public static String format(Locale l, String format, Object... args) {
         return new Formatter(l).format(format, args).toString();
+    }
+
+    /**
+     * Returns a formatted string using this string, as the specified
+     * <a href="../util/Formatter.html#syntax">format</a>, and
+     * arguments.
+     *
+     * <p> The locale always used is the one returned by {@link
+     * java.util.Locale#getDefault(java.util.Locale.Category)
+     * Locale.getDefault(Locale.Category)} with
+     * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in the format
+     *         string.  If there are more arguments than format specifiers, the
+     *         extra arguments are ignored.  The number of arguments is
+     *         variable and may be zero.  The maximum number of arguments is
+     *         limited by the maximum dimension of a Java array as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         The behaviour on a
+     *         {@code null} argument depends on the <a
+     *         href="../util/Formatter.html#syntax">conversion</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification.
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     *
+     * @since  12
+     */
+    public String format(Object... args) {
+        return new Formatter().format(this, args).toString();
+    }
+
+    /**
+     * Returns a formatted string using this string, as the specified
+     * <a href="../util/Formatter.html#syntax">format</a>, the specified locale,
+     * and  arguments.
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in the format
+     *         string.  If there are more arguments than format specifiers, the
+     *         extra arguments are ignored.  The number of arguments is
+     *         variable and may be zero.  The maximum number of arguments is
+     *         limited by the maximum dimension of a Java array as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         The behaviour on a
+     *         {@code null} argument depends on the
+     *         <a href="../util/Formatter.html#syntax">conversion</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     *
+     * @since  12
+     */
+    public String format(Locale l, Object... args) {
+        return new Formatter(l).format(this, args).toString();
     }
 
     /**
@@ -3290,229 +3829,6 @@ public final class String
         } else {    // this.coder == LATIN && coder == UTF16
             StringLatin1.inflate(value, 0, dst, dstBegin, value.length);
         }
-    }
-
-    private String unescape(boolean backslash, boolean unicode) throws MalformedEscapeException {
-        if (isLatin1()) {
-            return StringLatin1.unescape(value, backslash, unicode);
-        } else {
-            return StringUTF16.unescape(toCharArray(), backslash, unicode);
-        }
-    }
-
-    /**
-     * The constants of this enumerated type provide a simple classification
-     * of the types of escape sequence catagories based on the
-     * <cite>The Java&trade; Language Specification</cite>.
-     */
-    public enum EscapeType {
-        /** Backslash escape sequences based on section 3.10.6 of the
-         * <cite>The Java&trade; Language Specification</cite>.
-         * This includes sequences for backspace, horizontal tab,
-         * line feed, form feed, carriage return, double quote,
-         * single quote, backslash and octal escape sequences.
-         */
-        BACKSLASH,
-
-        /** Unicode sequences based on section 3.3 of the
-         * <cite>The Java&trade; Language Specification</cite>.
-         * This includes sequences in the form {@code \u005Cunnnn}.
-         */
-        UNICODE
-    }
-
-    /**
-     * Translates all Unicode escapes and escape sequences in the string into
-     * characters represented by those escapes specified in sections 3.3 and
-     * 3.10.6 of the <cite>The Java&trade; Language Specification</cite>.
-     * <p>
-     * Each  unicode escape in the form {@code \u005Cunnnn} is translated to
-     * the unicode character whose code point is {@code 0xnnnn}. Care should be
-     * taken when using UTF-16 surrogate pairs to ensure that the high
-     * surrogate ({@code \u005CuD800..\u005CuDBFF}) is immediately followed by
-     * a low surrogate ({@code \u005CuDC00..\u005CuDFFF}) otherwise a {@link
-     * java.nio.charset.CharacterCodingException} may occur during UTF-8
-     * decoding.
-     * <p>
-     * Backslash escape sequences are translated as follows;
-     * <table class="plain">
-     *   <caption style="display:none">Escape sequences</caption>
-     *   <thead>
-     *   <tr>
-     *     <th scope="col">Escape</th>
-     *     <th scope="col">Name</th>
-     *     <th scope="col">Unicode</th>
-     *   </tr>
-     *   </thead>
-     *   <tr>
-     *     <td>{@code \u005Cb}</td>
-     *     <td>backspace</td>
-     *     <td>{@code \u005Cu0008}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005Ct}</td>
-     *     <td>horizontal tab</td>
-     *     <td>{@code \u005Cu0009}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005Cn}</td>
-     *     <td>line feed</td>
-     *     <td>{@code \u005Cu000A}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005Cf}</td>
-     *     <td>form feed</td>
-     *     <td>{@code \u005Cu000C}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005Cr}</td>
-     *     <td>carriage return</td>
-     *     <td>{@code \u005Cu000D}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005C"}</td>
-     *     <td>double quote</td>
-     *     <td>{@code \u005Cu0022}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005C'}</td>
-     *     <td>single quote</td>
-     *     <td>{@code \u005Cu0027}</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005C\u005C}</td>
-     *     <td>backslash</td>
-     *     <td>{@code \u005Cu005C}</td>
-     *   </tr>
-     * </table>
-     * <p>
-     * Octal escapes \u005C0 - \u005C377 are translated to their code
-     * point equivalents.
-     *
-     * @throws MalformedEscapeException when escape sequence is malformed.
-     * @return String with all escapes translated.
-     */
-    public String unescape() throws MalformedEscapeException {
-        return unescape(true, true);
-    }
-
-    /**
-     * Selectively translates all Unicode escapes and escape sequences in
-     * the string into characters represented by those escapes specified in
-     * sections 3.3 and 3.10.6 of the
-     * <cite>The Java&trade; Language Specification</cite>.
-     * <p>
-     * Which escape sequences that are translated is based on {@link EscapeType}
-     * {@code escapes} specified.
-     * <p>
-     * If {@link EscapeType.BACKSLASH} is specified then backslash escape
-     * sequences are translated according to the table at {@link #unescape()}.
-     * <p>
-     * If {@link EscapeType.UNICODE} is specified then Unicode escapes
-     * are translated.
-     * <p>
-     * If no EscapeType is provided then this string is returned.
-     *
-     * @param escapes  a vararg of {@link EscapeType} indicating which
-     *                 sequences to translate
-     *
-     * @throws MalformedEscapeException when escape sequence is malformed.
-     * @return String with selective escapes translated.
-     */
-    public String unescape(EscapeType... escapes) throws MalformedEscapeException {
-        boolean backslash = false;
-        boolean unicode = false;
-        for (EscapeType escape : escapes) {
-            switch (escape) {
-            case BACKSLASH:
-                backslash = true;
-                break;
-            case UNICODE:
-                unicode = true;
-                break;
-            }
-        }
-        if (backslash || unicode) {
-            return unescape(backslash, unicode);
-        }
-        return this;
-    }
-
-    private String escape(boolean backslash, boolean unicode) {
-        String result;
-        if (isLatin1()) {
-            result = StringLatin1.escape(value, backslash, unicode);
-        } else {
-            result = StringUTF16.escape(toCharArray(), backslash, unicode);
-        }
-        return result == null ? this : result;
-    }
-
-    /**
-     * Translates all quotes, backslashes, non-ASCII and non-graphics
-     * characters into escape sequence representations specified in
-     * sections 3.3 and 3.10.6 of the
-     * <cite>The Java&trade; Language Specification</cite>.
-     * <p>
-     * Characters in the code point range {@code \u005Cu0000..\u005Cu001F}
-     * are translated to unicode escapes unless they have a special
-     * sequence found in the table at {@link #unescape()}.
-     * <p>
-     * Characters in the code point range {@code \u005Cu0020..\u005Cu007F}
-     * are unaffected unless they have a special sequence found in the
-     * table at {@link #unescape()}.
-     * <p>
-     * Characters in the code point range {@code \u005Cu0080..\u005CuFFFF}
-     * including surrogates are translated to unicode sescapes.
-     *
-     * @return String with translated escape sequences.
-     */
-    public String escape() {
-        return escape(true, true);
-    }
-
-    /**
-     * Selectively translates all quotes, backslashes, non-ASCII and
-     * non-graphics characters into escape sequence representations
-     * specified in sections 3.3 and 3.10.6 of the
-     * <cite>The Java&trade; Language Specification</cite>.
-     * <p>
-     * Which characters that are translated is based on {@link EscapeType}
-     * {@code escapes} specified.
-     * <p>
-     * If {@link EscapeType.BACKSLASH} is specified then characters
-     * translated to backslash escape sequences according to the table
-     * at {@link #unescape()}.
-     * <p>
-     * If {@link EscapeType.UNICODE} is specified then characters
-     * in the code point range {@code \u005Cu0080..\u005CuFFFF} are
-     * translated to Unicode escapes.
-     * <p>
-     * If no EscapeType is provided then this string is returned.
-     *
-     * @param escapes  a vararg of {@link EscapeType} indicating which
-     *                 characters to translate
-     *
-     * @return String with selective characters translated to escape
-     * sequences.
-     */
-    public String escape(EscapeType... escapes) {
-        boolean backslash = false;
-        boolean unicode = false;
-        for (EscapeType escape : escapes) {
-            switch (escape) {
-            case BACKSLASH:
-                backslash = true;
-                break;
-            case UNICODE:
-                unicode = true;
-                break;
-            }
-        }
-        if (backslash || unicode) {
-            return escape(backslash, unicode);
-        }
-        return this;
     }
 
     /*

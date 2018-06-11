@@ -895,19 +895,17 @@ final class StringUTF16 {
             return "";
         }
         int right = lastIndexOfNonWhitespace(value);
-        return ((left > 0) || (right < length)) ?
-                new String(Arrays.copyOfRange(value, left << 1, right << 1), UTF16) : null;
+        boolean ifChanged = (left > 0) || (right < length);
+        return ifChanged ? newString(value, left, right - left) : null;
     }
 
     public static String stripLeading(byte[] value) {
-        int length = value.length >> 1;
+        int length = value.length >>> 1;
         int left = indexOfNonWhitespace(value);
         if (left == length) {
             return "";
         }
-        return (left != 0) ?
-                new String(Arrays.copyOfRange(value, left << 1, value.length), UTF16) :
-                null;
+        return (left != 0) ? newString(value, left, length - left) : null;
     }
 
     public static String stripTrailing(byte[] value) {
@@ -916,26 +914,18 @@ final class StringUTF16 {
         if (right == 0) {
             return "";
         }
-        return (right != length) ?
-                new String(Arrays.copyOfRange(value, 0, right << 1), UTF16) : null;
+        return (right != length) ? newString(value, 0, right) : null;
     }
 
-    static class LinesSpliterator implements Spliterator<String> {
+    private final static class LinesSpliterator implements Spliterator<String> {
         private byte[] value;
         private int index;        // current index, modified on advance/split
         private final int fence;  // one past last index
-        private final int cs;
 
-        LinesSpliterator(byte[] value, int cs) {
-            this(value, 0, value.length >>> 1, cs);
-        }
-
-        LinesSpliterator(byte[] value, int start, int length, int cs) {
+        private LinesSpliterator(byte[] value, int start, int length) {
             this.value = value;
             this.index = start;
             this.fence = start + length;
-            this.cs = cs |
-                      Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
         }
 
         private int indexOfLineSeparator(int start) {
@@ -997,7 +987,7 @@ final class StringUTF16 {
             if (mid < fence) {
                 int start = index;
                 index = mid;
-                return new LinesSpliterator(value, start, mid - start, cs);
+                return new LinesSpliterator(value, start, mid - start);
             }
             return null;
         }
@@ -1009,12 +999,93 @@ final class StringUTF16 {
 
         @Override
         public int characteristics() {
-            return cs;
+            return Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL;
+        }
+
+        static LinesSpliterator spliterator(byte[] value) {
+            return new LinesSpliterator(value, 0, value.length >>> 1);
+        }
+
+        static LinesSpliterator spliterator(byte[] value, int leading, int trailing) {
+            int length = value.length >>> 1;
+            int left = 0;
+            int index;
+            for (int l = 0; l < leading; l++) {
+                index = skipBlankForward(value, left, length);
+                if (index == left) {
+                    break;
+                }
+                left = index;
+            }
+            int right = length;
+            for (int t = 0; t < trailing; t++) {
+                index = skipBlankBackward(value, left, right);
+                if (index == right) {
+                    break;
+                }
+                right = index;
+            }
+            return new LinesSpliterator(value, left, right - left);
+        }
+
+        private static int skipBlankForward(byte[] value, int start, int length) {
+            int index = start;
+            while (index < length) {
+                char ch = getChar(value, index++);
+                if (ch == '\n') {
+                    return index;
+                }
+                if (ch == '\r') {
+                    if (index < length && getChar(value, index) == '\n') {
+                        return index + 1;
+                    }
+                    return index;
+                }
+                if (ch != ' ' && ch != '\t' && !Character.isWhitespace(ch)) {
+                    return start;
+                }
+            }
+            return length;
+        }
+
+        private static int skipBlankBackward(byte[] value, int start, int fence) {
+            int index = fence;
+            if (start < index && getChar(value, index - 1) == '\n') {
+                index--;
+            }
+            if (start < index && getChar(value, index - 1) == '\r') {
+                index--;
+            }
+            while (start < index) {
+                char ch = getChar(value, --index);
+                if (ch == '\r' || ch == '\n') {
+                    return index + 1;
+                }
+                if (ch != ' ' && ch != '\t' && !Character.isWhitespace(ch)) {
+                    return fence;
+                }
+            }
+            return start;
         }
     }
 
-    static Stream<String> lines(byte[] value) {
-        return StreamSupport.stream(new LinesSpliterator(value, 0), false);
+    static Stream<String> lines(byte[] value, int leading, int trailing) {
+        if (leading == 0 && trailing == 0) {
+            return StreamSupport.stream(LinesSpliterator.spliterator(value), false);
+        } else {
+            return StreamSupport.stream(LinesSpliterator.spliterator(value, leading, trailing), false);
+        }
+    }
+
+    public static boolean isMultiline(byte[] value) {
+        int index = value.length >>> 1;
+        while (0 < index) {
+            char ch = getChar(value, --index);
+            if (ch == '\n' || ch == '\r') {
+                return true;
+            };
+        }
+        return false;
     }
 
     private static void putChars(byte[] val, int index, char[] str, int off, int end) {
