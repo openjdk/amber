@@ -188,6 +188,15 @@ public class TreeInfo {
                 .collect(List.collector());
     }
 
+    public static List<Type> recordFieldTypes(JCClassDecl tree) {
+        return tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
+                .map(vd -> vd.type)
+                .collect(List.collector());
+    }
+
     /** Is this a constructor whose first (non-synthetic) statement is not
      *  of the form this(...)?
      */

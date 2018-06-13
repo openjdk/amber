@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.comp.Resolve.MethodResolutionContext;
 import com.sun.tools.javac.jvm.*;
 import com.sun.tools.javac.main.Option.PkgInfo;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
@@ -787,6 +788,21 @@ public class Lower extends TreeTranslator {
      */
     private MethodSymbol lookupMethod(DiagnosticPosition pos, Name name, Type qual, List<Type> args) {
         return rs.resolveInternalMethod(pos, attrEnv, qual, name, args, List.nil());
+    }
+
+    private Symbol findMethodOrFailSilently(
+            DiagnosticPosition pos,
+            Env<AttrContext> env,
+            Type site,
+            Name name,
+            List<Type> argtypes,
+            List<Type> typeargtypes) {
+        MethodResolutionContext resolveContext = rs.new MethodResolutionContext();
+        resolveContext.internalResolution = true;
+        resolveContext.silentFail = true;
+        Symbol sym = rs.resolveQualifiedMethod(resolveContext, pos, env, site.tsym,
+                site, name, argtypes, typeargtypes);
+        return sym;
     }
 
     /** Anon inner classes are used as access constructor tags.
@@ -2443,7 +2459,8 @@ public class Lower extends TreeTranslator {
                 recordEquals(tree, getterMethHandles),
                 recordToString(tree, vars, getterMethHandles),
                 recordHashCode(tree, getterMethHandles),
-                recordExtractor(tree, getterMethHandles)
+                recordExtractor(tree, getterMethHandles),
+                recordReadResolve(tree)
         ));
     }
 
@@ -2554,6 +2571,28 @@ public class Lower extends TreeTranslator {
         JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.nil());
         proxyCall.type = qualifier.type;
         return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(proxyCall))));
+    }
+
+    JCTree recordReadResolve(JCClassDecl tree) {
+        make_at(tree.pos());
+        Symbol msym = findMethodOrFailSilently(
+                tree.pos(),
+                attrEnv,
+                tree.sym.type,
+                names.readResolve,
+                List.nil(),
+                List.nil());
+        MethodSymbol initSym = lookupMethod(tree.pos(),
+                         names.init,
+                         tree.sym.type,
+                         TreeInfo.recordFieldTypes(tree));
+        // we will generate the `readResolve` method only if the user provided a state constructor
+        if (!msym.kind.isResolutionError() && (msym.flags() & RECORD) != 0 && (initSym.flags() & RECORD) == 0) {
+            List<JCExpression> args = TreeInfo.recordFields(tree).map(vd -> make.Ident(vd));
+            return make.MethodDef((MethodSymbol)msym, make.Block(0, List.of(make.Return(makeNewClass(tree.sym.type, args)))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
     }
 
     private String argsTypeSig(List<Type> typeList) {

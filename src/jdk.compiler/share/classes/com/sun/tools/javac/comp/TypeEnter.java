@@ -914,6 +914,7 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             ClassType ct = (ClassType)sym.type;
+            boolean defaultConstructorGenerated = false;
 
             // Add default constructor if needed.
             if ((sym.flags() & INTERFACE) == 0 &&
@@ -934,6 +935,7 @@ public class TypeEnter implements Completer {
                 if (helper != null) {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
+                    defaultConstructorGenerated = true;
                 }
             } else {
                 if ((sym.flags() & RECORD) != 0) {
@@ -986,7 +988,7 @@ public class TypeEnter implements Completer {
                 env.info.scope.enter(superSym);
             }
 
-            finishClass(tree, env);
+            finishClass(tree, env, defaultConstructorGenerated);
 
             if (allowTypeAnnos) {
                 typeAnnotations.organizeTypeAnnotationsSignatures(env, (JCClassDecl)env.tree);
@@ -1019,7 +1021,7 @@ public class TypeEnter implements Completer {
 
         /** Enter members for a class.
          */
-        void finishClass(JCClassDecl tree, Env<AttrContext> env) {
+        void finishClass(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
             if ((tree.mods.flags & Flags.ENUM) != 0 &&
                 !tree.sym.type.hasTag(ERROR) &&
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
@@ -1030,7 +1032,7 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(defsToEnter, env);
             if ((tree.mods.flags & RECORD) != 0) {
                 if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-                    addRecordMembersIfNeeded(tree, env);
+                    addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
                 }
                 addAccessorsIfNeeded(tree, env);
             }
@@ -1109,7 +1111,7 @@ public class TypeEnter implements Completer {
         /** Add the implicit members for a record
          *  to the symbol table.
          */
-        private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+        private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
@@ -1152,6 +1154,22 @@ public class TypeEnter implements Completer {
                               null,
                               null);
                 memberEnter.memberEnter(equals, env);
+            }
+
+            if (attr.isSerializable(tree.sym.type) && !defaultConstructorGenerated) {
+                if (lookupMethod(tree.sym, names.readResolve, List.nil()) == null) {
+                    // private Object readResolve() { return ???; }
+                    JCMethodDecl readResolve = make.
+                        MethodDef(make.Modifiers(Flags.PRIVATE | Flags.RECORD | Flags.FINAL),
+                                  names.readResolve,
+                                  make.Type(syms.objectType),
+                                  List.nil(),
+                                  List.nil(),
+                                  List.nil(), // thrown
+                                  null,
+                                  null);
+                    memberEnter.memberEnter(readResolve, env);
+                }
             }
         }
 
