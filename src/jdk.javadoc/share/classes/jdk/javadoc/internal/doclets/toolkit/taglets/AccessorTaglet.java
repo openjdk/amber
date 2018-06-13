@@ -25,6 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.taglets;
 
+import java.util.EnumSet;
+
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.Utils;
@@ -51,60 +53,11 @@ public class AccessorTaglet extends BaseTaglet {
      * Construct a ParamTaglet.
      */
     public AccessorTaglet(DocTree.Kind kind) {
-        name = kind.tagName;
+        super(kind.tagName, false, EnumSet.of(Site.FIELD));
         this.kind = kind;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public boolean inField() {
-        return true;
-    }
-
-        /**
-     * {@inheritDoc}
-     */
-    public boolean inMethod() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean inOverview() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean inModule() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean inPackage() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean inType() {
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean isInlineTag() {
-        return false;
-    }
-
-    /**
+   /**
      * Given an array of <code>ParamTag</code>s,return its string representation.
      * @param holder the member that holds the param tags.
      * @param writer the TagletWriter that will write this tag.
@@ -115,3 +68,4 @@ public class AccessorTaglet extends BaseTaglet {
         return writer.accessorTagOutput(holder, utils.getBlockTags(holder, kind));
     }
 }
+

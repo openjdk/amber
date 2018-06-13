@@ -35,6 +35,7 @@
 
 class BarrierSetAssembler;
 class BarrierSetC1;
+class BarrierSetC2;
 class JavaThread;
 
 // This class provides the interface between a barrier implementation and
@@ -70,6 +71,7 @@ private:
   FakeRtti _fake_rtti;
   BarrierSetAssembler* _barrier_set_assembler;
   BarrierSetC1* _barrier_set_c1;
+  BarrierSetC2* _barrier_set_c2;
 
 public:
   // Metafunction mapping a class derived from BarrierSet to the
@@ -92,10 +94,12 @@ public:
 protected:
   BarrierSet(BarrierSetAssembler* barrier_set_assembler,
              BarrierSetC1* barrier_set_c1,
+             BarrierSetC2* barrier_set_c2,
              const FakeRtti& fake_rtti) :
     _fake_rtti(fake_rtti),
     _barrier_set_assembler(barrier_set_assembler),
-    _barrier_set_c1(barrier_set_c1) {}
+    _barrier_set_c1(barrier_set_c1),
+    _barrier_set_c2(barrier_set_c2) {}
   ~BarrierSet() { }
 
   template <class BarrierSetAssemblerT>
@@ -106,6 +110,11 @@ protected:
   template <class BarrierSetC1T>
   BarrierSetC1* make_barrier_set_c1() {
     return COMPILER1_PRESENT(new BarrierSetC1T()) NOT_COMPILER1(NULL);
+  }
+
+  template <class BarrierSetC2T>
+  BarrierSetC2* make_barrier_set_c2() {
+    return COMPILER2_PRESENT(new BarrierSetC2T()) NOT_COMPILER2(NULL);
   }
 
 public:
@@ -136,6 +145,11 @@ public:
   BarrierSetC1* barrier_set_c1() {
     assert(_barrier_set_c1 != NULL, "should be set");
     return _barrier_set_c1;
+  }
+
+  BarrierSetC2* barrier_set_c2() {
+    assert(_barrier_set_c2 != NULL, "should be set");
+    return _barrier_set_c2;
   }
 
   // The AccessBarrier of a BarrierSet subclass is called by the Access API
@@ -199,8 +213,12 @@ public:
     }
 
     template <typename T>
-    static void arraycopy_in_heap(arrayOop src_obj, arrayOop dst_obj, T* src, T* dst, size_t length) {
-      Raw::arraycopy(src_obj, dst_obj, src, dst, length);
+    static void arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
+                                  arrayOop dst_obj, size_t dst_offset_in_bytes, T* dst_raw,
+                                  size_t length) {
+      Raw::arraycopy(src_obj, src_offset_in_bytes, src_raw,
+                     dst_obj, dst_offset_in_bytes, dst_raw,
+                     length);
     }
 
     // Heap oop accesses. These accessors get resolved when
@@ -243,8 +261,12 @@ public:
     }
 
     template <typename T>
-    static bool oop_arraycopy_in_heap(arrayOop src_obj, arrayOop dst_obj, T* src, T* dst, size_t length) {
-      return Raw::oop_arraycopy(src_obj, dst_obj, src, dst, length);
+    static bool oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
+                                      arrayOop dst_obj, size_t dst_offset_in_bytes, T* dst_raw,
+                                      size_t length) {
+      return Raw::oop_arraycopy(src_obj, src_offset_in_bytes, src_raw,
+                                dst_obj, dst_offset_in_bytes, dst_raw,
+                                length);
     }
 
     // Off-heap oop accesses. These accessors get resolved when
