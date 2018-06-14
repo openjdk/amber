@@ -29,7 +29,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.constant.ClassDesc;
-import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicCallSiteDesc;
 import java.lang.constant.MethodHandleDesc;
 import java.lang.constant.MethodTypeDesc;
@@ -59,7 +59,7 @@ public class IndyRefTest {
     public void testIndyRef() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyRefTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
         DynamicCallSiteDesc csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
         CallSite cs = csd.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target = cs.getTarget();
@@ -94,7 +94,7 @@ public class IndyRefTest {
     public void testEqualsHashToString() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyRefTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
 
         DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
         DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
@@ -111,7 +111,7 @@ public class IndyRefTest {
     public void testEmptyInvocationName() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyRefTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
         DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "", MethodTypeDesc.of(CR_String));
     }
 }

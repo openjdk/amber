@@ -34,7 +34,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
-import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.ConstantUtils;
 import java.lang.constant.DynamicConstantDesc;
 import java.util.HashMap;
@@ -2141,11 +2141,11 @@ public abstract class VarHandle implements Constable<VarHandle> {
             STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHR_VARHANDLEDESC_OFSTATIC),
             ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHR_VARHANDLEDESC_OFARRAY);
 
-            final ConstantMethodHandleDesc bootstrapMethod;
-            final ConstantMethodHandleDesc descFactory;
+            final DirectMethodHandleDesc bootstrapMethod;
+            final DirectMethodHandleDesc descFactory;
 
-            Kind(ConstantMethodHandleDesc bootstrapMethod,
-                 ConstantMethodHandleDesc descFactory) {
+            Kind(DirectMethodHandleDesc bootstrapMethod,
+                 DirectMethodHandleDesc descFactory) {
                 this.bootstrapMethod = bootstrapMethod;
                 this.descFactory = descFactory;
             }

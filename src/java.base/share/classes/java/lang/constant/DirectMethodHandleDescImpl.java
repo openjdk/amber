@@ -25,27 +25,24 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Optional;
 
-import jdk.internal.lang.annotation.Foldable;
-
 import static java.lang.constant.ConstantDescs.BSM_METHODHANDLEDESC;
-import static java.lang.constant.ConstantDescs.CR_ConstantMethodHandleDesc;
+import static java.lang.constant.ConstantDescs.CR_DirectMethodHandleDesc;
 import static java.lang.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.constant.ConstantUtils.validateMemberName;
-import static java.lang.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
+import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a direct
- * {@link MethodHandle}.  A {@linkplain ConstantMethodHandleDesc} corresponds to
+ * {@link MethodHandle}.  A {@linkplain DirectMethodHandleDescImpl} corresponds to
  * a {@code Constant_MethodHandle_info} entry in the constant pool of a classfile.
  */
-public final class ConstantMethodHandleDesc implements MethodHandleDesc {
+final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
 
     private final Kind kind;
     private final ClassDesc owner;
@@ -53,7 +50,7 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
     private final MethodTypeDesc type;
 
     /**
-     * Construct a {@linkplain ConstantMethodHandleDesc} for a method or field
+     * Construct a {@linkplain DirectMethodHandleDescImpl} for a method or field
      * from a kind, owner, name, and type
      *
      * @param kind the kind of the method handle
@@ -68,7 +65,7 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
      * is not {@code void}
      * @jvms 4.2.2 Unqualified Names
      */
-    ConstantMethodHandleDesc(Kind kind, ClassDesc owner, String name, MethodTypeDesc type) {
+    DirectMethodHandleDescImpl(Kind kind, ClassDesc owner, String name, MethodTypeDesc type) {
         if (kind == CONSTRUCTOR)
             name = "<init>";
 
@@ -109,59 +106,26 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
         }
     }
 
-    /**
-     * Return the {@code kind} of the method handle described by this nominal
-     * descriptor.
-     *
-     * @return the {@link Kind}
-     */
-    @Foldable
+    @Override
     public Kind kind() { return kind; }
 
-    /**
-     * Return the {@code refKind} of the method handle described by this nominal
-     * reference, as defined by {@link MethodHandleInfo}.
-     *
-     * @return the reference kind
-     */
-    @Foldable
+    @Override
     public int refKind() { return kind.refKind; }
 
-    /**
-     * Indicates if the method is declared by an interface
-     *
-     * @return true if the method is declared by an interface
-     */
+    @Override
     public boolean isOwnerInterface() { return kind.isInterface; }
 
-    /**
-     * Return a {@link ClassDesc} describing the class declaring the
-     * method or field described by this nominal descriptor.
-     *
-     * @return the class declaring the method or field
-     */
-    @Foldable
+    @Override
     public ClassDesc owner() {
         return owner;
     }
 
-    /**
-     * Return the name of the method or field described by this nominal descriptor.
-     *
-     * @return the name of the method or field
-     */
-    @Foldable
+    @Override
     public String methodName() {
         return name;
     }
 
-    /**
-     * Return a {@link MethodTypeDesc} describing the invocation type of the
-     * method handle described by this nominal descriptor
-     *
-     * @return the method type
-     */
-    @Foldable
+    @Override
     public MethodTypeDesc methodType() {
         return type;
     }
@@ -197,40 +161,15 @@ public final class ConstantMethodHandleDesc implements MethodHandleDesc {
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodHandle>>of(BSM_METHODHANDLEDESC, CR_ConstantMethodHandleDesc)
+        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodHandle>>of(BSM_METHODHANDLEDESC, CR_DirectMethodHandleDesc)
                                               .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
-    }
-
-    /**
-     * Constant bootstrap method for representing a {@linkplain MethodHandleDesc} in
-     * the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param bsmKindName The name of an {@code enum} constant from {@link Kind}
-     * @param memberOwner A field type descriptor for the class declaring the
-     *                 method, field, or constructor, as per JVMS 4.3.2
-     * @param memberName The name of the method or field, as per JVMS 4.2.2
-     * @param memberType A method type descriptor for the method handle being
-     *                described, as per JVMS 4.3.3
-     * @return the {@linkplain MethodHandleDesc}
-     * @jvms 4.2.2 Unqualified Names
-     * @jvms 4.3.2 Field Descriptors
-     * @jvms 4.3.3 Method Descriptors
-     */
-    public static ConstantMethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                                     String bsmKindName, String memberOwner, String memberName, String memberType) {
-        return MethodHandleDesc.of(MethodHandleDesc.Kind.valueOf(bsmKindName),
-                                   ClassDesc.ofDescriptor(memberOwner), memberName,
-                                   MethodTypeDesc.ofDescriptor(memberType));
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ConstantMethodHandleDesc desc = (ConstantMethodHandleDesc) o;
+        DirectMethodHandleDescImpl desc = (DirectMethodHandleDescImpl) o;
         return kind == desc.kind &&
                Objects.equals(owner, desc.owner) &&
                Objects.equals(name, desc.name) &&

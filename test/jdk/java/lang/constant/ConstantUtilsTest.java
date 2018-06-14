@@ -68,7 +68,7 @@ public class ConstantUtilsTest {
     }
 
     public void testSymbolizeHelper() {
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ConstantDescs.CR_String, "isEmpty", "()Z");
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ConstantDescs.CR_String, "isEmpty", "()Z");
         try {
             ConstantUtils.symbolizeHelper(mh, null, "");
             fail("");
