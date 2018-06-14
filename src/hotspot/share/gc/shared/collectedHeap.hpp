@@ -89,6 +89,7 @@ class GCHeapLog : public EventLogBase<GCMessage> {
 //     CMSHeap
 //   G1CollectedHeap
 //   ParallelScavengeHeap
+//   ZCollectedHeap
 //
 class CollectedHeap : public CHeapObj<mtInternal> {
   friend class VMStructs;
@@ -206,7 +207,9 @@ class CollectedHeap : public CHeapObj<mtInternal> {
     Serial,
     Parallel,
     CMS,
-    G1
+    G1,
+    Epsilon,
+    Z
   };
 
   static inline size_t filler_array_max_size() {
@@ -346,6 +349,8 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   static void fill_with_object(HeapWord* start, HeapWord* end, bool zap = true) {
     fill_with_object(start, pointer_delta(end, start), zap);
   }
+
+  virtual void fill_with_dummy_object(HeapWord* start, HeapWord* end, bool zap);
 
   // Return the address "addr" aligned by "alignment_in_bytes" if such
   // an address is below "end".  Return NULL otherwise.

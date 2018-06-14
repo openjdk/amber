@@ -25,21 +25,22 @@
  * @bug 4313887 6838333 6917021 7006126 6950237 8006645 8201407
  * @summary Unit test for java.nio.file.Files copy and move methods (use -Dseed=X to set PRNG seed)
  * @library .. /test/lib
- * @build jdk.test.lib.RandomFactory
+ * @build jdk.test.lib.Platform jdk.test.lib.RandomFactory
  *        CopyAndMove PassThroughFileSystem
  * @run main/othervm CopyAndMove
  * @key randomness
  */
 
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.LinkOption.*;
 import java.nio.file.attribute.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import jdk.test.lib.Platform;
 import jdk.test.lib.RandomFactory;
 
 public class CopyAndMove {
@@ -87,6 +88,18 @@ public class CopyAndMove {
         }
     }
 
+    static void printDirInfo(String name, Path dir) throws IOException {
+        System.err.format("%s: %s (%s)%n", name, dir,
+            Files.getFileStore(dir).type());
+    }
+
+    static void printDirInfo(String label, Path dir1, Path dir2)
+        throws IOException {
+        System.err.format("--- %s ---%n", label);
+        printDirInfo("dir1", dir1);
+        printDirInfo("dir2", dir2);
+    }
+
     static void checkBasicAttributes(BasicFileAttributes attrs1,
                                      BasicFileAttributes attrs2)
     {
@@ -116,17 +129,44 @@ public class CopyAndMove {
     static void checkPosixAttributes(PosixFileAttributes attrs1,
                                      PosixFileAttributes attrs2)
     {
-        assertTrue(attrs1.permissions().equals(attrs2.permissions()));
-        assertTrue(attrs1.owner().equals(attrs2.owner()));
-        assertTrue(attrs1.group().equals(attrs2.group()));
+        try {
+            assertTrue(attrs1.permissions().equals(attrs2.permissions()));
+            assertTrue(attrs1.owner().equals(attrs2.owner()));
+            assertTrue(attrs1.group().equals(attrs2.group()));
+        } catch (Exception e) {
+            if (!attrs1.permissions().equals(attrs2.permissions()))
+                System.err.format("permissions%n1 (%d): %s%n2 (%d): %s%n%n",
+                    attrs1.permissions().size(), attrs1.permissions(),
+                    attrs2.permissions().size(), attrs2.permissions());
+            if (!attrs1.owner().equals(attrs2.owner()))
+                System.err.format("owner%n1: %s%n2: %s%n%n",
+                    attrs1.owner(), attrs2.owner());
+            if (!attrs1.group().equals(attrs2.group()))
+                System.err.format("group%n1: %s%n2: %s%n%n",
+                    attrs1.group(), attrs2.group());
+            throw e;
+        }
     }
 
     static void checkDosAttributes(DosFileAttributes attrs1,
                                    DosFileAttributes attrs2)
     {
-        assertTrue(attrs1.isReadOnly() == attrs2.isReadOnly());
-        assertTrue(attrs1.isHidden() == attrs2.isHidden());
-        assertTrue(attrs1.isSystem() == attrs2.isSystem());
+        try {
+            assertTrue(attrs1.isReadOnly() == attrs2.isReadOnly());
+            assertTrue(attrs1.isHidden() == attrs2.isHidden());
+            assertTrue(attrs1.isSystem() == attrs2.isSystem());
+        } catch (Exception e) {
+            if(attrs1.isReadOnly() != attrs2.isReadOnly())
+                System.err.format("isReadOnly%n1: %s%n2: %s%n%n",
+                    attrs1.isReadOnly(), attrs2.isReadOnly());
+            if(attrs1.isHidden() != attrs2.isHidden())
+                System.err.format("isHidden%n1: %s%n2: %s%n%n",
+                    attrs1.isHidden(), attrs2.isHidden());
+            if(attrs1.isSystem() != attrs2.isSystem())
+                System.err.format("isSystem%n1: %s%n2: %s%n%n",
+                    attrs1.isSystem(), attrs2.isSystem());
+            throw e;
+        }
     }
 
     static void checkUserDefinedFileAttributes(Map<String,ByteBuffer> attrs1,
@@ -169,8 +209,7 @@ public class CopyAndMove {
         Map<String,ByteBuffer> namedAttributes = null;
 
         // get file attributes of source file
-        String os = System.getProperty("os.name");
-        if (os.startsWith("Windows")) {
+        if (Platform.isWindows()) {
             dosAttributes = readAttributes(source, DosFileAttributes.class, NOFOLLOW_LINKS);
             basicAttributes = dosAttributes;
         } else {
@@ -253,6 +292,8 @@ public class CopyAndMove {
     static void testMove(Path dir1, Path dir2, boolean supportsLinks)
         throws IOException
     {
+        printDirInfo("testMove", dir1, dir2);
+
         Path source, target, entry;
 
         boolean sameDevice = getFileStore(dir1).equals(getFileStore(dir2));
@@ -657,17 +698,14 @@ public class CopyAndMove {
             if (source.getFileSystem().provider() == target.getFileSystem().provider()) {
 
                 // check POSIX attributes are copied
-                String os = System.getProperty("os.name");
-                if ((os.equals("SunOS") || os.equals("Linux")) &&
-                    testPosixAttributes)
-                {
+                if (!Platform.isWindows() && testPosixAttributes) {
                     checkPosixAttributes(
                         readAttributes(source, PosixFileAttributes.class, linkOptions),
                         readAttributes(target, PosixFileAttributes.class, linkOptions));
                 }
 
                 // check DOS attributes are copied
-                if (os.startsWith("Windows")) {
+                if (Platform.isWindows()) {
                     checkDosAttributes(
                         readAttributes(source, DosFileAttributes.class, linkOptions),
                         readAttributes(target, DosFileAttributes.class, linkOptions));
@@ -691,6 +729,8 @@ public class CopyAndMove {
     static void testCopyFileToFile(Path dir1, Path dir2, boolean supportsLinks)
         throws IOException
     {
+        printDirInfo("testCopyFileToFile", dir1, dir2);
+
         Path source, target, link, entry;
 
         // -- regular file --
@@ -925,9 +965,7 @@ public class CopyAndMove {
         /**
          * Test: Copy link to UNC (Windows only)
          */
-        if (supportsLinks &&
-            System.getProperty("os.name").startsWith("Windows"))
-        {
+        if (supportsLinks && Platform.isWindows()) {
             Path unc = Paths.get("\\\\rialto\\share\\file");
             link = dir1.resolve("link");
             createSymbolicLink(link, unc);
@@ -1160,12 +1198,14 @@ public class CopyAndMove {
 
     // "randomize" the file attributes of the given file.
     static void randomizeAttributes(Path file) throws IOException {
-        String os = System.getProperty("os.name");
-        boolean isWindows = os.startsWith("Windows");
-        boolean isUnix = os.equals("SunOS") || os.equals("Linux");
         boolean isDirectory = isDirectory(file, NOFOLLOW_LINKS);
 
-        if (isUnix) {
+        if (Platform.isWindows()) {
+            DosFileAttributeView view =
+                getFileAttributeView(file, DosFileAttributeView.class, NOFOLLOW_LINKS);
+            // only set or unset the hidden attribute
+            view.setHidden(heads());
+        } else {
             Set<PosixFilePermission> perms =
                 getPosixFilePermissions(file, NOFOLLOW_LINKS);
             PosixFilePermission[] toChange = {
@@ -1186,18 +1226,12 @@ public class CopyAndMove {
             setPosixFilePermissions(file, perms);
         }
 
-        if (isWindows) {
-            DosFileAttributeView view =
-                getFileAttributeView(file, DosFileAttributeView.class, NOFOLLOW_LINKS);
-            // only set or unset the hidden attribute
-            view.setHidden(heads());
-        }
-
         boolean addUserDefinedFileAttributes = heads() &&
             getFileStore(file).supportsFileAttributeView("xattr");
 
         // remove this when copying a direcory copies its named streams
-        if (isWindows && isDirectory) addUserDefinedFileAttributes = false;
+        if (Platform.isWindows() && isDirectory)
+            addUserDefinedFileAttributes = false;
 
         if (addUserDefinedFileAttributes) {
             UserDefinedFileAttributeView view =
