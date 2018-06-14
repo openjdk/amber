@@ -1157,7 +1157,8 @@ public class TypeEnter implements Completer {
             }
 
             if (attr.isSerializable(tree.sym.type) && !defaultConstructorGenerated) {
-                if (lookupMethod(tree.sym, names.readResolve, List.nil()) == null) {
+                if (lookupMethod(tree.sym, names.readResolve, List.nil()) == null &&
+                    lookupMethod(tree.sym, names.readObject, List.nil()) == null) {
                     // private Object readResolve() { return ???; }
                     JCMethodDecl readResolve = make.
                         MethodDef(make.Modifiers(Flags.PRIVATE | Flags.RECORD | Flags.FINAL),

@@ -36,7 +36,7 @@ import com.sun.tools.classfile.*;
 
 public class CheckReadResolveMethodTest {
 
-    // readResolve should be generated as the user is providing a constructor
+    // readResolve should be generated as a constructor is provided
     record Point1(int i, int j) implements Serializable {
         Point1(int i, int j) {
             this.i = i;
@@ -44,8 +44,23 @@ public class CheckReadResolveMethodTest {
         }
     }
 
-    // no readResolve should be generated as the user is not providing a constructor
+    // no readResolve should be generated as a constructor is not provided
     record Point2(int i, int j) implements Serializable;
+
+    // no readResolve should be generated as the record doesnt implement Serializable
+    record Point3(int i, int j);
+
+    // no readResolve should be generated as an implementation is already provided
+    record Point4(int i, int j) {
+        private Object readResolve() {
+            return new Point4(i, j);
+        }
+    }
+
+    // no readResolve should be generated as an implementation of readObject is already provided
+    record Point5(int i, int j) {
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {}
+    }
 
     public static void main(String args[]) throws Throwable {
         new CheckReadResolveMethodTest().run();
@@ -54,6 +69,9 @@ public class CheckReadResolveMethodTest {
     void run() throws Throwable {
         checkReadResolveMethod("Point1", true);
         checkReadResolveMethod("Point2", false);
+        checkReadResolveMethod("Point3", false);
+        checkReadResolveMethod("Point4", true);
+        checkReadResolveMethod("Point5", false);
     }
 
     void checkReadResolveMethod(String className, boolean shouldBeThere) throws Throwable {

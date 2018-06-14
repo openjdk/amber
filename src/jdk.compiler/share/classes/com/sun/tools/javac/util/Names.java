@@ -115,6 +115,7 @@ public class Names {
     public final Name valueOf;
     public final Name values;
     public final Name readResolve;
+    public final Name readObject;
 
     // class names
     public final Name java_io_Serializable;
@@ -292,6 +293,7 @@ public class Names {
         valueOf = fromString("valueOf");
         values = fromString("values");
         readResolve = fromString("readResolve");
+        readObject = fromString("readObject");
         dollarThis = fromString("$this");
 
         // class names
