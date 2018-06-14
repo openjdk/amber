@@ -28,8 +28,8 @@
  * entities such as classes or method handles, and classfile entities such as
  * constant pool entries or {@code invokedynamic} call sites.  These classes
  * are suitable for use in bytecode reading and writing APIs, {@code invokedynamic}
- * bootstraps, bytecode intrinsic APIs (such as {@link java.lang.invoke.Intrinsics#ldc(ConstantDesc)}),
- * and compile-time or link-time program analysis tools.
+ * bootstraps, bytecode intrinsic APIs, and compile-time or link-time program
+ * analysis tools.
  *
  * <p>Every API that reads and writes bytecode instructions needs to model the
  * operands to these instructions and other classfile structures (such as entries
@@ -57,8 +57,8 @@
  * <p>The subtypes of of {@link java.lang.constant.ConstantDesc} describe various kinds
  * of constant values.  For each type of loadable constant pool entry defined in JVMS 4.4,
  * there is a corresponding subtype of {@link java.lang.constant.ConstantDesc}:
- * {@link java.lang.constant.ConstantClassDesc}, {@link java.lang.constant.ConstantMethodTypeDesc},
- * {@link java.lang.constant.ConstantMethodHandleDesc}, {@link java.lang.String},
+ * {@link java.lang.constant.ClassDesc}, {@link java.lang.constant.MethodTypeDesc},
+ * {@link java.lang.constant.DirectMethodHandleDescImpl}, {@link java.lang.String},
  * {@link java.lang.Integer}, {@link java.lang.Long}, {@link java.lang.Float},
  * {@link java.lang.Double}, and {@link java.lang.constant.DynamicConstantDesc}.  These classes
  * provides type-specific accessor methods to extract the nominal information for
@@ -68,7 +68,7 @@
  * When a bytecode-reading API encounters a constant pool entry, it can
  * convert it to the appropriate type of nominal descriptor.  For dynamic
  * constants, bytecode-reading APIs may wish to use the factory
- * {@link java.lang.constant.DynamicConstantDesc#ofCanonical(ConstantMethodHandleDesc, java.lang.String, ClassDesc, ConstantDesc[])},
+ * {@link java.lang.constant.DynamicConstantDesc#ofCanonical(DirectMethodHandleDesc, java.lang.String, ClassDesc, ConstantDesc[])},
  * which will inspect the bootstrap and, for well-known bootstraps, return
  * a more specific subtype of {@link java.lang.constant.DynamicConstantDesc}, such as
  * {@link java.lang.Enum.EnumDesc}.
@@ -87,9 +87,8 @@
  * pool entry.  It describes the bootstrap method, invocation name and type,
  * and bootstrap arguments associated with an {@code invokedynamic} instruction.
  * It is also suitable for describing {@code invokedynamic} call sites in bytecode
- * reading and writing APIs, and and is used by the
- * {@link java.lang.invoke.Intrinsics#invokedynamic(DynamicCallSiteDesc, java.lang.Object...)}
- * API for expressing {@code invokedynamic} call sites in Java source files.
+ * reading and writing APIs.
+ *
  * @jvms 4.4 The Constant Pool
  */
 package java.lang.constant;

@@ -30,7 +30,7 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.WrongMethodTypeException;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
-import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.MethodHandleDesc;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -81,10 +81,10 @@ public class MethodHandleRefTest extends SymbolicRefTest {
     }
 
     private void testMethodHandleRef(MethodHandleDesc r) throws ReflectiveOperationException {
-        if (r instanceof ConstantMethodHandleDesc) {
+        if (r instanceof DirectMethodHandleDesc) {
             testSymbolicRef(r);
 
-            ConstantMethodHandleDesc rr = (ConstantMethodHandleDesc) r;
+            DirectMethodHandleDesc rr = (DirectMethodHandleDesc) r;
             assertEquals(r, MethodHandleDesc.of(rr.kind(), rr.owner(), rr.methodName(), r.methodType()));
         }
         else {
@@ -100,7 +100,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
 
         // compare extractable properties: refKind, owner, name, type
         MethodHandleInfo mhi = LOOKUP.revealDirect(mh);
-        ConstantMethodHandleDesc rr = (ConstantMethodHandleDesc) r;
+        DirectMethodHandleDesc rr = (DirectMethodHandleDesc) r;
         assertEquals(mhi.getDeclaringClass().descriptorString(), rr.owner().descriptorString());
         assertEquals(mhi.getName(), rr.methodName());
         assertEquals(mhi.getReferenceKind(), rr.kind().refKind);
@@ -278,7 +278,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         Field[] fields = ConstantDescs.class.getDeclaredFields();
         for (Field f : fields) {
             try {
-                if (f.getType().equals(ConstantMethodHandleDesc.class)
+                if (f.getType().equals(DirectMethodHandleDesc.class)
                     && ((f.getModifiers() & Modifier.STATIC) != 0)
                     && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
                     MethodHandleDesc r = (MethodHandleDesc) f.get(null);

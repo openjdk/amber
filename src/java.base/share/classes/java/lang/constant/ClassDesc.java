@@ -25,7 +25,7 @@
 package java.lang.constant;
 
 import java.lang.invoke.FieldTypeDescriptor;
-
+import java.lang.invoke.MethodHandles;
 import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
@@ -48,6 +48,11 @@ import static java.util.stream.Collectors.joining;
  * type, use {@link #ofDescriptor(String)}, or first obtain a
  * {@linkplain ClassDesc} for the component type and then call the {@link #arrayType()}
  * or {@link #arrayType(int)} methods.
+ *
+ * @apiNote In the future, if the Java language permits, {@linkplain ClassDesc}
+ * may become a {@code sealed} interface, which would prohibit subclassing except
+ * by explicitly permitted types.  Non-platform classes should not implement
+ * {@linkplain ClassDesc} directly.
  *
  * @see ConstantDescs
  */
@@ -108,8 +113,8 @@ public interface ClassDesc
     static ClassDesc ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
         return (descriptor.length() == 1)
-               ? new PrimitiveClassDesc(descriptor)
-               : new ConstantClassDesc(descriptor);
+               ? new PrimitiveClassDescImpl(descriptor)
+               : new ReferenceClassDescImpl(descriptor);
     }
 
     /**
@@ -249,6 +254,22 @@ public interface ClassDesc
         }
         else
             throw new IllegalStateException(descriptorString());
+    }
+
+    /**
+     * Constant bootstrap method for representing a {@linkplain ClassDesc} in
+     * the constant pool of a classfile.
+     *
+     * @param lookup ignored
+     * @param name ignored
+     * @param clazz ignored
+     * @param descriptor a field descriptor string for the class, as per JVMS 4.3.2
+     * @return the {@linkplain ClassDesc}
+     * @jvms 4.3.2 Field Descriptors
+     */
+    public static ClassDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+                                              String descriptor) {
+        return ClassDesc.ofDescriptor(descriptor);
     }
 
     /**

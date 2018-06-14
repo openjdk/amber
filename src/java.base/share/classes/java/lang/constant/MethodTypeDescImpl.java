@@ -31,15 +31,16 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_METHODTYPEDESC;
-import static java.lang.constant.ConstantDescs.CR_ConstantMethodTypeDesc;
+import static java.lang.constant.ConstantDescs.CR_MethodTypeDesc;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
- * {@link MethodType}.  A {@linkplain ConstantMethodTypeDesc} corresponds to a
+ * {@link MethodType}.  A {@linkplain MethodTypeDescImpl} corresponds to a
  * {@code Constant_MethodType_info} entry in the constant pool of a classfile.
  */
-public final class ConstantMethodTypeDesc implements MethodTypeDesc {
+final class MethodTypeDescImpl implements MethodTypeDesc {
     private final ClassDesc returnType;
     private final ClassDesc[] argTypes;
 
@@ -50,7 +51,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
      * @param returnType a {@link ClassDesc} describing the return type
      * @param argTypes {@link ClassDesc}s describing the parameter types
      */
-    ConstantMethodTypeDesc(ClassDesc returnType, ClassDesc[] argTypes) {
+    MethodTypeDescImpl(ClassDesc returnType, ClassDesc[] argTypes) {
         this.returnType = requireNonNull(returnType);
         this.argTypes = requireNonNull(argTypes);
 
@@ -60,19 +61,19 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
     }
 
     /**
-     * Create a {@linkplain ConstantMethodTypeDesc} given a method descriptor string.
+     * Create a {@linkplain MethodTypeDescImpl} given a method descriptor string.
      *
      * @param descriptor the method descriptor string, as per JVMS 4.3.3
-     * @return a {@linkplain ConstantMethodTypeDesc} describing the desired method type
+     * @return a {@linkplain MethodTypeDescImpl} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
      * @jvms 4.3.3 Method Descriptors
      */
-    static ConstantMethodTypeDesc ofDescriptor(String descriptor) {
+    static MethodTypeDescImpl ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
         List<String> types = ConstantUtils.parseMethodDescriptor(descriptor);
         ClassDesc[] paramTypes = types.stream().skip(1).map(ClassDesc::ofDescriptor).toArray(ClassDesc[]::new);
-        return new ConstantMethodTypeDesc(ClassDesc.ofDescriptor(types.get(0)), paramTypes);
+        return new MethodTypeDescImpl(ClassDesc.ofDescriptor(types.get(0)), paramTypes);
     }
 
     @Override
@@ -142,24 +143,8 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<MethodType>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodType>>of(BSM_METHODTYPEDESC, CR_ConstantMethodTypeDesc)
-                                   .withArgs(descriptorString()));
-    }
-
-    /**
-     * Constant bootstrap method for representing a {@linkplain MethodTypeDesc} in
-     * the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
-     * @return the {@linkplain MethodTypeDesc}
-     * @jvms 4.3.3 Method Descriptors
-     */
-    public static ConstantMethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                                   String descriptor) {
-        return (ConstantMethodTypeDesc)MethodTypeDesc.ofDescriptor(descriptor);
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODTYPEDESC, DEFAULT_NAME, CR_MethodTypeDesc,
+                                                  new ConstantDesc<?>[] { descriptorString() }));
     }
 
     @Override
@@ -167,7 +152,7 @@ public final class ConstantMethodTypeDesc implements MethodTypeDesc {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ConstantMethodTypeDesc constant = (ConstantMethodTypeDesc) o;
+        MethodTypeDescImpl constant = (MethodTypeDescImpl) o;
 
         return returnType.equals(constant.returnType)
                && Arrays.equals(argTypes, constant.argTypes);

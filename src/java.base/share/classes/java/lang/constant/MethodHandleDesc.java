@@ -25,68 +25,22 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodType;
 
-import static java.lang.invoke.MethodHandleInfo.REF_getField;
-import static java.lang.invoke.MethodHandleInfo.REF_getStatic;
-import static java.lang.invoke.MethodHandleInfo.REF_invokeInterface;
-import static java.lang.invoke.MethodHandleInfo.REF_invokeSpecial;
-import static java.lang.invoke.MethodHandleInfo.REF_invokeStatic;
-import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
-import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
-import static java.lang.invoke.MethodHandleInfo.REF_putField;
-import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
 import static java.lang.constant.ConstantDescs.CR_void;
-import static java.lang.constant.MethodHandleDesc.Kind.CONSTRUCTOR;
+import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
  * {@link MethodHandle} constant.
+ *
+ * @apiNote In the future, if the Java language permits, {@linkplain MethodHandleDesc}
+ * may become a {@code sealed} interface, which would prohibit subclassing except
+ * by explicitly permitted types.  Non-platform classes should not implement
+ * {@linkplain MethodHandleDesc} directly.
  */
 public interface MethodHandleDesc
         extends ConstantDesc<MethodHandle>, Constable<ConstantDesc<MethodHandle>> {
-    /**
-     * Kinds of method handles that can be described with {@linkplain MethodHandleDesc}.
-     */
-    public enum Kind {
-        /** A method handle for a method invoked as with {@code invokestatic} */
-        STATIC(REF_invokeStatic),
-        /** A method handle for a method invoked as with {@code invokestatic} */
-        INTERFACE_STATIC(REF_invokeStatic, true),
-        /** A method handle for a method invoked as with {@code invokevirtual} */
-        VIRTUAL(REF_invokeVirtual),
-        /** A method handle for a method invoked as with {@code invokeinterface} */
-        INTERFACE_VIRTUAL(REF_invokeInterface, true),
-        /** A method handle for a method invoked as with {@code invokespecial} */
-        SPECIAL(REF_invokeSpecial),
-        /** A method handle for an interface method invoked as with {@code invokespecial} */
-        INTERFACE_SPECIAL(REF_invokeSpecial, true),
-        /** A method handle for a constructor */
-        CONSTRUCTOR(REF_newInvokeSpecial),
-        /** A method handle for a read accessor for an instance field  */
-        GETTER(REF_getField),
-        /** A method handle for a write accessor for an instance field  */
-        SETTER(REF_putField),
-        /** A method handle for a read accessor for a static field  */
-        STATIC_GETTER(REF_getStatic),
-        /** A method handle for a write accessor for a static field  */
-        STATIC_SETTER(REF_putStatic);
-
-        /** The corresponding {@code refKind} value for this kind of method handle,
-         * as defined by {@link MethodHandleInfo}
-         */
-        public final int refKind;
-        /** Is this an interface
-         */
-        public final boolean isInterface;
-
-        Kind(int refKind) {
-            this(refKind, false);
-        }
-        Kind(int refKind, boolean isInterface) { this.refKind = refKind; this.isInterface = isInterface; }
-    }
-
 
     /**
      * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
@@ -99,7 +53,7 @@ public interface MethodHandleDesc
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
      *
-     * <p>For constructor and field access, the methods {@link #ofField(Kind, ClassDesc, String, ClassDesc)}
+     * <p>For constructor and field access, the methods {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)}
      * and {@link #ofConstructor(ClassDesc, ClassDesc...)} may be more convenient.
      *
      * @param kind The kind of method handle to be described
@@ -115,11 +69,11 @@ public interface MethodHandleDesc
      * format
      * @jvms 4.2.2 Unqualified Names
      */
-    static ConstantMethodHandleDesc of(Kind kind,
-                                       ClassDesc clazz,
-                                       String name,
-                                       MethodTypeDesc type) {
-        return new ConstantMethodHandleDesc(kind, clazz, name, type);
+    static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
+                                     ClassDesc clazz,
+                                     String name,
+                                     MethodTypeDesc type) {
+        return new DirectMethodHandleDescImpl(kind, clazz, name, type);
     }
 
     /**
@@ -132,7 +86,7 @@ public interface MethodHandleDesc
      * of field access and the type of the field; instance field accessors must
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(Kind, ClassDesc, String, ClassDesc)} will construct
+     * The method {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)} will construct
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
@@ -147,10 +101,10 @@ public interface MethodHandleDesc
      * @jvms 4.2.2 Unqualified Names
      * @jvms 4.3.3 Method Descriptors
      */
-    static ConstantMethodHandleDesc of(Kind kind,
-                                       ClassDesc clazz,
-                                       String name,
-                                       String descriptorString) {
+    static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
+                                     ClassDesc clazz,
+                                     String name,
+                                     String descriptorString) {
         return of(kind, clazz, name, MethodTypeDesc.ofDescriptor(descriptorString));
     }
 
@@ -164,7 +118,7 @@ public interface MethodHandleDesc
      * of field access and the type of the field; instance field accessors must
      * take a leading receiver parameter, getters must return the type of the
      * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(Kind, ClassDesc, String, ClassDesc)} will construct
+     * The method {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)} will construct
      * the appropriate invocation given the type of the field.
      *
      * @param kind The kind of method handle to be described
@@ -180,11 +134,11 @@ public interface MethodHandleDesc
      * @throws NullPointerException if any of the non-ignored arguments are null
      * @jvms 4.2.2 Unqualified Names
      */
-    static ConstantMethodHandleDesc of(Kind kind,
-                                       ClassDesc clazz,
-                                       String name,
-                                       ClassDesc returnType,
-                                       ClassDesc... paramTypes) {
+    static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
+                                     ClassDesc clazz,
+                                     String name,
+                                     ClassDesc returnType,
+                                     ClassDesc... paramTypes) {
         return of(kind, clazz, name, MethodTypeDesc.of(returnType, paramTypes));
     }
 
@@ -202,10 +156,10 @@ public interface MethodHandleDesc
      * @throws NullPointerException if any of the arguments are null
      * @jvms 4.2.2 Unqualified Names
      */
-    static ConstantMethodHandleDesc ofField(Kind kind,
-                                            ClassDesc clazz,
-                                            String fieldName,
-                                            ClassDesc fieldType) {
+    static DirectMethodHandleDesc ofField(DirectMethodHandleDesc.Kind kind,
+                                          ClassDesc clazz,
+                                          String fieldName,
+                                          ClassDesc fieldType) {
         MethodTypeDesc mtr;
         switch (kind) {
             case GETTER: mtr = MethodTypeDesc.of(fieldType, clazz); break;
@@ -228,8 +182,8 @@ public interface MethodHandleDesc
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
-    static ConstantMethodHandleDesc ofConstructor(ClassDesc clazz,
-                                                  ClassDesc... paramTypes) {
+    static DirectMethodHandleDesc ofConstructor(ClassDesc clazz,
+                                                ClassDesc... paramTypes) {
         return MethodHandleDesc.of(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
                                    MethodTypeDesc.of(CR_void, paramTypes));
     }

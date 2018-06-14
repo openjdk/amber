@@ -30,7 +30,7 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
-import java.lang.constant.ConstantMethodHandleDesc;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodHandleDesc;
 
@@ -89,15 +89,15 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testDynamicConstant() throws ReflectiveOperationException {
-        ConstantMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyRefTest"), "concatBSM",
+        DirectMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyRefTest"), "concatBSM",
                                                                             CR_String, CR_String, CR_String);
         DynamicConstantDesc<String> r = DynamicConstantDesc.<String>of(bsmRef).withArgs("foo", "bar");
         testDCR(r, "foobar");
     }
 
     public void testNested() throws Throwable {
-        ConstantMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.arrayType());
-        ConstantMethodHandleDesc format = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType());
+        DirectMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.arrayType());
+        DirectMethodHandleDesc format = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType());
 
         String s = (String) invoker.resolveConstantDesc(LOOKUP)
                                    .invoke(LOOKUP, "", String.class,

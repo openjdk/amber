@@ -29,13 +29,16 @@ import java.util.Optional;
 
 import sun.invoke.util.Wrapper;
 
+import static java.lang.constant.ConstantDescs.BSM_CLASSDESC;
+import static java.lang.constant.ConstantDescs.CR_ClassDesc;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for the class
  * constant corresponding to a primitive type (e.g., {@code int.class}).
  */
-final class PrimitiveClassDesc
+final class PrimitiveClassDescImpl
         extends DynamicConstantDesc<Class<?>> implements ClassDesc {
 
     private final String descriptor;
@@ -50,7 +53,7 @@ final class PrimitiveClassDesc
      * describe a valid primitive type
      * @jvms 4.3 Descriptors
      */
-    PrimitiveClassDesc(String descriptor) {
+    PrimitiveClassDescImpl(String descriptor) {
         super(ConstantDescs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantDescs.CR_Class);
         if (descriptor.length() != 1
             || "VIJCSBFDZ".indexOf(descriptor.charAt(0)) < 0)
@@ -70,7 +73,8 @@ final class PrimitiveClassDesc
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
-        return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_CLASSDESC_FACTORY, ConstantDescs.CR_ClassDesc, descriptorString());
+        return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, DEFAULT_NAME, CR_ClassDesc,
+                                                  new ConstantDesc<?>[] { descriptor }));
     }
 
     @Override

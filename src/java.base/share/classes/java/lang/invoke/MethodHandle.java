@@ -31,6 +31,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
+import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.MethodHandleDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.util.Arrays;
@@ -1536,27 +1537,27 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
 
         switch (info.getReferenceKind()) {
             case REF_getField:
-                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.GETTER, owner, name, type.returnType()));
             case REF_putField:
-                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, owner, name, type.parameterType(0)));
+                return Optional.of(MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.SETTER, owner, name, type.parameterType(0)));
             case REF_getStatic:
-                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_GETTER, owner, name, type.returnType()));
+                return Optional.of(MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.STATIC_GETTER, owner, name, type.returnType()));
             case REF_putStatic:
-                return Optional.of(MethodHandleDesc.ofField(MethodHandleDesc.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
+                return Optional.of(MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
             case REF_invokeVirtual:
-                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, owner, name, type));
             case REF_invokeStatic:
                 return isInterface ?
-                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_STATIC, owner, name, type)) :
-                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, owner, name, type));
+                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_STATIC, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, owner, name, type));
             case REF_invokeSpecial:
                 return isInterface ?
-                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_SPECIAL, owner, name, type)) :
-                        Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.SPECIAL, owner, name, type));
+                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_SPECIAL, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.SPECIAL, owner, name, type));
             case REF_invokeInterface:
-                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
             case REF_newInvokeSpecial:
-                return Optional.of(MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, owner, name, type));
+                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, owner, name, type));
             default:
                 return Optional.empty();
         }

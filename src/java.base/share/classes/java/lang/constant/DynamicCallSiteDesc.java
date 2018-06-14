@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class DynamicCallSiteDesc {
 
-    private final ConstantMethodHandleDesc bootstrapMethod;
+    private final DirectMethodHandleDesc bootstrapMethod;
     private final ConstantDesc<?>[] bootstrapArgs;
     private final String invocationName;
     private final MethodTypeDesc invocationType;
@@ -54,7 +54,7 @@ public class DynamicCallSiteDesc {
     /**
      * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationName The name that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}, as per
@@ -70,7 +70,7 @@ public class DynamicCallSiteDesc {
      * format
      * @jvms 4.2.2 Unqualified Names
      */
-    private DynamicCallSiteDesc(ConstantMethodHandleDesc bootstrapMethod,
+    private DynamicCallSiteDesc(DirectMethodHandleDesc bootstrapMethod,
                                 String invocationName,
                                 MethodTypeDesc invocationType,
                                 ConstantDesc<?>[] bootstrapArgs) {
@@ -85,7 +85,7 @@ public class DynamicCallSiteDesc {
     /**
      * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationName The name that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}, as per
@@ -102,7 +102,7 @@ public class DynamicCallSiteDesc {
      * format
      * @jvms 4.2.2 Unqualified Names
      */
-    public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
+    public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          String invocationName,
                                          MethodTypeDesc invocationType,
                                          ConstantDesc<?>... bootstrapArgs) {
@@ -121,7 +121,7 @@ public class DynamicCallSiteDesc {
      * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
      */
-    public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
+    public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          String invocationName,
                                          MethodTypeDesc invocationType) {
         return new DynamicCallSiteDesc(bootstrapMethod, invocationName, invocationType, EMPTY_CONSTANTDESC);
@@ -132,7 +132,7 @@ public class DynamicCallSiteDesc {
      * bootstrap method has no static arguments and for which the name parameter
      * is {@link ConstantDescs#DEFAULT_NAME}.
      *
-     * @param bootstrapMethod a {@link ConstantMethodHandleDesc} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
@@ -142,7 +142,7 @@ public class DynamicCallSiteDesc {
      * @throws IllegalArgumentException if the invocation name has the incorrect
      * format
      */
-    public static DynamicCallSiteDesc of(ConstantMethodHandleDesc bootstrapMethod,
+    public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          MethodTypeDesc invocationType) {
         return of(bootstrapMethod, ConstantDescs.DEFAULT_NAME, invocationType);
     }

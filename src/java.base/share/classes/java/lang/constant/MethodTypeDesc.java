@@ -24,6 +24,7 @@
  */
 package java.lang.constant;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.MethodTypeDescriptor;
 import java.util.List;
@@ -35,6 +36,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
  * {@linkplain MethodType} constant.
+ *
+ * @apiNote In the future, if the Java language permits, {@linkplain MethodTypeDesc}
+ * may become a {@code sealed} interface, which would prohibit subclassing except
+ * by explicitly permitted types.  Non-platform classes should not implement
+ * {@linkplain MethodTypeDesc} directly.
  */
 public interface MethodTypeDesc
         extends ConstantDesc<MethodType>,
@@ -51,7 +57,7 @@ public interface MethodTypeDesc
      * @jvms 4.3.3 Method Descriptors
      */
     static MethodTypeDesc ofDescriptor(String descriptor) {
-        return ConstantMethodTypeDesc.ofDescriptor(descriptor);
+        return MethodTypeDescImpl.ofDescriptor(descriptor);
     }
 
     /**
@@ -64,7 +70,7 @@ public interface MethodTypeDesc
      * @throws NullPointerException if any argument is {@code null}
      */
     static MethodTypeDesc of(ClassDesc returnDesc, ClassDesc... paramDescs) {
-        return new ConstantMethodTypeDesc(returnDesc, paramDescs);
+        return new MethodTypeDescImpl(returnDesc, paramDescs);
     }
 
     /**
@@ -182,5 +188,21 @@ public interface MethodTypeDesc
                                    .map(ClassDesc::displayName)
                                    .collect(Collectors.joining(",")),
                              returnType().displayName());
+    }
+
+    /**
+     * Constant bootstrap method for representing a {@linkplain MethodTypeDesc} in
+     * the constant pool of a classfile.
+     *
+     * @param lookup ignored
+     * @param name ignored
+     * @param clazz ignored
+     * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
+     * @return the {@linkplain MethodTypeDesc}
+     * @jvms 4.3.3 Method Descriptors
+     */
+    static MethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
+                                            String descriptor) {
+        return MethodTypeDesc.ofDescriptor(descriptor);
     }
 }

@@ -25,21 +25,21 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Objects;
 import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_CLASSDESC;
 import static java.lang.constant.ConstantDescs.CR_ClassDesc;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.lang.constant.ConstantUtils.dropFirstAndLastChar;
 import static java.lang.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a class,
- * interface, or array type.  A {@linkplain ConstantClassDesc} corresponds to a
+ * interface, or array type.  A {@linkplain ReferenceClassDescImpl} corresponds to a
  * {@code Constant_Class_info} entry in the constant pool of a classfile.
  */
-public final class ConstantClassDesc implements ClassDesc {
+final class ReferenceClassDescImpl implements ClassDesc {
     private final String descriptor;
 
     /**
@@ -52,7 +52,7 @@ public final class ConstantClassDesc implements ClassDesc {
      * field descriptor string, or does not describe a class or interface type
      * @jvms 4.3.2 Field Descriptors
      */
-    ConstantClassDesc(String descriptor) {
+    ReferenceClassDescImpl(String descriptor) {
         requireNonNull(descriptor);
         int len = ConstantUtils.matchSig(descriptor, 0, descriptor.length());
         if (len == 0 || len == 1
@@ -86,24 +86,8 @@ public final class ConstantClassDesc implements ClassDesc {
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.<ConstantDesc<Class<?>>>of(BSM_CLASSDESC, CR_ClassDesc)
-                                   .withArgs(descriptor));
-    }
-
-    /**
-     * Constant bootstrap method for representing a {@linkplain ClassDesc} in
-     * the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param descriptor a field descriptor string for the class, as per JVMS 4.3.2
-     * @return the {@linkplain ClassDesc}
-     * @jvms 4.3.2 Field Descriptors
-     */
-    public static ClassDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                              String descriptor) {
-        return ClassDesc.ofDescriptor(descriptor);
+        return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, DEFAULT_NAME, CR_ClassDesc,
+                                                  new ConstantDesc<?>[] {descriptor }));
     }
 
     @Override
