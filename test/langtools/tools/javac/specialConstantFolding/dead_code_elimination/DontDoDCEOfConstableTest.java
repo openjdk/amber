@@ -108,8 +108,8 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "*/\n" +
             "public class Stub {\n" +
             "   private static final ClassDesc CR_BOX = ClassDesc.of(\"java.lang.constant.Stub\").inner(\"Box\");\n" +
-            "   private static final ConstantMethodHandleDesc MH_BOX = ConstantDescs.ofConstantBootstrap(CR_BOX, \"constantBootstrap\", CR_BOX, CR_String);\n" +
-            "   //private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
+            "   private static final DirectMethodHandleDesc MH_BOX = ConstantDescs.ofConstantBootstrap(CR_BOX, \"constantBootstrap\", CR_BOX, CR_String);\n" +
+            "   //private static final MethodHandleDesc MH_BOX = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, CR_BOX, \"_\", CR_void, CR_String);\n" +
             "   /**\n" +
             "    * x\n" +
             "    * @return x\n" +
@@ -166,8 +166,8 @@ public class DontDoDCEOfConstableTest extends TestRunner {
             "       }\n" +
             "\n" +
             "       @Override\n" +
-            "       public Optional<? extends ConstantDesc<? super Box>> describeConstable(MethodHandles.Lookup lookup) {\n" +
-            "           return Optional.of(DynamicConstantDesc.of(MH_BOX, CR_BOX)\n" +
+            "       public Optional<? extends ConstantDesc<Box>> describeConstable() {\n" +
+            "           return Optional.of(DynamicConstantDesc.<Box>of(MH_BOX, CR_BOX)\n" +
             "                   .withArgs(s));\n" +
             "       }\n" +
             "   }\n" +

@@ -56,27 +56,27 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
      */
     enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
-        STATIC(REF_invokeStatic),
+        @Foldable STATIC(REF_invokeStatic),
         /** A method handle for a method invoked as with {@code invokestatic} */
-        INTERFACE_STATIC(REF_invokeStatic, true),
+        @Foldable INTERFACE_STATIC(REF_invokeStatic, true),
         /** A method handle for a method invoked as with {@code invokevirtual} */
-        VIRTUAL(REF_invokeVirtual),
+        @Foldable VIRTUAL(REF_invokeVirtual),
         /** A method handle for a method invoked as with {@code invokeinterface} */
-        INTERFACE_VIRTUAL(REF_invokeInterface, true),
+        @Foldable INTERFACE_VIRTUAL(REF_invokeInterface, true),
         /** A method handle for a method invoked as with {@code invokespecial} */
-        SPECIAL(REF_invokeSpecial),
+        @Foldable SPECIAL(REF_invokeSpecial),
         /** A method handle for an interface method invoked as with {@code invokespecial} */
-        INTERFACE_SPECIAL(REF_invokeSpecial, true),
+        @Foldable INTERFACE_SPECIAL(REF_invokeSpecial, true),
         /** A method handle for a constructor */
-        CONSTRUCTOR(REF_newInvokeSpecial),
+        @Foldable CONSTRUCTOR(REF_newInvokeSpecial),
         /** A method handle for a read accessor for an instance field  */
-        GETTER(REF_getField),
+        @Foldable GETTER(REF_getField),
         /** A method handle for a write accessor for an instance field  */
-        SETTER(REF_putField),
+        @Foldable SETTER(REF_putField),
         /** A method handle for a read accessor for a static field  */
-        STATIC_GETTER(REF_getStatic),
+        @Foldable STATIC_GETTER(REF_getStatic),
         /** A method handle for a write accessor for a static field  */
-        STATIC_SETTER(REF_putStatic);
+        @Foldable STATIC_SETTER(REF_putStatic);
 
         /** The corresponding {@code refKind} value for this kind of method handle,
          * as defined by {@link MethodHandleInfo}

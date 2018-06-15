@@ -1,11 +1,7 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.ConstantDescs;
-import java.lang.constant.MethodHandleDesc;
-import java.lang.constant.MethodTypeDesc;
-
+import java.lang.constant.*;
 import static java.lang.invoke.Intrinsics.*;
 
 public class FindConstructorTest extends ConstantFoldingTest {
@@ -25,7 +21,7 @@ public class FindConstructorTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_newInvokeSpecial"})
     void test1() throws Throwable {
-        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.ofDescriptor("LFindConstructorTest;"), "<init>",
+        final MethodHandle mhNewFindConstructorTest = ldc(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.ofDescriptor("LFindConstructorTest;"), "<init>",
                                                                               MethodTypeDesc.of(ConstantDescs.CR_void)));
         FindConstructorTest foo = (FindConstructorTest) mhNewFindConstructorTest.invokeExact();
         check(foo.toString().equals("invoking FindConstructorTest.toString()"));
@@ -33,7 +29,7 @@ public class FindConstructorTest extends ConstantFoldingTest {
 
     @InstructionInfo(bytecodePosition=0, values={"CONSTANT_MethodHandle_info", "REF_newInvokeSpecial"})
     void test2() throws Throwable {
-        MethodHandle mhNewFindConstructorTest = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.ofDescriptor("LFindConstructorTest;"), "<init>",
+        MethodHandle mhNewFindConstructorTest = ldc(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.ofDescriptor("LFindConstructorTest;"), "<init>",
                                                                         MethodTypeDesc.of(ConstantDescs.CR_void)));
         FindConstructorTest foo = (FindConstructorTest) mhNewFindConstructorTest.invokeExact();
         check(foo.toString().equals("invoking FindConstructorTest.toString()"));

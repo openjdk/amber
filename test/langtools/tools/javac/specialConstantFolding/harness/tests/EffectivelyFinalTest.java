@@ -1,10 +1,7 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodHandleDesc;
-import java.lang.constant.MethodTypeDesc;
-
+import java.lang.constant.*;
 import static java.lang.invoke.Intrinsics.*;
 
 public class EffectivelyFinalTest extends ConstantFoldingTest {
@@ -39,7 +36,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test3(EffectivelyFinalTest f) throws Throwable {
         ClassDesc c = ClassDesc.ofDescriptor("Ljava/lang/String;");
         MethodTypeDesc mt = MethodTypeDesc.of(c);
-        MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
+        MethodHandle mh = ldc(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 
@@ -47,7 +44,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test4(EffectivelyFinalTest f) throws Throwable {
         ClassDesc c = ClassDesc.ofDescriptor("Ljava/lang/String;");
         MethodTypeDesc mt = MethodTypeDesc.of(c);
-        final MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
+        final MethodHandle mh = ldc(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, ClassDesc.ofDescriptor("LEffectivelyFinalTest;"), "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 
@@ -57,7 +54,7 @@ public class EffectivelyFinalTest extends ConstantFoldingTest {
     void test5(EffectivelyFinalTest f) throws Throwable {
         ClassDesc c = ClassDesc.ofDescriptor("Ljava/lang/String;");;
         MethodTypeDesc mt = MethodTypeDesc.of(c);
-        MethodHandle mh = ldc(MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, cField, "foo", mt));
+        MethodHandle mh = ldc(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, cField, "foo", mt));
         check(mh.invoke(f).toString().equals("invoking EffectivelyFinalTest.foo()"));
     }
 }

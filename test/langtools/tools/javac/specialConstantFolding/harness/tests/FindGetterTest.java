@@ -1,11 +1,9 @@
 /* /nodynamiccopyright/ */
 
 import java.lang.invoke.*;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodHandleDesc;
-
+import java.lang.constant.*;
 import static java.lang.invoke.Intrinsics.*;
-import static java.lang.constant.MethodHandleDesc.Kind.GETTER;
+import static java.lang.constant.DirectMethodHandleDesc.Kind.GETTER;
 
 public class FindGetterTest extends ConstantFoldingTest {
     String strField = "instance field";

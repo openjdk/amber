@@ -71,6 +71,7 @@ public interface MethodHandleDesc
      * format
      * @jvms 4.2.2 Unqualified Names
      */
+    @Foldable
     static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
                                      ClassDesc clazz,
                                      String name,
