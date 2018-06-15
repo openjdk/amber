@@ -196,7 +196,7 @@ public final class ConstantDescs {
 
     /** {@link ClassDesc} representing {@link DirectMethodHandleDesc.Kind} */
     @Foldable
-    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_MethodHandleDesc.inner("Kind");
+    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_DirectMethodHandleDesc.inner("Kind");
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
     @Foldable

@@ -97,7 +97,7 @@ public class CondyRefTest extends SymbolicRefTest {
 
     public void testNested() throws Throwable {
         DirectMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CR_ConstantBootstraps, "invoke", CR_Object, CR_MethodHandle, CR_Object.arrayType());
-        DirectMethodHandleDesc format = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType());
+        DirectMethodHandleDesc format = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType());
 
         String s = (String) invoker.resolveConstantDesc(LOOKUP)
                                    .invoke(LOOKUP, "", String.class,
