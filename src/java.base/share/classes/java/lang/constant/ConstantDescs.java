@@ -160,7 +160,7 @@ public final class ConstantDescs {
     public static final ClassDesc CR_VarHandleDesc = CR_VarHandle.inner("VarHandleDesc");
 
     /** {@link ClassDesc} representing {@link DirectMethodHandleDesc.Kind} */
-    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_MethodHandleDesc.inner("Kind");
+    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_DirectMethodHandleDesc.inner("Kind");
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
     public static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.constant.DynamicConstantDesc");
