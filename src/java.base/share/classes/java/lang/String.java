@@ -2751,56 +2751,7 @@ public final class String
         return indexOfNonWhitespace() == length();
     }
 
-    /**
-     * Returns a stream of substrings extracted from this string
-     * partitioned by line terminators.
-     * <p>
-     * Line terminators recognized are line feed
-     * {@code "\n"} ({@code U+000A}),
-     * carriage return
-     * {@code "\r"} ({@code U+000D})
-     * and a carriage return followed immediately by a line feed
-     * {@code "\r\n"} ({@code U+000D U+000A}).
-     * <p>
-     * The stream returned by this method contains each line of
-     * this string that is terminated by a line terminator except that
-     * the last line can either be terminated by a line terminator or the
-     * end of the string.
-     * The lines in the stream are in the order in which
-     * they occur in this string and do not include the line terminators
-     * partitioning the lines.
-     * <p>
-     * The {@code maxLeading} and {@code maxTrailing} arguments can be
-     * used to remove incidental blank lines from the beginning and
-     * end of a multi-line sequence. A value of {@code 1} will remove
-     * at most one blank line. A value of {@link Integer.MAX_VALUE}
-     * will all leading or trailing blank lines.
-     *
-     * @implNote This method provides better performance than
-     *           split("\R") by supplying elements lazily and
-     *           by faster search of new line terminators.
-     *
-     * @param  maxLeading   the maximum number of leading blank lines
-     *                      to remove
-     *
-     * @param  maxTrailing  the maximum number of trailing blank lines
-     *                      to remove
-     *
-     * @return  the stream of strings extracted from this string
-     *          partitioned by line terminators
-     *
-     * @throws  IllegalArgumentException if {@code maxLeading} or
-     *          {@code maxTrailing} is negative.
-     *
-     * @since 12
-     */
-    public Stream<String> lines(int maxLeading, int maxTrailing) {
-        if (maxLeading < 0) {
-            throw new IllegalArgumentException("maxLeading is negative: " + maxLeading);
-        }
-        if (maxTrailing < 0) {
-            throw new IllegalArgumentException("maxTrailing is negative: " + maxTrailing);
-        }
+    private Stream<String> lines(int maxLeading, int maxTrailing) {
         Stream<String> stream = isLatin1() ? StringLatin1.lines(value, maxLeading, maxTrailing)
                                            : StringUTF16.lines(value, maxLeading, maxTrailing);
         return stream;
@@ -2838,13 +2789,40 @@ public final class String
         return lines(0, 0);
     }
 
+    private String indent(int n, boolean removeBlanks) {
+        if (isMultiline()) {
+            Stream<String> stream = removeBlanks ? lines(Integer.MAX_VALUE, Integer.MAX_VALUE)
+                                                 : lines();
+            if (n > 0) {
+                final String spaces = " ".repeat(n);
+                stream = stream.map(s -> s.isBlank() ? s : spaces + s);
+            } else if (n == Integer.MIN_VALUE) {
+                stream = stream.map(s -> s.stripLeading());
+            } else if (n < 0) {
+                stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+            }
+            return stream.collect(Collectors.joining("\n", "", "\n"));
+        } else {
+            if (n > 0) {
+                return " ".repeat(n) + this;
+            }
+            if (n == Integer.MIN_VALUE) {
+                return stripLeading();
+            }
+            if (n < 0) {
+                return substring(Math.min(-n, indexOfNonWhitespace()));
+            }
+            return this;
+        }
+    }
+
     /**
-     * When applied to a string, modifies the indentation
-     * of each line based on parameter {@code n}.
+     * Modify the indentation of each line based on parameter
+     * {@code n}.
      * <p>
      * If {@code n > 0} then {@code n} spaces {@code u+0020}
      * are inserted at the beginning of each line.
-     * {@link String#isBlank() blank lines} are unaffected.
+     * {@link String#isBlank() Blank lines} are unaffected.
      * <p>
      * If {@code n < 0} then {@code n}
      * {@link Character#isWhitespace(int) white space characters}
@@ -2869,38 +2847,11 @@ public final class String
      * @return string with indentation modified.
      *
      * @see Character#isWhitespace(int)
-     * @see String#lines()
      *
      * @since 12
      */
     public String indent(int n) {
-        return isEmpty() ? "" :  indent(n, false);
-    }
-
-    private String indent(int n, boolean skipBlanks) {
-        if (isMultiline()) {
-            Stream<String> stream = skipBlanks ? lines(1, 1) : lines();
-            if (n > 0) {
-                final String spaces = " ".repeat(n);
-                stream = stream.map(s -> s.isBlank() ? s : spaces + s);
-            } else if (n == Integer.MIN_VALUE) {
-                stream = stream.map(s -> s.stripLeading());
-            } else if (n < 0) {
-                stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
-            }
-            return stream.collect(Collectors.joining("\n", "", "\n"));
-        } else {
-            if (n > 0) {
-                return " ".repeat(n) + this;
-            }
-            if (n == Integer.MIN_VALUE) {
-                return stripLeading();
-            }
-            if (n < 0) {
-                return substring(Math.min(-n, indexOfNonWhitespace()));
-            }
-            return this;
-        }
+        return isEmpty() ? "" :  indent(n, true);
     }
 
     private boolean isMultiline() {
@@ -2919,19 +2870,39 @@ public final class String
     }
 
     /**
-     * When applied to a string, left justifies
-     * lines without loss of relative indentation. This is
-     * accomplished by removing an equal number of
+     * After removing all leading and trailing blank lines,
+     * left justifies each line {@code n} spaces
+     * without loss of relative indentation.
+     * <p>
+     * This is accomplished by using
+     * {@link java.lang.String#indent(int)} to
+     * remove (negative argument) an equal number of
      * {@link Character#isWhitespace(int) white space} characters
      * from each line so that at least one line has a non-white
      * space character in the left-most position.
-     * The result is then realigned by indenting {@code n}
-     * {@link Character#isWhitespace(int) white space}
-     * characters.
-     * First and last blank lines introduced to allow
-     * bracketing  delimiters to appear on separate source lines
-     * are also removed.
      * <p>
+     * The integer value {@code n} is added to the
+     * value passed to {@link java.lang.String#indent(int)}
+     * to adjust the resulting indentation. Example:
+     * <blockquote><pre>
+     *     `
+     *             abc
+     *                def
+     *     `.align(0);
+     *
+     * returns
+     * abc
+     *    def
+     *
+     *
+     *     `
+     *             abc
+     *                def
+     *     `.align(4);
+     * returns
+     *     abc
+     *        def
+     * </pre></blockquote>
      * @apinote All
      *          {@link Character#isWhitespace(int) white space characters},
      *          including tab, are treated as a single space.
@@ -2944,10 +2915,7 @@ public final class String
      *
      * @return string aligned to left margin
      *
-     * @see Character#isWhitespace(int)
-     * @see String#indent(int)
-     * @see String#lines()
-     * @see String#lines(int, int)
+     * @see java.lang.String#indent(int)
      *
      * @since 12
      */
@@ -2964,29 +2932,17 @@ public final class String
     }
 
     /**
-     * When applied to a string, left justifies
-     * lines without loss of relative indentation. This is
-     * accomplished by removing an equal number of
-     * {@link Character#isWhitespace(int) white space} characters
-     * from each line so that at least one line has a non-white
-     * space character in the left-most position.
-     * First and last blank lines introduced to allow
-     * bracketing  delimiters to appear on separate source lines
-     * are also removed.
-     * <p>
-     * @apinote All
-     *          {@link Character#isWhitespace(int) white space characters},
-     *          including tab, are treated as a single space.
-     * <p>
-     * @apiNote The all line terminators in the result will be
-     *          replaced with line feed {@code "\n"} ({@code U+000A}).
+     * After removing all leading and trailing blank lines,
+     * left justifies each line without loss of relative
+     * indentation.
+     * Invoking this method is equivalent to:
+     * <blockquote>
+     *  {@code this.align(0)}
+     * </blockquote>
      *
      * @return string left justified
      *
-     * @see Character#isWhitespace(int)
-     * @see String#indent(int)
-     * @see String#lines()
-     * @see String#lines(int, int)
+     * @see String#align(int)
      *
      * @since 12
      */
