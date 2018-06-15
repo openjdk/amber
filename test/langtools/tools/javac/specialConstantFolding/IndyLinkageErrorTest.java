@@ -17,7 +17,7 @@ public class IndyLinkageErrorTest {
                 ConstantDescs.CR_String,
                 ConstantDescs.CR_Object.arrayType()
         );
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("Ljava/lang/invoke/StringConcatFactory;"),
                                                           "makeConcatWithConstants", methodTypeForMethodHandle);
         MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
                 ConstantDescs.CR_String,

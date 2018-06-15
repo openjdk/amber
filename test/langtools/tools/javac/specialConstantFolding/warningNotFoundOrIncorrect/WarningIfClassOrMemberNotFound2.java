@@ -12,7 +12,7 @@ public class WarningIfClassOrMemberNotFound2 {
     public int m(int i) { return i; }
 
     public void test() {
-        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
         Intrinsics.ldc(negIMethodRef);
     }
 }

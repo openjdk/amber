@@ -115,7 +115,7 @@ public class ConstantFoldingHarness {
         ct.setProcessors(Collections.singleton(new LCDInfoFinder()));
         lcdInfoMap.clear();
         if (!ct.call()) {
-            throw new AssertionError("Error during compilation");
+            throw new AssertionError("Error during compilation of file " + jfo);
         }
 
         if (ignoreTest) {

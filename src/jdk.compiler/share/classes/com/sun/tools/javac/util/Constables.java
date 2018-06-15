@@ -100,7 +100,7 @@ public class Constables {
         log = Log.instance(context);
         constablesVisitor = ConstablesVisitor.instance(context);
         try {
-            directMethodHandleRefClass = Class.forName("java.lang.constant.ConstantMethodHandleDesc", false, null);
+            directMethodHandleRefClass = Class.forName("java.lang.constant.DirectMethodHandleDesc", false, null);
             methodTypeRefClass = Class.forName("java.lang.constant.MethodTypeDesc", false, null);
             classRefClass = Class.forName("java.lang.constant.ClassDesc", false, null);
             constantRefClass = Class.forName("java.lang.constant.ConstantDesc", false, null);

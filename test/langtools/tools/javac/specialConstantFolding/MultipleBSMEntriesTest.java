@@ -48,9 +48,9 @@ public class MultipleBSMEntriesTest {
         private static final ClassDesc ME = ClassDesc.ofDescriptor("LMultipleBSMEntriesTest$MultiplyCallSite;");
 
         private static final MethodHandle FAST = Intrinsics.ldc(
-                MethodHandleDesc.of(MethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
+                MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
         private static final MethodHandle SLOW = Intrinsics.ldc(
-                MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ME, "slow", TYPE));
+                MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ME, "slow", TYPE));
 
         MultiplyCallSite(MethodType type) {
             super(type);
@@ -81,7 +81,7 @@ public class MultipleBSMEntriesTest {
 
     public static final DynamicCallSiteDesc MULT = DynamicCallSiteDesc.of(
             MethodHandleDesc.of(
-                    MethodHandleDesc.Kind.STATIC,
+                    DirectMethodHandleDesc.Kind.STATIC,
                     ClassDesc.ofDescriptor("LMultipleBSMEntriesTest;"),
                     "multiplyFactory",
                     ConstantDescs.CR_CallSite,

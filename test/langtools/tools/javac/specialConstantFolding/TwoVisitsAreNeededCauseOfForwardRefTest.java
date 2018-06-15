@@ -39,7 +39,7 @@ public class TwoVisitsAreNeededCauseOfForwardRefTest {
         private static final ClassDesc ME = ClassDesc.ofDescriptor("LTwoVisitsAreNeededCauseOfForwardRefTest$Inner;");
 
         private static final MethodHandle FAST = Intrinsics.ldc(MethodHandleDesc.of(
-                MethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
+                DirectMethodHandleDesc.Kind.VIRTUAL, ME, "fast", TYPE));
     }
 
     public static final ClassDesc ClassRef_BigInt = ClassDesc.ofDescriptor("Ljava/math/BigInteger;");

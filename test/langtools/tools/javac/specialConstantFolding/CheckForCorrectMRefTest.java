@@ -56,7 +56,7 @@ public class CheckForCorrectMRefTest {
 
             "    public void test() {\n" +
             "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.of(\n" +
-            "            MethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, \"m\", MethodTypeDesc.ofDescriptor(\"(I)I\"));\n" +
+            "            DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, \"m\", MethodTypeDesc.ofDescriptor(\"(I)I\"));\n" +
             "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
             "}";
@@ -71,17 +71,17 @@ public class CheckForCorrectMRefTest {
             "    private static final ClassDesc THE_INTERFACE = ClassDesc.of(\"Test2$I\");\n" +
 
             "    public void test1() {\n" +
-            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, \"\", MethodTypeDesc.ofDescriptor(\"()V\"));\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, \"\", MethodTypeDesc.ofDescriptor(\"()V\"));\n" +
             "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
 
             "    public void test2() {\n" +
-            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.GETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
             "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
 
             "    public void test3() {\n" +
-            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
+            "        MethodHandleDesc negIMethodDesc = MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.SETTER, THE_INTERFACE, \"strField\", ConstantDescs.CR_String);\n" +
             "        Intrinsics.ldc(negIMethodDesc);\n" +
             "    }\n" +
             "}";

@@ -62,7 +62,7 @@ public class IndyCodeGenerationTest {
                 ConstantDescs.CR_MethodType,
                 ConstantDescs.CR_MethodHandle
         );
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LIndyCodeGenerationTest;"),
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ClassDesc.ofDescriptor("LIndyCodeGenerationTest;"),
                                                           "testWithStaticArgsBSM", methodTypeForMethodHandle);
         MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
                 ConstantDescs.CR_String

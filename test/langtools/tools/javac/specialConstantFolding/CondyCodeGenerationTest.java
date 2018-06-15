@@ -38,7 +38,7 @@ import java.lang.invoke.MethodType;
 import java.util.StringJoiner;
 
 import static java.lang.invoke.Intrinsics.ldc;
-import static java.lang.constant.MethodHandleDesc.Kind.STATIC;
+import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
 
 public class CondyCodeGenerationTest {
     public static void main(String[] args) throws Throwable {
@@ -57,7 +57,7 @@ public class CondyCodeGenerationTest {
     String testNoStaticArgs() throws Throwable {
         MethodTypeDesc methodTypeForMethodHandle = MethodTypeDesc.of(
                 ConstantDescs.CR_String, ConstantDescs.CR_MethodHandles_Lookup, ConstantDescs.CR_String, ConstantDescs.CR_Class);
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
                                                           "testNoStaticArgsBSM", methodTypeForMethodHandle);
 
         DynamicConstantDesc<String> condyDescr = DynamicConstantDesc.<String>of(mh, "constant-name");
@@ -83,7 +83,7 @@ public class CondyCodeGenerationTest {
                 ConstantDescs.CR_String,
                 ConstantDescs.CR_MethodType,
                 ConstantDescs.CR_MethodHandle);
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
                                                           "testWithStaticArgsBSM", methodTypeForMethodHandle);
         DynamicConstantDesc<String> condyDescr = DynamicConstantDesc.<String>of(mh, "constant-name").withArgs(1, 2L, 3.0f, 4.0d,
                                                                                                               ConstantDescs.CR_Number,
@@ -118,7 +118,7 @@ public class CondyCodeGenerationTest {
                 ConstantDescs.CR_String,
                 ConstantDescs.CR_Class
         );
-        ConstantMethodHandleDesc c_primitiveClassBSM_MH =
+        DirectMethodHandleDesc c_primitiveClassBSM_MH =
                 MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
                                     "primitiveClassBSM", c_primitiveClassBSM_MT);
         DynamicConstantDesc<Class> c_primitiveClassBSM_CD = DynamicConstantDesc.of(c_primitiveClassBSM_MH, "I");
@@ -130,7 +130,7 @@ public class CondyCodeGenerationTest {
                 ConstantDescs.CR_Class,
                 ConstantDescs.CR_Class
         );
-        ConstantMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
+        DirectMethodHandleDesc mh = MethodHandleDesc.of(STATIC, ClassDesc.ofDescriptor("LCondyCodeGenerationTest;"),
                                                           "testWithNestedArgBSM", methodTypeForMethodHandle);
 
         DynamicConstantDesc<String> condyDescr = DynamicConstantDesc.<String>of(mh, "constant-name").withArgs(c_primitiveClassBSM_CD);

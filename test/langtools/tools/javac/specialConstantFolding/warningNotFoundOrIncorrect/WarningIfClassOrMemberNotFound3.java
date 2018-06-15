@@ -13,17 +13,17 @@ public class WarningIfClassOrMemberNotFound3 {
     private static final ClassDesc THE_INTERFACE = ClassDesc.of("WarningIfClassOrMemberNotFound3$I");
 
     public void test1() {
-        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(MethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, "", MethodTypeDesc.ofDescriptor("()V"));
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, THE_INTERFACE, "", MethodTypeDesc.ofDescriptor("()V"));
         Intrinsics.ldc(negIMethodRef);
     }
 
     public void test2() {
-        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(MethodHandleDesc.Kind.GETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.GETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 
     public void test3() {
-        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(MethodHandleDesc.Kind.SETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
+        MethodHandleDesc negIMethodRef = MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.SETTER, THE_INTERFACE, "strField", ConstantDescs.CR_String);
         Intrinsics.ldc(negIMethodRef);
     }
 }

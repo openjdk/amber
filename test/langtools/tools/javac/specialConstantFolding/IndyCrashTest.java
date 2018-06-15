@@ -22,7 +22,7 @@ public class IndyCrashTest {
     }
 
     public void testSimpleIndy() throws Throwable {
-        ConstantMethodHandleDesc bsmMH = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
+        DirectMethodHandleDesc bsmMH = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, HELPER_CLASS, "foo", "()Ljava/lang/invoke/CallSite;");
         MethodTypeDesc methodTypeForIndy = MethodTypeDesc.of(
                 ConstantDescs.CR_String,
                 ConstantDescs.CR_MethodType

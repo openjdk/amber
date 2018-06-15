@@ -132,7 +132,7 @@ public class IntrinsicsTest {
     }
 
     public void testMethodHandleCombinators() {
-        MethodHandleDesc mhc = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ConstantDescs.CR_String, "valueOf",
+        MethodHandleDesc mhc = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ConstantDescs.CR_String, "valueOf",
                                                    MethodTypeDesc.of(ConstantDescs.CR_String, ConstantDescs.CR_Object));
         assertEquals(MethodType.methodType(String.class, Object.class),
                      Intrinsics.ldc(mhc.methodType()));
@@ -141,7 +141,7 @@ public class IntrinsicsTest {
     }
 
     public void testInterfaceSpecial() throws Throwable {
-        MethodHandleDesc mhr = MethodHandleDesc.of(MethodHandleDesc.Kind.STATIC, ConstantDescs.CR_List, "of",
+        MethodHandleDesc mhr = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ConstantDescs.CR_List, "of",
                                                    MethodTypeDesc.of(ConstantDescs.CR_List, ConstantDescs.CR_Object.arrayType()));
         MethodHandle mh = Intrinsics.ldc(mhr);
         assertEquals(List.of("a", "b"), (List<String>) mh.invoke("a", "b"));
@@ -149,7 +149,7 @@ public class IntrinsicsTest {
 
     public void testSimpleIndy() throws Throwable {
         final MethodTypeDesc Str_MT = MethodTypeDesc.of(ConstantDescs.CR_String);
-        ConstantMethodHandleDesc simpleBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "simpleBSM", ConstantDescs.CR_CallSite);
+        DirectMethodHandleDesc simpleBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "simpleBSM", ConstantDescs.CR_CallSite);
         DynamicCallSiteDesc bsm = DynamicCallSiteDesc.of(simpleBSM, "foo", Str_MT);
         String result = (String) Intrinsics.invokedynamic(bsm);
         assertEquals("foo", result);
@@ -157,12 +157,12 @@ public class IntrinsicsTest {
         DynamicCallSiteDesc bsm2 = DynamicCallSiteDesc.of(simpleBSM, "bar", Str_MT);
         assertEquals("bar", (String) Intrinsics.invokedynamic(bsm2));
 
-        ConstantMethodHandleDesc staticArgBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "staticArgBSM", ConstantDescs.CR_CallSite, ConstantDescs.CR_String);
+        DirectMethodHandleDesc staticArgBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "staticArgBSM", ConstantDescs.CR_CallSite, ConstantDescs.CR_String);
         DynamicCallSiteDesc bsm3 = DynamicCallSiteDesc.of(staticArgBSM, "ignored", Str_MT, "bark");
         assertEquals("bark", (String) Intrinsics.invokedynamic(bsm3));
 
         final MethodTypeDesc Str_Str_MT = MethodTypeDesc.of(ConstantDescs.CR_String, ConstantDescs.CR_String);
-        ConstantMethodHandleDesc dynArgBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "dynArgBSM", ConstantDescs.CR_CallSite, ConstantDescs.CR_String);
+        DirectMethodHandleDesc dynArgBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "dynArgBSM", ConstantDescs.CR_CallSite, ConstantDescs.CR_String);
         DynamicCallSiteDesc bsm4 = DynamicCallSiteDesc.of(dynArgBSM, "ignored", Str_Str_MT, "bargle");
         assertEquals("barglefoo", (String) Intrinsics.invokedynamic(bsm4, "foo"));
         assertEquals("barglebar", (String) Intrinsics.invokedynamic(bsm4, "bar"));
@@ -170,7 +170,7 @@ public class IntrinsicsTest {
 
     public void testStatefulBSM() throws Throwable {
         final MethodTypeDesc Int_MT = MethodTypeDesc.of(ConstantDescs.CR_int);
-        ConstantMethodHandleDesc statefulBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "statefulBSM", ConstantDescs.CR_CallSite);
+        DirectMethodHandleDesc statefulBSM = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "statefulBSM", ConstantDescs.CR_CallSite);
         DynamicCallSiteDesc bsm = DynamicCallSiteDesc.of(statefulBSM, "ignored", Int_MT);
         for (int i=0; i<10; i++) {
             assertEquals(i, (int) Intrinsics.invokedynamic(bsm));
@@ -179,14 +179,14 @@ public class IntrinsicsTest {
 
     public void testCondyInIndy() throws Throwable {
         final MethodTypeDesc Class_MT = MethodTypeDesc.of(ConstantDescs.CR_Class);
-        ConstantMethodHandleDesc bsm = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "staticArgBSM",
+        DirectMethodHandleDesc bsm = ConstantDescs.ofCallsiteBootstrap(HELPER_CLASS, "staticArgBSM",
                                                                          ConstantDescs.CR_CallSite, ConstantDescs.CR_Class);
         assertEquals(String.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteDesc.of(bsm, "ignored", Class_MT, ConstantDescs.CR_String)));
         assertEquals(int.class, (Class) Intrinsics.invokedynamic(DynamicCallSiteDesc.of(bsm, "ignored", Class_MT, ConstantDescs.CR_int)));
     }
 
     public void testCondyInCondy() throws Throwable {
-        ConstantMethodHandleDesc bsm = ConstantDescs.ofConstantBootstrap(HELPER_CLASS, "identityCondy", ConstantDescs.CR_Object, ConstantDescs.CR_Object);
+        DirectMethodHandleDesc bsm = ConstantDescs.ofConstantBootstrap(HELPER_CLASS, "identityCondy", ConstantDescs.CR_Object, ConstantDescs.CR_Object);
         assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm, ConstantDescs.CR_Class).withArgs(ConstantDescs.CR_String)));
         assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm).withArgs(ConstantDescs.CR_String)));
         assertEquals(int.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm).withArgs(ConstantDescs.CR_int)));
