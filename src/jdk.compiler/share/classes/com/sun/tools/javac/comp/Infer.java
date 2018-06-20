@@ -61,6 +61,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -260,16 +261,21 @@ public class Infer {
         }
 
         private List<Type> roots(MethodType mt, DeferredAttrContext deferredAttrContext) {
-            ListBuffer<Type> roots = new ListBuffer<>();
-            roots.add(mt.getReturnType());
             if (deferredAttrContext != null && deferredAttrContext.mode == AttrMode.CHECK) {
-                roots.addAll(mt.getThrownTypes());
+                ListBuffer<Type> roots = new ListBuffer<>();
+                roots.add(mt.getReturnType());
                 for (DeferredAttr.DeferredAttrNode n : deferredAttrContext.deferredAttrNodes) {
                     roots.addAll(n.deferredStuckPolicy.stuckVars());
                     roots.addAll(n.deferredStuckPolicy.depVars());
                 }
+                List<Type> thrownVars = deferredAttrContext.inferenceContext.inferencevars.stream()
+                                .filter(tv -> (tv.tsym.flags() & Flags.THROWS) != 0).collect(List.collector());
+                List<Type> result = roots.toList();
+                result = result.appendList(thrownVars.diff(result));
+                return result;
+            } else {
+                return List.of(mt.getReturnType());
             }
-            return roots.toList();
         }
 
     /**
@@ -1701,7 +1707,7 @@ public class Infer {
 
                 Node(Type ivar) {
                     super(ListBuffer.of(ivar));
-                    this.deps = new HashSet<>();
+                    this.deps = new LinkedHashSet<>();
                 }
 
                 @Override
@@ -1746,6 +1752,24 @@ public class Infer {
                 }
 
                 /**
+                 * Compute closure of a give node, by recursively walking
+                 * through all its dependencies.
+                 */
+                protected Set<Node> closure() {
+                    Set<Node> closure = new HashSet<>();
+                    closureInternal(closure);
+                    return closure;
+                }
+
+                private void closureInternal(Set<Node> closure) {
+                    if (closure.add(this)) {
+                        for (Node n : deps) {
+                            n.closureInternal(closure);
+                        }
+                    }
+                }
+
+                /**
                  * Is this node a leaf? This means either the node has no dependencies,
                  * or it just has self-dependencies.
                  */
@@ -1772,7 +1796,7 @@ public class Infer {
                         addDependencies(n.deps);
                     }
                     //update deps
-                    Set<Node> deps2 = new HashSet<>();
+                    Set<Node> deps2 = new LinkedHashSet<>();
                     for (Node d : deps) {
                         if (data.contains(d.data.first())) {
                             deps2.add(this);

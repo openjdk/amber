@@ -51,7 +51,7 @@
 #include "runtime/javaCalls.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/objectMonitor.hpp"
-#include "runtime/orderAccess.inline.hpp"
+#include "runtime/orderAccess.hpp"
 #include "runtime/osThread.hpp"
 #include "runtime/perfMemory.hpp"
 #include "runtime/sharedRuntime.hpp"
@@ -425,18 +425,6 @@ extern "C" void breakpoint() {
 debug_only(static bool signal_sets_initialized = false);
 static sigset_t unblocked_sigs, vm_sigs;
 
-bool os::Linux::is_sig_ignored(int sig) {
-  struct sigaction oact;
-  sigaction(sig, (struct sigaction*)NULL, &oact);
-  void* ohlr = oact.sa_sigaction ? CAST_FROM_FN_PTR(void*,  oact.sa_sigaction)
-                                 : CAST_FROM_FN_PTR(void*,  oact.sa_handler);
-  if (ohlr == CAST_FROM_FN_PTR(void*, SIG_IGN)) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 void os::Linux::signal_sets_init() {
   // Should also have an assertion stating we are still single-threaded.
   assert(!signal_sets_initialized, "Already initialized");
@@ -464,13 +452,13 @@ void os::Linux::signal_sets_init() {
   sigaddset(&unblocked_sigs, SR_signum);
 
   if (!ReduceSignalUsage) {
-    if (!os::Linux::is_sig_ignored(SHUTDOWN1_SIGNAL)) {
+    if (!os::Posix::is_sig_ignored(SHUTDOWN1_SIGNAL)) {
       sigaddset(&unblocked_sigs, SHUTDOWN1_SIGNAL);
     }
-    if (!os::Linux::is_sig_ignored(SHUTDOWN2_SIGNAL)) {
+    if (!os::Posix::is_sig_ignored(SHUTDOWN2_SIGNAL)) {
       sigaddset(&unblocked_sigs, SHUTDOWN2_SIGNAL);
     }
-    if (!os::Linux::is_sig_ignored(SHUTDOWN3_SIGNAL)) {
+    if (!os::Posix::is_sig_ignored(SHUTDOWN3_SIGNAL)) {
       sigaddset(&unblocked_sigs, SHUTDOWN3_SIGNAL);
     }
   }
@@ -2000,6 +1988,8 @@ void os::print_os_info(outputStream* st) {
 
   os::Linux::print_full_memory_info(st);
 
+  os::Linux::print_proc_sys_info(st);
+
   os::Linux::print_container_info(st);
 }
 
@@ -2129,6 +2119,24 @@ void os::Linux::print_libversion_info(outputStream* st) {
   st->print("libc:");
   st->print("%s ", os::Linux::glibc_version());
   st->print("%s ", os::Linux::libpthread_version());
+  st->cr();
+}
+
+void os::Linux::print_proc_sys_info(outputStream* st) {
+  st->cr();
+  st->print_cr("/proc/sys/kernel/threads-max (system-wide limit on the number of threads):");
+  _print_ascii_file("/proc/sys/kernel/threads-max", st);
+  st->cr();
+  st->cr();
+
+  st->print_cr("/proc/sys/vm/max_map_count (maximum number of memory map areas a process may have):");
+  _print_ascii_file("/proc/sys/vm/max_map_count", st);
+  st->cr();
+  st->cr();
+
+  st->print_cr("/proc/sys/kernel/pid_max (system-wide limit on number of process identifiers):");
+  _print_ascii_file("/proc/sys/kernel/pid_max", st);
+  st->cr();
   st->cr();
 }
 
@@ -2532,7 +2540,7 @@ static volatile jint pending_signals[NSIG+1] = { 0 };
 static Semaphore* sig_sem = NULL;
 static PosixSemaphore sr_semaphore;
 
-void os::signal_init_pd() {
+static void jdk_misc_signal_init() {
   // Initialize signal structures
   ::memset((void*)pending_signals, 0, sizeof(pending_signals));
 
@@ -2545,7 +2553,7 @@ void os::signal_notify(int sig) {
     Atomic::inc(&pending_signals[sig]);
     sig_sem->signal();
   } else {
-    // Signal thread is not created with ReduceSignalUsage and signal_init_pd
+    // Signal thread is not created with ReduceSignalUsage and jdk_misc_signal_init
     // initialization isn't called.
     assert(ReduceSignalUsage, "signal semaphore should be created");
   }
@@ -2884,6 +2892,10 @@ void os::Linux::sched_getcpu_init() {
     set_sched_getcpu(CAST_TO_FN_PTR(sched_getcpu_func_t,
                                     (void*)&sched_getcpu_syscall));
   }
+
+  if (sched_getcpu() == -1) {
+    vm_exit_during_initialization("getcpu(2) system call not supported by kernel");
+  }
 }
 
 // Something to do with the numa-aware allocator needs these symbols
@@ -3114,7 +3126,10 @@ static address get_stack_commited_bottom(address bottom, size_t size) {
 bool os::committed_in_range(address start, size_t size, address& committed_start, size_t& committed_size) {
   int mincore_return_value;
   const size_t stripe = 1024;  // query this many pages each time
-  unsigned char vec[stripe];
+  unsigned char vec[stripe + 1];
+  // set a guard
+  vec[stripe] = 'X';
+
   const size_t page_sz = os::vm_page_size();
   size_t pages = size / page_sz;
 
@@ -3126,7 +3141,9 @@ bool os::committed_in_range(address start, size_t size, address& committed_start
   int loops = (pages + stripe - 1) / stripe;
   int committed_pages = 0;
   address loop_base = start;
-  for (int index = 0; index < loops; index ++) {
+  bool found_range = false;
+
+  for (int index = 0; index < loops && !found_range; index ++) {
     assert(pages > 0, "Nothing to do");
     int pages_to_query = (pages >= stripe) ? stripe : pages;
     pages -= pages_to_query;
@@ -3141,12 +3158,14 @@ bool os::committed_in_range(address start, size_t size, address& committed_start
       return false;
     }
 
+    assert(vec[stripe] == 'X', "overflow guard");
     assert(mincore_return_value == 0, "Range must be valid");
     // Process this stripe
     for (int vecIdx = 0; vecIdx < pages_to_query; vecIdx ++) {
       if ((vec[vecIdx] & 0x01) == 0) { // not committed
         // End of current contiguous region
         if (committed_start != NULL) {
+          found_range = true;
           break;
         }
       } else { // committed
@@ -4452,7 +4471,7 @@ extern "C" JNIEXPORT int JVM_handle_linux_signal(int signo,
                                                  void* ucontext,
                                                  int abort_if_unrecognized);
 
-void signalHandler(int sig, siginfo_t* info, void* uc) {
+static void signalHandler(int sig, siginfo_t* info, void* uc) {
   assert(info != NULL && uc != NULL, "it must be old kernel");
   int orig_errno = errno;  // Preserve errno value over signal handler.
   JVM_handle_linux_signal(sig, info, uc, true);
@@ -5000,6 +5019,10 @@ jint os::init_2(void) {
 
   Linux::signal_sets_init();
   Linux::install_signal_handlers();
+  // Initialize data for jdk.internal.misc.Signal
+  if (!ReduceSignalUsage) {
+    jdk_misc_signal_init();
+  }
 
   // Check and sets minimum stack sizes against command line options
   if (Posix::set_minimum_stack_sizes() == JNI_ERR) {
@@ -5239,6 +5262,12 @@ int os::active_processor_count() {
   }
 
   return active_cpus;
+}
+
+uint os::processor_id() {
+  const int id = Linux::sched_getcpu();
+  assert(id >= 0 && id < _processor_count, "Invalid processor id");
+  return (uint)id;
 }
 
 void os::set_native_thread_name(const char *name) {

@@ -1757,6 +1757,7 @@ public class JavacParser implements Parser {
             }
             for (JCVariableDecl param: params) {
                 if (param.vartype != null && isRestrictedLocalVarTypeName(param.vartype)) {
+                    param.startPos = TreeInfo.getStartPos(param.vartype);
                     param.vartype = null;
                 }
             }
@@ -3214,6 +3215,9 @@ public class JavacParser implements Parser {
                         }
                         if (token.kind == LBRACKET) {
                             log.error(token.pos, Errors.ArrayAndReceiver);
+                        }
+                        if (pn.hasTag(Tag.SELECT) && ((JCFieldAccess)pn).name != names._this) {
+                            log.error(token.pos, Errors.WrongReceiver);
                         }
                     }
                     return toP(F.at(pos).ReceiverVarDef(mods, pn, type));

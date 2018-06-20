@@ -170,21 +170,23 @@ elapsedTimer CompileBroker::_t_standard_compilation;
 elapsedTimer CompileBroker::_t_invalidated_compilation;
 elapsedTimer CompileBroker::_t_bailedout_compilation;
 
-int CompileBroker::_total_bailout_count          = 0;
-int CompileBroker::_total_invalidated_count      = 0;
-int CompileBroker::_total_compile_count          = 0;
-int CompileBroker::_total_osr_compile_count      = 0;
-int CompileBroker::_total_standard_compile_count = 0;
+int CompileBroker::_total_bailout_count            = 0;
+int CompileBroker::_total_invalidated_count        = 0;
+int CompileBroker::_total_compile_count            = 0;
+int CompileBroker::_total_osr_compile_count        = 0;
+int CompileBroker::_total_standard_compile_count   = 0;
+int CompileBroker::_total_compiler_stopped_count   = 0;
+int CompileBroker::_total_compiler_restarted_count = 0;
 
-int CompileBroker::_sum_osr_bytes_compiled       = 0;
-int CompileBroker::_sum_standard_bytes_compiled  = 0;
-int CompileBroker::_sum_nmethod_size             = 0;
-int CompileBroker::_sum_nmethod_code_size        = 0;
+int CompileBroker::_sum_osr_bytes_compiled         = 0;
+int CompileBroker::_sum_standard_bytes_compiled    = 0;
+int CompileBroker::_sum_nmethod_size               = 0;
+int CompileBroker::_sum_nmethod_code_size          = 0;
 
-long CompileBroker::_peak_compilation_time       = 0;
+long CompileBroker::_peak_compilation_time         = 0;
 
-CompileQueue* CompileBroker::_c2_compile_queue   = NULL;
-CompileQueue* CompileBroker::_c1_compile_queue   = NULL;
+CompileQueue* CompileBroker::_c2_compile_queue     = NULL;
+CompileQueue* CompileBroker::_c1_compile_queue     = NULL;
 
 
 
@@ -728,24 +730,14 @@ void CompileBroker::compilation_init_phase2() {
 }
 
 Handle CompileBroker::create_thread_oop(const char* name, TRAPS) {
-  Klass* k = SystemDictionary::find(vmSymbols::java_lang_Thread(), Handle(), Handle(), CHECK_NH);
-  assert(k != NULL, "must be initialized");
-  InstanceKlass* klass = InstanceKlass::cast(k);
-  instanceHandle thread_handle = klass->allocate_instance_handle(CHECK_NH);
   Handle string = java_lang_String::create_from_str(name, CHECK_NH);
-
-  // Initialize thread_oop to put it into the system threadGroup
   Handle thread_group(THREAD, Universe::system_thread_group());
-  JavaValue result(T_VOID);
-  JavaCalls::call_special(&result, thread_handle,
-                       klass,
-                       vmSymbols::object_initializer_name(),
+  return JavaCalls::construct_new_instance(
+                       SystemDictionary::Thread_klass(),
                        vmSymbols::threadgroup_string_void_signature(),
                        thread_group,
                        string,
                        CHECK_NH);
-
-  return thread_handle;
 }
 
 

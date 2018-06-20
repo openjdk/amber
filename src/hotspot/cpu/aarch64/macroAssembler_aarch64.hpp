@@ -979,6 +979,8 @@ public:
   void addptr(const Address &dst, int32_t src);
   void cmpptr(Register src1, Address src2);
 
+  void cmpoop(Register obj1, Register obj2);
+
   // Various forms of CAS
 
   void cmpxchg_obj_header(Register oldv, Register newv, Register obj, Register tmp,
@@ -1020,7 +1022,7 @@ public:
   address trampoline_call(Address entry, CodeBuffer *cbuf = NULL);
 
   static bool far_branches() {
-    return ReservedCodeCacheSize > branch_range;
+    return ReservedCodeCacheSize > branch_range || UseAOT;
   }
 
   // Jumps that can reach anywhere in the code cache.
