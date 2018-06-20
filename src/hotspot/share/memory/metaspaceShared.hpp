@@ -111,6 +111,7 @@ class MetaspaceShared : AllStatic {
   }
   static oop find_archived_heap_object(oop obj);
   static oop archive_heap_object(oop obj, Thread* THREAD);
+  static oop materialize_archived_object(oop obj);
   static void archive_klass_objects(Thread* THREAD);
 #endif
 
@@ -225,7 +226,7 @@ class MetaspaceShared : AllStatic {
 
   static bool try_link_class(InstanceKlass* ik, TRAPS);
   static void link_and_cleanup_shared_classes(TRAPS);
-  static void check_shared_class_loader_type(Klass* obj);
+  static void check_shared_class_loader_type(InstanceKlass* ik);
 
   // Allocate a block of memory from the "mc", "ro", or "rw" regions.
   static char* misc_code_space_alloc(size_t num_bytes);
