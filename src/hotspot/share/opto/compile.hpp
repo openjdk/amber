@@ -54,6 +54,7 @@ class CloneMap;
 class ConnectionGraph;
 class InlineTree;
 class Int_Array;
+class LoadBarrierNode;
 class Matcher;
 class MachConstantNode;
 class MachConstantBaseNode;
@@ -407,6 +408,7 @@ class Compile : public Phase {
 
   // Compilation environment.
   Arena                 _comp_arena;            // Arena with lifetime equivalent to Compile
+  void*                 _barrier_set_state;     // Potential GC barrier state for Compile
   ciEnv*                _env;                   // CI interface
   DirectiveSet*         _directive;             // Compiler directive
   CompileLog*           _log;                   // from CompilerThread
@@ -529,6 +531,8 @@ class Compile : public Phase {
   void log_late_inline_failure(CallGenerator* cg, const char* msg);
 
  public:
+
+  void* barrier_set_state() const { return _barrier_set_state; }
 
   outputStream* print_inlining_stream() const {
     assert(print_inlining() || print_intrinsics(), "PrintInlining off?");
@@ -1349,7 +1353,6 @@ class Compile : public Phase {
   // supporting clone_map
   CloneMap&     clone_map();
   void          set_clone_map(Dict* d);
-
 };
 
 #endif // SHARE_VM_OPTO_COMPILE_HPP

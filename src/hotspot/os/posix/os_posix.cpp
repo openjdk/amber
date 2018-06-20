@@ -51,6 +51,8 @@
 #endif
 #define IS_VALID_PID(p) (p > 0 && p < MAX_PID)
 
+#define ROOT_UID 0
+
 #ifndef MAP_ANONYMOUS
   #define MAP_ANONYMOUS MAP_ANON
 #endif
@@ -926,6 +928,18 @@ bool os::Posix::is_valid_signal(int sig) {
 #endif
 }
 
+bool os::Posix::is_sig_ignored(int sig) {
+  struct sigaction oact;
+  sigaction(sig, (struct sigaction*)NULL, &oact);
+  void* ohlr = oact.sa_sigaction ? CAST_FROM_FN_PTR(void*,  oact.sa_sigaction)
+                                 : CAST_FROM_FN_PTR(void*,  oact.sa_handler);
+  if (ohlr == CAST_FROM_FN_PTR(void*, SIG_IGN)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // Returns:
 // NULL for an invalid signal number
 // "SIG<num>" for a valid but unknown signal number
@@ -1440,6 +1454,18 @@ size_t os::Posix::get_initial_stack_size(ThreadType thr_type, size_t req_stack_s
   }
 
   return stack_size;
+}
+
+bool os::Posix::is_root(uid_t uid){
+    return ROOT_UID == uid;
+}
+
+bool os::Posix::matches_effective_uid_or_root(uid_t uid) {
+    return is_root(uid) || geteuid() == uid;
+}
+
+bool os::Posix::matches_effective_uid_and_gid_or_root(uid_t uid, gid_t gid) {
+    return is_root(uid) || (geteuid() == uid && getegid() == gid);
 }
 
 Thread* os::ThreadCrashProtection::_protected_thread = NULL;

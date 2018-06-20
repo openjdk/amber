@@ -44,6 +44,9 @@
 #ifdef COMPILER2
 #include "opto/runtime.hpp"
 #endif
+#if INCLUDE_ZGC
+#include "gc/z/zThreadLocalData.hpp"
+#endif
 
 // Declaration and definition of StubGenerator (no .hpp file).
 // For a more detailed description of the stub routine structure
@@ -1026,6 +1029,15 @@ class StubGenerator: public StubCodeGenerator {
     // make sure object is 'reasonable'
     __ testptr(rax, rax);
     __ jcc(Assembler::zero, exit); // if obj is NULL it is OK
+
+#if INCLUDE_ZGC
+    if (UseZGC) {
+      // Check if metadata bits indicate a bad oop
+      __ testptr(rax, Address(r15_thread, ZThreadLocalData::address_bad_mask_offset()));
+      __ jcc(Assembler::notZero, error);
+    }
+#endif
+
     // Check if the oop is in the right area of memory
     __ movptr(c_rarg2, rax);
     __ movptr(c_rarg3, (intptr_t) Universe::verify_oop_mask());
@@ -1820,7 +1832,7 @@ class StubGenerator: public StubCodeGenerator {
     setup_arg_regs(); // from => rdi, to => rsi, count => rdx
                       // r9 and r10 may be used to save non-volatile registers
 
-    DecoratorSet decorators = ARRAYCOPY_DISJOINT;
+    DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY | ARRAYCOPY_DISJOINT;
     if (dest_uninitialized) {
       decorators |= AS_DEST_NOT_INITIALIZED;
     }
@@ -1914,7 +1926,7 @@ class StubGenerator: public StubCodeGenerator {
     setup_arg_regs(); // from => rdi, to => rsi, count => rdx
                       // r9 and r10 may be used to save non-volatile registers
 
-    DecoratorSet decorators = 0;
+    DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY;
     if (dest_uninitialized) {
       decorators |= AS_DEST_NOT_INITIALIZED;
     }
@@ -2018,7 +2030,7 @@ class StubGenerator: public StubCodeGenerator {
                       // r9 and r10 may be used to save non-volatile registers
     // 'from', 'to' and 'qword_count' are now valid
 
-    DecoratorSet decorators = ARRAYCOPY_DISJOINT;
+    DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY | ARRAYCOPY_DISJOINT;
     if (dest_uninitialized) {
       decorators |= AS_DEST_NOT_INITIALIZED;
     }
@@ -2111,7 +2123,7 @@ class StubGenerator: public StubCodeGenerator {
                       // r9 and r10 may be used to save non-volatile registers
     // 'from', 'to' and 'qword_count' are now valid
 
-    DecoratorSet decorators = ARRAYCOPY_DISJOINT;
+    DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY | ARRAYCOPY_DISJOINT;
     if (dest_uninitialized) {
       decorators |= AS_DEST_NOT_INITIALIZED;
     }
@@ -2294,7 +2306,7 @@ class StubGenerator: public StubCodeGenerator {
     Address from_element_addr(end_from, count, TIMES_OOP, 0);
     Address   to_element_addr(end_to,   count, TIMES_OOP, 0);
 
-    DecoratorSet decorators = ARRAYCOPY_CHECKCAST;
+    DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY | ARRAYCOPY_CHECKCAST;
     if (dest_uninitialized) {
       decorators |= AS_DEST_NOT_INITIALIZED;
     }

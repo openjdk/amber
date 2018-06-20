@@ -116,6 +116,7 @@ SystemProperty *Arguments::_java_library_path = NULL;
 SystemProperty *Arguments::_java_home = NULL;
 SystemProperty *Arguments::_java_class_path = NULL;
 SystemProperty *Arguments::_jdk_boot_class_path_append = NULL;
+SystemProperty *Arguments::_vm_info = NULL;
 
 GrowableArray<ModulePatchPath*> *Arguments::_patch_mod_prefix = NULL;
 PathString *Arguments::_system_boot_class_path = NULL;
@@ -395,8 +396,10 @@ void Arguments::init_system_properties() {
                                                            "Java Virtual Machine Specification",  false));
   PropertyList_add(&_system_properties, new SystemProperty("java.vm.version", VM_Version::vm_release(),  false));
   PropertyList_add(&_system_properties, new SystemProperty("java.vm.name", VM_Version::vm_name(),  false));
-  PropertyList_add(&_system_properties, new SystemProperty("java.vm.info", VM_Version::vm_info_string(),  true));
   PropertyList_add(&_system_properties, new SystemProperty("jdk.debug", VM_Version::jdk_debug_level(),  false));
+
+  // Initialize the vm.info now, but it will need updating after argument parsing.
+  _vm_info = new SystemProperty("java.vm.info", VM_Version::vm_info_string(), true);
 
   // Following are JVMTI agent writable properties.
   // Properties values are set to NULL and they are
@@ -417,6 +420,7 @@ void Arguments::init_system_properties() {
   PropertyList_add(&_system_properties, _java_home);
   PropertyList_add(&_system_properties, _java_class_path);
   PropertyList_add(&_system_properties, _jdk_boot_class_path_append);
+  PropertyList_add(&_system_properties, _vm_info);
 
   // Set OS specific system properties values
   os::init_system_properties_values();
@@ -553,6 +557,7 @@ static SpecialFlag const special_jvm_flags[] = {
   { "CheckEndorsedAndExtDirs",       JDK_Version::jdk(10),     JDK_Version::jdk(11), JDK_Version::jdk(12) },
   { "DeferThrSuspendLoopCount",      JDK_Version::jdk(10),     JDK_Version::jdk(11), JDK_Version::jdk(12) },
   { "DeferPollingPageLoopCount",     JDK_Version::jdk(10),     JDK_Version::jdk(11), JDK_Version::jdk(12) },
+  { "TraceScavenge",                 JDK_Version::undefined(), JDK_Version::jdk(11), JDK_Version::jdk(12) },
   { "PermSize",                      JDK_Version::undefined(), JDK_Version::jdk(8),  JDK_Version::undefined() },
   { "MaxPermSize",                   JDK_Version::undefined(), JDK_Version::jdk(8),  JDK_Version::undefined() },
   { "SharedReadWriteSize",           JDK_Version::undefined(), JDK_Version::jdk(10), JDK_Version::undefined() },
@@ -1265,9 +1270,13 @@ bool Arguments::process_argument(const char* arg,
     char stripped_argname[BUFLEN+1]; // +1 for '\0'
     jio_snprintf(stripped_argname, arg_len+1, "%s", argname); // +1 for '\0'
     if (is_obsolete_flag(stripped_argname, &since)) {
-      char version[256];
-      since.to_string(version, sizeof(version));
-      warning("Ignoring option %s; support was removed in %s", stripped_argname, version);
+      if (strcmp(stripped_argname, "UseAppCDS") != 0) {
+        char version[256];
+        since.to_string(version, sizeof(version));
+        warning("Ignoring option %s; support was removed in %s", stripped_argname, version);
+      } else {
+        warning("Ignoring obsolete option UseAppCDS; AppCDS is automatically enabled");
+      }
       return true;
     }
 #ifndef PRODUCT
@@ -3365,16 +3374,16 @@ jint Arguments::finalize_vm_init_args(bool patch_mod_javabase) {
   UNSUPPORTED_OPTION(TieredCompilation);
 #endif
 
+  if (!check_vm_args_consistency()) {
+    return JNI_ERR;
+  }
+
 #if INCLUDE_JVMCI
   if (EnableJVMCI &&
       !create_numbered_property("jdk.module.addmods", "jdk.internal.vm.ci", addmods_count++)) {
     return JNI_ENOMEM;
   }
 #endif
-
-  if (!check_vm_args_consistency()) {
-    return JNI_ERR;
-  }
 
 #if INCLUDE_JVMCI
   if (UseJVMCICompiler) {
