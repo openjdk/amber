@@ -34,9 +34,11 @@ class ModRefBarrierSet: public BarrierSet {
 protected:
   ModRefBarrierSet(BarrierSetAssembler* barrier_set_assembler,
                    BarrierSetC1* barrier_set_c1,
+                   BarrierSetC2* barrier_set_c2,
                    const BarrierSet::FakeRtti& fake_rtti)
     : BarrierSet(barrier_set_assembler,
                  barrier_set_c1,
+                 barrier_set_c2,
                  fake_rtti.add_tag(BarrierSet::ModRef)) { }
   ~ModRefBarrierSet() { }
 
@@ -81,7 +83,9 @@ public:
     static oop oop_atomic_xchg_in_heap(oop new_value, T* addr);
 
     template <typename T>
-    static bool oop_arraycopy_in_heap(arrayOop src_obj, arrayOop dst_obj, T* src, T* dst, size_t length);
+    static bool oop_arraycopy_in_heap(arrayOop src_obj, size_t src_offset_in_bytes, T* src_raw,
+                                      arrayOop dst_obj, size_t dst_offset_in_bytes, T* dst_raw,
+                                      size_t length);
 
     static void clone_in_heap(oop src, oop dst, size_t size);
 

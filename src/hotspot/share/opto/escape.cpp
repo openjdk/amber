@@ -25,6 +25,7 @@
 #include "precompiled.hpp"
 #include "ci/bcEscapeAnalyzer.hpp"
 #include "compiler/compileLog.hpp"
+#include "gc/shared/c2/barrierSetC2.hpp"
 #include "libadt/vectset.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
@@ -37,9 +38,13 @@
 #include "opto/phaseX.hpp"
 #include "opto/movenode.hpp"
 #include "opto/rootnode.hpp"
+#include "utilities/macros.hpp"
 #if INCLUDE_G1GC
 #include "gc/g1/g1ThreadLocalData.hpp"
 #endif // INCLUDE_G1GC
+#if INCLUDE_ZGC
+#include "gc/z/c2/zBarrierSetC2.hpp"
+#endif
 
 ConnectionGraph::ConnectionGraph(Compile * C, PhaseIterGVN *igvn) :
   _nodes(C->comp_arena(), C->unique(), C->unique(), NULL),
@@ -448,6 +453,10 @@ void ConnectionGraph::add_node_to_connection_graph(Node *n, Unique_Node_List *de
       break;
     }
     case Op_LoadP:
+#if INCLUDE_ZGC
+    case Op_LoadBarrierSlowReg:
+    case Op_LoadBarrierWeakSlowReg:
+#endif
     case Op_LoadN:
     case Op_LoadPLocked: {
       add_objload_to_connection_graph(n, delayed_worklist);
@@ -482,6 +491,13 @@ void ConnectionGraph::add_node_to_connection_graph(Node *n, Unique_Node_List *de
         add_local_var_and_edge(n, PointsToNode::NoEscape,
                                n->in(0), delayed_worklist);
       }
+#if INCLUDE_ZGC
+      else if (UseZGC) {
+        if (n->as_Proj()->_con == LoadBarrierNode::Oop && n->in(0)->is_LoadBarrier()) {
+          add_local_var_and_edge(n, PointsToNode::NoEscape, n->in(0)->in(LoadBarrierNode::Oop), delayed_worklist);
+        }
+      }
+#endif
       break;
     }
     case Op_Rethrow: // Exception object escapes
@@ -650,6 +666,10 @@ void ConnectionGraph::add_final_edges(Node *n) {
       break;
     }
     case Op_LoadP:
+#if INCLUDE_ZGC
+    case Op_LoadBarrierSlowReg:
+    case Op_LoadBarrierWeakSlowReg:
+#endif
     case Op_LoadN:
     case Op_LoadPLocked: {
       // Using isa_ptr() instead of isa_oopptr() for LoadP and Phi because
@@ -689,6 +709,14 @@ void ConnectionGraph::add_final_edges(Node *n) {
         add_local_var_and_edge(n, PointsToNode::NoEscape, n->in(0), NULL);
         break;
       }
+#if INCLUDE_ZGC
+      else if (UseZGC) {
+        if (n->as_Proj()->_con == LoadBarrierNode::Oop && n->in(0)->is_LoadBarrier()) {
+          add_local_var_and_edge(n, PointsToNode::NoEscape, n->in(0)->in(LoadBarrierNode::Oop), NULL);
+          break;
+        }
+      }
+#endif
       ELSE_FAIL("Op_Proj");
     }
     case Op_Rethrow: // Exception object escapes
@@ -980,10 +1008,9 @@ void ConnectionGraph::process_call_arguments(CallNode *call) {
                                        arg_has_oops && (i > TypeFunc::Parms);
 #ifdef ASSERT
           if (!(is_arraycopy ||
+                BarrierSet::barrier_set()->barrier_set_c2()->is_gc_barrier_node(call) ||
                 (call->as_CallLeaf()->_name != NULL &&
-                 (strcmp(call->as_CallLeaf()->_name, "g1_wb_pre")  == 0 ||
-                  strcmp(call->as_CallLeaf()->_name, "g1_wb_post") == 0 ||
-                  strcmp(call->as_CallLeaf()->_name, "updateBytesCRC32") == 0 ||
+                 (strcmp(call->as_CallLeaf()->_name, "updateBytesCRC32") == 0 ||
                   strcmp(call->as_CallLeaf()->_name, "updateBytesCRC32C") == 0 ||
                   strcmp(call->as_CallLeaf()->_name, "updateBytesAdler32") == 0 ||
                   strcmp(call->as_CallLeaf()->_name, "aescrypt_encryptBlock") == 0 ||
@@ -3163,7 +3190,8 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
               op == Op_CastP2X || op == Op_StoreCM ||
               op == Op_FastLock || op == Op_AryEq || op == Op_StrComp || op == Op_HasNegatives ||
               op == Op_StrCompressedCopy || op == Op_StrInflatedCopy ||
-              op == Op_StrEquals || op == Op_StrIndexOf || op == Op_StrIndexOfChar)) {
+              op == Op_StrEquals || op == Op_StrIndexOf || op == Op_StrIndexOfChar ||
+              BarrierSet::barrier_set()->barrier_set_c2()->is_gc_barrier_node(use))) {
           n->dump();
           use->dump();
           assert(false, "EA: missing allocation reference path");
@@ -3285,9 +3313,7 @@ void ConnectionGraph::split_unique_types(GrowableArray<Node *>  &alloc_worklist,
             (op == Op_StrCompressedCopy || op == Op_StrInflatedCopy)) {
           // They overwrite memory edge corresponding to destination array,
           memnode_worklist.append_if_missing(use);
-        } else if (!(op == Op_StoreCM ||
-              (op == Op_CallLeaf && use->as_CallLeaf()->_name != NULL &&
-               strcmp(use->as_CallLeaf()->_name, "g1_wb_pre") == 0) ||
+        } else if (!(BarrierSet::barrier_set()->barrier_set_c2()->is_gc_barrier_node(use) ||
               op == Op_AryEq || op == Op_StrComp || op == Op_HasNegatives ||
               op == Op_StrCompressedCopy || op == Op_StrInflatedCopy ||
               op == Op_StrEquals || op == Op_StrIndexOf || op == Op_StrIndexOfChar)) {

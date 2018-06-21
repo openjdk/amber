@@ -113,6 +113,7 @@ class Linux {
   static void print_container_info(outputStream* st);
   static void print_distro_info(outputStream* st);
   static void print_libversion_info(outputStream* st);
+  static void print_proc_sys_info(outputStream* st);
 
  public:
   static bool _stack_is_executable;
@@ -160,7 +161,6 @@ class Linux {
   static void signal_sets_init();
   static void install_signal_handlers();
   static void set_signal_handler(int, bool);
-  static bool is_sig_ignored(int sig);
 
   static sigset_t* unblocked_signals();
   static sigset_t* vm_signals();
