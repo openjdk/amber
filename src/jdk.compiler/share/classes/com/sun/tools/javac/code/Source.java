@@ -182,6 +182,7 @@ public enum Source {
         UNDERSCORE_IDENTIFIER(MIN, JDK8),
         PRIVATE_INTERFACE_METHODS(JDK9, Fragments.FeaturePrivateIntfMethods, DiagKind.PLURAL),
         LOCAL_VARIABLE_TYPE_INFERENCE(JDK10),
+        IMPORT_ON_DEMAND_OBSERVABLE_PACKAGES(JDK1_2, JDK8)
         RAW_STRING_LITERALS(JDK10, Fragments.FeatureRawStringLiterals, DiagKind.PLURAL);
 
         enum DiagKind {

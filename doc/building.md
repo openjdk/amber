@@ -747,7 +747,7 @@ Apart from the default target, here are some common make targets:
 
   * `hotspot` - Build all of hotspot (but only hotspot)
   * `hotspot-<variant>` - Build just the specified jvm variant
-  * `images` or `product-images` - Build the JRE and JDK images
+  * `images` or `product-images` - Build the JDK image
   * `docs` or `docs-image` - Build the documentation image
   * `test-image` - Build the test image
   * `all` or `all-images` - Build all images (product, docs and test)
@@ -832,6 +832,12 @@ installation of JTReg. If this is not picked up automatically, use the
 `--with-jtreg=<path to jtreg home>` option to point to the JTReg framework.
 Note that this option should point to the JTReg home, i.e. the top directory,
 containing `lib/jtreg.jar` etc.
+
+The [Adoption Group](https://wiki.openjdk.java.net/display/Adoption) provides
+recent builds of jtreg [here](
+https://adopt-openjdk.ci.cloudbees.com/job/jtreg/lastSuccessfulBuild/artifact).
+Download the latest `.tar.gz` file, unpack it, and point `--with-jtreg` to the
+`jtreg` directory that you just unpacked.
 
 To execute the most basic tests (tier 1), use:
 ```
@@ -1033,8 +1039,8 @@ original aarch64 port is used. To select the Oracle ARM 64 port, use
 The build will end up in a directory named like
 `build/linux-arm-normal-server-release`.
 
-Inside this build output directory, the `images/jdk` and `images/jre` will
-contain the newly built JDK and JRE, respectively, for your *target* system.
+Inside this build output directory, the `images/jdk` will contain the newly
+built JDK, for your *target* system.
 
 Copy these folders to your *target* system. Then you can run e.g.
 `images/jdk/bin/java -version`.
