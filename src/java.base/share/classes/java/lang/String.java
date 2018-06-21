@@ -2798,33 +2798,6 @@ public final class String
         return lines(0, 0);
     }
 
-    private String indent(int n, boolean removeBlanks) {
-        if (isMultiline()) {
-            Stream<String> stream = removeBlanks ? lines(Integer.MAX_VALUE, Integer.MAX_VALUE)
-                                                 : lines();
-            if (n > 0) {
-                final String spaces = " ".repeat(n);
-                stream = stream.map(s -> s.isBlank() ? s : spaces + s);
-            } else if (n == Integer.MIN_VALUE) {
-                stream = stream.map(s -> s.stripLeading());
-            } else if (n < 0) {
-                stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
-            }
-            return stream.collect(Collectors.joining("\n", "", "\n"));
-        } else {
-            if (n > 0) {
-                return " ".repeat(n) + this;
-            }
-            if (n == Integer.MIN_VALUE) {
-                return stripLeading();
-            }
-            if (n < 0) {
-                return substring(Math.min(-n, indexOfNonWhitespace()));
-            }
-            return this;
-        }
-    }
-
     /**
      * Modify the indentation of each line based on parameter
      * {@code n}.
@@ -2863,6 +2836,33 @@ public final class String
         return isEmpty() ? "" :  indent(n, true);
     }
 
+    private String indent(int n, boolean removeBlanks) {
+        if (isMultiline()) {
+            Stream<String> stream = removeBlanks ? lines(Integer.MAX_VALUE, Integer.MAX_VALUE)
+                    : lines();
+            if (n > 0) {
+                final String spaces = " ".repeat(n);
+                stream = stream.map(s -> s.isBlank() ? s : spaces + s);
+            } else if (n == Integer.MIN_VALUE) {
+                stream = stream.map(s -> s.stripLeading());
+            } else if (n < 0) {
+                stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+            }
+            return stream.collect(Collectors.joining("\n", "", "\n"));
+        } else {
+            if (n > 0) {
+                return " ".repeat(n) + this;
+            }
+            if (n == Integer.MIN_VALUE) {
+                return stripLeading();
+            }
+            if (n < 0) {
+                return substring(Math.min(-n, indexOfNonWhitespace()));
+            }
+            return this;
+        }
+    }
+
     private boolean isMultiline() {
         return isLatin1() ? StringLatin1.isMultiline(value)
                           : StringUTF16.isMultiline(value);
@@ -2895,22 +2895,22 @@ public final class String
      * to adjust the resulting indentation. Example:
      * <blockquote><pre>
      *     `
-     *             abc
-     *                def
+     *             This is the first line
+     *                This is the second line
      *     `.align(0);
      *
      * returns
-     * abc
-     *    def
+     * This is the first line
+     *    This is the second line
      *
      *
      *     `
-     *             abc
-     *                def
+     *             This is the first line
+     *                This is the second line
      *     `.align(4);
      * returns
-     *     abc
-     *        def
+     *     This is the first line
+     *        This is the second line
      * </pre></blockquote>
      * @apinote All
      *          {@link Character#isWhitespace(int) white space characters},
@@ -2962,7 +2962,7 @@ public final class String
     /**
      * This method allows the application of a function to {@code this}
      * string. The function should expect a single String argument
-     * and produce an object result.
+     * and produce an {@code R} result.
      *
      * @param f    functional interface to a apply
      *
@@ -2974,24 +2974,7 @@ public final class String
      *
      * @since 12
      */
-    public <R> R apply(Function<String, R> f) {
-        return f.apply(this);
-    }
-
-    /**
-     * This method allows the application of a function to {@code this}
-     * string. The function should expect a single String argument
-     * and produce a String result.
-     *
-     * @param f    functional interface to a apply
-     *
-     * @return     the string result of applying the function to this string
-     *
-     * @see java.util.function.Function
-     *
-     * @since 12
-     */
-    public String transform(Function<String, String> f) {
+    public <R> R transform(Function<String, R> f) {
         return f.apply(this);
     }
 
@@ -3269,7 +3252,7 @@ public final class String
 
     /**
      * Replaces some space {@code U+0020} characters with tab
-     * {@code U+0020} characters if can align to tab stops at
+     * {@code U+0009} characters if can align to tab stops at
      * intervals {@code n}.
      *
      * @param n  number of characters between tab stops
