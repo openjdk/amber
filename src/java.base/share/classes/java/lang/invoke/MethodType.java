@@ -102,7 +102,7 @@ import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 public final
 class MethodType
         implements Constable<MethodType>,
-                   MethodTypeDescriptor<Class<?>, MethodType>,
+                   TypeDescriptor.OfMethod<Class<?>, MethodType>,
                    java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 

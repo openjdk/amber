@@ -25,8 +25,8 @@
 package java.lang.constant;
 
 import jdk.internal.lang.annotation.Foldable;
-import java.lang.invoke.FieldTypeDescriptor;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.TypeDescriptor;
 import java.util.stream.Stream;
 
 import sun.invoke.util.Wrapper;
@@ -60,7 +60,7 @@ import static java.util.stream.Collectors.joining;
 public interface ClassDesc
         extends ConstantDesc<Class<?>>,
                 Constable<ConstantDesc<Class<?>>>,
-                FieldTypeDescriptor<ClassDesc> {
+                TypeDescriptor.OfField<ClassDesc> {
 
     /**
      * Create a {@linkplain ClassDesc} given the name of a class or interface
