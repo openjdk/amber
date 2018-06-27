@@ -397,6 +397,7 @@ public class ConstablesVisitor extends TreeScanner {
                     // we need to issue a warning if the type of the indy is not assignable to the type of the
                     // tree, same for condy
                     tree.type = mType.restype;
+                    tree.varargsElement = null;
                 }
             }
         }

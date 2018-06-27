@@ -404,7 +404,7 @@ public class ClassWriter extends ClassFile {
             if (value instanceof MethodSymbol) {
                 MethodSymbol m = (MethodSymbol)value;
                 if (!m.isDynamic()) {
-                    poolbuf.appendByte((m.owner.flags_field & INTERFACE) != 0
+                    poolbuf.appendByte(m.isOwnerAnInterface()
                               ? CONSTANT_InterfaceMethodref
                               : CONSTANT_Methodref);
                     poolbuf.appendChar(pool.put(m.owner));

@@ -324,20 +324,20 @@ public class Constables {
             String methodTypeDesc = (String)invokeMethodReflectively(methodTypeRefClass, mtConstant, "descriptorString");
             MethodType mType = (MethodType)descriptorToType(methodTypeDesc, currentModule, true);
             // this method generates fake symbols as needed
-            Symbol refSymbol = getReferenceSymbol(tree, refKind, ownerType.tsym, name, mType);
+            Pair<Symbol, Boolean> refSymbolPair = getReferenceSymbol(tree, refKind, ownerType.tsym, name, mType);
             boolean ownerFound = true;
             try {
-                refSymbol.owner.complete();
+                refSymbolPair.fst.owner.complete();
             } catch (CompletionFailure ex) {
-                log.warning(tree, Warnings.ClassNotFound(refSymbol.owner));
+                log.warning(tree, Warnings.ClassNotFound(refSymbolPair.fst.owner));
                 ownerFound = false;
             }
             if (ownerFound) {
-                ownerType = refSymbol.owner.type;
-                checkIfMemberExists(tree, attrEnv, names.fromString(name), ownerType, mType.argtypes, refKind);
+                ownerType = refSymbolPair.fst.owner.type;
+                checkIfMemberExists(tree, attrEnv, names.fromString(name), ownerType, mType.argtypes, refKind, refSymbolPair.snd);
             }
-            Pool.MethodHandle mHandle = new Pool.MethodHandle(refKind, refSymbol, types,
-                    new Pool.MethodHandle.DumbMethodHandleCheckHelper(refKind, refSymbol));
+            Pool.MethodHandle mHandle = new Pool.MethodHandle(refKind, refSymbolPair.fst, types,
+                    new Pool.MethodHandle.DumbMethodHandleCheckHelper(refKind, refSymbolPair.fst));
             return mHandle;
         } else if (methodTypeRefClass.isInstance(constant)) {
             String descriptor = (String)invokeMethodReflectively(methodTypeRefClass, constant, "descriptorString");
@@ -398,14 +398,17 @@ public class Constables {
             }
         }
 
-        private void checkIfMemberExists(DiagnosticPosition pos, Env<AttrContext> attrEnv, Name name, Type qual, List<Type> args, int refKind) {
+        private void checkIfMemberExists(DiagnosticPosition pos, Env<AttrContext> attrEnv, Name name, Type qual, List<Type> args, int refKind, boolean warned) {
             Symbol refSym = resolveConstableMethod(pos, attrEnv, qual, name, args, List.nil());
             if (refSym.kind.isResolutionError()) {
                 try {
                     refSym = rs.resolveInternalField(pos, attrEnv, qual, name);
                 } catch (Throwable t) {
-                    log.warning(pos, Warnings.MemberNotFoundAtClass(name,
-                            (qual.tsym.flags_field & INTERFACE) == 0 ? "class" : "interface", qual.tsym));
+                    if (!warned) {
+                        // don't double warn
+                        log.warning(pos, Warnings.MemberNotFoundAtClass(name,
+                                (qual.tsym.flags_field & INTERFACE) == 0 ? "class" : "interface", qual.tsym));
+                    }
                     return;
                 }
             }
@@ -541,9 +544,9 @@ public class Constables {
         return !error;
     }
 
-    private Symbol getReferenceSymbol(JCTree tree, int refKind, Symbol owner, String name, MethodType methodType) {
+    private Pair<Symbol, Boolean> getReferenceSymbol(JCTree tree, int refKind, Symbol owner, String name, MethodType methodType) {
         if (!checkMethodTypeShape(tree, refKind, methodType)) {
-            return syms.noSymbol;
+            return new Pair<>(syms.noSymbol, false);
         }
         long flags = refKind == ClassFile.REF_getStatic ||
                 refKind == ClassFile.REF_putStatic ||
@@ -560,68 +563,57 @@ public class Constables {
                 if (refKind == ClassFile.REF_invokeInterface && (owner.flags_field & INTERFACE) == 0) {
                     Symbol result = generateMethodSymbolHelper(owner, symbolName, methodType, flags, true);
                     log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "interface", result.owner));
-                    return result;
+                    return new Pair<>(result, true);
                 }
                 if (!canHaveInterfaceOwner && (owner.flags_field & INTERFACE) != 0) {
                     Symbol result = generateMethodSymbolHelper(owner, symbolName, methodType, flags, false);
                     log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
-                    return result;
+                    return new Pair<>(result, true);
                 }
-                return new MethodSymbol(flags, symbolName, methodType, owner);
+                return new Pair<>(new MethodSymbol(flags, symbolName, methodType, owner), false);
             case ClassFile.REF_putField:
                 if ((owner.flags_field & INTERFACE) != 0) {
-                    Symbol result = generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    Symbol result = new VarSymbol(flags, symbolName, methodType.restype, owner);
                     log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
-                    return result;
+                    return new Pair<>(result, true);
                 }
-                return new VarSymbol(flags, symbolName, methodType.argtypes.tail.head, owner);
+                return new Pair<>(new VarSymbol(flags, symbolName, methodType.argtypes.tail.head, owner), false);
             case ClassFile.REF_putStatic:
-                return new VarSymbol(flags, symbolName, methodType.argtypes.head, owner);
+                return new Pair<>(new VarSymbol(flags, symbolName, methodType.argtypes.head, owner), false);
             case ClassFile.REF_getField:
             case ClassFile.REF_getStatic:
                 if (refKind == ClassFile.REF_getField && (owner.flags_field & INTERFACE) != 0) {
-                    Symbol result = generateVarSymbolHelper(owner, symbolName, methodType, flags, false);
+                    Symbol result = new VarSymbol(flags, symbolName, methodType.restype, owner);
                     log.warning(tree, Warnings.MemberNotFoundAtClass(symbolName, "class", result.owner));
-                    return result;
+                    return new Pair<>(result, true);
                 }
-                return new VarSymbol(flags, symbolName, methodType.restype, owner);
+                return new Pair<>(new VarSymbol(flags, symbolName, methodType.restype, owner), false);
             default:
                 throw new AssertionError("invalid refKind value " + refKind);
         }
     }
 
     private Symbol generateMethodSymbolHelper(
-            Symbol currentOwner,
+            Symbol owner,
             Name symbolName,
             MethodType methodType,
             long flags,
-            boolean shouldBeInterface) {
-        ClassSymbol newOwner = createNewOwner(currentOwner, shouldBeInterface);
-        Symbol newMS = new MethodSymbol(flags, symbolName, methodType, newOwner);
-        newOwner.members_field.enter(newMS);
+            final boolean shouldBeInterface) {
+        Symbol newMS = new MethodSymbol(flags, symbolName, methodType, owner) {
+            @Override
+            public boolean isOwnerAnInterface() {
+                return shouldBeInterface;
+            }
+        };
         return newMS;
     }
 
-    private ClassSymbol createNewOwner(Symbol currentOwner,
-            boolean shouldBeInterface) {
-        long newFlags = shouldBeInterface ?
-                currentOwner.flags_field | Flags.INTERFACE :
-                currentOwner.flags_field & ~Flags.INTERFACE;
-        ClassSymbol newOwner = new ClassSymbol(newFlags,
-                currentOwner.name, currentOwner.owner);
-        newOwner.members_field = WriteableScope.create(newOwner);
-        return newOwner;
-    }
-
     private Symbol generateVarSymbolHelper(
-            Symbol currentOwner,
+            Symbol owner,
             Name symbolName,
             MethodType methodType,
-            long flags,
-            boolean shouldBeInterface) {
-        ClassSymbol newOwner = createNewOwner(currentOwner, shouldBeInterface);
-        Symbol newVS = new VarSymbol(flags, symbolName, methodType.restype, newOwner);
-        newOwner.members_field.enter(newVS);
+            long flags) {
+        Symbol newVS = new VarSymbol(flags, symbolName, methodType.restype, owner);
         return newVS;
     }
 

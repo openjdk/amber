@@ -10,9 +10,12 @@ import java.lang.constant.*;
 public class WarningIfClassOrMemberNotFound2 {
     private static final ClassDesc THIS = ClassDesc.of("WarningIfClassOrMemberNotFound2");
     public int m(int i) { return i; }
+    public int f(int i) { return i; }
 
     public void test() {
         MethodHandleDesc negIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, "m", MethodTypeDesc.ofDescriptor("(I)I"));
         Intrinsics.ldc(negIMethodRef);
+        MethodHandleDesc negIMethodRef2 = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, THIS, "f", MethodTypeDesc.ofDescriptor("(I)I"));
+        Intrinsics.ldc(negIMethodRef2);
     }
 }

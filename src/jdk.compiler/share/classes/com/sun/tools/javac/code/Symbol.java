@@ -1717,6 +1717,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return false;
         }
 
+        public boolean isOwnerAnInterface() {
+            return (owner.flags_field & INTERFACE) != 0;
+        }
+
         /** find a symbol that this (proxy method) symbol implements.
          *  @param    c       The class whose members are searched for
          *                    implementations
