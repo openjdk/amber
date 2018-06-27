@@ -23,7 +23,7 @@
  * questions.
  */
 
-import java.lang.invoke.FieldTypeDescriptor;
+import java.lang.invoke.TypeDescriptor;
 import java.lang.constant.ClassDesc;
 
 import org.testng.annotations.Test;
@@ -42,7 +42,7 @@ import static org.testng.Assert.assertTrue;
  */
 @Test
 public class TypeDescriptorTest {
-    private<F extends FieldTypeDescriptor<F>> void testArray(F f, boolean isArray, F component, F array) {
+    private<F extends TypeDescriptor.OfField<F>> void testArray(F f, boolean isArray, F component, F array) {
         if (isArray) {
             assertTrue(f.isArray());
             assertEquals(f.arrayType(), array);
