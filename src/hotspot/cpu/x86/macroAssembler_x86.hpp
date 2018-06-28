@@ -504,6 +504,7 @@ class MacroAssembler: public Assembler {
 
   // allocation
   void eden_allocate(
+    Register thread,                   // Current thread
     Register obj,                      // result: pointer to object after successful allocation
     Register var_size_in_bytes,        // object size in bytes if unknown at compile time; invalid otherwise
     int      con_size_in_bytes,        // object size in bytes if   known at compile time
@@ -511,6 +512,7 @@ class MacroAssembler: public Assembler {
     Label&   slow_case                 // continuation point if fast allocation fails
   );
   void tlab_allocate(
+    Register thread,                   // Current thread
     Register obj,                      // result: pointer to object after successful allocation
     Register var_size_in_bytes,        // object size in bytes if unknown at compile time; invalid otherwise
     int      con_size_in_bytes,        // object size in bytes if   known at compile time
@@ -519,10 +521,6 @@ class MacroAssembler: public Assembler {
     Label&   slow_case                 // continuation point if fast allocation fails
   );
   void zero_memory(Register address, Register length_in_bytes, int offset_in_bytes, Register temp);
-
-  void incr_allocated_bytes(Register thread,
-                            Register var_size_in_bytes, int con_size_in_bytes,
-                            Register t1 = noreg);
 
   // interface method calling
   void lookup_interface_method(Register recv_klass,
@@ -1097,6 +1095,10 @@ public:
   void vmovdqu(XMMRegister dst, Address src);
   void vmovdqu(XMMRegister dst, XMMRegister src);
   void vmovdqu(XMMRegister dst, AddressLiteral src);
+  void evmovdquq(XMMRegister dst, Address src, int vector_len) { Assembler::evmovdquq(dst, src, vector_len); }
+  void evmovdquq(XMMRegister dst, XMMRegister src, int vector_len) { Assembler::evmovdquq(dst, src, vector_len); }
+  void evmovdquq(Address dst, XMMRegister src, int vector_len) { Assembler::evmovdquq(dst, src, vector_len); }
+  void evmovdquq(XMMRegister dst, AddressLiteral src, int vector_len, Register rscratch);
 
   // Move Aligned Double Quadword
   void movdqa(XMMRegister dst, Address src)       { Assembler::movdqa(dst, src); }
@@ -1210,6 +1212,8 @@ public:
   void vpcmpeqw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
   void vpmovzxbw(XMMRegister dst, Address src, int vector_len);
+  void vpmovzxbw(XMMRegister dst, XMMRegister src, int vector_len) { Assembler::vpmovzxbw(dst, src, vector_len); }
+
   void vpmovmskb(Register dst, XMMRegister src);
 
   void vpmullw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
