@@ -232,7 +232,7 @@ AC_DEFUN([FLAGS_SETUP_OPTIMIZATION],
       C_O_FLAG_NORM="-xO2 -Wu,-O2~yz"
     elif test "x$OPENJDK_TARGET_CPU_ARCH" = "xsparc"; then
       C_O_FLAG_HIGHEST="-xO4 -Wc,-Qrm-s -Wc,-Qiselect-T0 \
-          -xprefetch=auto,explicit -xchip=ultra $CC_HIGHEST"
+          -xprefetch=auto,explicit $CC_HIGHEST"
       C_O_FLAG_HI="-xO4 -Wc,-Qrm-s -Wc,-Qiselect-T0"
       C_O_FLAG_NORM="-xO2 -Wc,-Qrm-s -Wc,-Qiselect-T0"
     fi
@@ -491,6 +491,12 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
     # (see http://llvm.org/bugs/show_bug.cgi?id=7554)
     TOOLCHAIN_CFLAGS_JVM="$TOOLCHAIN_CFLAGS_JVM -flimit-debug-info"
 
+    # In principle the stack alignment below is cpu- and ABI-dependent and
+    # should agree with values of StackAlignmentInBytes in various
+    # src/hotspot/cpu/*/globalDefinitions_*.hpp files, but this value currently
+    # works for all platforms.
+    TOOLCHAIN_CFLAGS_JVM="$TOOLCHAIN_CFLAGS_JVM -mno-omit-leaf-frame-pointer -mstack-alignment=16"
+
     if test "x$OPENJDK_TARGET_OS" = xlinux; then
       TOOLCHAIN_CFLAGS_JDK="-pipe"
       TOOLCHAIN_CFLAGS_JDK_CONLY="-fno-strict-aliasing" # technically NOT for CXX
@@ -549,6 +555,7 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
   elif test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
     WARNING_CFLAGS="-W3"
     WARNING_CFLAGS_JDK="-wd4800"
+    WARNING_CFLAGS_JVM="-wd4800"
   fi
 
   # Set some additional per-OS defines.
@@ -598,10 +605,6 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
     if test "x$STATIC_BUILD" = xtrue; then
       JVM_PICFLAG=""
     fi
-  fi
-
-  if test "x$OPENJDK_TARGET_OS" = xmacosx; then
-    OS_CFLAGS_JVM="$OS_CFLAGS_JVM -mno-omit-leaf-frame-pointer -mstack-alignment=16"
   fi
 
   # Optional POSIX functionality needed by the JVM
