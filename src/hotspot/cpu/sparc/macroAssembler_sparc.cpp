@@ -176,14 +176,13 @@ void MacroAssembler::resolve_jobject(Register value, Register tmp) {
   delayed()->andcc(value, JNIHandles::weak_tag_mask, G0); // Test for jweak
   brx(Assembler::zero, true, Assembler::pt, not_weak);
   delayed()->nop();
-  access_load_at(T_OBJECT, IN_ROOT | ON_PHANTOM_OOP_REF,
+  access_load_at(T_OBJECT, IN_NATIVE | ON_PHANTOM_OOP_REF,
                  Address(value, -JNIHandles::weak_tag_value), value, tmp);
   verify_oop(value);
   br (Assembler::always, true, Assembler::pt, done);
   delayed()->nop();
   bind(not_weak);
-  access_load_at(T_OBJECT, IN_CONCURRENT_ROOT,
-                 Address(value, 0), value, tmp);
+  access_load_at(T_OBJECT, IN_NATIVE, Address(value, 0), value, tmp);
   verify_oop(value);
   bind(done);
 }
@@ -3402,8 +3401,7 @@ void MacroAssembler::reserved_stack_check() {
 // ((OopHandle)result).resolve();
 void MacroAssembler::resolve_oop_handle(Register result, Register tmp) {
   // OopHandle::resolve is an indirection.
-  access_load_at(T_OBJECT, IN_CONCURRENT_ROOT,
-                 Address(result, 0), result, tmp);
+  access_load_at(T_OBJECT, IN_NATIVE, Address(result, 0), result, tmp);
 }
 
 void MacroAssembler::load_mirror(Register mirror, Register method, Register tmp) {

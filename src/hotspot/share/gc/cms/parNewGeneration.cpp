@@ -42,6 +42,7 @@
 #include "gc/shared/plab.inline.hpp"
 #include "gc/shared/preservedMarks.inline.hpp"
 #include "gc/shared/referencePolicy.hpp"
+#include "gc/shared/referenceProcessorPhaseTimes.hpp"
 #include "gc/shared/space.hpp"
 #include "gc/shared/spaceDecorator.hpp"
 #include "gc/shared/strongRootsScope.hpp"
@@ -50,6 +51,7 @@
 #include "gc/shared/workgroup.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
+#include "memory/iterator.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/compressedOops.inline.hpp"
@@ -202,7 +204,7 @@ bool ParScanThreadState::take_from_overflow_stack() {
   const size_t num_overflow_elems = of_stack->size();
   const size_t space_available = queue->max_elems() - queue->size();
   const size_t num_take_elems = MIN3(space_available / 4,
-                                     ParGCDesiredObjsFromOverflowList,
+                                     (size_t)ParGCDesiredObjsFromOverflowList,
                                      num_overflow_elems);
   // Transfer the most recent num_take_elems from the overflow
   // stack to our work queue.
@@ -501,12 +503,6 @@ ParScanClosure::ParScanClosure(ParNewGeneration* g,
   _boundary = _g->reserved().end();
 }
 
-void ParScanWithBarrierClosure::do_oop(oop* p)       { ParScanClosure::do_oop_work(p, true, false); }
-void ParScanWithBarrierClosure::do_oop(narrowOop* p) { ParScanClosure::do_oop_work(p, true, false); }
-
-void ParScanWithoutBarrierClosure::do_oop(oop* p)       { ParScanClosure::do_oop_work(p, false, false); }
-void ParScanWithoutBarrierClosure::do_oop(narrowOop* p) { ParScanClosure::do_oop_work(p, false, false); }
-
 void ParRootScanWithBarrierTwoGensClosure::do_oop(oop* p)       { ParScanClosure::do_oop_work(p, true, true); }
 void ParRootScanWithBarrierTwoGensClosure::do_oop(narrowOop* p) { ParScanClosure::do_oop_work(p, true, true); }
 
@@ -517,9 +513,6 @@ ParScanWeakRefClosure::ParScanWeakRefClosure(ParNewGeneration* g,
                                              ParScanThreadState* par_scan_state)
   : ScanWeakRefClosure(g), _par_scan_state(par_scan_state)
 {}
-
-void ParScanWeakRefClosure::do_oop(oop* p)       { ParScanWeakRefClosure::do_oop_work(p); }
-void ParScanWeakRefClosure::do_oop(narrowOop* p) { ParScanWeakRefClosure::do_oop_work(p); }
 
 #ifdef WIN32
 #pragma warning(disable: 4786) /* identifier was truncated to '255' characters in the browser information */
@@ -683,17 +676,17 @@ template <class T>
 void /*ParNewGeneration::*/ParKeepAliveClosure::do_oop_work(T* p) {
 #ifdef ASSERT
   {
-    oop obj = RawAccess<OOP_NOT_NULL>::oop_load(p);
+    oop obj = RawAccess<IS_NOT_NULL>::oop_load(p);
     // We never expect to see a null reference being processed
     // as a weak reference.
     assert(oopDesc::is_oop(obj), "expected an oop while scanning weak refs");
   }
 #endif // ASSERT
 
-  _par_cl->do_oop_nv(p);
+  Devirtualizer::do_oop_no_verify(_par_cl, p);
 
   if (CMSHeap::heap()->is_in_reserved(p)) {
-    oop obj = RawAccess<OOP_NOT_NULL>::oop_load(p);;
+    oop obj = RawAccess<IS_NOT_NULL>::oop_load(p);;
     _rs->write_ref_field_gc_par(p, obj);
   }
 }
@@ -709,17 +702,17 @@ template <class T>
 void /*ParNewGeneration::*/KeepAliveClosure::do_oop_work(T* p) {
 #ifdef ASSERT
   {
-    oop obj = RawAccess<OOP_NOT_NULL>::oop_load(p);
+    oop obj = RawAccess<IS_NOT_NULL>::oop_load(p);
     // We never expect to see a null reference being processed
     // as a weak reference.
     assert(oopDesc::is_oop(obj), "expected an oop while scanning weak refs");
   }
 #endif // ASSERT
 
-  _cl->do_oop_nv(p);
+  Devirtualizer::do_oop_no_verify(_cl, p);
 
   if (CMSHeap::heap()->is_in_reserved(p)) {
-    oop obj = RawAccess<OOP_NOT_NULL>::oop_load(p);
+    oop obj = RawAccess<IS_NOT_NULL>::oop_load(p);
     _rs->write_ref_field_gc_par(p, obj);
   }
 }
@@ -736,7 +729,7 @@ template <class T> void ScanClosureWithParBarrier::do_oop_work(T* p) {
       oop new_obj = obj->is_forwarded()
                       ? obj->forwardee()
                       : _g->DefNewGeneration::copy_to_survivor_space(obj);
-      RawAccess<OOP_NOT_NULL>::oop_store(p, new_obj);
+      RawAccess<IS_NOT_NULL>::oop_store(p, new_obj);
     }
     if (_gc_barrier) {
       // If p points to a younger generation, mark the card.
@@ -792,14 +785,17 @@ void ParNewRefProcTaskProxy::work(uint worker_id) {
              par_scan_state.evacuate_followers_closure());
 }
 
-void ParNewRefProcTaskExecutor::execute(ProcessTask& task) {
+void ParNewRefProcTaskExecutor::execute(ProcessTask& task, uint ergo_workers) {
   CMSHeap* gch = CMSHeap::heap();
   WorkGang* workers = gch->workers();
   assert(workers != NULL, "Need parallel worker threads.");
+  assert(workers->active_workers() == ergo_workers,
+         "Ergonomically chosen workers (%u) must be equal to active workers (%u)",
+         ergo_workers, workers->active_workers());
   _state_set.reset(workers->active_workers(), _young_gen.promotion_failed());
   ParNewRefProcTaskProxy rp_task(task, _young_gen, _old_gen,
                                  _young_gen.reserved().end(), _state_set);
-  workers->run_task(&rp_task);
+  workers->run_task(&rp_task, workers->active_workers());
   _state_set.reset(0 /* bad value in debug if not reset */,
                    _young_gen.promotion_failed());
 }
@@ -812,7 +808,7 @@ void ParNewRefProcTaskExecutor::set_single_threaded_mode() {
 
 ScanClosureWithParBarrier::
 ScanClosureWithParBarrier(ParNewGeneration* g, bool gc_barrier) :
-  ScanClosure(g, gc_barrier)
+  OopsInClassLoaderDataOrGenClosure(g), _g(g), _boundary(g->reserved().end()), _gc_barrier(gc_barrier)
 { }
 
 template <typename OopClosureType1, typename OopClosureType2>
@@ -1449,7 +1445,8 @@ void ParNewGeneration::ref_processor_init() {
                              refs_discovery_is_mt(),     // mt discovery
                              ParallelGCThreads,          // mt discovery degree
                              refs_discovery_is_atomic(), // atomic_discovery
-                             NULL);                      // is_alive_non_header
+                             NULL,                       // is_alive_non_header
+                             false);                     // disable adjusting number of processing threads
   }
 }
 
