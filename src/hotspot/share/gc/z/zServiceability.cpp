@@ -138,6 +138,7 @@ ZServiceabilityMemoryUsageTracker::~ZServiceabilityMemoryUsageTracker() {
 ZServiceabilityManagerStatsTracer::ZServiceabilityManagerStatsTracer(bool is_gc_begin, bool is_gc_end) :
     _stats(ZHeap::heap()->serviceability_memory_manager(),
            ZCollectedHeap::heap()->gc_cause() /* cause */,
+           true        /* allMemoryPoolsAffected */,
            is_gc_begin /* recordGCBeginTime */,
            is_gc_begin /* recordPreGCUsage */,
            true        /* recordPeakUsage */,
@@ -148,7 +149,7 @@ ZServiceabilityManagerStatsTracer::ZServiceabilityManagerStatsTracer(bool is_gc_
 
 ZServiceabilityCountersTracer::ZServiceabilityCountersTracer() {
   // Nothing to trace with TraceCollectorStats, since ZGC has
-  // neither a young collector or a full collector.
+  // neither a young collector nor a full collector.
 }
 
 ZServiceabilityCountersTracer::~ZServiceabilityCountersTracer() {

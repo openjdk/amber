@@ -22,7 +22,10 @@
  */
 package requires;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -69,6 +73,12 @@ public class VMProps implements Callable<Map<String, String>> {
         map.put("vm.debug", vmDebug());
         map.put("vm.jvmci", vmJvmci());
         map.put("vm.emulatedClient", vmEmulatedClient());
+        // vm.hasSA is "true" if the VM contains the serviceability agent
+        // and jhsdb.
+        map.put("vm.hasSA", vmHasSA());
+        // vm.hasSAandCanAttach is "true" if the VM contains the serviceability agent
+        // and jhsdb and it can attach to the VM.
+        map.put("vm.hasSAandCanAttach", vmHasSAandCanAttach());
         map.put("vm.cpu.features", cpuFeatures());
         map.put("vm.rtm.cpu", vmRTMCPU());
         map.put("vm.rtm.os", vmRTMOS());
@@ -80,6 +90,7 @@ public class VMProps implements Callable<Map<String, String>> {
         // vm.graal.enabled is true if Graal is used as JIT
         map.put("vm.graal.enabled", isGraalEnabled());
         map.put("docker.support", dockerSupport());
+        map.put("release.implementor", implementor());
         vmGC(map); // vm.gc.X = true/false
         vmOptFinalFlags(map);
 
@@ -171,16 +182,13 @@ public class VMProps implements Callable<Map<String, String>> {
      * @return "true" if Flight Recorder is enabled, "false" if is disabled.
      */
     protected String vmFlightRecorder() {
-        Boolean isUnlockedCommercialFatures = WB.getBooleanVMFlag("UnlockCommercialFeatures");
         Boolean isFlightRecorder = WB.getBooleanVMFlag("FlightRecorder");
         String startFROptions = WB.getStringVMFlag("StartFlightRecording");
-        if (isUnlockedCommercialFatures != null && isUnlockedCommercialFatures) {
-            if (isFlightRecorder != null && isFlightRecorder) {
-                return "true";
-            }
-            if (startFROptions != null && !startFROptions.isEmpty()) {
-                return "true";
-            }
+        if (isFlightRecorder != null && isFlightRecorder) {
+            return "true";
+        }
+        if (startFROptions != null && !startFROptions.isEmpty()) {
+            return "true";
         }
         return "false";
     }
@@ -254,6 +262,28 @@ public class VMProps implements Callable<Map<String, String>> {
     protected void vmOptFinalFlags(Map<String, String> map) {
         vmOptFinalFlag(map, "ClassUnloading");
         vmOptFinalFlag(map, "UseCompressedOops");
+    }
+
+    /**
+     * @return "true" if VM has a serviceability agent.
+     */
+    protected String vmHasSA() {
+        return "" + Platform.hasSA();
+    }
+
+    /**
+     * @return "true" if VM has a serviceability agent and it can
+     * attach to the VM.
+     */
+    protected String vmHasSAandCanAttach() {
+        try {
+            return "" + Platform.shouldSAAttach();
+        } catch (IOException e) {
+            System.out.println("Checking whether SA can attach to the VM failed.");
+            e.printStackTrace();
+            // Run the tests anyways.
+            return "true";
+        }
     }
 
     /**
@@ -395,6 +425,18 @@ public class VMProps implements Callable<Map<String, String>> {
         return (p.exitValue() == 0);
     }
 
+
+    private String implementor() {
+        try (InputStream in = new BufferedInputStream(new FileInputStream(
+                System.getProperty("java.home") + "/release"))) {
+            Properties properties = new Properties();
+            properties.load(in);
+            return properties.getProperty("IMPLEMENTOR").replace("\"", "");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 
     /**

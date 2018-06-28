@@ -20,6 +20,8 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
+
 package org.graalvm.compiler.replacements;
 
 import java.net.URI;
@@ -846,7 +848,9 @@ public abstract class PEGraphDecoder extends SimplifyingGraphDecoder {
         // Copy inlined methods from inlinee to caller
         List<ResolvedJavaMethod> inlinedMethods = graphToInline.getInlinedMethods();
         if (inlinedMethods != null) {
-            graph.getMethods().addAll(inlinedMethods);
+            for (ResolvedJavaMethod other : inlinedMethods) {
+                graph.recordMethod(other);
+            }
         }
 
         if (graphToInline.getFields() != null) {
