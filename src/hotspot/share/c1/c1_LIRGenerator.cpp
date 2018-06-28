@@ -1602,7 +1602,7 @@ void LIRGenerator::do_StoreIndexed(StoreIndexed* x) {
     array_store_check(value.result(), array.result(), store_check_info, x->profiled_method(), x->profiled_bci());
   }
 
-  DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY;
+  DecoratorSet decorators = IN_HEAP | IS_ARRAY;
   if (x->check_boolean()) {
     decorators |= C1_MASK_BOOLEAN;
   }
@@ -1847,7 +1847,7 @@ void LIRGenerator::do_LoadIndexed(LoadIndexed* x) {
     }
   }
 
-  DecoratorSet decorators = IN_HEAP | IN_HEAP_ARRAY;
+  DecoratorSet decorators = IN_HEAP | IS_ARRAY;
 
   LIR_Opr result = rlock_result(x, x->elt_type());
   access_load_at(decorators, x->elt_type(),
@@ -3245,7 +3245,7 @@ void LIRGenerator::do_ProfileInvoke(ProfileInvoke* x) {
     int freq_log = Tier23InlineeNotifyFreqLog;
     double scale;
     if (_method->has_option_value("CompileThresholdScaling", scale)) {
-      freq_log = Arguments::scaled_freq_log(freq_log, scale);
+      freq_log = CompilerConfig::scaled_freq_log(freq_log, scale);
     }
     increment_event_counter_impl(info, x->inlinee(), LIR_OprFact::intConst(InvocationCounter::count_increment), right_n_bits(freq_log), InvocationEntryBci, false, true);
   }
@@ -3279,7 +3279,7 @@ void LIRGenerator::increment_event_counter(CodeEmitInfo* info, LIR_Opr step, int
   // Increment the appropriate invocation/backedge counter and notify the runtime.
   double scale;
   if (_method->has_option_value("CompileThresholdScaling", scale)) {
-    freq_log = Arguments::scaled_freq_log(freq_log, scale);
+    freq_log = CompilerConfig::scaled_freq_log(freq_log, scale);
   }
   increment_event_counter_impl(info, info->scope()->method(), step, right_n_bits(freq_log), bci, backedge, true);
 }

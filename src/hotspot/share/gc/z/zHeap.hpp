@@ -124,6 +124,7 @@ public:
   uintptr_t alloc_object(size_t size);
   uintptr_t alloc_object_for_relocation(size_t size);
   void undo_alloc_object_for_relocation(uintptr_t addr, size_t size);
+  bool is_alloc_stalled() const;
   void check_out_of_memory();
 
   // Marking
@@ -151,7 +152,7 @@ public:
   void relocate();
 
   // Iteration
-  void object_iterate(ObjectClosure* cl);
+  void object_iterate(ObjectClosure* cl, bool visit_referents);
 
   // Serviceability
   void serviceability_initialize();
