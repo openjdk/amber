@@ -22,8 +22,8 @@
  */
 
 // key: compiler.misc.feature.multiple.case.labels
-// key: compiler.warn.source.no.bootclasspath
-// options: -source 11
+// key: compiler.warn.preview.feature.use.plural
+// options: --enable-preview -source 12 -Xlint:preview
 
 class MultipleCaseLabels {
     void m(int i) {

@@ -22,13 +22,13 @@
  */
 
 // key: compiler.misc.feature.switch.expressions
-// key: compiler.warn.source.no.bootclasspath
-// options: -source 11
+// key: compiler.warn.preview.feature.use.plural
+// options: --enable-preview -source 12 -Xlint:preview
 
 class SwitchExpressions {
     int m(int i) {
         return switch (i) {
-            default -> -1;
+            default: break -1;
         };
     }
 }

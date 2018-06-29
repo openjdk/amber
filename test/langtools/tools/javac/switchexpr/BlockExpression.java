@@ -23,8 +23,8 @@
 
 /**
  * @test
- * @compile BlockExpression.java
- * @run main BlockExpression
+ * @compile --enable-preview -source 12 BlockExpression.java
+ * @run main/othervm --enable-preview BlockExpression
  */
 
 public class BlockExpression {

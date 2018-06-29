@@ -23,8 +23,8 @@
 
 /**
  * @test
- * @compile ExpressionSwitchBreaks1.java
- * @run main ExpressionSwitchBreaks1
+ * @compile --enable-preview -source 12 ExpressionSwitchBreaks1.java
+ * @run main/othervm --enable-preview ExpressionSwitchBreaks1
  */
 
 import java.util.Objects;

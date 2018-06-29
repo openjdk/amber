@@ -1,6 +1,6 @@
 /**
  * @test /nodynamiccopyright/
- * @compile/fail/ref=ExpressionSwitchInfer.out -XDrawDiagnostics ExpressionSwitchInfer.java
+ * @compile/fail/ref=ExpressionSwitchInfer.out -XDrawDiagnostics --enable-preview -source 12 ExpressionSwitchInfer.java
  */
 
 import java.util.ArrayList;

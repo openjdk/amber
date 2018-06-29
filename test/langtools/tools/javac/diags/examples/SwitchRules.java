@@ -21,15 +21,14 @@
  * questions.
  */
 
-// key: compiler.err.not.exhaustive
-// key: compiler.note.preview.filename
-// key: compiler.note.preview.recompile
-// options: --enable-preview -source 12
+// key: compiler.misc.feature.switch.rules
+// key: compiler.warn.preview.feature.use.plural
+// options: --enable-preview -source 12 -Xlint:preview
 
-class NotExhaustive {
-    int t(int i) {
-        return switch (i) {
-            case 0 -> -1;
+class SwitchExpressions {
+    void m(int i) {
+        switch (i) {
+            default -> { break; }
         };
     }
 }

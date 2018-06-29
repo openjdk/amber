@@ -1,6 +1,6 @@
 /**
  * @test /nodynamiccopyright/
- * @compile/fail/ref=ExpressionSwitchNotExhaustive.out -XDrawDiagnostics ExpressionSwitchNotExhaustive.java
+ * @compile/fail/ref=ExpressionSwitchNotExhaustive.out -XDrawDiagnostics --enable-preview -source 12 ExpressionSwitchNotExhaustive.java
  */
 
 public class ExpressionSwitchNotExhaustive {

@@ -1,4 +1,6 @@
 ExpressionSwitchNotExhaustive.java:8:16: compiler.err.not.exhaustive
 ExpressionSwitchNotExhaustive.java:14:16: compiler.err.not.exhaustive
 ExpressionSwitchNotExhaustive.java:27:23: compiler.err.var.might.not.have.been.initialized: s
+- compiler.note.preview.filename: ExpressionSwitchNotExhaustive.java
+- compiler.note.preview.recompile
 3 errors

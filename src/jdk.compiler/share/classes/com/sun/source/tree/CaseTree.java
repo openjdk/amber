@@ -60,7 +60,7 @@ public interface CaseTree extends Tree {
      * Returns the labels for this case.
      * For default case, returns an empty list.
      * @return labels for this case
-     * @since TBD
+     * @since 12
      */
     List<? extends ExpressionTree> getExpressions();
 
@@ -75,13 +75,13 @@ public interface CaseTree extends Tree {
     List<? extends StatementTree> getStatements();
 
     /**
-     * For case with kind {@linkplain CaseKind#ARROW},
+     * For case with kind {@linkplain CaseKind#RULE},
      * return the statement or expression after the arrow.
      * Returns {@code null} for case with kind
      * {@linkplain CaseKind#STATEMENT}.
      * 
      * @return case value or null
-     * @since TBD
+     * @since 12
      */
     public default Tree getBody() {
         return null;
@@ -101,9 +101,9 @@ public interface CaseTree extends Tree {
      * The syntatic form of this case:
      * <ul>
      *     <li>STATEMENT: {@code case <expression>: <statements>}</li>
-     *     <li>ARROW: {@code case <expression> -> <expression>/<statement>}</li>
+     *     <li>RULE: {@code case <expression> -> <expression>/<statement>}</li>
      * </ul>
-     * @since TBD
+     * @since 12
      */
     public enum CaseKind {
         /**
@@ -113,6 +113,6 @@ public interface CaseTree extends Tree {
         /**
          * Case is in the form: {@code case <expression> -> <expression>}.
          */
-        ARROW;
+        RULE;
     }
 }

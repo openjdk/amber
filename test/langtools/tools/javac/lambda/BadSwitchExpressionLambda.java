@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary Adding switch expressions
- * @compile/fail/ref=BadSwitchExpressionLambda.out -XDrawDiagnostics BadSwitchExpressionLambda.java
+ * @compile/fail/ref=BadSwitchExpressionLambda.out -XDrawDiagnostics --enable-preview -source 12 BadSwitchExpressionLambda.java
  */
 
 class BadSwitchExpressionLambda {

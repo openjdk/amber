@@ -23,8 +23,8 @@
 
 /**
  * @test
- * @compile ExpressionSwitchFallThrough1.java
- * @run main ExpressionSwitchFallThrough1
+ * @compile --enable-preview -source 12 ExpressionSwitchFallThrough1.java
+ * @run main/othervm --enable-preview ExpressionSwitchFallThrough1
  */
 
 import java.util.Objects;

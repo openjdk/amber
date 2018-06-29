@@ -55,7 +55,7 @@ public interface BreakTree extends StatementTree {
     /**
      * Returns the expression for this {@code break} statement.
      * @return the expression
-     * @since TBD
+     * @since 12
      */
     ExpressionTree getValue();
 }

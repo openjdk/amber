@@ -2,4 +2,6 @@ SwitchStatementBroken2.java:15:23: compiler.err.switch.case.unexpected.statement
 SwitchStatementBroken2.java:16:23: compiler.err.switch.case.unexpected.statement
 SwitchStatementBroken2.java:17:23: compiler.err.switch.case.unexpected.statement
 SwitchStatementBroken2.java:20:24: compiler.err.switch.case.unexpected.statement
+- compiler.note.preview.filename: SwitchStatementBroken2.java
+- compiler.note.preview.recompile
 4 errors

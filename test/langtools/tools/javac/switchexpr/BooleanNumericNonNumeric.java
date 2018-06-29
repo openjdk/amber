@@ -1,6 +1,6 @@
 /**
  * @test /nodynamiccopyright/
- * @compile/fail/ref=BooleanNumericNonNumeric.out -XDrawDiagnostics BooleanNumericNonNumeric.java
+ * @compile/fail/ref=BooleanNumericNonNumeric.out -XDrawDiagnostics --enable-preview -source 12 BooleanNumericNonNumeric.java
  */
 
 public class BooleanNumericNonNumeric {

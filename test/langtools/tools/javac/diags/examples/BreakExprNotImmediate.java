@@ -22,6 +22,9 @@
  */
 
 // key: compiler.err.break.expr.not.immediate
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
+// options: --enable-preview -source 12
 
 class BreakExprNotImmediate {
     int t(int i) {

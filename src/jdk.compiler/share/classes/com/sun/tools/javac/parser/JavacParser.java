@@ -1411,16 +1411,17 @@ public class JavacParser implements Parser {
         CaseKind kind;
         switch (token.kind) {
             case ARROW:
+                checkSourceLevel(Feature.SWITCH_RULE);
                 nextToken();
                 if (token.kind == TokenKind.THROW || token.kind == TokenKind.LBRACE) {
                     stats = List.of(parseStatement());
                     body = stats.head;
-                    kind = CaseKind.ARROW;
+                    kind = CaseKind.RULE;
                 } else {
                     JCExpression value = parseExpression();
                     stats = List.of(to(F.at(value).Break(value)));
                     body = value;
-                    kind = CaseKind.ARROW;
+                    kind = CaseKind.RULE;
                     accept(SEMI);
                 }
                 break;
@@ -2817,8 +2818,9 @@ public class JavacParser implements Parser {
             CaseKind caseKind;
             JCTree body = null;
             if (token.kind == ARROW) {
+                checkSourceLevel(Feature.SWITCH_RULE);
                 accept(ARROW);
-                caseKind = CaseKind.ARROW;
+                caseKind = CaseKind.RULE;
                 JCStatement statement = parseStatementAsBlock();
                 if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
                     log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);
@@ -2844,8 +2846,9 @@ public class JavacParser implements Parser {
                 caseKind = CaseKind.STATEMENT;
                 stats = blockStatements();
             } else {
+                checkSourceLevel(Feature.SWITCH_RULE);
                 accept(ARROW);
-                caseKind = CaseKind.ARROW;
+                caseKind = CaseKind.RULE;
                 JCStatement statement = parseStatementAsBlock();
                 if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
                     log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);

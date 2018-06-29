@@ -10,5 +10,7 @@ ExpressionSwitchBreaks2.java:38:17: compiler.err.break.complex.value.no.switch.e
 ExpressionSwitchBreaks2.java:38:29: compiler.err.cant.resolve.location: kindname.variable, undef, , , (compiler.misc.location: kindname.class, ExpressionSwitchBreaks2, null)
 ExpressionSwitchBreaks2.java:42:22: compiler.warn.break.ambiguous.target: j
 ExpressionSwitchBreaks2.java:45:22: compiler.err.break.outside.switch.expression
+- compiler.note.preview.filename: ExpressionSwitchBreaks2.java
+- compiler.note.preview.recompile
 10 errors
 2 warnings

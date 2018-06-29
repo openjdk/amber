@@ -23,9 +23,9 @@
 
 /**
  * @test
- * @compile ExhaustiveEnumSwitch.java
+ * @compile --enable-preview -source 12 ExhaustiveEnumSwitch.java
  * @compile ExhaustiveEnumSwitchExtra.java
- * @run main ExhaustiveEnumSwitch
+ * @run main/othervm --enable-preview ExhaustiveEnumSwitch
  */
 
 public class ExhaustiveEnumSwitch {

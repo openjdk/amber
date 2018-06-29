@@ -22,6 +22,9 @@
  */
 
 // key: compiler.err.break.missing.value
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
+// options: --enable-preview -source 12
 
 class BreakMissingValue {
     int t(int i) {

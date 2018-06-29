@@ -154,7 +154,7 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
                             // but the embedded annotations will be.
                             reflectiveScan(((JCModuleDecl) tree).mods.annotations);
                         } else if (tree instanceof JCCase &&
-                                   ((JCCase) tree).getCaseKind() == CaseKind.ARROW &&
+                                   ((JCCase) tree).getCaseKind() == CaseKind.RULE &&
                                    f.getName().equals("stats")) {
                             //value case, visit value:
                             reflectiveScan(((JCCase) tree).getBody());

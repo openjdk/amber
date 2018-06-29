@@ -1,6 +1,6 @@
 /**
  * @test /nodynamiccopyright/
- * @compile/fail/ref=ExpressionSwitchBreaks2.out -XDrawDiagnostics ExpressionSwitchBreaks2.java
+ * @compile/fail/ref=ExpressionSwitchBreaks2.out -XDrawDiagnostics --enable-preview -source 12 ExpressionSwitchBreaks2.java
  */
 
 public class ExpressionSwitchBreaks2 {

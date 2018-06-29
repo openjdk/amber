@@ -23,8 +23,8 @@
 
 /**
  * @test
- * @compile ExpressionSwitchBugs.java
- * @run main ExpressionSwitchBugs
+ * @compile --enable-preview -source 12 ExpressionSwitchBugs.java
+ * @run main/othervm --enable-preview ExpressionSwitchBugs
  */
 
 public class ExpressionSwitchBugs {

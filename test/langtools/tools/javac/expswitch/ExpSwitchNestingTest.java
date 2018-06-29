@@ -77,6 +77,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
 
     private void assertOK(String... constructs) {
         reset();
+        addCompileOptions("--enable-preview", "-source", "12");
         program(constructs);
         try {
             compile();
@@ -89,6 +90,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
 
     private void assertOKWithWarning(String warning, String... constructs) {
         reset();
+        addCompileOptions("--enable-preview", "-source", "12");
         program(constructs);
         try {
             compile();
@@ -101,6 +103,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
 
     private void assertFail(String expectedDiag, String... constructs) {
         reset();
+        addCompileOptions("--enable-preview", "-source", "12");
         program(constructs);
         try {
             compile();

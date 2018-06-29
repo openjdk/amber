@@ -1,6 +1,6 @@
 /**
  * @test /nodynamiccopyright/
- * @compile/fail/ref=ParserRecovery.out -XDrawDiagnostics ParserRecovery.java
+ * @compile/fail/ref=ParserRecovery.out -XDrawDiagnostics --enable-preview -source 12 ParserRecovery.java
  */
 
 public class ParserRecovery {

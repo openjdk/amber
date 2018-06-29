@@ -1,3 +1,5 @@
 ExpressionSwitchInfer.java:16:95: compiler.err.cant.resolve.location.args: kindname.method, substring, , int, (compiler.misc.location: kindname.interface, java.lang.CharSequence, null)
 ExpressionSwitchInfer.java:25:38: compiler.err.cant.resolve.location.args: kindname.method, substring, , int, (compiler.misc.location: kindname.interface, java.lang.CharSequence, null)
+- compiler.note.preview.filename: ExpressionSwitchInfer.java
+- compiler.note.preview.recompile
 2 errors

@@ -24,6 +24,9 @@
 // key: compiler.err.prob.found.req
 // key: compiler.misc.incompatible.ret.type.in.lambda
 // key: compiler.misc.switch.expression.target.cant.be.void
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
+// options: --enable-preview -source 12
 
 class SwitchExpressionTargetCantBeVoid {
 

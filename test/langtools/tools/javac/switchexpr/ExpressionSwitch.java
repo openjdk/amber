@@ -1,8 +1,8 @@
 /**
  * @test /nodynamiccopyright/
  * @compile/fail/ref=ExpressionSwitch-old.out -source 9 -Xlint:-options -XDrawDiagnostics ExpressionSwitch.java
- * @compile ExpressionSwitch.java
- * @run main ExpressionSwitch
+ * @compile --enable-preview -source 12 ExpressionSwitch.java
+ * @run main/othervm --enable-preview ExpressionSwitch
  */
 
 import java.util.Objects;
