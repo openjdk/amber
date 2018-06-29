@@ -40,7 +40,10 @@ requires.properties= \
     vm.gc.Z \
     vm.graal.enabled \
     vm.cds \
-    docker.support
+    vm.hasSA \
+    vm.hasSAandCanAttach \
+    docker.support \
+    release.implementor
 
 # Minimum jtreg version
 requiredVersion=4.2 b12
