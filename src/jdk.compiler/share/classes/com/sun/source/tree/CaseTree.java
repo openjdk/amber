@@ -75,9 +75,10 @@ public interface CaseTree extends Tree {
     List<? extends StatementTree> getStatements();
 
     /**
-     * If this is a case in switch expression in for
-     * {@linkplain CaseKind#ARROW}, the right-hand-side of
-     * the case, null otherwise.
+     * For case with kind {@linkplain CaseKind#ARROW},
+     * return the statement or expression after the arrow.
+     * Returns {@code null} for case with kind
+     * {@linkplain CaseKind#STATEMENT}.
      * 
      * @return case value or null
      * @since TBD
@@ -100,8 +101,7 @@ public interface CaseTree extends Tree {
      * The syntatic form of this case:
      * <ul>
      *     <li>STATEMENT: {@code case <expression>: <statements>}</li>
-     *     <li>VALUE: {@code case <expression> -> <expression>}</li>
-     *     <li>THROW: {@code case <expression> -> throw ...}</li>
+     *     <li>ARROW: {@code case <expression> -> <expression>/<statement>}</li>
      * </ul>
      * @since TBD
      */

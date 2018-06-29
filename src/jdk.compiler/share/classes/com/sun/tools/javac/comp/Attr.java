@@ -73,6 +73,10 @@ import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCClassDecl;
+import com.sun.tools.javac.tree.JCTree.JCLambda;
+import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.Error;
@@ -1401,14 +1405,12 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitSwitchExpression(JCSwitchExpression tree) {
-        tree.polyKind = (pt().hasTag(NONE) && pt() != Type.recoveryType && pt() != Infer.anyPoly
-                /*TODO: || isBooleanOrNumeric(env, tree)*/) ?
+        tree.polyKind = (pt().hasTag(NONE) && pt() != Type.recoveryType && pt() != Infer.anyPoly) ?
                 PolyKind.STANDALONE : PolyKind.POLY;
 
         if (tree.polyKind == PolyKind.POLY && resultInfo.pt.hasTag(VOID)) {
             //this means we are returning a poly conditional from void-compatible lambda expression
-            //TODO: fix error (&test):
-            resultInfo.checkContext.report(tree, diags.fragment(Fragments.ConditionalTargetCantBeVoid));
+            resultInfo.checkContext.report(tree, diags.fragment(Fragments.SwitchExpressionTargetCantBeVoid));
             result = tree.type = types.createErrorType(resultInfo.pt);
             return;
         }

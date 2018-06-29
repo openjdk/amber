@@ -26,7 +26,6 @@
  * @compile SwitchStatementArrow.java
  * @run main SwitchStatementArrow
  */
-// * @compile/fail/ref=MultipleLabelsStatement-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsStatement.java
 
 import java.util.Objects;
 import java.util.function.Function;

@@ -1,5 +1,5 @@
 /**
- * @test
+ * @test /nodynamiccopyright/
  * @compile/fail/ref=SwitchNoExtraTypes.out -XDrawDiagnostics SwitchNoExtraTypes.java
  */
 

@@ -39,7 +39,6 @@
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -58,7 +57,6 @@ import com.sun.tools.javac.platform.JDKPlatformProvider;
 
 import toolbox.JavacTask;
 import toolbox.Task;
-import toolbox.Task.Expect;
 import toolbox.ToolBox;
 
 public class JavaBaseTest {
@@ -73,12 +71,6 @@ public class JavaBaseTest {
         List.of("transitive"),
         List.of("static", "transitive")
     );
-
-    final List<String> targets = List.of("9", "10", "current");
-    
-    {
-        JDKPlatformProvider.
-    }
 
     enum Mode { SOURCE, CLASS };
 

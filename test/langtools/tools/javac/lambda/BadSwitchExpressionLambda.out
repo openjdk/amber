@@ -1,0 +1,2 @@
+BadSwitchExpressionLambda.java:17:26: compiler.err.prob.found.req: (compiler.misc.incompatible.ret.type.in.lambda: (compiler.misc.switch.expression.target.cant.be.void))
+1 error

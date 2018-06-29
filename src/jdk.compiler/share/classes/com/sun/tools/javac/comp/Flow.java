@@ -601,12 +601,6 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
-            Set<Object> constants = null;
-            if (types.unboxedTypeOrType(tree.selector.type).tsym == syms.booleanType.tsym) {
-                constants = new HashSet<>();
-                constants.add(0);
-                constants.add(1);
-            }
             boolean hasDefault = false;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = true;
@@ -616,9 +610,6 @@ public class Flow {
                 else {
                     for (JCExpression pat : c.pats) {
                         scan(pat);
-                        if (constants != null) {
-                            constants.remove(pat.type.constValue());
-                        }
                     }
                 }
                 scanStats(c.stats);
@@ -631,7 +622,7 @@ public class Flow {
                                 l.tail.head.pos(),
                                 Warnings.PossibleFallThroughIntoCase);
             }
-            if ((constants == null || !constants.isEmpty()) && !hasDefault) {
+            if (!hasDefault) {
                 alive = true;
             }
             alive |= resolveBreaks(tree, prevPendingExits);
@@ -648,11 +639,6 @@ public class Flow {
                 for (Symbol s : tree.selector.type.tsym.members().getSymbols(s -> (s.flags() & ENUM) != 0)) {
                     constants.add(s.name);
                 }
-            }
-            if (types.unboxedTypeOrType(tree.selector.type).tsym == syms.booleanType.tsym) {
-                constants = new HashSet<>();
-                constants.add(0);
-                constants.add(1);
             }
             boolean hasDefault = false;
             boolean prevAlive = alive;

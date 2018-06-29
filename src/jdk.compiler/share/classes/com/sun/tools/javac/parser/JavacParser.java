@@ -60,6 +60,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.ImplicitAndExplicitNotAllowed;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.VarAndExplicitNotAllowed;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.VarAndImplicitNotAllowed;
+import com.sun.tools.javac.tree.JCTree.JCStatement;
 
 /** The parser maps a token sequence into an abstract syntax
  *  tree. It operates by recursive descent, with code derived
@@ -1418,6 +1419,7 @@ public class JavacParser implements Parser {
                 } else {
                     JCExpression value = parseExpression();
                     stats = List.of(to(F.at(value).Break(value)));
+                    body = value;
                     kind = CaseKind.ARROW;
                     accept(SEMI);
                 }
@@ -2817,7 +2819,11 @@ public class JavacParser implements Parser {
             if (token.kind == ARROW) {
                 accept(ARROW);
                 caseKind = CaseKind.ARROW;
-                stats = List.of(parseStatementAsBlock());
+                JCStatement statement = parseStatementAsBlock();
+                if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
+                    log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);
+                }
+                stats = List.of(statement);
                 body = stats.head;
             } else {
                 accept(COLON);
@@ -2840,7 +2846,11 @@ public class JavacParser implements Parser {
             } else {
                 accept(ARROW);
                 caseKind = CaseKind.ARROW;
-                stats = List.of(parseStatementAsBlock());
+                JCStatement statement = parseStatementAsBlock();
+                if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
+                    log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);
+                }
+                stats = List.of(statement);
                 body = stats.head;
             }
             c = F.at(pos).Case(caseKind, List.nil(), stats, body);

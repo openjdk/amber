@@ -127,10 +127,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         BLOCK,
 
-        /** Block expressions, of type BlockExpression.
-         */
-        BLOCK_EXPRESSION,
-
         /** Do-while loops, of type DoLoop.
          */
         DOLOOP,
@@ -1538,7 +1534,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A break from a loop or switch.
      */
     public static class JCBreak extends JCStatement implements BreakTree {
-        public JCExpression value; //TODO: should be expr?
+        public JCExpression value;
         public JCTree target;
         protected JCBreak(JCExpression value, JCTree target) {
             this.value = value;

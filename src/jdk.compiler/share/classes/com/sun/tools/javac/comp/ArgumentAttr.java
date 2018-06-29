@@ -25,7 +25,6 @@
 
 package com.sun.tools.javac.comp;
 
-import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
@@ -39,10 +38,12 @@ import com.sun.tools.javac.comp.DeferredAttr.DeferredAttrContext;
 import com.sun.tools.javac.comp.DeferredAttr.DeferredType;
 import com.sun.tools.javac.comp.DeferredAttr.DeferredTypeCompleter;
 import com.sun.tools.javac.comp.DeferredAttr.LambdaReturnScanner;
+import com.sun.tools.javac.comp.DeferredAttr.SwitchExpressionScanner;
 import com.sun.tools.javac.comp.Infer.PartiallyInferredMethodType;
 import com.sun.tools.javac.comp.Resolve.MethodResolutionPhase;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
@@ -52,6 +53,7 @@ import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCParens;
 import com.sun.tools.javac.tree.JCTree.JCReturn;
+import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import com.sun.tools.javac.tree.TreeCopier;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.Assert;
@@ -75,10 +77,6 @@ import static com.sun.tools.javac.code.TypeTag.DEFERRED;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
-import com.sun.tools.javac.comp.DeferredAttr.SwitchExpressionScanner;
-import com.sun.tools.javac.tree.JCTree.JCBreak;
-import com.sun.tools.javac.tree.JCTree.JCCase;
-import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 
 /**
  * This class performs attribution of method/constructor arguments when target-typing is enabled
@@ -485,9 +483,8 @@ public class ArgumentAttr extends JCTree.Visitor {
             if (speculativeTree.isStandalone()) {
                 return localInfo.check(speculativeTree, speculativeTree.type);
             } else if (resultInfo.pt.hasTag(VOID)) {
-                //this means we are returning a poly conditional from void-compatible lambda expression
-                //XXX: fix error:
-                resultInfo.checkContext.report(tree, attr.diags.fragment(Fragments.ConditionalTargetCantBeVoid));
+                //this means we are returning a poly switch expression from void-compatible lambda expression
+                resultInfo.checkContext.report(tree, attr.diags.fragment(Fragments.SwitchExpressionTargetCantBeVoid));
                 return attr.types.createErrorType(resultInfo.pt);
             } else {
                 //poly

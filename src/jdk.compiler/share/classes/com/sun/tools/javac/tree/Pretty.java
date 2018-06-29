@@ -27,6 +27,7 @@ package com.sun.tools.javac.tree;
 
 import java.io.*;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.*;
@@ -841,17 +842,22 @@ public class Pretty extends JCTree.Visitor {
                 print("case ");
                 printExprs(tree.pats);
             }
-            print(": "); //XXX
-            println();
-            indent();
-            printStats(tree.stats);
-            undent();
-            align();
+            if (tree.caseKind == CaseKind.STATEMENT) {
+                print(":");
+                println();
+                indent();
+                printStats(tree.stats);
+                undent();
+                align();
+            } else {
+                print(" -> ");
+                printStat(tree.stats.head);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
-
+ 
     public void visitSwitchExpression(JCSwitchExpression tree) {
         try {
             print("switch ");
