@@ -159,6 +159,7 @@ public class Names {
     public final Name ModuleResolution;
     public final Name NestHost;
     public final Name NestMembers;
+    public final Name Record;
     public final Name RuntimeInvisibleAnnotations;
     public final Name RuntimeInvisibleParameterAnnotations;
     public final Name RuntimeInvisibleTypeAnnotations;
@@ -340,6 +341,7 @@ public class Names {
         ModuleResolution = fromString("ModuleResolution");
         NestHost = fromString("NestHost");
         NestMembers = fromString("NestMembers");
+        Record = fromString("Record");
         RuntimeInvisibleAnnotations = fromString("RuntimeInvisibleAnnotations");
         RuntimeInvisibleParameterAnnotations = fromString("RuntimeInvisibleParameterAnnotations");
         RuntimeInvisibleTypeAnnotations = fromString("RuntimeInvisibleTypeAnnotations");

@@ -3118,8 +3118,9 @@ public class Check {
                 if (s.kind == MTH && !s.isConstructor())
                     return true;
             } else if (target == names.PARAMETER) {
-                if (s.kind == VAR && s.owner.kind == MTH &&
-                      (s.flags() & PARAMETER) != 0) {
+                if (s.kind == VAR &&
+                    (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0) ||
+                    (s.owner.kind == TYP && s.owner.isDatum())) {
                     return true;
                 }
             } else if (target == names.CONSTRUCTOR) {
