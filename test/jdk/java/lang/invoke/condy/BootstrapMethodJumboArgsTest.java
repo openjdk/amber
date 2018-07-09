@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @bug 8186046
+ * @bug 8186046 8206177
  * @summary Test bootstrap methods throwing an exception
  * @library /lib/testlibrary/bytecode /java/lang/invoke/common
  * @build jdk.experimental.bytecode.BasicClassBuilder test.java.lang.invoke.lib.InstructionHelper
@@ -48,6 +48,10 @@ public class BootstrapMethodJumboArgsTest {
     static final MethodHandles.Lookup L = MethodHandles.lookup();
 
 
+    static Object bsmZero(Object... args) {
+        Object[] a = args.clone();
+        return a;
+    }
     static Object bsmZero(MethodHandles.Lookup l, String name, Object type,
                       Object... args) {
         Object[] a = args.clone();
@@ -59,6 +63,12 @@ public class BootstrapMethodJumboArgsTest {
         }
     }
 
+    static Object bsmOne(Object first, Object... args) {
+        Object[] a = new Object[args.length + 1];
+        a[0] = first;
+        System.arraycopy(args, 0, a, 1, args.length);
+        return a;
+    }
     static Object bsmOne(MethodHandles.Lookup l, String name, Object type,
                          Object first, Object... args) {
         Object[] a = new Object[args.length + 1];
@@ -72,6 +82,13 @@ public class BootstrapMethodJumboArgsTest {
         }
     }
 
+    static Object bsmTwo(Object first, Object second, Object... args) {
+        Object[] a = new Object[args.length + 2];
+        a[0] = first;
+        a[1] = second;
+        System.arraycopy(args, 0, a, 2, args.length);
+        return a;
+    }
     static Object bsmTwo(MethodHandles.Lookup l, String name, Object type,
                          Object first, Object second, Object... args) {
         Object[] a = new Object[args.length + 2];
@@ -93,7 +110,7 @@ public class BootstrapMethodJumboArgsTest {
     }
 
     @Test
-    public void testCondyWithJumboArgs() throws Throwable {
+    public void testCondyWithJumboArgsWithMetaData() throws Throwable {
         String[] expected = IntStream.range(0, 1000).mapToObj(Integer::toString).toArray(String[]::new);
 
         {
@@ -120,6 +137,41 @@ public class BootstrapMethodJumboArgsTest {
             MethodHandle mh = InstructionHelper.ldcDynamicConstant(
                     L, "name", Object[].class,
                     "bsmTwo", methodType(Object.class, MethodHandles.Lookup.class, String.class, Object.class, Object.class, Object.class, Object[].class),
+                    S -> manyStaticStrings(expected, S));
+
+            Object[] actual = (Object[]) mh.invoke();
+            Assert.assertEquals(actual, expected);
+        }
+    }
+
+    @Test
+    public void testCondyWithJumboArgsWithoutMetaData() throws Throwable {
+        String[] expected = IntStream.range(0, 1000).mapToObj(Integer::toString).toArray(String[]::new);
+
+        {
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
+                    L, "name", Object[].class,
+                    "bsmZero", methodType(Object.class, Object[].class),
+                    S -> manyStaticStrings(expected, S));
+
+            Object[] actual = (Object[]) mh.invoke();
+            Assert.assertEquals(actual, expected);
+        }
+
+        {
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
+                    L, "name", Object[].class,
+                    "bsmOne", methodType(Object.class, Object.class, Object[].class),
+                    S -> manyStaticStrings(expected, S));
+
+            Object[] actual = (Object[]) mh.invoke();
+            Assert.assertEquals(actual, expected);
+        }
+
+        {
+            MethodHandle mh = InstructionHelper.ldcDynamicConstant(
+                    L, "name", Object[].class,
+                    "bsmTwo", methodType(Object.class, Object.class, Object.class, Object[].class),
                     S -> manyStaticStrings(expected, S));
 
             Object[] actual = (Object[]) mh.invoke();

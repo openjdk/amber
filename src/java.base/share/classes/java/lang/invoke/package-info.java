@@ -96,23 +96,28 @@
  * following items:
  * <ul>
  * <li>the bootstrap method, a {@code CONSTANT_MethodHandle}</li>
- * <li>the {@code Class} or {@code MethodType} derived from
+ * <li>the {@code MethodType} or {@code Class} derived from
  * type component of the {@code CONSTANT_NameAndType} descriptor</li>
  * <li>static arguments, if any (note that static arguments can themselves be
  * dynamically-computed constants)</li>
  * </ul>
  * <p>
- * The bootstrap method is then invoked, as if by
+ * The bootstrap method is then invoked, in general, as if by
  * {@link java.lang.invoke.MethodHandle#invoke MethodHandle.invoke},
  * with the following arguments:
  * <ul>
  * <li>a {@code MethodHandles.Lookup}, which is a lookup object on the <em>caller class</em>
  * in which dynamically-computed constant or call site occurs</li>
  * <li>a {@code String}, the name mentioned in the {@code CONSTANT_NameAndType}</li>
- * <li>a {@code MethodType} or {@code Class}, the resolved type descriptor of the {@code CONSTANT_NameAndType}</li>
- * <li>a {@code Class}, the resolved type descriptor of the constant, if it is a dynamic constant </li>
+ * <li>for a dynamically-computed call site a {@code MethodType} (the resolved
+ * type descriptor of the call site), or for a dynamically computed constant,
+ * a {@code Class} (the resolved type descriptor of the constant)</li>
  * <li>the additional resolved static arguments, if any</li>
  * </ul>
+ * For dynamically computed constant, if the bootstrap method has no parameters
+ * or the first parameter type is not assignable to {@code MethodHandles.Lookup}
+ * then the method is invoked as described above but with just the arguments
+ * that are the additional resolved static arguments, if any.
  * <p>
  * For a dynamically-computed call site, the returned result must be a non-null reference to a
  * {@link java.lang.invoke.CallSite CallSite}.
@@ -122,11 +127,11 @@
  * On success the call site then becomes permanently linked to the {@code invokedynamic}
  * instruction.
  * <p>
- * For a dynamically-computed constant, the first parameter of the bootstrap
- * method must be assignable to {@code MethodHandles.Lookup}. If this condition
- * is not met, a {@code BootstrapMethodError} is thrown.
- * On success the result of the bootstrap method is cached as the resolved
- * constant value.
+ * For a dynamically-computed constant, the result of the bootstrap method is
+ * cached as the resolved constant value.  The constant value must be
+ * convertible to the {@code Class} derived from type component of the
+ * {@code CONSTANT_NameAndType} descriptor, otherwise a
+ * {@code BootstrapMethodError} is thrown.
  * <p>
  * If an exception, {@code E} say, occurs during execution of the bootstrap method, then
  * resolution fails and terminates abnormally. {@code E} is rethrown if the type of
@@ -176,21 +181,18 @@
  * types {@code MethodHandles.Lookup}, {@code String}, {@code MethodType}, and the types
  * of any static arguments; the return type is {@code CallSite}.
  * <p>
- * For a dynamically-computed constant, the bootstrap method is invoked with parameter types
- * {@code MethodHandles.Lookup}, {@code String}, {@code Class}, and the types of any
- * static arguments; the return type is the type represented by the {@code Class}.
+ * For a dynamically-computed constant, if the first parameter of the bootstrap
+ * method is assignable to {@code MethodHandles.Lookup} then the bootstrap
+ * method is invoked with parameter types {@code MethodHandles.Lookup},
+ * {@code String}, {@code Class}, and the types of any static arguments.
+ * Otherwise, the bootstrap method is invoked with just the parameter types of
+ * any static arguments.  In either case the return type is the type represented
+ * by the {@code Class} (regardless of whether the bootstrap is invoked with
+ * just the static arguments).
  * <p>
  * Because {@link java.lang.invoke.MethodHandle#invoke MethodHandle.invoke} allows for
  * adaptations between the invoked method type and the bootstrap method handle's method type,
  * there is flexibility in the declaration of the bootstrap method.
- * For a dynamically-computed constant the first parameter type of the bootstrap method handle
- * must be assignable to {@code MethodHandles.Lookup}, other than that constraint the same degree
- * of flexibility applies to bootstrap methods of dynamically-computed call sites and
- * dynamically-computed constants.
- * Note: this constraint allows for the future possibility where the bootstrap method is
- * invoked with just the parameter types of static arguments, thereby supporting a wider
- * range of methods compatible with the static arguments (such as methods that don't declare
- * or require the lookup, name, and type meta-data parameters).
  * <p> For example, for dynamically-computed call site, a the first argument
  * could be {@code Object} instead of {@code MethodHandles.Lookup}, and the return type
  * could also be {@code Object} instead of {@code CallSite}.
@@ -205,13 +207,15 @@
  * between {@code CONSTANT_MethodHandle} constants, the modifier bit for variable arity methods,
  * and the {@link java.lang.invoke.MethodHandle#asVarargsCollector asVarargsCollector} transformation.)
  * <p>
- * Given these rules, here are examples of legal bootstrap method declarations for
+ * Given these rules the following examples and explanations are presented for
+ * legal bootstrap method declarations.
+ * Here are examples of legal bootstrap method declarations for
  * dynamically-computed call sites, given various numbers {@code N} of extra arguments.
  * The first row (marked {@code *}) will work for any number of extra arguments.
  * <table class="plain" style="vertical-align:top">
  * <caption style="display:none">Static argument types</caption>
  * <thead>
- * <tr><th scope="col">N</th><th scope="col">Sample bootstrap method</th></tr>
+ * <tr><th scope="col">N</th><th scope="col">Sample bootstrap method for a dynamically-computed call site</th></tr>
  * </thead>
  * <tbody>
  * <tr><th scope="row" style="font-weight:normal; vertical-align:top">*</th><td>
@@ -239,32 +243,73 @@
  * {@code String} and {@code Integer} (or {@code int}), respectively.
  * The second-to-last example assumes that all extra arguments are of type
  * {@code String}.
- * The other examples work with all types of extra arguments.  Note that all
- * the examples except the second and third also work with dynamically-computed
- * constants if the return type is changed to be compatible with the
- * constant's declared type (such as {@code Object}, which is always compatible).
+ * The other examples work with all types of extra arguments.
  * <p>
- * Since dynamically-computed constants can be provided as static arguments to bootstrap
- * methods, there are no limitations on the types of bootstrap arguments.
- * However, arguments of type {@code boolean}, {@code byte}, {@code short}, or {@code char}
- * cannot be <em>directly</em> supplied by {@code CONSTANT_Integer}
- * constant pool entries, since the {@code asType} conversions do
- * not perform the necessary narrowing primitive conversions.
+ * Since dynamically-computed constants can be provided as static arguments to
+ * bootstrap methods for both dynamically-computed call sites and
+ * dynamically-computed constants, there are no limitations on the types of
+ * bootstrap arguments.  However, arguments of type {@code boolean},
+ * {@code byte}, {@code short}, or {@code char} cannot be <em>directly</em>
+ * supplied by {@code CONSTANT_Integer} constant pool entries, since the
+ * {@code asType} conversions do not perform the necessary narrowing primitive
+ * conversions.
  * <p>
- * In the above examples, the return type is always {@code CallSite},
- * but that is not a necessary feature of bootstrap methods.
- * In the case of a dynamically-computed call site, the only requirement is that
- * the return type of the bootstrap method must be convertible
- * (using the {@code asType} conversions) to {@code CallSite}, which
+ * In the above examples, the return type is always {@code CallSite}, but that
+ * is not a necessary feature of call site bootstrap methods.  The only
+ * requirement is that the return type of the bootstrap method must be
+ * convertible (using the {@code asType} conversions) to {@code CallSite}, which
  * means the bootstrap method return type might be {@code Object} or
  * {@code ConstantCallSite}.
- * In the case of a dynamically-resolved constant, the return type of the bootstrap
- * method must be convertible to the type of the constant, as
- * represented by its field type descriptor.  For example, if the
- * dynamic constant has a field type descriptor of {@code "C"}
- * ({@code char}) then the bootstrap method return type could be
- * {@code Object}, {@code Character}, or {@code char}, but not
- * {@code int} or {@code Integer}.
+ * <p>
+ * Here are examples of legal bootstrap method declarations for
+ * dynamically-computed constants, given various numbers {@code N} of extra
+ * arguments.  The first row (marked {@code *}) will work for any number of
+ * extra arguments.
+ * <table class="plain" style="vertical-align:top">
+ * <caption style="display:none">Static argument types</caption>
+ * <thead>
+ * <tr><th scope="col">N</th><th scope="col">Sample bootstrap method for a dynamically-computed constant</th></tr>
+ * </thead>
+ * <tbody>
+ * <tr><th scope="row" style="font-weight:normal; vertical-align:top">*</th><td>
+ *     <ul style="list-style:none; padding-left: 0; margin:0">
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type, Object... args)</code>
+ *     <li><code>Object bootstrap(Object... args)</code>
+ *     <li><code>Object bootstrap(Object firstArg, Object... otherArgs)</code>
+ *     </ul></td></tr>
+ * <tr><th scope="row" style="font-weight:normal; vertical-align:top">0</th><td>
+ *     <ul style="list-style:none; padding-left: 0; margin:0">
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type)</code>
+ *     <li><code>Object bootstrap(Lookup caller, Object... nameAndType)</code>
+ *     <li><code>Object bootstrap()</code>
+ *     <li><code>Object bootstrap(Object... args)</code>
+ *     </ul></td></tr>
+ * <tr><th scope="row" style="font-weight:normal; vertical-align:top">1</th><td>
+ *     <ul style="list-style:none; padding-left: 0; margin:0">
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type, Object arg)</code>
+ *     <li><code>Object bootstrap(Object arg)</code>
+ *     </ul></td></tr>
+ * <tr><th scope="row" style="font-weight:normal; vertical-align:top">2</th><td>
+ *     <ul style="list-style:none; padding-left: 0; margin:0">
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type, Object... args)</code>
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type, String... args)</code>
+ *     <li><code>Object bootstrap(Lookup caller, String name, Class type, String x, int y)</code>
+ *     <li><code>Object bootstrap(Object... args)</code>
+ *     <li><code>Object bootstrap(String... args)</code>
+ *     <li><code>Object bootstrap(String x, int y)</code>
+ *     </ul></td></tr>
+ * </tbody>
+ * </table>
+ * The example methods whose first parameter type, if any, is not {@code Lookup}
+ * will be invoked with just the static arguments.
+ * <p>
+ * In the above examples, the return type is always {@code Object}, but that
+ * is not a necessary feature of dynamic constant bootstrap methods.  The only
+ * requirement is that method must be convertible to the type of the constant,
+ * as represented by its field type descriptor.  For example, if the dynamic
+ * constant has a field type descriptor of {@code "C"} ({@code char}) then the
+ * bootstrap method return type could be {@code Object}, {@code Character}, or
+ * {@code char}, but not {@code int} or {@code Integer}.
  *
  * @author John Rose, JSR 292 EG
  * @since 1.7

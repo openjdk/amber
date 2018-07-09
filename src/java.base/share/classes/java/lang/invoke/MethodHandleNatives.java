@@ -365,7 +365,8 @@ class MethodHandleNatives {
      * replaced with currently commented out code.
      */
     static boolean isPullModeBSM(MethodHandle bsm) {
-        return bsm.type().parameterCount() == 2 && !bsm.isVarargsCollector();
+        return bsm.type().parameterCount() == 2 && !bsm.isVarargsCollector()
+               && BootstrapCallInfo.class.isAssignableFrom(bsm.type().parameterType(1));
     }
 
     /**

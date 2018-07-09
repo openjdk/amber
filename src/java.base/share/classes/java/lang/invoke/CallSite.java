@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -305,7 +305,8 @@ public class CallSite {
         CallSite site;
         try {
             Object binding = BootstrapMethodInvoker.invoke(
-                    CallSite.class, bootstrapMethod, name, type, info, callerClass);
+                    CallSite.class, bootstrapMethod, name, type, info, callerClass,
+                    true);
             if (binding instanceof CallSite) {
                 site = (CallSite) binding;
             } else {
