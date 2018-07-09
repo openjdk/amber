@@ -1,0 +1,9 @@
+ExpressionSwitchUnreachable.java:13:17: compiler.err.unreachable.stmt
+ExpressionSwitchUnreachable.java:20:17: compiler.err.unreachable.stmt
+ExpressionSwitchUnreachable.java:28:17: compiler.err.unreachable.stmt
+ExpressionSwitchUnreachable.java:35:17: compiler.err.unreachable.stmt
+ExpressionSwitchUnreachable.java:43:17: compiler.err.unreachable.stmt
+ExpressionSwitchUnreachable.java:50:17: compiler.err.unreachable.stmt
+- compiler.note.preview.filename: ExpressionSwitchUnreachable.java
+- compiler.note.preview.recompile
+6 errors

@@ -41,14 +41,20 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
     private static final String WHILE = "while (cond) { # }";
     private static final String DO = "do { # } while (cond);";
     private static final String SSWITCH = "switch (x) { case 0: # };";
-    private static final String ESWITCH = "int res = switch (x) { case 0 -> { # } default -> 0; };";
+    private static final String ESWITCH_Z = "int res = switch (x) { case 0 -> { # } default -> 0; };";
+    private static final String ESWITCH_S = "String res_string = switch (x) { case 0 -> { # } default -> \"default\"; };";
+    private static final String INT_FN_ESWITCH = "java.util.function.IntSupplier r = switch (x) { case 0 -> { # } default -> null; };";
+    private static final String ESWITCH_DEFAULT = "int res = switch (x) { case 0 -> 0; default -> { # }; };";
     private static final String IF = "if (cond) { # }";
     private static final String BLOCK = "{ # }";
     private static final String BREAK_Z = "break 0;";
+    private static final String BREAK_S = "break \"hello world\";";
+    private static final String BREAK_INT_FN = "break () -> 0 ;";
     private static final String BREAK_N = "break;";
     private static final String BREAK_L = "break label;";
     private static final String RETURN_Z = "return 0;";
     private static final String RETURN_N = "return;";
+    private static final String RETURN_S = "return \"Hello\";";
     private static final String CONTINUE_N = "continue;";
     private static final String CONTINUE_L = "continue label;";
     private static final String NOTHING = "System.out.println();";
@@ -135,30 +141,79 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
     }
 
     public void testEswitch() {
-        assertOK(ESWITCH, BREAK_Z);
-        assertOK(LABEL, BLOCK, ESWITCH, BREAK_Z);
-        assertFail("compiler.err.break.missing.value", ESWITCH, BREAK_N);
-        assertFail("compiler.err.cant.resolve.location", ESWITCH, BREAK_L);
-        assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, ESWITCH, BREAK_L);
-        assertFail("compiler.err.undef.label", ESWITCH, CONTINUE_L);
-        assertFail("compiler.err.cont.outside.loop", ESWITCH, CONTINUE_N);
-        assertFail("compiler.err.return.outside.switch.expression", ESWITCH, RETURN_N);
-        assertFail("compiler.err.return.outside.switch.expression", ESWITCH, RETURN_Z);
+        //Int-valued switch expressions
+        assertOK(ESWITCH_Z, BREAK_Z);
+        assertOK(LABEL, BLOCK, ESWITCH_Z, BREAK_Z);
+        assertFail("compiler.err.break.missing.value", ESWITCH_Z, BREAK_N);
+        assertFail("compiler.err.cant.resolve.location", ESWITCH_Z, BREAK_L);
+        assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, ESWITCH_Z, BREAK_L);
+        assertFail("compiler.err.undef.label", ESWITCH_Z, CONTINUE_L);
+        assertFail("compiler.err.cont.outside.loop", ESWITCH_Z, CONTINUE_N);
+        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_Z, RETURN_N);
+        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_Z, RETURN_Z);
+        // String-valued switch expressions
+        assertOK(ESWITCH_S, BREAK_S);
+        assertOK(LABEL, BLOCK, ESWITCH_S, BREAK_S);
+        assertFail("compiler.err.break.missing.value", ESWITCH_S, BREAK_N);
+        assertFail("compiler.err.cant.resolve.location", ESWITCH_S, BREAK_L);
+        assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, ESWITCH_S, BREAK_L);
+        assertFail("compiler.err.undef.label", ESWITCH_S, CONTINUE_L);
+        assertFail("compiler.err.cont.outside.loop", ESWITCH_S, CONTINUE_N);
+        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_S, RETURN_N);
+        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_S, RETURN_S); //? which error message is right here?
+        // Function-valued switch expression
+        assertOK(INT_FN_ESWITCH, BREAK_INT_FN);
+        assertFail("compiler.err.break.missing.value", INT_FN_ESWITCH, BREAK_N);
+        assertFail("compiler.err.cant.resolve.location", INT_FN_ESWITCH, BREAK_L);
+        assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, INT_FN_ESWITCH, BREAK_L);
+        assertFail("compiler.err.undef.label", INT_FN_ESWITCH, CONTINUE_L);
+        assertFail("compiler.err.cont.outside.loop", INT_FN_ESWITCH, CONTINUE_N);
+        assertFail("compiler.err.return.outside.switch.expression", INT_FN_ESWITCH, RETURN_N);
+        assertFail("compiler.err.return.outside.switch.expression", INT_FN_ESWITCH, RETURN_S); //? which error message is right here?
+
     }
 
     public void testNestedInExpSwitch() {
-        assertOK(ESWITCH, IF, BREAK_Z);
-        assertOK(ESWITCH, BLOCK, BREAK_Z);
-        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, SSWITCH, BREAK_Z);
-        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, FOR, BREAK_Z);
-        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, WHILE, BREAK_Z);
-        assertFail("compiler.err.break.expr.not.immediate", ESWITCH, DO, BREAK_Z);
+        assertOK(ESWITCH_Z, IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  BREAK_Z);
+        //
+        assertOK(ESWITCH_Z, IF,     IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, IF,     BLOCK,  BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  BLOCK,  BREAK_Z);
+        //
+        assertOK(ESWITCH_Z, IF,     IF,     IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, IF,     IF,     BLOCK,  BREAK_Z);
+        assertOK(ESWITCH_Z, IF,     BLOCK,  IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, IF,     BLOCK,  BLOCK,  BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  IF,     IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  IF,     BLOCK,  BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  BLOCK,  IF,     BREAK_Z);
+        assertOK(ESWITCH_Z, BLOCK,  BLOCK,  BLOCK,  BREAK_Z);
+        //
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, SSWITCH, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, FOR, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, WHILE, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, DO, BREAK_Z);
+        assertFail("compiler.err.break.complex.value.no.switch.expression", ESWITCH_Z, INT_FN, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, SSWITCH, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, FOR, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, WHILE, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, DO, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, BLOCK, SSWITCH, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, BLOCK, FOR, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, BLOCK, WHILE, IF, BREAK_Z);
+        assertFail("compiler.err.break.expr.not.immediate", ESWITCH_Z, BLOCK, DO, IF, BREAK_Z);
     }
 
     public void testBreakExpressionLabelDisambiguation() {
-        assertOK(DEF_LABEL_VAR, ESWITCH, BREAK_L);
-        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH, LABEL, FOR, BREAK_L); //label break
-        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH, BREAK_L); //expression break
+        assertOK(DEF_LABEL_VAR, ESWITCH_Z, BREAK_L);
+        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH_Z, LABEL, FOR, BREAK_L); //label break
+        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH_Z, BREAK_L); //expression break
         //
+    }
+
+    public void testFunReturningSwitchExp() {
+        assertOK(INT_FN_ESWITCH, BREAK_INT_FN);
     }
 }
