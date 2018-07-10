@@ -217,7 +217,7 @@ public class Flow {
 
     public void analyzeTree(Env<AttrContext> env, TreeMaker make) {
         new AliveAnalyzer().analyzeTree(env, make);
-        new AssignAnalyzer().analyzeTree(env);
+        new AssignAnalyzer().analyzeTree(env, make);
         new FlowAnalyzer().analyzeTree(env, make);
         new CaptureAnalyzer().analyzeTree(env, make);
     }
@@ -250,7 +250,7 @@ public class Flow {
         //related errors, which will allow for more errors to be detected
         Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
         try {
-            new LambdaAssignAnalyzer(env).analyzeTree(env, that);
+            new LambdaAssignAnalyzer(env).analyzeTree(env, that, make);
             LambdaFlowAnalyzer flowAnalyzer = new LambdaFlowAnalyzer();
             flowAnalyzer.analyzeTree(env, that, make);
             return flowAnalyzer.inferredThrownTypes;
@@ -404,6 +404,12 @@ public class Flow {
 
         public void visitPackageDef(JCPackageDecl tree) {
             // Do nothing for PackageDecl
+        }
+
+        protected void scanSyntheticBreak(TreeMaker make, JCTree swtch) {
+            JCBreak brk = make.at(Position.NOPOS).Break(null);
+            brk.target = swtch;
+            scan(brk);
         }
     }
 
@@ -614,8 +620,12 @@ public class Flow {
                 }
                 scanStats(c.stats);
                 c.completesNormally = alive;
+                if (alive && c.caseKind == CaseKind.RULE) {
+                    scanSyntheticBreak(make, tree);
+                    alive = false;
+                }
                 // Warn about fall-through if lint switch fallthrough enabled.
-                if (alive && c.caseKind == CaseKind.STATEMENT &&
+                if (alive &&
                     lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
                     c.stats.nonEmpty() && l.tail.nonEmpty())
                     log.warning(Lint.LintCategory.FALLTHROUGH,
@@ -2203,6 +2213,9 @@ public class Flow {
                     uninits.assign(uninits.andSet(uninitsSwitch));
                 }
                 scan(c.stats);
+                if (c.completesNormally && c.caseKind == CaseKind.RULE) {
+                    scanSyntheticBreak(make, tree);
+                }
                 addVars(c.stats, initsSwitch, uninitsSwitch);
                 if (!hasDefault) {
                     inits.assign(initsSwitch);
@@ -2559,11 +2572,11 @@ public class Flow {
 
         /** Perform definite assignment/unassignment analysis on a tree.
          */
-        public void analyzeTree(Env<?> env) {
-            analyzeTree(env, env.tree);
+        public void analyzeTree(Env<?> env, TreeMaker make) {
+            analyzeTree(env, env.tree, make);
          }
 
-        public void analyzeTree(Env<?> env, JCTree tree) {
+        public void analyzeTree(Env<?> env, JCTree tree, TreeMaker make) {
             try {
                 startPos = tree.pos().getStartPosition();
 
@@ -2574,6 +2587,7 @@ public class Flow {
                         vardecls[i] = null;
                 firstadr = 0;
                 nextadr = 0;
+                Flow.this.make = make;
                 pendingExits = new ListBuffer<>();
                 this.classDef = null;
                 unrefdResources = WriteableScope.create(env.enclClass.sym);
@@ -2589,6 +2603,7 @@ public class Flow {
                 }
                 firstadr = 0;
                 nextadr = 0;
+                Flow.this.make = null;
                 pendingExits = null;
                 this.classDef = null;
                 unrefdResources = null;

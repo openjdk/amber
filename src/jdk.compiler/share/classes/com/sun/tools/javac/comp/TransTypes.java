@@ -574,7 +574,8 @@ public class TransTypes extends TreeTranslator {
         Type target = enumSwitch ? erasure(tree.selector.type) : syms.intType;
         tree.selector = translate(tree.selector, target);
         tree.cases = translate(tree.cases);
-        result = tree;
+        tree.type = erasure(tree.type);
+        result = retype(tree, tree.type, pt);
     }
 
     public void visitSynchronized(JCSynchronized tree) {
@@ -619,8 +620,11 @@ public class TransTypes extends TreeTranslator {
 
     @Override
     public void visitBreak(JCBreak tree) {
-        if (tree.isValueBreak())
+        if (tree.isValueBreak()) {
             tree.value = translate(tree.value, erasure(tree.value.type));
+            tree.value.type = erasure(tree.value.type);
+            tree.value = retype(tree.value, tree.value.type, pt);
+        }
         result = tree;
     }
 
