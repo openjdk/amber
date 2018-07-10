@@ -1417,8 +1417,7 @@ public class Attr extends JCTree.Visitor {
 
         ResultInfo condInfo = tree.polyKind == PolyKind.STANDALONE ?
                 unknownExprInfo :
-                //TODO: fix error in conditionalContext
-                resultInfo.dup(conditionalContext(resultInfo.checkContext));
+                resultInfo.dup(switchExpressionContext(resultInfo.checkContext));
 
         ListBuffer<Type> caseTypes = new ListBuffer<>();
 
@@ -1443,6 +1442,18 @@ public class Attr extends JCTree.Visitor {
 
         result = tree.type = check(tree, owntype, KindSelector.VAL, resultInfo);
     }
+    //where:
+        CheckContext switchExpressionContext(CheckContext checkContext) {
+            return new Check.NestedCheckContext(checkContext) {
+                //this will use enclosing check context to check compatibility of
+                //subexpression against target type; if we are in a method check context,
+                //depending on whether boxing is allowed, we could have incompatibilities
+                @Override
+                public void report(DiagnosticPosition pos, JCDiagnostic details) {
+                    enclosingContext.report(pos, diags.fragment(Fragments.IncompatibleTypeInSwitchExpression(details)));
+                }
+            };
+        }
 
     private void handleSwitch(JCTree switchTree,
                               JCExpression selector,

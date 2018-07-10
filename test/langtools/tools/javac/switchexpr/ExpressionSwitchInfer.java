@@ -24,6 +24,12 @@ public class ExpressionSwitchInfer {
             default -> new ArrayList<>();
         }, CharSequence.class, param).substring(0);
 
+        String str = switch (param) {
+            case "" -> {
+                break 0;
+            } default ->"default";
+        };
+
         return null;
     }
 
