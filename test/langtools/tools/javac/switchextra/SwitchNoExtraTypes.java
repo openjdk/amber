@@ -1,5 +1,6 @@
 /**
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=SwitchNoExtraTypes.out -XDrawDiagnostics SwitchNoExtraTypes.java
  */
 

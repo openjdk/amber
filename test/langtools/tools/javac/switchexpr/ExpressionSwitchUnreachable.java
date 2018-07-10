@@ -1,5 +1,6 @@
 /**
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=ExpressionSwitchUnreachable.out -XDrawDiagnostics --enable-preview -source 12 ExpressionSwitchUnreachable.java
  */
 

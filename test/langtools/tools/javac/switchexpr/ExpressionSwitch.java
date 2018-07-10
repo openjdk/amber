@@ -1,5 +1,6 @@
 /**
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=ExpressionSwitch-old.out -source 9 -Xlint:-options -XDrawDiagnostics ExpressionSwitch.java
  * @compile --enable-preview -source 12 ExpressionSwitch.java
  * @run main/othervm --enable-preview ExpressionSwitch

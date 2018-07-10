@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8206986
  * @summary Ensure than parser can parse incomplete sources
  * @modules jdk.compiler
  */

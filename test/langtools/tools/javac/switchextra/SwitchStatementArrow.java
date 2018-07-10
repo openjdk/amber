@@ -1,5 +1,6 @@
 /**
  * @test /nodymaticcopyright/
+ * @bug 8206986
  * @compile/fail/ref=SwitchStatementArrow-old.out -source 9 -Xlint:-options -XDrawDiagnostics SwitchStatementArrow.java
  * @compile --enable-preview -source 12 SwitchStatementArrow.java
  * @run main/othervm --enable-preview SwitchStatementArrow

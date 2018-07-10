@@ -1,5 +1,6 @@
-/** /nodynamiccopyright/
- * @test
+/**
+ * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=SwitchStatementBroken2.out -XDrawDiagnostics --enable-preview -source 12 SwitchStatementBroken2.java
  */
 

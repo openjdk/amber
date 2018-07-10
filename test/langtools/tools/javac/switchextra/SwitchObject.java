@@ -1,5 +1,6 @@
 /*
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=SwitchObject.out -XDrawDiagnostics SwitchObject.java
  */
 public class SwitchObject {

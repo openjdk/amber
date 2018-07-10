@@ -23,6 +23,7 @@
 
 /**
  * @test
+ * @bug 8206986
  * @compile --enable-preview -source 12 ExpressionSwitchBreaks1.java
  * @run main/othervm --enable-preview ExpressionSwitchBreaks1
  */

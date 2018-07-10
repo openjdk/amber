@@ -1,5 +1,6 @@
 /**
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=MultipleLabelsStatement-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsStatement.java
  * @compile --enable-preview -source 12 MultipleLabelsStatement.java
  * @run main/othervm --enable-preview MultipleLabelsStatement

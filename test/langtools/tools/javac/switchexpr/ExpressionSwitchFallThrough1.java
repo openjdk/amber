@@ -23,6 +23,7 @@
 
 /**
  * @test
+ * @bug 8206986
  * @compile --enable-preview -source 12 ExpressionSwitchFallThrough1.java
  * @run main/othervm --enable-preview ExpressionSwitchFallThrough1
  */

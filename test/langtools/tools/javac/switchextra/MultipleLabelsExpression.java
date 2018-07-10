@@ -1,5 +1,6 @@
 /**
  * @test /nodynamiccopyright/
+ * @bug 8206986
  * @compile/fail/ref=MultipleLabelsExpression-old.out -source 9 -Xlint:-options -XDrawDiagnostics MultipleLabelsExpression.java
  * @compile --enable-preview -source 12 MultipleLabelsExpression.java
  * @run main/othervm --enable-preview MultipleLabelsExpression
