@@ -241,8 +241,16 @@ public interface Tree {
 
         /**
          * Used for instances of {@link SwitchExpressionTree}.
+         * 
+         * @apiNote
+         * This enum constant is modeling switch expressions,
+         * which are part of a preview feature and may be removed
+         * if the preview feature is removed.
+         * 
          * @since 12
          */
+        @Deprecated(forRemoval=true, since="12")
+        @SuppressWarnings("removal")
         SWITCH_EXPRESSION(SwitchExpressionTree.class),
 
         /**

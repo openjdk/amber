@@ -342,6 +342,8 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
+    @Deprecated(forRemoval=true, since="12")
+    @SuppressWarnings("removal")
     public R visitSwitchExpression(SwitchExpressionTree node, P p) {
         R r = scan(node.getExpression(), p);
         r = scanAndReduce(node.getCases(), p, r);
@@ -356,6 +358,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
+    @SuppressWarnings("removal")
     public R visitCase(CaseTree node, P p) {
         R r = scan(node.getExpressions(), p);
         if (node.getCaseKind() == CaseKind.RULE)
@@ -459,6 +462,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
+    @SuppressWarnings("removal")
     public R visitBreak(BreakTree node, P p) {
         return scan(node.getValue(), p);
     }

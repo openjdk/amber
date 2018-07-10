@@ -620,7 +620,7 @@ public class Flow {
                 }
                 scanStats(c.stats);
                 c.completesNormally = alive;
-                if (alive && c.caseKind == CaseKind.RULE) {
+                if (alive && c.caseKind == JCCase.RULE) {
                     scanSyntheticBreak(make, tree);
                     alive = false;
                 }
@@ -2213,7 +2213,7 @@ public class Flow {
                     uninits.assign(uninits.andSet(uninitsSwitch));
                 }
                 scan(c.stats);
-                if (c.completesNormally && c.caseKind == CaseKind.RULE) {
+                if (c.completesNormally && c.caseKind == JCCase.RULE) {
                     scanSyntheticBreak(make, tree);
                 }
                 addVars(c.stats, initsSwitch, uninitsSwitch);

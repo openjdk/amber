@@ -271,6 +271,8 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @return  the result of {@code defaultAction}
      */
     @Override
+    @Deprecated(forRemoval=true, since="12")
+    @SuppressWarnings("removal")
     public R visitSwitchExpression(SwitchExpressionTree node, P p) {
         return defaultAction(node, p);
     }

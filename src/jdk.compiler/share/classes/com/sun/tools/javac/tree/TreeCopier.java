@@ -373,6 +373,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    @SuppressWarnings("removal")
     public JCTree visitSwitchExpression(SwitchExpressionTree node, P p) {
         JCSwitchExpression t = (JCSwitchExpression) node;
         JCExpression selector = copy(t.selector, p);

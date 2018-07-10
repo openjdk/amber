@@ -1408,6 +1408,7 @@ public class JavacParser implements Parser {
         }
         List<JCStatement> stats = null;
         JCTree body = null;
+        @SuppressWarnings("removal")
         CaseKind kind;
         switch (token.kind) {
             case ARROW:
@@ -1416,19 +1417,19 @@ public class JavacParser implements Parser {
                 if (token.kind == TokenKind.THROW || token.kind == TokenKind.LBRACE) {
                     stats = List.of(parseStatement());
                     body = stats.head;
-                    kind = CaseKind.RULE;
+                    kind = JCCase.RULE;
                 } else {
                     JCExpression value = parseExpression();
                     stats = List.of(to(F.at(value).Break(value)));
                     body = value;
-                    kind = CaseKind.RULE;
+                    kind = JCCase.RULE;
                     accept(SEMI);
                 }
                 break;
             default:
                 accept(COLON);
                 stats = blockStatements();
-                kind = CaseKind.STATEMENT;
+                kind = JCCase.STATEMENT;
                 break;
         }
         caseExprs.append(toP(F.at(casePos).Case(kind, pats.toList(), stats, body)));
@@ -2815,12 +2816,13 @@ public class JavacParser implements Parser {
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
             };
+            @SuppressWarnings("removal")
             CaseKind caseKind;
             JCTree body = null;
             if (token.kind == ARROW) {
                 checkSourceLevel(Feature.SWITCH_RULE);
                 accept(ARROW);
-                caseKind = CaseKind.RULE;
+                caseKind = JCCase.RULE;
                 JCStatement statement = parseStatementAsBlock();
                 if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
                     log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);
@@ -2829,7 +2831,7 @@ public class JavacParser implements Parser {
                 body = stats.head;
             } else {
                 accept(COLON);
-                caseKind = CaseKind.STATEMENT;
+                caseKind = JCCase.STATEMENT;
                 stats = blockStatements();
             }
             c = F.at(pos).Case(caseKind, pats.toList(), stats, body);
@@ -2839,16 +2841,17 @@ public class JavacParser implements Parser {
         }
         case DEFAULT: {
             nextToken();
+            @SuppressWarnings("removal")
             CaseKind caseKind;
             JCTree body = null;
             if (token.kind == COLON) {
                 accept(COLON);
-                caseKind = CaseKind.STATEMENT;
+                caseKind = JCCase.STATEMENT;
                 stats = blockStatements();
             } else {
                 checkSourceLevel(Feature.SWITCH_RULE);
                 accept(ARROW);
-                caseKind = CaseKind.RULE;
+                caseKind = JCCase.RULE;
                 JCStatement statement = parseStatementAsBlock();
                 if (!statement.hasTag(EXEC) && !statement.hasTag(BLOCK) && !statement.hasTag(Tag.THROW)) {
                     log.error(statement.pos(), Errors.SwitchCaseUnexpectedStatement);

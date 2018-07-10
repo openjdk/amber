@@ -54,8 +54,15 @@ public interface BreakTree extends StatementTree {
 
     /**
      * Returns the expression for this {@code break} statement.
+     * 
+     * @apiNote
+     * This method is modeling value breaks, which are part of
+     * a preview feature and may be removed if the preview feature
+     * is removed.
+     * 
      * @return the expression
      * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
     ExpressionTree getValue();
 }

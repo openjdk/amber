@@ -355,11 +355,19 @@ public interface TreeVisitor<R,P> {
 
     /**
      * Visits a SwitchExpressionTree node.
+     * 
+     * @apiNote
+     * This method is modeling switch expressions,
+     * which are part of a preview feature and may be removed
+     * if the preview feature is removed.
+     * 
      * @param node the node being visited
      * @param p a parameter value
      * @return a result value
      * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
+    @SuppressWarnings("removal")
     R visitSwitchExpression(SwitchExpressionTree node, P p);
 
     /**

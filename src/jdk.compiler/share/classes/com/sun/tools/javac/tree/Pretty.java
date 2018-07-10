@@ -842,7 +842,7 @@ public class Pretty extends JCTree.Visitor {
                 print("case ");
                 printExprs(tree.pats);
             }
-            if (tree.caseKind == CaseKind.STATEMENT) {
+            if (tree.caseKind == JCCase.STATEMENT) {
                 print(":");
                 println();
                 indent();

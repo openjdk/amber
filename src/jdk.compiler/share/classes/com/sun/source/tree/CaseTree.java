@@ -51,17 +51,22 @@ public interface CaseTree extends Tree {
      * {@code null} if this is the default case.
      * If this case has multiple lables, returns the first label.
      * @return the expression for the case, or null
-     * @deprecated Use {@link #getExpressions()}
      */
-    @Deprecated
     ExpressionTree getExpression();
 
     /**
      * Returns the labels for this case.
      * For default case, returns an empty list.
+     * 
+     * @apiNote
+     * This method is modeling a case with multiple labels,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     * 
      * @return labels for this case
      * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
     List<? extends ExpressionTree> getExpressions();
 
     /**
@@ -80,9 +85,15 @@ public interface CaseTree extends Tree {
      * Returns {@code null} for case with kind
      * {@linkplain CaseKind#STATEMENT}.
      * 
+     * @apiNote
+     * This method is modeling a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     * 
      * @return case value or null
      * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
     public default Tree getBody() {
         return null;
     }
@@ -90,9 +101,15 @@ public interface CaseTree extends Tree {
     /**
      * Returns the kind of this case.
      * 
+     * @apiNote
+     * This method is used to model a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     * 
      * @return the kind of this case
-     * @since TBD
+     * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
     public default CaseKind getCaseKind() {
         return CaseKind.STATEMENT;
     }
@@ -103,8 +120,15 @@ public interface CaseTree extends Tree {
      *     <li>STATEMENT: {@code case <expression>: <statements>}</li>
      *     <li>RULE: {@code case <expression> -> <expression>/<statement>}</li>
      * </ul>
+     *
+     * @apiNote
+     * This enum is used to model a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     * 
      * @since 12
      */
+    @Deprecated(forRemoval=true, since="12")
     public enum CaseKind {
         /**
          * Case is in the form: {@code case <expression>: <statements>}.
