@@ -1,57 +1,61 @@
-// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//
-// This code is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License version 2 only, as
-// published by the Free Software Foundation.  Oracle designates this
-// particular file as subject to the "Classpath" exception as provided
-// by Oracle in the LICENSE file that accompanied this code.
-//
-// This code is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// version 2 for more details (a copy is included in the LICENSE file that
-// accompanied this code).
-//
-// You should have received a copy of the GNU General Public License version
-// 2 along with this work; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-//
-// Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-// or visit www.oracle.com if you need additional information or have any
-// questions.
-//
-// This file is available under and governed by the GNU General Public
-// License version 2 only, as published by the Free Software Foundation.
-// However, the following notice accompanied the original version of this
-// file:
-//
-// ASM: a very small and fast Java bytecode manipulation framework
-// Copyright (c) 2000-2011 INRIA, France Telecom
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. Neither the name of the copyright holders nor the names of its
-//    contributors may be used to endorse or promote products derived from
-//    this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-// THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+/*
+ * This file is available under and governed by the GNU General Public
+ * License version 2 only, as published by the Free Software Foundation.
+ * However, the following notice accompanied the original version of this
+ * file:
+ *
+ * ASM: a very small and fast Java bytecode manipulation framework
+ * Copyright (c) 2000-2011 INRIA, France Telecom
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package jdk.internal.org.objectweb.asm;
 
 import java.io.ByteArrayOutputStream;
@@ -59,71 +63,73 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A parser to make a {@link ClassVisitor} visit a ClassFile structure, as defined in the Java
- * Virtual Machine Specification (JVMS). This class parses the ClassFile content and calls the
- * appropriate visit methods of a given {@link ClassVisitor} for each field, method and bytecode
- * instruction encountered.
+ * A Java class parser to make a {@link ClassVisitor} visit an existing class.
+ * This class parses a byte array conforming to the Java class file format and
+ * calls the appropriate visit methods of a given class visitor for each field,
+ * method and bytecode instruction encountered.
  *
- * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html">JVMS 4</a>
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
 public class ClassReader {
 
-  /**
-   * A flag to skip the Code attributes. If this flag is set the Code attributes are neither parsed
-   * nor visited.
-   */
-  public static final int SKIP_CODE = 1;
+    /**
+     * Flag to skip method code. If this class is set <code>CODE</code>
+     * attribute won't be visited. This can be used, for example, to retrieve
+     * annotations for methods and method parameters.
+     */
+    public static final int SKIP_CODE = 1;
 
-  /**
-   * A flag to skip the SourceFile, SourceDebugExtension, LocalVariableTable, LocalVariableTypeTable
-   * and LineNumberTable attributes. If this flag is set these attributes are neither parsed nor
-   * visited (i.e. {@link ClassVisitor#visitSource}, {@link MethodVisitor#visitLocalVariable} and
-   * {@link MethodVisitor#visitLineNumber} are not called).
-   */
-  public static final int SKIP_DEBUG = 2;
+    /**
+     * Flag to skip the debug information in the class. If this flag is set the
+     * debug information of the class is not visited, i.e. the
+     * {@link MethodVisitor#visitLocalVariable visitLocalVariable} and
+     * {@link MethodVisitor#visitLineNumber visitLineNumber} methods will not be
+     * called.
+     */
+    public static final int SKIP_DEBUG = 2;
 
-  /**
-   * A flag to skip the StackMap and StackMapTable attributes. If this flag is set these attributes
-   * are neither parsed nor visited (i.e. {@link MethodVisitor#visitFrame} is not called). This flag
-   * is useful when the {@link ClassWriter#COMPUTE_FRAMES} option is used: it avoids visiting frames
-   * that will be ignored and recomputed from scratch.
-   */
-  public static final int SKIP_FRAMES = 4;
+    /**
+     * Flag to skip the stack map frames in the class. If this flag is set the
+     * stack map frames of the class is not visited, i.e. the
+     * {@link MethodVisitor#visitFrame visitFrame} method will not be called.
+     * This flag is useful when the {@link ClassWriter#COMPUTE_FRAMES} option is
+     * used: it avoids visiting frames that will be ignored and recomputed from
+     * scratch in the class writer.
+     */
+    public static final int SKIP_FRAMES = 4;
 
-  /**
-   * A flag to expand the stack map frames. By default stack map frames are visited in their
-   * original format (i.e. "expanded" for classes whose version is less than V1_6, and "compressed"
-   * for the other classes). If this flag is set, stack map frames are always visited in expanded
-   * format (this option adds a decompression/compression step in ClassReader and ClassWriter which
-   * degrades performance quite a lot).
-   */
-  public static final int EXPAND_FRAMES = 8;
+    /**
+     * Flag to expand the stack map frames. By default stack map frames are
+     * visited in their original format (i.e. "expanded" for classes whose
+     * version is less than V1_6, and "compressed" for the other classes). If
+     * this flag is set, stack map frames are always visited in expanded format
+     * (this option adds a decompression/recompression step in ClassReader and
+     * ClassWriter which degrades performances quite a lot).
+     */
+    public static final int EXPAND_FRAMES = 8;
 
-  /**
-   * A flag to expand the ASM specific instructions into an equivalent sequence of standard bytecode
-   * instructions. When resolving a forward jump it may happen that the signed 2 bytes offset
-   * reserved for it is not sufficient to store the bytecode offset. In this case the jump
-   * instruction is replaced with a temporary ASM specific instruction using an unsigned 2 bytes
-   * offset (see {@link Label#resolve}). This internal flag is used to re-read classes containing
-   * such instructions, in order to replace them with standard instructions. In addition, when this
-   * flag is used, goto_w and jsr_w are <i>not</i> converted into goto and jsr, to make sure that
-   * infinite loops where a goto_w is replaced with a goto in ClassReader and converted back to a
-   * goto_w in ClassWriter cannot occur.
-   */
-  static final int EXPAND_ASM_INSNS = 256;
+    /**
+     * Flag to expand the ASM pseudo instructions into an equivalent sequence of
+     * standard bytecode instructions. When resolving a forward jump it may
+     * happen that the signed 2 bytes offset reserved for it is not sufficient
+     * to store the bytecode offset. In this case the jump instruction is
+     * replaced with a temporary ASM pseudo instruction using an unsigned 2
+     * bytes offset (see Label#resolve). This internal flag is used to re-read
+     * classes containing such instructions, in order to replace them with
+     * standard instructions. In addition, when this flag is used, GOTO_W and
+     * JSR_W are <i>not</i> converted into GOTO and JSR, to make sure that
+     * infinite loops where a GOTO_W is replaced with a GOTO in ClassReader and
+     * converted back to a GOTO_W in ClassWriter cannot occur.
+     */
+    static final int EXPAND_ASM_INSNS = 256;
 
-  /**
-   * A byte array containing the JVMS ClassFile structure to be parsed. <i>The content of this array
-   * must not be modified. This field is intended for {@link Attribute} sub classes, and is normally
-   * not needed by class visitors.</i>
-   *
-   * <p>NOTE: the ClassFile structure can start at any offset within this array, i.e. it does not
-   * necessarily start at offset 0. Use {@link #getItem} and {@link #header} to get correct
-   * ClassFile element offsets within this byte array.
-   */
-  public final byte[] b;
+    /**
+     * The class to be parsed. <i>The content of this array must not be
+     * modified. This field is intended for {@link Attribute} sub classes, and
+     * is normally not needed by class generators or adapters.</i>
+     */
+    public final byte[] b;
 
   /**
    * The offset in bytes, in {@link #b}, of each cp_info entry of the ClassFile's constant_pool
@@ -194,7 +200,7 @@ public class ClassReader {
     this.b = classFileBuffer;
     // Check the class' major_version. This field is after the magic and minor_version fields, which
     // use 4 and 2 bytes respectively.
-    if (checkClassVersion && readShort(classFileOffset + 6) > Opcodes.V11) {
+    if (checkClassVersion && readShort(classFileOffset + 6) > Opcodes.V12) {
       throw new IllegalArgumentException(
           "Unsupported class file major version " + readShort(classFileOffset + 6));
     }

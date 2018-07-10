@@ -1,74 +1,77 @@
-// DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-//
-// This code is free software; you can redistribute it and/or modify it
-// under the terms of the GNU General Public License version 2 only, as
-// published by the Free Software Foundation.  Oracle designates this
-// particular file as subject to the "Classpath" exception as provided
-// by Oracle in the LICENSE file that accompanied this code.
-//
-// This code is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// version 2 for more details (a copy is included in the LICENSE file that
-// accompanied this code).
-//
-// You should have received a copy of the GNU General Public License version
-// 2 along with this work; if not, write to the Free Software Foundation,
-// Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-//
-// Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-// or visit www.oracle.com if you need additional information or have any
-// questions.
-//
-// This file is available under and governed by the GNU General Public
-// License version 2 only, as published by the Free Software Foundation.
-// However, the following notice accompanied the original version of this
-// file:
-//
-// ASM: a very small and fast Java bytecode manipulation framework
-// Copyright (c) 2000-2011 INRIA, France Telecom
-// All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. Neither the name of the copyright holders nor the names of its
-//    contributors may be used to endorse or promote products derived from
-//    this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-// THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+/*
+ * This file is available under and governed by the GNU General Public
+ * License version 2 only, as published by the Free Software Foundation.
+ * However, the following notice accompanied the original version of this
+ * file:
+ *
+ * ASM: a very small and fast Java bytecode manipulation framework
+ * Copyright (c) 2000-2011 INRIA, France Telecom
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package jdk.internal.org.objectweb.asm;
 
+import java.util.Arrays;
+
 /**
- * A non standard class, field, method or code attribute, as defined in the Java Virtual Machine
- * Specification (JVMS).
+ * A non standard class, field, method or code attribute.
  *
- * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7">JVMS
- *     4.7</a>
- * @see <a href="https://docs.oracle.com/javase/specs/jvms/se9/html/jvms-4.html#jvms-4.7.3">JVMS
- *     4.7.3</a>
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
 public class Attribute {
 
-  /** The type of this attribute, also called its name in the JVMS. */
-  public final String type;
+    /**
+     * The type of this attribute.
+     */
+    public final String type;
 
   /**
    * The raw content of this attribute, only used for unknown attributes (see {@link #isUnknown()}).
@@ -83,37 +86,34 @@ public class Attribute {
    */
   Attribute nextAttribute;
 
-  /**
-   * Constructs a new empty attribute.
-   *
-   * @param type the type of the attribute.
-   */
-  protected Attribute(final String type) {
-    this.type = type;
-  }
+    /**
+     * Constructs a new empty attribute.
+     *
+     * @param type
+     *            the type of the attribute.
+     */
+    protected Attribute(final String type) {
+        this.type = type;
+    }
 
-  /**
-   * Returns <tt>true</tt> if this type of attribute is unknown. This means that the attribute
-   * content can't be parsed to extract constant pool references, labels, etc. Instead, the
-   * attribute content is read as an opaque byte array, and written back as is. This can lead to
-   * invalid attributes, if the content actually contains constant pool references, labels, or other
-   * symbolic references that need to be updated when there are changes to the constant pool, the
-   * method bytecode, etc. The default implementation of this method always returns <tt>true</tt>.
-   *
-   * @return <tt>true</tt> if this type of attribute is unknown.
-   */
-  public boolean isUnknown() {
-    return true;
-  }
+    /**
+     * Returns <tt>true</tt> if this type of attribute is unknown. The default
+     * implementation of this method always returns <tt>true</tt>.
+     *
+     * @return <tt>true</tt> if this type of attribute is unknown.
+     */
+    public boolean isUnknown() {
+        return true;
+    }
 
-  /**
-   * Returns <tt>true</tt> if this type of attribute is a code attribute.
-   *
-   * @return <tt>true</tt> if this type of attribute is a code attribute.
-   */
-  public boolean isCodeAttribute() {
-    return false;
-  }
+    /**
+     * Returns <tt>true</tt> if this type of attribute is a code attribute.
+     *
+     * @return <tt>true</tt> if this type of attribute is a code attribute.
+     */
+    public boolean isCodeAttribute() {
+        return false;
+    }
 
   /**
    * Returns the labels corresponding to this attribute.
@@ -347,4 +347,72 @@ public class Attribute {
       data[size++] = attribute;
     }
   }
+
+    //The stuff below is temporary - once proper support for nestmate attribute has been added, it can be safely removed.
+    //see also changes in ClassReader.accept.
+
+    public static class NestMembers extends Attribute {
+        public NestMembers() {
+            super("NestMembers");
+        }
+
+        byte[] bytes;
+        String[] classes;
+
+        @Override
+        protected Attribute read(ClassReader cr, int off, int len, char[] buf, int codeOff, Label[] labels) {
+            int offset = off;
+            NestMembers a = new NestMembers();
+            int size = cr.readShort(off);
+            a.classes = new String[size];
+            off += 2;
+            for (int i = 0; i < size ; i++) {
+                a.classes[i] = cr.readClass(off, buf);
+                off += 2;
+            }
+            a.bytes = Arrays.copyOfRange(cr.b, offset, offset + len);
+            return a;
+        }
+
+        @Override
+        protected ByteVector write(ClassWriter cw, byte[] code, int len, int maxStack, int maxLocals) {
+            ByteVector v = new ByteVector(bytes.length);
+            v.putShort(classes.length);
+            for (String s : classes) {
+                v.putShort(cw.newClass(s));
+            }
+            return v;
+        }
+    }
+
+    public static class NestHost extends Attribute {
+
+        byte[] bytes;
+        String clazz;
+
+        public NestHost() {
+            super("NestHost");
+        }
+
+        @Override
+        protected Attribute read(ClassReader cr, int off, int len, char[] buf, int codeOff, Label[] labels) {
+            int offset = off;
+            NestHost a = new NestHost();
+            a.clazz = cr.readClass(off, buf);
+            a.bytes = Arrays.copyOfRange(cr.b, offset, offset + len);
+            return a;
+        }
+
+        @Override
+        protected ByteVector write(ClassWriter cw, byte[] code, int len, int maxStack, int maxLocals) {
+            ByteVector v = new ByteVector(bytes.length);
+            v.putShort(cw.newClass(clazz));
+            return v;
+        }
+    }
+
+    static final Attribute[] DEFAULT_ATTRIBUTE_PROTOS = new Attribute[] {
+        new NestMembers(),
+        new NestHost()
+    };
 }
