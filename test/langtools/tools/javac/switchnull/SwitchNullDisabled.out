@@ -1,2 +1,2 @@
-SwitchNullDisabled.java:9:18: compiler.err.switch.null.not.allowed
+SwitchNullDisabled.java:10:18: compiler.err.switch.null.not.allowed
 1 error

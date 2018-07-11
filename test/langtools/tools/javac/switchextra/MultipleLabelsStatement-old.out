@@ -1,2 +1,2 @@
-MultipleLabelsStatement.java:33:21: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.multiple.case.labels)
+MultipleLabelsStatement.java:34:21: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.multiple.case.labels)
 1 error
