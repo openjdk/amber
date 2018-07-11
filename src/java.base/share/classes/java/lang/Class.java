@@ -664,15 +664,6 @@ public final class Class<T> implements java.io.Serializable,
     @HotSpotIntrinsicCandidate
     public native boolean isInterface();
 
-    /**
-     * Determines if the specified {@code Class} object represents a
-     * a record.
-     *
-     * @return  {@code true} if this object represents a record;
-     *          {@code false} otherwise.
-     */
-    public native boolean isRecord();
-
 
     /**
      * Determines if this {@code Class} object represents an array class.

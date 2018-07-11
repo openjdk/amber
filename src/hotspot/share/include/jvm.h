@@ -454,9 +454,6 @@ JVM_GetClassInterfaces(JNIEnv *env, jclass cls);
 JNIEXPORT jboolean JNICALL
 JVM_IsInterface(JNIEnv *env, jclass cls);
 
-JNIEXPORT jboolean JNICALL
-JVM_IsRecord(JNIEnv *env, jclass cls);
-
 JNIEXPORT jobjectArray JNICALL
 JVM_GetClassSigners(JNIEnv *env, jclass cls);
 

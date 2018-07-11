@@ -1108,19 +1108,6 @@ JVM_QUICK_ENTRY(jboolean, JVM_IsInterface(JNIEnv *env, jclass cls))
   return result;
 JVM_END
 
-JVM_QUICK_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
-  JVMWrapper("JVM_IsRecord");
-  oop mirror = JNIHandles::resolve_non_null(cls);
-  if (java_lang_Class::is_primitive(mirror)) {
-    return JNI_FALSE;
-  }
-  Klass* k = java_lang_Class::as_Klass(mirror);
-  jboolean result = k->is_record();
-  assert(!result || k->is_instance_klass(),
-         "all records are instance types");
-  return result;
-JVM_END
-
 
 JVM_ENTRY(jobjectArray, JVM_GetClassSigners(JNIEnv *env, jclass cls))
   JVMWrapper("JVM_GetClassSigners");

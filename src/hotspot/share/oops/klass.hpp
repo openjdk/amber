@@ -624,7 +624,6 @@ protected:
   void set_is_shared()                  { _access_flags.set_is_shared_class(); }
 
   bool is_cloneable() const;
-  bool is_record() const;
   void set_is_cloneable();
 
   // Biased locking support

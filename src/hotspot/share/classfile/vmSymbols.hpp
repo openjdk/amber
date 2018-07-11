@@ -329,7 +329,6 @@
   template(java_lang_StackFrameInfo,                  "java/lang/StackFrameInfo")                 \
   template(java_lang_LiveStackFrameInfo,              "java/lang/LiveStackFrameInfo")             \
   template(java_lang_StackStreamFactory_AbstractStackWalker, "java/lang/StackStreamFactory$AbstractStackWalker") \
-  template(java_lang_AbstractRecord,                  "java/lang/AbstractRecord")                 \
   template(doStackWalk_signature,                     "(JIIII)Ljava/lang/Object;")                \
   template(asPrimitive_name,                          "asPrimitive")                              \
   template(asPrimitive_int_signature,                 "(I)Ljava/lang/LiveStackFrame$PrimitiveSlot;") \

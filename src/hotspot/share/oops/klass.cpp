@@ -62,10 +62,6 @@ bool Klass::is_cloneable() const {
          is_subtype_of(SystemDictionary::Cloneable_klass());
 }
 
-bool Klass::is_record() const {
-  return is_subtype_of(SystemDictionary::AbstractRecord_klass());
-}
-
 void Klass::set_is_cloneable() {
   if (name() == vmSymbols::java_lang_invoke_MemberName()) {
     assert(is_final(), "no subclasses allowed");
