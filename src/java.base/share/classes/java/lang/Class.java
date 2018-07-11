@@ -3515,7 +3515,7 @@ public final class Class<T> implements java.io.Serializable,
      */
     public boolean isRecord() {
         // A record must directly extend java.lang.AbstractRecord
-        return this.getSuperclass() == java.lang.AbstractRecord.class;
+        return AbstractRecord.class.isAssignableFrom(this);
     }
 
     // Fetches the factory for reflective objects
