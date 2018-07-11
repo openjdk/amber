@@ -3505,6 +3505,19 @@ public final class Class<T> implements java.io.Serializable,
         this.getSuperclass() == java.lang.Enum.class;
     }
 
+    /**
+     * Returns true if and only if this class was declared as a record in the
+     * source code.
+     *
+     * @return true if and only if this class was declared as a record in the
+     *     source code
+     * @since 1.12
+     */
+    public boolean isRecord() {
+        // A record must directly extend java.lang.AbstractRecord
+        return this.getSuperclass() == java.lang.AbstractRecord.class;
+    }
+
     // Fetches the factory for reflective objects
     private static ReflectionFactory getReflectionFactory() {
         if (reflectionFactory == null) {
