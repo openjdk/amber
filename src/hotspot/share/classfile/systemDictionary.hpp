@@ -212,6 +212,9 @@ class OopStorage;
   do_klass(Integer_klass,                               java_lang_Integer,                         Pre                 ) \
   do_klass(Long_klass,                                  java_lang_Long,                            Pre                 ) \
                                                                                                                          \
+  /* Super class for all records */                                                                                      \
+  do_klass(AbstractRecord_klass,                       java_lang_AbstractRecord,                  Pre                  ) \
+                                                                                                                         \
   /* JVMCI classes. These are loaded on-demand. */                                                                       \
   JVMCI_WK_KLASSES_DO(do_klass)                                                                                          \
                                                                                                                          \

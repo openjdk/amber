@@ -144,6 +144,7 @@ JVM_IsConstructorIx
 JVM_IsInterface
 JVM_IsInterrupted
 JVM_IsPrimitiveClass
+JVM_IsRecord
 JVM_IsSameClassPackage
 JVM_IsSupportedJNIVersion
 JVM_IsThreadAlive

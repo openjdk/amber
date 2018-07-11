@@ -56,6 +56,7 @@ static JNINativeMethod methods[] = {
     {"getSuperclass",    "()" CLS,          NULL},
     {"getInterfaces0",   "()[" CLS,         (void *)&JVM_GetClassInterfaces},
     {"isInterface",      "()Z",             (void *)&JVM_IsInterface},
+    {"isRecord",         "()Z",             (void *)&JVM_IsRecord},
     {"getSigners",       "()[" OBJ,         (void *)&JVM_GetClassSigners},
     {"setSigners",       "([" OBJ ")V",     (void *)&JVM_SetClassSigners},
     {"isArray",          "()Z",             (void *)&JVM_IsArrayClass},
