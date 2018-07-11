@@ -93,13 +93,12 @@ public class ExpressionSwitchBreaks1 {
             case 1:
                 break "1";
             case 2:
-                int LOOP = 0;
-                LOOP: while (j-- > 0) {
+                LOP: while (j-- > 0) {
                     if (k == 5) {
                         k--;
                         continue;
                     }
-                    break LOOP; //may produce a warning
+                    break LOP;
                 }
                 Supplier<String> getter = () -> { return "2-X-5"; };
                 break getter.get();

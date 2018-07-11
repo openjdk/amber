@@ -1883,7 +1883,7 @@ public class Attr extends JCTree.Visitor {
                     if (jumpTarget.fst != null) {
                         JCTree speculative = deferredAttr.attribSpeculative(tree.value, env, unknownExprInfo);
                         if (!speculative.type.hasTag(ERROR)) {
-                            log.warning(tree.pos(), Warnings.BreakAmbiguousTarget(label));
+                            log.error(tree.pos(), Errors.BreakAmbiguousTarget(label));
                             if (jumpTarget.snd == null) {
                                 tree.target = jumpTarget.fst;
                                 attribute = false;

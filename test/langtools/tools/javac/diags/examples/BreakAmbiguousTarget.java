@@ -21,7 +21,7 @@
  * questions.
  */
 
-// key: compiler.warn.break.ambiguous.target
+// key: compiler.err.break.ambiguous.target
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source 12

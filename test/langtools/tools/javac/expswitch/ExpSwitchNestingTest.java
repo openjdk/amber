@@ -208,9 +208,8 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
 
     public void testBreakExpressionLabelDisambiguation() {
         assertOK(DEF_LABEL_VAR, ESWITCH_Z, BREAK_L);
-        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH_Z, LABEL, FOR, BREAK_L); //label break
-        assertOKWithWarning("compiler.warn.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH_Z, BREAK_L); //expression break
-        //
+        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH_Z, LABEL, FOR, BREAK_L);
+        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH_Z, BREAK_L);
     }
 
     public void testFunReturningSwitchExp() {

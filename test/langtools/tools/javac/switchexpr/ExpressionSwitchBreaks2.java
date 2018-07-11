@@ -40,7 +40,7 @@ public class ExpressionSwitchBreaks2 {
         }
         }
         j: print(switch (i) {
-            default: break j;
+            default: break j; //error: "j" is ambiguous (expression/label)
         }, 0);
         j2: print(switch (i) {
             default: break j2;
