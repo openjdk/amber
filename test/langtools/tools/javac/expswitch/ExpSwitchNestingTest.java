@@ -44,7 +44,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
     private static final String ESWITCH_Z = "int res = switch (x) { case 0 -> { # } default -> 0; };";
     private static final String ESWITCH_S = "String res_string = switch (x) { case 0 -> { # } default -> \"default\"; };";
     private static final String INT_FN_ESWITCH = "java.util.function.IntSupplier r = switch (x) { case 0 -> { # } default -> null; };";
-    private static final String ESWITCH_DEFAULT = "int res = switch (x) { case 0 -> 0; default -> { # }; };";
+    private static final String INT_ESWITCH_DEFAULT = "int res = switch (x) { default -> { # } };";
     private static final String IF = "if (cond) { # }";
     private static final String BLOCK = "{ # }";
     private static final String BREAK_Z = "break 0;";
@@ -132,12 +132,21 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
         assertOK(RUNNABLE, NOTHING);
         assertOK(INT_FN, RETURN_Z);
         assertFail("compiler.err.break.outside.switch.loop", RUNNABLE, BREAK_N);
+        assertFail("compiler.err.break.complex.value.no.switch.expression", RUNNABLE, BREAK_Z);
+        assertFail("compiler.err.break.complex.value.no.switch.expression", RUNNABLE, BREAK_S);
+        assertFail("compiler.err.break.outside.switch.loop", INT_FN, BREAK_N);
         assertFail("compiler.err.break.complex.value.no.switch.expression", INT_FN, BREAK_Z);
+        assertFail("compiler.err.break.complex.value.no.switch.expression", INT_FN, BREAK_S);
         assertFail("compiler.err.cont.outside.loop", RUNNABLE, CONTINUE_N);
         assertFail("compiler.err.undef.label", RUNNABLE, BREAK_L);
         assertFail("compiler.err.undef.label", RUNNABLE, CONTINUE_L);
+        assertFail("compiler.err.cont.outside.loop", INT_FN, CONTINUE_N);
+        assertFail("compiler.err.undef.label", INT_FN, BREAK_L);
+        assertFail("compiler.err.undef.label", INT_FN, CONTINUE_L);
         assertFail("compiler.err.undef.label", LABEL, BLOCK, RUNNABLE, BREAK_L);
         assertFail("compiler.err.undef.label", LABEL, BLOCK, RUNNABLE, CONTINUE_L);
+        assertFail("compiler.err.undef.label", LABEL, BLOCK, INT_FN, BREAK_L);
+        assertFail("compiler.err.undef.label", LABEL, BLOCK, INT_FN, CONTINUE_L);
     }
 
     public void testEswitch() {
@@ -145,31 +154,43 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
         assertOK(ESWITCH_Z, BREAK_Z);
         assertOK(LABEL, BLOCK, ESWITCH_Z, BREAK_Z);
         assertFail("compiler.err.break.missing.value", ESWITCH_Z, BREAK_N);
+        assertFail("compiler.err.prob.found.req", ESWITCH_Z, BREAK_S);
         assertFail("compiler.err.cant.resolve.location", ESWITCH_Z, BREAK_L);
         assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, ESWITCH_Z, BREAK_L);
         assertFail("compiler.err.undef.label", ESWITCH_Z, CONTINUE_L);
         assertFail("compiler.err.cont.outside.loop", ESWITCH_Z, CONTINUE_N);
         assertFail("compiler.err.return.outside.switch.expression", ESWITCH_Z, RETURN_N);
         assertFail("compiler.err.return.outside.switch.expression", ESWITCH_Z, RETURN_Z);
+
+        assertOK(INT_ESWITCH_DEFAULT, BREAK_Z);
+        assertFail("compiler.err.break.missing.value", INT_ESWITCH_DEFAULT, BREAK_N);
+        assertFail("compiler.err.prob.found.req", INT_ESWITCH_DEFAULT, BREAK_S);
+        assertFail("compiler.err.cant.resolve.location", INT_ESWITCH_DEFAULT, BREAK_L);
+
+
         // String-valued switch expressions
         assertOK(ESWITCH_S, BREAK_S);
         assertOK(LABEL, BLOCK, ESWITCH_S, BREAK_S);
         assertFail("compiler.err.break.missing.value", ESWITCH_S, BREAK_N);
+        assertFail("compiler.err.prob.found.req", ESWITCH_S, BREAK_Z);
         assertFail("compiler.err.cant.resolve.location", ESWITCH_S, BREAK_L);
         assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, ESWITCH_S, BREAK_L);
         assertFail("compiler.err.undef.label", ESWITCH_S, CONTINUE_L);
         assertFail("compiler.err.cont.outside.loop", ESWITCH_S, CONTINUE_N);
         assertFail("compiler.err.return.outside.switch.expression", ESWITCH_S, RETURN_N);
-        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_S, RETURN_S); //? which error message is right here?
+        assertFail("compiler.err.return.outside.switch.expression", ESWITCH_S, RETURN_S); 
         // Function-valued switch expression
         assertOK(INT_FN_ESWITCH, BREAK_INT_FN);
         assertFail("compiler.err.break.missing.value", INT_FN_ESWITCH, BREAK_N);
+        assertFail("compiler.err.prob.found.req", INT_FN_ESWITCH, BREAK_Z);
+        assertFail("compiler.err.prob.found.req", INT_FN_ESWITCH, BREAK_S);
+
         assertFail("compiler.err.cant.resolve.location", INT_FN_ESWITCH, BREAK_L);
         assertFail("compiler.err.break.outside.switch.expression", LABEL, BLOCK, INT_FN_ESWITCH, BREAK_L);
         assertFail("compiler.err.undef.label", INT_FN_ESWITCH, CONTINUE_L);
         assertFail("compiler.err.cont.outside.loop", INT_FN_ESWITCH, CONTINUE_N);
         assertFail("compiler.err.return.outside.switch.expression", INT_FN_ESWITCH, RETURN_N);
-        assertFail("compiler.err.return.outside.switch.expression", INT_FN_ESWITCH, RETURN_S); //? which error message is right here?
+        assertFail("compiler.err.return.outside.switch.expression", INT_FN_ESWITCH, RETURN_S); 
 
     }
 
@@ -208,8 +229,10 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
 
     public void testBreakExpressionLabelDisambiguation() {
         assertOK(DEF_LABEL_VAR, ESWITCH_Z, BREAK_L);
-        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH_Z, LABEL, FOR, BREAK_L);
-        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH_Z, BREAK_L);
+        assertFail("compiler.err.break.ambiguous.target", LABEL, FOR, BLOCK, DEF_LABEL_VAR, ESWITCH_Z, BREAK_L);
+        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, ESWITCH_Z, LABEL, FOR, BREAK_L); //label break
+        assertFail("compiler.err.break.ambiguous.target", DEF_LABEL_VAR, LABEL, BLOCK, ESWITCH_Z, BREAK_L); //expression break
+        //
     }
 
     public void testFunReturningSwitchExp() {
