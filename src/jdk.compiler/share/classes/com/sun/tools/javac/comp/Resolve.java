@@ -2567,8 +2567,8 @@ public class Resolve {
         }
 
         @Override
-        protected Type typeOf(DeferredType dt) {
-            Type res = super.typeOf(dt);
+        protected Type typeOf(DeferredType dt, Type pt) {
+            Type res = super.typeOf(dt, pt);
             if (!res.isErroneous()) {
                 switch (TreeInfo.skipParens(dt.tree).getTag()) {
                     case LAMBDA:
@@ -3999,7 +3999,12 @@ public class Resolve {
 
         @Override
         public Symbol access(Name name, TypeSymbol location) {
-            return types.createErrorType(name, location, syms.errSymbol.type).tsym;
+            Symbol sym = bestCandidate();
+            return types.createErrorType(name, location, sym != null ? sym.type : syms.errSymbol.type).tsym;
+        }
+
+        protected Symbol bestCandidate() {
+            return errCandidate().fst;
         }
 
         protected Pair<Symbol, JCDiagnostic> errCandidate() {
@@ -4130,6 +4135,16 @@ public class Resolve {
                 //conform to source order
                 return details;
             }
+
+        @Override
+        protected Symbol bestCandidate() {
+            Map<Symbol, JCDiagnostic> candidatesMap = mapCandidates();
+            Map<Symbol, JCDiagnostic> filteredCandidates = filterCandidates(candidatesMap);
+            if (filteredCandidates.size() == 1) {
+                return filteredCandidates.keySet().iterator().next();
+            }
+            return null;
+        }
     }
 
     /**

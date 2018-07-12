@@ -1516,6 +1516,7 @@ public class JavacParser implements Parser {
     ParensResult analyzeParens() {
         int depth = 0;
         boolean type = false;
+        ParensResult defaultResult = ParensResult.PARENS;
         outer: for (int lookahead = 0 ; ; lookahead++) {
             TokenKind tk = S.token(lookahead).kind;
             switch (tk) {
@@ -1568,7 +1569,7 @@ public class JavacParser implements Parser {
                         case LONG: case FLOAT: case DOUBLE: case BOOLEAN: case VOID:
                             return ParensResult.CAST;
                         default:
-                            return ParensResult.PARENS;
+                            return defaultResult;
                     }
                 case UNDERSCORE:
                 case ASSERT:
@@ -1580,6 +1581,8 @@ public class JavacParser implements Parser {
                     } else if (peekToken(lookahead, RPAREN, ARROW)) {
                         // Identifier, ')' '->' -> implicit lambda
                         return ParensResult.IMPLICIT_LAMBDA;
+                    } else if (depth == 0 && peekToken(lookahead, COMMA)) {
+                        defaultResult = ParensResult.IMPLICIT_LAMBDA;
                     }
                     type = false;
                     break;
@@ -1665,7 +1668,7 @@ public class JavacParser implements Parser {
                     break;
                 default:
                     //this includes EOF
-                    return ParensResult.PARENS;
+                    return defaultResult;
             }
         }
     }
