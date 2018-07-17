@@ -205,8 +205,8 @@ public class MethodHandleRefTest extends SymbolicRefTest {
 
         try { privateIMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        try { privateIMethodRef.resolveConstantDesc(TestClass.LOOKUP); fail(); }
-        catch (IllegalAccessException e) { /* expected */ }
+        // this is passing after nestmates got pushed
+        privateIMethodRef.resolveConstantDesc(TestClass.LOOKUP);
         assertEquals(0, (int) privateIMethodRef.resolveConstantDesc(TestInterface.LOOKUP).invokeExact(instanceI, 5));
 
         try { privateStaticMethodRef.resolveConstantDesc(LOOKUP); fail(); }
@@ -215,8 +215,8 @@ public class MethodHandleRefTest extends SymbolicRefTest {
 
         try { privateStaticIMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        try { privateStaticIMethodRef.resolveConstantDesc(TestClass.LOOKUP); fail(); }
-        catch (IllegalAccessException e) { /* expected */ }
+        // this is passing after nestmates got pushed
+        privateStaticIMethodRef.resolveConstantDesc(TestClass.LOOKUP);
         assertEquals(0, (int) privateStaticIMethodRef.resolveConstantDesc(TestInterface.LOOKUP).invokeExact(5));
 
         MethodHandleDesc staticSetterRef = MethodHandleDesc.ofField(STATIC_SETTER, testClass, "sf", CR_int);
