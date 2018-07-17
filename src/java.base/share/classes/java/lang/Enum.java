@@ -25,6 +25,8 @@
 
 package java.lang;
 
+import jdk.internal.lang.annotation.Foldable;
+
 import java.io.Serializable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -308,6 +310,7 @@ public abstract class Enum<E extends Enum<E>>
          * @throws NullPointerException if any argument is null
          * @jvms 4.2.2 Unqualified Names
          */
+        @Foldable
         public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
                                                         String constantName) {
             return new EnumDesc<>(enumClass, validateMemberName(constantName));
