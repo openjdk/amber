@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -138,7 +138,6 @@ public class Gen extends JCTree.Visitor {
         doConstantFold = foldingOp != null ?
                 foldingOp.equals("true") :
                 Feature.CONSTABLES.allowedInSource(source);
-        allowBetterNullChecks = target.hasObjects();
         disableVirtualizedPrivateInvoke = options.isSet("disableVirtualizedPrivateInvoke");
         pool = new Pool(types);
 
@@ -153,7 +152,6 @@ public class Gen extends JCTree.Visitor {
     private final boolean varDebugInfo;
     private final boolean genCrt;
     private final boolean debugCode;
-    private final boolean allowBetterNullChecks;
     private final boolean doConstantFold;
     private boolean disableVirtualizedPrivateInvoke;
 
@@ -1954,13 +1952,8 @@ public class Gen extends JCTree.Visitor {
     /** Generate a null check from the object value at stack top. */
     private void genNullCheck(JCTree tree) {
         code.statBegin(tree.pos);
-        if (allowBetterNullChecks) {
-            callMethod(tree.pos(), syms.objectsType, names.requireNonNull,
+        callMethod(tree.pos(), syms.objectsType, names.requireNonNull,
                     List.of(syms.objectType), true);
-        } else {
-            callMethod(tree.pos(), syms.objectType, names.getClass,
-                    List.nil(), false);
-        }
         code.emitop0(pop);
     }
 
