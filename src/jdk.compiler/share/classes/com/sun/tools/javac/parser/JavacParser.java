@@ -2640,7 +2640,6 @@ public class JavacParser implements Parser {
             nextToken();
             List<JCTree> resources = List.nil();
             if (token.kind == LPAREN) {
-                checkSourceLevel(Feature.TRY_WITH_RESOURCES);
                 nextToken();
                 resources = resources();
                 accept(RPAREN);
@@ -2656,11 +2655,7 @@ public class JavacParser implements Parser {
                 }
             } else {
                 if (resources.isEmpty()) {
-                    if (Feature.TRY_WITH_RESOURCES.allowedInSource(source)) {
-                        log.error(DiagnosticFlag.SYNTAX, pos, Errors.TryWithoutCatchFinallyOrResourceDecls);
-                    } else {
-                        log.error(DiagnosticFlag.SYNTAX, pos, Errors.TryWithoutCatchOrFinally);
-                    }
+                    log.error(DiagnosticFlag.SYNTAX, pos, Errors.TryWithoutCatchFinallyOrResourceDecls);
                 }
             }
             return F.at(pos).Try(resources, body, catchers.toList(), finalizer);
@@ -2773,7 +2768,6 @@ public class JavacParser implements Parser {
         ListBuffer<JCExpression> catchTypes = new ListBuffer<>();
         catchTypes.add(parseType());
         while (token.kind == BAR) {
-            checkSourceLevel(Feature.MULTICATCH);
             nextToken();
             // Instead of qualident this is now parseType.
             // But would that allow too much, e.g. arrays or generics?

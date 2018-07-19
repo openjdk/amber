@@ -120,7 +120,6 @@ public class Gen extends JCTree.Visitor {
             : options.isSet(G_CUSTOM, "vars");
         genCrt = options.isSet(XJCOV);
         debugCode = options.isSet("debug.code");
-        allowBetterNullChecks = target.hasObjects();
         disableVirtualizedPrivateInvoke = options.isSet("disableVirtualizedPrivateInvoke");
         pool = new Pool(types);
 
@@ -135,7 +134,6 @@ public class Gen extends JCTree.Visitor {
     private final boolean varDebugInfo;
     private final boolean genCrt;
     private final boolean debugCode;
-    private final boolean allowBetterNullChecks;
     private boolean disableVirtualizedPrivateInvoke;
 
     /** Code buffer, set by genMethod.
@@ -1915,13 +1913,8 @@ public class Gen extends JCTree.Visitor {
     /** Generate a null check from the object value at stack top. */
     private void genNullCheck(JCTree tree) {
         code.statBegin(tree.pos);
-        if (allowBetterNullChecks) {
-            callMethod(tree.pos(), syms.objectsType, names.requireNonNull,
-                    List.of(syms.objectType), true);
-        } else {
-            callMethod(tree.pos(), syms.objectType, names.getClass,
-                    List.nil(), false);
-        }
+        callMethod(tree.pos(), syms.objectsType, names.requireNonNull,
+                   List.of(syms.objectType), true);
         code.emitop0(pop);
     }
 
