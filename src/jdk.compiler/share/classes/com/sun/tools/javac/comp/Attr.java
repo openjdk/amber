@@ -74,6 +74,7 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
+import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
@@ -156,7 +157,6 @@ public class Attr extends JCTree.Visitor {
         Options options = Options.instance(context);
 
         Source source = Source.instance(context);
-        allowStringsInSwitch = Feature.STRINGS_IN_SWITCH.allowedInSource(source);
         allowPoly = Feature.POLY.allowedInSource(source);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowLambda = Feature.LAMBDA.allowedInSource(source);
@@ -199,11 +199,6 @@ public class Attr extends JCTree.Visitor {
      * RFE: 6425594
      */
     boolean useBeforeDeclarationWarning;
-
-    /**
-     * Switch: allow strings in switch?
-     */
-    boolean allowStringsInSwitch;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -401,7 +396,9 @@ public class Attr extends JCTree.Visitor {
     public Env<AttrContext> attribExprToTree(JCTree expr, Env<AttrContext> env, JCTree tree) {
         breakTree = tree;
         JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
+        EnumSet<AnalyzerMode> analyzerModes = EnumSet.copyOf(analyzer.analyzerModes);
         try {
+            analyzer.analyzerModes.clear();
             attribExpr(expr, env);
         } catch (BreakAttr b) {
             return b.env;
@@ -414,6 +411,7 @@ public class Attr extends JCTree.Visitor {
         } finally {
             breakTree = null;
             log.useSource(prev);
+            analyzer.analyzerModes.addAll(analyzerModes);
         }
         return env;
     }
@@ -421,7 +419,9 @@ public class Attr extends JCTree.Visitor {
     public Env<AttrContext> attribStatToTree(JCTree stmt, Env<AttrContext> env, JCTree tree) {
         breakTree = tree;
         JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
+        EnumSet<AnalyzerMode> analyzerModes = EnumSet.copyOf(analyzer.analyzerModes);
         try {
+            analyzer.analyzerModes.clear();
             attribStat(stmt, env);
         } catch (BreakAttr b) {
             return b.env;
@@ -434,6 +434,7 @@ public class Attr extends JCTree.Visitor {
         } finally {
             breakTree = null;
             log.useSource(prev);
+            analyzer.analyzerModes.addAll(analyzerModes);
         }
         return env;
     }
@@ -1431,9 +1432,6 @@ public class Attr extends JCTree.Visitor {
                 tree.kind = SwitchKind.ENUM;
             } else if (types.isSameType(seltype, syms.stringType)) {
                 tree.kind = SwitchKind.STRING;
-                if (!allowStringsInSwitch) {
-                    log.error(DiagnosticFlag.SOURCE_LEVEL, tree.selector.pos(), Feature.STRINGS_IN_SWITCH.error(sourceName));
-                }
             } else if (!types.isAssignable(seltype, syms.intType) &&
                        !types.isSameType(seltype, syms.voidType)) {
                 //TODO: check source level
@@ -2859,7 +2857,7 @@ public class Attr extends JCTree.Visitor {
                     JCLambda lambda = (JCLambda)tree;
                     List<Type> argtypes = List.nil();
                     for (JCVariableDecl param : lambda.params) {
-                        argtypes = param.vartype != null ?
+                        argtypes = param.vartype != null && param.vartype.type != null ?
                                 argtypes.append(param.vartype.type) :
                                 argtypes.append(syms.errType);
                     }
