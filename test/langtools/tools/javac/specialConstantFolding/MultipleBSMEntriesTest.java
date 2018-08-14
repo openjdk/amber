@@ -118,15 +118,19 @@ public class MultipleBSMEntriesTest {
         File file = new File(testClasses, MultipleBSMEntriesTest.class.getName().concat(".class"));
         ClassFile classFile = ClassFile.read(file);
         BootstrapMethods_attribute bootstrapMethods = (BootstrapMethods_attribute)classFile.getAttribute("BootstrapMethods");
-        Assert.check(bootstrapMethods.bootstrap_method_specifiers.length == 1, "there can only be a bootstrap method specifier");
 
-        // lets check now that the specifier is the one we are expecting
-        BootstrapMethods_attribute.BootstrapMethodSpecifier specifier = bootstrapMethods.bootstrap_method_specifiers[0];
-        CONSTANT_MethodHandle_info mhInfo = (CONSTANT_MethodHandle_info)classFile.constant_pool.get(specifier.bootstrap_method_ref);
-        Assert.check(mhInfo.reference_kind == ConstantPool.RefKind.REF_invokeStatic);
-        CONSTANT_Methodref_info mrInfo = (CONSTANT_Methodref_info)classFile.constant_pool.get(mhInfo.reference_index);
-        CONSTANT_NameAndType_info nameAndType = (CONSTANT_NameAndType_info)classFile.constant_pool.getNameAndTypeInfo(mrInfo.name_and_type_index);
-        Assert.check(nameAndType.getName().equals("multiplyFactory"));
-        Assert.check(nameAndType.getType().equals("(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;"));
+        // lets check now that the there is only one specifier for BSM: multiplyFactory
+        int multiplyFactorCount = 0;
+        for (BootstrapMethods_attribute.BootstrapMethodSpecifier specifier : bootstrapMethods.bootstrap_method_specifiers) {
+            CONSTANT_MethodHandle_info mhInfo = (CONSTANT_MethodHandle_info)classFile.constant_pool.get(specifier.bootstrap_method_ref);
+            if (classFile.constant_pool.get(mhInfo.reference_index) instanceof CONSTANT_Methodref_info) {
+                CONSTANT_Methodref_info mrInfo = (CONSTANT_Methodref_info)classFile.constant_pool.get(mhInfo.reference_index);
+                CONSTANT_NameAndType_info nameAndType = (CONSTANT_NameAndType_info)classFile.constant_pool.getNameAndTypeInfo(mrInfo.name_and_type_index);
+                if (nameAndType.getName().equals("multiplyFactory")) {
+                    multiplyFactorCount++;
+                }
+            }
+        }
+        Assert.check(multiplyFactorCount == 1);
     }
 }

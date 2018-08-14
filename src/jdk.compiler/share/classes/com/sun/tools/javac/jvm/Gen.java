@@ -452,7 +452,8 @@ public class Gen extends JCTree.Visitor {
                         initCode.append(init);
                         endPosTable.replaceTree(vdef, init);
                         initTAs.addAll(getAndRemoveNonFieldTAs(sym));
-                    } else if (sym.getConstValue() == null) {
+                    } else if (sym.getConstValue() == null ||
+                            (doConstantFold && !constables.skipCodeGeneration(vdef))) {
                         // Initialize class (static) variables only if
                         // they are not compile-time constants.
                         JCStatement init = make.at(vdef.pos).
