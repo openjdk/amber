@@ -641,11 +641,11 @@ public final class Integer extends Number
                     negative = true;
                     limit = Integer.MIN_VALUE;
                 } else if (firstChar != '+') {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
 
                 if (len == 1) { // Cannot have lone "+" or "-"
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 i++;
             }
@@ -655,17 +655,17 @@ public final class Integer extends Number
                 // Accumulating negatively avoids surprises near MAX_VALUE
                 int digit = Character.digit(s.charAt(i++), radix);
                 if (digit < 0 || result < multmin) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result *= radix;
                 if (result < limit + digit) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result -= digit;
             }
             return negative ? result : -result;
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -751,7 +751,7 @@ public final class Integer extends Number
             }
             return negative ? result : -result;
         } else {
-            throw NumberFormatException.forInputString("");
+            throw NumberFormatException.forInputString("", radix);
         }
     }
 
@@ -848,7 +848,7 @@ public final class Integer extends Number
                 }
             }
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -1003,7 +1003,8 @@ public final class Integer extends Number
     private static class IntegerCache {
         static final int low = -128;
         static final int high;
-        static final Integer cache[];
+        static final Integer[] cache;
+        static Integer[] archivedCache;
 
         static {
             // high value may be configured by property
@@ -1022,11 +1023,19 @@ public final class Integer extends Number
             }
             high = h;
 
-            cache = new Integer[(high - low) + 1];
-            int j = low;
-            for(int k = 0; k < cache.length; k++)
-                cache[k] = new Integer(j++);
+            // Load IntegerCache.archivedCache from archive, if possible
+            VM.initializeFromArchive(IntegerCache.class);
+            int size = (high - low) + 1;
 
+            // Use the archived cache if it exists and is large enough
+            if (archivedCache == null || size > archivedCache.length) {
+                Integer[] c = new Integer[size];
+                int j = low;
+                for(int k = 0; k < c.length; k++)
+                    c[k] = new Integer(j++);
+                archivedCache = c;
+            }
+            cache = archivedCache;
             // range [-128, 127] must be interned (JLS7 5.1.7)
             assert IntegerCache.high >= 127;
         }
