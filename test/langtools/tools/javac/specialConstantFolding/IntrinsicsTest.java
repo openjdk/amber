@@ -187,10 +187,10 @@ public class IntrinsicsTest {
 
     public void testCondyInCondy() throws Throwable {
         DirectMethodHandleDesc bsm = ConstantDescs.ofConstantBootstrap(HELPER_CLASS, "identityCondy", ConstantDescs.CR_Object, ConstantDescs.CR_Object);
-        assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm, ConstantDescs.CR_Class).withArgs(ConstantDescs.CR_String)));
-        assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm).withArgs(ConstantDescs.CR_String)));
-        assertEquals(int.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm).withArgs(ConstantDescs.CR_int)));
-        assertEquals("foo", Intrinsics.ldc(DynamicConstantDesc.of(bsm).withArgs("foo")));
+        assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm, ConstantDescs.CR_String)));
+        assertEquals(String.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm, ConstantDescs.CR_String)));
+        assertEquals(int.class, Intrinsics.ldc(DynamicConstantDesc.of(bsm, ConstantDescs.CR_int)));
+        assertEquals("foo", Intrinsics.ldc(DynamicConstantDesc.of(bsm, "foo")));
     }
 
     static class IntrinsicTestHelper {
