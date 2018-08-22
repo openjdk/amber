@@ -346,13 +346,14 @@ public abstract class DynamicConstantDesc<T>
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<T>>> describeConstable() {
-        ConstantDesc<?>[] args = new ConstantDesc<?>[bootstrapArgs.length + 5];
-        args[0] = bootstrapMethod.owner().descriptorString();
-        args[1] = bootstrapMethod.methodName();
-        args[2] = bootstrapMethod.methodType().descriptorString();
-        args[3] = constantName;
-        args[4] = constantType.descriptorString();
-        System.arraycopy(bootstrapArgs, 0, args, 5, bootstrapArgs.length);
+        ConstantDesc<?>[] args =new ConstantDesc<?>[bootstrapArgs.length +5];
+        args[0] =bootstrapMethod.owner().descriptorString();
+        args[1] =bootstrapMethod.methodName();
+        args[2] =bootstrapMethod.methodType().descriptorString();
+        args[3] =constantName;
+        args[4] =constantType.descriptorString();
+        for (int i=0; i<bootstrapArgs.length; i++)
+            args[i+5] = (ConstantDesc<?>) ((Constable)bootstrapArgs[i]).describeConstable().orElseThrow();
         return Optional.of(DynamicConstantDesc.of(BSM_DYNAMICCONSTANTDESC, ConstantDescs.DEFAULT_NAME,
                                                   CR_DynamicConstantDesc, args));
     }
