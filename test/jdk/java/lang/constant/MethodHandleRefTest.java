@@ -65,10 +65,10 @@ import static org.testng.Assert.fail;
  */
 @Test
 public class MethodHandleRefTest extends SymbolicRefTest {
-    private static ClassDesc thisClass = ClassDesc.of("MethodHandleRefTest");
-    private static ClassDesc testClass = thisClass.inner("TestClass");
-    private static ClassDesc testInterface = thisClass.inner("TestInterface");
-    private static ClassDesc testSuperclass = thisClass.inner("TestSuperclass");
+    private static ClassDesc helperHolderClass = ClassDesc.of("TestHelpers");
+    private static ClassDesc testClass = helperHolderClass.inner("TestClass");
+    private static ClassDesc testInterface = helperHolderClass.inner("TestInterface");
+    private static ClassDesc testSuperclass = helperHolderClass.inner("TestSuperclass");
 
 
     private static void assertMHEquals(MethodHandle a, MethodHandle b) {
@@ -175,49 +175,47 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         for (MethodHandleDesc r : List.of(ctorRef, staticMethodRef, staticIMethodRef, instanceMethodRef, instanceIMethodRef))
             testMethodHandleRef(r);
 
-        TestClass instance = (TestClass) ctorRef.resolveConstantDesc(LOOKUP).invokeExact();
-        TestClass instance2 = (TestClass) ctorRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact();
-        TestInterface instanceI = instance;
+        TestHelpers.TestClass instance = (TestHelpers.TestClass) ctorRef.resolveConstantDesc(LOOKUP).invokeExact();
+        TestHelpers.TestClass instance2 = (TestHelpers.TestClass) ctorRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact();
+        TestHelpers.TestInterface instanceI = instance;
 
         assertNotSame(instance, instance2);
 
         assertEquals(5, (int) staticMethodRef.resolveConstantDesc(LOOKUP).invokeExact(5));
-        assertEquals(5, (int) staticMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(5));
+        assertEquals(5, (int) staticMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(5));
         assertEquals(0, (int) staticIMethodRef.resolveConstantDesc(LOOKUP).invokeExact(5));
-        assertEquals(0, (int) staticIMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(5));
+        assertEquals(0, (int) staticIMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(5));
 
         assertEquals(5, (int) instanceMethodRef.resolveConstantDesc(LOOKUP).invokeExact(instance, 5));
-        assertEquals(5, (int) instanceMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance, 5));
+        assertEquals(5, (int) instanceMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance, 5));
         assertEquals(5, (int) instanceIMethodRef.resolveConstantDesc(LOOKUP).invokeExact(instanceI, 5));
-        assertEquals(5, (int) instanceIMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instanceI, 5));
+        assertEquals(5, (int) instanceIMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instanceI, 5));
 
         try { superMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(-1, (int) superMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance, 5));
+        assertEquals(-1, (int) superMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance, 5));
 
         try { superIMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(0, (int) superIMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance, 5));
+        assertEquals(0, (int) superIMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance, 5));
 
         try { privateMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(5, (int) privateMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance, 5));
+        assertEquals(5, (int) privateMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance, 5));
 
         try { privateIMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        try { privateIMethodRef.resolveConstantDesc(TestClass.LOOKUP); fail(); }
-        catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(0, (int) privateIMethodRef.resolveConstantDesc(TestInterface.LOOKUP).invokeExact(instanceI, 5));
+        assertEquals(0, (int) privateIMethodRef.resolveConstantDesc(TestHelpers.TestInterface.LOOKUP).invokeExact(instanceI, 5));
+        assertEquals(0, (int) privateIMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invoke(instanceI, 5));
 
         try { privateStaticMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(5, (int) privateStaticMethodRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(5));
+        assertEquals(5, (int) privateStaticMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(5));
 
         try { privateStaticIMethodRef.resolveConstantDesc(LOOKUP); fail(); }
         catch (IllegalAccessException e) { /* expected */ }
-        try { privateStaticIMethodRef.resolveConstantDesc(TestClass.LOOKUP); fail(); }
-        catch (IllegalAccessException e) { /* expected */ }
-        assertEquals(0, (int) privateStaticIMethodRef.resolveConstantDesc(TestInterface.LOOKUP).invokeExact(5));
+        assertEquals(0, (int) privateStaticIMethodRef.resolveConstantDesc(TestHelpers.TestInterface.LOOKUP).invokeExact(5));
+        assertEquals(0, (int) privateStaticIMethodRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(5));
 
         MethodHandleDesc staticSetterRef = MethodHandleDesc.ofField(STATIC_SETTER, testClass, "sf", CR_int);
         MethodHandleDesc staticGetterRef = MethodHandleDesc.ofField(STATIC_GETTER, testClass, "sf", CR_int);
@@ -228,22 +226,22 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         for (MethodHandleDesc r : List.of(staticSetterRef, staticGetterRef, staticGetterIRef, setterRef, getterRef))
             testMethodHandleRef(r);
 
-        staticSetterRef.resolveConstantDesc(LOOKUP).invokeExact(6); assertEquals(TestClass.sf, 6);
+        staticSetterRef.resolveConstantDesc(LOOKUP).invokeExact(6); assertEquals(TestHelpers.TestClass.sf, 6);
         assertEquals(6, (int) staticGetterRef.resolveConstantDesc(LOOKUP).invokeExact());
-        assertEquals(6, (int) staticGetterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact());
-        staticSetterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(7); assertEquals(TestClass.sf, 7);
+        assertEquals(6, (int) staticGetterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact());
+        staticSetterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(7); assertEquals(TestHelpers.TestClass.sf, 7);
         assertEquals(7, (int) staticGetterRef.resolveConstantDesc(LOOKUP).invokeExact());
-        assertEquals(7, (int) staticGetterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact());
+        assertEquals(7, (int) staticGetterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact());
 
         assertEquals(3, (int) staticGetterIRef.resolveConstantDesc(LOOKUP).invokeExact());
-        assertEquals(3, (int) staticGetterIRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact());
+        assertEquals(3, (int) staticGetterIRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact());
 
         setterRef.resolveConstantDesc(LOOKUP).invokeExact(instance, 6); assertEquals(instance.f, 6);
         assertEquals(6, (int) getterRef.resolveConstantDesc(LOOKUP).invokeExact(instance));
-        assertEquals(6, (int) getterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance));
-        setterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance, 7); assertEquals(instance.f, 7);
+        assertEquals(6, (int) getterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance));
+        setterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance, 7); assertEquals(instance.f, 7);
         assertEquals(7, (int) getterRef.resolveConstantDesc(LOOKUP).invokeExact(instance));
-        assertEquals(7, (int) getterRef.resolveConstantDesc(TestClass.LOOKUP).invokeExact(instance));
+        assertEquals(7, (int) getterRef.resolveConstantDesc(TestHelpers.TestClass.LOOKUP).invokeExact(instance));
     }
 
     private void assertBadArgs(Supplier<MethodHandleDesc> supplier, String s) {
@@ -262,10 +260,10 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         List<String> badSetterDescs = List.of("()V", "(I)V", "(Ljava/lang/Object;)V", "(Ljava/lang/Object;I)I", "(Ljava/lang/Object;II)V");
         List<String> badStaticSetterDescs = List.of("()V", "(II)V", "()I");
 
-        badGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(GETTER, thisClass, "x", s), s));
-        badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(SETTER, thisClass, "x", s), s));
-        badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_GETTER, thisClass, "x", s), s));
-        badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_SETTER, thisClass, "x", s), s));
+        badGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(GETTER, helperHolderClass, "x", s), s));
+        badSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(SETTER, helperHolderClass, "x", s), s));
+        badStaticGetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_GETTER, helperHolderClass, "x", s), s));
+        badStaticSetterDescs.forEach(s -> assertBadArgs(() -> MethodHandleDesc.of(STATIC_SETTER, helperHolderClass, "x", s), s));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
@@ -293,34 +291,5 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         }
 
         assertTrue(tested > 0);
-    }
-
-    private interface TestInterface {
-        public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-
-        public static final int sf = 3;
-
-        static int sm(int  x) { return 0; }
-        default int m(int x) { return 0; }
-        private int pm(int x) { return 0; }
-        private static int psm(int x) { return 0; }
-    }
-
-    private static class TestSuperclass {
-        public int m(int x) { return -1; }
-    }
-
-    private static class TestClass extends TestSuperclass implements TestInterface {
-        public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-
-        static int sf;
-        int f;
-
-        public TestClass()  {}
-
-        public static int sm(int x) { return x; }
-        public int m(int x) { return x; }
-        private static int psm(int x) { return x; }
-        private int pm(int x) { return x; }
     }
 }

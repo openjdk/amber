@@ -108,8 +108,8 @@ public class ConstantUtils {
      * @return the nominal descriptor for the dynamic constant
      */
     public static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
-                                                               ClassDesc type,
-                                                               Constable<?>... args) {
+                                                                      ClassDesc type,
+                                                                      Constable<?>... args) {
         requireNonNull(bootstrap);
         requireNonNull(type);
         requireNonNull(args);
@@ -118,8 +118,9 @@ public class ConstantUtils {
             quotedArgs[0] = bootstrap;
             for (int i=0; i<args.length; i++)
                 quotedArgs[i+1] = args[i].describeConstable().orElseThrow();
-            return Optional.of(DynamicConstantDesc.of(ConstantDescs.BSM_INVOKE, ConstantDescs.DEFAULT_NAME,
-                                                      type, quotedArgs));
+            return Optional.of(DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE,
+                                                           ConstantDescs.DEFAULT_NAME,
+                                                           type, quotedArgs));
         }
         catch (NoSuchElementException e) {
             return Optional.empty();

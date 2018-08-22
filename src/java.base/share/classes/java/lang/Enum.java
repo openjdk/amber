@@ -40,6 +40,7 @@ import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_ENUMDESC;
 import static java.lang.constant.ConstantDescs.CR_EnumDesc;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 
@@ -323,8 +324,7 @@ public abstract class Enum<E extends Enum<E>>
 
         @Override
         public Optional<? extends ConstantDesc<ConstantDesc<E>>> describeConstable() {
-            return Optional.of(DynamicConstantDesc.<ConstantDesc<E>>of(BSM_ENUMDESC, CR_EnumDesc)
-                                                  .withArgs(constantType().descriptorString(), constantName()));
+            return Optional.of(DynamicConstantDesc.of(BSM_ENUMDESC, constantType().descriptorString(), constantName()));
         }
 
         /**

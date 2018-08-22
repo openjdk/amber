@@ -61,7 +61,7 @@ public class CondyRefTest extends SymbolicRefTest {
     private final static ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
     private static<T> void testDCR(DynamicConstantDesc<T> r, T c) throws ReflectiveOperationException {
-        assertEquals(r, DynamicConstantDesc.of(r.bootstrapMethod(), r.constantName(), r.constantType(), r.bootstrapArgs()));
+        assertEquals(r, DynamicConstantDesc.ofNamed(r.bootstrapMethod(), r.constantName(), r.constantType(), r.bootstrapArgs()));
         assertEquals(r.resolveConstantDesc(LOOKUP), c);
     }
 
@@ -80,7 +80,7 @@ public class CondyRefTest extends SymbolicRefTest {
 
     public void testNullConstant() throws ReflectiveOperationException {
         DynamicConstantDesc<?> r = (DynamicConstantDesc<?>) ConstantDescs.NULL;
-        assertEquals(r, DynamicConstantDesc.of(r.bootstrapMethod(), r.constantName(), r.constantType(), r.bootstrapArgs()));
+        assertEquals(r, DynamicConstantDesc.ofNamed(r.bootstrapMethod(), r.constantName(), r.constantType(), r.bootstrapArgs()));
         assertNull(r.resolveConstantDesc(LOOKUP));
     }
 
@@ -91,7 +91,7 @@ public class CondyRefTest extends SymbolicRefTest {
     public void testDynamicConstant() throws ReflectiveOperationException {
         DirectMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyRefTest"), "concatBSM",
                                                                             CR_String, CR_String, CR_String);
-        DynamicConstantDesc<String> r = DynamicConstantDesc.<String>of(bsmRef).withArgs("foo", "bar");
+        DynamicConstantDesc<String> r = DynamicConstantDesc.of(bsmRef, "foo", "bar");
         testDCR(r, "foobar");
     }
 
@@ -104,10 +104,10 @@ public class CondyRefTest extends SymbolicRefTest {
                                            format.resolveConstantDesc(LOOKUP), "%s%s", "moo", "cow");
         assertEquals(s, "moocow");
 
-        DynamicConstantDesc<String> ref = DynamicConstantDesc.<String>of(invoker).withArgs(format, "%s%s", "moo", "cow");
+        DynamicConstantDesc<String> ref = DynamicConstantDesc.of(invoker, format, "%s%s", "moo", "cow");
         testDCR(ref, "moocow");
 
-        DynamicConstantDesc<String> ref2 = DynamicConstantDesc.<String>of(invoker).withArgs(format, "%s%s", ref, "cow");
+        DynamicConstantDesc<String> ref2 = DynamicConstantDesc.of(invoker, format, "%s%s", ref, "cow");
         testDCR(ref2, "moocowcow");
     }
 
@@ -186,7 +186,7 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testLifting() {
-        DynamicConstantDesc<Object> unliftedNull = DynamicConstantDesc.of(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS);
+        DynamicConstantDesc<Object> unliftedNull = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS);
         assertEquals(ConstantDescs.NULL, unliftedNull);
         assertNotSame(ConstantDescs.NULL, unliftedNull);
         assertSame(ConstantDescs.NULL, DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "_", CR_Object, EMPTY_ARGS));
@@ -194,23 +194,23 @@ public class CondyRefTest extends SymbolicRefTest {
         assertSame(ConstantDescs.NULL, DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_NULL_CONSTANT, "wahoo", CR_Object, EMPTY_ARGS));
 
         assertLifted(CR_int,
-                     DynamicConstantDesc.of(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS),
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS));
 
         ClassDesc enumClass = ClassDesc.of("CondyRefTest").inner("MyEnum");
         assertLifted(EnumDesc.of(enumClass, "A"),
-                     DynamicConstantDesc.of(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS),
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS),
                      DynamicConstantDesc.<MyEnum>ofCanonical(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS));
 
         ClassDesc testClass = ClassDesc.of("CondyRefTest").inner("MyClass");
         assertLifted(VarHandleDesc.ofStaticField(testClass, "sf", CR_int),
-                     DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CR_int }),
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CR_int }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CR_int }));
         assertLifted(VarHandleDesc.ofField(testClass, "f", CR_int),
-                     DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantDesc<?>[] {testClass, "f", CR_int }),
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantDesc<?>[] {testClass, "f", CR_int }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CR_VarHandle, new ConstantDesc<?>[] {testClass, "f", CR_int }));
         assertLifted(VarHandleDesc.ofArray(CR_int.arrayType()),
-                     DynamicConstantDesc.of(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.arrayType() }),
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.arrayType() }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CR_VarHandle, new ConstantDesc<?>[] {CR_int.arrayType() }));
     }
 

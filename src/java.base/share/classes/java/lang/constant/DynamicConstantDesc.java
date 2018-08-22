@@ -41,6 +41,8 @@ import static java.lang.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
 import static java.lang.constant.ConstantDescs.CR_Class;
 import static java.lang.constant.ConstantDescs.CR_DynamicConstantDesc;
 import static java.lang.constant.ConstantDescs.CR_VarHandle;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
+import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -105,21 +107,6 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant whose bootstrap, invocation
-     * name, and invocation type are the same as this one, but with the specified
-     * bootstrap arguments.
-     *
-     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
-     *                      to the bootstrap, that would appear in the
-     *                      {@code BootstrapMethods} attribute
-     * @return the nominal descriptor
-     * @throws NullPointerException if any argument is null
-     */
-    public DynamicConstantDesc<T> withArgs(ConstantDesc<?>... bootstrapArgs) {
-        return DynamicConstantDesc.of(bootstrapMethod, constantName, constantType, bootstrapArgs);
-    }
-
-    /**
      * Return a nominal descriptor for a dynamic constant, transforming it into
      * a more specific type if the constant bootstrap is a well-known one and a
      * more specific nominal descriptor type (e.g., ClassDesc) is available.
@@ -131,7 +118,7 @@ public abstract class DynamicConstantDesc<T>
      *
      * <p>Bytecode-reading APIs that process the constant pool and wish to expose
      * entries as {@link ConstantDesc} to their callers should generally use this
-     * method in preference to {@link #of(DirectMethodHandleDesc, String, ClassDesc, ConstantDesc[])}
+     * method in preference to {@link #ofNamed(DirectMethodHandleDesc, String, ClassDesc, ConstantDesc...)}
      * because this may result in a more specific type that can be provided to
      * callers.
      *
@@ -157,7 +144,7 @@ public abstract class DynamicConstantDesc<T>
                                                  String constantName,
                                                  ClassDesc constantType,
                                                  ConstantDesc<?>[] bootstrapArgs) {
-        return DynamicConstantDesc.<T>of(bootstrapMethod, constantName, constantType, bootstrapArgs)
+        return DynamicConstantDesc.<T>ofNamed(bootstrapMethod, constantName, constantType, bootstrapArgs)
                 .tryCanonicalize();
     }
 
@@ -182,26 +169,25 @@ public abstract class DynamicConstantDesc<T>
      * format
      * @jvms 4.2.2 Unqualified Names
      */
-    public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
-                                               String constantName,
-                                               ClassDesc constantType,
-                                               ConstantDesc<?>[] bootstrapArgs) {
-        return new DynamicConstantDesc<>(bootstrapMethod, constantName, constantType, bootstrapArgs) {};
+
+    public static<T> DynamicConstantDesc<T> ofNamed(DirectMethodHandleDesc bootstrapMethod,
+                                                    String constantName,
+                                                    ClassDesc constantType,
+                                                    ConstantDesc<?>... bootstrapArgs) {
+        return new AnonymousDynamicConstantDesc<>(bootstrapMethod, constantName, constantType, bootstrapArgs);
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant whose bootstrap has
-     * no static arguments.
+     * Return a nominal descriptor for a dynamic constant whose name parameter
+     * is {@link ConstantDescs#DEFAULT_NAME}, and whose type parameter is always
+     * the same as the bootstrap method return type.
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
-     * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
-     *                     that would appear in the {@code NameAndType} operand
-     *                     of the {@code LDC} for this constant
+     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
+     *                      to the bootstrap, that would appear in the
+     *                      {@code BootstrapMethods} attribute
      * @return the nominal descriptor
      * @throws NullPointerException if any argument is null
      * @throws IllegalArgumentException if the {@code name} has the incorrect
@@ -209,50 +195,8 @@ public abstract class DynamicConstantDesc<T>
      * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
-                                               String constantName,
-                                               ClassDesc constantType) {
-        return DynamicConstantDesc.of(bootstrapMethod, constantName, constantType, ConstantUtils.EMPTY_CONSTANTDESC);
-    }
-
-    /**
-     * Return a nominal descriptor for a dynamic constant whose bootstrap has
-     * no static arguments, and for which the name parameter
-     * is {@link ConstantDescs#DEFAULT_NAME}.
-     *
-     * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
-     *                        bootstrap method for the constant
-     * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
-     *                     that would appear in the {@code NameAndType} operand
-     *                     of the {@code LDC} for this constant
-     * @return the nominal descriptor
-     * @throws NullPointerException if any argument is null
-     */
-    public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
-                                               ClassDesc constantType) {
-        return of(bootstrapMethod, ConstantDescs.DEFAULT_NAME, constantType);
-    }
-
-    /**
-     * Return a nominal descriptor for a dynamic constant whose bootstrap has
-     * no static arguments, and whose type parameter is always the same as the
-     * bootstrap method return type.
-     *
-     * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
-     *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
-     * @return the nominal descriptor
-     * @throws NullPointerException if any argument is null
-     * @throws IllegalArgumentException if the {@code name} has the incorrect
-     * format
-     * @jvms 4.2.2 Unqualified Names
-     */
-    public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
-                                               String constantName) {
-        return of(bootstrapMethod, constantName, bootstrapMethod.methodType().returnType());
+                                               ConstantDesc<?>... bootstrapArgs) {
+        return ofNamed(bootstrapMethod, DEFAULT_NAME, bootstrapMethod.methodType().returnType(), bootstrapArgs);
     }
 
     /**
@@ -269,7 +213,7 @@ public abstract class DynamicConstantDesc<T>
      * format
      */
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod) {
-        return of(bootstrapMethod, ConstantDescs.DEFAULT_NAME);
+        return of(bootstrapMethod, EMPTY_CONSTANTDESC);
     }
 
     /**
@@ -346,16 +290,15 @@ public abstract class DynamicConstantDesc<T>
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<T>>> describeConstable() {
-        ConstantDesc<?>[] args =new ConstantDesc<?>[bootstrapArgs.length +5];
-        args[0] =bootstrapMethod.owner().descriptorString();
-        args[1] =bootstrapMethod.methodName();
-        args[2] =bootstrapMethod.methodType().descriptorString();
-        args[3] =constantName;
-        args[4] =constantType.descriptorString();
+        ConstantDesc<?>[] args =new ConstantDesc<?>[bootstrapArgs.length+5];
+        args[0] = bootstrapMethod.owner().descriptorString();
+        args[1] = bootstrapMethod.methodName();
+        args[2] = bootstrapMethod.methodType().descriptorString();
+        args[3] = constantName;
+        args[4] = constantType.descriptorString();
         for (int i=0; i<bootstrapArgs.length; i++)
             args[i+5] = (ConstantDesc<?>) ((Constable)bootstrapArgs[i]).describeConstable().orElseThrow();
-        return Optional.of(DynamicConstantDesc.of(BSM_DYNAMICCONSTANTDESC, ConstantDescs.DEFAULT_NAME,
-                                                  CR_DynamicConstantDesc, args));
+        return Optional.of(DynamicConstantDesc.of(BSM_DYNAMICCONSTANTDESC, args));
     }
 
     /**
@@ -385,10 +328,10 @@ public abstract class DynamicConstantDesc<T>
                                                            String bsmOwner, String bsmName, String bsmDesc,
                                                            String constantName, String constantType,
                                                            ConstantDesc<?>... args) {
-        return DynamicConstantDesc.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC,
-                                                          ClassDesc.ofDescriptor(bsmOwner), bsmName,
-                                                          MethodTypeDesc.ofDescriptor(bsmDesc)),
-                                      constantName, ClassDesc.ofDescriptor(constantType), args);
+        return DynamicConstantDesc.ofNamed(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC,
+                                                               ClassDesc.ofDescriptor(bsmOwner), bsmName,
+                                                               MethodTypeDesc.ofDescriptor(bsmDesc)),
+                                           constantName, ClassDesc.ofDescriptor(constantType), args);
 
     }
 
@@ -481,5 +424,11 @@ public abstract class DynamicConstantDesc<T>
                              constantName.equals(ConstantDescs.DEFAULT_NAME) ? "" : constantName + "/",
                              Stream.of(bootstrapArgs).map(Object::toString).collect(joining(",")),
                              constantType.displayName());
+    }
+
+    private static class AnonymousDynamicConstantDesc<T> extends DynamicConstantDesc<T> {
+        AnonymousDynamicConstantDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc<?>... bootstrapArgs) {
+            super(bootstrapMethod, constantName, constantType, bootstrapArgs);
+        }
     }
 }
