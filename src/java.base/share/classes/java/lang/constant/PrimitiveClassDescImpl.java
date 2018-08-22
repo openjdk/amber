@@ -73,8 +73,7 @@ final class PrimitiveClassDescImpl
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, DEFAULT_NAME, CR_ClassDesc,
-                                                  new ConstantDesc<?>[] { descriptor }));
+        return Optional.of(DynamicConstantDesc.of(BSM_CLASSDESC, descriptor));
     }
 
     @Override

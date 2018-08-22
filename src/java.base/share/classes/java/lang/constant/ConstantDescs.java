@@ -303,8 +303,8 @@ public final class ConstantDescs {
     /** Nominal descriptor representing the constant {@code null} */
     @Foldable
     public static final ConstantDesc<?> NULL
-            = DynamicConstantDesc.of(ConstantDescs.BSM_NULL_CONSTANT,
-                                     ConstantDescs.CR_Object);
+            = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT,
+                                          DEFAULT_NAME, ConstantDescs.CR_Object);
 
     // Used by XxxDesc classes, but need to be here to avoid bootstrap cycles
     static final DirectMethodHandleDesc MHR_METHODTYPEDESC_FACTORY

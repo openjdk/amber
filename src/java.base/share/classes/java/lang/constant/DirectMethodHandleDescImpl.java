@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_METHODHANDLEDESC;
 import static java.lang.constant.ConstantDescs.CR_DirectMethodHandleDesc;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.lang.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
@@ -161,8 +162,11 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.<ConstantDesc<MethodHandle>>of(BSM_METHODHANDLEDESC, CR_DirectMethodHandleDesc)
-                                              .withArgs(kind.toString(), owner.descriptorString(), name, type.descriptorString()));
+        return Optional.of(DynamicConstantDesc.of(BSM_METHODHANDLEDESC,
+                                                  kind.toString(),
+                                                  owner.descriptorString(),
+                                                  name,
+                                                  type.descriptorString()));
     }
 
     @Override
