@@ -51,7 +51,7 @@ import static org.testng.Assert.assertTrue;
 
 /**
  * @test
- * @compile CondyRefTest.java
+ * @compile -XDfolding=false CondyRefTest.java
  * @run testng CondyRefTest
  * @summary unit tests for java.lang.constant.CondyRefTest
  */

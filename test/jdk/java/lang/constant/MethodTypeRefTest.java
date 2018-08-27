@@ -42,7 +42,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile MethodTypeRefTest.java
+ * @compile -XDfolding=false MethodTypeRefTest.java
  * @run testng MethodTypeRefTest
  * @summary unit tests for java.lang.constant.MethodTypeRef
  */

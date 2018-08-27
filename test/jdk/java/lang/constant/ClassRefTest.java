@@ -45,7 +45,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile ClassRefTest.java
+ * @compile -XDfolding=false ClassRefTest.java
  * @run testng ClassRefTest
  * @summary unit tests for java.lang.constant.ClassDesc
  */

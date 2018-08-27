@@ -36,7 +36,7 @@ import static org.testng.Assert.assertTrue;
 
 /**
  * @test
- * @compile TypeDescriptorTest.java
+ * @compile -XDfolding=false TypeDescriptorTest.java
  * @run testng TypeDescriptorTest
  * @summary unit tests for implementations of java.lang.invoke.TypeDescriptor
  */
