@@ -42,7 +42,7 @@ import static org.testng.Assert.assertNotEquals;
 
 /**
  * @test
- * @compile -XDfolding=false IndyRefTest.java
+ * @compile IndyRefTest.java
  * @run testng IndyRefTest
  * @summary unit tests for java.lang.constant.IndyRefTest
  */

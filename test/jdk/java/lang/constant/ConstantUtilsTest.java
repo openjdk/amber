@@ -33,7 +33,7 @@ import static org.testng.Assert.*;
 
 /**
  * @test
- * @compile -XDfolding=false ConstantUtilsTest.java
+ * @compile ConstantUtilsTest.java
  * @run testng ConstantUtilsTest
  * @summary unit tests for methods of java.lang.constant.ConstantUtils that are not covered by other unit tests
  */
