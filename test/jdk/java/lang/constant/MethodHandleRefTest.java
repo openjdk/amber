@@ -59,7 +59,7 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile -XDfolding=false MethodHandleRefTest.java
+ * @compile MethodHandleRefTest.java
  * @run testng MethodHandleRefTest
  * @summary unit tests for java.lang.constant.MethodHandleDesc
  */
