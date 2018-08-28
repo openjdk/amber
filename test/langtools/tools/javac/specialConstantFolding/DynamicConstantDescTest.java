@@ -43,7 +43,7 @@ public class DynamicConstantDescTest {
     );
 
     public static void main(String[] args) throws Throwable {
-        ConstantDesc<String> d = DynamicConstantDesc.<String>of(BSM_INVOKE).withArgs(MHR_CONCAT, "Hello, ", "world!");
+        ConstantDesc<String> d = DynamicConstantDesc.<String>of(BSM_INVOKE, MHR_CONCAT, "Hello, ", "world!");
         Assert.check(d.toString().equals("DynamicConstantDesc[ConstantBootstraps::invoke(MethodHandleDesc[VIRTUAL/String::concat(String)String],Hello, ,world!)Object]"));
     }
 }
