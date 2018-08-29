@@ -28,7 +28,7 @@ package com.sun.source.tree;
 import java.util.List;
 
 /**
- * A tree node for a {@code case} in a {@code switch} statement.
+ * A tree node for a {@code case} in a {@code switch} statement or expression.
  *
  * For example:
  * <pre>
@@ -50,6 +50,7 @@ public interface CaseTree extends Tree {
      * Returns the expression for the case, or
      * {@code null} if this is the default case
      * or this case covers a non-constant pattern.
+     * If this case has multiple patterns, returns the first label.
      * @return the expression for the case, or null
      * @deprecated use {@link #getPattern()}
      */
@@ -57,15 +58,90 @@ public interface CaseTree extends Tree {
     ExpressionTree getExpression();
 
     /**
-     * Returns the pattern for the case, or
-     * {@code null} if this is the default case.
-     * @return the pattern for the case, or null
+     * Returns the labels for this case.
+     * For default case, returns an empty list.
+     *
+     * @return labels for this case
+     * @since 12
+     *
+     * @deprecated This method is modeling a case with multiple labels,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
-    PatternTree getPattern();
+    @Deprecated(forRemoval=true, since="12")
+    List<? extends ExpressionTree> getExpressions();
 
     /**
-     * Returns the statements labeled by the case.
-     * @return the statements labeled by the case
+     * Returns the patterns for this case.
+     * For default case, returns an empty list.
+     * @return the patterns for this case
+     */
+    List<? extends PatternTree> getPatterns();
+
+    /**
+     * For case with kind {@linkplain CaseKind#STATEMENT},
+     * returns the statements labeled by the case.
+     * Returns {@code null} for case with kind
+     * {@linkplain CaseKind#RULE}.
+     * @return the statements labeled by the case or null
      */
     List<? extends StatementTree> getStatements();
+
+    /**
+     * For case with kind {@linkplain CaseKind#RULE},
+     * returns the statement or expression after the arrow.
+     * Returns {@code null} for case with kind
+     * {@linkplain CaseKind#STATEMENT}.
+     *
+     * @return case value or null
+     * @since 12
+     *
+     * @deprecated This method is modeling a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     */
+    @Deprecated(forRemoval=true, since="12")
+    public default Tree getBody() {
+        return null;
+    }
+
+    /**
+     * Returns the kind of this case.
+     *
+     * @return the kind of this case
+     * @since 12
+     *
+     * @deprecated This method is used to model a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     */
+    @Deprecated(forRemoval=true, since="12")
+    public default CaseKind getCaseKind() {
+        return CaseKind.STATEMENT;
+    }
+
+    /**
+     * The syntatic form of this case:
+     * <ul>
+     *     <li>STATEMENT: {@code case <expression>: <statements>}</li>
+     *     <li>RULE: {@code case <expression> -> <expression>/<statement>}</li>
+     * </ul>
+     *
+     * @since 12
+     *
+     * @deprecated This enum is used to model a rule case,
+     * which is part of a preview feature and may be removed
+     * if the preview feature is removed.
+     */
+    @Deprecated(forRemoval=true, since="12")
+    public enum CaseKind {
+        /**
+         * Case is in the form: {@code case <expression>: <statements>}.
+         */
+        STATEMENT,
+        /**
+         * Case is in the form: {@code case <expression> -> <expression>}.
+         */
+        RULE;
+    }
 }

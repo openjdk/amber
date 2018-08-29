@@ -48,10 +48,12 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.OpensDirective;
 import com.sun.tools.javac.code.Type.ModuleType;
+import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
 
 /**
  * Root class for abstract syntax tree nodes. It provides definitions
@@ -150,7 +152,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         SWITCH,
 
-        /** Case parts in switch statements, of type Case.
+        /** Switch expression statements, of type Switch.
+         */
+        SWITCH_EXPRESSION,
+
+        /** Case parts in switch statements/expressions, of type Case.
          */
         CASE,
 
@@ -1259,34 +1265,60 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A "case  :" of a switch.
      */
     public static class JCCase extends JCStatement implements CaseTree {
-        public JCPattern pat;
+        //as CaseKind is deprecated for removal (as it is part of a preview feature),
+        //using indirection through these fields to avoid unnecessary @SuppressWarnings:
+        @SuppressWarnings("removal")
+        public static final CaseKind STATEMENT = CaseKind.STATEMENT;
+        @SuppressWarnings("removal")
+        public static final CaseKind RULE = CaseKind.RULE;
+        @SuppressWarnings("removal")
+        public final CaseKind caseKind;
+        public List<JCPattern> pats;
         public List<JCStatement> stats;
         public boolean alive;
-        protected JCCase(JCPattern pat, List<JCStatement> stats) {
-            this.pat = pat;
+        public JCTree body;
+        public boolean completesNormally;
+        protected JCCase(@SuppressWarnings("removal") CaseKind caseKind, List<JCPattern> pats,
+                         List<JCStatement> stats, JCTree body) {
+            Assert.checkNonNull(pats);
+            Assert.check(pats.isEmpty() || pats.head != null);
+            this.caseKind = caseKind;
+            this.pats = pats;
             this.stats = stats;
+            this.body = body;
         }
         @Override
         public void accept(Visitor v) { v.visitCase(this); }
 
-        @DefinedBy(Api.COMPILER_TREE)
+        @Override @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.CASE; }
         @DefinedBy(Api.COMPILER_TREE)
         @Deprecated
         public JCExpression getExpression() {
-            return constExpression();
+            return constExpressions().stream().findFirst().orElse(null);
         }
-        public JCExpression constExpression() {
-            if (pat == null || !pat.hasTag(LITERALPATTERN)) {
-                return null;
-            }
-            JCLiteralPattern cpat = (JCLiteralPattern) pat;
-            return cpat.value;
+        public List<JCExpression> constExpressions() {
+            return pats.stream()
+                       .map(pat -> pat.hasTag(LITERALPATTERN) ? ((JCLiteralPattern) pat).value : null)
+                       .collect(List.collector());
         }
-        @DefinedBy(Api.COMPILER_TREE)
-        public JCPattern getPattern() { return pat; }
-        @DefinedBy(Api.COMPILER_TREE)
-        public List<JCStatement> getStatements() { return stats; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        @SuppressWarnings("removal")
+        public List<JCExpression> getExpressions() { return constExpressions(); }
+        public List<JCPattern> getPatterns() { return pats; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        @SuppressWarnings("removal")
+        public List<JCStatement> getStatements() {
+            return caseKind == CaseKind.STATEMENT ? stats : null;
+        }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        @SuppressWarnings("removal")
+        public JCTree getBody() { return body; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        @SuppressWarnings("removal")
+        public CaseKind getCaseKind() {
+            return caseKind;
+        }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
             return v.visitCase(this, d);
@@ -1298,6 +1330,36 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     }
 
 
+
+    /**
+     * A "switch ( ) { }" construction.
+     */
+    @SuppressWarnings("removal")
+    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
+        public JCExpression selector;
+        public List<JCCase> cases;
+        protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
+            this.selector = selector;
+            this.cases = cases;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitSwitchExpression(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.SWITCH_EXPRESSION; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getExpression() { return selector; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public List<JCCase> getCases() { return cases; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitSwitchExpression(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return SWITCH_EXPRESSION;
+        }
+    }
 
     /**
      * A synchronized block.
@@ -1520,19 +1582,27 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A break from a loop or switch.
      */
     public static class JCBreak extends JCStatement implements BreakTree {
-        public Name label;
+        public JCExpression value;
         public JCTree target;
-        protected JCBreak(Name label, JCTree target) {
-            this.label = label;
+        protected JCBreak(JCExpression value, JCTree target) {
+            this.value = value;
             this.target = target;
         }
         @Override
         public void accept(Visitor v) { v.visitBreak(this); }
+        public boolean isValueBreak() {
+            return target != null && target.hasTag(SWITCH_EXPRESSION);
+        }
 
         @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.BREAK; }
         @DefinedBy(Api.COMPILER_TREE)
-        public Name getLabel() { return label; }
+        public Name getLabel() {
+            return value != null && value.getKind() == Kind.IDENTIFIER ? ((JCIdent) value).getName() : null;
+        }
+        @DefinedBy(Api.COMPILER_TREE)
+        @SuppressWarnings("removal")
+        public JCExpression getValue() { return value; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R,D> R accept(TreeVisitor<R,D> v, D d) {
             return v.visitBreak(this, d);
@@ -2133,6 +2203,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      */
     public static abstract class JCPattern extends JCTree
             implements PatternTree {
+        public JCExpression constExpression() {
+            return null;
+        }        
     }
 
     public static class JCBindingPattern extends JCPattern
@@ -2221,6 +2294,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return LITERALPATTERN;
         }
+
+        @Override
+        public JCExpression constExpression() {
+            return value;
+        }
+
         public enum LiteralPatternKind {
             CONSTANTEXPRESSIONORNULL,
             TYPE
@@ -3099,9 +3178,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     /** (let int x = 3; in x+2) */
     public static class LetExpr extends JCExpression {
-        public List<JCVariableDecl> defs;
+        public List<JCStatement> defs;
         public JCExpression expr;
-        protected LetExpr(List<JCVariableDecl> defs, JCExpression expr) {
+        protected LetExpr(List<JCStatement> defs, JCExpression expr) {
             this.defs = defs;
             this.expr = expr;
         }
@@ -3159,7 +3238,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCEnhancedForLoop ForeachLoop(JCVariableDecl var, JCExpression expr, JCStatement body);
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
-        JCCase Case(JCPattern pat, List<JCStatement> stats);
+        JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
+        JCCase Case(@SuppressWarnings("removal") CaseKind caseKind, List<JCPattern> pat,
+                    List<JCStatement> stats, JCTree body);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);
         JCTry Try(List<JCTree> resources,
@@ -3172,7 +3253,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                                 JCExpression elsepart);
         JCIf If(JCExpression cond, JCStatement thenpart, JCStatement elsepart);
         JCExpressionStatement Exec(JCExpression expr);
-        JCBreak Break(Name label);
+        JCBreak Break(JCExpression value);
         JCContinue Continue(Name label);
         JCReturn Return(JCExpression expr);
         JCThrow Throw(JCExpression expr);
@@ -3217,7 +3298,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCProvides Provides(JCExpression serviceName, List<JCExpression> implNames);
         JCRequires Requires(boolean isTransitive, boolean isStaticPhase, JCExpression qualId);
         JCUses Uses(JCExpression qualId);
-        LetExpr LetExpr(List<JCVariableDecl> defs, JCExpression expr);
+        LetExpr LetExpr(List<JCStatement> defs, JCExpression expr);
     }
 
     /** A generic visitor class for trees.
@@ -3238,6 +3319,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitLabelled(JCLabeledStatement that)   { visitTree(that); }
         public void visitSwitch(JCSwitch that)               { visitTree(that); }
         public void visitCase(JCCase that)                   { visitTree(that); }
+        public void visitSwitchExpression(JCSwitchExpression that)               { visitTree(that); }
         public void visitSynchronized(JCSynchronized that)   { visitTree(that); }
         public void visitTry(JCTry that)                     { visitTree(that); }
         public void visitCatch(JCCatch that)                 { visitTree(that); }

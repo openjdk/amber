@@ -28,6 +28,8 @@
 package com.sun.tools.javac.comp;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.tools.javac.code.*;
@@ -212,7 +214,7 @@ public class Flow {
 
     public void analyzeTree(Env<AttrContext> env, TreeMaker make) {
         new AliveAnalyzer().analyzeTree(env, make);
-        new AssignAnalyzer().analyzeTree(env);
+        new AssignAnalyzer().analyzeTree(env, make);
         new FlowAnalyzer().analyzeTree(env, make);
         new CaptureAnalyzer().analyzeTree(env, make);
     }
@@ -245,7 +247,7 @@ public class Flow {
         //related errors, which will allow for more errors to be detected
         Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
         try {
-            new LambdaAssignAnalyzer(env).analyzeTree(env, that);
+            new LambdaAssignAnalyzer(env).analyzeTree(env, that, make);
             LambdaFlowAnalyzer flowAnalyzer = new LambdaFlowAnalyzer();
             flowAnalyzer.analyzeTree(env, that, make);
             return flowAnalyzer.inferredThrownTypes;
@@ -414,6 +416,12 @@ public class Flow {
         public void visitPackageDef(JCPackageDecl tree) {
             // Do nothing for PackageDecl
         }
+
+        protected void scanSyntheticBreak(TreeMaker make, JCTree swtch) {
+            JCBreak brk = make.at(Position.NOPOS).Break(null);
+            brk.target = swtch;
+            scan(brk);
+        }
     }
 
     /**
@@ -527,7 +535,7 @@ public class Flow {
                 while (exits.nonEmpty()) {
                     PendingExit exit = exits.head;
                     exits = exits.tail;
-                    Assert.check(exit.tree.hasTag(RETURN));
+                    Assert.check(exit.tree.hasTag(RETURN), () -> exit.tree.toString());
                 }
             } finally {
                 lint = lintPrev;
@@ -622,14 +630,20 @@ public class Flow {
                 boolean hasDefault = false;
                 for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                     JCCase c = l.head;
-                    if (patternDominated(tree.cases, c, tree.selector.type)) {
-                        log.error(c, c.pat != null ? Errors.PatternDominated : Errors.UnreachableStmt);
-                    }
-                    alive = true;
-                    if (c.pat != null)
-                        scan(c.pat);
-                    else
+                    if (c.pats.nonEmpty()) {
+                        for (JCPattern pat : c.pats) {
+                            if (patternDominated(tree.cases, pat, tree.selector.type)) {
+                                log.error(c, Errors.PatternDominated);
+                            }
+                            alive = true;
+                            scan(pat);
+                        }
+                    } else {
+                        if (patternDominated(tree.cases, null, tree.selector.type)) {
+                            log.error(c, Errors.UnreachableStmt);
+                        }
                         hasDefault = true;
+                    }
                     scanStats(c.stats);
                     aliveInAnyArm |= alive;
                 }
@@ -637,38 +651,41 @@ public class Flow {
                 alive |= resolveBreaks(tree, prevPendingExits);
             }
             //where:
-                private boolean patternDominated(List<JCCase> clauses, JCCase aClause, Type selectorType) {
+                private boolean patternDominated(List<JCCase> clauses, JCPattern givenPattern, Type selectorType) {
                     // TODO: This needs to evolve as we add more support for other pattern kinds.
                     boolean assignableCaseFound = false;
-                    for (List<JCCase> l = clauses; l.nonEmpty(); l = l.tail) {
+                    OUTTER: for (List<JCCase> l = clauses; l.nonEmpty(); l = l.tail) {
                         JCCase c = l.head;
-                        if (c == aClause)
-                            break;
-                        if (c.pat == null) {
-                            // default clause must be the last
-                            return l.nonEmpty();
-                        } else {
-                            switch (c.pat.getTag()) {
+                        if (c.pats.isEmpty()) {
+                            if (givenPattern == null) {
+                                break ;
+                            } else {
+                                // default clause must be the last
+                                return l.nonEmpty();
+                            }
+                        }
+                        for (JCPattern pat : c.pats) {
+                            switch (pat.getTag()) {
                                 case BINDINGPATTERN: {
-                                    JCBindingPattern vpatt = (JCBindingPattern)c.pat;
+                                    JCBindingPattern vpatt = (JCBindingPattern)pat;
                                     if (vpatt.vartype == null) {
                                         assignableCaseFound = true;
-                                        if (aClause.pat != null)
+                                        if (givenPattern != null)
                                             return true;
                                     } else {
                                         if (types.isAssignable(selectorType, vpatt.type))
                                             assignableCaseFound = true;
-                                        if (aClause.pat != null) {
-                                            switch (aClause.pat.getTag()) {
+                                        if (givenPattern != null) {
+                                            switch (givenPattern.getTag()) {
                                                 case BINDINGPATTERN:
-                                                    JCBindingPattern currentPattern = (JCBindingPattern)aClause.pat;
+                                                    JCBindingPattern currentPattern = (JCBindingPattern)givenPattern;
                                                     if (currentPattern.vartype != null) {
                                                         if (types.isAssignable(types.erasure(currentPattern.vartype.type), types.erasure(vpatt.type)))
                                                             return true;
                                                     }
                                                     break;
                                                 case LITERALPATTERN:
-                                                    JCLiteralPattern literalPattern = (JCLiteralPattern) aClause.pat;
+                                                    JCLiteralPattern literalPattern = (JCLiteralPattern) givenPattern;
                                                     if (literalPattern.type.constValue()==null) {
                                                         return false; // null pattern is not dominated by a type test pattern
                                                     } else if (types.isAssignable(literalPattern.type, vpatt.type)) {
@@ -690,7 +707,7 @@ public class Flow {
                             }
                         }
                     }
-                    return aClause.pat != null ? assignableCaseFound : false;
+                    return givenPattern != null ? assignableCaseFound : false;
                 }
             private void visitLegacySwitch(JCSwitch tree) {
                 ListBuffer<PendingExit> prevPendingExits = pendingExits;
@@ -700,11 +717,20 @@ public class Flow {
                 for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                     alive = true;
                     JCCase c = l.head;
-                    if (c.pat == null)
+                    if (c.pats.isEmpty())
                         hasDefault = true;
-                    else
-                        scan(c.constExpression());
+                    else {
+                        for (JCPattern pat : c.pats) {
+                            scan(pat);
+                        }
+                    }
                     scanStats(c.stats);
+                    c.completesNormally = alive;
+                    if (alive && c.caseKind == JCCase.RULE) {
+                        System.err.println("synthetic break: " + tree);
+                        scanSyntheticBreak(make, tree);
+                        alive = false;
+                    }
                     // Warn about fall-through if lint switch fallthrough enabled.
                     if (alive &&
                         lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
@@ -718,6 +744,47 @@ public class Flow {
                 }
                 alive |= resolveBreaks(tree, prevPendingExits);
             }
+
+        @Override
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            ListBuffer<PendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+            scan(tree.selector);
+            Set<Object> constants = null;
+            if ((tree.selector.type.tsym.flags() & ENUM) != 0) {
+                constants = new HashSet<>();
+                for (Symbol s : tree.selector.type.tsym.members().getSymbols(s -> (s.flags() & ENUM) != 0)) {
+                    constants.add(s.name);
+                }
+            }
+            boolean hasDefault = false;
+            boolean prevAlive = alive;
+            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                alive = true;
+                JCCase c = l.head;
+                if (c.pats.isEmpty())
+                    hasDefault = true;
+                else {
+                    for (JCPattern pat : c.pats) {
+                        scan(pat);
+                        if (constants != null && pat.hasTag(LITERALPATTERN)) {
+                            JCExpression lit = ((JCLiteralPattern) pat).value;
+                            if (lit.hasTag(IDENT))
+                                constants.remove(((JCIdent) lit).name);
+                            if (lit.type != null)
+                                constants.remove(lit.type.constValue());
+                        }
+                    }
+                }
+                scanStats(c.stats);
+                c.completesNormally = alive;
+            }
+            if ((constants == null || !constants.isEmpty()) && !hasDefault) {
+                log.error(tree, Errors.NotExhaustive);
+            }
+            alive = prevAlive;
+            alive |= resolveBreaks(tree, prevPendingExits);
+        }
 
         public void visitTry(JCTry tree) {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
@@ -784,6 +851,8 @@ public class Flow {
         }
 
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new PendingExit(tree));
         }
 
@@ -1147,14 +1216,21 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        @Override
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        private void handleSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
             ListBuffer<FlowPendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
-            scan(tree.selector);
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+            scan(selector);
+            for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
-                if (c.pat != null) {
-                    scan(c.pat);
-                }
+                scan(c.pats);
                 scan(c.stats);
             }
             resolveBreaks(tree, prevPendingExits);
@@ -1298,6 +1374,8 @@ public class Flow {
             }
 
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new FlowPendingExit(tree, null));
         }
 
@@ -2225,27 +2303,40 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        public void visitSwitchExpression(JCSwitchExpression tree) {
+            handleSwitch(tree, tree.selector, tree.cases);
+        }
+
+        private void handleSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
             ListBuffer<AssignPendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             int nextadrPrev = nextadr;
-            scanExpr(tree.selector);
+            scanExpr(selector);
             final Bits initsSwitch = new Bits(inits);
             final Bits uninitsSwitch = new Bits(uninits);
             boolean hasDefault = false;
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+            for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 inits.assign(initsSwitch);
                 uninits.assign(uninits.andSet(uninitsSwitch));
                 JCCase c = l.head;
-                if (c.pat == null) {
+                if (c.pats.isEmpty()) {
                     hasDefault = true;
                 } else {
-                    scanExpr(c.pat);
+                    for (JCPattern pat : c.pats) {
+                        scanExpr(pat);
+                    }
                 }
                 if (hasDefault) {
                     inits.assign(initsSwitch);
                     uninits.assign(uninits.andSet(uninitsSwitch));
                 }
                 scan(c.stats);
+                if (c.completesNormally && c.caseKind == JCCase.RULE) {
+                    scanSyntheticBreak(make, tree);
+                }
                 addVars(c.stats, initsSwitch, uninitsSwitch);
                 if (!hasDefault) {
                     inits.assign(initsSwitch);
@@ -2421,6 +2512,8 @@ public class Flow {
 
         @Override
         public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
             recordExit(new AssignPendingExit(tree, inits, uninits));
         }
 
@@ -2604,11 +2697,11 @@ public class Flow {
 
         /** Perform definite assignment/unassignment analysis on a tree.
          */
-        public void analyzeTree(Env<?> env) {
-            analyzeTree(env, env.tree);
+        public void analyzeTree(Env<?> env, TreeMaker make) {
+            analyzeTree(env, env.tree, make);
          }
 
-        public void analyzeTree(Env<?> env, JCTree tree) {
+        public void analyzeTree(Env<?> env, JCTree tree, TreeMaker make) {
             try {
                 startPos = tree.pos().getStartPosition();
 
@@ -2619,6 +2712,7 @@ public class Flow {
                         vardecls[i] = null;
                 firstadr = 0;
                 nextadr = 0;
+                Flow.this.make = make;
                 pendingExits = new ListBuffer<>();
                 this.classDef = null;
                 unrefdResources = WriteableScope.create(env.enclClass.sym);
@@ -2634,6 +2728,7 @@ public class Flow {
                 }
                 firstadr = 0;
                 nextadr = 0;
+                Flow.this.make = null;
                 pendingExits = null;
                 this.classDef = null;
                 unrefdResources = null;
@@ -2784,6 +2879,12 @@ public class Flow {
                 }
             }
             super.visitTry(tree);
+        }
+
+        @Override
+        public void visitBreak(JCBreak tree) {
+            if (tree.isValueBreak())
+                scan(tree.value);
         }
 
         public void visitModuleDef(JCModuleDecl tree) {
