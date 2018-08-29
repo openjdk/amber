@@ -1562,8 +1562,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Kind getKind() { return Kind.BREAK; }
         @DefinedBy(Api.COMPILER_TREE)
         public Name getLabel() {
-            //TODO: OK for compatibility?
-            return value.getKind() == Kind.IDENTIFIER ? ((JCIdent) value).getName() : null;
+            return value != null && value.getKind() == Kind.IDENTIFIER ? ((JCIdent) value).getName() : null;
         }
         @DefinedBy(Api.COMPILER_TREE)
         @SuppressWarnings("removal")
