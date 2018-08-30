@@ -2843,8 +2843,6 @@
               <in>elfStringTable.hpp</in>
               <in>elfSymbolTable.cpp</in>
               <in>elfSymbolTable.hpp</in>
-              <in>errorReporter.cpp</in>
-              <in>errorReporter.hpp</in>
               <in>events.cpp</in>
               <in>events.hpp</in>
               <in>exceptions.cpp</in>
@@ -6156,6 +6154,9 @@
                 </df>
                 <df name="HeapMonitorModule">
                   <in>libHeapMonitorTest.c</in>
+                </df>
+                <df name="VMEvent">
+                  <in>libVMEventTest.c</in>
                 </df>
                 <df name="ModuleAwareAgents">
                   <df name="ClassFileLoadHook">
@@ -15162,16 +15163,6 @@
             flavor2="0">
       </item>
       <item path="../../src/hotspot/share/utilities/elfSymbolTable.hpp"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="../../src/hotspot/share/utilities/errorReporter.cpp"
-            ex="false"
-            tool="1"
-            flavor2="0">
-      </item>
-      <item path="../../src/hotspot/share/utilities/errorReporter.hpp"
             ex="false"
             tool="3"
             flavor2="0">
@@ -28948,16 +28939,6 @@
             tool="3"
             flavor2="0">
       </item>
-      <item path="../../src/hotspot/share/utilities/errorReporter.cpp"
-            ex="false"
-            tool="1"
-            flavor2="0">
-      </item>
-      <item path="../../src/hotspot/share/utilities/errorReporter.hpp"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
       <item path="../../src/hotspot/share/utilities/events.cpp"
             ex="false"
             tool="1"
@@ -40164,6 +40145,11 @@
             flavor2="0">
       </item>
       <item path="../../test/hotspot/jtreg/serviceability/jvmti/HeapMonitor/libHeapMonitorTest.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="../../test/hotspot/jtreg/serviceability/jvmti/VMEvent/libVMEventTest.c"
             ex="false"
             tool="0"
             flavor2="0">
