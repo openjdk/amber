@@ -76,7 +76,7 @@ import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
-import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
@@ -1443,7 +1443,7 @@ public class Attr extends JCTree.Visitor {
         ListBuffer<DiagnosticPosition> caseTypePositions = new ListBuffer<>();
         ListBuffer<Type> caseTypes = new ListBuffer<>();
 
-        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> {/*XXX: ignored for now*/}, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> ((JCSwitchExpression) t).kind = k, (c, caseEnv) -> {
             caseEnv.info.breakResult = condInfo;
             attribStats(c.stats, caseEnv);
             new TreeScanner() {
@@ -1532,7 +1532,7 @@ public class Attr extends JCTree.Visitor {
                     wasError = true;
                 }
                 List<BindingSymbol> matchBindings = prevBindings;
-                if (c.getExpressions().nonEmpty()) {
+                if (c.getPatterns().nonEmpty()) {
                     for (JCPattern pat : c.getPatterns()) {
                         if (TreeInfo.isNull(pat)) {
                             log.error(pat.pos(),

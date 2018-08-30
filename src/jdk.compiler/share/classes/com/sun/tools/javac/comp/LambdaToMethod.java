@@ -67,7 +67,7 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
-import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import static com.sun.tools.javac.jvm.Pool.DynamicMethod;
 
 import javax.lang.model.element.ElementKind;

@@ -45,7 +45,7 @@ import com.sun.tools.javac.util.JCDiagnostic.Warning;
 
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.tree.JCTree.*;
-import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
@@ -630,12 +630,12 @@ public class Flow {
                 boolean hasDefault = false;
                 for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                     JCCase c = l.head;
+                    alive = true;
                     if (c.pats.nonEmpty()) {
                         for (JCPattern pat : c.pats) {
                             if (patternDominated(tree.cases, pat, tree.selector.type)) {
                                 log.error(c, Errors.PatternDominated);
                             }
-                            alive = true;
                             scan(pat);
                         }
                     } else {
@@ -665,6 +665,9 @@ public class Flow {
                             }
                         }
                         for (JCPattern pat : c.pats) {
+                            if (pat == givenPattern) {
+                                break OUTTER;
+                            }
                             switch (pat.getTag()) {
                                 case BINDINGPATTERN: {
                                     JCBindingPattern vpatt = (JCBindingPattern)pat;

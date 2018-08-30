@@ -28,6 +28,7 @@ package com.sun.tools.javac.tree;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
@@ -1225,10 +1226,18 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public interface GenericSwitch {
+        public enum SwitchKind {
+            ORDINARY,
+            STRING,
+            ENUM,
+            MATCHING;
+        }
+    }
     /**
      * A "switch ( ) { }" construction.
      */
-    public static class JCSwitch extends JCStatement implements SwitchTree {
+    public static class JCSwitch extends JCStatement implements SwitchTree, GenericSwitch {
         public JCExpression selector;
         public List<JCCase> cases;
         public SwitchKind kind;
@@ -1252,12 +1261,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return SWITCH;
-        }
-        public enum SwitchKind {
-            ORDINARY,
-            STRING,
-            ENUM,
-            MATCHING;
         }
     }
 
@@ -1295,16 +1298,15 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @DefinedBy(Api.COMPILER_TREE)
         @Deprecated
         public JCExpression getExpression() {
-            return constExpressions().stream().findFirst().orElse(null);
-        }
-        public List<JCExpression> constExpressions() {
-            return pats.stream()
-                       .map(pat -> pat.hasTag(LITERALPATTERN) ? ((JCLiteralPattern) pat).value : null)
-                       .collect(List.collector());
+            return pats.nonEmpty() ? pats.head.constExpression() : null;
         }
         @Override @DefinedBy(Api.COMPILER_TREE)
         @SuppressWarnings("removal")
-        public List<JCExpression> getExpressions() { return constExpressions(); }
+        public java.util.List<JCExpression> getExpressions() {
+            return pats.stream()
+                       .map(pat -> pat.constExpression())
+                       .collect(Collectors.toList());
+        }
         public List<JCPattern> getPatterns() { return pats; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         @SuppressWarnings("removal")
@@ -1335,9 +1337,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      * A "switch ( ) { }" construction.
      */
     @SuppressWarnings("removal")
-    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
+    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree, GenericSwitch {
         public JCExpression selector;
         public List<JCCase> cases;
+        public SwitchKind kind;
         protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;
             this.cases = cases;

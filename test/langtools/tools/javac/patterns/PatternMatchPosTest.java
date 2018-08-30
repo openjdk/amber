@@ -83,7 +83,7 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     boolean prevPrint = print;
                     try {
                         print = true;
-                        scan(node.getPattern(), p);
+                        scan(node.getPatterns(), p);
                     } finally {
                         print = prevPrint;
                     }

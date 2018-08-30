@@ -62,7 +62,7 @@ import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
-import com.sun.tools.javac.tree.JCTree.JCSwitch.SwitchKind;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 
@@ -3651,6 +3651,7 @@ public class Lower extends TreeTranslator {
 
         stmtList.append(make.at(tree.pos()).VarDef(dollar_switchexpr, null).setType(dollar_switchexpr.type));
         JCSwitch switchStatement = make.Switch(tree.selector, null);
+        switchStatement.kind = tree.kind;
         switchStatement.cases =
                 tree.cases.stream()
                           .map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c))
