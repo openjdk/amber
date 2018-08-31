@@ -1597,7 +1597,7 @@ public class Attr extends JCTree.Visitor {
                 }
 
                 flow.aliveAfterCase(caseEnv, c, make);
-                prevBindings = c.alive ? matchBindings : null;
+                prevBindings = c.completesNormally ? matchBindings : null;
             }
         } finally {
             switchEnv.info.scope.leave();

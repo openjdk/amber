@@ -267,7 +267,7 @@ public class Flow {
             CaseAliveAnalyzer analyzer = new CaseAliveAnalyzer();
 
             analyzer.analyzeTree(env, that.stats, make);
-            that.alive = analyzer.isAlive();
+            that.completesNormally = analyzer.isAlive();
         } finally {
             log.popDiagnosticHandler(diagHandler);
         }
@@ -728,7 +728,6 @@ public class Flow {
                         }
                     }
                     scanStats(c.stats);
-                    c.completesNormally = alive;
                     if (alive && c.caseKind == JCCase.RULE) {
                         System.err.println("synthetic break: " + tree);
                         scanSyntheticBreak(make, tree);
@@ -780,7 +779,6 @@ public class Flow {
                     }
                 }
                 scanStats(c.stats);
-                c.completesNormally = alive;
             }
             if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);

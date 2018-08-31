@@ -1278,7 +1278,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public final CaseKind caseKind;
         public List<JCPattern> pats;
         public List<JCStatement> stats;
-        public boolean alive;
         public JCTree body;
         public boolean completesNormally;
         protected JCCase(@SuppressWarnings("removal") CaseKind caseKind, List<JCPattern> pats,

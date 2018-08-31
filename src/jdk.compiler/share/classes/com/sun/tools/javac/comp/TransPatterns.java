@@ -289,24 +289,23 @@ public class TransPatterns extends TreeTranslator {
                 List<JCStatement> resultStatements = List.of(fallthroughInit);
 
                 for (JCCase clause : tree.cases) {
-                    List<JCExpression> matches = clause.pats.isEmpty() ? List.of(make.Literal(BOOLEAN, 1)) : clause.pats.stream().map(pat -> make.PatternTest(tree.selector, pat)).collect(List.collector());
-                    for (JCExpression jcMatches : matches) {
-                        jcMatches.setType(syms.booleanType);
-                        JCStatement body;
-                        List<JCStatement> stats = clause.stats;
-                        if (clause.alive) {
-                            stats = stats.append(make.at(tree.pos).Exec(make.Assign(make.Ident(fallthroughSym), make.Literal(BOOLEAN, 1).setType(syms.booleanType)).setType(syms.booleanType)));
-                        }
-                        body = make.Block(0, stats);
-                        JCStatement translatedIf = translate(make.If(jcMatches, body, null));
-                        JCIf testStatement = translatedIf.hasTag(Tag.IF) ? (JCIf)translatedIf : (JCIf) ((JCBlock)translatedIf).stats.tail.head;
-
-                        testStatement.cond = makeBinary(Tag.OR,
-                                make.Ident(fallthroughSym),
-                                testStatement.cond);
-
-                        resultStatements = resultStatements.append(translatedIf);
+                    Assert.check(clause.pats.size() <= 1);
+                    final JCExpression jcMatches = clause.pats.nonEmpty() ? make.PatternTest(tree.selector, clause.pats.head) : make.Literal(BOOLEAN, 1);
+                    jcMatches.setType(syms.booleanType);
+                    JCStatement body;
+                    List<JCStatement> stats = clause.stats;
+                    if (clause.completesNormally) {
+                        stats = stats.append(make.at(tree.pos).Exec(make.Assign(make.Ident(fallthroughSym), make.Literal(BOOLEAN, 1).setType(syms.booleanType)).setType(syms.booleanType)));
                     }
+                    body = make.Block(0, stats);
+                    JCStatement translatedIf = translate(make.If(jcMatches, body, null));
+                    JCIf testStatement = translatedIf.hasTag(Tag.IF) ? (JCIf)translatedIf : (JCIf) ((JCBlock)translatedIf).stats.tail.head;
+
+                    testStatement.cond = makeBinary(Tag.OR,
+                            make.Ident(fallthroughSym),
+                            testStatement.cond);
+
+                    resultStatements = resultStatements.append(translatedIf);
                 }
                 pendingMatchLabel.body = make.Block(0, resultStatements);
                 result = pendingMatchLabel;
