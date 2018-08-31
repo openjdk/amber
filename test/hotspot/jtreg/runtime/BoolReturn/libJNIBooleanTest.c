@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -19,22 +19,12 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
- *
  */
 
-#ifndef SHARE_VM_UTILITIES_ERRORREPORTER_HPP
-#define SHARE_VM_UTILITIES_ERRORREPORTER_HPP
+#include "jni.h"
 
-#include "utilities/globalDefinitions.hpp"
-#include "memory/allocation.hpp"
-
-class ErrorReporter : public StackObj {
-
-public:
-  ErrorReporter();
-  ~ErrorReporter(){};
-
-  void call(FILE* fd, char *buffer, int length);
-};
-
-#endif // ndef SHARE_VM_UTILITIES_ERRORREPORTER_HPP
+JNIEXPORT jboolean JNICALL
+Java_JNIBooleanTest_foo(JNIEnv *env, jclass cls, jbyte b) {
+  jboolean old = b;
+  return old;
+}
