@@ -181,6 +181,9 @@ public enum Source {
         PRIVATE_INTERFACE_METHODS(JDK9, Fragments.FeaturePrivateIntfMethods, DiagKind.PLURAL),
         LOCAL_VARIABLE_TYPE_INFERENCE(JDK10),
         IMPORT_ON_DEMAND_OBSERVABLE_PACKAGES(JDK1_2, JDK8),
+        SWITCH_MULTIPLE_CASE_LABELS(JDK12, Fragments.FeatureMultipleCaseLabels, DiagKind.PLURAL),
+        SWITCH_RULE(JDK12, Fragments.FeatureSwitchRules, DiagKind.PLURAL),
+        SWITCH_EXPRESSION(JDK12, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
         CONDY_FOR_LAMBDA(JDK11),
         CONSTABLES(JDK11);
 
