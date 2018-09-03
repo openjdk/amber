@@ -27,25 +27,69 @@
  * @compile --enable-preview -source 12 SwitchExpressionWithPatterns.java
  * @run main/othervm --enable-preview SwitchExpressionWithPatterns
  */
+
+import java.util.List;
+import java.util.function.ToIntFunction;
+
 public class SwitchExpressionWithPatterns {
 
     public static void main(String[] args) {
-        assertEquals(1, test((Integer) 42));
-        assertEquals(2, test(41));
-        assertEquals(-2, test((long) 0));
-        assertEquals(-2, test((float) 0));
-        assertEquals(-1, test((byte) 13));
+        List<ToIntFunction<Object>> tests = List.of(
+            SwitchExpressionWithPatterns::test1,
+            SwitchExpressionWithPatterns::test2,
+            SwitchExpressionWithPatterns::test3,
+            SwitchExpressionWithPatterns::test4
+        );
+        for (ToIntFunction<Object> f : tests) {
+            assertEquals(2, f.applyAsInt(41));
+            assertEquals(1, f.applyAsInt((Integer) 42));
+            assertEquals(3, f.applyAsInt((long) 0));
+            assertEquals(3, f.applyAsInt((float) 0));
+            assertEquals(4, f.applyAsInt((byte) 13));
+        }
     }
 
-    private static int test(Object in) {
+    private static int test1(Object in) {
         int check = 0;
         return switch (in) {
             case 41: check++; //fall-through
-            case Integer j: check++; break check;
-            case Long l, Float f: break -2;
-            default: break -1;
+            case Integer i: check++; break check;
+            case Long l, Float f: break 3;
+            default: break 4;
         };
 
+    }
+
+    private static int test2(Object in) {
+        int check = 0;
+        return switch (in) {
+            case 41 -> 2;
+            case Integer j -> { break 1; }
+            case Long l, Float f -> 3;
+            default -> { break 4; }
+        };
+    }
+
+    private static int test3(Object in) {
+        int check = 0;
+        switch (in) {
+            case 41: check++; //fall-through
+            case Integer j: check++; break;
+            case Long l, Float f: check = 3; break;
+            default: check = 4; break;
+        }
+        return check;
+    }
+
+    private static int test4(Object in) {
+        int check = 0;
+        switch (in) {
+            case 41 -> check = 2;
+            case Integer j -> { check = 1; }
+            case Long l, Float f -> check = 3;
+            default -> { check = 4; }
+        };
+        return check;
     }
 
     private static void assertEquals(int expected, int actual) {
