@@ -59,12 +59,12 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile MethodHandleRefTest.java
- * @run testng MethodHandleRefTest
+ * @compile MethodHandleDescTest.java
+ * @run testng MethodHandleDescTest
  * @summary unit tests for java.lang.constant.MethodHandleDesc
  */
 @Test
-public class MethodHandleRefTest extends SymbolicRefTest {
+public class MethodHandleDescTest extends SymbolicDescTest {
     private static ClassDesc helperHolderClass = ClassDesc.of("TestHelpers");
     private static ClassDesc testClass = helperHolderClass.inner("TestClass");
     private static ClassDesc testInterface = helperHolderClass.inner("TestInterface");
@@ -82,13 +82,13 @@ public class MethodHandleRefTest extends SymbolicRefTest {
 
     private void testMethodHandleRef(MethodHandleDesc r) throws ReflectiveOperationException {
         if (r instanceof DirectMethodHandleDesc) {
-            testSymbolicRef(r);
+            testSymbolicDesc(r);
 
             DirectMethodHandleDesc rr = (DirectMethodHandleDesc) r;
             assertEquals(r, MethodHandleDesc.of(rr.kind(), rr.owner(), rr.methodName(), r.methodType()));
         }
         else {
-            testSymbolicRefForwardOnly(r);
+            testSymbolicDescForwardOnly(r);
         }
     }
 
@@ -271,7 +271,7 @@ public class MethodHandleRefTest extends SymbolicRefTest {
         MethodHandleDesc.of(VIRTUAL, ClassDesc.ofDescriptor("I"), "x", MethodTypeDesc.ofDescriptor("()I"));
     }
 
-    public void testSymbolicRefsConstants() throws ReflectiveOperationException {
+    public void testSymbolicDescsConstants() throws ReflectiveOperationException {
         int tested = 0;
         Field[] fields = ConstantDescs.class.getDeclaredFields();
         for (Field f : fields) {

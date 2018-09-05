@@ -39,7 +39,7 @@ import static org.testng.Assert.assertEquals;
 /**
  * Base class for XxxRef tests
  */
-public abstract class SymbolicRefTest {
+public abstract class SymbolicDescTest {
 
     public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
@@ -88,17 +88,17 @@ public abstract class SymbolicRefTest {
         return ClassDesc.ofDescriptor(c.descriptorString());
     }
 
-    static<T> void testSymbolicRef(ConstantDesc<T> ref) throws ReflectiveOperationException {
-        testSymbolicRef(ref, false);
+    static<T> void testSymbolicDesc(ConstantDesc<T> ref) throws ReflectiveOperationException {
+        testSymbolicDesc(ref, false);
     }
 
-    static<T> void testSymbolicRefForwardOnly(ConstantDesc<T> ref) throws ReflectiveOperationException {
-        testSymbolicRef(ref, true);
+    static<T> void testSymbolicDescForwardOnly(ConstantDesc<T> ref) throws ReflectiveOperationException {
+        testSymbolicDesc(ref, true);
     }
 
-    private static<T> void testSymbolicRef(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
+    private static<T> void testSymbolicDesc(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
         if (!forwardOnly) {
-            // Round trip sym -> resolve -> toSymbolicRef
+            // Round trip sym -> resolve -> toSymbolicDesc
             ConstantDesc<? super ConstantDesc<T>> s = ((Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP)).describeConstable().orElseThrow();
             assertEquals(ref, s);
         }

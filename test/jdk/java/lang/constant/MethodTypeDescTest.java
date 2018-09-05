@@ -42,15 +42,15 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile MethodTypeRefTest.java
- * @run testng MethodTypeRefTest
+ * @compile MethodTypeDescTest.java
+ * @run testng MethodTypeDescTest
  * @summary unit tests for java.lang.constant.MethodTypeRef
  */
 @Test
-public class MethodTypeRefTest extends SymbolicRefTest {
+public class MethodTypeDescTest extends SymbolicDescTest {
 
     private void testMethodTypeRef(MethodTypeDesc r) throws ReflectiveOperationException {
-        testSymbolicRef(r);
+        testSymbolicDesc(r);
 
         // Tests accessors (rType, pType, pCount, pList, pArray, descriptorString),
         // factories (ofDescriptor, of), equals
@@ -71,8 +71,8 @@ public class MethodTypeRefTest extends SymbolicRefTest {
 
         assertEquals(r.descriptorString(), mt.toMethodDescriptorString());
         assertEquals(r.parameterCount(), mt.parameterCount());
-        assertEquals(r.parameterList(), mt.parameterList().stream().map(SymbolicRefTest::classToRef).collect(toList()));
-        assertEquals(r.parameterArray(), Stream.of(mt.parameterArray()).map(SymbolicRefTest::classToRef).toArray(ClassDesc[]::new));
+        assertEquals(r.parameterList(), mt.parameterList().stream().map(SymbolicDescTest::classToRef).collect(toList()));
+        assertEquals(r.parameterArray(), Stream.of(mt.parameterArray()).map(SymbolicDescTest::classToRef).toArray(ClassDesc[]::new));
         for (int i=0; i<r.parameterCount(); i++)
             assertEquals(r.parameterType(i), classToRef(mt.parameterType(i)));
         assertEquals(r.returnType(), classToRef(mt.returnType()));
