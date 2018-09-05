@@ -297,14 +297,6 @@ public final class ConstantDescs {
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofArray",
                                   CR_VarHandleDesc, CR_ClassDesc);
 
-    static final DirectMethodHandleDesc BSM_CLASSDESC
-            = ConstantDescs.ofConstantBootstrap(CR_ClassDesc,
-                                                "constantBootstrap", CR_ClassDesc, CR_String);
-
-    static final DirectMethodHandleDesc BSM_METHODTYPEDESC
-            = ConstantDescs.ofConstantBootstrap(CR_MethodTypeDesc,
-                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
-
     static final DirectMethodHandleDesc BSM_METHODHANDLEDESC
             = ConstantDescs.ofConstantBootstrap(CR_DirectMethodHandleDesc,
                                                 "constantBootstrap", CR_DirectMethodHandleDesc,

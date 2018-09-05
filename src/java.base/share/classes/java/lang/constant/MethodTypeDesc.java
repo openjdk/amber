@@ -189,20 +189,4 @@ public interface MethodTypeDesc
                                    .collect(Collectors.joining(",")),
                              returnType().displayName());
     }
-
-    /**
-     * Constant bootstrap method for representing a {@linkplain MethodTypeDesc} in
-     * the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param descriptor a method descriptor string for the method type, as per JVMS 4.3.3
-     * @return the {@linkplain MethodTypeDesc}
-     * @jvms 4.3.3 Method Descriptors
-     */
-    static MethodTypeDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                            String descriptor) {
-        return MethodTypeDesc.ofDescriptor(descriptor);
-    }
 }

@@ -257,22 +257,6 @@ public interface ClassDesc
     }
 
     /**
-     * Constant bootstrap method for representing a {@linkplain ClassDesc} in
-     * the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param descriptor a field descriptor string for the class, as per JVMS 4.3.2
-     * @return the {@linkplain ClassDesc}
-     * @jvms 4.3.2 Field Descriptors
-     */
-    public static ClassDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                              String descriptor) {
-        return ClassDesc.ofDescriptor(descriptor);
-    }
-
-    /**
      * Return a field type descriptor string for this type, as per JVMS 4.3.2
      *
      * @return the descriptor string
