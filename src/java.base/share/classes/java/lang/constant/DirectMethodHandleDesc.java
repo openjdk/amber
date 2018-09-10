@@ -137,12 +137,11 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     MethodTypeDesc methodType();
 
     /**
-     * Constant bootstrap method for representing a {@linkplain DirectMethodHandleDesc} in
-     * the constant pool of a classfile.
+     * Create a {@linkplain DirectMethodHandleDesc} given descriptor strings
+     * for its components.  Suitable for use as a constant bootstrap method
+     * for representing a {@linkplain DirectMethodHandleDesc} in the constant
+     * pool of a classfile.
      *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
      * @param bsmKindName The name of an {@code enum} constant from {@link Kind}
      * @param memberOwner A field type descriptor for the class declaring the
      *                 method, field, or constructor, as per JVMS 4.3.2
@@ -154,8 +153,10 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
      * @jvms 4.3.2 Field Descriptors
      * @jvms 4.3.3 Method Descriptors
      */
-    static DirectMethodHandleDesc constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                                    String bsmKindName, String memberOwner, String memberName, String memberType) {
+    static DirectMethodHandleDesc ofDescriptor(String bsmKindName,
+                                               String memberOwner,
+                                               String memberName,
+                                               String memberType) {
         return MethodHandleDesc.of(Kind.valueOf(bsmKindName),
                                    ClassDesc.ofDescriptor(memberOwner), memberName,
                                    MethodTypeDesc.ofDescriptor(memberType));

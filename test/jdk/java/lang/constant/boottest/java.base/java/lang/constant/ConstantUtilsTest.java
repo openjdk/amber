@@ -23,6 +23,8 @@
  * questions.
  */
 
+package java.lang.constant;
+
 import java.lang.invoke.*;
 import java.lang.constant.*;
 import java.util.*;

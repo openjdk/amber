@@ -38,10 +38,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.lang.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 import static java.lang.constant.ConstantDescs.CR_Class;
-import static java.lang.constant.ConstantDescs.CR_DynamicConstantDesc;
 import static java.lang.constant.ConstantDescs.CR_VarHandle;
 import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
+import static java.lang.constant.ConstantDescs.MHR_DYNAMICCONSTANTDESC_FACTORY;
+import static java.lang.constant.ConstantDescs.MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY;
 import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
@@ -157,7 +159,7 @@ public abstract class DynamicConstantDesc<T>
      * @param constantName The name that would appear in the {@code NameAndType}
      *                     operand of the {@code LDC} for this constant, as per
      *                     JVMS 4.2.2
-     * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
+     * @param constantType a {@link ClassDesc} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
      * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
@@ -175,6 +177,35 @@ public abstract class DynamicConstantDesc<T>
                                                     ClassDesc constantType,
                                                     ConstantDesc<?>... bootstrapArgs) {
         return new AnonymousDynamicConstantDesc<>(bootstrapMethod, constantName, constantType, bootstrapArgs);
+    }
+
+    /**
+     * Return a nominal descriptor for a dynamic constant.
+     *
+     * @param <T> the type of the dynamic constant
+     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     *                        bootstrap method for the constant
+     * @param constantName The name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant, as per
+     *                     JVMS 4.2.2
+     * @param constantTypeDescriptor a field descriptor string for the type
+     *                     that would appear in the {@code NameAndType} operand
+     *                     of the {@code LDC} for this constant
+     * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
+     *                      to the bootstrap, that would appear in the
+     *                      {@code BootstrapMethods} attribute
+     * @return the nominal descriptor
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if the {@code name} has the incorrect
+     * format
+     * @jvms 4.2.2 Unqualified Names
+     */
+
+    public static<T> DynamicConstantDesc<T> ofNamed(DirectMethodHandleDesc bootstrapMethod,
+                                                    String constantName,
+                                                    String constantTypeDescriptor,
+                                                    ConstantDesc<?>... bootstrapArgs) {
+        return ofNamed(bootstrapMethod, constantName, ClassDesc.ofDescriptor(constantTypeDescriptor), bootstrapArgs);
     }
 
     /**
@@ -290,49 +321,24 @@ public abstract class DynamicConstantDesc<T>
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<T>>> describeConstable() {
-        ConstantDesc<?>[] args =new ConstantDesc<?>[bootstrapArgs.length+5];
-        args[0] = bootstrapMethod.owner().descriptorString();
-        args[1] = bootstrapMethod.methodName();
-        args[2] = bootstrapMethod.methodType().descriptorString();
-        args[3] = constantName;
-        args[4] = constantType.descriptorString();
-        for (int i=0; i<bootstrapArgs.length; i++)
-            args[i+5] = (ConstantDesc<?>) ((Constable)bootstrapArgs[i]).describeConstable().orElseThrow();
-        return Optional.of(DynamicConstantDesc.of(BSM_DYNAMICCONSTANTDESC, args));
-    }
-
-    /**
-     * Constant bootstrap method for representing a {@linkplain DynamicConstantDesc}
-     * in the constant pool of a classfile.
-     *
-     * @param lookup ignored
-     * @param name ignored
-     * @param clazz ignored
-     * @param bsmOwner A field type descriptor for the class declaring the
-     *                 bootstrap method, as per JVMS 4.3.2
-     * @param bsmName The name of the bootstrap method, as per JVMS 4.2.2
-     * @param bsmDesc A method type descriptor for bootstrap method, as per JVMS 4.3.3
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
-     * @param constantType a field type descriptor string describing the type
-     *                     that would appear in the {@code NameAndType} operand
-     *                     of the {@code LDC} for this constant, as per JVMS 4.3.2
-     * @param args The static arguments to the bootstrap method
-     * @return the {@linkplain DynamicConstantDesc}
-     * @jvms 4.2.2 Unqualified Names
-     * @jvms 4.3.2 Field Descriptors
-     * @jvms 4.3.3 Method Descriptors
-     */
-    public static DynamicConstantDesc<?> constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                                           String bsmOwner, String bsmName, String bsmDesc,
-                                                           String constantName, String constantType,
-                                                           ConstantDesc<?>... args) {
-        return DynamicConstantDesc.ofNamed(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC,
-                                                               ClassDesc.ofDescriptor(bsmOwner), bsmName,
-                                                               MethodTypeDesc.ofDescriptor(bsmDesc)),
-                                           constantName, ClassDesc.ofDescriptor(constantType), args);
-
+        ConstantDesc<?>[] args;
+        if (constantName.equals(DEFAULT_NAME) && constantType.equals(bootstrapMethod.methodType().returnType())) {
+            args = new ConstantDesc<?>[bootstrapArgs.length + 2];
+            args[0] = MHR_DYNAMICCONSTANTDESC_FACTORY;
+            args[1] = bootstrapMethod.describeConstable().orElseThrow();
+            for (int i = 0; i < bootstrapArgs.length; i++)
+                args[i + 2] = (ConstantDesc<?>) ((Constable) bootstrapArgs[i]).describeConstable().orElseThrow();
+        }
+        else {
+            args = new ConstantDesc<?>[bootstrapArgs.length + 4];
+            args[0] = MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY;
+            args[1] = bootstrapMethod.describeConstable().orElseThrow();
+            args[2] = constantName;
+            args[3] = constantType().descriptorString();
+            for (int i = 0; i < bootstrapArgs.length; i++)
+                args[i + 4] = (ConstantDesc<?>) ((Constable) bootstrapArgs[i]).describeConstable().orElseThrow();
+        }
+        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, args));
     }
 
     private ConstantDesc<T> tryCanonicalize() {

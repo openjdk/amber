@@ -25,23 +25,21 @@
 
 package java.lang;
 
-import java.io.Serializable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
-import java.lang.invoke.MethodHandles;
+import java.io.Serializable;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DynamicConstantDesc;
+import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
-import static java.lang.constant.ConstantDescs.BSM_ENUMDESC;
-import static java.lang.constant.ConstantDescs.CR_EnumDesc;
-import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
-import static java.lang.constant.ConstantUtils.validateMemberName;
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.MHR_ENUMDESC_FACTORY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -312,7 +310,24 @@ public abstract class Enum<E extends Enum<E>>
          */
         public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
                                                         String constantName) {
-            return new EnumDesc<>(enumClass, validateMemberName(constantName));
+            return new EnumDesc<>(enumClass, constantName);
+        }
+
+        /**
+         * Return a nominal descriptor for the specified {@code enum} class and
+         * name, where the class is specified as a descriptor string.
+         *
+         * @param <E> the type of the enum constant
+         * @param enumClass a field descriptor string, as per JVMS 4.3.2,
+         *                  describing the {@code enum} class
+         * @param constantName the name of the enum constant, as per JVMS 4.2.2
+         * @return the nominal descriptor
+         * @throws NullPointerException if any argument is null
+         * @jvms 4.2.2 Unqualified Names
+         */
+        public static<E extends Enum<E>> EnumDesc<E> ofDescriptor(String enumClass,
+                                                                  String constantName) {
+            return EnumDesc.of(ClassDesc.ofDescriptor(enumClass), constantName);
         }
 
         @Override
@@ -324,25 +339,7 @@ public abstract class Enum<E extends Enum<E>>
 
         @Override
         public Optional<? extends ConstantDesc<ConstantDesc<E>>> describeConstable() {
-            return Optional.of(DynamicConstantDesc.of(BSM_ENUMDESC, constantType().descriptorString(), constantName()));
-        }
-
-        /**
-         * Constant bootstrap method for representing an {@linkplain EnumDesc} in
-         * the constant pool of a classfile.
-         *
-         * @param lookup ignored
-         * @param name ignored
-         * @param clazz ignored
-         * @param classDescriptor A field type descriptor for the enum class, as
-         *                        per JVMS 4.3.2
-         * @param constantName The name of the {@code enum} constant
-         * @return the {@linkplain EnumDesc}
-         * @jvms 4.3.2 Field Descriptors
-         */
-        public static EnumDesc<?> constantBootstrap(MethodHandles.Lookup lookup, String name, Class<ClassDesc> clazz,
-                                                    String classDescriptor, String constantName) {
-            return EnumDesc.of(ClassDesc.ofDescriptor(classDescriptor), constantName);
+            return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHR_ENUMDESC_FACTORY, constantType().descriptorString(), constantName()));
         }
 
         @Override

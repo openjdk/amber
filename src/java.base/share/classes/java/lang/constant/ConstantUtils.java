@@ -24,13 +24,18 @@
  */
 package java.lang.constant;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
+
 import static java.util.Objects.requireNonNull;
 
 /**
  * Helper methods for the implementation of {@code java.lang.constant}.
  */
-public class ConstantUtils {
+class ConstantUtils {
     /** an empty constant descriptor */
     public static final ConstantDesc<?>[] EMPTY_CONSTANTDESC = new ConstantDesc<?>[0];
     static final Constable<?>[] EMPTY_CONSTABLE = new Constable<?>[0];
