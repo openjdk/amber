@@ -1938,6 +1938,7 @@ public class Attr extends JCTree.Visitor {
             thenEnv.info.scope.leave();
         }
 
+        preFlow(tree.thenpart);
         boolean aliveAfterThen = flow.aliveAfter(env, tree.thenpart, make);
         boolean aliveAfterElse;
         List<BindingSymbol> elseBindings = List.nil();
@@ -1951,6 +1952,7 @@ public class Attr extends JCTree.Visitor {
             } finally {
                 elseEnv.info.scope.leave();
             }
+            preFlow(tree.elsepart);
             aliveAfterElse = flow.aliveAfter(env, tree.elsepart, make);
         } else {
             aliveAfterElse = true;
@@ -1971,6 +1973,21 @@ public class Attr extends JCTree.Visitor {
 
         result = null;
     }
+
+        void preFlow(JCTree tree) {
+            new PostAttrAnalyzer() {
+                @Override
+                public void scan(JCTree tree) {
+                    if (tree == null ||
+                            (tree.type != null &&
+                            tree.type == Type.stuckType)) {
+                        //don't touch stuck expressions!
+                        return;
+                    }
+                    super.scan(tree);
+                }
+            }.scan(tree);
+        }
 
     public void visitExec(JCExpressionStatement tree) {
         //a fresh environment is required for 292 inference to work properly ---
