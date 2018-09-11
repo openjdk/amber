@@ -61,7 +61,7 @@ public class PatternMatchPosTest extends AbstractProcessor {
             SourcePositions sp = trees.getSourcePositions();
             TreePath dataPath = trees.getPath(data);
             String text = dataPath.getCompilationUnit().getSourceFile().getCharContent(true).toString();
-            
+
             new TreeScanner<Void, Void>() {
                 boolean print;
                 @Override
@@ -75,19 +75,6 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     }
                     scan(node.getThenStatement(), p);
                     scan(node.getElseStatement(), p);
-                    return null;
-                }
-
-                @Override
-                public Void visitCase(CaseTree node, Void p) {
-                    boolean prevPrint = print;
-                    try {
-                        print = true;
-                        scan(node.getPatterns(), p);
-                    } finally {
-                        print = prevPrint;
-                    }
-                    scan(node.getStatements(), p);
                     return null;
                 }
                 @Override
@@ -117,13 +104,6 @@ public class PatternMatchPosTest extends AbstractProcessor {
 
 class PatternMatchPosTestData {
     void data(Object o) {
-        if (o __matches 1) { }
-        if (o __matches var s) { }
-        if (o __matches String s) { }
-        switch (o) {
-            case 1: break;
-            case String s: break;
-            case var s: break;
-        }
+        if (o instanceof String s) { }
     }
 }

@@ -56,16 +56,14 @@ import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
+import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
-import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
-import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
-
 
 /** This pass translates away some syntactic sugar: inner classes,
  *  class literals, assertions, foreach loops, etc.
@@ -3358,23 +3356,60 @@ public class Lower extends TreeTranslator {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        Type target;
-        switch (tree.kind) {
-            case ENUM: target = tree.selector.type; break;
-            case STRING: target = syms.stringType; break;
-            case ORDINARY: target = syms.intType; break;
-            default:
-                Assert.error("Should not get here, kind: " + tree.kind);
-                throw new InternalError();
+        //expand multiple label cases:
+        ListBuffer<JCCase> cases = new ListBuffer<>();
+
+        for (JCCase c : tree.cases) {
+            switch (c.pats.size()) {
+                case 0: //default
+                case 1: //single label
+                    cases.append(c);
+                    break;
+                default: //multiple labels, expand:
+                    //case C1, C2, C3: ...
+                    //=>
+                    //case C1:
+                    //case C2:
+                    //case C3: ...
+                    List<JCExpression> patterns = c.pats;
+                    while (patterns.tail.nonEmpty()) {
+                        cases.append(make_at(c.pos()).Case(JCCase.STATEMENT,
+                                                           List.of(patterns.head),
+                                                           List.nil(),
+                                                           null));
+                        patterns = patterns.tail;
+                    }
+                    c.pats = patterns;
+                    cases.append(c);
+                    break;
+            }
         }
+
+        for (JCCase c : cases) {
+            if (c.caseKind == JCCase.RULE && c.completesNormally) {
+                JCBreak b = make_at(c.pos()).Break(null);
+                b.target = tree;
+                c.stats = c.stats.append(b);
+            }
+        }
+
+        tree.cases = cases.toList();
+
+        Type selsuper = types.supertype(tree.selector.type);
+        boolean enumSwitch = selsuper != null &&
+            (tree.selector.type.tsym.flags() & ENUM) != 0;
+        boolean stringSwitch = selsuper != null &&
+            types.isSameType(tree.selector.type, syms.stringType);
+        Type target = enumSwitch ? tree.selector.type :
+            (stringSwitch? syms.stringType : syms.intType);
         tree.selector = translate(tree.selector, target);
         tree.cases = translateCases(tree.cases);
-        switch (tree.kind) {
-            case ENUM: result = visitEnumSwitch(tree); break;
-            case STRING: result = visitStringSwitch(tree); break;
-            case ORDINARY: result = tree; break;
-            default:
-                Assert.error("Should not get here, kind: " + tree.kind);
+        if (enumSwitch) {
+            result = visitEnumSwitch(tree);
+        } else if (stringSwitch) {
+            result = visitStringSwitch(tree);
+        } else {
+            result = tree;
         }
     }
 
@@ -3392,16 +3427,14 @@ public class Lower extends TreeTranslator {
         ListBuffer<JCCase> cases = new ListBuffer<>();
         for (JCCase c : tree.cases) {
             if (c.pats.nonEmpty()) {
-                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pats.head.constExpression());
-                JCLiteral value = map.forConstant(label);
-                JCPattern pat = make.LiteralPattern(value);
+                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pats.head);
+                JCLiteral pat = map.forConstant(label);
                 cases.append(make.Case(JCCase.STATEMENT, List.of(pat), c.stats, null));
             } else {
                 cases.append(c);
             }
         }
         JCSwitch enumSwitch = make.Switch(selector, cases.toList());
-        enumSwitch.kind = SwitchKind.ORDINARY;
         patchTargets(enumSwitch, tree, enumSwitch);
         return enumSwitch;
     }
@@ -3467,7 +3500,7 @@ public class Lower extends TreeTranslator {
 
             for(JCCase oneCase : caseList) {
                 if (oneCase.pats.nonEmpty()) { // pats is empty for a "default" case
-                    JCExpression expression = oneCase.pats.head.constExpression();
+                    JCExpression expression = oneCase.pats.head;
                     String labelExpr = (String) expression.type.constValue();
                     Integer mapping = caseLabelToPosition.put(labelExpr, casePosition);
                     Assert.checkNull(mapping);
@@ -3529,7 +3562,6 @@ public class Lower extends TreeTranslator {
                                                        List.nil()).setType(syms.intType);
             JCSwitch switch1 = make.Switch(hashCodeCall,
                                         caseBuffer.toList());
-            switch1.kind = SwitchKind.ORDINARY;
             for(Map.Entry<Integer, Set<String>> entry : hashToString.entrySet()) {
                 int hashCode = entry.getKey();
                 Set<String> stringsWithHashCode = entry.getValue();
@@ -3552,7 +3584,7 @@ public class Lower extends TreeTranslator {
                 breakStmt.target = switch1;
                 lb.append(elsepart).append(breakStmt);
 
-                caseBuffer.append(make.Case(JCCase.STATEMENT, List.of(make.LiteralPattern(make.Literal(hashCode))), lb.toList(), null));
+                caseBuffer.append(make.Case(JCCase.STATEMENT, List.of(make.Literal(hashCode)), lb.toList(), null));
             }
 
             switch1.cases = caseBuffer.toList();
@@ -3564,7 +3596,6 @@ public class Lower extends TreeTranslator {
 
             ListBuffer<JCCase> lb = new ListBuffer<>();
             JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
-            switch2.kind = SwitchKind.ORDINARY;
             for(JCCase oneCase : caseList ) {
                 // Rewire up old unlabeled break statements to the
                 // replacement switch being created.
@@ -3575,11 +3606,11 @@ public class Lower extends TreeTranslator {
                 if (isDefault)
                     caseExpr = null;
                 else {
-                    caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.pats.head.constExpression()).
+                    caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.pats.head).
                                                                     type.constValue()));
                 }
 
-                lb.append(make.Case(JCCase.STATEMENT, caseExpr == null ? List.nil() : List.of(make.LiteralPattern(caseExpr)),
+                lb.append(make.Case(JCCase.STATEMENT, caseExpr == null ? List.nil() : List.of(caseExpr),
                                     oneCase.getStatements(), null));
             }
 
@@ -3592,8 +3623,73 @@ public class Lower extends TreeTranslator {
 
     @Override
     public void visitSwitchExpression(JCSwitchExpression tree) {
-        Assert.error("Shuld not get here!");
+        //translates switch expression to statement switch:
+        //switch (selector) {
+        //    case C: break value;
+        //    ...
+        //}
+        //=>
+        //(letexpr T exprswitch$;
+        //         switch (selector) {
+        //             case C: { exprswitch$ = value; break; }
+        //         }
+        //         exprswitch$
+        //)
+        VarSymbol dollar_switchexpr = new VarSymbol(Flags.FINAL|Flags.SYNTHETIC,
+                           names.fromString("exprswitch" + tree.pos + target.syntheticNameChar()),
+                           tree.type,
+                           currentMethodSym);
+
+        ListBuffer<JCStatement> stmtList = new ListBuffer<>();
+
+        stmtList.append(make.at(tree.pos()).VarDef(dollar_switchexpr, null).setType(dollar_switchexpr.type));
+        JCSwitch switchStatement = make.Switch(tree.selector, null);
+        switchStatement.cases =
+                tree.cases.stream()
+                          .map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c))
+                          .collect(List.collector());
+        if (tree.cases.stream().noneMatch(c -> c.pats.isEmpty())) {
+            JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType,
+                                                  List.nil()));
+            JCCase c = make.Case(JCCase.STATEMENT, List.nil(), List.of(thr), null);
+            switchStatement.cases = switchStatement.cases.append(c);
+        }
+
+        stmtList.append(translate(switchStatement));
+
+        result = make.LetExpr(stmtList.toList(), make.Ident(dollar_switchexpr))
+                     .setType(dollar_switchexpr.type);
     }
+        //where:
+        private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement,
+                                   JCSwitchExpression switchExpr, JCCase c) {
+            make.at(c.pos());
+            ListBuffer<JCStatement> statements = new ListBuffer<>();
+            statements.addAll(new TreeTranslator() {
+                @Override
+                public void visitLambda(JCLambda tree) {}
+                @Override
+                public void visitClassDef(JCClassDecl tree) {}
+                @Override
+                public void visitMethodDef(JCMethodDecl tree) {}
+                @Override
+                public void visitBreak(JCBreak tree) {
+                    if (tree.target == switchExpr) {
+                        tree.target = switchStatement;
+                        JCExpressionStatement assignment =
+                                make.Exec(make.Assign(make.Ident(dollar_switchexpr),
+                                                      translate(tree.value))
+                                              .setType(dollar_switchexpr.type));
+                        result = make.Block(0, List.of(assignment,
+                                                       tree));
+                        tree.value = null;
+                    } else {
+                        result = tree;
+                    }
+                }
+            }.translate(c.stats));
+            return make.Case(JCCase.STATEMENT, c.pats, statements.toList(), null);
+        }
 
     public void visitNewArray(JCNewArray tree) {
         tree.elemtype = translate(tree.elemtype);

@@ -51,4 +51,10 @@ public interface InstanceOfTree extends ExpressionTree {
      * @return the type
      */
     Tree getType();
+
+    /**
+     * Returns the tested pattern.
+     * @return the tested pattern
+     */
+    PatternTree getPattern();
 }

@@ -25,7 +25,7 @@
 
 class ResourceMayNotBeAssigned {
     void m(Object o) {
-        if (o __matches String s) {
+        if (o instanceof String s) {
             s = "";
         }
     }

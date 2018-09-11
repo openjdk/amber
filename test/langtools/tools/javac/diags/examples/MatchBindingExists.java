@@ -32,7 +32,7 @@ class X {
         Integer i = 42;
         Object o1 = s, o2 = i;
 
-        if (o1 __matches String k && o2 __matches Integer k) {}
-        if (o1 __matches String k || o2 __matches Integer k) {}
+        if (o1 instanceof String k && o2 instanceof Integer k) {}
+        if (o1 instanceof String k || o2 instanceof Integer k) {}
     }
 }

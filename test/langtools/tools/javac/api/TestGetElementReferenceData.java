@@ -36,7 +36,7 @@ public class TestGetElementReferenceData {
         utility/*getElement:METHOD:test.TestGetElementReferenceData.Base.utility()*/();
         target(TestGetElementReferenceData :: test/*getElement:METHOD:test.TestGetElementReferenceData.test()*/);
         Object o = null;
-        if (o __matches String/*getElement:CLASS:java.lang.String*/ str/*getElement:LOCAL_VARIABLE:str*/) ;
+        if (o instanceof String/*getElement:CLASS:java.lang.String*/ str/*getElement:LOCAL_VARIABLE:str*/) ;
     }
     private static void target(Runnable r) { r.run(); }
     public static class Base {

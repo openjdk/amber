@@ -80,7 +80,6 @@ public class CompletenessTest extends KullaTesting {
         "i >= 0 && Character.isWhitespace(s.charAt(i))",
         "int.class",
         "String.class",
-        "var",
     };
 
     static final String[] complete_with_semi = new String[] {
@@ -123,7 +122,6 @@ public class CompletenessTest extends KullaTesting {
         "int[] m = {1, 2}, n = null",
         "int[] m = {1, 2}, n",
         "int[] m = {1, 2}, n = {3, 4}",
-        "int var",
     };
 
     static final String[] considered_incomplete = new String[] {
@@ -187,8 +185,6 @@ public class CompletenessTest extends KullaTesting {
         "int n,",
         "int[] m = {1, 2},",
         "int[] m = {1, 2}, n = {3, 4},",
-        "Map<String,",
-        "if (o __matches var",
         "Map<String,",
         "switch (x) {",
         "var v = switch (x) {",

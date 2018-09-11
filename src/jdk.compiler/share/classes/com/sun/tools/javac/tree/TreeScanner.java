@@ -296,21 +296,12 @@ public class TreeScanner extends Visitor {
 
     public void visitTypeTest(JCInstanceOf tree) {
         scan(tree.expr);
-        scan(tree.clazz);
-    }
-
-    public void visitPatternTest(JCMatches tree) {
-        scan(tree.expr);
         scan(tree.pattern);
     }
 
     public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null)
             scan(tree.vartype);
-    }
-
-    public void visitLiteralPattern(JCLiteralPattern tree) {
-        scan(tree.value);
     }
 
     public void visitIndexed(JCArrayAccess tree) {

@@ -34,7 +34,6 @@ import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
-import com.sun.tools.javac.tree.JCTree.JCLiteralPattern;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -61,11 +60,6 @@ public class MatchBindingsComputer extends TreeScanner {
     @Override
     public void visitBindingPattern(JCBindingPattern tree) {
         bindings = whenTrue ? List.of(tree.symbol) : List.nil();
-    }
-
-    @Override
-    public void visitLiteralPattern(JCLiteralPattern tree) {
-        //noop
     }
 
     @Override
@@ -193,9 +187,9 @@ public class MatchBindingsComputer extends TreeScanner {
         }
         return bindings;
     }
-    
+
     public static class BindingSymbol extends VarSymbol {
-        
+
         public BindingSymbol(Name name, Type type, Symbol owner) {
             super(Flags.FINAL | Flags.HASINIT | Flags.MATCH_BINDING, name, type, owner);
         }

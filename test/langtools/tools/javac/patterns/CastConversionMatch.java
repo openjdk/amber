@@ -24,24 +24,16 @@
 /*
  * @test
  * @summary Match which involves a cast conversion
- * @compile CastConversionMatch.java
- * @run main CastConversionMatch
+ * @compile/fail/ref=CastConversionMatch.out -XDrawDiagnostics CastConversionMatch.java
  */
 
 public class CastConversionMatch {
     public static void main(String [] args) {
         Object o = 42;
-        if (o __matches int s) {
+        if (o instanceof int s) {
             System.out.println("Okay");
         } else {
             throw new AssertionError("broken");
-        }
-        switch (o) {
-            case int i: {
-                System.out.println("Okay;");
-                break;
-            }
-            default: throw new AssertionError("broken");
         }
         System.out.println(">Test complete");
     }

@@ -146,7 +146,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCase(CaseTree node, P p) {
         JCCase t = (JCCase) node;
-        List<JCPattern> pats = copy(t.pats, p);
+        List<JCExpression> pats = copy(t.pats, p);
         List<JCStatement> stats = copy(t.stats, p);
         JCTree body = copy(t.body, p);
         return M.at(t.pos).Case(t.caseKind, pats, stats, body);
@@ -475,33 +475,17 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     public JCTree visitInstanceOf(InstanceOfTree node, P p) {
         JCInstanceOf t = (JCInstanceOf) node;
         JCExpression expr = copy(t.expr, p);
-        JCTree clazz = copy(t.clazz, p);
-        return M.at(t.pos).TypeTest(expr, clazz);
+        JCTree pattern = copy(t.pattern, p);
+        return M.at(t.pos).TypeTest(expr, pattern);
     }
-
-    @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitMatches(MatchesTree node, P p) {
-        JCMatches t = (JCMatches) node;
-        JCExpression expr = copy(t.expr, p);
-        JCPattern pattern = copy(t.pattern, p);
-        return M.at(t.pos).PatternTest(expr, pattern);
-    }
-
 
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitBindingPattern(BindingPatternTree node, P p) {
         JCBindingPattern t = (JCBindingPattern) node;
-        JCExpression vartype = copy(t.vartype, p);
+        JCTree vartype = copy(t.vartype, p);
         return M.at(t.pos).BindingPattern(t.name, vartype);
     }
 
-    @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitLiteralPattern(LiteralPatternTree node, P p) {
-        JCLiteralPattern t = (JCLiteralPattern)node;
-        JCExpression value = copy(t.value, p);
-        return M.at(t.pos).LiteralPattern(value);
-    }
-    
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitUnary(UnaryTree node, P p) {
         JCUnary t = (JCUnary) node;
