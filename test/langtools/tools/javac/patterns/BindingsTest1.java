@@ -111,7 +111,32 @@ public class BindingsTest1 {
             s.length();
         }
 
+        L1: {
+            if (o1 instanceof String s) {
+                s.length();
+            } else {
+                break L1;
+            }
+            s.length();
+        }
 
+        L2: {
+            if (!(o1 instanceof String s)) {
+                break L2;
+            } else {
+                s.length();
+            }
+            s.length();
+        }
+
+        L3: {
+            if ((o1 instanceof String s) || (o3 instanceof String s)) {
+                s.length();
+            } else {
+                break L3;
+            }
+            s.length();
+        }
 
         System.out.println("BindingsTest1 complete");
     }

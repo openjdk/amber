@@ -201,6 +201,14 @@ public class MatchBindingsComputer extends TreeScanner {
         List<BindingSymbol> aliases() {
             return List.of(this);
         }
+
+        public void preserveBinding() {
+            flags_field |= Flags.MATCH_BINDING_TO_OUTER;
+        }
+
+        public boolean isPreserved() {
+            return (flags_field & Flags.MATCH_BINDING_TO_OUTER) != 0;
+        }
     }
 
     public static class IntersectionBindingSymbol extends BindingSymbol {
@@ -217,6 +225,15 @@ public class MatchBindingsComputer extends TreeScanner {
         @Override
         List<BindingSymbol> aliases() {
             return aliases;
+        }
+
+        @Override
+        public void preserveBinding() {
+            aliases.stream().forEach(BindingSymbol::preserveBinding);
+        }
+
+        public boolean isPreserved() {
+            return aliases.stream().allMatch(BindingSymbol::isPreserved);
         }
     }
 }

@@ -76,6 +76,8 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
+import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
@@ -1318,6 +1320,12 @@ public class Attr extends JCTree.Visitor {
     public void visitDoLoop(JCDoWhileLoop tree) {
         attribStat(tree.body, env.dup(tree));
         attribExpr(tree.cond, env, syms.booleanType);
+        if (!breaksOutOf(tree, tree.body)) {
+            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+            bindings.forEach(env.info.scope::enter);
+            bindings.forEach(BindingSymbol::preserveBinding);
+        }
         result = null;
     }
 
@@ -1330,7 +1338,27 @@ public class Attr extends JCTree.Visitor {
         } finally {
             whileEnv.info.scope.leave();
         }
+        if (!breaksOutOf(tree, tree.body)) {
+            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+            bindings.forEach(env.info.scope::enter);
+            bindings.forEach(BindingSymbol::preserveBinding);
+        }
         result = null;
+    }
+
+    private boolean breaksOutOf(JCTree loop, JCTree body) {
+        //TODO: should correctly reflect liveness:
+        boolean[] breaksOut = new boolean[1];
+        new TreeScanner() {
+            @Override
+            public void visitBreak(JCBreak tree) {
+                breaksOut[0] |= tree.target == loop;
+                super.visitBreak(tree);
+            }
+        }.scan(body);
+
+        return breaksOut[0];
     }
 
     public void visitForLoop(JCForLoop tree) {
@@ -1351,6 +1379,12 @@ public class Attr extends JCTree.Visitor {
                 attribStat(tree.body, bodyEnv);
             } finally {
                 bodyEnv.info.scope.leave();
+            }
+            if (!breaksOutOf(tree, tree.body)) {
+                List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+                bindings.forEach(env.info.scope::enter);
+                bindings.forEach(BindingSymbol::preserveBinding);
             }
             result = null;
         }
@@ -1895,22 +1929,46 @@ public class Attr extends JCTree.Visitor {
 
         // if (x) { y } [ else z ] include x.T in y; include x.F in z
 
-        Env<AttrContext> thenEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        List<BindingSymbol> thenBindings = getMatchBindings(types, log, tree.cond, true);
+        Env<AttrContext> thenEnv = bindingEnv(env, thenBindings);
+
         try {
             attribStat(tree.thenpart, thenEnv);
         } finally {
             thenEnv.info.scope.leave();
         }
 
+        boolean aliveAfterThen = flow.aliveAfter(env, tree.thenpart, make);
+        boolean aliveAfterElse;
+        List<BindingSymbol> elseBindings = List.nil();
+
         if (tree.elsepart != null) {
-            Env<AttrContext> elseEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, false));
+            elseBindings = getMatchBindings(types, log, tree.cond, false);
+
+            Env<AttrContext> elseEnv = bindingEnv(env, elseBindings);
             try {
                 attribStat(tree.elsepart, elseEnv);
             } finally {
                 elseEnv.info.scope.leave();
             }
+            aliveAfterElse = flow.aliveAfter(env, tree.elsepart, make);
+        } else {
+            aliveAfterElse = true;
         }
+
         chk.checkEmptyIf(tree);
+
+        List<BindingSymbol> afterIfBindings = List.nil();
+
+        if (aliveAfterThen && !aliveAfterElse) {
+            afterIfBindings = thenBindings;
+        } else if (aliveAfterElse && !aliveAfterThen) {
+            afterIfBindings = elseBindings;
+        }
+
+        afterIfBindings.forEach(env.info.scope::enter);
+        afterIfBindings.forEach(BindingSymbol::preserveBinding);
+
         result = null;
     }
 

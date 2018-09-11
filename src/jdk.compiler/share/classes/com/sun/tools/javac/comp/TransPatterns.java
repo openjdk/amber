@@ -58,11 +58,14 @@ import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import com.sun.tools.javac.tree.JCTree.JCBlock;
+import com.sun.tools.javac.tree.JCTree.JCStatement;
 
 /**
  * This pass translates pattern-matching constructs, such as instanceof <pattern>.
@@ -106,6 +109,11 @@ public class TransPatterns extends TreeTranslator {
         BindingContext pop() {
             //do nothing
             return this;
+        }
+
+        @Override
+        boolean tryPrepend(BindingSymbol binding, JCVariableDecl var) {
+            return false;
         }
     };
 
@@ -256,6 +264,28 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
+    @Override
+    public void visitBlock(JCBlock tree) {
+        ListBuffer<JCStatement> statements = new ListBuffer<>();
+        bindingContext = new BasicBindingContext(List.nil()) {
+            boolean tryPrepend(BindingSymbol binding, JCVariableDecl var) {
+                hoistedVarMap.put(binding, var.sym);
+                statements.append(var);
+                return true;
+            }
+        };
+        try {
+            for (List<JCStatement> l = tree.stats; l.nonEmpty(); l = l.tail) {
+                statements.append(translate(l.head));
+            }
+
+            tree.stats = statements.toList();
+            result = tree;
+        } finally {
+            bindingContext.pop();
+        }
+    }
+
     public JCTree translateTopLevelClass(Env<AttrContext> env, JCTree cdef, TreeMaker make) {
         try {
             this.make = make;
@@ -344,6 +374,7 @@ public class TransPatterns extends TreeTranslator {
         abstract JCStatement decorateStatement(JCStatement stat);
         abstract JCExpression decorateExpression(JCExpression expr);
         abstract BindingContext pop();
+        abstract boolean tryPrepend(BindingSymbol binding, JCVariableDecl var);
     }
 
     class BasicBindingContext extends BindingContext {
@@ -375,11 +406,18 @@ public class TransPatterns extends TreeTranslator {
         JCStatement decorateStatement(JCStatement stat) {
             if (hoistedVarMap.isEmpty()) return stat;
             ListBuffer<JCStatement> stats = new ListBuffer<>();
-            for (VarSymbol vsym : hoistedVarMap.values()) {
-                stats.add(makeHoistedVarDecl(stat.pos, vsym));
+            for (Entry<BindingSymbol, VarSymbol> e : hoistedVarMap.entrySet()) {
+                JCVariableDecl decl = makeHoistedVarDecl(stat.pos, e.getValue());
+                if (!e.getKey().isPreserved() ||
+                    !parent.tryPrepend(e.getKey(), decl)) {
+                    stats.add(decl);
+                }
             }
-            stats.add(stat);
-            return make.at(stat.pos).Block(0, stats.toList());
+            if (stats.nonEmpty()) {
+                stats.add(stat);
+                stat = make.at(stat.pos).Block(0, stats.toList());
+            }
+            return stat;
         }
 
         @Override
@@ -393,6 +431,11 @@ public class TransPatterns extends TreeTranslator {
         @Override
         BindingContext pop() {
             return bindingContext = parent;
+        }
+
+        @Override
+        boolean tryPrepend(BindingSymbol binding, JCVariableDecl var) {
+            return false;
         }
 
         private JCVariableDecl makeHoistedVarDecl(int pos, VarSymbol varSymbol) {
