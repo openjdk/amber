@@ -42,7 +42,9 @@ import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.TypeTag.*;
@@ -109,7 +111,13 @@ public class RichDiagnosticFormatter extends
             whereClauses.put(kind, new LinkedHashMap<Type, JCDiagnostic>());
         symbolsToRemove.add(syms.constableType.tsym);
         symbolsToRemove.add(syms.constantDescType.tsym);
+        Options options = Options.instance(context);
+        compactMethodDiags = options.isSet(Option.XDIAGS, "compact") ||
+                options.isUnset(Option.XDIAGS) && options.isUnset("rawDiagnostics");
     }
+
+    Set<TypeSymbol> symbolsToRemove = new HashSet<>();
+    final boolean compactMethodDiags;
 
     @Override
     public String format(JCDiagnostic diag, Locale l) {
@@ -185,7 +193,7 @@ public class RichDiagnosticFormatter extends
      */
     protected void preprocessArgument(Object arg) {
         if (arg instanceof Type) {
-            arg = preprocessType((Type)arg);
+            preprocessType((Type)arg);
         }
         else if (arg instanceof Symbol) {
             preprocessSymbol((Symbol)arg);
@@ -455,81 +463,95 @@ public class RichDiagnosticFormatter extends
      * Preprocess a given type looking for (i) additional info (where clauses) to be
      * added to the main diagnostic (ii) names to be compacted.
      */
-    protected Type preprocessType(Type t) {
-        return typePreprocessor.visit(t);
+    protected void preprocessType(Type t) {
+        typePreprocessor.visit(t);
     }
     //where
-    Set<TypeSymbol> symbolsToRemove = new HashSet<>();
+    protected Types.UnaryVisitor<Void> typePreprocessor =
+            new Types.UnaryVisitor<Void>() {
 
-    protected StructuralTypeMapping<Void> typePreprocessor = new StructuralTypeMapping<Void>() {
-        List<Type> visit(List<Type> ts) {
-            return ts.map(t -> visit(t));
-        }
-
-        @Override
-        public Type visitForAll(ForAll t, Void ignored) {
-            t.tvars = visit(t.tvars);
-            t.qtype = visit(t.qtype);
-            return t;
-        }
-
-        @Override
-        public Type visitMethodType(MethodType t, Void ignored) {
-            t.argtypes = t.argtypes;
-            t.restype = visit(t.restype);
-            return t;
-        }
-
-        @Override
-        public Type visitErrorType(ErrorType t, Void ignored) {
-            Type ot = t.getOriginalType();
-            if (ot != null)
-                ot = visit(ot);
-            return ot;
-        }
-
-        @Override
-        public Type visitArrayType(ArrayType t, Void ignored) {
-            t.elemtype = visit(t.elemtype);
-            return t;
-        }
-
-        @Override
-        public Type visitWildcardType(WildcardType t, Void ignored) {
-            t.type = visit(t.type);
-            return t;
-        }
-
-        public Type visitType(Type t, Void ignored) {
+        public Void visit(List<Type> ts) {
+            for (Type t : ts)
+                visit(t);
             return null;
         }
 
         @Override
-        public Type visitCapturedType(CapturedType t, Void ignored) {
-            if (indexOf(t, WhereClauseKind.CAPTURED) == -1) {
-                t.wildcard = (WildcardType)visit(t.wildcard);
-                t.lower = visit(t.lower);
-                t.bound = visit(t.bound);
-                String suffix = t.lower == syms.botType ? ".1" : "";
-                JCDiagnostic d = diags.fragment("where.captured"+ suffix, t, t.bound, t.lower, t.wildcard);
-                whereClauses.get(WhereClauseKind.CAPTURED).put(t, d);
-            }
-            return t;
+        public Void visitForAll(ForAll t, Void ignored) {
+            visit(t.tvars);
+            visit(t.qtype);
+            return null;
         }
 
         @Override
-        public Type visitClassType(ClassType t, Void ignored) {
+        public Void visitMethodType(MethodType t, Void ignored) {
+            visit(t.argtypes);
+            visit(t.restype);
+            return null;
+        }
+
+        @Override
+        public Void visitErrorType(ErrorType t, Void ignored) {
+            Type ot = t.getOriginalType();
+            if (ot != null)
+                visit(ot);
+            return null;
+        }
+
+        @Override
+        public Void visitArrayType(ArrayType t, Void ignored) {
+            visit(t.elemtype);
+            return null;
+        }
+
+        @Override
+        public Void visitWildcardType(WildcardType t, Void ignored) {
+            visit(t.type);
+            return null;
+        }
+
+        public Void visitType(Type t, Void ignored) {
+            return null;
+        }
+
+        @Override
+        public Void visitCapturedType(CapturedType t, Void ignored) {
+            if (indexOf(t, WhereClauseKind.CAPTURED) == -1) {
+                String suffix = t.lower == syms.botType ? ".1" : "";
+                JCDiagnostic d = diags.fragment("where.captured"+ suffix, t, t.bound, t.lower, t.wildcard);
+                whereClauses.get(WhereClauseKind.CAPTURED).put(t, d);
+                visit(t.wildcard);
+                visit(t.lower);
+                visit(t.bound);
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitClassType(ClassType t, Void ignored) {
             if (t.isCompound()) {
                 if (indexOf(t, WhereClauseKind.INTERSECTION) == -1) {
-                    Type supertype = visit(types.supertype(t));
+                    Type supertype = types.supertype(t);
                     List<Type> interfaces = types.interfaces(t);
-                    List<Type> newInterfaces = removeTypes(interfaces);
-                    if (interfaces != newInterfaces) {
-                        t = types.makeIntersectionType(newInterfaces.prepend(supertype));
+                    ListBuffer<Type> interfaceBuffer = new ListBuffer<>();
+                    boolean removed = false;
+                    if (compactMethodDiags) {
+                        for (Type interf : interfaces) {
+                            if (!symbolsToRemove.contains(interf.tsym)) {
+                                interfaceBuffer.add(interf);
+                            } else {
+                                removed = true;
+                            }
+                        }
+                        interfaces = interfaceBuffer.toList();
                     }
-                    JCDiagnostic d = diags.fragment(Fragments.WhereIntersection(t, newInterfaces.prepend(supertype)));
+                    JCDiagnostic d = diags.fragment(Fragments.WhereIntersection(t, interfaces.prepend(supertype)));
+                    if (removed) {
+                        d.setFlag(DiagnosticFlag.COMPRESSED);
+                    }
                     whereClauses.get(WhereClauseKind.INTERSECTION).put(t, d);
-                    return t;
+                    visit(supertype);
+                    visit(interfaces);
                 }
             } else if (t.tsym.name.isEmpty()) {
                 //anon class
@@ -552,11 +574,11 @@ public class RichDiagnosticFormatter extends
             }
             if (enclosingType != Type.noType)
                 visit(t.getEnclosingType());
-            return t;
+            return null;
         }
 
         @Override
-        public Type visitTypeVar(TypeVar t, Void ignored) {
+        public Void visitTypeVar(TypeVar t, Void ignored) {
             t = (TypeVar)t.stripMetadataIfNeeded();
             if (indexOf(t, WhereClauseKind.TYPEVAR) == -1) {
                 //access the bound type and skip error types
@@ -593,76 +615,12 @@ public class RichDiagnosticFormatter extends
                 }
 
             }
-            return t;
+            return null;
         }
         //where:
             private List<Type> getBounds(Type bound) {
                 return bound.isCompound() ? types.directSupertypes(bound) : List.of(bound);
             }
-    };
-
-    private List<Type> removeTypes(List<Type> ts) {
-        ListBuffer<Type> newList = new ListBuffer<>();
-        for (Type t : ts) {
-            Type result = removeTypes(t);
-            if (result != null) {
-                newList.add(result);
-            }
-        }
-        return newList.toList();
-    }
-
-    private Type removeTypes(Type t) {
-        return t.map(removeTypesVisitor);
-    }
-
-    private StructuralTypeMapping<Void> removeTypesVisitor = new StructuralTypeMapping<Void>() {
-        @Override
-        public Type visitTypeVar(TypeVar t, Void ignored) {
-            if (symbolsToRemove.contains(t.tsym)) {
-                return null;
-            }
-            return t;
-        }
-
-        List<Type> visit(List<Type> ts, Void ignored) {
-            boolean changed = false;
-            ListBuffer<Type> buf = new ListBuffer<>();
-            for (Type t : ts) {
-                Type newT = visit(t, ignored);
-                if (newT != null) {
-                    buf.append(newT);
-                }
-                changed |= (newT != t);
-            }
-            return changed ? buf.toList() : ts;
-        }
-
-        @Override
-        public Type visitClassType(ClassType t, Void ignored) {
-            if (symbolsToRemove.contains(t.tsym)) {
-                return null;
-            }
-            if (!t.isCompound()) {
-                return super.visitClassType(t, ignored);
-            } else {
-                Type st = visit(types.supertype(t));
-                List<Type> is = visit(types.interfaces(t), ignored);
-                if (st == types.supertype(t) && is == types.interfaces(t))
-                    return t;
-                else
-                    return types.makeIntersectionType(is.prepend(st));
-            }
-        }
-
-        @Override
-        public Type visitWildcardType(WildcardType t, Void ignored) {
-            WildcardType t2 = (WildcardType)super.visitWildcardType(t, ignored);
-            if (t2 != t && t.isExtendsBound() && t2.type.isExtendsBound()) {
-                t2.type = types.wildUpperBound(t2.type);
-            }
-            return t2;
-        }
     };
     // </editor-fold>
 
@@ -681,7 +639,7 @@ public class RichDiagnosticFormatter extends
         @Override
         public Void visitClassSymbol(ClassSymbol s, Void ignored) {
             if (s.type.isCompound()) {
-                s.type = typePreprocessor.visit(s.type);
+                typePreprocessor.visit(s.type);
             } else {
                 nameSimplifier.addUsage(s);
             }
@@ -697,7 +655,7 @@ public class RichDiagnosticFormatter extends
         public Void visitMethodSymbol(MethodSymbol s, Void ignored) {
             visit(s.owner, null);
             if (s.type != null)
-                s.type = typePreprocessor.visit(s.type);
+                typePreprocessor.visit(s.type);
             return null;
         }
     };
