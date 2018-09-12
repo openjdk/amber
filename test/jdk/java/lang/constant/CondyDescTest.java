@@ -51,12 +51,12 @@ import static org.testng.Assert.assertTrue;
 
 /**
  * @test
- * @compile -XDfolding=false CondyRefTest.java
- * @run testng CondyRefTest
- * @summary unit tests for java.lang.constant.CondyRefTest
+ * @compile CondyDescTest.java
+ * @run testng CondyDescTest
+ * @summary unit tests for java.lang.constant.CondyDescTest
  */
 @Test
-public class CondyRefTest extends SymbolicRefTest {
+public class CondyDescTest extends SymbolicDescTest {
     private final static ConstantDesc<?>[] EMPTY_ARGS = new ConstantDesc<?>[0];
     private final static ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
@@ -66,13 +66,13 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     private void testVarHandleRef(DynamicConstantDesc<VarHandle> r, VarHandle vh) throws ReflectiveOperationException  {
-        testSymbolicRef(r);
+        testSymbolicDesc(r);
         assertEquals(r.resolveConstantDesc(LOOKUP), vh);
         assertEquals(vh.describeConstable().orElseThrow(), r);
     }
 
     private static<E extends Enum<E>> void testEnumRef(EnumDesc<E> r, E e) throws ReflectiveOperationException {
-        testSymbolicRef(r);
+        testSymbolicDesc(r);
 
         assertEquals(r, EnumDesc.of(r.constantType(), r.constantName()));
         assertEquals(r.resolveConstantDesc(LOOKUP), e);
@@ -89,7 +89,7 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testDynamicConstant() throws ReflectiveOperationException {
-        DirectMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyRefTest"), "concatBSM",
+        DirectMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyDescTest"), "concatBSM",
                                                                             CR_String, CR_String, CR_String);
         DynamicConstantDesc<String> r = DynamicConstantDesc.of(bsmRef, "foo", "bar");
         testDCR(r, "foobar");
@@ -114,7 +114,7 @@ public class CondyRefTest extends SymbolicRefTest {
     enum MyEnum { A, B, C }
 
     public void testEnumRef() throws ReflectiveOperationException {
-        ClassDesc enumClass = ClassDesc.of("CondyRefTest").inner("MyEnum");
+        ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
 
         testEnumRef(EnumDesc.of(enumClass, "A"), MyEnum.A);
         testEnumRef(EnumDesc.of(enumClass, "B"), MyEnum.B);
@@ -127,7 +127,7 @@ public class CondyRefTest extends SymbolicRefTest {
     }
 
     public void testVarHandles() throws ReflectiveOperationException {
-        ClassDesc testClass = ClassDesc.of("CondyRefTest").inner("MyClass");
+        ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
         MyClass instance = new MyClass();
 
         // static varHandle
@@ -197,12 +197,12 @@ public class CondyRefTest extends SymbolicRefTest {
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CR_Class, EMPTY_ARGS));
 
-        ClassDesc enumClass = ClassDesc.of("CondyRefTest").inner("MyEnum");
+        ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
         assertLifted(EnumDesc.of(enumClass, "A"),
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS),
                      DynamicConstantDesc.<MyEnum>ofCanonical(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS));
 
-        ClassDesc testClass = ClassDesc.of("CondyRefTest").inner("MyClass");
+        ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
         assertLifted(VarHandleDesc.ofStaticField(testClass, "sf", CR_int),
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CR_int }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CR_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CR_int }));

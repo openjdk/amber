@@ -25,17 +25,11 @@
 
 package java.lang.invoke;
 
-import jdk.internal.HotSpotIntrinsicCandidate;
-import jdk.internal.util.Preconditions;
-import jdk.internal.vm.annotation.ForceInline;
-import jdk.internal.vm.annotation.Stable;
-
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DirectMethodHandleDesc;
-import java.lang.constant.ConstantUtils;
 import java.lang.constant.DynamicConstantDesc;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +39,12 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.util.Preconditions;
+import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.Stable;
+
 import static java.lang.invoke.MethodHandleStatics.UNSAFE;
-import static java.lang.constant.ConstantDescs.CR_VarHandleDesc;
 
 /**
  * A VarHandle is a dynamically strongly typed reference to a variable, or to a
@@ -2269,15 +2267,6 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 default:
                     throw new InternalError("Cannot reach here");
             }
-        }
-
-        @Override
-        public Optional<? extends ConstantDesc<ConstantDesc<VarHandle>>> describeConstable() {
-            Constable<?>[] args =
-                    (kind == Kind.ARRAY)
-                    ? new Constable<?>[] { declaringClass }
-                    : new Constable<?>[] { declaringClass, constantName(), varType };
-            return ConstantUtils.symbolizeHelper(kind.descFactory, CR_VarHandleDesc, args);
         }
 
         @Override

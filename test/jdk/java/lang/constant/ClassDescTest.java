@@ -26,7 +26,6 @@
 import java.lang.invoke.MethodHandles;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
-import java.lang.constant.ConstantUtils;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -45,15 +44,15 @@ import static org.testng.Assert.fail;
 
 /**
  * @test
- * @compile -XDfolding=false ClassRefTest.java
- * @run testng ClassRefTest
+ * @compile ClassDescTest.java
+ * @run testng ClassDescTest
  * @summary unit tests for java.lang.constant.ClassDesc
  */
 @Test
-public class ClassRefTest extends SymbolicRefTest {
+public class ClassDescTest extends SymbolicDescTest {
 
     private void testClassRef(ClassDesc r) throws ReflectiveOperationException {
-        testSymbolicRef(r);
+        testSymbolicDesc(r);
 
         // Test descriptor accessor, factory, equals
         assertEquals(r, ClassDesc.ofDescriptor(r.descriptorString()));
@@ -81,7 +80,7 @@ public class ClassRefTest extends SymbolicRefTest {
         assertEquals(ClassDesc.ofDescriptor(c.descriptorString()), r);
     }
 
-    public void testSymbolicRefsConstants() throws ReflectiveOperationException {
+    public void testSymbolicDescsConstants() throws ReflectiveOperationException {
         int tested = 0;
         Field[] fields = ConstantDescs.class.getDeclaredFields();
         for (Field f : fields) {
@@ -151,11 +150,11 @@ public class ClassRefTest extends SymbolicRefTest {
         testClassRef(ClassDesc.of("java.lang.String").arrayType(), String[].class);
         testClassRef(ClassDesc.of("java.util.Map").inner("Entry"), Map.Entry.class);
 
-        ClassDesc thisClassRef = ClassDesc.ofDescriptor("LClassRefTest;");
-        assertEquals(thisClassRef, ClassDesc.of("", "ClassRefTest"));
-        assertEquals(thisClassRef, ClassDesc.of("ClassRefTest"));
-        assertEquals(thisClassRef.displayName(), "ClassRefTest");
-        testClassRef(thisClassRef, ClassRefTest.class);
+        ClassDesc thisClassRef = ClassDesc.ofDescriptor("LClassDescTest;");
+        assertEquals(thisClassRef, ClassDesc.of("", "ClassDescTest"));
+        assertEquals(thisClassRef, ClassDesc.of("ClassDescTest"));
+        assertEquals(thisClassRef.displayName(), "ClassDescTest");
+        testClassRef(thisClassRef, ClassDescTest.class);
     }
 
     private void testBadPackageName(ClassDesc cr) {

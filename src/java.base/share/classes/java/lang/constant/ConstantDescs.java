@@ -210,14 +210,12 @@ public final class ConstantDescs {
     @Foldable
     public static final ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
-    // Used by MethodHandleDesc, but initialized here before reference to
-    // MethodHandleDesc to avoid static initalization circularities
-    /* non-public */ static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
+    private static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CR_MethodHandles_Lookup,
             ConstantDescs.CR_String,
             ConstantDescs.CR_MethodType };
 
-    /* non-public */ static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
+    private static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CR_MethodHandles_Lookup,
             ConstantDescs.CR_String,
             ConstantDescs.CR_Class };
@@ -316,8 +314,8 @@ public final class ConstantDescs {
                                   CR_ClassDesc, CR_String);
 
     static final DirectMethodHandleDesc MHR_METHODHANDLEDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_MethodHandleDesc, "of",
-                                  CR_MethodHandleDesc, CR_MethodHandleDesc_Kind, CR_ClassDesc, CR_String, CR_MethodTypeDesc);
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DirectMethodHandleDesc, "ofDescriptor",
+                                  CR_DirectMethodHandleDesc, CR_String, CR_String, CR_String, CR_String);
 
     static final DirectMethodHandleDesc MHR_METHODHANDLE_ASTYPE
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_MethodHandle, "asType",
@@ -329,15 +327,16 @@ public final class ConstantDescs {
 
     static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_FACTORY
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "of",
-                                  CR_DynamicConstantDesc, CR_MethodHandleDesc, CR_String, CR_ClassDesc);
+                                  CR_DynamicConstantDesc, CR_DirectMethodHandleDesc, CR_ConstantDesc.arrayType());
 
-    static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_WITHARGS
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_DynamicConstantDesc, "withArgs",
-                                  CR_DynamicConstantDesc, CR_ConstantDesc.arrayType());
+    static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "ofNamed",
+                                  CR_DynamicConstantDesc, CR_DirectMethodHandleDesc, CR_String, CR_String, CR_ConstantDesc.arrayType());
 
-    static final DirectMethodHandleDesc MHR_ENUMDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_EnumDesc, "of",
-                                  CR_EnumDesc, CR_ClassDesc, CR_String);
+    /** {@link MethodHandleDesc} representing {@link EnumDesc#ofDescriptor(String, String)} */
+    public static final DirectMethodHandleDesc MHR_ENUMDESC_FACTORY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_EnumDesc, "ofDescriptor",
+                                  CR_EnumDesc, CR_String, CR_String);
 
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofField(ClassDesc, String, ClassDesc)} */
     public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFFIELD
@@ -353,29 +352,16 @@ public final class ConstantDescs {
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofArray",
                                   CR_VarHandleDesc, CR_ClassDesc);
 
-    static final DirectMethodHandleDesc BSM_CLASSDESC
-            = ConstantDescs.ofConstantBootstrap(CR_ClassDesc,
-                                                "constantBootstrap", CR_ClassDesc, CR_String);
-
-    static final DirectMethodHandleDesc BSM_METHODTYPEDESC
-            = ConstantDescs.ofConstantBootstrap(CR_MethodTypeDesc,
-                                                "constantBootstrap", CR_MethodTypeDesc, CR_String);
-
     static final DirectMethodHandleDesc BSM_METHODHANDLEDESC
             = ConstantDescs.ofConstantBootstrap(CR_DirectMethodHandleDesc,
                                                 "constantBootstrap", CR_DirectMethodHandleDesc,
                                                 CR_String, CR_String, CR_String, CR_String);
 
-    /** {@link MethodHandleDesc} representing {@link EnumDesc#constantBootstrap(Lookup, String, Class, String, String)} */
-    public static final DirectMethodHandleDesc BSM_ENUMDESC
-            = ConstantDescs.ofConstantBootstrap(CR_EnumDesc, "constantBootstrap", CR_EnumDesc, CR_String, CR_String);
-
     static final DirectMethodHandleDesc BSM_DYNAMICCONSTANTDESC
             = ConstantDescs.ofConstantBootstrap(CR_DynamicConstantDesc,
                                                 "constantBootstrap",
                                                 CR_DynamicConstantDesc,
-                                                CR_String, CR_String, CR_String, CR_String, CR_String, CR_ConstantDesc.arrayType());
-
+                                                CR_DirectMethodHandleDesc, CR_String, CR_String, CR_ConstantDesc.arrayType());
 
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for
@@ -395,7 +381,8 @@ public final class ConstantDescs {
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes).insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
+        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+                                                                      .insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
     }
 
     /**
@@ -416,6 +403,7 @@ public final class ConstantDescs {
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes).insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
+        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+                                                                      .insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
     }
 }
