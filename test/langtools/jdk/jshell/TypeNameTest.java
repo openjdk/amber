@@ -193,22 +193,7 @@ public class TypeNameTest extends KullaTesting {
 
         assertEval("<Z> Z choose(Z z1, Z z2) { return z1; }");
         assertType("choose(1, 1L);",
-                "Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<" +
-                "?>>>&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.Constable<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>" +
-                "&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.Constable<? extends Number&Comparable<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<" +
-                "?>>>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<? extends Number&Comparable<" +
-                "? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>" +
-                "&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.ConstantDesc<" +
-                "? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<? extends Number" +
-                "&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant." +
-                "ConstantDesc<?>>&java.lang.constant.Constable<? extends Number&Comparable<? extends Number&Comparable<" +
-                "?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.Constable<" +
-                "?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.ConstantDesc<?>>",
+                "Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.Constable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.Constable<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>>&java.lang.constant.ConstantDesc<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.Constable<? extends Number&Comparable<? extends Number&Comparable<?>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.Constable<?>&java.lang.constant.ConstantDesc<?>>&java.lang.constant.ConstantDesc<?>>",
                 "Object");
     }
 
