@@ -3704,6 +3704,9 @@ public class JavacParser implements Parser {
         Map<Name, JCVariableDecl> fields = new LinkedHashMap<>();
         while (token.kind != RPAREN) {
             JCModifiers mods = modifiersOpt();
+            if (mods.flags != 0) {
+                log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
+            }
             mods.flags |= Flags.RECORD | Flags.FINAL;
             mods.flags |= (recordClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
             JCExpression type = parseType();
