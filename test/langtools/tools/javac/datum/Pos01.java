@@ -38,7 +38,7 @@ public class Pos01 {
 
     static record Sup(int x, int y) { }
 
-    static record Foo(int x, int y, public int z);
+    static record Foo(int x, int y, int z);
 
     public static void main(String[] args) {
         Foo foo = new Foo(1, 2, 3);

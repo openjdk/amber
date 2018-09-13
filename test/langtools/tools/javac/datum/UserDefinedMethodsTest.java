@@ -34,7 +34,7 @@ import com.sun.tools.javac.util.Assert;
 
 public class UserDefinedMethodsTest {
 
-    static record Foo(int x, int y, public int z) {
+    static record Foo(int x, int y, int z) {
         @Override
         public String toString() {
             return "Foo(x=#x, y=#y, z=#z)".replaceAll("#x", "" + x).replaceAll("#y", "" + y).replaceAll("#z", "" + z);
