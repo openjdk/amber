@@ -332,7 +332,6 @@ void Universe::genesis(TRAPS) {
              SystemDictionary::Cloneable_klass(), "u3");
       assert(_the_array_interfaces_array->at(1) ==
              SystemDictionary::Serializable_klass(), "u3");
-      MetaspaceShared::fixup_mapped_heap_regions();
     } else
 #endif
     {
@@ -545,6 +544,7 @@ void initialize_itable_for_klass(InstanceKlass* k, TRAPS) {
 
 
 void Universe::reinitialize_itables(TRAPS) {
+  MutexLocker mcld(ClassLoaderDataGraph_lock);
   ClassLoaderDataGraph::dictionary_classes_do(initialize_itable_for_klass, CHECK);
 }
 
