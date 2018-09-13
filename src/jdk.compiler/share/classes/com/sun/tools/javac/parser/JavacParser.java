@@ -2515,17 +2515,8 @@ public class JavacParser implements Parser {
         //todo: skip to anchor on error(?)
         int pos = token.pos;
         switch (token.kind) {
-        case RBRACE: case CASE: case EOF:
+        case RBRACE: case CASE: case DEFAULT: case EOF:
             return List.nil();
-        case DEFAULT:
-            if (peekToken(COLON)) {
-                return List.nil();
-            } else {
-                accept(DEFAULT);
-                JCExpression t = toP(F.at(pos).Ident(names._default));
-                t = arguments(null, t);
-                return List.of(toP(F.at(pos).Exec(t)));
-            }
         case LBRACE: case IF: case FOR: case WHILE: case DO: case TRY:
         case SWITCH: case SYNCHRONIZED: case RETURN: case THROW: case BREAK:
         case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:

@@ -108,8 +108,7 @@ public class TreeInfo {
                     JCMethodInvocation apply = (JCMethodInvocation)stat.expr;
                     Name methName = TreeInfo.name(apply.meth);
                     if (methName == names._this ||
-                        methName == names._super ||
-                        (isRecord && methName == names._default)) {
+                        methName == names._super) {
                         return methName;
                     }
                 }

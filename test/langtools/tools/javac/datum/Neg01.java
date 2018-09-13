@@ -12,16 +12,4 @@ public class Neg01 {
     static class Sup2 { }
 
     static record Sup3(int x, int y) { }
-
-    record Test(int x) {
-        Test(int x, int y) {
-            default(); //too few
-            default(x); //ok
-            default(x, y); //too many
-        }
-
-        void test() {
-           default(); //error - not in a constructor
-        }
-    }
 }

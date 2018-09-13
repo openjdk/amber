@@ -1922,12 +1922,6 @@ public class Resolve {
                    boolean allowBoxing, boolean useVarargs) {
         Symbol bestSoFar = methodNotFound;
 
-        if (name == names._default &&
-                env.enclMethod != null &&
-                env.enclMethod.sym.name == names.init) {
-            return env.info.recordImplicitConstructor;
-        }
-
         Env<AttrContext> env1 = env;
         boolean staticOnly = false;
         while (env1.outer != null) {

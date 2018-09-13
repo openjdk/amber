@@ -3729,30 +3729,6 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    @Override
-    public void visitExec(JCExpressionStatement tree) {
-        if (tree.expr.hasTag(APPLY) &&
-                TreeInfo.name(((JCMethodInvocation)tree.expr).meth) == names._default) {
-            //inline constructor assignments
-            List<VarSymbol> vars = types.recordVars(currentClass.type).stream()
-                            .filter(v -> v.owner == currentClass)
-                            .collect(List.collector());
-            ListBuffer<JCStatement> stats = new ListBuffer<>();
-
-            List<JCExpression> args = ((JCMethodInvocation)tree.expr).args;
-            for (VarSymbol vsym : vars) {
-                stats.add(make.Exec(
-                        make.Assign(make.Select(makeThis(tree, currentClass), vsym), args.head)
-                                .setType(types.erasure(vsym.type))));
-                args = args.tail;
-            }
-            JCTree block = make.Block(0, stats.toList());
-            result = translate(block);
-        } else {
-            super.visitExec(tree);
-        }
-    }
-
     public JCTree visitEnumSwitch(JCSwitch tree) {
         TypeSymbol enumSym = tree.selector.type.tsym;
         EnumMapping map = mapForEnum(tree.pos(), enumSym);

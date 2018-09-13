@@ -2410,11 +2410,6 @@ public class Flow {
         public void visitApply(JCMethodInvocation tree) {
             scanExpr(tree.meth);
             scanExprs(tree.args);
-            if (TreeInfo.name(tree.meth) == names._default) {
-                types.recordVars(classDef.type).stream()
-                        .filter(v -> v.owner == classDef.sym)
-                        .forEach(v -> letInit(tree.pos(), v));
-            }
         }
 
         public void visitNewClass(JCNewClass tree) {
