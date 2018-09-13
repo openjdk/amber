@@ -325,11 +325,6 @@ public class Flags {
      */
     public static final long RECORD = 1L<<58;
 
-    /**
-     * Flag to indicate that a record field is non-final.
-     */
-    public static final long NON_FINAL = 1L<<59;
-
     /** Modifier masks.
      */
     public static final int
@@ -447,8 +442,7 @@ public class Flags {
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
-        RECORD(Flags.RECORD),
-        NON_FINAL(Flags.NON_FINAL);
+        RECORD(Flags.RECORD);
 
         Flag(long flag) {
             this.value = flag;

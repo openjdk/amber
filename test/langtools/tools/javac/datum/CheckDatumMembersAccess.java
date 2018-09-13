@@ -41,7 +41,7 @@ import com.sun.tools.javac.util.Assert;
 
 public class CheckDatumMembersAccess {
 
-    record Datum(int AbstractFieldToSearchFor, int newField, non-final int nonFinalField) {}
+    record Datum(int AbstractFieldToSearchFor, int newField, int nonFinalField) {}
 
     public static void main(String args[]) throws Throwable {
         new CheckDatumMembersAccess().run();
@@ -60,9 +60,6 @@ public class CheckDatumMembersAccess {
             if (f.getName(classFile.constant_pool).equals("AbstractFieldToSearchFor") ||
                 f.getName(classFile.constant_pool).equals("newField")) {
                 Assert.check((f.access_flags.flags & AccessFlags.ACC_FINAL) != 0, "fields of datum should be final");
-            }
-            if (f.getName(classFile.constant_pool).equals("nonFinalField")) {
-                Assert.check((f.access_flags.flags & AccessFlags.ACC_FINAL) == 0, "non-final fields of datum should be mutable");
             }
         }
     }

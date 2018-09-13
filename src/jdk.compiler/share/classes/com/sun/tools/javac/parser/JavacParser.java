@@ -3018,19 +3018,6 @@ public class JavacParser implements Parser {
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
-            case IDENTIFIER  : {
-                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.FINAL)) {
-                    Token tokenSub = S.token(1);
-                    Token tokenFinal = S.token(2);
-                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenFinal.pos) {
-                        flag = Flags.NON_FINAL;
-                        nextToken();
-                        nextToken();
-                        break;
-                    }
-                }
-                break loop;
-            }
             default: break loop;
             }
             if ((flags & flag) != 0) log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.RepeatedModifier);
@@ -3726,11 +3713,8 @@ public class JavacParser implements Parser {
         Map<Name, JCVariableDecl> fields = new LinkedHashMap<>();
         while (token.kind != RPAREN) {
             JCModifiers mods = modifiersOpt();
-            mods.flags |= Flags.RECORD;
+            mods.flags |= Flags.RECORD | Flags.FINAL;
             mods.flags |= (recordClassMods.flags & Flags.ABSTRACT) != 0 ? Flags.PROTECTED : 0;
-            if ((mods.flags & Flags.NON_FINAL) == 0) {
-                mods.flags |= Flags.FINAL;
-            }
             JCExpression type = parseType();
             int pos = token.pos;
             Name id = ident();
