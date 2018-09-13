@@ -1884,7 +1884,7 @@ bool SystemDictionary::do_unloading(GCTimer* gc_timer,
     // Oops referenced by the protection domain cache table may get unreachable independently
     // of the class loader (eg. cached protection domain oops). So we need to
     // explicitly unlink them here.
-    _pd_cache_table->unlink();
+    _pd_cache_table->trigger_cleanup();
   }
 
   if (do_cleaning) {
@@ -1919,6 +1919,7 @@ void SystemDictionary::well_known_klasses_do(MetaspaceClosure* it) {
 
 void SystemDictionary::methods_do(void f(Method*)) {
   // Walk methods in loaded classes
+  MutexLocker ml(ClassLoaderDataGraph_lock);
   ClassLoaderDataGraph::methods_do(f);
   // Walk method handle intrinsics
   invoke_method_table()->methods_do(f);
@@ -1936,6 +1937,7 @@ class RemoveClassesClosure : public CLDClosure {
 void SystemDictionary::remove_classes_in_error_state() {
   ClassLoaderData::the_null_class_loader_data()->dictionary()->remove_classes_in_error_state();
   RemoveClassesClosure rcc;
+  MutexLocker ml(ClassLoaderDataGraph_lock);
   ClassLoaderDataGraph::cld_do(&rcc);
 }
 
@@ -2026,6 +2028,22 @@ void SystemDictionary::resolve_preloaded_classes(TRAPS) {
 #if INCLUDE_CDS
   if (UseSharedSpaces) {
     resolve_wk_klasses_through(WK_KLASS_ENUM_NAME(Object_klass), scan, CHECK);
+
+    // It's unsafe to access the archived heap regions before they
+    // are fixed up, so we must do the fixup as early as possible
+    // before the archived java objects are accessed by functions
+    // such as java_lang_Class::restore_archived_mirror and
+    // ConstantPool::restore_unshareable_info (restores the archived
+    // resolved_references array object).
+    //
+    // MetaspaceShared::fixup_mapped_heap_regions() fills the empty
+    // spaces in the archived heap regions and may use
+    // SystemDictionary::Object_klass(), so we can do this only after
+    // Object_klass is resolved. See the above resolve_wk_klasses_through()
+    // call. No mirror objects are accessed/restored in the above call.
+    // Mirrors are restored after java.lang.Class is loaded.
+    MetaspaceShared::fixup_mapped_heap_regions();
+
     // Initialize the constant pool for the Object_class
     Object_klass()->constants()->restore_unshareable_info(CHECK);
     resolve_wk_klasses_through(WK_KLASS_ENUM_NAME(Class_klass), scan, CHECK);
