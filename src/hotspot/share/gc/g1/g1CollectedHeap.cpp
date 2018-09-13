@@ -1950,12 +1950,8 @@ public:
 };
 
 size_t G1CollectedHeap::recalculate_used() const {
-  double recalculate_used_start = os::elapsedTime();
-
   SumUsedClosure blk;
   heap_region_iterate(&blk);
-
-  g1_policy()->phase_times()->record_evac_fail_recalc_used_time((os::elapsedTime() - recalculate_used_start) * 1000.0);
   return blk.result();
 }
 
@@ -3013,7 +3009,10 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         g1_policy()->phase_times()->record_start_new_cset_time_ms((os::elapsedTime() - start) * 1000.0);
 
         if (evacuation_failed()) {
+          double recalculate_used_start = os::elapsedTime();
           set_used(recalculate_used());
+          g1_policy()->phase_times()->record_evac_fail_recalc_used_time((os::elapsedTime() - recalculate_used_start) * 1000.0);
+
           if (_archive_allocator != NULL) {
             _archive_allocator->clear_used();
           }
@@ -4652,6 +4651,10 @@ void G1CollectedHeap::rebuild_strong_code_roots() {
 
 void G1CollectedHeap::initialize_serviceability() {
   _g1mm->initialize_serviceability();
+}
+
+MemoryUsage G1CollectedHeap::memory_usage() {
+  return _g1mm->memory_usage();
 }
 
 GrowableArray<GCMemoryManager*> G1CollectedHeap::memory_managers() {
