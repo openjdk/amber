@@ -5,7 +5,7 @@
  */
 
 public class Neg01 {
-    static abstract record Sup1(int x, int y) { }
+    static record Sup1(int x, int y) { }
 
     record Bad1(int x, int y, int z) extends Sup1(x, y) { } //can't extend
 

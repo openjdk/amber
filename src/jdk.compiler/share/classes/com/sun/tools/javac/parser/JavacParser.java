@@ -3639,6 +3639,9 @@ public class JavacParser implements Parser {
 
     protected JCClassDecl recordDeclaration(JCModifiers mods, Comment dc) {
         int pos = token.pos;
+        if ((mods.flags & Flags.ABSTRACT) != 0) {
+            log.error(mods.pos, Errors.RecordCantBeAbstract);
+        }
         nextToken();
         mods.flags |= Flags.RECORD | Flags.STATIC | Flags.FINAL;
         Name name = typeName();
