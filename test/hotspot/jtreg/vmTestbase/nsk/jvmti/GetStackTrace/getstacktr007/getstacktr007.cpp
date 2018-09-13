@@ -27,21 +27,8 @@
 #include "agent_common.h"
 #include "JVMTITools.h"
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
-#ifndef JNI_ENV_ARG
-
-#ifdef __cplusplus
-#define JNI_ENV_ARG(x, y) y
-#define JNI_ENV_PTR(x) x
-#else
-#define JNI_ENV_ARG(x,y) x, y
-#define JNI_ENV_PTR(x) (*x)
-#endif
-
-#endif
 
 #define PASSED 0
 #define STATUS_FAILED 2
@@ -68,26 +55,26 @@ static frame_info frames[] = {
     {"Lnsk/jvmti/GetStackTrace/getstacktr007$TestThread;", "run", "()V"},
 };
 
-#define NUMBER_OF_FRAMES ((int) (sizeof(frames)/sizeof(frame_info)))
+#define NUMBER_OF_STACK_FRAMES ((int) (sizeof(frames)/sizeof(frame_info)))
 
 void check(jvmtiEnv *jvmti_env, jthread thr) {
     jvmtiError err;
-    jvmtiFrameInfo f[NUMBER_OF_FRAMES + 1];
+    jvmtiFrameInfo f[NUMBER_OF_STACK_FRAMES + 1];
     jclass callerClass;
     char *sigClass, *name, *sig, *generic;
     jint i, count;
 
     err = jvmti_env->GetStackTrace(thr,
-        0, NUMBER_OF_FRAMES + 1, f, &count);
+        0, NUMBER_OF_STACK_FRAMES + 1, f, &count);
     if (err != JVMTI_ERROR_NONE) {
         printf("(GetStackTrace) unexpected error: %s (%d)\n",
                TranslateError(err), err);
         result = STATUS_FAILED;
         return;
     }
-    if (count != NUMBER_OF_FRAMES) {
+    if (count != NUMBER_OF_STACK_FRAMES) {
         printf("Wrong frame count, expected: %d, actual: %d\n",
-               NUMBER_OF_FRAMES, count);
+               NUMBER_OF_STACK_FRAMES, count);
         result = STATUS_FAILED;
     }
 
@@ -126,7 +113,7 @@ void check(jvmtiEnv *jvmti_env, jthread thr) {
             printf(">>>   class:  \"%s\"\n", sigClass);
             printf(">>>   method: \"%s%s\"\n", name, sig);
         }
-        if (i < NUMBER_OF_FRAMES) {
+        if (i < NUMBER_OF_STACK_FRAMES) {
             if (sigClass == NULL || strcmp(sigClass, frames[i].cls) != 0) {
                 printf("(frame#%d) wrong class sig: \"%s\", expected: \"%s\"\n",
                        i, sigClass, frames[i].cls);
@@ -183,10 +170,8 @@ void JNICALL Breakpoint(jvmtiEnv *jvmti_env, JNIEnv *env,
 
     classDef.klass = klass;
     classDef.class_byte_count =
-        JNI_ENV_PTR(env)->GetArrayLength(JNI_ENV_ARG((JNIEnv *)env, classBytes));
-    classDef.class_bytes = (unsigned char*)
-        JNI_ENV_PTR(env)->GetByteArrayElements(JNI_ENV_ARG((JNIEnv *)env,
-            classBytes), NULL);
+        env->GetArrayLength(classBytes);
+    classDef.class_bytes = (unsigned char*) env->GetByteArrayElements(classBytes, NULL);
 
     err = jvmti->RedefineClasses(1, &classDef);
     if (err != JVMTI_ERROR_NONE) {
@@ -195,7 +180,7 @@ void JNICALL Breakpoint(jvmtiEnv *jvmti_env, JNIEnv *env,
         result = STATUS_FAILED;
         return;
     }
-    JNI_ENV_PTR(env)->DeleteGlobalRef(JNI_ENV_ARG((JNIEnv *)env, classBytes));
+    env->DeleteGlobalRef(classBytes);
     classBytes = NULL;
 
     check(jvmti_env, thr);
@@ -220,8 +205,7 @@ jint Agent_Initialize(JavaVM *jvm, char *options, void *reserved) {
         printdump = JNI_TRUE;
     }
 
-    res = JNI_ENV_PTR(jvm)->GetEnv(JNI_ENV_ARG(jvm, (void **) &jvmti),
-        JVMTI_VERSION_1_1);
+    res = jvm->GetEnv((void **) &jvmti, JVMTI_VERSION_1_1);
     if (res != JNI_OK || jvmti == NULL) {
         printf("Wrong result of a valid call to GetEnv!\n");
         return JNI_ERR;
@@ -278,10 +262,9 @@ Java_nsk_jvmti_GetStackTrace_getstacktr007_getReady(JNIEnv *env, jclass cls,
         return;
     }
 
-    classBytes = (jbyteArray) JNI_ENV_PTR(env)->NewGlobalRef(JNI_ENV_ARG(env, bytes));
+    classBytes = (jbyteArray) env->NewGlobalRef(bytes);
 
-    mid = JNI_ENV_PTR(env)->GetMethodID(JNI_ENV_ARG(env, clazz),
-         "checkPoint", "()V");
+    mid = env->GetMethodID(clazz, "checkPoint", "()V");
     if (mid == NULL) {
         printf("Cannot find Method ID for method checkPoint\n");
         result = STATUS_FAILED;
@@ -310,6 +293,4 @@ Java_nsk_jvmti_GetStackTrace_getstacktr007_getRes(JNIEnv *env, jclass cls) {
     return result;
 }
 
-#ifdef __cplusplus
 }
-#endif

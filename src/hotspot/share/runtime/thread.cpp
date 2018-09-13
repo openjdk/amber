@@ -307,13 +307,15 @@ Thread::Thread() {
   }
 #endif // ASSERT
 
-  // Notify the barrier set that a thread is being created. Note that the
-  // main thread is created before a barrier set is available. The call to
-  // BarrierSet::on_thread_create() for the main thread is therefore deferred
-  // until it calls BarrierSet::set_barrier_set().
+  // Notify the barrier set that a thread is being created. Note that some
+  // threads are created before a barrier set is available. The call to
+  // BarrierSet::on_thread_create() for these threads is therefore deferred
+  // to BarrierSet::set_barrier_set().
   BarrierSet* const barrier_set = BarrierSet::barrier_set();
   if (barrier_set != NULL) {
     barrier_set->on_thread_create(this);
+  } else {
+    DEBUG_ONLY(Threads::inc_threads_before_barrier_set();)
   }
 }
 
@@ -3397,6 +3399,7 @@ size_t      JavaThread::_stack_size_at_create = 0;
 
 #ifdef ASSERT
 bool        Threads::_vm_complete = false;
+size_t      Threads::_threads_before_barrier_set = 0;
 #endif
 
 static inline void *prefetch_and_load_ptr(void **addr, intx prefetch_interval) {
@@ -4733,7 +4736,6 @@ void Thread::SpinAcquire(volatile int * adr, const char * LockName) {
   }
 
   // Slow-path : We've encountered contention -- Spin/Yield/Block strategy.
-  TEVENT(SpinAcquire - ctx);
   int ctr = 0;
   int Yields = 0;
   for (;;) {
@@ -4828,7 +4830,6 @@ void Thread::muxAcquire(volatile intptr_t * Lock, const char * LockName) {
     return;
   }
 
-  TEVENT(muxAcquire - Contention);
   ParkEvent * const Self = Thread::current()->_MuxEvent;
   assert((intptr_t(Self) & LOCKBIT) == 0, "invariant");
   for (;;) {
@@ -4874,7 +4875,6 @@ void Thread::muxAcquireW(volatile intptr_t * Lock, ParkEvent * ev) {
     return;
   }
 
-  TEVENT(muxAcquire - Contention);
   ParkEvent * ReleaseAfter = NULL;
   if (ev == NULL) {
     ev = ReleaseAfter = ParkEvent::Allocate(NULL);
