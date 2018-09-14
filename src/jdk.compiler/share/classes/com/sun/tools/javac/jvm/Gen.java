@@ -1029,6 +1029,7 @@ public class Gen extends JCTree.Visitor {
                     (doConstantFold && !constables.skipCodeGeneration(tree))) {
                 code.newLocal(v);
                 Assert.check(code.isStatementStart());
+                code.newLocal(v);
                 genExpr(tree.init, v.erasure(types)).load();
                 items.makeLocalItem(v).store();
                 Assert.check(code.isStatementStart());

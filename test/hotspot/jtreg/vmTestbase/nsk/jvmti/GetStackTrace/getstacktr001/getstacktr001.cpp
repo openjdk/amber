@@ -27,21 +27,8 @@
 #include "agent_common.h"
 #include "JVMTITools.h"
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
-#ifndef JNI_ENV_ARG
-
-#ifdef __cplusplus
-#define JNI_ENV_ARG(x, y) y
-#define JNI_ENV_PTR(x) x
-#else
-#define JNI_ENV_ARG(x,y) x, y
-#define JNI_ENV_PTR(x) (*x)
-#endif
-
-#endif
 
 #define PASSED 0
 #define STATUS_FAILED 2
@@ -66,7 +53,7 @@ static frame_info frames[] = {
      "([Ljava/lang/String;)V"}
 };
 
-#define NUMBER_OF_FRAMES ((int) (sizeof(frames)/sizeof(frame_info)))
+#define NUMBER_OF_STACK_FRAMES ((int) (sizeof(frames)/sizeof(frame_info)))
 
 #ifdef STATIC_BUILD
 JNIEXPORT jint JNICALL Agent_OnLoad_getstacktr001(JavaVM *jvm, char *options, void *reserved) {
@@ -86,8 +73,7 @@ jint Agent_Initialize(JavaVM *jvm, char *options, void *reserved) {
         printdump = JNI_TRUE;
     }
 
-    res = JNI_ENV_PTR(jvm)->GetEnv(JNI_ENV_ARG(jvm, (void **) &jvmti),
-        JVMTI_VERSION_1_1);
+    res = jvm->GetEnv((void **) &jvmti, JVMTI_VERSION_1_1);
     if (res != JNI_OK || jvmti == NULL) {
         printf("Wrong result of a valid call to GetEnv!\n");
         return JNI_ERR;
@@ -100,9 +86,8 @@ JNIEXPORT jint JNICALL
 Java_nsk_jvmti_GetStackTrace_getstacktr001_chain(JNIEnv *env, jclass cls) {
     jmethodID mid;
 
-    mid = JNI_ENV_PTR(env)->GetStaticMethodID(JNI_ENV_ARG(env, cls),
-        "dummy", "()V");
-    JNI_ENV_PTR(env)->CallStaticVoidMethod(JNI_ENV_ARG(env, cls), mid);
+    mid = env->GetStaticMethodID(cls, "dummy", "()V");
+    env->CallStaticVoidMethod(cls, mid);
 
     return result;
 }
@@ -110,7 +95,7 @@ Java_nsk_jvmti_GetStackTrace_getstacktr001_chain(JNIEnv *env, jclass cls) {
 JNIEXPORT void JNICALL
 Java_nsk_jvmti_GetStackTrace_getstacktr001_check(JNIEnv *env, jclass cls, jthread thread) {
     jvmtiError err;
-    jvmtiFrameInfo f[NUMBER_OF_FRAMES + 1];
+    jvmtiFrameInfo f[NUMBER_OF_STACK_FRAMES + 1];
     jclass callerClass;
     char *sigClass, *name, *sig, *generic;
     jint i, count;
@@ -122,16 +107,16 @@ Java_nsk_jvmti_GetStackTrace_getstacktr001_check(JNIEnv *env, jclass cls, jthrea
     }
 
     err = jvmti->GetStackTrace(thread, 0,
-        NUMBER_OF_FRAMES + 1, f, &count);
+        NUMBER_OF_STACK_FRAMES + 1, f, &count);
     if (err != JVMTI_ERROR_NONE) {
         printf("(GetStackTrace) unexpected error: %s (%d)\n",
                TranslateError(err), err);
         result = STATUS_FAILED;
         return;
     }
-    if (count != NUMBER_OF_FRAMES) {
+    if (count != NUMBER_OF_STACK_FRAMES) {
         printf("Wrong number of frames: %d, expected: %d\n",
-               count, NUMBER_OF_FRAMES);
+               count, NUMBER_OF_STACK_FRAMES);
         result = STATUS_FAILED;
     }
     for (i = 0; i < count; i++) {
@@ -166,7 +151,7 @@ Java_nsk_jvmti_GetStackTrace_getstacktr001_check(JNIEnv *env, jclass cls, jthrea
             printf(">>>   method: \"%s%s\"\n", name, sig);
             printf(">>>   %d ... done\n", i);
         }
-        if (i < NUMBER_OF_FRAMES) {
+        if (i < NUMBER_OF_STACK_FRAMES) {
             if (sigClass == NULL || strcmp(sigClass, frames[i].cls) != 0) {
                 printf("(frame#%d) wrong class sig: \"%s\", expected: \"%s\"\n",
                        i, sigClass, frames[i].cls);
@@ -186,6 +171,4 @@ Java_nsk_jvmti_GetStackTrace_getstacktr001_check(JNIEnv *env, jclass cls, jthrea
     }
 }
 
-#ifdef __cplusplus
 }
-#endif
