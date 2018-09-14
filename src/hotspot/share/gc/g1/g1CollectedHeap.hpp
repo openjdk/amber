@@ -961,6 +961,7 @@ public:
   virtual SoftRefPolicy* soft_ref_policy();
 
   virtual void initialize_serviceability();
+  virtual MemoryUsage memory_usage();
   virtual GrowableArray<GCMemoryManager*> memory_managers();
   virtual GrowableArray<MemoryPool*> memory_pools();
 
@@ -1384,11 +1385,7 @@ public:
   void print_cset_rsets() PRODUCT_RETURN;
   void print_all_rsets() PRODUCT_RETURN;
 
-public:
   size_t pending_card_num();
-
-private:
-  size_t _max_heap_capacity;
 };
 
 class G1ParEvacuateFollowersClosure : public VoidClosure {

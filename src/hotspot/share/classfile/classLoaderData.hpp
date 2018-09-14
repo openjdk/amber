@@ -70,6 +70,7 @@ class ClassLoaderDataGraph : public AllStatic {
   friend class ClassLoaderDataGraphMetaspaceIterator;
   friend class ClassLoaderDataGraphKlassIteratorAtomic;
   friend class ClassLoaderDataGraphKlassIteratorStatic;
+  friend class ClassLoaderDataGraphIterator;
   friend class VMStructs;
  private:
   // All CLDs (except the null CLD) can be reached by walking _head->_next->...
@@ -118,6 +119,7 @@ class ClassLoaderDataGraph : public AllStatic {
   static void packages_do(void f(PackageEntry*));
   static void packages_unloading_do(void f(PackageEntry*));
   static void loaded_classes_do(KlassClosure* klass_closure);
+  static void unlocked_loaded_classes_do(KlassClosure* klass_closure);
   static void classes_unloading_do(void f(Klass* const));
   static bool do_unloading(bool do_cleaning);
 
@@ -177,6 +179,20 @@ class ClassLoaderDataGraph : public AllStatic {
 #endif
 };
 
+class LockedClassesDo : public KlassClosure {
+  typedef void (*classes_do_func_t)(Klass*);
+  classes_do_func_t _function;
+public:
+  LockedClassesDo();  // For callers who provide their own do_klass
+  LockedClassesDo(classes_do_func_t function);
+  ~LockedClassesDo();
+
+  void do_klass(Klass* k) {
+    (*_function)(k);
+  }
+};
+
+
 // ClassLoaderData class
 
 class ClassLoaderData : public CHeapObj<mtClass> {
@@ -213,6 +229,7 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   };
 
   friend class ClassLoaderDataGraph;
+  friend class ClassLoaderDataGraphIterator;
   friend class ClassLoaderDataGraphKlassIteratorAtomic;
   friend class ClassLoaderDataGraphKlassIteratorStatic;
   friend class ClassLoaderDataGraphMetaspaceIterator;
@@ -290,8 +307,9 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   void accumulate_modified_oops()        { if (has_modified_oops()) _accumulated_modified_oops = true; }
   void clear_accumulated_modified_oops() { _accumulated_modified_oops = false; }
   bool has_accumulated_modified_oops()   { return _accumulated_modified_oops; }
- private:
+  oop holder_no_keepalive() const;
 
+ private:
   void unload();
   bool keep_alive() const       { return _keep_alive > 0; }
 
@@ -319,6 +337,8 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   bool claimed() const { return _claimed == 1; }
   bool claim();
 
+  // Computes if the CLD is alive or not. This is safe to call in concurrent
+  // contexts.
   bool is_alive() const;
 
   // Accessors
@@ -360,6 +380,9 @@ class ClassLoaderData : public CHeapObj<mtClass> {
   inline oop class_loader() const;
 
   // Returns true if this class loader data is for a loader going away.
+  // Note that this is only safe after the GC has computed if the CLD is
+  // unloading or not. In concurrent contexts where there are no such
+  // guarantees, is_alive() should be used instead.
   bool is_unloading() const     {
     assert(!(is_the_null_class_loader_data() && _unloading), "The null class loader can never be unloaded");
     return _unloading;
