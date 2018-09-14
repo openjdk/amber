@@ -2600,12 +2600,7 @@ public class Lower extends TreeTranslator {
                 names.readResolve,
                 List.nil(),
                 List.nil());
-        MethodSymbol initSym = lookupMethod(tree.pos(),
-                         names.init,
-                         tree.sym.type,
-                         TreeInfo.recordFieldTypes(tree));
-        // we will generate the `readResolve` method only if the user provided a state constructor
-        if (!msym.kind.isResolutionError() && (msym.flags() & RECORD) != 0 && (initSym.flags() & RECORD) == 0) {
+        if (!msym.kind.isResolutionError() && (msym.flags() & RECORD) != 0) {
             List<JCExpression> args = TreeInfo.recordFields(tree).map(vd -> make.Ident(vd));
             return make.MethodDef((MethodSymbol)msym, make.Block(0, List.of(make.Return(makeNewClass(tree.sym.type, args)))));
         } else {

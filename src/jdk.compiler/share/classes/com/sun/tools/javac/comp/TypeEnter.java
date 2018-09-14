@@ -1156,7 +1156,7 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(equals, env);
             }
 
-            if (attr.isSerializable(tree.sym.type) && !defaultConstructorGenerated) {
+            if (attr.isSerializable(tree.sym.type)) {
                 if (lookupMethod(tree.sym, names.readResolve, List.nil()) == null &&
                     lookupMethod(tree.sym, names.readObject, List.nil()) == null) {
                     // private Object readResolve() { return ???; }

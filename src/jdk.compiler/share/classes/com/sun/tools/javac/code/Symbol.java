@@ -1562,6 +1562,23 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
         }
 
+        @Override
+        public Type erasure(Types types) {
+            if (erasure_field == null) {
+                erasure_field = types.erasure(type);
+                if (!accessors.isEmpty()) {
+                    for (Pair<Accessors.Kind, MethodSymbol> accessorPair : accessors) {
+                        if (accessorPair.fst == Accessors.Kind.GET) {
+                            ((MethodType)accessorPair.snd.type).restype = erasure_field;
+                        } else {
+                            // set accessors are not yet generated
+                        }
+                    }
+                }
+            }
+            return erasure_field;
+        }
+
         @DefinedBy(Api.LANGUAGE_MODEL)
         public ElementKind getKind() {
             long flags = flags();

@@ -3950,7 +3950,9 @@ public class JavacParser implements Parser {
     }
 
     boolean isRecordDeclaration() {
-        return token.kind == IDENTIFIER && token.name() == names.record && peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN);
+        return token.kind == IDENTIFIER && token.name() == names.record &&
+                (peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN) ||
+                peekToken(TokenKind.IDENTIFIER, TokenKind.LT));
     }
 
     private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc, boolean isRecord) {

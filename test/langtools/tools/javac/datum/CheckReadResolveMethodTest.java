@@ -44,7 +44,7 @@ public class CheckReadResolveMethodTest {
         }
     }
 
-    // no readResolve should be generated as a constructor is not provided
+    // readResolve should be generated the record implements Serializable
     record Point2(int i, int j) implements Serializable;
 
     // no readResolve should be generated as the record doesnt implement Serializable
@@ -68,7 +68,7 @@ public class CheckReadResolveMethodTest {
 
     void run() throws Throwable {
         checkReadResolveMethod("Point1", true);
-        checkReadResolveMethod("Point2", false);
+        checkReadResolveMethod("Point2", true);
         checkReadResolveMethod("Point3", false);
         checkReadResolveMethod("Point4", true);
         checkReadResolveMethod("Point5", false);
