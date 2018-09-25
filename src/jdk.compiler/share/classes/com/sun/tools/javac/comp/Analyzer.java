@@ -84,6 +84,7 @@ import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 import com.sun.tools.javac.util.Position;
 
+import static com.sun.tools.javac.code.Flags.ANONCONSTR;
 import static com.sun.tools.javac.code.Flags.GENERATEDCONSTR;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
@@ -354,23 +355,27 @@ public class Analyzer {
             if (methodDec != null &&
                     ((methodDec.mods.flags & Flags.SYNTHETIC) == 0) &&
                     ((methodDec.mods.flags & Flags.ABSTRACT) == 0) &&
+//                    ((methodDec.mods.flags & Flags.GENERATEDCONSTR) == 0) &&
+//                    ((methodDec.mods.flags & Flags.ANONCONSTR) == 0) &&
                     methodDec.body.stats.size() == 1 &&
                     methodDec.name != names.init) {
                 JCStatement stat = methodDec.body.stats.head;
                 JCMethodInvocation apply = findInvocation(stat);
                 if (apply != null) {
                     Symbol qualifier = null;
+                    List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
+                    List<Symbol> argsSyms = TreeInfo.symbols(apply.args);
                     if (apply.meth.hasTag(SELECT)) {
                         JCFieldAccess fieldAcc = (JCFieldAccess)apply.meth;
-                        if (fieldAcc.selected.hasTag(Tag.IDENT)) {
+                        if (TreeInfo.isIdentOrIdentDotIdent(fieldAcc)) {
                             qualifier = TreeInfo.symbol(((JCFieldAccess) apply.meth).selected);
+                            qualifier = methodDec.params.isEmpty() || qualifier != methodDec.params.head.sym ? null : qualifier;
                         } else {
+                            // no chain().of().invocations() etc
                             return false;
                         }
                     }
                     if (methodDec.params.size() == apply.args.size() + (qualifier != null ? 1 : 0)) {
-                        List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
-                        List<Symbol> argsSyms = TreeInfo.symbols(apply.args);
                         argsSyms = qualifier != null ? argsSyms.prepend(qualifier) : argsSyms;
                         result = paramsSyms.equals(argsSyms);
                         if (result) {

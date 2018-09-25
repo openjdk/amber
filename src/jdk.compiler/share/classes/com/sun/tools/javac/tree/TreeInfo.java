@@ -163,8 +163,21 @@ public class TreeInfo {
         }
     }
 
-    /** Is this tree an identifier, possibly qualified by 'this'?
+    /** Is this tree an identifier, possibly qualified by a chain of identifiers?
      */
+    public static boolean isIdentOrIdentDotIdent(JCTree tree) {
+        switch (tree.getTag()) {
+            case PARENS:
+                return isIdentOrThisDotIdent(skipParens(tree));
+            case IDENT:
+                return true;
+            case SELECT:
+                return isIdentOrIdentDotIdent(((JCFieldAccess)tree).selected);
+            default:
+                return false;
+        }
+    }
+
     public static boolean isIdentOrThisDotIdent(JCTree tree) {
         switch (tree.getTag()) {
             case PARENS:
