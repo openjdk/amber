@@ -844,6 +844,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCExpression defaultValue;
         /** method symbol */
         public MethodSymbol sym;
+        /** is this a concise method? reserved for those concise methods which are just wrappers
+         *  around a method reference
+         */
+        public JCMemberReference conciseMethodRef;
+
         protected JCMethodDecl(JCModifiers mods,
                             Name name,
                             JCExpression restype,
@@ -853,7 +858,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                             List<JCExpression> thrown,
                             JCBlock body,
                             JCExpression defaultValue,
-                            MethodSymbol sym)
+                            MethodSymbol sym,
+                            JCMemberReference conciseMethodRef)
         {
             this.mods = mods;
             this.name = name;
@@ -867,6 +873,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             this.body = body;
             this.defaultValue = defaultValue;
             this.sym = sym;
+            this.conciseMethodRef = conciseMethodRef;
         }
         @Override
         public void accept(Visitor v) { v.visitMethodDef(this); }

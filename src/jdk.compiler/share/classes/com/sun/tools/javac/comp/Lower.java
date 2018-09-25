@@ -2532,6 +2532,52 @@ public class Lower extends TreeTranslator {
                 lambdaTranslationMap = (tree.sym.flags() & SYNTHETIC) != 0 &&
                         tree.sym.name.startsWith(names.lambda) ?
                         makeTranslationMap(tree) : null;
+                if (tree.conciseMethodRef != null) {
+                    JCFieldAccess qualifier = null;
+                    JCMethodInvocation apply = null;
+                    JCExpression expr = null;
+                    switch (tree.conciseMethodRef.kind) {
+                        case STATIC:
+                            qualifier = make.Select(make.QualIdent(tree.conciseMethodRef.expr.type.tsym), tree.conciseMethodRef.name);
+                            apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, make.Idents(tree.params));
+                            break;
+                        case UNBOUND:
+                            qualifier = make.Select(make.QualIdent(tree.params.head.sym), tree.conciseMethodRef.name);
+                            apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, List.nil());
+                            break;
+                        case BOUND: case SUPER:
+                            qualifier = make.Select(make.QualIdent(TreeInfo.symbol(tree.conciseMethodRef.expr)), tree.conciseMethodRef.name);
+                            apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, make.Idents(tree.params));
+                            break;
+                        case TOPLEVEL: case IMPLICIT_INNER:
+                            expr = makeNewClass(tree.conciseMethodRef.expr.type, make.Idents(tree.params));
+                            break;
+                        case ARRAY_CTOR:
+                            expr = make.NewArray(
+                                    make.Type(types.elemtype(tree.conciseMethodRef.expr.type)),
+                                    List.of(make.Ident(tree.params.head.sym)), null)
+                                    .setType(new ArrayType(types.elemtype(tree.conciseMethodRef.expr.type), syms.arrayClass));
+                            break;
+                        default:
+                            qualifier = make.Select(make.QualIdent(tree.params.head.sym), tree.conciseMethodRef.name);
+                            apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, List.nil());
+                    }
+                    switch (tree.conciseMethodRef.kind) {
+                        case STATIC: case UNBOUND: case BOUND: case SUPER:
+                            qualifier.type = tree.type;
+                            qualifier.sym = tree.conciseMethodRef.sym;
+                            apply.setType(tree.type.asMethodType().restype);
+                            expr = apply;
+                            break;
+                    }
+                    if (!tree.type.asMethodType().restype.hasTag(VOID)) {
+                        JCReturn _return = make.at(tree.body.pos).Return(expr);
+                        tree.body = make.at(tree.body.pos).Block(0, List.of(_return));
+                    } else {
+                        JCExpressionStatement exprStm = make.at(tree.body.pos).Exec(expr);
+                        tree.body = make.at(tree.body.pos).Block(0, List.of(exprStm));
+                    }
+                }
                 super.visitMethodDef(tree);
             } finally {
                 lambdaTranslationMap = prevLambdaTranslationMap;

@@ -509,7 +509,7 @@ public class Flow {
                 alive = true;
                 scanStat(tree.body);
 
-                if (alive && !tree.sym.type.getReturnType().hasTag(VOID))
+                if (tree.conciseMethodRef == null && alive && !tree.sym.type.getReturnType().hasTag(VOID))
                     log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingRetStmt);
 
                 List<PendingExit> exits = pendingExits.toList();

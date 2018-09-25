@@ -878,9 +878,22 @@ public class TreeInfo {
             return symbol(((JCAnnotatedType) tree).underlyingType);
         case REFERENCE:
             return ((JCMemberReference) tree).sym;
+        case VARDEF:
+            return ((JCVariableDecl)tree).sym;
         default:
             return null;
         }
+    }
+
+    public static List<Symbol> symbols(List<? extends JCTree> trees) {
+        ListBuffer<Symbol> lb = new ListBuffer<>();
+        for (JCTree tree : trees) {
+            Symbol sym = symbol(tree);
+            if (sym != null) {
+                lb.add(sym);
+            }
+        }
+        return lb.toList();
     }
 
     /** Return true if this is a nonstatic selection. */

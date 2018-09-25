@@ -1108,7 +1108,12 @@ public class Attr extends JCTree.Visitor {
                 annotate.flush();
 
                 // Attribute method body.
-                attribStat(tree.body, localEnv);
+                if (tree.conciseMethodRef != null) {
+                    localEnv.info.conciseMethod = tree;
+                    attribTree(tree.conciseMethodRef, localEnv, statInfo);
+                } else {
+                    attribStat(tree.body, localEnv);
+                }
             }
 
             localEnv.info.scope.leave();
@@ -3131,13 +3136,15 @@ public class Attr extends JCTree.Visitor {
 
     @Override
     public void visitReference(final JCMemberReference that) {
-        if (pt().isErroneous() || (pt().hasTag(NONE) && pt() != Type.recoveryType)) {
-            if (pt().hasTag(NONE) && (env.info.enclVar == null || !env.info.enclVar.type.isErroneous())) {
-                //method reference only allowed in assignment or method invocation/cast context
-                log.error(that.pos(), Errors.UnexpectedMref);
+        if (env.info.conciseMethod == null) {
+            if (pt().isErroneous() || (pt().hasTag(NONE) && pt() != Type.recoveryType)) {
+                if (pt().hasTag(NONE) && (env.info.enclVar == null || !env.info.enclVar.type.isErroneous())) {
+                    //method reference only allowed in assignment or method invocation/cast context
+                    log.error(that.pos(), Errors.UnexpectedMref);
+                }
+                result = that.type = types.createErrorType(pt());
+                return;
             }
-            result = that.type = types.createErrorType(pt());
-            return;
         }
         final Env<AttrContext> localEnv = env.dup(that);
         try {
@@ -3182,9 +3189,16 @@ public class Attr extends JCTree.Visitor {
             boolean isTargetSerializable =
                     resultInfo.checkContext.deferredAttrContext().mode == DeferredAttr.AttrMode.CHECK &&
                     isSerializable(pt());
-            TargetInfo targetInfo = getTargetInfo(that, resultInfo, null);
-            Type currentTarget = targetInfo.target;
-            Type desc = targetInfo.descriptor;
+            Type currentTarget;
+            Type desc;
+            if (localEnv.info.conciseMethod == null) {
+                TargetInfo targetInfo = getTargetInfo(that, resultInfo, null);
+                currentTarget = targetInfo.target;
+                desc = targetInfo.descriptor;
+            } else {
+                currentTarget = pt();
+                desc = localEnv.info.conciseMethod.sym.type;
+            }
 
             setFunctionalInfo(localEnv, that, pt(), desc, currentTarget, resultInfo.checkContext);
             List<Type> argtypes = desc.getParameterTypes();
@@ -3198,7 +3212,7 @@ public class Attr extends JCTree.Visitor {
             List<Type> saved_undet = resultInfo.checkContext.inferenceContext().save();
             try {
                 refResult = rs.resolveMemberReference(localEnv, that, that.expr.type,
-                        that.name, argtypes, typeargtypes, targetInfo.descriptor, referenceCheck,
+                        that.name, argtypes, typeargtypes, desc, referenceCheck,
                         resultInfo.checkContext.inferenceContext(), rs.basicReferenceChooser);
             } finally {
                 resultInfo.checkContext.inferenceContext().rollback(saved_undet);
@@ -3335,7 +3349,11 @@ public class Attr extends JCTree.Visitor {
             if (!isSpeculativeRound) {
                 checkAccessibleTypes(that, localEnv, resultInfo.checkContext.inferenceContext(), desc, currentTarget);
             }
-            result = check(that, currentTarget, KindSelector.VAL, resultInfo);
+            if (localEnv.info.conciseMethod == null) {
+                result = check(that, currentTarget, KindSelector.VAL, resultInfo);
+            } else {
+                result = currentTarget;
+            }
         } catch (Types.FunctionDescriptorLookupError ex) {
             JCDiagnostic cause = ex.getDiagnostic();
             resultInfo.checkContext.report(that, cause);

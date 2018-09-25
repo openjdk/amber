@@ -183,7 +183,21 @@ public class TreeMaker implements JCTree.Factory {
                                JCExpression defaultValue) {
         return MethodDef(
                 mods, name, restype, typarams, null, params,
-                thrown, body, defaultValue);
+                thrown, body, defaultValue, null);
+    }
+
+    public JCMethodDecl MethodDef(JCModifiers mods,
+                               Name name,
+                               JCExpression restype,
+                               List<JCTypeParameter> typarams,
+                               List<JCVariableDecl> params,
+                               List<JCExpression> thrown,
+                               JCBlock body,
+                               JCExpression defaultValue,
+                               JCMemberReference conciseMethodRef) {
+        return MethodDef(
+                mods, name, restype, typarams, null, params,
+                thrown, body, defaultValue, conciseMethodRef);
     }
 
     public JCMethodDecl MethodDef(JCModifiers mods,
@@ -205,7 +219,34 @@ public class TreeMaker implements JCTree.Factory {
                                        thrown,
                                        body,
                                        defaultValue,
+                                       null,
                                        null);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCMethodDecl MethodDef(JCModifiers mods,
+                               Name name,
+                               JCExpression restype,
+                               List<JCTypeParameter> typarams,
+                               JCVariableDecl recvparam,
+                               List<JCVariableDecl> params,
+                               List<JCExpression> thrown,
+                               JCBlock body,
+                               JCExpression defaultValue,
+                               JCMemberReference conciseMethodRef)
+    {
+        JCMethodDecl tree = new JCMethodDecl(mods,
+                                       name,
+                                       restype,
+                                       typarams,
+                                       recvparam,
+                                       params,
+                                       thrown,
+                                       body,
+                                       defaultValue,
+                                       null,
+                                       conciseMethodRef);
         tree.pos = pos;
         return tree;
     }
@@ -963,7 +1004,8 @@ public class TreeMaker implements JCTree.Factory {
                 Types(mtype.getThrownTypes()),
                 body,
                 null,
-                m).setPos(pos).setType(mtype);
+                m,
+                null).setPos(pos).setType(mtype);
     }
 
     /** Create a type parameter tree from its name and type.

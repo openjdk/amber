@@ -3932,16 +3932,36 @@ public class JavacParser implements Parser {
                 thrown = qualidentList(true);
             }
             JCBlock body = null;
-            JCExpression defaultValue;
+            JCExpression defaultValue = null;
+            JCMemberReference conciseMethodRef = null;
             if (token.kind == LBRACE) {
                 body = block();
-                defaultValue = null;
+            } else if (token.kind == ARROW) {
+                int bodyPos = token.pos;
+                checkSourceLevel(bodyPos, Feature.CONCISE_METHOD_BODIES);
+                accept(ARROW);
+                JCExpression expr = parseExpression();
+                if (!isVoid) {
+                    JCReturn _return = toP(F.at(bodyPos).Return(expr));
+                    body = F.at(bodyPos).Block(0, List.of(_return));
+                } else {
+                    JCExpressionStatement exprStm = toP(F.at(bodyPos).Exec(expr));
+                    body = F.at(bodyPos).Block(0, List.of(exprStm));
+                }
+                body.endpos = token.pos;
+            } else if (token.kind == EQ) {
+                int bodyPos = token.pos;
+                checkSourceLevel(bodyPos, Feature.CONCISE_METHOD_BODIES);
+                accept(EQ);
+                JCExpression expr = parseExpression();
+                Assert.check(expr.hasTag(REFERENCE));
+                conciseMethodRef = (JCMemberReference)expr;
+                body = F.at(bodyPos).Block(0, List.nil());
+                body.endpos = token.pos;
             } else {
                 if (token.kind == DEFAULT) {
                     accept(DEFAULT);
                     defaultValue = annotationValue();
-                } else {
-                    defaultValue = null;
                 }
                 accept(SEMI);
                 if (token.pos <= endPosTable.errorEndPos) {
@@ -3956,7 +3976,7 @@ public class JavacParser implements Parser {
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
                                             receiverParam, params, thrown,
-                                            body, defaultValue));
+                                            body, defaultValue, conciseMethodRef));
             attach(result, dc);
             return result;
         } finally {
