@@ -377,8 +377,21 @@ public class Analyzer {
                             treeToPosMap.put(tree, methodDec);
                         }
                     }
+                } else {
+                    JCNewClass constructor = findConstructor(stat);
+                    if (constructor != null &&
+                            constructor.def == null &&
+                            constructor.clazz.hasTag(Tag.IDENT)) {
+                        if (methodDec.params.size() == constructor.args.size()) {
+                            List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
+                            List<Symbol> argsSyms = TreeInfo.symbols(constructor.args);
+                            result = paramsSyms.equals(argsSyms);
+                            if (result) {
+                                treeToPosMap.put(tree, methodDec);
+                            }
+                        }
+                    }
                 }
-                // we still have to include constructor invocations
             }
             return result;
         }
