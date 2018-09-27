@@ -785,7 +785,7 @@ public class TransTypes extends TreeTranslator {
                 }
             }
         }
-        result = tree;
+        result = retype(tree, tree.type, pt);
     }
 
     public void visitTypeTest(JCInstanceOf tree) {
