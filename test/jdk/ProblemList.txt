@@ -128,7 +128,6 @@ java/awt/FileDialog/FileDialogIconTest/FileDialogIconTest.java 8160558 windows-a
 java/awt/FileDialog/8003399/bug8003399.java 8198334 windows-all
 java/awt/event/MouseWheelEvent/InfiniteRecursion/InfiniteRecursion.java 8060176 windows-all,macosx-all
 java/awt/event/MouseWheelEvent/InfiniteRecursion/InfiniteRecursion_1.java 8060176 windows-all,macosx-all
-java/awt/dnd/BadSerializaionTest/BadSerializationTest.java 8039082 generic-all
 java/awt/dnd/MissingEventsOnModalDialog/MissingEventsOnModalDialogTest.java 8164464 linux-all,macosx-all
 java/awt/dnd/URIListBetweenJVMsTest/URIListBetweenJVMsTest.html 8171510 macosx-all
 javax/swing/dnd/7171812/bug7171812.java 8041447 macosx-all
@@ -517,8 +516,6 @@ java/lang/StringCoding/CheckEncodings.sh                        7008363 generic-
 java/lang/instrument/RedefineBigClass.sh                        8065756 generic-all
 java/lang/instrument/RetransformBigClass.sh                     8065756 generic-all
 
-java/lang/instrument/BootClassPath/BootClassPathTest.sh         8072130 macosx-all
-
 java/lang/management/MemoryMXBean/Pending.java                  8158837 generic-all
 java/lang/management/MemoryMXBean/PendingAllGC.sh               8158837 generic-all
 
@@ -689,7 +686,6 @@ sun/security/pkcs11/tls/TestPremaster.java                      8204203 windows-
 javax/sound/sampled/DirectAudio/bug6372428.java                      8055097 generic-all
 javax/sound/sampled/Clip/bug5070081.java                             8055097 generic-all
 javax/sound/sampled/DataLine/LongFramePosition.java                  8055097 generic-all
-javax/sound/sampled/Clip/AutoCloseTimeCheck.java                     8207150 generic-all
 
 javax/sound/sampled/Clip/Drain/ClipDrain.java          7062792 generic-all
 
@@ -835,8 +831,6 @@ tools/pack200/CommandLineTests.java                             8059906 generic-
 # jdk_jdi
 
 com/sun/jdi/BasicJDWPConnectionTest.java                        8195703 generic-all
-
-com/sun/jdi/RedefineImplementor.sh                              8004127 generic-all
 
 com/sun/jdi/RepStep.java                                        8043571 generic-all
 
