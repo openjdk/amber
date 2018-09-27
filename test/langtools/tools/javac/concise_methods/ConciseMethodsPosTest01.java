@@ -24,10 +24,55 @@
 /*
  * @test
  * @summary smoke test for concise methods
- * @compile ConciseMethodsPosTest01.java
+ * @modules jdk.compiler/com.sun.tools.javac.util
  */
 
-class ConciseMethodsPosTest01 {
+import com.sun.tools.javac.util.Assert;
+
+public class ConciseMethodsPosTest01 {
+    String hello = "hello";
+
     int length(String s) -> s.length();
     void printLength(String s) -> System.out.println(s.length());
+
+    int length2(String s) = String::length;
+
+    String dowahoo(int x) = this::wahoo;
+
+    String wahoo(int x) {
+        return "wahoo " + x;
+    }
+
+    static ConciseMethodsPosTest01 make() = ConciseMethodsPosTest01::new;
+
+    class TT {
+        int i;
+        public TT(int i) {
+            this.i = i;
+        }
+    }
+
+    TT makeTT(int i) = TT::new;
+
+    int[] intArray(int i) = int[]::new;
+
+    public static void main(String... args) {
+        ConciseMethodsPosTest01 t = new ConciseMethodsPosTest01();
+        Assert.check(t.length("hey") == 3);
+        Assert.check(t.length2("hey") == 3);
+
+        Assert.check(t.dowahoo(1).equals("wahoo 1"));
+
+        ConciseMethodsPosTest01 t2 = ConciseMethodsPosTest01.make();
+        Assert.check(t2.hello.equals("hello"));
+
+        TT tt = t.makeTT(5);
+        Assert.check(tt.i == 5);
+
+        int[] arr = t.intArray(2);
+        for (int i = 0; i < 2; i++) {
+            arr[i] = i;
+            Assert.check(arr[i] == i);
+        }
+    }
 }
