@@ -36,9 +36,7 @@ ifeq ($(TOOLCHAIN_TYPE), gcc)
   LAUNCHER_CFLAGS += -fvisibility=hidden
   LDFLAGS_JDKEXE += -Wl,--exclude-libs,ALL
 else ifeq ($(TOOLCHAIN_TYPE), clang)
-  ifneq ($(OPENJDK_TARGET_OS), macosx)
-    LAUNCHER_CFLAGS += -fvisibility=hidden
-  endif
+  LAUNCHER_CFLAGS += -fvisibility=hidden
 else ifeq ($(TOOLCHAIN_TYPE), solstudio)
   LAUNCHER_CFLAGS += -xldscope=hidden
 else ifeq ($(TOOLCHAIN_TYPE), xlc)
@@ -152,6 +150,7 @@ define SetupBuildLauncherBody
       CFLAGS_linux := -fPIC, \
       CFLAGS_solaris := -KPIC -DHAVE_GETHRTIME, \
       CFLAGS_windows := $$($1_CFLAGS_windows), \
+      DISABLED_WARNINGS_gcc := unused-function, \
       LDFLAGS := $$(LDFLAGS_JDKEXE) \
           $$(call SET_EXECUTABLE_ORIGIN) \
           $$($1_LDFLAGS), \
