@@ -366,14 +366,8 @@ public class Analyzer {
                     List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
                     List<Symbol> argsSyms = TreeInfo.symbols(apply.args);
                     if (apply.meth.hasTag(SELECT)) {
-                        JCFieldAccess fieldAcc = (JCFieldAccess)apply.meth;
-                        if (TreeInfo.isIdentOrIdentDotIdent(fieldAcc)) {
-                            qualifier = TreeInfo.symbol(((JCFieldAccess) apply.meth).selected);
-                            qualifier = methodDec.params.isEmpty() || qualifier != methodDec.params.head.sym ? null : qualifier;
-                        } else {
-                            // no chain().of().invocations() etc
-                            return false;
-                        }
+                        qualifier = TreeInfo.symbol(((JCFieldAccess) apply.meth).selected);
+                        qualifier = methodDec.params.isEmpty() || qualifier != methodDec.params.head.sym ? null : qualifier;
                     }
                     if (methodDec.params.size() == apply.args.size() + (qualifier != null ? 1 : 0)) {
                         argsSyms = qualifier != null ? argsSyms.prepend(qualifier) : argsSyms;
@@ -384,9 +378,7 @@ public class Analyzer {
                     }
                 } else {
                     JCNewClass constructor = findConstructor(stat);
-                    if (constructor != null &&
-                            constructor.def == null &&
-                            constructor.clazz.hasTag(Tag.IDENT)) {
+                    if (constructor != null && constructor.def == null) {
                         if (methodDec.params.size() == constructor.args.size()) {
                             List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
                             List<Symbol> argsSyms = TreeInfo.symbols(constructor.args);
@@ -439,7 +431,9 @@ public class Analyzer {
         @Override
         void process (JCTree oldTree, JCTree newTree, boolean hasErrors){
             if (!hasErrors) {
-                log.note(treeToPosMap.get(oldTree), Notes.PotentialConciseMethodFound(oldTree.toString()));
+                // this version is for experiments only, printing warnings breaks the OpenJDK build
+                //log.note(treeToPosMap.get(oldTree), Notes.PotentialConciseMethodFound(oldTree.toString()));
+                log.warning(treeToPosMap.get(oldTree), Warnings.PotentialConciseMethodFound);
             }
             treeToPosMap.remove(oldTree);
         }
