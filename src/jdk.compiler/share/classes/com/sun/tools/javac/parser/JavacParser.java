@@ -3936,27 +3936,26 @@ public class JavacParser implements Parser {
             JCMemberReference conciseMethodRef = null;
             if (token.kind == LBRACE) {
                 body = block();
-            } else if (token.kind == ARROW) {
+            } else if (token.kind == ARROW || token.kind == EQ) {
+                boolean arrowForm = token.kind == ARROW;
                 int bodyPos = token.pos;
                 checkSourceLevel(bodyPos, Feature.CONCISE_METHOD_BODIES);
-                accept(ARROW);
+                accept(token.kind);
                 JCExpression expr = parseExpression();
-                if (!isVoid) {
-                    JCReturn _return = toP(F.at(bodyPos).Return(expr));
-                    body = F.at(bodyPos).Block(0, List.of(_return));
+                if (arrowForm) {
+                    if (!isVoid) {
+                        JCReturn _return = toP(F.at(bodyPos).Return(expr));
+                        body = F.at(bodyPos).Block(0, List.of(_return));
+                    } else {
+                        JCExpressionStatement exprStm = toP(F.at(bodyPos).Exec(expr));
+                        body = F.at(bodyPos).Block(0, List.of(exprStm));
+                    }
                 } else {
-                    JCExpressionStatement exprStm = toP(F.at(bodyPos).Exec(expr));
-                    body = F.at(bodyPos).Block(0, List.of(exprStm));
+                    Assert.check(expr.hasTag(REFERENCE));
+                    conciseMethodRef = (JCMemberReference)expr;
+                    body = F.at(bodyPos).Block(0, List.nil());
                 }
-                body.endpos = token.pos;
-            } else if (token.kind == EQ) {
-                int bodyPos = token.pos;
-                checkSourceLevel(bodyPos, Feature.CONCISE_METHOD_BODIES);
-                accept(EQ);
-                JCExpression expr = parseExpression();
-                Assert.check(expr.hasTag(REFERENCE));
-                conciseMethodRef = (JCMemberReference)expr;
-                body = F.at(bodyPos).Block(0, List.nil());
+                mods.flags |= Flags.CONCISE;
                 body.endpos = token.pos;
             } else {
                 if (token.kind == DEFAULT) {

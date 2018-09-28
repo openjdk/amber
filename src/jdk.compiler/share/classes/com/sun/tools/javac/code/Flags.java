@@ -319,6 +319,11 @@ public class Flags {
      */
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
+    /**
+     * Flag for concise methods
+     */
+    public static final long CONCISE = 1L<<58;
+
     /** Modifier masks.
      */
     public static final int
@@ -435,7 +440,8 @@ public class Flags {
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
-        ANONCONSTR_BASED(Flags.ANONCONSTR_BASED);
+        ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
+        CONCISE(Flags.CONCISE);
 
         Flag(long flag) {
             this.value = flag;

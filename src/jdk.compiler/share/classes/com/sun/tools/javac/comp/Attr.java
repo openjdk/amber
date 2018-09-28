@@ -1078,6 +1078,8 @@ public class Attr extends JCTree.Visitor {
                 }
             } else if ((tree.mods.flags & NATIVE) != 0) {
                 log.error(tree.pos(), Errors.NativeMethCantHaveBody);
+            } else if ((tree.mods.flags & CONCISE) != 0 && tree.name == names.init) {
+                log.error(tree.pos(), Errors.ConstructorsCantHaveConciseBody);
             } else {
                 // Add an implicit super() call unless an explicit call to
                 // super(...) or this(...) is given
