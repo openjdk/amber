@@ -2703,12 +2703,14 @@ public class Attr extends JCTree.Visitor {
      */
     @Override
     public void visitLambda(final JCLambda that) {
+        boolean wrongContext = false;
         if (pt().isErroneous() || (pt().hasTag(NONE) && pt() != Type.recoveryType)) {
             if (pt().hasTag(NONE) && (env.info.enclVar == null || !env.info.enclVar.type.isErroneous())) {
                 //lambda only allowed in assignment or method invocation/cast context
                 log.error(that.pos(), Errors.UnexpectedLambda);
             }
             resultInfo = recoveryInfo;
+            wrongContext = true;
         }
         //create an environment for attribution of the lambda expression
         final Env<AttrContext> localEnv = lambdaEnv(that, env);
@@ -2825,7 +2827,8 @@ public class Attr extends JCTree.Visitor {
 
                 checkAccessibleTypes(that, localEnv, resultInfo.checkContext.inferenceContext(), lambdaType, currentTarget);
             }
-            result = check(that, currentTarget, KindSelector.VAL, resultInfo);
+            result = wrongContext ? that.type = types.createErrorType(pt())
+                                  : check(that, currentTarget, KindSelector.VAL, resultInfo);
         } catch (Types.FunctionDescriptorLookupError ex) {
             JCDiagnostic cause = ex.getDiagnostic();
             resultInfo.checkContext.report(that, cause);
@@ -5369,22 +5372,11 @@ public class Attr extends JCTree.Visitor {
         }
 
         @Override
-        public void visitLambda(JCLambda that) {
-            super.visitLambda(that);
-            if (that.target == null) {
-                that.target = syms.unknownType;
-            }
-        }
-
-        @Override
         public void visitReference(JCMemberReference that) {
             super.visitReference(that);
             if (that.sym == null) {
                 that.sym = new MethodSymbol(0, names.empty, dummyMethodType(),
                         syms.noSymbol);
-            }
-            if (that.target == null) {
-                that.target = syms.unknownType;
             }
         }
     }
