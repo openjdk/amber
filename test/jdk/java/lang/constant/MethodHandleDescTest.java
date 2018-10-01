@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
+import static java.lang.constant.DirectMethodHandleDesc.*;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.GETTER;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.SETTER;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC_GETTER;
@@ -108,19 +109,19 @@ public class MethodHandleDescTest extends SymbolicDescTest {
     }
 
     public void testSimpleMHs() throws ReflectiveOperationException {
-        testMethodHandleRef(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_String, "isEmpty", "()Z"),
+        testMethodHandleRef(MethodHandleDesc.of(Kind.VIRTUAL, CR_String, "isEmpty", "()Z"),
                             LOOKUP.findVirtual(String.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
-        testMethodHandleRef(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType()),
+        testMethodHandleRef(MethodHandleDesc.of(Kind.STATIC, CR_String, "format", CR_String, CR_String, CR_Object.arrayType()),
                             LOOKUP.findStatic(String.class, "format", MethodType.methodType(String.class, String.class, Object[].class)));
-        testMethodHandleRef(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, CR_List, "isEmpty", "()Z"),
+        testMethodHandleRef(MethodHandleDesc.of(Kind.INTERFACE_VIRTUAL, CR_List, "isEmpty", "()Z"),
                             LOOKUP.findVirtual(List.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
-        testMethodHandleRef(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_void),
+        testMethodHandleRef(MethodHandleDesc.of(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_void),
                             LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
         testMethodHandleRef(MethodHandleDesc.ofConstructor(ClassDesc.of("java.util.ArrayList")),
                             LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
         // bad constructor non void return type
         try {
-            MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_int);
+            MethodHandleDesc.of(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CR_int);
             fail("should have failed: non void return type for constructor");
         } catch (IllegalArgumentException ex) {
             // good
@@ -128,7 +129,7 @@ public class MethodHandleDescTest extends SymbolicDescTest {
     }
 
     public void testAsType() throws Throwable {
-        MethodHandleDesc mhr = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, ClassDesc.of("java.lang.Integer"), "valueOf",
+        MethodHandleDesc mhr = MethodHandleDesc.of(Kind.STATIC, ClassDesc.of("java.lang.Integer"), "valueOf",
                                                    MethodTypeDesc.of(CR_Integer, CR_int));
         MethodHandleDesc takesInteger = mhr.asType(MethodTypeDesc.of(CR_Integer, CR_Integer));
         testMethodHandleRef(takesInteger);
@@ -160,17 +161,17 @@ public class MethodHandleDescTest extends SymbolicDescTest {
     }
 
     public void testMethodHandleRef() throws Throwable {
-        MethodHandleDesc ctorRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, testClass, "<ignored!>", CR_void);
-        MethodHandleDesc staticMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, testClass, "sm", "(I)I");
-        MethodHandleDesc staticIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_STATIC, testInterface, "sm", "(I)I");
-        MethodHandleDesc instanceMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, testClass, "m", "(I)I");
-        MethodHandleDesc instanceIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, testInterface, "m", "(I)I");
-        MethodHandleDesc superMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.SPECIAL, testSuperclass, "m", "(I)I");
-        MethodHandleDesc superIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_SPECIAL, testInterface, "m", "(I)I");
-        MethodHandleDesc privateMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.SPECIAL, testClass, "pm", "(I)I");
-        MethodHandleDesc privateIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_SPECIAL, testInterface, "pm", "(I)I");
-        MethodHandleDesc privateStaticMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, testClass, "psm", "(I)I");
-        MethodHandleDesc privateStaticIMethodRef = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_STATIC, testInterface, "psm", "(I)I");
+        MethodHandleDesc ctorRef = MethodHandleDesc.of(Kind.CONSTRUCTOR, testClass, "<ignored!>", CR_void);
+        MethodHandleDesc staticMethodRef = MethodHandleDesc.of(Kind.STATIC, testClass, "sm", "(I)I");
+        MethodHandleDesc staticIMethodRef = MethodHandleDesc.of(Kind.INTERFACE_STATIC, testInterface, "sm", "(I)I");
+        MethodHandleDesc instanceMethodRef = MethodHandleDesc.of(Kind.VIRTUAL, testClass, "m", "(I)I");
+        MethodHandleDesc instanceIMethodRef = MethodHandleDesc.of(Kind.INTERFACE_VIRTUAL, testInterface, "m", "(I)I");
+        MethodHandleDesc superMethodRef = MethodHandleDesc.of(Kind.SPECIAL, testSuperclass, "m", "(I)I");
+        MethodHandleDesc superIMethodRef = MethodHandleDesc.of(Kind.INTERFACE_SPECIAL, testInterface, "m", "(I)I");
+        MethodHandleDesc privateMethodRef = MethodHandleDesc.of(Kind.SPECIAL, testClass, "pm", "(I)I");
+        MethodHandleDesc privateIMethodRef = MethodHandleDesc.of(Kind.INTERFACE_SPECIAL, testInterface, "pm", "(I)I");
+        MethodHandleDesc privateStaticMethodRef = MethodHandleDesc.of(Kind.STATIC, testClass, "psm", "(I)I");
+        MethodHandleDesc privateStaticIMethodRef = MethodHandleDesc.of(Kind.INTERFACE_STATIC, testInterface, "psm", "(I)I");
 
         for (MethodHandleDesc r : List.of(ctorRef, staticMethodRef, staticIMethodRef, instanceMethodRef, instanceIMethodRef))
             testMethodHandleRef(r);
@@ -291,5 +292,11 @@ public class MethodHandleDescTest extends SymbolicDescTest {
         }
 
         assertTrue(tested > 0);
+    }
+
+    public void testKind() {
+        for (Kind k : Kind.values()) {
+            assertEquals(Kind.valueOf(k.refKind, k.isInterface), k);
+        }
     }
 }
