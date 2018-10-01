@@ -194,7 +194,7 @@ public class TreeMaker implements JCTree.Factory {
                                List<JCExpression> thrown,
                                JCBlock body,
                                JCExpression defaultValue,
-                               JCMemberReference conciseMethodRef) {
+                               JCExpression conciseMethodRef) {
         return MethodDef(
                 mods, name, restype, typarams, null, params,
                 thrown, body, defaultValue, conciseMethodRef);
@@ -234,7 +234,7 @@ public class TreeMaker implements JCTree.Factory {
                                List<JCExpression> thrown,
                                JCBlock body,
                                JCExpression defaultValue,
-                               JCMemberReference conciseMethodRef)
+                               JCExpression conciseMethodRef)
     {
         JCMethodDecl tree = new JCMethodDecl(mods,
                                        name,

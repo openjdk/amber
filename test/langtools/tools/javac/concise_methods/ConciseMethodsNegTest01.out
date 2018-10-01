@@ -3,4 +3,5 @@ ConciseMethodsNegTest01.java:8:28: compiler.err.prob.found.req: (compiler.misc.i
 ConciseMethodsNegTest01.java:10:18: compiler.err.abstract.meth.cant.have.body
 ConciseMethodsNegTest01.java:12:16: compiler.err.native.meth.cant.have.body
 ConciseMethodsNegTest01.java:18:5: compiler.err.constructors.cant.have.concise.body
-5 errors
+ConciseMethodsNegTest01.java:22:59: compiler.err.only.method.references.allowed
+6 errors

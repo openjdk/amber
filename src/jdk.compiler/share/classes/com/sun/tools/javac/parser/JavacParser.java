@@ -3933,7 +3933,7 @@ public class JavacParser implements Parser {
             }
             JCBlock body = null;
             JCExpression defaultValue = null;
-            JCMemberReference conciseMethodRef = null;
+            JCExpression conciseMethodRef = null;
             if (token.kind == LBRACE) {
                 body = block();
             } else if (token.kind == ARROW || token.kind == EQ) {
@@ -3951,8 +3951,7 @@ public class JavacParser implements Parser {
                         body = F.at(bodyPos).Block(0, List.of(exprStm));
                     }
                 } else {
-                    Assert.check(expr.hasTag(REFERENCE));
-                    conciseMethodRef = (JCMemberReference)expr;
+                    conciseMethodRef = expr;
                     body = F.at(bodyPos).Block(0, List.nil());
                 }
                 mods.flags |= Flags.CONCISE;

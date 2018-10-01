@@ -1112,6 +1112,9 @@ public class Attr extends JCTree.Visitor {
                 // Attribute method body.
                 if (tree.conciseMethodRef != null) {
                     localEnv.info.conciseMethod = tree;
+                    if (!tree.conciseMethodRef.hasTag(REFERENCE)) {
+                        log.error(tree.conciseMethodRef, Errors.OnlyMethodReferencesAllowed);
+                    }
                     attribTree(tree.conciseMethodRef, localEnv, statInfo);
                 } else {
                     attribStat(tree.body, localEnv);

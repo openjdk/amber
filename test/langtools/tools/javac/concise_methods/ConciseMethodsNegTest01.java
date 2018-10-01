@@ -16,4 +16,8 @@ class ConciseMethodsNegTest01 {
     }
 
     ConciseMethodsNegTest01() = ConciseMethodsNegTest01::make;
+
+    private static void all() {}
+
+    public static void foo() = ConciseMethodsNegTest01.all();
 }

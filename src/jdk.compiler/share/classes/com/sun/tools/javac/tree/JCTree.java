@@ -847,7 +847,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** is this a concise method? reserved for those concise methods which are just wrappers
          *  around a method reference
          */
-        public JCMemberReference conciseMethodRef;
+        public JCExpression conciseMethodRef;
 
         protected JCMethodDecl(JCModifiers mods,
                             Name name,
@@ -859,7 +859,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                             JCBlock body,
                             JCExpression defaultValue,
                             MethodSymbol sym,
-                            JCMemberReference conciseMethodRef)
+                            JCExpression conciseMethodRef)
         {
             this.mods = mods;
             this.name = name;
