@@ -28,14 +28,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Objects;
-import java.util.Optional;
 
-import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.BSM_METHODHANDLEDESC;
-import static java.lang.constant.ConstantDescs.CR_DirectMethodHandleDesc;
-import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
-import static java.lang.constant.ConstantDescs.MHR_METHODHANDLEDESC_FACTORY;
-import static java.lang.constant.ConstantDescs.MHR_METHODTYPEDESC_FACTORY;
 import static java.lang.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
@@ -161,15 +154,6 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
             default:
                 throw new IllegalStateException(kind.name());
         }
-    }
-
-    @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHR_METHODHANDLEDESC_FACTORY,
-                                                  kind.toString(),
-                                                  owner.descriptorString(),
-                                                  name,
-                                                  type.descriptorString()));
     }
 
     @Override

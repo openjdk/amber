@@ -32,14 +32,11 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
-import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
-import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.MHR_ENUMDESC_FACTORY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -313,33 +310,11 @@ public abstract class Enum<E extends Enum<E>>
             return new EnumDesc<>(enumClass, constantName);
         }
 
-        /**
-         * Return a nominal descriptor for the specified {@code enum} class and
-         * name, where the class is specified as a descriptor string.
-         *
-         * @param <E> the type of the enum constant
-         * @param enumClass a field descriptor string, as per JVMS 4.3.2,
-         *                  describing the {@code enum} class
-         * @param constantName the name of the enum constant, as per JVMS 4.2.2
-         * @return the nominal descriptor
-         * @throws NullPointerException if any argument is null
-         * @jvms 4.2.2 Unqualified Names
-         */
-        public static<E extends Enum<E>> EnumDesc<E> ofDescriptor(String enumClass,
-                                                                  String constantName) {
-            return EnumDesc.of(ClassDesc.ofDescriptor(enumClass), constantName);
-        }
-
         @Override
         @SuppressWarnings("unchecked")
         public E resolveConstantDesc(MethodHandles.Lookup lookup)
                 throws ReflectiveOperationException {
             return Enum.valueOf((Class<E>) constantType().resolveConstantDesc(lookup), constantName());
-        }
-
-        @Override
-        public Optional<? extends ConstantDesc<ConstantDesc<E>>> describeConstable() {
-            return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHR_ENUMDESC_FACTORY, constantType().descriptorString(), constantName()));
         }
 
         @Override

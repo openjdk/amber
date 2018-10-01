@@ -24,7 +24,6 @@
  */
 package java.lang.constant;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.TypeDescriptor;
 import java.util.stream.Stream;
 
@@ -58,7 +57,6 @@ import static java.util.stream.Collectors.joining;
  */
 public interface ClassDesc
         extends ConstantDesc<Class<?>>,
-                Constable<ConstantDesc<Class<?>>>,
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**

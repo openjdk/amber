@@ -25,12 +25,9 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Optional;
 
 import sun.invoke.util.Wrapper;
 
-import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.MHR_CLASSDESC_FACTORY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -68,11 +65,6 @@ final class PrimitiveClassDescImpl
     @Override
     public Class<?> resolveConstantDesc(MethodHandles.Lookup lookup) {
         return Wrapper.forBasicType(descriptorString().charAt(0)).primitiveType();
-    }
-
-    @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHR_CLASSDESC_FACTORY, descriptor));
     }
 
     @Override

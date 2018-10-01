@@ -248,26 +248,13 @@ public final class ConstantDescs {
             = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT,
                                           DEFAULT_NAME, ConstantDescs.CR_Object);
 
-    // Used by XxxDesc classes, but need to be here to avoid bootstrap cycles
-    static final DirectMethodHandleDesc MHR_METHODTYPEDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_MethodTypeDesc, "ofDescriptor",
-                                  CR_MethodTypeDesc, CR_String);
-
     static final DirectMethodHandleDesc MHR_CLASSDESC_FACTORY
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_ClassDesc, "ofDescriptor",
                                   CR_ClassDesc, CR_String);
 
-    static final DirectMethodHandleDesc MHR_METHODHANDLEDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DirectMethodHandleDesc, "ofDescriptor",
-                                  CR_DirectMethodHandleDesc, CR_String, CR_String, CR_String, CR_String);
-
     static final DirectMethodHandleDesc MHR_METHODHANDLE_ASTYPE
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_MethodHandle, "asType",
                                   CR_MethodHandle, CR_MethodType);
-
-    static final DirectMethodHandleDesc MHR_METHODHANDLEDESC_ASTYPE
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_MethodHandleDesc, "asType",
-                                  CR_MethodHandleDesc, CR_MethodTypeDesc);
 
     static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_FACTORY
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "of",
@@ -277,15 +264,11 @@ public final class ConstantDescs {
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "ofNamed",
                                   CR_DynamicConstantDesc, CR_DirectMethodHandleDesc, CR_String, CR_String, CR_ConstantDesc.arrayType());
 
-    /** {@link MethodHandleDesc} representing {@link EnumDesc#ofDescriptor(String, String)} */
-    public static final DirectMethodHandleDesc MHR_ENUMDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_EnumDesc, "ofDescriptor",
-                                  CR_EnumDesc, CR_String, CR_String);
-
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofField(ClassDesc, String, ClassDesc)} */
     public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFFIELD
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofField",
                                   CR_VarHandleDesc, CR_ClassDesc, CR_String, CR_ClassDesc);
+
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofStaticField(ClassDesc, String, ClassDesc)} */
     public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFSTATIC
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofStaticField",
@@ -295,17 +278,6 @@ public final class ConstantDescs {
     public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFARRAY
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofArray",
                                   CR_VarHandleDesc, CR_ClassDesc);
-
-    static final DirectMethodHandleDesc BSM_METHODHANDLEDESC
-            = ConstantDescs.ofConstantBootstrap(CR_DirectMethodHandleDesc,
-                                                "constantBootstrap", CR_DirectMethodHandleDesc,
-                                                CR_String, CR_String, CR_String, CR_String);
-
-    static final DirectMethodHandleDesc BSM_DYNAMICCONSTANTDESC
-            = ConstantDescs.ofConstantBootstrap(CR_DynamicConstantDesc,
-                                                "constantBootstrap",
-                                                CR_DynamicConstantDesc,
-                                                CR_DirectMethodHandleDesc, CR_String, CR_String, CR_ConstantDesc.arrayType());
 
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for

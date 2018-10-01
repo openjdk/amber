@@ -97,15 +97,18 @@ public abstract class SymbolicDescTest {
     }
 
     private static<T> void testSymbolicDesc(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
+        // Round trip sym -> resolve -> toSymbolicDesc
+        Constable<ConstantDesc<T>> constable = (Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP);
+        Optional<? extends ConstantDesc<ConstantDesc<T>>> described = constable.describeConstable();
         if (!forwardOnly) {
-            // Round trip sym -> resolve -> toSymbolicDesc
-            ConstantDesc<? super ConstantDesc<T>> s = ((Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP)).describeConstable().orElseThrow();
-            assertEquals(ref, s);
+            assertEquals(ref, described.orElseThrow());
         }
 
         // Round trip sym -> quoted sym -> resolve
-        Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable();
-        ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
-        assertEquals(sr, ref);
+        if (ref instanceof Constable) {
+            Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable();
+            ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
+            assertEquals(sr, ref);
+        }
     }
 }

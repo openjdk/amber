@@ -2128,8 +2128,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
      * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
      * {@link VarHandle} constant.
      */
-    public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
-            implements Constable<ConstantDesc<VarHandle>> {
+    public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle> {
 
         /**
          * Kinds of variable handle descs

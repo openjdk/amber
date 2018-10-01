@@ -27,7 +27,6 @@ package java.lang.constant;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 import static java.lang.constant.ConstantDescs.CR_MethodHandle;
@@ -62,12 +61,6 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
         MethodHandle handle = underlying.resolveConstantDesc(lookup);
         MethodType methodType = type.resolveConstantDesc(lookup);
         return handle.asType(methodType);
-    }
-
-    @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
-                                             underlying, type);
     }
 
     @Override

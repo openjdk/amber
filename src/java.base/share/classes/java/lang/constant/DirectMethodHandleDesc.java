@@ -26,7 +26,6 @@ package java.lang.constant;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleInfo;
-import java.lang.invoke.MethodHandles;
 
 import static java.lang.invoke.MethodHandleInfo.REF_getField;
 import static java.lang.invoke.MethodHandleInfo.REF_getStatic;
@@ -135,30 +134,4 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
      * @return the method type
      */
     MethodTypeDesc methodType();
-
-    /**
-     * Create a {@linkplain DirectMethodHandleDesc} given descriptor strings
-     * for its components.  Suitable for use as a constant bootstrap method
-     * for representing a {@linkplain DirectMethodHandleDesc} in the constant
-     * pool of a classfile.
-     *
-     * @param bsmKindName The name of an {@code enum} constant from {@link Kind}
-     * @param memberOwner A field type descriptor for the class declaring the
-     *                 method, field, or constructor, as per JVMS 4.3.2
-     * @param memberName The name of the method or field, as per JVMS 4.2.2
-     * @param memberType A method type descriptor for the method handle being
-     *                described, as per JVMS 4.3.3
-     * @return the {@linkplain MethodHandleDesc}
-     * @jvms 4.2.2 Unqualified Names
-     * @jvms 4.3.2 Field Descriptors
-     * @jvms 4.3.3 Method Descriptors
-     */
-    static DirectMethodHandleDesc ofDescriptor(String bsmKindName,
-                                               String memberOwner,
-                                               String memberName,
-                                               String memberType) {
-        return MethodHandleDesc.of(Kind.valueOf(bsmKindName),
-                                   ClassDesc.ofDescriptor(memberOwner), memberName,
-                                   MethodTypeDesc.ofDescriptor(memberType));
-    }
 }

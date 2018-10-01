@@ -24,14 +24,11 @@
  */
 package java.lang.constant;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.TypeDescriptor;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
@@ -44,7 +41,6 @@ import static java.util.Objects.requireNonNull;
  */
 public interface MethodTypeDesc
         extends ConstantDesc<MethodType>,
-                Constable<ConstantDesc<MethodType>>,
                 TypeDescriptor.OfMethod<ClassDesc, MethodTypeDesc> {
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string

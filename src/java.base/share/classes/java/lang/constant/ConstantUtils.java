@@ -26,8 +26,6 @@ package java.lang.constant;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -98,38 +96,6 @@ class ConstantUtils {
 
     static String dropFirstAndLastChar(String s) {
         return s.substring(1, s.length() - 1);
-    }
-
-    /**
-     * Produce an {@code Optional<DynamicConstantDesc<T>>} describing the invocation
-     * of the specified bootstrap with the specified arguments.  The arguments will
-     * be converted to nominal descriptors using the provided lookup.  Helper
-     * method for implementing {@link Constable#describeConstable()}.
-     *
-     * @param <T> the type of the resulting constant
-     * @param bootstrap nominal descriptor for the bootstrap method
-     * @param type nominal descriptor for the type of the resulting constant
-     * @param args nominal descriptors for the bootstrap arguments
-     * @return the nominal descriptor for the dynamic constant
-     */
-    public static<T> Optional<DynamicConstantDesc<T>> symbolizeHelper(MethodHandleDesc bootstrap,
-                                                                      ClassDesc type,
-                                                                      Constable<?>... args) {
-        requireNonNull(bootstrap);
-        requireNonNull(type);
-        requireNonNull(args);
-        try {
-            ConstantDesc<?>[] quotedArgs = new ConstantDesc<?>[args.length + 1];
-            quotedArgs[0] = bootstrap;
-            for (int i=0; i<args.length; i++)
-                quotedArgs[i+1] = args[i].describeConstable().orElseThrow();
-            return Optional.of(DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE,
-                                                           ConstantDescs.DEFAULT_NAME,
-                                                           type, quotedArgs));
-        }
-        catch (NoSuchElementException e) {
-            return Optional.empty();
-        }
     }
 
     /**
