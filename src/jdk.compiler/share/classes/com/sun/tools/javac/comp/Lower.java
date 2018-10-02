@@ -2541,19 +2541,20 @@ public class Lower extends TreeTranslator {
                     JCMemberReference reference = (JCMemberReference)tree.conciseMethodRef;
                     switch (reference.kind) {
                         case STATIC:
-                            qualifier = make.Select(make.QualIdent(reference.expr.type.tsym), reference.name);
+                            qualifier = make.Select(access(make.QualIdent(reference.expr.type.tsym)), reference.name);
                             apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, make.Idents(tree.params));
                             break;
                         case UNBOUND:
-                            qualifier = make.Select(make.QualIdent(tree.params.head.sym), reference.name);
+                            qualifier = make.Select(access(make.QualIdent(tree.params.head.sym)), reference.name);
                             apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, List.nil());
                             break;
                         case BOUND: case SUPER:
-                            qualifier = make.Select(make.Ident(TreeInfo.symbol(reference.expr)), reference.name);
+                            qualifier = make.Select(access(reference.expr), reference.name);
                             apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, make.Idents(tree.params));
                             break;
                         case TOPLEVEL: case IMPLICIT_INNER:
-                            expr = makeNewClass(reference.expr.type, make.Idents(tree.params));
+                            Symbol constSym = accessConstructor(reference, reference.expr.type.tsym);
+                            expr = makeNewClass(constSym.type, make.Idents(tree.params));
                             break;
                         case ARRAY_CTOR:
                             expr = make.NewArray(
