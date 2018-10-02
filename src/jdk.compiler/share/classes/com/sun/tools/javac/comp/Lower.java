@@ -104,6 +104,7 @@ public class Lower extends TreeTranslator {
     private final boolean debugLower;
     private final boolean disableProtectedAccessors; // experimental
     private final PkgInfo pkginfoOpt;
+    private final TransTypes transTypes;
 
     protected Lower(Context context) {
         context.put(lowerKey, this);
@@ -128,6 +129,7 @@ public class Lower extends TreeTranslator {
             fromString(target.syntheticNameChar() + "closeResource");
 
         types = Types.instance(context);
+        transTypes = TransTypes.instance(context);
         Options options = Options.instance(context);
         debugLower = options.isSet("debuglower");
         pkginfoOpt = PkgInfo.get(options);
@@ -2547,7 +2549,7 @@ public class Lower extends TreeTranslator {
                             apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, List.nil());
                             break;
                         case BOUND: case SUPER:
-                            qualifier = make.Select(make.QualIdent(TreeInfo.symbol(reference.expr)), reference.name);
+                            qualifier = make.Select(make.Ident(TreeInfo.symbol(reference.expr)), reference.name);
                             apply = make.at(tree.body.pos).Apply(List.nil(), qualifier, make.Idents(tree.params));
                             break;
                         case TOPLEVEL: case IMPLICIT_INNER:
@@ -2567,8 +2569,9 @@ public class Lower extends TreeTranslator {
                         case STATIC: case UNBOUND: case BOUND: case SUPER:
                             qualifier.type = tree.type;
                             qualifier.sym = reference.sym;
-                            apply.setType(tree.type.asMethodType().restype);
-                            expr = apply;
+                            Type mt = reference.sym.erasure(types);
+                            apply.setType(mt.asMethodType().restype);
+                            expr = transTypes.coerce(attrEnv, apply, types.erasure(tree.type.asMethodType().restype));
                             break;
                     }
                     if (!tree.type.asMethodType().restype.hasTag(VOID)) {
