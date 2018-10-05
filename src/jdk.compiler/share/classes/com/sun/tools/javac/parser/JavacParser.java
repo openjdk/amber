@@ -2568,6 +2568,7 @@ public class JavacParser implements Parser {
      */
     List<JCStatement> blockStatement() {
         //todo: skip to anchor on error(?)
+        Comment dc;
         int pos = token.pos;
         Comment dc;
         switch (token.kind) {
