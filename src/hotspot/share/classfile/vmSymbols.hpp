@@ -156,6 +156,7 @@
   template(tag_deprecated,                            "Deprecated")                               \
   template(tag_source_debug_extension,                "SourceDebugExtension")                     \
   template(tag_signature,                             "Signature")                                \
+  template(tag_record,                                "Record")                                   \
   template(tag_runtime_visible_annotations,           "RuntimeVisibleAnnotations")                \
   template(tag_runtime_invisible_annotations,         "RuntimeInvisibleAnnotations")              \
   template(tag_runtime_visible_parameter_annotations, "RuntimeVisibleParameterAnnotations")       \

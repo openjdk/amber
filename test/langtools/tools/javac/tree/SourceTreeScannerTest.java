@@ -59,6 +59,7 @@ import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCModuleDecl;
 import com.sun.tools.javac.tree.JCTree.TypeBoundKind;
 import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Pair;
 
 public class SourceTreeScannerTest extends AbstractTreeScannerTest {
     /**
@@ -169,6 +170,8 @@ public class SourceTreeScannerTest extends AbstractTreeScannerTest {
                 List<?> list = (List<?>) o;
                 for (Object item: list)
                     reflectiveScan(item);
+            } else if (o instanceof Pair) {
+                return;
             } else
                 error("unexpected item: " + o);
         }

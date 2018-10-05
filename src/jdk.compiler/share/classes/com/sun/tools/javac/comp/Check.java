@@ -1168,17 +1168,22 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = LocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
-                    (flags & ENUM) != 0)
+                    (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
+                }
+                if ((flags & RECORD) != 0 && (flags & STATIC) == 0) {
+                    log.error(pos, Errors.NestedRecordsMustBeStatic);
+                }
             } else if (sym.owner.kind == TYP) {
-                mask = MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? MemberRecordClassFlags : MemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0)
+                else if ((flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
+                }
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
             } else {
@@ -1191,6 +1196,10 @@ public class Check {
                 // enums can't be declared abstract or final
                 mask &= ~(ABSTRACT | FINAL);
                 implicit |= implicitEnumFinalFlag(tree);
+            }
+            if ((flags & RECORD) != 0) {
+                // records can't be declared abstract
+                mask &= ~ABSTRACT;
             }
             // Imply STRICTFP if owner has STRICTFP set.
             implicit |= sym.owner.flags_field & STRICTFP;
@@ -3104,8 +3113,9 @@ public class Check {
                 if (s.kind == MTH && !s.isConstructor())
                     return true;
             } else if (target == names.PARAMETER) {
-                if (s.kind == VAR && s.owner.kind == MTH &&
-                      (s.flags() & PARAMETER) != 0) {
+                if (s.kind == VAR &&
+                    (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0) ||
+                    (s.owner.kind == TYP && s.owner.isDatum())) {
                     return true;
                 }
             } else if (target == names.CONSTRUCTOR) {

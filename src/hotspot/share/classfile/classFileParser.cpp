@@ -3371,6 +3371,7 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   bool parsed_innerclasses_attribute = false;
   bool parsed_nest_members_attribute = false;
   bool parsed_nest_host_attribute = false;
+  bool parsed_record_attribute = false;
   bool parsed_enclosingmethod_attribute = false;
   bool parsed_bootstrap_methods_attribute = false;
   const u1* runtime_visible_annotations = NULL;
@@ -3390,6 +3391,8 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   u2  enclosing_method_method_index = 0;
   const u1* nest_members_attribute_start = NULL;
   u4  nest_members_attribute_length = 0;
+  const u1* record_attribute_start = NULL;
+  u4  record_attribute_length = 0;
 
   // Iterate over attributes
   while (attributes_count--) {
@@ -3572,12 +3575,18 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          "Nest-host class_info_index %u has bad constant type in class file %s",
                          class_info_index, CHECK);
           _nest_host = class_info_index;
-        } else {
-          // Unknown attribute
-          cfs->skip_u1(attribute_length, CHECK);
+        } else if (tag == vmSymbols::tag_record()) {
+          if (parsed_record_attribute) {
+            classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
+          } else {
+            parsed_record_attribute = true;
+          }
+          record_attribute_start = cfs->current();
+          record_attribute_length = attribute_length;
+          cfs->skip_u1(record_attribute_length, CHECK);
         }
       } else {
-        // Unknown attribute
+        // Unknown attribute 
         cfs->skip_u1(attribute_length, CHECK);
       }
     } else {

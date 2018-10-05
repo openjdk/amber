@@ -22,7 +22,7 @@
  */
 
 // key: compiler.err.illegal.start.of.stmt
-// key: compiler.err.expected3
+// key: compiler.err.expected4
 
 class IllegalStartOfStmt {
     void m() {

@@ -1639,7 +1639,9 @@ public class ClassReader {
         }
         ListBuffer<CompoundAnnotationProxy> proxies = new ListBuffer<>();
         for (CompoundAnnotationProxy proxy : annotations) {
-            if (proxy.type.tsym.flatName() == syms.proprietaryType.tsym.flatName())
+            if (proxy.type.tsym == syms.dataAnnotationType.tsym) {
+                sym.flags_field |= RECORD;
+            } else if (proxy.type.tsym.flatName() == syms.proprietaryType.tsym.flatName())
                 sym.flags_field |= PROPRIETARY;
             else if (proxy.type.tsym.flatName() == syms.profileType.tsym.flatName()) {
                 if (profile != Profile.DEFAULT) {

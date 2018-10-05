@@ -1019,6 +1019,15 @@ public class Attr extends JCTree.Visitor {
                         tree.recvparam.pos(),
                         Errors.IntfAnnotationMembersCantHaveParams);
 
+            if ((owner.flags() & RECORD) != 0) {
+                List<VarSymbol> recordFieldSymbols = types.recordVars(env.enclClass.type);
+                List<Name> forbiddenMethodNames = recordFieldSymbols.map(vd -> vd.name);
+                forbiddenMethodNames = forbiddenMethodNames.prependList(List.of(names.hashCode, names.equals));
+                if (forbiddenMethodNames.contains(m.name)) {
+                    log.error(tree, Errors.CantProvideExplicitVersion(m.name));
+                }
+            }
+
             // Attribute all value parameters.
             for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
                 attribStat(l.head, localEnv);
@@ -1090,12 +1099,11 @@ public class Attr extends JCTree.Visitor {
                 if (tree.name == names.init && owner.type != syms.objectType) {
                     JCBlock body = tree.body;
                     if (body.stats.isEmpty() ||
-                            !TreeInfo.isSelfCall(body.stats.head)) {
-                        body.stats = body.stats.
-                                prepend(typeEnter.SuperCall(make.at(body.pos),
-                                        List.nil(),
-                                        List.nil(),
-                                        false));
+                            TreeInfo.getConstructorInvocationName(body.stats, names,
+                                    (env.enclClass.sym.flags() & RECORD) != 0) == names.empty) {
+                        JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
+                                make.Ident(names._super), make.Idents(List.nil())));
+                        body.stats = body.stats.prepend(supCall);
                     } else if ((env.enclClass.sym.flags() & ENUM) != 0 &&
                             (tree.mods.flags & GENERATEDCONSTR) == 0 &&
                             TreeInfo.isSuperCall(body.stats.head)) {
@@ -3235,7 +3243,6 @@ public class Attr extends JCTree.Visitor {
             } else {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dup()));
             }
-            lambdaEnv.info.breakResult = null;
             return lambdaEnv;
         }
 
