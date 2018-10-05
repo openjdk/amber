@@ -4157,16 +4157,34 @@ public class JavacParser implements Parser {
                 }
             }
             JCBlock body = null;
-            JCExpression defaultValue;
+            JCExpression defaultValue = null;
+            JCExpression conciseMethodRef = null;
             if (token.kind == LBRACE) {
                 body = block();
-                defaultValue = null;
+            } else if (token.kind == ARROW || token.kind == EQ) {
+                boolean arrowForm = token.kind == ARROW;
+                int bodyPos = token.pos;
+                checkSourceLevel(bodyPos, Feature.CONCISE_METHOD_BODIES);
+                accept(token.kind);
+                JCExpression expr = parseExpression();
+                if (arrowForm) {
+                    if (!isVoid) {
+                        JCReturn _return = toP(F.at(bodyPos).Return(expr));
+                        body = F.at(bodyPos).Block(0, List.of(_return));
+                    } else {
+                        JCExpressionStatement exprStm = toP(F.at(bodyPos).Exec(expr));
+                        body = F.at(bodyPos).Block(0, List.of(exprStm));
+                    }
+                } else {
+                    conciseMethodRef = expr;
+                    body = F.at(bodyPos).Block(0, List.nil());
+                }
+                mods.flags |= Flags.CONCISE;
+                body.endpos = token.pos;
             } else {
                 if (token.kind == DEFAULT) {
                     accept(DEFAULT);
                     defaultValue = annotationValue();
-                } else {
-                    defaultValue = null;
                 }
                 accept(SEMI);
                 if (token.pos <= endPosTable.errorEndPos) {
@@ -4181,7 +4199,7 @@ public class JavacParser implements Parser {
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
                                             receiverParam, params, thrown,
-                                            body, defaultValue));
+                                            body, defaultValue, conciseMethodRef));
             attach(result, dc);
             return result;
         } finally {

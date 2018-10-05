@@ -30,6 +30,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 
 /** Contains information specific to the attribute and enter
  *  passes, to be used in place of the generic field in environments.
@@ -120,6 +121,10 @@ public class AttrContext {
 
     MethodSymbol recordImplicitConstructor;
 
+    /** method that acts as a wrapper for a method reference
+     */
+    JCMethodDecl conciseMethod;
+
     /** Duplicate this context, replacing scope field and copying all others.
      */
     AttrContext dup(WriteableScope scope) {
@@ -141,6 +146,7 @@ public class AttrContext {
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
+        info.conciseMethod = conciseMethod;
         info.recordImplicitConstructor = recordImplicitConstructor;
         return info;
     }

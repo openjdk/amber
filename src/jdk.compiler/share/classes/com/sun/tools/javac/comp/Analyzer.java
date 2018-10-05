@@ -30,7 +30,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.Predicate;
 
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.NewClassTree;
@@ -38,16 +37,20 @@ import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Source.Feature;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
+import com.sun.tools.javac.resources.CompilerProperties.Notes;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
+import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
+import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCForLoop;
 import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
@@ -55,6 +58,7 @@ import com.sun.tools.javac.tree.JCTree.JCLambda.ParameterKind;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCReturn;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
 import com.sun.tools.javac.tree.JCTree.JCTry;
@@ -76,9 +80,11 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticType;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Log;
+import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 import com.sun.tools.javac.util.Position;
 
+import static com.sun.tools.javac.code.Flags.ANONCONSTR;
 import static com.sun.tools.javac.code.Flags.GENERATEDCONSTR;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
@@ -87,6 +93,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.LABELLED;
 import static com.sun.tools.javac.tree.JCTree.Tag.METHODDEF;
 import static com.sun.tools.javac.tree.JCTree.Tag.NEWCLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.NULLCHK;
+import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 import static com.sun.tools.javac.tree.JCTree.Tag.TYPEAPPLY;
 import static com.sun.tools.javac.tree.JCTree.Tag.VARDEF;
 
@@ -104,6 +111,7 @@ public class Analyzer {
     final ArgumentAttr argumentAttr;
     final TreeMaker make;
     final AnalyzerCopier copier;
+    final Names names;
     private final boolean allowDiamondWithAnonymousClassCreation;
 
     final EnumSet<AnalyzerMode> analyzerModes;
@@ -124,6 +132,7 @@ public class Analyzer {
         argumentAttr = ArgumentAttr.instance(context);
         make = TreeMaker.instance(context);
         copier = new AnalyzerCopier();
+        names = Names.instance(context);
         Options options = Options.instance(context);
         String findOpt = options.get("find");
         //parse modes
@@ -140,6 +149,7 @@ public class Analyzer {
         DIAMOND("diamond", Feature.DIAMOND),
         LAMBDA("lambda", Feature.LAMBDA),
         METHOD("method", Feature.GRAPH_INFERENCE),
+        CONCISE_METHOD("concise_method", Feature.CONCISE_METHOD_BODIES),
         LOCAL("local", Feature.LOCAL_VARIABLE_TYPE_INFERENCE);
 
         final String opt;
@@ -198,10 +208,14 @@ public class Analyzer {
             return analyzerModes.contains(mode);
         }
 
+        boolean accepts(S tree) {
+            return tree.hasTag(tag);
+        }
+
         /**
          * Should this analyzer be rewriting the given tree?
          */
-        abstract boolean match(S tree);
+        abstract boolean match(S tree, Env<AttrContext> env);
 
         /**
          * Rewrite a given AST node into a new one(s)
@@ -224,7 +238,7 @@ public class Analyzer {
         }
 
         @Override
-        boolean match(JCNewClass tree) {
+        boolean match(JCNewClass tree, Env<AttrContext> env) {
             return tree.clazz.hasTag(TYPEAPPLY) &&
                     !TreeInfo.isDiamond(tree) &&
                     (tree.def == null || allowDiamondWithAnonymousClassCreation);
@@ -278,7 +292,7 @@ public class Analyzer {
         }
 
         @Override
-        boolean match (JCNewClass tree){
+        boolean match (JCNewClass tree, Env<AttrContext> env){
             Type clazztype = tree.clazz.type;
             return tree.def != null &&
                     clazztype.hasTag(CLASS) &&
@@ -319,6 +333,113 @@ public class Analyzer {
     }
 
     /**
+     * This analyzer checks if anonymous instance creation expression can replaced by lambda.
+     */
+    class ConciseMethodsAnalyzer extends StatementAnalyzer<JCTree, JCTree> {
+
+        Map<JCTree, JCTree> treeToPosMap = new HashMap<>();
+
+        ConciseMethodsAnalyzer() {
+            super(AnalyzerMode.CONCISE_METHOD, METHODDEF);
+        }
+
+        @Override
+        boolean accepts(JCTree tree) {
+            return tree.hasTag(Tag.RETURN) || tree.hasTag(Tag.EXEC);
+        }
+
+        @Override
+        boolean match (JCTree tree, Env<AttrContext> env) {
+            boolean result = false;
+            JCMethodDecl methodDec = env.enclMethod;
+            if (methodDec != null &&
+                    ((methodDec.mods.flags & Flags.SYNTHETIC) == 0) &&
+                    ((methodDec.mods.flags & Flags.ABSTRACT) == 0) &&
+//                    ((methodDec.mods.flags & Flags.GENERATEDCONSTR) == 0) &&
+//                    ((methodDec.mods.flags & Flags.ANONCONSTR) == 0) &&
+                    methodDec.body.stats.size() == 1 &&
+                    methodDec.name != names.init) {
+                JCStatement stat = methodDec.body.stats.head;
+                JCMethodInvocation apply = findInvocation(stat);
+                if (apply != null) {
+                    Symbol qualifier = null;
+                    List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
+                    List<Symbol> argsSyms = TreeInfo.symbols(apply.args);
+                    if (apply.meth.hasTag(SELECT)) {
+                        qualifier = TreeInfo.symbol(((JCFieldAccess) apply.meth).selected);
+                        qualifier = methodDec.params.isEmpty() || qualifier != methodDec.params.head.sym ? null : qualifier;
+                    }
+                    if (methodDec.params.size() == apply.args.size() + (qualifier != null ? 1 : 0)) {
+                        argsSyms = qualifier != null ? argsSyms.prepend(qualifier) : argsSyms;
+                        result = paramsSyms.equals(argsSyms);
+                        if (result) {
+                            treeToPosMap.put(tree, methodDec);
+                        }
+                    }
+                } else {
+                    JCNewClass constructor = findConstructor(stat);
+                    if (constructor != null && constructor.def == null) {
+                        if (methodDec.params.size() == constructor.args.size()) {
+                            List<Symbol> paramsSyms = TreeInfo.symbols(methodDec.params);
+                            List<Symbol> argsSyms = TreeInfo.symbols(constructor.args);
+                            result = paramsSyms.equals(argsSyms);
+                            if (result) {
+                                treeToPosMap.put(tree, methodDec);
+                            }
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+        //where
+            private JCMethodInvocation findInvocation(JCStatement stat) {
+                if (stat.hasTag(Tag.RETURN)) {
+                    JCReturn retrn = (JCReturn)stat;
+                    if (retrn.expr != null && retrn.expr.hasTag(APPLY)) {
+                        return (JCMethodInvocation)retrn.expr;
+                    }
+                } else if (stat.hasTag(Tag.EXEC)) {
+                    JCExpressionStatement exprStat = (JCExpressionStatement)stat;
+                    if (exprStat.expr.hasTag(APPLY)) {
+                        return (JCMethodInvocation)exprStat.expr;
+                    }
+                }
+                return null;
+            }
+
+            private JCNewClass findConstructor(JCStatement stat) {
+                if (stat.hasTag(Tag.RETURN)) {
+                    JCReturn retrn = (JCReturn)stat;
+                    if (retrn.expr != null && retrn.expr.hasTag(NEWCLASS)) {
+                        return (JCNewClass)retrn.expr;
+                    }
+                } else if (stat.hasTag(Tag.EXEC)) {
+                    JCExpressionStatement exprStat = (JCExpressionStatement)stat;
+                    if (exprStat.expr.hasTag(NEWCLASS)) {
+                        return (JCNewClass)exprStat.expr;
+                    }
+                }
+                return null;
+            }
+
+        @Override
+        List<JCTree> rewrite(JCTree oldTree){
+            return List.of(oldTree);
+        }
+
+        @Override
+        void process (JCTree oldTree, JCTree newTree, boolean hasErrors){
+            if (!hasErrors) {
+                // this version is for experiments only, printing warnings breaks the OpenJDK build
+                //log.note(treeToPosMap.get(oldTree), Notes.PotentialConciseMethodFound(oldTree.toString()));
+                log.warning(treeToPosMap.get(oldTree), Warnings.PotentialConciseMethodFound);
+            }
+            treeToPosMap.remove(oldTree);
+        }
+    }
+
+    /**
      * This analyzer checks if generic method call has redundant type arguments.
      */
     class RedundantTypeArgAnalyzer extends StatementAnalyzer<JCMethodInvocation, JCMethodInvocation> {
@@ -328,7 +449,7 @@ public class Analyzer {
         }
 
         @Override
-        boolean match (JCMethodInvocation tree){
+        boolean match (JCMethodInvocation tree, Env<AttrContext> env){
             return tree.typeargs != null &&
                     tree.typeargs.nonEmpty();
         }
@@ -391,7 +512,7 @@ public class Analyzer {
             super(VARDEF);
         }
 
-        boolean match(JCVariableDecl tree){
+        boolean match(JCVariableDecl tree, Env<AttrContext> env){
             return tree.sym.owner.kind == Kind.MTH &&
                     tree.init != null && !isImplicitlyTyped(tree) &&
                     attr.canInferLocalVarType(tree) == null;
@@ -416,7 +537,7 @@ public class Analyzer {
         }
 
         @Override
-        boolean match(JCEnhancedForLoop tree){
+        boolean match(JCEnhancedForLoop tree, Env<AttrContext> env){
             return !isImplicitlyTyped(tree.var);
         }
         @Override
@@ -438,7 +559,8 @@ public class Analyzer {
             new LambdaAnalyzer(),
             new RedundantTypeArgAnalyzer(),
             new RedundantLocalVarTypeAnalyzer(),
-            new RedundantLocalVarTypeAnalyzerForEach()
+            new RedundantLocalVarTypeAnalyzerForEach(),
+            new ConciseMethodsAnalyzer(),
     };
 
     /**
@@ -601,8 +723,8 @@ public class Analyzer {
             if (tree != null) {
                 for (StatementAnalyzer<JCTree, JCTree> analyzer : analyzers) {
                     if (analyzer.isEnabled() &&
-                            tree.hasTag(analyzer.tag) &&
-                            analyzer.match(tree)) {
+                            analyzer.accepts(tree) &&
+                            analyzer.match(tree, env)) {
                         for (JCTree t : analyzer.rewrite(tree)) {
                             rewritings.add(new RewritingContext(originalTree, tree, t, analyzer, env));
                         }

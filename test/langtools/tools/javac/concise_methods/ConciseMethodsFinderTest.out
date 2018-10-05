@@ -1,0 +1,8 @@
+ConciseMethodsFinderTest.java:20:9: compiler.warn.potential.concise.method.found
+ConciseMethodsFinderTest.java:25:9: compiler.warn.potential.concise.method.found
+ConciseMethodsFinderTest.java:30:9: compiler.warn.potential.concise.method.found
+ConciseMethodsFinderTest.java:35:37: compiler.warn.potential.concise.method.found
+ConciseMethodsFinderTest.java:48:12: compiler.warn.potential.concise.method.found
+- compiler.err.warnings.and.werror
+1 error
+5 warnings

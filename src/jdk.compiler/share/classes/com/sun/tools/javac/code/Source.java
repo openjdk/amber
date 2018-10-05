@@ -185,7 +185,8 @@ public enum Source {
         SWITCH_RULE(JDK12, Fragments.FeatureSwitchRules, DiagKind.PLURAL),
         SWITCH_EXPRESSION(JDK12, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
         RAW_STRING_LITERALS(JDK12, Fragments.FeatureRawStringLiterals, DiagKind.PLURAL),
-        RECORDS(JDK10);
+        RECORDS(JDK10),
+        CONCISE_METHOD_BODIES(JDK12, Fragments.FeatureConciseMethodBodies, DiagKind.PLURAL);
 
         enum DiagKind {
             NORMAL,

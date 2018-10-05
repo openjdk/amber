@@ -330,6 +330,11 @@ public class Flags {
      */
     public static final long MATCH_BINDING = 1L<<59;
 
+    /**
+     * Flag for concise methods
+     */
+    public static final long CONCISE = 1L<<60;
+
     /** Modifier masks.
      */
     public static final int
@@ -450,7 +455,8 @@ public class Flags {
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         MATCH_BINDING(Flags.MATCH_BINDING),
-        RECORD(Flags.RECORD);
+        RECORD(Flags.RECORD),
+        CONCISE(Flags.CONCISE);
 
         Flag(long flag) {
             this.value = flag;
