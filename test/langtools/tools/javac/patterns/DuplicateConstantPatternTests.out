@@ -1,0 +1,5 @@
+DuplicateConstantPatternTests.java:13:13: compiler.err.duplicate.case.label
+DuplicateConstantPatternTests.java:18:13: compiler.err.duplicate.case.label
+DuplicateConstantPatternTests.java:23:13: compiler.err.duplicate.case.label
+DuplicateConstantPatternTests.java:30:13: compiler.err.duplicate.case.label
+4 errors

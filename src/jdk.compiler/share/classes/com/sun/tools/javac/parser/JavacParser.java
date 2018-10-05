@@ -361,6 +361,7 @@ public class JavacParser implements Parser {
                 case DO:
                 case TRY:
                 case SWITCH:
+                case MATCH:
                 case RETURN:
                 case THROW:
                 case BREAK:
@@ -583,6 +584,11 @@ public class JavacParser implements Parser {
             Name name = token.name();
             nextToken();
             return name;
+        } else if (token.kind == MATCHES || token.kind == TokenKind.MATCH || token.kind == VAR) {
+            //'matches', 'match', 'var' are just identifiers when inside other expressions
+            Name name = token.name();
+            nextToken();
+            return name;
         } else {
             accept(IDENTIFIER);
             if (advanceOnErrors) {
@@ -736,6 +742,25 @@ public class JavacParser implements Parser {
         return term(EXPR);
     }
 
+
+    /** parses patterns.
+     */
+
+    public JCPattern parsePattern() {
+        int pos = token.pos;
+        if (token.kind == VAR) {
+            nextToken();
+            return toP(F.at(pos).BindingPattern(ident(), null));
+        } else {
+            JCExpression e = term(EXPR | TYPE | NOLAMBDA);
+            if (token.kind == IDENTIFIER) {
+                return toP(F.at(pos).BindingPattern(ident(), e));
+            } else {
+                return toP(F.at(pos).LiteralPattern(e));
+            }
+        }
+    }
+
     /**
      * parses (optional) type annotations followed by a type. If the
      * annotations are present before the type and are not consumed during array
@@ -886,6 +911,7 @@ public class JavacParser implements Parser {
 
     /*  Expression2Rest = {infixop Expression3}
      *                  | Expression3 instanceof Type
+     *                  | Expression3 matches Pattern
      *  infixop         = "||"
      *                  | "&&"
      *                  | "|"
@@ -898,6 +924,7 @@ public class JavacParser implements Parser {
      *                  | "*" | "/" | "%"
      */
     JCExpression term2Rest(JCExpression t, int minprec) {
+
         JCExpression[] odStack = newOdStack();
         Token[] opStack = newOpStack();
 
@@ -908,13 +935,25 @@ public class JavacParser implements Parser {
         Token topOp = Tokens.DUMMY;
         while (prec(token.kind) >= minprec) {
             opStack[top] = topOp;
-            top++;
-            topOp = token;
-            nextToken();
-            odStack[top] = (topOp.kind == INSTANCEOF) ? parseType() : term3();
+
+            if (token.kind == INSTANCEOF) {
+                int pos = token.pos;
+                nextToken();
+                JCExpression typ = parseType();
+                odStack[top] = F.at(pos).TypeTest(odStack[top], typ);
+            } else if (token.kind == MATCHES) {
+                int pos = token.pos;
+                nextToken();
+                JCPattern pat = parsePattern();
+                odStack[top] = F.at(pos).PatternTest(odStack[top], pat);
+            } else {
+                topOp = token;
+                nextToken();
+                top++;
+                odStack[top] = term3();
+            }
             while (top > 0 && prec(topOp.kind) >= prec(token.kind)) {
-                odStack[top-1] = makeOp(topOp.pos, topOp.kind, odStack[top-1],
-                                        odStack[top]);
+                odStack[top - 1] = F.at(topOp.pos).Binary(optag(topOp.kind), odStack[top - 1], odStack[top]);
                 top--;
                 topOp = opStack[top];
             }
@@ -931,19 +970,18 @@ public class JavacParser implements Parser {
         return t;
     }
     //where
-        /** Construct a binary or type test node.
-         */
-        private JCExpression makeOp(int pos,
-                                    TokenKind topOp,
-                                    JCExpression od1,
-                                    JCExpression od2)
-        {
-            if (topOp == INSTANCEOF) {
-                return F.at(pos).TypeTest(od1, od2);
-            } else {
-                return F.at(pos).Binary(optag(topOp), od1, od2);
+        Filter<TokenKind> matchFilter = tk -> {
+            switch (tk) {
+                case LPAREN:
+                case DOT:
+                case EQ:
+                    return false;
+                case MATCHES:
+                    return true;
+                default: return optag(tk) == Tag.NO_TAG;
             }
-        }
+        };
+
         /** If tree is a concatenation of string literals, replace it
          *  by a single literal representing the concatenated string.
          */
@@ -1210,7 +1248,7 @@ public class JavacParser implements Parser {
                 t = insertAnnotationsToMostInner(expr, typeAnnos, false);
             }
             break;
-        case UNDERSCORE: case IDENTIFIER: case ASSERT: case ENUM:
+        case UNDERSCORE: case IDENTIFIER: case ASSERT: case ENUM: case MATCH: case MATCHES: case VAR:
             if (typeArgs != null) return illegal();
             if ((mode & EXPR) != 0 && (mode & NOLAMBDA) == 0 && peekToken(ARROW)) {
                 t = lambdaExpressionOrStatement(false, false, pos);
@@ -1408,14 +1446,14 @@ public class JavacParser implements Parser {
     private List<JCCase> switchExpressionStatementGroup() {
         ListBuffer<JCCase> caseExprs = new ListBuffer<>();
         int casePos = token.pos;
-        ListBuffer<JCExpression> pats = new ListBuffer<>();
+        ListBuffer<JCPattern> pats = new ListBuffer<>();
 
         if (token.kind == DEFAULT) {
             nextToken();
         } else {
             accept(CASE);
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
@@ -1654,6 +1692,7 @@ public class JavacParser implements Parser {
                         case DOUBLELITERAL: case CHARLITERAL: case STRINGLITERAL:
                         case TRUE: case FALSE: case NULL:
                         case NEW: case IDENTIFIER: case ASSERT: case ENUM: case UNDERSCORE:
+                        case VAR: case MATCH: case MATCHES:
                         case BYTE: case SHORT: case CHAR: case INT:
                         case LONG: case FLOAT: case DOUBLE: case BOOLEAN: case VOID:
                             return ParensResult.CAST;
@@ -1664,6 +1703,21 @@ public class JavacParser implements Parser {
                 case ASSERT:
                 case ENUM:
                 case IDENTIFIER:
+                case VAR:
+                case MATCH: // ??
+                case MATCHES: // ??
+                    if (tk == IDENTIFIER && S.token(lookahead + 1).kind == MATCHES) {
+                        // Identifier, "matches" -> ! explicit lambda
+                        return ParensResult.PARENS;
+                    }
+                    if (peekToken(lookahead, MATCHES)) {
+                        Token next = S.token(lookahead + 1);
+                        if (next.kind == COMMA || next.kind == RPAREN) {
+                            // Identifier matches ','|')' -> explicit lambda
+                            return ParensResult.EXPLICIT_LAMBDA;
+                        }
+                        return ParensResult.PARENS;
+                    }
                     if (peekToken(lookahead, LAX_IDENTIFIER)) {
                         // Identifier, Identifier/'_'/'assert'/'enum' -> explicit lambda
                         return ParensResult.EXPLICIT_LAMBDA;
@@ -1764,7 +1818,8 @@ public class JavacParser implements Parser {
     }
 
     /** Accepts all identifier-like tokens */
-    protected Filter<TokenKind> LAX_IDENTIFIER = t -> t == IDENTIFIER || t == UNDERSCORE || t == ASSERT || t == ENUM;
+    protected Filter<TokenKind> LAX_IDENTIFIER = t -> t == IDENTIFIER || t == UNDERSCORE || t == ASSERT || t == ENUM ||
+            t == MATCHES || t == TokenKind.MATCH || t == VAR;
 
     enum ParensResult {
         CAST,
@@ -2522,6 +2577,13 @@ public class JavacParser implements Parser {
         case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
         case ASSERT:
             return List.of(parseSimpleStatement());
+        case MATCH:
+            //is it a match statement?
+            if (isMatchStatement()) {
+                return List.of(parseSimpleStatement());
+            } else {
+                break;
+            }
         case MONKEYS_AT:
         case FINAL: {
             Comment dc = token.comment(CommentStyle.JAVADOC);
@@ -2548,28 +2610,54 @@ public class JavacParser implements Parser {
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
-        default:
-            Token prevToken = token;
-            JCExpression t = term(EXPR | TYPE);
-            if (token.kind == COLON && t.hasTag(IDENT)) {
-                nextToken();
-                JCStatement stat = parseStatementAsBlock();
-                return List.of(F.at(pos).Labelled(prevToken.name(), stat));
-            } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
-                pos = token.pos;
-                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-                F.at(pos);
-                return localVariableDeclarations(mods, t);
-            } else {
-                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-                t = checkExprStat(t);
-                accept(SEMI);
-                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-                return List.of(expr);
-            }
+        }
+        //otherwise
+        Token prevToken = token;
+        JCExpression t = term(EXPR | TYPE);
+        if (token.kind == COLON && t.hasTag(IDENT)) {
+            nextToken();
+            JCStatement stat = parseStatementAsBlock();
+            return List.of(F.at(pos).Labelled(prevToken.name(), stat));
+        } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
+            pos = token.pos;
+            JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+            F.at(pos);
+            return localVariableDeclarations(mods, t);
+        } else {
+            // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+            t = checkExprStat(t);
+            accept(SEMI);
+            JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+            return List.of(expr);
         }
     }
+
     //where
+        boolean isMatchStatement() {
+            //we need a LPAREN
+            if (!peekToken(LPAREN)) {
+                return false;
+            }
+            //then we scan through the contents of the '(...)', looking for a matching closing parens,
+            //followed by an '{'.
+            int depth = 1;
+            for (int lookahead = 2 ; ; lookahead++) {
+                TokenKind tk = S.token(lookahead).kind;
+                switch (tk) {
+                    case LPAREN:
+                        depth++;
+                        break;
+                    case RPAREN:
+                        depth--;
+                        if (depth == 0) {
+                            return S.token(lookahead + 1).kind == LBRACE;
+                        }
+                        break;
+                    case EOF:
+                        return false;
+                }
+            }
+        }
         private List<JCStatement> localVariableDeclarations(JCModifiers mods, JCExpression type) {
             ListBuffer<JCStatement> stats =
                     variableDeclarators(mods, type, new ListBuffer<>(), true);
@@ -2676,6 +2764,7 @@ public class JavacParser implements Parser {
             }
             return F.at(pos).Try(resources, body, catchers.toList(), finalizer);
         }
+        case MATCH:
         case SWITCH: {
             nextToken();
             JCExpression selector = parExpression();
@@ -2794,7 +2883,7 @@ public class JavacParser implements Parser {
 
     /** SwitchBlockStatementGroups = { SwitchBlockStatementGroup }
      *  SwitchBlockStatementGroup = SwitchLabel BlockStatements
-     *  SwitchLabel = CASE ConstantExpression ":" | DEFAULT ":"
+     *  SwitchLabel = CASE Pattern ":" | DEFAULT ":"
      */
     List<JCCase> switchBlockStatementGroups() {
         ListBuffer<JCCase> cases = new ListBuffer<>();
@@ -2822,9 +2911,9 @@ public class JavacParser implements Parser {
         switch (token.kind) {
         case CASE: {
             nextToken();
-            ListBuffer<JCExpression> pats = new ListBuffer<>();
+            ListBuffer<JCPattern> pats = new ListBuffer<>();
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
@@ -4221,7 +4310,7 @@ public class JavacParser implements Parser {
     /** Return precedence of operator represented by token,
      *  -1 if token is not a binary operator. @see TreeInfo.opPrec
      */
-    static int prec(TokenKind token) {
+    int prec(TokenKind token) {
         JCTree.Tag oc = optag(token);
         return (oc != NO_TAG) ? TreeInfo.opPrec(oc) : -1;
     }
@@ -4241,7 +4330,7 @@ public class JavacParser implements Parser {
     /** Return operation tag of binary operator represented by token,
      *  No_TAG if token is not a binary operator.
      */
-    static JCTree.Tag optag(TokenKind token) {
+    JCTree.Tag optag(TokenKind token) {
         switch (token) {
         case BARBAR:
             return OR;
@@ -4305,6 +4394,8 @@ public class JavacParser implements Parser {
             return MOD_ASG;
         case INSTANCEOF:
             return TYPETEST;
+        case MATCHES:
+             return peekToken(matchFilter) ? PATTERNTEST : NO_TAG;
         default:
             return NO_TAG;
         }

@@ -319,6 +319,11 @@ public class Flags {
      */
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
+    /**
+     * Flag to indicate the given variable is a match binding variable.
+     */
+    public static final long MATCH_BINDING = 1L<<58;
+
     /** Modifier masks.
      */
     public static final int

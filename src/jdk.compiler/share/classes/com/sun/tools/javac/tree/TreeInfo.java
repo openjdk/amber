@@ -454,6 +454,8 @@ public class TreeInfo {
                 return getStartPos(((JCArrayTypeTree) tree).elemtype);
             case TYPETEST:
                 return getStartPos(((JCInstanceOf) tree).expr);
+            case PATTERNTEST:
+                return getStartPos(((JCMatches) tree).expr);
             case ANNOTATED_TYPE: {
                 JCAnnotatedType node = (JCAnnotatedType) tree;
                 if (node.annotations.nonEmpty()) {
@@ -572,6 +574,8 @@ public class TreeInfo {
                 return getEndPos(((JCTypeCast) tree).expr, endPosTable);
             case TYPETEST:
                 return getEndPos(((JCInstanceOf) tree).clazz, endPosTable);
+            case PATTERNTEST:
+                return getEndPos(((JCMatches) tree).pattern, endPosTable);
             case WHILELOOP:
                 return getEndPos(((JCWhileLoop) tree).body, endPosTable);
             case ANNOTATED_TYPE:
@@ -844,6 +848,8 @@ public class TreeInfo {
             if (node.type != null)
                 return node.type.tsym;
             return null;
+        case BINDINGPATTERN:
+            return ((JCBindingPattern) node).symbol;
         default:
             return null;
         }
@@ -1006,7 +1012,8 @@ public class TreeInfo {
         case MUL:
         case DIV:
         case MOD: return mulPrec;
-        case TYPETEST: return ordPrec;
+        case TYPETEST:
+        case PATTERNTEST: return ordPrec;
         default: throw new AssertionError();
         }
     }
@@ -1222,4 +1229,5 @@ public class TreeInfo {
     public static boolean isPackageInfo(JCCompilationUnit tree) {
         return tree.sourcefile.isNameCompatible("package-info", JavaFileObject.Kind.SOURCE);
     }
+
 }

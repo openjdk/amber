@@ -49,6 +49,7 @@ import com.sun.tools.javac.code.Types.FunctionDescriptorLookupError;
 import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
 import com.sun.tools.javac.comp.Check.CheckContext;
 import com.sun.tools.javac.comp.DeferredAttr.AttrMode;
+import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
 import com.sun.tools.javac.jvm.*;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.Diamond;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArg;
@@ -58,6 +59,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern.LiteralPatternKind;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -74,6 +76,7 @@ import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
@@ -293,6 +296,8 @@ public class Attr extends JCTree.Visitor {
                isAssignableAsBlankFinal(v, env)))) {
             if (v.isResourceVariable()) { //TWR resource
                 log.error(pos, Errors.TryResourceMayNotBeAssigned(v));
+            } else if ((v.flags() & MATCH_BINDING) != 0) {
+                log.error(pos, Errors.PatternBindingMayNotBeAssigned(v));
             } else {
                 log.error(pos, Errors.CantAssignValToFinalVar(v));
             }
@@ -1320,7 +1325,13 @@ public class Attr extends JCTree.Visitor {
 
     public void visitWhileLoop(JCWhileLoop tree) {
         attribExpr(tree.cond, env, syms.booleanType);
-        attribStat(tree.body, env.dup(tree));
+        // include x.T in while's body
+        Env<AttrContext> whileEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        try {
+            attribStat(tree.body, whileEnv.dup(tree));
+        } finally {
+            whileEnv.info.scope.leave();
+        }
         result = null;
     }
 
@@ -1329,14 +1340,24 @@ public class Attr extends JCTree.Visitor {
             env.dup(env.tree, env.info.dup(env.info.scope.dup()));
         try {
             attribStats(tree.init, loopEnv);
-            if (tree.cond != null) attribExpr(tree.cond, loopEnv, syms.booleanType);
-            loopEnv.tree = tree; // before, we were not in loop!
-            attribStats(tree.step, loopEnv);
-            attribStat(tree.body, loopEnv);
+            List<BindingSymbol> matchBindings = List.nil();
+            if (tree.cond != null) {
+                attribExpr(tree.cond, loopEnv, syms.booleanType);
+                // include x.T in the evaluation scopes of body & step.
+                matchBindings = getMatchBindings(types, log, tree.cond, true);
+            }
+            Env<AttrContext> bodyEnv = bindingEnv(loopEnv, matchBindings);
+            try {
+                bodyEnv.tree = tree; // before, we were not in loop!
+                attribStats(tree.step, bodyEnv);
+                attribStat(tree.body, bodyEnv);
+            } finally {
+                bodyEnv.info.scope.leave();
+            }
             result = null;
         }
         finally {
-            loopEnv.info.scope.leave();
+            loopEnv.info.scope.leave(); // all injected match bindings vanish here.
         }
     }
 
@@ -1398,7 +1419,7 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> ((JCSwitch) t).kind = k, (c, caseEnv) -> {
             attribStats(c.stats, caseEnv);
         });
         result = null;
@@ -1422,7 +1443,7 @@ public class Attr extends JCTree.Visitor {
         ListBuffer<DiagnosticPosition> caseTypePositions = new ListBuffer<>();
         ListBuffer<Type> caseTypes = new ListBuffer<>();
 
-        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> ((JCSwitchExpression) t).kind = k, (c, caseEnv) -> {
             caseEnv.info.breakResult = condInfo;
             attribStats(c.stats, caseEnv);
             new TreeScanner() {
@@ -1465,6 +1486,7 @@ public class Attr extends JCTree.Visitor {
     private void handleSwitch(JCTree switchTree,
                               JCExpression selector,
                               List<JCCase> cases,
+                              BiConsumer<JCTree, SwitchKind> kindSetter,
                               BiConsumer<JCCase, Env<AttrContext>> attribCase) {
         Type seltype = attribExpr(selector, env);
 
@@ -1472,15 +1494,31 @@ public class Attr extends JCTree.Visitor {
             env.dup(switchTree, env.info.dup(env.info.scope.dup()));
 
         try {
-            boolean enumSwitch = (seltype.tsym.flags() & Flags.ENUM) != 0;
-            boolean stringSwitch = types.isSameType(seltype, syms.stringType);
-            if (!enumSwitch && !stringSwitch)
+            boolean hasPatternCases = cases.stream()
+                                           .flatMap(c -> c.pats.stream())
+                                           .anyMatch(pat -> pat.constExpression() == null); //XXX: null handling???
+            SwitchKind kind;
+            if (hasPatternCases) {
+                //TODO: check source level
+                kind = SwitchKind.MATCHING;
+            } else if ((seltype.tsym.flags() & Flags.ENUM) != 0) {
+                kind = SwitchKind.ENUM;
+            } else if (types.isSameType(seltype, syms.stringType)) {
+                kind = SwitchKind.STRING;
+            } else if (!types.isAssignable(seltype, syms.intType) &&
+                       !types.isSameType(seltype, syms.voidType)) {
+                //TODO: check source level
+                kind = SwitchKind.MATCHING;
+            } else {
                 seltype = chk.checkType(selector.pos(), seltype, syms.intType);
-
+                kind = SwitchKind.ORDINARY;
+            }
+            kindSetter.accept(switchTree, kind);
             // Attribute all cases and
             // check that there are no duplicate case labels or default clauses.
             Set<Object> labels = new HashSet<>(); // The set of case labels.
             boolean hasDefault = false;      // Is there a default label?
+            List<BindingSymbol> prevBindings = null;
             @SuppressWarnings("removal")
             CaseKind caseKind = null;
             boolean wasError = false;
@@ -1493,43 +1531,73 @@ public class Attr extends JCTree.Visitor {
                               Errors.SwitchMixingCaseTypes);
                     wasError = true;
                 }
-                if (c.getExpressions().nonEmpty()) {
-                    for (JCExpression pat : c.getExpressions()) {
+                List<BindingSymbol> matchBindings = prevBindings;
+                if (c.getPatterns().nonEmpty()) {
+                    for (JCPattern pat : c.getPatterns()) {
                         if (TreeInfo.isNull(pat)) {
                             log.error(pat.pos(),
                                       Errors.SwitchNullNotAllowed);
-                        } else if (enumSwitch) {
-                            Symbol sym = enumConstant(pat, seltype);
-                            if (sym == null) {
-                                log.error(pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
-                            } else if (!labels.add(sym)) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
-                            }
-                        } else {
-                            Type pattype = attribExpr(pat, switchEnv, seltype);
-                            if (!pattype.hasTag(ERROR)) {
-                                if (pattype.constValue() == null) {
-                                    log.error(pat.pos(),
-                                              (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
-                                } else if (!labels.add(pattype.constValue())) {
+                            continue;
+                        }
+                        switch (kind) {
+                            case MATCHING:
+                                ResultInfo castInfo = unknownExprInfo;
+                                if (pat.getTag() == BINDINGPATTERN) {
+                                    JCBindingPattern bindingPattern = (JCBindingPattern) pat;
+                                    if (bindingPattern.vartype == null)
+                                        castInfo = castInfo(seltype);
+                                }
+                                Type patType = attribTree(pat, switchEnv, castInfo);
+                                chk.checkCastable(selector.pos(), seltype, patType);
+                                if (pat.getTag() == LITERALPATTERN && !labels.add(patType.constValue())) {
                                     log.error(c.pos(), Errors.DuplicateCaseLabel);
                                 }
-                            }
+                                break;
+                            case ENUM:
+                                Symbol sym = enumConstant(pat.constExpression(), seltype);
+                                if (sym == null) {
+                                    log.error(pat.constExpression().pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
+                                } else if (!labels.add(sym)) {
+                                    log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                }
+                                break;
+                            default:
+                                Type pattype = attribExpr(pat.constExpression(), switchEnv, seltype);
+                                if (!pattype.hasTag(ERROR)) {
+                                    if (pattype.constValue() == null) {
+                                        log.error(pat.constExpression().pos(),
+                                                  (kind == SwitchKind.STRING ? Errors.StringConstReq
+                                                                                  : Errors.ConstExprReq));
+                                    } else if (!labels.add(pattype.constValue())) {
+                                        log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                    }
+                                }
+                                break;
                         }
+                        matchBindings = getMatchBindings(types, log, pat, true, matchBindings);
                     }
-                } else if (hasDefault) {
-                    log.error(c.pos(), Errors.DuplicateDefaultLabel);
                 } else {
-                    hasDefault = true;
+                    if (hasDefault) {
+                        log.error(c.pos(), Errors.DuplicateDefaultLabel);
+                    } else {
+                        hasDefault = true;
+                    }
+                    matchBindings = getMatchBindings(types, log, null, true, matchBindings);
                 }
-                Env<AttrContext> caseEnv =
-                    switchEnv.dup(c, env.info.dup(switchEnv.info.scope.dup()));
+
+                Env<AttrContext> caseEnv = bindingEnv(switchEnv, matchBindings);
+
+                caseEnv.tree = c;
+
                 try {
                     attribCase.accept(c, caseEnv);
                 } finally {
                     caseEnv.info.scope.leave();
                     addVars(c.stats, switchEnv.info.scope);
                 }
+
+                flow.aliveAfterCase(caseEnv, c, make);
+                prevBindings = c.completesNormally ? matchBindings : null;
             }
         } finally {
             switchEnv.info.scope.leave();
@@ -1688,8 +1756,26 @@ public class Attr extends JCTree.Visitor {
                 unknownExprInfo :
                 resultInfo.dup(conditionalContext(resultInfo.checkContext));
 
-        Type truetype = attribTree(tree.truepart, env, condInfo);
-        Type falsetype = attribTree(tree.falsepart, env, condInfo);
+        /*  if e = "x ? y : z", then:
+                include x.T in y
+                include x.F in z
+        */
+
+        Type truetype;
+        Env<AttrContext> trueEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        try {
+            truetype = attribTree(tree.truepart, trueEnv, condInfo);
+        } finally {
+            trueEnv.info.scope.leave();
+        }
+
+        Type falsetype;
+        Env<AttrContext> falseEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, false));
+        try {
+            falsetype = attribTree(tree.falsepart, falseEnv, condInfo);
+        } finally {
+            falseEnv.info.scope.leave();
+        }
 
         Type owntype = (tree.polyKind == PolyKind.STANDALONE) ?
                 condType(List.of(tree.truepart.pos(), tree.falsepart.pos()),
@@ -1847,11 +1933,32 @@ public class Attr extends JCTree.Visitor {
         BOOLEAN,
     };
 
+    Env<AttrContext> bindingEnv(Env<AttrContext> env, List<BindingSymbol> bindings) {
+        Env<AttrContext> env1 = env.dup(env.tree, env.info.dup(env.info.scope.dup()));
+        bindings.forEach(env1.info.scope::enter);
+        return env1;
+    }
+
     public void visitIf(JCIf tree) {
         attribExpr(tree.cond, env, syms.booleanType);
-        attribStat(tree.thenpart, env);
-        if (tree.elsepart != null)
-            attribStat(tree.elsepart, env);
+
+        // if (x) { y } [ else z ] include x.T in y; include x.F in z
+
+        Env<AttrContext> thenEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        try {
+            attribStat(tree.thenpart, thenEnv);
+        } finally {
+            thenEnv.info.scope.leave();
+        }
+
+        if (tree.elsepart != null) {
+            Env<AttrContext> elseEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, false));
+            try {
+                attribStat(tree.elsepart, elseEnv);
+            } finally {
+                elseEnv.info.scope.leave();
+            }
+        }
         chk.checkEmptyIf(tree);
         result = null;
     }
@@ -3576,7 +3683,27 @@ public class Attr extends JCTree.Visitor {
     public void visitBinary(JCBinary tree) {
         // Attribute arguments.
         Type left = chk.checkNonVoid(tree.lhs.pos(), attribExpr(tree.lhs, env));
-        Type right = chk.checkNonVoid(tree.rhs.pos(), attribExpr(tree.rhs, env));
+        // If e = "x && y", then, include x.T in y;  If e = "x || y", then, include x.F in y
+        List<BindingSymbol> matchBindings;
+        switch (tree.getTag()) {
+            case AND:
+                matchBindings = getMatchBindings(types, log, tree.lhs, true);
+                break;
+            case OR:
+                matchBindings = getMatchBindings(types, log, tree.lhs, false);
+                break;
+            default:
+                matchBindings = List.nil();
+                break;
+        }
+        Env<AttrContext> rhsEnv = bindingEnv(env, matchBindings);
+        Type right;
+        try {
+            right = chk.checkNonVoid(tree.rhs.pos(), attribExpr(tree.rhs, rhsEnv));
+        } finally {
+            rhsEnv.info.scope.leave();
+        }
+
         // Find operator.
         Symbol operator = tree.operator = operators.resolveBinary(tree, tree.getTag(), left, right);
         Type owntype = types.createErrorType(tree.type);
@@ -3619,13 +3746,7 @@ public class Attr extends JCTree.Visitor {
         boolean isPoly = allowPoly && (expr.hasTag(LAMBDA) || expr.hasTag(REFERENCE));
         if (isPoly) {
             //expression is a poly - we need to propagate target type info
-            castInfo = new ResultInfo(KindSelector.VAL, clazztype,
-                                      new Check.NestedCheckContext(resultInfo.checkContext) {
-                @Override
-                public boolean compatible(Type found, Type req, Warner warn) {
-                    return types.isCastable(found, req, warn);
-                }
-            });
+            castInfo = castInfo(clazztype);
         } else {
             //standalone cast - target-type info is not propagated
             castInfo = unknownExprInfo;
@@ -3653,6 +3774,75 @@ public class Attr extends JCTree.Visitor {
         chk.validate(tree.clazz, env, false);
         chk.checkCastable(tree.expr.pos(), exprtype, clazztype);
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
+    }
+
+    public void visitPatternTest(JCMatches tree) {
+        Type exprtype = attribExpr(tree.expr, env); //no target type
+        ResultInfo castInfo = unknownExprInfo;
+        if (tree.pattern.getTag() == BINDINGPATTERN) {
+            JCBindingPattern bindingPattern = (JCBindingPattern) tree.pattern;
+            if (bindingPattern.vartype == null)
+                castInfo = castInfo(exprtype);
+        }
+        attribTree(tree.pattern, env, castInfo);
+        chk.checkCastable(tree.expr.pos(), exprtype, tree.pattern.type);
+        result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
+    }
+
+    ResultInfo castInfo(Type target) {
+        return target.isErroneous() ?
+                unknownExprInfo :
+                new ResultInfo(KindSelector.VAL, target,
+                        new Check.NestedCheckContext(resultInfo.checkContext) {
+                            @Override
+                            public boolean compatible(Type found, Type req, Warner warn) {
+                                return types.isCastable(found, req, warn);
+                            }
+                        });
+    }
+
+    public void visitBindingPattern(JCBindingPattern tree) {
+        if (tree.vartype != null) {
+            ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
+            tree.type = attribTree(tree.vartype, env, varInfo);
+        } else {
+            tree.type = resultInfo.pt;
+        }
+        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype != null ? tree.vartype.type : (tree.type.hasTag(BOT) ? syms.objectType : tree.type), env.info.scope.owner);
+        if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
+            chk.checkTransparentVar(tree.pos(), v, env.info.scope);
+            // env.info.scope.enter(v); // we inject into scopes expressly at various points.
+        }
+        result = tree.type;
+    }
+
+    public void visitLiteralPattern(JCLiteralPattern tree) {
+        Type patType = attribTree(tree.value, env, resultInfo);
+
+        if (tree.value.hasTag(IDENT)) {
+            // Pattern is an identifier
+            JCIdent ident = (JCIdent)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else if (tree.value.hasTag(SELECT)) {
+            // Pattern is a compound name
+            JCFieldAccess ident = (JCFieldAccess)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else {
+            // Pattern must be null literal or a constant expression
+            tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            if (!patType.isErroneous() && !patType.hasTag(BOT) && patType.constValue() == null) {
+                log.error(tree.pos(), Errors.ConstExprReq);
+            }
+        }
+        tree.type = patType;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -5307,6 +5497,16 @@ public class Attr extends JCTree.Visitor {
         }
 
         @Override
+        public void visitBindingPattern(JCBindingPattern that) {
+            //initTypeIfNeeded(that);
+            if (that.symbol == null) {
+                that.symbol = new BindingSymbol(that.name, that.type, syms.noSymbol);
+                that.symbol.adr = 0;
+            }
+            super.visitBindingPattern(that);
+        }
+
+        @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {
                 that.constructor = new MethodSymbol(0, names.init,
@@ -5373,4 +5573,12 @@ public class Attr extends JCTree.Visitor {
         }.scan(pid);
     }
 
+
+    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue) {
+        return getMatchBindings(types, log, expression, whenTrue, null);
+    }
+
+    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue, List<BindingSymbol> intersectWith) {
+        return new MatchBindingsComputer(types, log, expression, whenTrue).getBindings(intersectWith);
+    }
 }

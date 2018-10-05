@@ -179,6 +179,11 @@ public interface Tree {
         LABELED_STATEMENT(LabeledStatementTree.class),
 
         /**
+         * Used for instances of {@link MatchesTree}.
+         */
+        MATCHES(MatchesTree.class),
+
+        /**
          * Used for instances of {@link MethodTree}.
          */
         METHOD(MethodTree.class),
@@ -218,6 +223,16 @@ public interface Tree {
          * Used for instances of {@link ParenthesizedTree}.
          */
         PARENTHESIZED(ParenthesizedTree.class),
+
+        /**
+         * Used for instances of {@link BindingPatternTree}.
+         */
+        BINDING_PATTERN(BindingPatternTree.class),
+
+        /**
+         * Used for instances of {@link LiteralPatternTree}.
+         */
+        LITERAL_PATTERN(LiteralPatternTree.class),
 
         /**
          * Used for instances of {@link PrimitiveTypeTree}.

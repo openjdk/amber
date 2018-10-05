@@ -1,0 +1,2 @@
+VoidTest.java:8:16: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: void, int)
+1 error

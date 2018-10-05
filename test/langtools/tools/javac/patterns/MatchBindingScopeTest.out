@@ -1,0 +1,17 @@
+MatchBindingScopeTest.java:18:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:22:51: compiler.err.already.defined: kindname.variable, j, kindname.method, main(java.lang.String[])
+MatchBindingScopeTest.java:22:35: compiler.err.match.binding.exists
+MatchBindingScopeTest.java:29:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:30:32: compiler.err.cant.resolve.location: kindname.variable, k, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:33:38: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:34:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:37:35: compiler.err.match.binding.exists.with.different.type
+MatchBindingScopeTest.java:38:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:40:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:48:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:55:47: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:56:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:64:21: compiler.err.cant.resolve.location: kindname.variable, x, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:70:23: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+MatchBindingScopeTest.java:73:23: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
+16 errors

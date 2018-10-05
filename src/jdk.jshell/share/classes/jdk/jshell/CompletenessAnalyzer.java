@@ -212,6 +212,7 @@ class CompletenessAnalyzer {
         LONG(TokenKind.LONG, XEXPR1|XDECL1),  //  long
         SHORT(TokenKind.SHORT, XEXPR1|XDECL1),  //  short
         VOID(TokenKind.VOID, XEXPR1|XDECL1),  //  void
+        VAR(TokenKind.VAR, XEXPR1|XDECL1|XTERM),  //  var
 
         // Modifiers keywords
         ABSTRACT(TokenKind.ABSTRACT, XDECL1),  //  abstract
@@ -254,6 +255,7 @@ class CompletenessAnalyzer {
         THROW(TokenKind.THROW, XSTMT1|XSTART),  //  throw
         TRY(TokenKind.TRY, XSTMT1|XSTART),  //  try
         WHILE(TokenKind.WHILE, XSTMT1|XSTART),  //  while
+        MATCH(TokenKind.MATCH, XSTMT1|XSTART),  //  match
 
         // Statement keywords that we shouldn't see -- inside braces
         CASE(TokenKind.CASE, XSTMT|XSTART),  //  case
@@ -315,6 +317,7 @@ class CompletenessAnalyzer {
         LTLTEQ(TokenKind.LTLTEQ, XEXPR),  //  <<=
         GTGTEQ(TokenKind.GTGTEQ, XEXPR),  //  >>=
         GTGTGTEQ(TokenKind.GTGTGTEQ, XEXPR),  //  >>>=
+        MATCHES(TokenKind.MATCHES, XEXPR),
 
         // combined/processed kinds
         UNMATCHED(XERRO),
@@ -665,6 +668,7 @@ class CompletenessAnalyzer {
                         case BRACES:
                         case SEMI:
                             return Completeness.COMPLETE;
+                        case VAR:
                         case IDENTIFIER:
                             return isBracesNeeded
                                     ? Completeness.DEFINITELY_INCOMPLETE

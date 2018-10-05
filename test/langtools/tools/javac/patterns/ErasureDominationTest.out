@@ -1,0 +1,4 @@
+ErasureDominationTest.java:16:13: compiler.err.pattern.dominated
+- compiler.note.unchecked.filename: ErasureDominationTest.java
+- compiler.note.unchecked.recompile
+1 error

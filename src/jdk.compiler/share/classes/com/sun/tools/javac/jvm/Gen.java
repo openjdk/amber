@@ -1153,7 +1153,7 @@ public class Gen extends JCTree.Visitor {
             for (int i = 0; i < labels.length; i++) {
                 if (l.head.pats.nonEmpty()) {
                     Assert.check(l.head.pats.size() == 1);
-                    int val = ((Number)l.head.pats.head.type.constValue()).intValue();
+                    int val = ((Number)l.head.pats.head.constExpression().type.constValue()).intValue();
                     labels[i] = val;
                     if (val < lo) lo = val;
                     if (hi < val) hi = val;
