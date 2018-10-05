@@ -2513,6 +2513,7 @@ public class JavacParser implements Parser {
      */
     List<JCStatement> blockStatement() {
         //todo: skip to anchor on error(?)
+        Comment dc;
         int pos = token.pos;
         switch (token.kind) {
         case RBRACE: case CASE: case DEFAULT: case EOF:
@@ -2524,7 +2525,7 @@ public class JavacParser implements Parser {
             return List.of(parseSimpleStatement());
         case MONKEYS_AT:
         case FINAL: {
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
@@ -2536,51 +2537,50 @@ public class JavacParser implements Parser {
             }
         }
         case ABSTRACT: case STRICTFP: {
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
         }
         case INTERFACE:
         case CLASS:
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
-        default:
-            if (token.kind == TokenKind.STATIC) {
-                // we have to check if this is a record declaration
-                Token t1 = S.token(1);
-                Token t2 = S.token(2);
-                Token t3 = S.token(3);
-                if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER && t3.kind == LPAREN) {
-                    nextToken();
-                }
+        }
+        if (token.kind == TokenKind.STATIC) {
+            // we have to check if this is a record declaration
+            Token t1 = S.token(1);
+            Token t2 = S.token(2);
+            Token t3 = S.token(3);
+            if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER && t3.kind == LPAREN) {
+                nextToken();
             }
-            if (isRecordDeclaration()) {
-                JCModifiers mods = modifiersOpt();
-                dc = token.comment(CommentStyle.JAVADOC);
-                return List.of(recordDeclaration(mods, dc));
+        }
+        if (isRecordDeclaration()) {
+            JCModifiers mods = modifiersOpt();
+            dc = token.comment(CommentStyle.JAVADOC);
+            return List.of(recordDeclaration(mods, dc));
+        } else {
+            Token prevToken = token;
+            JCExpression t = term(EXPR | TYPE);
+            if (token.kind == COLON && t.hasTag(IDENT)) {
+                nextToken();
+                JCStatement stat = parseStatementAsBlock();
+                return List.of(F.at(pos).Labelled(prevToken.name(), stat));
+            } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
+                pos = token.pos;
+                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+                F.at(pos);
+                return localVariableDeclarations(mods, t);
             } else {
-                Token prevToken = token;
-                JCExpression t = term(EXPR | TYPE);
-                if (token.kind == COLON && t.hasTag(IDENT)) {
-                    nextToken();
-                    JCStatement stat = parseStatementAsBlock();
-                    return List.of(F.at(pos).Labelled(prevToken.name(), stat));
-                } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
-                    pos = token.pos;
-                    JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-                    F.at(pos);
-                    return localVariableDeclarations(mods, t);
-                } else {
-                    // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-                    t = checkExprStat(t);
-                    accept(SEMI);
-                    JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-                    return List.of(expr);
-                }
+                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+                t = checkExprStat(t);
+                accept(SEMI);
+                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+                return List.of(expr);
             }
         }
     }
