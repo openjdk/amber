@@ -924,7 +924,6 @@ public class JavacParser implements Parser {
      *                  | "*" | "/" | "%"
      */
     JCExpression term2Rest(JCExpression t, int minprec) {
-
         JCExpression[] odStack = newOdStack();
         Token[] opStack = newOpStack();
 
