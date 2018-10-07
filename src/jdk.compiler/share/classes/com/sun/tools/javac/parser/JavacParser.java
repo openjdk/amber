@@ -4185,6 +4185,8 @@ public class JavacParser implements Parser {
                 if (token.kind == DEFAULT) {
                     accept(DEFAULT);
                     defaultValue = annotationValue();
+                } else {
+                    defaultValue = null;
                 }
                 accept(SEMI);
                 if (token.pos <= endPosTable.errorEndPos) {
