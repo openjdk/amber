@@ -2570,7 +2570,6 @@ public class JavacParser implements Parser {
         //todo: skip to anchor on error(?)
         Comment dc;
         int pos = token.pos;
-        Comment dc;
         switch (token.kind) {
         case RBRACE: case CASE: case DEFAULT: case EOF:
             return List.nil();
