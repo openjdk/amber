@@ -2513,6 +2513,7 @@ public class JavacParser implements Parser {
      */
     List<JCStatement> blockStatement() {
         //todo: skip to anchor on error(?)
+        Comment dc;
         int pos = token.pos;
         switch (token.kind) {
         case RBRACE: case CASE: case DEFAULT: case EOF:
@@ -2524,7 +2525,7 @@ public class JavacParser implements Parser {
             return List.of(parseSimpleStatement());
         case MONKEYS_AT:
         case FINAL: {
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
@@ -2536,13 +2537,13 @@ public class JavacParser implements Parser {
             }
         }
         case ABSTRACT: case STRICTFP: {
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             JCModifiers mods = modifiersOpt();
             return List.of(classOrInterfaceOrEnumDeclaration(mods, dc));
         }
         case INTERFACE:
         case CLASS:
-            Comment dc = token.comment(CommentStyle.JAVADOC);
+            dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
