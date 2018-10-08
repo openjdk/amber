@@ -4203,7 +4203,6 @@ public class JavacParser implements Parser {
                     }
                 }
             }
-
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
                                             receiverParam, params, thrown,
