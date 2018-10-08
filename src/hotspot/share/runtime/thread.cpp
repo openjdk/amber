@@ -851,11 +851,9 @@ void Thread::oops_do(OopClosure* f, CodeBlobClosure* cf) {
   f->do_oop((oop*)&_pending_exception);
   handle_area()->oops_do(f);
 
-  if (MonitorInUseLists) {
-    // When using thread local monitor lists, we scan them here,
-    // and the remaining global monitors in ObjectSynchronizer::oops_do().
-    ObjectSynchronizer::thread_local_used_oops_do(this, f);
-  }
+  // We scan thread local monitor lists here, and the remaining global
+  // monitors in ObjectSynchronizer::oops_do().
+  ObjectSynchronizer::thread_local_used_oops_do(this, f);
 }
 
 void Thread::metadata_handles_do(void f(Metadata*)) {
@@ -1549,6 +1547,7 @@ void JavaThread::initialize() {
   _pending_failed_speculation = 0;
   _pending_transfer_to_interpreter = false;
   _adjusting_comp_level = false;
+  _in_retryable_allocation = false;
   _jvmci._alternate_call_target = NULL;
   assert(_jvmci._implicit_exception_pc == NULL, "must be");
   if (JVMCICounterSize > 0) {
