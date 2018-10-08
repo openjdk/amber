@@ -4178,7 +4178,7 @@ public class JavacParser implements Parser {
                     conciseMethodRef = expr;
                     body = F.at(bodyPos).Block(0, List.nil());
                 }
-                mods.flags |= Flags.CONCISE;
+                mods.flags |= arrowForm ? Flags.CONCISE_ARROW : Flags.CONCISE_EQUAL;
                 body.endpos = token.pos;
             } else {
                 if (token.kind == DEFAULT) {

@@ -1,5 +1,5 @@
 ConciseMethodsNegTest01.java:7:1: compiler.err.does.not.override.abstract: ConciseMethodsNegTest01, length2(java.lang.String), ConciseMethodsNegTest01
-ConciseMethodsNegTest01.java:8:28: compiler.err.prob.found.req: (compiler.misc.invalid.mref: kindname.method, (compiler.misc.cant.apply.symbol: kindname.method, length, compiler.misc.no.args, java.lang.String, kindname.class, java.lang.String, (compiler.misc.arg.length.mismatch)))
+ConciseMethodsNegTest01.java:8:28: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, ConciseMethodsNegTest01, null)
 ConciseMethodsNegTest01.java:10:18: compiler.err.abstract.meth.cant.have.body
 ConciseMethodsNegTest01.java:12:16: compiler.err.native.meth.cant.have.body
 ConciseMethodsNegTest01.java:18:5: compiler.err.constructors.cant.have.concise.body

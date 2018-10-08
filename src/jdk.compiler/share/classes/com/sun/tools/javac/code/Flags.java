@@ -331,9 +331,14 @@ public class Flags {
     public static final long MATCH_BINDING = 1L<<59;
 
     /**
-     * Flag for concise methods
+     * Flag for concise methods `=`
      */
-    public static final long CONCISE = 1L<<60;
+    public static final long CONCISE_EQUAL = 1L<<60;
+
+    /**
+     * Flag for concise methods `->`
+     */
+    public static final long CONCISE_ARROW = 1L<<61;
 
     /** Modifier masks.
      */
@@ -456,7 +461,8 @@ public class Flags {
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         MATCH_BINDING(Flags.MATCH_BINDING),
         RECORD(Flags.RECORD),
-        CONCISE(Flags.CONCISE);
+        CONCISE_EQUAL(Flags.CONCISE_EQUAL),
+        CONCISE_ARROW(Flags.CONCISE_ARROW);
 
         Flag(long flag) {
             this.value = flag;

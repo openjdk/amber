@@ -1092,7 +1092,9 @@ public class Attr extends JCTree.Visitor {
                 }
             } else if ((tree.mods.flags & NATIVE) != 0) {
                 log.error(tree.pos(), Errors.NativeMethCantHaveBody);
-            } else if ((tree.mods.flags & CONCISE) != 0 && tree.name == names.init) {
+            } else if (((tree.mods.flags & CONCISE_ARROW) != 0 ||
+                    (tree.mods.flags & CONCISE_EQUAL) != 0) &&
+                    tree.name == names.init) {
                 log.error(tree.pos(), Errors.ConstructorsCantHaveConciseBody);
             } else {
                 // Add an implicit super() call unless an explicit call to
@@ -1218,6 +1220,13 @@ public class Attr extends JCTree.Visitor {
                 }
             }
             result = tree.type = v.type;
+            if (env.info.scope.owner.kind == MTH && (env.info.scope.owner.flags() & Flags.CONCISE_EQUAL) != 0) {
+                // remove from the scope so that the arguments can't be used inside the concise method
+                WriteableScope enclScope = enter.enterScope(env);
+                if (enclScope != null) {
+                    enclScope.remove(tree.sym);
+                }
+            }
         }
         finally {
             chk.setLint(prevLint);
