@@ -417,6 +417,12 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         return name.isEmpty();
     }
 
+    /** Are we dealing with a concise method?
+     */
+    public boolean isConciseMethod() {
+        return (flags() & CONCISE_ARROW) != 0 || (flags() & CONCISE_EQUAL) != 0;
+    }
+
     /** Is this symbol a constructor?
      */
     public boolean isConstructor() {

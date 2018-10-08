@@ -320,9 +320,14 @@ public class Flags {
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
     /**
-     * Flag for concise methods
+     * Flag for concise methods `=`
      */
-    public static final long CONCISE = 1L<<58;
+    public static final long CONCISE_EQUAL = 1L<<58;
+
+    /**
+     * Flag for concise methods `->`
+     */
+    public static final long CONCISE_ARROW = 1L<<59;
 
     /** Modifier masks.
      */
@@ -441,7 +446,8 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
-        CONCISE(Flags.CONCISE);
+        CONCISE_EQUAL(Flags.CONCISE_EQUAL),
+        CONCISE_ARROW(Flags.CONCISE_ARROW);
 
         Flag(long flag) {
             this.value = flag;
