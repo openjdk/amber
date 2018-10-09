@@ -43,7 +43,7 @@ public class Main {
     /**
      * ASM version to be used by nasgen tool.
      */
-    public static final int ASM_VERSION = Opcodes.ASM5;
+    public static final int ASM_VERSION = Opcodes.ASM7;
 
     private static final boolean DEBUG = Boolean.getBoolean("nasgen.debug");
 

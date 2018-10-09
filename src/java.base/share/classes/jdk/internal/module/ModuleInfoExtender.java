@@ -153,7 +153,7 @@ public final class ModuleInfoExtender {
 
         ClassReader cr = new ClassReader(in);
 
-        ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, cw) {
+        ClassVisitor cv = new ClassVisitor(Opcodes.ASM7, cw) {
             @Override
             public ModuleVisitor visitModule(String name, int flags, String version) {
                 Version v = ModuleInfoExtender.this.version;
@@ -170,7 +170,7 @@ public final class ModuleInfoExtender {
                     packages.forEach(pn -> mv.visitPackage(pn.replace('.', '/')));
                 }
 
-                return new ModuleVisitor(Opcodes.ASM6, mv) {
+                return new ModuleVisitor(Opcodes.ASM7, mv) {
                     public void visitMainClass(String existingMainClass) {
                         // skip main class if there is a new value
                         if (mainClass == null) {

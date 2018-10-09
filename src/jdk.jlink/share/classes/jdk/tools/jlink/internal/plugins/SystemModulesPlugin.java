@@ -434,12 +434,12 @@ public final class SystemModulesPlugin implements Plugin {
 
         boolean hasModulePackages() throws IOException {
             Set<String> packages = new HashSet<>();
-            ClassVisitor cv = new ClassVisitor(Opcodes.ASM6) {
+            ClassVisitor cv = new ClassVisitor(Opcodes.ASM7) {
                 @Override
                 public ModuleVisitor visitModule(String name,
                                                  int flags,
                                                  String version) {
-                    return new ModuleVisitor(Opcodes.ASM6) {
+                    return new ModuleVisitor(Opcodes.ASM7) {
                         public void visitPackage(String pn) {
                             packages.add(pn);
                         }
