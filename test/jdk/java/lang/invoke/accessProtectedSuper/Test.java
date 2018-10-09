@@ -54,7 +54,7 @@ class MakeProtected implements BogoLoader.VisitorMaker, Opcodes {
     }
 
     public ClassVisitor make(ClassVisitor cv) {
-        return new ClassVisitor(Opcodes.ASM5, cv) {
+        return new ClassVisitor(Opcodes.ASM7, cv) {
 
             @Override
             public void visitInnerClass(String name, String outerName,
