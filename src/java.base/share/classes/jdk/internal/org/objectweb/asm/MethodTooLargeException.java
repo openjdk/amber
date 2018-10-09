@@ -52,50 +52,74 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
-package jdk.internal.org.objectweb.asm.tree;
-
-import java.util.Map;
-import jdk.internal.org.objectweb.asm.MethodVisitor;
-import jdk.internal.org.objectweb.asm.Opcodes;
+package jdk.internal.org.objectweb.asm;
 
 /**
- * A node that represents an LDC instruction.
+ * Exception thrown when the Code attribute of a method produced by a {@link ClassWriter} is too
+ * large.
  *
- * @author Eric Bruneton
+ * @author Jason Zaugg
  */
-public class LdcInsnNode extends AbstractInsnNode {
+public final class MethodTooLargeException extends IndexOutOfBoundsException {
+
+  private final String className;
+  private final String methodName;
+  private final String descriptor;
+  private final int codeSize;
 
   /**
-   * The constant to be loaded on the stack. This parameter must be a non null {@link Integer}, a
-   * {@link Float}, a {@link Long}, a {@link Double}, a {@link String} or a {@link
-   * jdk.internal.org.objectweb.asm.Type}.
-   */
-  public Object cst;
-
-  /**
-   * Constructs a new {@link LdcInsnNode}.
+   * Constructs a new {@link MethodTooLargeException}.
    *
-   * @param value the constant to be loaded on the stack. This parameter must be a non null {@link
-   *     Integer}, a {@link Float}, a {@link Long}, a {@link Double} or a {@link String}.
+   * @param className the internal name of the owner class.
+   * @param methodName the name of the method.
+   * @param descriptor the descriptor of the method.
+   * @param codeSize the size of the method's Code attribute, in bytes.
    */
-  public LdcInsnNode(final Object value) {
-    super(Opcodes.LDC);
-    this.cst = value;
+  public MethodTooLargeException(
+      final String className,
+      final String methodName,
+      final String descriptor,
+      final int codeSize) {
+    super("Method too large: " + className + "." + methodName + " " + descriptor);
+    this.className = className;
+    this.methodName = methodName;
+    this.descriptor = descriptor;
+    this.codeSize = codeSize;
   }
 
-  @Override
-  public int getType() {
-    return LDC_INSN;
+  /**
+   * Returns the internal name of the owner class.
+   *
+   * @return the internal name of the owner class.
+   */
+  public String getClassName() {
+    return className;
   }
 
-  @Override
-  public void accept(final MethodVisitor methodVisitor) {
-    methodVisitor.visitLdcInsn(cst);
-    acceptAnnotations(methodVisitor);
+  /**
+   * Returns the name of the method.
+   *
+   * @return the name of the method.
+   */
+  public String getMethodName() {
+    return methodName;
   }
 
-  @Override
-  public AbstractInsnNode clone(final Map<LabelNode, LabelNode> clonedLabels) {
-    return new LdcInsnNode(cst).cloneAnnotations(this);
+  /**
+   * Returns the descriptor of the method.
+   *
+   * @return the descriptor of the method.
+   */
+  public String getDescriptor() {
+    return descriptor;
+  }
+
+  /**
+   * Returns the size of the method's Code attribute, in bytes.
+   *
+   * @return the size of the method's Code attribute, in bytes.
+   */
+  public int getCodeSize() {
+    return codeSize;
   }
 }

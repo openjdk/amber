@@ -52,50 +52,46 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
-package jdk.internal.org.objectweb.asm.tree;
-
-import java.util.Map;
-import jdk.internal.org.objectweb.asm.MethodVisitor;
-import jdk.internal.org.objectweb.asm.Opcodes;
+package jdk.internal.org.objectweb.asm;
 
 /**
- * A node that represents an LDC instruction.
+ * Exception thrown when the constant pool of a class produced by a {@link ClassWriter} is too
+ * large.
  *
- * @author Eric Bruneton
+ * @author Jason Zaugg
  */
-public class LdcInsnNode extends AbstractInsnNode {
+public final class ClassTooLargeException extends IndexOutOfBoundsException {
+
+  private final String className;
+  private final int constantPoolCount;
 
   /**
-   * The constant to be loaded on the stack. This parameter must be a non null {@link Integer}, a
-   * {@link Float}, a {@link Long}, a {@link Double}, a {@link String} or a {@link
-   * jdk.internal.org.objectweb.asm.Type}.
-   */
-  public Object cst;
-
-  /**
-   * Constructs a new {@link LdcInsnNode}.
+   * Constructs a new {@link ClassTooLargeException}.
    *
-   * @param value the constant to be loaded on the stack. This parameter must be a non null {@link
-   *     Integer}, a {@link Float}, a {@link Long}, a {@link Double} or a {@link String}.
+   * @param className the internal name of the class.
+   * @param constantPoolCount the number of constant pool items of the class.
    */
-  public LdcInsnNode(final Object value) {
-    super(Opcodes.LDC);
-    this.cst = value;
+  public ClassTooLargeException(final String className, final int constantPoolCount) {
+    super("Class too large: " + className);
+    this.className = className;
+    this.constantPoolCount = constantPoolCount;
   }
 
-  @Override
-  public int getType() {
-    return LDC_INSN;
+  /**
+   * Returns the internal name of the class.
+   *
+   * @return the internal name of the class.
+   */
+  public String getClassName() {
+    return className;
   }
 
-  @Override
-  public void accept(final MethodVisitor methodVisitor) {
-    methodVisitor.visitLdcInsn(cst);
-    acceptAnnotations(methodVisitor);
-  }
-
-  @Override
-  public AbstractInsnNode clone(final Map<LabelNode, LabelNode> clonedLabels) {
-    return new LdcInsnNode(cst).cloneAnnotations(this);
+  /**
+   * Returns the number of constant pool items of the class.
+   *
+   * @return the number of constant pool items of the class.
+   */
+  public int getConstantPoolCount() {
+    return constantPoolCount;
   }
 }
