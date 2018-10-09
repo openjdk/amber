@@ -60,6 +60,7 @@ package jdk.internal.org.objectweb.asm;
  *
  * @author Jason Zaugg
  */
+@SuppressWarnings("serial")
 public final class ClassTooLargeException extends IndexOutOfBoundsException {
 
   private final String className;
