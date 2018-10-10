@@ -35,7 +35,7 @@ import static sun.invoke.util.Wrapper.*;
 class TypeConvertingMethodAdapter extends MethodVisitor {
 
     TypeConvertingMethodAdapter(MethodVisitor mv) {
-        super(Opcodes.ASM5, mv);
+        super(Opcodes.ASM7, mv);
     }
 
     private static final int NUM_WRAPPERS = Wrapper.COUNT;

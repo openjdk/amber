@@ -94,7 +94,7 @@ public final class NashornTextifier extends Printer {
      * information
      */
     public NashornTextifier(final ScriptEnvironment env, final NashornClassReader cr) {
-        this(Opcodes.ASM5);
+        this(Opcodes.ASM7);
         this.env = env;
         this.cr = cr;
     }
