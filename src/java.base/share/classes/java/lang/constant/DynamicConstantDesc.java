@@ -41,11 +41,11 @@ import jdk.internal.lang.annotation.Foldable;
 
 import static java.lang.constant.ConstantDescs.BSM_DYNAMICCONSTANTDESC;
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.CR_Class;
-import static java.lang.constant.ConstantDescs.CR_VarHandle;
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_VarHandle;
 import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
-import static java.lang.constant.ConstantDescs.MHR_DYNAMICCONSTANTDESC_FACTORY;
-import static java.lang.constant.ConstantDescs.MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY;
+import static java.lang.constant.ConstantDescs.MHD_DYNAMICCONSTANTDESC_FACTORY;
+import static java.lang.constant.ConstantDescs.MHD_DYNAMICCONSTANTDESC_NAMED_FACTORY;
 import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
@@ -332,14 +332,14 @@ public abstract class DynamicConstantDesc<T>
         ConstantDesc<?>[] args;
         if (constantName.equals(DEFAULT_NAME) && constantType.equals(bootstrapMethod.methodType().returnType())) {
             args = new ConstantDesc<?>[bootstrapArgs.length + 2];
-            args[0] = MHR_DYNAMICCONSTANTDESC_FACTORY;
+            args[0] = MHD_DYNAMICCONSTANTDESC_FACTORY;
             args[1] = bootstrapMethod.describeConstable().orElseThrow();
             for (int i = 0; i < bootstrapArgs.length; i++)
                 args[i + 2] = (ConstantDesc<?>) ((Constable) bootstrapArgs[i]).describeConstable().orElseThrow();
         }
         else {
             args = new ConstantDesc<?>[bootstrapArgs.length + 4];
-            args[0] = MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY;
+            args[0] = MHD_DYNAMICCONSTANTDESC_NAMED_FACTORY;
             args[1] = bootstrapMethod.describeConstable().orElseThrow();
             args[2] = constantName;
             args[3] = constantType().descriptorString();
@@ -379,7 +379,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizePrimitiveClass(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0
-            || !desc.constantType().equals(CR_Class)
+            || !desc.constantType().equals(CD_Class)
             || desc.constantName == null)
             return desc;
         return ClassDesc.ofDescriptor(desc.constantName);
@@ -387,7 +387,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofStaticField((ClassDesc) desc.bootstrapArgs[0],
                                            (String) desc.bootstrapArgs[1],
@@ -396,7 +396,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofField((ClassDesc) desc.bootstrapArgs[0],
                                      (String) desc.bootstrapArgs[1],
@@ -405,12 +405,12 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 1
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofArray((ClassDesc) desc.bootstrapArgs[0]);
     }
 
-    // @@@ To eventually support in canonicalization: DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
+    // @@@ To eventually support in canonicalization: DCR with BSM=MHD_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
 
     @Override
     public final boolean equals(Object o) {

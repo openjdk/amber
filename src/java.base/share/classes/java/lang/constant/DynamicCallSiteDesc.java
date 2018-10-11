@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static java.lang.constant.ConstantDescs.CR_String;
+import static java.lang.constant.ConstantDescs.CD_String;
 import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.util.Objects.requireNonNull;
@@ -239,7 +239,7 @@ public class DynamicCallSiteDesc {
      * @throws Throwable if any exception is thrown by the bootstrap method
      */
     public CallSite resolveCallSiteDesc(MethodHandles.Lookup lookup) throws Throwable {
-        assert bootstrapMethod.methodType().parameterType(1).equals(CR_String);
+        assert bootstrapMethod.methodType().parameterType(1).equals(CD_String);
         MethodHandle bsm = bootstrapMethod.resolveConstantDesc(lookup);
         Object[] args = new Object[bootstrapArgs.length + 3];
         args[0] = lookup;

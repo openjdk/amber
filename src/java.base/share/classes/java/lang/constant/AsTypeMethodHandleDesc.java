@@ -29,10 +29,9 @@ import jdk.internal.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.CR_MethodHandle;
+import static java.lang.constant.ConstantDescs.CD_MethodHandle;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -47,8 +46,8 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     private final MethodTypeDesc type;
 
     AsTypeMethodHandleDesc(MethodHandleDesc underlying, MethodTypeDesc type) {
-        super(BSM_INVOKE, ConstantDescs.DEFAULT_NAME, CR_MethodHandle,
-              ConstantDescs.MHR_METHODHANDLE_ASTYPE, underlying, type);
+        super(BSM_INVOKE, ConstantDescs.DEFAULT_NAME, CD_MethodHandle,
+              ConstantDescs.MHD_METHODHANDLE_ASTYPE, underlying, type);
         this.underlying = requireNonNull(underlying);
         this.type = requireNonNull(type);
     }
@@ -65,12 +64,6 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
         MethodHandle handle = underlying.resolveConstantDesc(lookup);
         MethodType methodType = type.resolveConstantDesc(lookup);
         return handle.asType(methodType);
-    }
-
-    @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return ConstantUtils.symbolizeHelper(ConstantDescs.MHR_METHODHANDLEDESC_ASTYPE, ConstantDescs.CR_MethodHandleDesc,
-                                             underlying, type);
     }
 
     @Override

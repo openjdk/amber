@@ -107,7 +107,7 @@ import static java.lang.invoke.MethodHandleStatics.UNSAFE;
  * is {@code String}.  The access mode type for {@code compareAndSet} on this
  * VarHandle instance would be
  * {@code (String[] c1, int c2, String expectedValue, String newValue)boolean}.
- * Such a VarHandle instance may produced by the
+ * Such a VarHandle instance may be produced by the
  * {@link MethodHandles#arrayElementVarHandle(Class) array factory method} and
  * access array elements as follows:
  * <pre> {@code
@@ -2128,16 +2128,15 @@ public abstract class VarHandle implements Constable<VarHandle> {
      * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
      * {@link VarHandle} constant.
      */
-    public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle>
-            implements Constable<ConstantDesc<VarHandle>> {
+    public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle> {
 
         /**
          * Kinds of variable handle descs
          */
         private enum Kind {
-            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD, ConstantDescs.MHR_VARHANDLEDESC_OFFIELD),
-            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHR_VARHANDLEDESC_OFSTATIC),
-            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHR_VARHANDLEDESC_OFARRAY);
+            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFFIELD),
+            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFSTATIC),
+            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHD_VARHANDLEDESC_OFARRAY);
 
             final DirectMethodHandleDesc bootstrapMethod;
             final DirectMethodHandleDesc descFactory;
@@ -2180,7 +2179,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          */
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
-                  ConstantDescs.CR_VarHandle,
+                  ConstantDescs.CD_VarHandle,
                   kind.toBSMArgs(declaringClass, name, varType));
             this.kind = kind;
             this.declaringClass = declaringClass;

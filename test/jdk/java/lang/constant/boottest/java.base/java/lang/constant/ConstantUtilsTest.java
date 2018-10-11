@@ -68,28 +68,4 @@ public class ConstantUtilsTest {
             }
         }
     }
-
-    public void testSymbolizeHelper() {
-        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, ConstantDescs.CR_String, "isEmpty", "()Z");
-        try {
-            ConstantUtils.symbolizeHelper(mh, null, "");
-            fail("");
-        } catch (NullPointerException e) {
-            // good
-        }
-
-        try {
-            ConstantUtils.symbolizeHelper(null, ConstantDescs.CR_ClassDesc, "");
-            fail("");
-        } catch (NullPointerException e) {
-            // good
-        }
-
-        try {
-            ConstantUtils.symbolizeHelper(null, null, "");
-            fail("");
-        } catch (NullPointerException e) {
-            // good
-        }
-    }
 }

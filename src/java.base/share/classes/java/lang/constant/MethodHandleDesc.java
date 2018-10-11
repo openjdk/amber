@@ -29,7 +29,7 @@ import java.lang.invoke.MethodType;
 
 import jdk.internal.lang.annotation.Foldable;
 
-import static java.lang.constant.ConstantDescs.CR_void;
+import static java.lang.constant.ConstantDescs.CD_void;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
 
 /**
@@ -169,9 +169,9 @@ public interface MethodHandleDesc
         MethodTypeDesc mtr;
         switch (kind) {
             case GETTER: mtr = MethodTypeDesc.of(fieldType, clazz); break;
-            case SETTER: mtr = MethodTypeDesc.of(CR_void, clazz, fieldType); break;
+            case SETTER: mtr = MethodTypeDesc.of(CD_void, clazz, fieldType); break;
             case STATIC_GETTER: mtr = MethodTypeDesc.of(fieldType); break;
-            case STATIC_SETTER: mtr = MethodTypeDesc.of(CR_void, fieldType); break;
+            case STATIC_SETTER: mtr = MethodTypeDesc.of(CD_void, fieldType); break;
             default:
                 throw new IllegalArgumentException(kind.toString());
         }
@@ -192,7 +192,7 @@ public interface MethodHandleDesc
     static DirectMethodHandleDesc ofConstructor(ClassDesc clazz,
                                                 ClassDesc... paramTypes) {
         return MethodHandleDesc.of(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
-                                   MethodTypeDesc.of(CR_void, paramTypes));
+                                   MethodTypeDesc.of(CD_void, paramTypes));
     }
 
     /**

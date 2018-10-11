@@ -25,10 +25,12 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandles;
+
+import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.MHR_CLASSDESC_FACTORY;
+import static java.lang.constant.ConstantDescs.MHD_CLASSDESC_FACTORY;
 import static java.lang.constant.ConstantUtils.dropFirstAndLastChar;
 import static java.lang.constant.ConstantUtils.internalToBinary;
 import static java.util.Objects.requireNonNull;
@@ -85,7 +87,7 @@ final class ReferenceClassDescImpl implements ClassDesc {
 
     @Override
     public Optional<? extends ConstantDesc<ConstantDesc<Class<?>>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHR_CLASSDESC_FACTORY, descriptor));
+        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHD_CLASSDESC_FACTORY, descriptor));
     }
 
     @Override
