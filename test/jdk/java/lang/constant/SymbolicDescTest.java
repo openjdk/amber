@@ -55,15 +55,15 @@ public abstract class SymbolicDescTest {
     static String[] returnDescs = Stream.concat(Stream.of(paramDescs), Stream.of("V")).toArray(String[]::new);
 
     enum Primitives {
-        INT("I", "int", int.class, int[].class, ConstantDescs.CR_int),
-        LONG("J", "long", long.class, long[].class, ConstantDescs.CR_long),
-        SHORT("S", "short", short.class, short[].class, ConstantDescs.CR_short),
-        BYTE("B", "byte", byte.class, byte[].class, ConstantDescs.CR_byte),
-        CHAR("C", "char", char.class, char[].class, ConstantDescs.CR_char),
-        FLOAT("F", "float", float.class, float[].class, ConstantDescs.CR_float),
-        DOUBLE("D", "double", double.class, double[].class, ConstantDescs.CR_double),
-        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, ConstantDescs.CR_boolean),
-        VOID("V", "void", void.class, null, ConstantDescs.CR_void);
+        INT("I", "int", int.class, int[].class, ConstantDescs.CD_int),
+        LONG("J", "long", long.class, long[].class, ConstantDescs.CD_long),
+        SHORT("S", "short", short.class, short[].class, ConstantDescs.CD_short),
+        BYTE("B", "byte", byte.class, byte[].class, ConstantDescs.CD_byte),
+        CHAR("C", "char", char.class, char[].class, ConstantDescs.CD_char),
+        FLOAT("F", "float", float.class, float[].class, ConstantDescs.CD_float),
+        DOUBLE("D", "double", double.class, double[].class, ConstantDescs.CD_double),
+        BOOLEAN("Z", "boolean", boolean.class, boolean[].class, ConstantDescs.CD_boolean),
+        VOID("V", "void", void.class, null, ConstantDescs.CD_void);
 
         public final String descriptor;
         public final String name;

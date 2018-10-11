@@ -71,17 +71,17 @@ public class TypeDescriptorTest {
 
     public void testClassDesc() {
 
-        testArray(CR_int, false, null, CR_int.arrayType());
-        testArray(CR_int.arrayType(), true, CR_int, CR_int.arrayType(2));
-        testArray(CR_int.arrayType(2), true, CR_int.arrayType(), CR_int.arrayType(3));
-        testArray(CR_String, false, null, CR_String.arrayType());
-        testArray(CR_String.arrayType(), true, CR_String, CR_String.arrayType(2));
-        testArray(CR_String.arrayType(2), true, CR_String.arrayType(), CR_String.arrayType(3));
+        testArray(CD_int, false, null, CD_int.arrayType());
+        testArray(CD_int.arrayType(), true, CD_int, CD_int.arrayType(2));
+        testArray(CD_int.arrayType(2), true, CD_int.arrayType(), CD_int.arrayType(3));
+        testArray(CD_String, false, null, CD_String.arrayType());
+        testArray(CD_String.arrayType(), true, CD_String, CD_String.arrayType(2));
+        testArray(CD_String.arrayType(2), true, CD_String.arrayType(), CD_String.arrayType(3));
 
-        assertTrue(CR_int.isPrimitive());
-        assertFalse(CR_int.arrayType().isPrimitive());
-        assertFalse(CR_String.isPrimitive());
-        assertFalse(CR_String.arrayType().isPrimitive());
+        assertTrue(CD_int.isPrimitive());
+        assertFalse(CD_int.arrayType().isPrimitive());
+        assertFalse(CD_String.isPrimitive());
+        assertFalse(CD_String.arrayType().isPrimitive());
     }
 
 }

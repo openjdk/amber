@@ -172,9 +172,9 @@ public class ClassDescTest extends SymbolicDescTest {
         assertEquals("", ClassDesc.of("Bar").packageName());
         assertEquals("", ClassDesc.of("Bar").inner("Baz").packageName());
 
-        testBadPackageName(ConstantDescs.CR_int);
-        testBadPackageName(ConstantDescs.CR_int.arrayType());
-        testBadPackageName(ConstantDescs.CR_String.arrayType());
+        testBadPackageName(ConstantDescs.CD_int);
+        testBadPackageName(ConstantDescs.CD_int.arrayType());
+        testBadPackageName(ConstantDescs.CD_String.arrayType());
         testBadPackageName(ClassDesc.of("Bar").arrayType());
     }
 
@@ -218,8 +218,8 @@ public class ClassDescTest extends SymbolicDescTest {
             assertEquals(classToDescriptor(a1.resolveConstantDesc(LOOKUP)), a1.descriptorString());
             assertEquals(classToDescriptor(a2.resolveConstantDesc(LOOKUP)), a2.descriptorString());
 
-            testBadArrayRank(ConstantDescs.CR_int);
-            testBadArrayRank(ConstantDescs.CR_String);
+            testBadArrayRank(ConstantDescs.CD_int);
+            testBadArrayRank(ConstantDescs.CD_String);
             testBadArrayRank(ClassDesc.of("Bar"));
         }
     }

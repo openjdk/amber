@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import org.testng.annotations.Test;
 
-import static java.lang.constant.ConstantDescs.CR_int;
-import static java.lang.constant.ConstantDescs.CR_void;
+import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.CD_void;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
@@ -129,7 +129,7 @@ public class MethodTypeDescTest extends SymbolicDescTest {
             testMethodTypeRef(newRef, mt.dropParameterTypes(i, i+1));
         }
 
-        badDropParametersTypes(CR_void, paramDescs);
+        badDropParametersTypes(CD_void, paramDescs);
 
         // addParam
         for (int i=0; i <= paramTypes.length; i++) {
@@ -144,7 +144,7 @@ public class MethodTypeDescTest extends SymbolicDescTest {
             }
         }
 
-        badInsertParametersTypes(CR_void, paramDescs);
+        badInsertParametersTypes(CD_void, paramDescs);
     }
 
     private void badInsertParametersTypes(ClassDesc returnType, String... paramDescTypes) {
@@ -238,7 +238,7 @@ public class MethodTypeDescTest extends SymbolicDescTest {
         // try with void arguments, this will stress another code path in particular
         // ConstantMethodTypeDesc::init
         try {
-            MethodTypeDesc r = MethodTypeDesc.of(CR_int, CR_void);
+            MethodTypeDesc r = MethodTypeDesc.of(CD_int, CD_void);
             fail("can't reach here");
         }
         catch (IllegalArgumentException e) {

@@ -61,223 +61,223 @@ public final class ConstantDescs {
     // Don't change the order of these declarations!
 
     /** {@link ClassDesc} representing {@link Object} */
-    public static final ClassDesc CR_Object = ClassDesc.of("java.lang.Object");
+    public static final ClassDesc CD_Object = ClassDesc.of("java.lang.Object");
 
     /** {@link ClassDesc} representing {@link String} */
-    public static final ClassDesc CR_String = ClassDesc.of("java.lang.String");
+    public static final ClassDesc CD_String = ClassDesc.of("java.lang.String");
 
     /** {@link ClassDesc} representing {@link Class} */
-    public static final ClassDesc CR_Class = ClassDesc.of("java.lang.Class");
+    public static final ClassDesc CD_Class = ClassDesc.of("java.lang.Class");
 
     /** {@link ClassDesc} representing {@link Number} */
-    public static final ClassDesc CR_Number = ClassDesc.of("java.lang.Number");
+    public static final ClassDesc CD_Number = ClassDesc.of("java.lang.Number");
 
     /** {@link ClassDesc} representing {@link Integer} */
-    public static final ClassDesc CR_Integer = ClassDesc.of("java.lang.Integer");
+    public static final ClassDesc CD_Integer = ClassDesc.of("java.lang.Integer");
 
     /** {@link ClassDesc} representing {@link Long} */
-    public static final ClassDesc CR_Long = ClassDesc.of("java.lang.Long");
+    public static final ClassDesc CD_Long = ClassDesc.of("java.lang.Long");
 
     /** {@link ClassDesc} representing {@link Float} */
-    public static final ClassDesc CR_Float = ClassDesc.of("java.lang.Float");
+    public static final ClassDesc CD_Float = ClassDesc.of("java.lang.Float");
 
     /** {@link ClassDesc} representing {@link Double} */
-    public static final ClassDesc CR_Double = ClassDesc.of("java.lang.Double");
+    public static final ClassDesc CD_Double = ClassDesc.of("java.lang.Double");
 
     /** {@link ClassDesc} representing {@link Short} */
-    public static final ClassDesc CR_Short = ClassDesc.of("java.lang.Short");
+    public static final ClassDesc CD_Short = ClassDesc.of("java.lang.Short");
 
     /** {@link ClassDesc} representing {@link Byte} */
-    public static final ClassDesc CR_Byte = ClassDesc.of("java.lang.Byte");
+    public static final ClassDesc CD_Byte = ClassDesc.of("java.lang.Byte");
 
     /** {@link ClassDesc} representing {@link Character} */
-    public static final ClassDesc CR_Character = ClassDesc.of("java.lang.Character");
+    public static final ClassDesc CD_Character = ClassDesc.of("java.lang.Character");
 
     /** {@link ClassDesc} representing {@link Boolean} */
-    public static final ClassDesc CR_Boolean = ClassDesc.of("java.lang.Boolean");
+    public static final ClassDesc CD_Boolean = ClassDesc.of("java.lang.Boolean");
 
     /** {@link ClassDesc} representing {@link Void} */
-    public static final ClassDesc CR_Void = ClassDesc.of("java.lang.Void");
+    public static final ClassDesc CD_Void = ClassDesc.of("java.lang.Void");
 
     /** {@link ClassDesc} representing {@link Throwable} */
-    public static final ClassDesc CR_Throwable = ClassDesc.of("java.lang.Throwable");
+    public static final ClassDesc CD_Throwable = ClassDesc.of("java.lang.Throwable");
 
     /** {@link ClassDesc} representing {@link Exception} */
-    public static final ClassDesc CR_Exception = ClassDesc.of("java.lang.Exception");
+    public static final ClassDesc CD_Exception = ClassDesc.of("java.lang.Exception");
 
     /** {@link ClassDesc} representing {@link Enum} */
-    public static final ClassDesc CR_Enum = ClassDesc.of("java.lang.Enum");
+    public static final ClassDesc CD_Enum = ClassDesc.of("java.lang.Enum");
 
     /** {@link ClassDesc} representing {@link VarHandle} */
-    public static final ClassDesc CR_VarHandle = ClassDesc.of("java.lang.invoke.VarHandle");
+    public static final ClassDesc CD_VarHandle = ClassDesc.of("java.lang.invoke.VarHandle");
 
     /** {@link ClassDesc} representing {@link MethodHandles} */
-    public static final ClassDesc CR_MethodHandles = ClassDesc.of("java.lang.invoke.MethodHandles");
+    public static final ClassDesc CD_MethodHandles = ClassDesc.of("java.lang.invoke.MethodHandles");
 
     /** {@link ClassDesc} representing {@link MethodHandles.Lookup} */
-    public static final ClassDesc CR_MethodHandles_Lookup = CR_MethodHandles.inner("Lookup");
+    public static final ClassDesc CD_MethodHandles_Lookup = CD_MethodHandles.inner("Lookup");
 
     /** {@link ClassDesc} representing {@link MethodHandle} */
-    public static final ClassDesc CR_MethodHandle = ClassDesc.of("java.lang.invoke.MethodHandle");
+    public static final ClassDesc CD_MethodHandle = ClassDesc.of("java.lang.invoke.MethodHandle");
 
     /** {@link ClassDesc} representing {@link MethodType} */
-    public static final ClassDesc CR_MethodType = ClassDesc.of("java.lang.invoke.MethodType");
+    public static final ClassDesc CD_MethodType = ClassDesc.of("java.lang.invoke.MethodType");
 
     /** {@link ClassDesc} representing {@link CallSite} */
-    public static final ClassDesc CR_CallSite = ClassDesc.of("java.lang.invoke.CallSite");
+    public static final ClassDesc CD_CallSite = ClassDesc.of("java.lang.invoke.CallSite");
 
     /** {@link ClassDesc} representing {@link Collection} */
-    public static final ClassDesc CR_Collection = ClassDesc.of("java.util.Collection");
+    public static final ClassDesc CD_Collection = ClassDesc.of("java.util.Collection");
 
     /** {@link ClassDesc} representing {@link List} */
-    public static final ClassDesc CR_List = ClassDesc.of("java.util.List");
+    public static final ClassDesc CD_List = ClassDesc.of("java.util.List");
 
     /** {@link ClassDesc} representing {@link Set} */
-    public static final ClassDesc CR_Set = ClassDesc.of("java.util.Set");
+    public static final ClassDesc CD_Set = ClassDesc.of("java.util.Set");
 
     /** {@link ClassDesc} representing {@link Map} */
-    public static final ClassDesc CR_Map = ClassDesc.of("java.util.Map");
+    public static final ClassDesc CD_Map = ClassDesc.of("java.util.Map");
 
     /** {@link ClassDesc} representing {@link ConstantDesc} */
-    public static final ClassDesc CR_ConstantDesc = ClassDesc.of("java.lang.constant.ConstantDesc");
+    public static final ClassDesc CD_ConstantDesc = ClassDesc.of("java.lang.constant.ConstantDesc");
 
     /** {@link ClassDesc} representing {@link ClassDesc} */
-    public static final ClassDesc CR_ClassDesc = ClassDesc.of("java.lang.constant.ClassDesc");
+    public static final ClassDesc CD_ClassDesc = ClassDesc.of("java.lang.constant.ClassDesc");
 
     /** {@link ClassDesc} representing {@link EnumDesc} */
-    public static final ClassDesc CR_EnumDesc = CR_Enum.inner("EnumDesc");
+    public static final ClassDesc CD_EnumDesc = CD_Enum.inner("EnumDesc");
 
     /** {@link ClassDesc} representing {@link MethodTypeDesc} */
-    public static final ClassDesc CR_MethodTypeDesc = ClassDesc.of("java.lang.constant.MethodTypeDesc");
+    public static final ClassDesc CD_MethodTypeDesc = ClassDesc.of("java.lang.constant.MethodTypeDesc");
 
     /** {@link ClassDesc} representing {@link MethodHandleDesc} */
-    public static final ClassDesc CR_MethodHandleDesc = ClassDesc.of("java.lang.constant.MethodHandleDesc");
+    public static final ClassDesc CD_MethodHandleDesc = ClassDesc.of("java.lang.constant.MethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link DirectMethodHandleDescImpl} */
-    public static final ClassDesc CR_DirectMethodHandleDesc = ClassDesc.of("java.lang.constant.DirectMethodHandleDesc");
+    public static final ClassDesc CD_DirectMethodHandleDesc = ClassDesc.of("java.lang.constant.DirectMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
-    public static final ClassDesc CR_VarHandleDesc = CR_VarHandle.inner("VarHandleDesc");
+    public static final ClassDesc CD_VarHandleDesc = CD_VarHandle.inner("VarHandleDesc");
 
     /** {@link ClassDesc} representing {@link DirectMethodHandleDesc.Kind} */
-    public static final ClassDesc CR_MethodHandleDesc_Kind = CR_DirectMethodHandleDesc.inner("Kind");
+    public static final ClassDesc CD_MethodHandleDesc_Kind = CD_DirectMethodHandleDesc.inner("Kind");
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
-    public static final ClassDesc CR_DynamicConstantDesc = ClassDesc.of("java.lang.constant.DynamicConstantDesc");
+    public static final ClassDesc CD_DynamicConstantDesc = ClassDesc.of("java.lang.constant.DynamicConstantDesc");
 
     /** {@link ClassDesc} representing {@link DynamicCallSiteDesc} */
-    public static final ClassDesc CR_DynamicCallSiteDesc = ClassDesc.of("java.lang.constant.DynamicCallSiteDesc");
+    public static final ClassDesc CD_DynamicCallSiteDesc = ClassDesc.of("java.lang.constant.DynamicCallSiteDesc");
 
     /** {@link ClassDesc} representing {@link ConstantBootstraps} */
-    public static final ClassDesc CR_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
+    public static final ClassDesc CD_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
     private static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
-            ConstantDescs.CR_MethodHandles_Lookup,
-            ConstantDescs.CR_String,
-            ConstantDescs.CR_MethodType };
+            ConstantDescs.CD_MethodHandles_Lookup,
+            ConstantDescs.CD_String,
+            ConstantDescs.CD_MethodType};
 
     private static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
-            ConstantDescs.CR_MethodHandles_Lookup,
-            ConstantDescs.CR_String,
-            ConstantDescs.CR_Class };
+            ConstantDescs.CD_MethodHandles_Lookup,
+            ConstantDescs.CD_String,
+            ConstantDescs.CD_Class};
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
     public static final DirectMethodHandleDesc BSM_PRIMITIVE_CLASS
-            = ofConstantBootstrap(CR_ConstantBootstraps, "primitiveClass",
-                                  CR_Class);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "primitiveClass",
+            CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#enumConstant(Lookup, String, Class)} */
     public static final DirectMethodHandleDesc BSM_ENUM_CONSTANT
-            = ofConstantBootstrap(CR_ConstantBootstraps, "enumConstant",
-                                  CR_Enum);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "enumConstant",
+            CD_Enum);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class)} */
     public static final DirectMethodHandleDesc BSM_NULL_CONSTANT
-            = ofConstantBootstrap(CR_ConstantBootstraps, "nullConstant",
-                                  ConstantDescs.CR_Object);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "nullConstant",
+                                  ConstantDescs.CD_Object);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#fieldVarHandle(Lookup, String, Class, Class, Class)} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_FIELD
-            = ofConstantBootstrap(CR_ConstantBootstraps, "fieldVarHandle",
-                                  CR_VarHandle, CR_Class, CR_Class);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "fieldVarHandle",
+            CD_VarHandle, CD_Class, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#staticFieldVarHandle(Lookup, String, Class, Class, Class)} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_STATIC_FIELD
-            = ofConstantBootstrap(CR_ConstantBootstraps, "staticFieldVarHandle",
-                                  CR_VarHandle, CR_Class, CR_Class);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "staticFieldVarHandle",
+            CD_VarHandle, CD_Class, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#arrayVarHandle(Lookup, String, Class, Class)} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_ARRAY
-            = ofConstantBootstrap(CR_ConstantBootstraps, "arrayVarHandle",
-                                  CR_VarHandle, CR_Class);
+            = ofConstantBootstrap(CD_ConstantBootstraps, "arrayVarHandle",
+            CD_VarHandle, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#invoke(Lookup, String, Class, MethodHandle, Object...)} */
     public static final DirectMethodHandleDesc BSM_INVOKE
-            = ofConstantBootstrap(CR_ConstantBootstraps, "invoke",
-                                  CR_Object, CR_MethodHandle, CR_Object.arrayType());
+            = ofConstantBootstrap(CD_ConstantBootstraps, "invoke",
+            CD_Object, CD_MethodHandle, CD_Object.arrayType());
 
     /** {@link ClassDesc} representing the primitive type {@code int} */
-    public static final ClassDesc CR_int = ClassDesc.ofDescriptor("I");
+    public static final ClassDesc CD_int = ClassDesc.ofDescriptor("I");
 
     /** {@link ClassDesc} representing the primitive type {@code long} */
-    public static final ClassDesc CR_long = ClassDesc.ofDescriptor("J");
+    public static final ClassDesc CD_long = ClassDesc.ofDescriptor("J");
 
     /** {@link ClassDesc} representing the primitive type {@code float} */
-    public static final ClassDesc CR_float = ClassDesc.ofDescriptor("F");
+    public static final ClassDesc CD_float = ClassDesc.ofDescriptor("F");
 
     /** {@link ClassDesc} representing the primitive type {@code double} */
-    public static final ClassDesc CR_double = ClassDesc.ofDescriptor("D");
+    public static final ClassDesc CD_double = ClassDesc.ofDescriptor("D");
 
     /** {@link ClassDesc} representing the primitive type {@code short} */
-    public static final ClassDesc CR_short = ClassDesc.ofDescriptor("S");
+    public static final ClassDesc CD_short = ClassDesc.ofDescriptor("S");
 
     /** {@link ClassDesc} representing the primitive type {@code byte} */
-    public static final ClassDesc CR_byte = ClassDesc.ofDescriptor("B");
+    public static final ClassDesc CD_byte = ClassDesc.ofDescriptor("B");
 
     /** {@link ClassDesc} representing the primitive type {@code char} */
-    public static final ClassDesc CR_char = ClassDesc.ofDescriptor("C");
+    public static final ClassDesc CD_char = ClassDesc.ofDescriptor("C");
 
     /** {@link ClassDesc} representing the primitive type {@code boolean} */
-    public static final ClassDesc CR_boolean = ClassDesc.ofDescriptor("Z");
+    public static final ClassDesc CD_boolean = ClassDesc.ofDescriptor("Z");
 
     /** {@link ClassDesc} representing the primitive type {@code void} */
-    public static final ClassDesc CR_void = ClassDesc.ofDescriptor("V");
+    public static final ClassDesc CD_void = ClassDesc.ofDescriptor("V");
 
     /** Nominal descriptor representing the constant {@code null} */
     public static final ConstantDesc<?> NULL
             = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT,
-                                          DEFAULT_NAME, ConstantDescs.CR_Object);
+                                          DEFAULT_NAME, ConstantDescs.CD_Object);
 
-    static final DirectMethodHandleDesc MHR_CLASSDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_ClassDesc, "ofDescriptor",
-                                  CR_ClassDesc, CR_String);
+    static final DirectMethodHandleDesc MHD_CLASSDESC_FACTORY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_ClassDesc, "ofDescriptor",
+            CD_ClassDesc, CD_String);
 
-    static final DirectMethodHandleDesc MHR_METHODHANDLE_ASTYPE
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CR_MethodHandle, "asType",
-                                  CR_MethodHandle, CR_MethodType);
+    static final DirectMethodHandleDesc MHD_METHODHANDLE_ASTYPE
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CD_MethodHandle, "asType",
+            CD_MethodHandle, CD_MethodType);
 
-    static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "of",
-                                  CR_DynamicConstantDesc, CR_DirectMethodHandleDesc, CR_ConstantDesc.arrayType());
+    static final DirectMethodHandleDesc MHD_DYNAMICCONSTANTDESC_FACTORY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_DynamicConstantDesc, "of",
+            CD_DynamicConstantDesc, CD_DirectMethodHandleDesc, CD_ConstantDesc.arrayType());
 
-    static final DirectMethodHandleDesc MHR_DYNAMICCONSTANTDESC_NAMED_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_DynamicConstantDesc, "ofNamed",
-                                  CR_DynamicConstantDesc, CR_DirectMethodHandleDesc, CR_String, CR_String, CR_ConstantDesc.arrayType());
+    static final DirectMethodHandleDesc MHD_DYNAMICCONSTANTDESC_NAMED_FACTORY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_DynamicConstantDesc, "ofNamed",
+            CD_DynamicConstantDesc, CD_DirectMethodHandleDesc, CD_String, CD_String, CD_ConstantDesc.arrayType());
 
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofField(ClassDesc, String, ClassDesc)} */
-    public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFFIELD
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofField",
-                                  CR_VarHandleDesc, CR_ClassDesc, CR_String, CR_ClassDesc);
+    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFFIELD
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofField",
+            CD_VarHandleDesc, CD_ClassDesc, CD_String, CD_ClassDesc);
 
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofStaticField(ClassDesc, String, ClassDesc)} */
-    public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFSTATIC
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofStaticField",
-                                  CR_VarHandleDesc, CR_ClassDesc, CR_String, CR_ClassDesc);
+    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFSTATIC
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofStaticField",
+            CD_VarHandleDesc, CD_ClassDesc, CD_String, CD_ClassDesc);
 
     /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofArray(ClassDesc)} */
-    public static final DirectMethodHandleDesc MHR_VARHANDLEDESC_OFARRAY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CR_VarHandleDesc, "ofArray",
-                                  CR_VarHandleDesc, CR_ClassDesc);
+    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFARRAY
+            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofArray",
+            CD_VarHandleDesc, CD_ClassDesc);
 
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for

@@ -50,7 +50,7 @@ final class PrimitiveClassDescImpl
      * @jvms 4.3 Descriptors
      */
     PrimitiveClassDescImpl(String descriptor) {
-        super(ConstantDescs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantDescs.CR_Class);
+        super(ConstantDescs.BSM_PRIMITIVE_CLASS, requireNonNull(descriptor), ConstantDescs.CD_Class);
         if (descriptor.length() != 1
             || "VIJCSBFDZ".indexOf(descriptor.charAt(0)) < 0)
             throw new IllegalArgumentException(String.format("not a valid primitive type descriptor: %s", descriptor));

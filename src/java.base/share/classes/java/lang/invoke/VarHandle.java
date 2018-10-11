@@ -2134,9 +2134,9 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * Kinds of variable handle descs
          */
         private enum Kind {
-            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD, ConstantDescs.MHR_VARHANDLEDESC_OFFIELD),
-            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHR_VARHANDLEDESC_OFSTATIC),
-            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHR_VARHANDLEDESC_OFARRAY);
+            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFFIELD),
+            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFSTATIC),
+            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHD_VARHANDLEDESC_OFARRAY);
 
             final DirectMethodHandleDesc bootstrapMethod;
             final DirectMethodHandleDesc descFactory;
@@ -2179,7 +2179,7 @@ public abstract class VarHandle implements Constable<VarHandle> {
          */
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
-                  ConstantDescs.CR_VarHandle,
+                  ConstantDescs.CD_VarHandle,
                   kind.toBSMArgs(declaringClass, name, varType));
             this.kind = kind;
             this.declaringClass = declaringClass;

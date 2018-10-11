@@ -58,33 +58,33 @@ public class IndyDescTest {
 
     public void testIndyRef() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
-        MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
+        MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
         DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
-        DynamicCallSiteDesc csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
+        DynamicCallSiteDesc csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
         CallSite cs = csd.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target = cs.getTarget();
         assertEquals("Foo", target.invoke());
         assertEquals("wooga", csd.invocationName());
 
-        DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CR_String), "Bar");
+        DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CD_String), "Bar");
         CallSite cs2 = csd2.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target2 = cs2.getTarget();
         assertEquals("Bar", target2.invoke());
         assertEquals("foo", csd2.invocationName());
 
-        DynamicCallSiteDesc csd3 = DynamicCallSiteDesc.of(mh, MethodTypeDesc.of(CR_String));
+        DynamicCallSiteDesc csd3 = DynamicCallSiteDesc.of(mh, MethodTypeDesc.of(CD_String));
         CallSite cs3 = csd.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target3 = cs3.getTarget();
         assertEquals("Foo", target3.invoke());
         assertEquals("_", csd3.invocationName());
 
-        DynamicCallSiteDesc csd4 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CR_String)).withArgs("Bar");
+        DynamicCallSiteDesc csd4 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CD_String)).withArgs("Bar");
         CallSite cs4 = csd4.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target4 = cs4.getTarget();
         assertEquals("Bar", target4.invoke());
 
-        DynamicCallSiteDesc csd5 = DynamicCallSiteDesc.of(mh, MethodTypeDesc.of(CR_String, CR_String))
-                .withNameAndType("foo", MethodTypeDesc.of(CR_String)).withArgs("Bar");
+        DynamicCallSiteDesc csd5 = DynamicCallSiteDesc.of(mh, MethodTypeDesc.of(CD_String, CD_String))
+                .withNameAndType("foo", MethodTypeDesc.of(CD_String)).withArgs("Bar");
         CallSite cs5 = csd5.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target5 = cs5.getTarget();
         assertEquals("Bar", target5.invoke());
@@ -93,12 +93,12 @@ public class IndyDescTest {
 
     public void testEqualsHashToString() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
-        MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
+        MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
         DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
 
-        DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
-        DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CR_String));
-        DynamicCallSiteDesc csd3 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CR_String));
+        DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
+        DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
+        DynamicCallSiteDesc csd3 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CD_String));
         assertEquals(csd1, csd2);
         assertEquals(csd1.hashCode(), csd2.hashCode());
         assertNotEquals(csd1, csd3);
@@ -110,8 +110,8 @@ public class IndyDescTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testEmptyInvocationName() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
-        MethodTypeDesc mt = MethodTypeDesc.of(CR_CallSite, CR_MethodHandles_Lookup, CR_String, CR_MethodType, CR_Object.arrayType());
+        MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
         DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
-        DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "", MethodTypeDesc.of(CR_String));
+        DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "", MethodTypeDesc.of(CD_String));
     }
 }

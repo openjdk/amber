@@ -36,8 +36,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.lang.constant.ConstantDescs.CR_Class;
-import static java.lang.constant.ConstantDescs.CR_VarHandle;
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_VarHandle;
 import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.lang.constant.ConstantUtils.EMPTY_CONSTANTDESC;
 import static java.lang.constant.ConstantUtils.validateMemberName;
@@ -315,7 +315,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizePrimitiveClass(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0
-            || !desc.constantType().equals(CR_Class)
+            || !desc.constantType().equals(CD_Class)
             || desc.constantName == null)
             return desc;
         return ClassDesc.ofDescriptor(desc.constantName);
@@ -323,7 +323,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofStaticField((ClassDesc) desc.bootstrapArgs[0],
                                            (String) desc.bootstrapArgs[1],
@@ -332,7 +332,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofField((ClassDesc) desc.bootstrapArgs[0],
                                      (String) desc.bootstrapArgs[1],
@@ -341,7 +341,7 @@ public abstract class DynamicConstantDesc<T>
 
     private static ConstantDesc<?> canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 1
-            || !desc.constantType().equals(CR_VarHandle))
+            || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofArray((ClassDesc) desc.bootstrapArgs[0]);
     }
