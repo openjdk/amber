@@ -94,6 +94,7 @@ public interface ConstantDesc<T> {
      * @return the resolved constant value
      * @throws ReflectiveOperationException if a class, method, or field
      * could not be reflectively resolved in the course of resolution
+     * @throws LinkageError if a linkage error occurs
      * @jvms 5.4.3 Resolution
      * @jvms 5.4.4 Access Control
      */
