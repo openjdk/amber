@@ -4,7 +4,7 @@
  * @compile/fail/ref=ConciseMethodsNegTest01.out -XDrawDiagnostics ConciseMethodsNegTest01.java
  */
 
-class ConciseMethodsNegTest01 {
+class ConciseMethodsNegTest01 implements Runnable {
     int length(String s) = s::length;
 
     abstract int length2(String s) = String::length;
@@ -20,4 +20,10 @@ class ConciseMethodsNegTest01 {
     private static void all() {}
 
     public static void foo() = ConciseMethodsNegTest01.all();
+
+    public void run() -> null;
+
+    Runnable f(Runnable r) -> r;
+
+    void m() = f(this)::run;
 }

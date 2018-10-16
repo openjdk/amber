@@ -1118,6 +1118,19 @@ public class Attr extends JCTree.Visitor {
                         log.error(tree.conciseMethodRef, Errors.OnlyMethodReferencesAllowed);
                     }
                     attribTree(tree.conciseMethodRef, localEnv, statInfo);
+                    if (tree.conciseMethodRef.hasTag(REFERENCE)) {
+                        JCMemberReference mreference = (JCMemberReference)tree.conciseMethodRef;
+                        boolean isConstant = mreference.expr.type.constValue() != null;
+                        boolean isArray = mreference.expr.hasTag(Tag.TYPEARRAY);
+                        Symbol sym = TreeInfo.symbol(mreference.expr);
+                        boolean isTypeOrFinalField = sym != null &&
+                                (sym.kind == Kind.TYP ||
+                                sym.owner.kind == Kind.TYP &&
+                                sym.isFinal());
+                        if (!isConstant && !isArray && !isTypeOrFinalField) {
+                            log.error(mreference.expr, Errors.ExpressionMustBeTypeOrConstantOrFinalField);
+                        }
+                    }
                 } else {
                     attribStat(tree.body, localEnv);
                 }
