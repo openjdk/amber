@@ -4,4 +4,5 @@ ConciseMethodsNegTest01.java:10:18: compiler.err.abstract.meth.cant.have.body
 ConciseMethodsNegTest01.java:12:16: compiler.err.native.meth.cant.have.body
 ConciseMethodsNegTest01.java:18:5: compiler.err.constructors.cant.have.concise.body
 ConciseMethodsNegTest01.java:22:59: compiler.err.only.method.references.allowed
-6 errors
+ConciseMethodsNegTest01.java:28:17: compiler.err.expression.must.be.type.or.constant.or.final.field
+7 errors
