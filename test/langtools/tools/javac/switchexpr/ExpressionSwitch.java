@@ -23,6 +23,10 @@ public class ExpressionSwitch {
         assertEquals(scopesIsolated(T.B), "B");
         assertEquals(lambdas1(T.B).get(), "B");
         assertEquals(lambdas2(T.B).get(), "B");
+        assertEquals(stringSwitchExpr("A"), "0");
+        assertEquals(stringSwitchExpr("B"), "0");
+        assertEquals(stringSwitchExpr("C"), "1");
+        assertEquals(stringSwitchExpr("X"), "D");
         localClass(T.A);
     }
 
@@ -73,6 +77,14 @@ public class ExpressionSwitch {
             case A: break () -> "A";
             case B: { break () -> "B"; }
             default: break () -> "default";
+        };
+    }
+
+    private String stringSwitchExpr(String str) {
+        return switch (str) {
+            case "A", "B" -> { break "0"; }
+            case "C" -> "1";
+            default -> "D";
         };
     }
 
