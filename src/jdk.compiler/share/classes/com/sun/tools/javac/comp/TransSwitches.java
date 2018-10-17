@@ -207,7 +207,7 @@ public class TransSwitches extends TreeTranslator {
                     }
                 }
             }.translate(c.stats));
-            JCCase res = make.Case(c.caseKind, c.pats, statements.toList(), null);
+            JCCase res = make.Case(JCCase.STATEMENT, c.pats, statements.toList(), null);
             res.completesNormally = c.completesNormally;
             return res;
         }
