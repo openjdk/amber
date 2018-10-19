@@ -10,10 +10,10 @@ public class ImpossibleTypeTest {
         int in = 42;
         Integer i = 42;
 
-        if (i __matches String s ) {
+        if (i matches String s ) {
             System.out.println("Broken");
         }
-        if (i __matches Undefined u ) {
+        if (i matches Undefined u ) {
             System.out.println("Broken");
         }
     }
