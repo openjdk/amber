@@ -1885,8 +1885,6 @@ public abstract class VarHandle implements Constable<VarHandle> {
 
     @Override
     public final String toString() {
-        // @@@ defer to concrete type for additional description
-        // see https://bugs.openjdk.java.net/browse/JDK-8199149
         return String.format("VarHandle[varType=%s, coord=%s]",
                              varType().getName(),
                              coordinateTypes());
@@ -2127,6 +2125,8 @@ public abstract class VarHandle implements Constable<VarHandle> {
     /**
      * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
      * {@link VarHandle} constant.
+     *
+     * @since 12
      */
     public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle> {
 

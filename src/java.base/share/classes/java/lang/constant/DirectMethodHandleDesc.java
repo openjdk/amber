@@ -50,6 +50,8 @@ import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
  * {@linkplain DirectMethodHandleDesc} directly.
+ *
+ * @since 12
  */
 public interface DirectMethodHandleDesc extends MethodHandleDesc {
     /**

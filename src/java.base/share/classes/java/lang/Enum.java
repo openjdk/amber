@@ -279,6 +279,8 @@ public abstract class Enum<E extends Enum<E>>
      * {@code enum} constant.
      *
      * @param <E> the type of the enum constant
+     *
+     * @since 12
      */
     public static final class EnumDesc<E extends Enum<E>>
             extends DynamicConstantDesc<E> {

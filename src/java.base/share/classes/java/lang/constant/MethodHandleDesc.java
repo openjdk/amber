@@ -38,6 +38,8 @@ import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
  * {@linkplain MethodHandleDesc} directly.
+ *
+ * @since 12
  */
 public interface MethodHandleDesc
         extends ConstantDesc<MethodHandle> {

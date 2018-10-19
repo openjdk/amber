@@ -47,6 +47,8 @@ import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
  * bootstrap methods.
  *
  * @see ConstantDesc
+ *
+ * @since 12
  */
 public final class ConstantDescs {
     // No instances
