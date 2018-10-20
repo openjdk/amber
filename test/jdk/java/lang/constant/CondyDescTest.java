@@ -4,9 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -65,13 +63,13 @@ public class CondyDescTest extends SymbolicDescTest {
         assertEquals(r.resolveConstantDesc(LOOKUP), c);
     }
 
-    private void testVarHandleRef(DynamicConstantDesc<VarHandle> r, VarHandle vh) throws ReflectiveOperationException  {
+    private void testVarHandleDesc(DynamicConstantDesc<VarHandle> r, VarHandle vh) throws ReflectiveOperationException  {
         testSymbolicDesc(r);
         assertEquals(r.resolveConstantDesc(LOOKUP), vh);
         assertEquals(vh.describeConstable().orElseThrow(), r);
     }
 
-    private static<E extends Enum<E>> void testEnumRef(EnumDesc<E> r, E e) throws ReflectiveOperationException {
+    private static<E extends Enum<E>> void testEnumDesc(EnumDesc<E> r, E e) throws ReflectiveOperationException {
         testSymbolicDesc(r);
 
         assertEquals(r, EnumDesc.of(r.constantType(), r.constantName()));
@@ -89,9 +87,9 @@ public class CondyDescTest extends SymbolicDescTest {
     }
 
     public void testDynamicConstant() throws ReflectiveOperationException {
-        DirectMethodHandleDesc bsmRef = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyDescTest"), "concatBSM",
+        DirectMethodHandleDesc bsmDesc = ConstantDescs.ofConstantBootstrap(ClassDesc.of("CondyDescTest"), "concatBSM",
                                                                             CD_String, CD_String, CD_String);
-        DynamicConstantDesc<String> r = DynamicConstantDesc.of(bsmRef, "foo", "bar");
+        DynamicConstantDesc<String> r = DynamicConstantDesc.of(bsmDesc, "foo", "bar");
         testDCR(r, "foobar");
     }
 
@@ -104,21 +102,21 @@ public class CondyDescTest extends SymbolicDescTest {
                                            format.resolveConstantDesc(LOOKUP), "%s%s", "moo", "cow");
         assertEquals(s, "moocow");
 
-        DynamicConstantDesc<String> ref = DynamicConstantDesc.of(invoker, format, "%s%s", "moo", "cow");
-        testDCR(ref, "moocow");
+        DynamicConstantDesc<String> desc = DynamicConstantDesc.of(invoker, format, "%s%s", "moo", "cow");
+        testDCR(desc, "moocow");
 
-        DynamicConstantDesc<String> ref2 = DynamicConstantDesc.of(invoker, format, "%s%s", ref, "cow");
-        testDCR(ref2, "moocowcow");
+        DynamicConstantDesc<String> desc2 = DynamicConstantDesc.of(invoker, format, "%s%s", desc, "cow");
+        testDCR(desc2, "moocowcow");
     }
 
     enum MyEnum { A, B, C }
 
-    public void testEnumRef() throws ReflectiveOperationException {
+    public void testEnumDesc() throws ReflectiveOperationException {
         ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
 
-        testEnumRef(EnumDesc.of(enumClass, "A"), MyEnum.A);
-        testEnumRef(EnumDesc.of(enumClass, "B"), MyEnum.B);
-        testEnumRef(EnumDesc.of(enumClass, "C"), MyEnum.C);
+        testEnumDesc(EnumDesc.of(enumClass, "A"), MyEnum.A);
+        testEnumDesc(EnumDesc.of(enumClass, "B"), MyEnum.B);
+        testEnumDesc(EnumDesc.of(enumClass, "C"), MyEnum.C);
     }
 
     static class MyClass {
@@ -133,7 +131,7 @@ public class CondyDescTest extends SymbolicDescTest {
         // static varHandle
         VarHandleDesc vhc = VarHandleDesc.ofStaticField(testClass, "sf", CD_int);
         VarHandle varHandle = LOOKUP.findStaticVarHandle(MyClass.class, "sf", int.class);
-        testVarHandleRef(vhc, varHandle);
+        testVarHandleDesc(vhc, varHandle);
 
         assertEquals(varHandle.varType(), int.class);
         varHandle.set(8);
@@ -143,7 +141,7 @@ public class CondyDescTest extends SymbolicDescTest {
         // static varHandle
         vhc = VarHandleDesc.ofField(testClass, "f", CD_int);
         varHandle = LOOKUP.findVarHandle(MyClass.class, "f", int.class);
-        testVarHandleRef(vhc, varHandle);
+        testVarHandleDesc(vhc, varHandle);
 
         assertEquals(varHandle.varType(), int.class);
         varHandle.set(instance, 9);
@@ -152,7 +150,7 @@ public class CondyDescTest extends SymbolicDescTest {
 
         vhc = VarHandleDesc.ofArray(CD_int.arrayType());
         varHandle = MethodHandles.arrayElementVarHandle(int[].class);
-        testVarHandleRef(vhc, varHandle);
+        testVarHandleDesc(vhc, varHandle);
 
         int[] ints = new int[3];
         varHandle.set(ints, 0, 1);

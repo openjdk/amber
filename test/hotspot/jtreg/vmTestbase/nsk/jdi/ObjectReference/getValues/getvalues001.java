@@ -205,7 +205,7 @@ public class getvalues001 {
             val1    = debuggeeClass.getValue(field1);
             objRef  = (ObjectReference) val1;
 
-            log2("......getting the mirror of tested getvalues001aTestClass : ReferenceType classRef");
+            log2("......getting the mirror of tested getvalues001aTestClass : ReferenceType classDesc");
 
             classes      = vm.classesByName(testedClassName);
             testedClass  = (ReferenceType) classes.get(0);
