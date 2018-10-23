@@ -1108,7 +1108,7 @@ public class ClassWriter extends ClassFile {
         List<VarSymbol> vars = List.nil();
         int numParams = 0;
         for (Symbol sym : s.getSymbols(NON_RECURSIVE)) {
-            if (sym.kind == VAR) {
+            if (sym.kind == VAR && sym.isDatum()) {
                 vars = vars.prepend((VarSymbol)sym);
                 numParams++;
             }

@@ -2270,6 +2270,7 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   }
 
   it->push(&_nest_members);
+  it->push(&_recordParams);
 }
 
 void InstanceKlass::remove_unshareable_info() {

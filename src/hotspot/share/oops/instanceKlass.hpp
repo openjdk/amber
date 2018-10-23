@@ -188,6 +188,8 @@ class InstanceKlass: public Klass {
   // if this class is unloaded.
   Symbol*         _array_name;
 
+  Array<u2>*      _recordParams;
+
   // Number of heapOopSize words used by non-static fields in this klass
   // (including inherited fields but after header_size()).
   int             _nonstatic_field_size;
@@ -200,6 +202,7 @@ class InstanceKlass: public Klass {
   u2              _source_file_name_index;
   u2              _static_oop_field_count;// number of static oop fields in this klass
   u2              _java_fields_count;    // The number of declared Java fields
+  u2              _record_params_count;  // The number of record parameters
   int             _nonstatic_oop_map_size;// size in words of nonstatic oop map blocks
 
   int             _itable_len;           // length of Java itable (in words)
@@ -457,6 +460,15 @@ class InstanceKlass: public Klass {
   // nest-host index
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
+
+  int record_params_count() const       { return (int)_record_params_count; }
+
+  Array<u2>* recordParams() const       { return _recordParams; }
+  void set_recordParams(Array<u2>* recordParams, u2 record_params_count) {
+    guarantee(_recordParams == NULL || recordParams == NULL, "Just checking");
+    _recordParams = recordParams;
+    _record_params_count = record_params_count;
+  }
 
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
