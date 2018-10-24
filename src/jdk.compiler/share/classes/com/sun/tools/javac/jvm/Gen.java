@@ -2185,7 +2185,7 @@ public class Gen extends JCTree.Visitor {
             this.endPosTable = toplevel.endPositions;
             c.pool = pool;
             pool.reset();
-            if (c.isDatum()) {
+            if (c.isRecord()) {
                 Attribute.Compound attribute = c.attribute(syms.dataAnnotationType.tsym);
                 if (attribute == null) {
                     attribute = new Attribute.Compound(syms.dataAnnotationType, List.nil());

@@ -1108,7 +1108,7 @@ public class ClassWriter extends ClassFile {
         List<VarSymbol> vars = List.nil();
         int numParams = 0;
         for (Symbol sym : s.getSymbols(NON_RECURSIVE)) {
-            if (sym.kind == VAR && sym.isDatum()) {
+            if (sym.kind == VAR && sym.isRecord()) {
                 vars = vars.prepend((VarSymbol)sym);
                 numParams++;
             }
@@ -1916,7 +1916,7 @@ public class ClassWriter extends ClassFile {
             }
         }
 
-        if (c.isDatum()) {
+        if (c.isRecord()) {
             acount += writeRecordAttribute(c);
         }
 
