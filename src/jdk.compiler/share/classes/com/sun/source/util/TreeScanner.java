@@ -677,7 +677,11 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
     @Override
     public R visitInstanceOf(InstanceOfTree node, P p) {
         R r = scan(node.getExpression(), p);
-        r = scanAndReduce(node.getType(), p, r);
+        if (node.getPattern() != null) {
+            r = scanAndReduce(node.getPattern(), p, r);
+        } else {
+            r = scanAndReduce(node.getType(), p, r);
+        }
         return r;
     }
 
@@ -687,20 +691,6 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
-     */
-    @Override
-    public R visitMatches(MatchesTree node, P p) {
-        R r = scan(node.getExpression(), p);
-        r = scanAndReduce(node.getPattern(), p, r);
-        return r;
-    }
-
-    /**
-     * {@inheritDoc} This implementation scans the children in left to right order.
-     *
-     * @param node the node being visited
-     * @param p a parameter value
-     * @return a result value
      */
     @Override
     public R visitBindingPattern(BindingPatternTree node, P p) {

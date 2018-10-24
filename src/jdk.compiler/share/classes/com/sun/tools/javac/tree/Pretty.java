@@ -1313,19 +1313,11 @@ public class Pretty extends JCTree.Visitor {
             open(prec, TreeInfo.ordPrec);
             printExpr(tree.expr, TreeInfo.ordPrec);
             print(" instanceof ");
-            printExpr(tree.clazz, TreeInfo.ordPrec + 1);
-            close(prec, TreeInfo.ordPrec);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public void visitPatternTest(JCMatches tree) {
-        try {
-            open(prec, TreeInfo.ordPrec);
-            printExpr(tree.expr, TreeInfo.ordPrec);
-            print(" matches ");
-            printPattern(tree.pattern);
+            if (tree.pattern instanceof JCPattern) {
+                printPattern(tree.pattern);
+            } else {
+                printExpr(tree.getType(), TreeInfo.ordPrec + 1);
+            }
             close(prec, TreeInfo.ordPrec);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

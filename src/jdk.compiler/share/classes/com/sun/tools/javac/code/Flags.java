@@ -324,6 +324,11 @@ public class Flags {
      */
     public static final long MATCH_BINDING = 1L<<58;
 
+    /**
+     * A flag to indicate a match binding variable whose scope extends after the current statement.
+     */
+    public static final long MATCH_BINDING_TO_OUTER = 1L<<59;
+
     /** Modifier masks.
      */
     public static final int

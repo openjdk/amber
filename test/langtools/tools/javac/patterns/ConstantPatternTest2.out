@@ -1,0 +1,28 @@
+ConstantPatternTest2.java:21:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:21:28: compiler.err.expected: ';'
+ConstantPatternTest2.java:26:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:26:28: compiler.err.not.stmt
+ConstantPatternTest2.java:26:30: compiler.err.expected: ';'
+ConstantPatternTest2.java:42:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:42:30: compiler.err.expected: ';'
+ConstantPatternTest2.java:47:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:47:30: compiler.err.not.stmt
+ConstantPatternTest2.java:47:34: compiler.err.expected: ';'
+ConstantPatternTest2.java:62:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:62:33: compiler.err.expected: ';'
+ConstantPatternTest2.java:67:26: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:67:36: compiler.err.expected: ';'
+ConstantPatternTest2.java:80:28: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:80:35: compiler.err.expected: ';'
+ConstantPatternTest2.java:83:28: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:83:32: compiler.err.expected: ';'
+ConstantPatternTest2.java:87:28: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:87:30: compiler.err.expected: ';'
+ConstantPatternTest2.java:91:17: compiler.err.var.not.allowed
+ConstantPatternTest2.java:95:28: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:95:30: compiler.err.expected: ';'
+ConstantPatternTest2.java:97:28: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:97:32: compiler.err.expected: ';'
+ConstantPatternTest2.java:100:29: compiler.err.illegal.start.of.type
+ConstantPatternTest2.java:100:36: compiler.err.expected: ';'
+27 errors

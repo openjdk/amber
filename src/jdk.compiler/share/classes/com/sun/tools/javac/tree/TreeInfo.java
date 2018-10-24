@@ -454,8 +454,6 @@ public class TreeInfo {
                 return getStartPos(((JCArrayTypeTree) tree).elemtype);
             case TYPETEST:
                 return getStartPos(((JCInstanceOf) tree).expr);
-            case PATTERNTEST:
-                return getStartPos(((JCMatches) tree).expr);
             case ANNOTATED_TYPE: {
                 JCAnnotatedType node = (JCAnnotatedType) tree;
                 if (node.annotations.nonEmpty()) {
@@ -573,9 +571,7 @@ public class TreeInfo {
             case TYPECAST:
                 return getEndPos(((JCTypeCast) tree).expr, endPosTable);
             case TYPETEST:
-                return getEndPos(((JCInstanceOf) tree).clazz, endPosTable);
-            case PATTERNTEST:
-                return getEndPos(((JCMatches) tree).pattern, endPosTable);
+                return getEndPos(((JCInstanceOf) tree).pattern, endPosTable);
             case WHILELOOP:
                 return getEndPos(((JCWhileLoop) tree).body, endPosTable);
             case ANNOTATED_TYPE:
@@ -1012,8 +1008,7 @@ public class TreeInfo {
         case MUL:
         case DIV:
         case MOD: return mulPrec;
-        case TYPETEST:
-        case PATTERNTEST: return ordPrec;
+        case TYPETEST: return ordPrec;
         default: throw new AssertionError();
         }
     }

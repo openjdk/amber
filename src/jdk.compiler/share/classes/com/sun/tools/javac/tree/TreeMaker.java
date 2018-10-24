@@ -441,13 +441,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCMatches PatternTest(JCExpression expr, JCPattern patt) {
-        JCMatches tree = new JCMatches(expr, patt);
-        tree.pos = pos;
-        return tree;
-    }
-
-    public JCBindingPattern BindingPattern(Name name, JCExpression vartype) {
+    public JCBindingPattern BindingPattern(Name name, JCTree vartype) {
         JCBindingPattern tree = new JCBindingPattern(name, null, vartype);
         tree.pos = pos;
         return tree;

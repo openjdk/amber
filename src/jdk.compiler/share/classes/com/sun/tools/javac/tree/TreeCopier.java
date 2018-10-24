@@ -475,23 +475,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     public JCTree visitInstanceOf(InstanceOfTree node, P p) {
         JCInstanceOf t = (JCInstanceOf) node;
         JCExpression expr = copy(t.expr, p);
-        JCTree clazz = copy(t.clazz, p);
-        return M.at(t.pos).TypeTest(expr, clazz);
+        JCTree pattern = copy(t.pattern, p);
+        return M.at(t.pos).TypeTest(expr, pattern);
     }
-
-    @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitMatches(MatchesTree node, P p) {
-        JCMatches t = (JCMatches) node;
-        JCExpression expr = copy(t.expr, p);
-        JCPattern pattern = copy(t.pattern, p);
-        return M.at(t.pos).PatternTest(expr, pattern);
-    }
-
 
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitBindingPattern(BindingPatternTree node, P p) {
         JCBindingPattern t = (JCBindingPattern) node;
-        JCExpression vartype = copy(t.vartype, p);
+        JCTree vartype = copy(t.vartype, p);
         return M.at(t.pos).BindingPattern(t.name, vartype);
     }
 

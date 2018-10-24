@@ -4,9 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,27 +21,18 @@
  * questions.
  */
 
-package com.sun.source.tree;
-
-/**
- * A tree node for an {@code matches} expression.
- *
- * For example:
- * <pre>
- *   <em>expression</em> matches <em>pattern</em>
- * </pre>
- *
+/*
+ * @test
+ * @summary Testing pattern matching against the null constant
+ * @compile/fail/ref=NullsInPatterns2.out -XDrawDiagnostics NullsInPatterns2.java
  */
-public interface MatchesTree extends ExpressionTree {
-    /**
-     * Returns the expression to be matched.
-     * @return the expression
-     */
-    ExpressionTree getExpression();
 
-    /**
-     * Returns the pattern to match against.
-     * @return the pattern
-     */
-    Tree getPattern();
+public class NullsInPatterns2 {
+
+    public static void main(String[] args) {
+        if (null instanceof var x) {
+        }
+        if (null instanceof null) {
+        }
+    }
 }

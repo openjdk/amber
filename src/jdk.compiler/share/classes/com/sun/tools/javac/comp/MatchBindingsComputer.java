@@ -193,9 +193,9 @@ public class MatchBindingsComputer extends TreeScanner {
         }
         return bindings;
     }
-    
+
     public static class BindingSymbol extends VarSymbol {
-        
+
         public BindingSymbol(Name name, Type type, Symbol owner) {
             super(Flags.FINAL | Flags.HASINIT | Flags.MATCH_BINDING, name, type, owner);
         }
@@ -206,6 +206,14 @@ public class MatchBindingsComputer extends TreeScanner {
 
         List<BindingSymbol> aliases() {
             return List.of(this);
+        }
+
+        public void preserveBinding() {
+            flags_field |= Flags.MATCH_BINDING_TO_OUTER;
+        }
+
+        public boolean isPreserved() {
+            return (flags_field & Flags.MATCH_BINDING_TO_OUTER) != 0;
         }
     }
 
@@ -223,6 +231,15 @@ public class MatchBindingsComputer extends TreeScanner {
         @Override
         List<BindingSymbol> aliases() {
             return aliases;
+        }
+
+        @Override
+        public void preserveBinding() {
+            aliases.stream().forEach(BindingSymbol::preserveBinding);
+        }
+
+        public boolean isPreserved() {
+            return aliases.stream().allMatch(BindingSymbol::isPreserved);
         }
     }
 }

@@ -31,11 +31,6 @@
 public class CastConversionMatch {
     public static void main(String [] args) {
         Object o = 42;
-        if (o __matches int s) {
-            System.out.println("Okay");
-        } else {
-            throw new AssertionError("broken");
-        }
         switch (o) {
             case int i: {
                 System.out.println("Okay;");

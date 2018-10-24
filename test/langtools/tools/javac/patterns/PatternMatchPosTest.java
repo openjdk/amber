@@ -61,7 +61,7 @@ public class PatternMatchPosTest extends AbstractProcessor {
             SourcePositions sp = trees.getSourcePositions();
             TreePath dataPath = trees.getPath(data);
             String text = dataPath.getCompilationUnit().getSourceFile().getCharContent(true).toString();
-            
+
             new TreeScanner<Void, Void>() {
                 boolean print;
                 @Override
@@ -117,9 +117,11 @@ public class PatternMatchPosTest extends AbstractProcessor {
 
 class PatternMatchPosTestData {
     void data(Object o) {
-        if (o __matches 1) { }
-        if (o __matches var s) { }
-        if (o __matches String s) { }
+        //no constants in instanceof
+//        if (o instanceof 1) { }
+        //no var in instanceof:
+//        if (o instanceof var s) { }
+        if (o instanceof String s) { }
         switch (o) {
             case 1: break;
             case String s: break;

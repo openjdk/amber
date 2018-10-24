@@ -256,7 +256,7 @@ public class Flow {
         }
     }
 
-    public void aliveAfterCase(Env<AttrContext> env, JCCase that, TreeMaker make) {
+    public boolean aliveAfter(Env<AttrContext> env, JCTree that, TreeMaker make) {
         //we need to disable diagnostics temporarily; the problem is that if
         //a lambda expression contains e.g. an unreachable statement, an error
         //message will be reported and will cause compilation to skip the flow analyis
@@ -264,10 +264,10 @@ public class Flow {
         //related errors, which will allow for more errors to be detected
         Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
         try {
-            CaseAliveAnalyzer analyzer = new CaseAliveAnalyzer();
+            SnippetAliveAnalyzer analyzer = new SnippetAliveAnalyzer();
 
-            analyzer.analyzeTree(env, that.stats, make);
-            that.completesNormally = analyzer.isAlive();
+            analyzer.analyzeTree(env, that, make);
+            return analyzer.isAlive();
         } finally {
             log.popDiagnosticHandler(diagHandler);
         }
@@ -1544,9 +1544,9 @@ public class Flow {
     }
 
     /**
-     * TODO
+     * Determine if alive after the given tree.
      */
-    class CaseAliveAnalyzer extends AliveAnalyzer {
+    class SnippetAliveAnalyzer extends AliveAnalyzer {
         @Override
         public void visitClassDef(JCClassDecl tree) {
             //skip
