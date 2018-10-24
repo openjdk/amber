@@ -37,6 +37,8 @@
 
 class RecordParamInfo {
   friend class ClassFileParser;
+  friend class RecordParameterStreamBase;
+  friend class JavaRecordParameterStream;
   enum ParamOffset {
     access_flags_offset      = 0,
     name_index_offset        = 1,
@@ -48,13 +50,13 @@ class RecordParamInfo {
 private:
   u2 _shorts[param_slots];
 
-  void set_name_index(u2 val)                    { _shorts[name_index_offset] = val;         }
-  void set_descriptor_index(u2 val)              { _shorts[descriptor_index_offset] = val;   }
-  void set_signature_index(u2 val)               { _shorts[signature_index_offset] = val;    }
+  void set_name_index(u2 val)                              { _shorts[name_index_offset] = val;         }
+  void set_descriptor_index(u2 val)                        { _shorts[descriptor_index_offset] = val;   }
+  void set_signature_index(u2 val)                         { _shorts[signature_index_offset] = val;    }
 
-  u2 name_index() const                          { return _shorts[name_index_offset];        }
-  u2 descriptor_index() const                    { return _shorts[descriptor_index_offset];  }
-  u2 signature_index() const                     { return _shorts[signature_index_offset];   }
+  u2 name_index() const                                    { return _shorts[name_index_offset];        }
+  u2 descriptor_index() const                              { return _shorts[descriptor_index_offset];  }
+  u2 signature_index() const                               { return _shorts[signature_index_offset];   }
 public:
   static RecordParamInfo* from_record_params_array(Array<u2>* record_params, int index) {
     return ((RecordParamInfo*)record_params->adr_at(index * param_slots));
@@ -63,19 +65,11 @@ public:
     return ((RecordParamInfo*)(record_params + index * param_slots));
   }
 
-  u2 access_flags() const                        { return _shorts[access_flags_offset];      }
-
-  Symbol* name(const constantPoolHandle& cp) const {
-    return cp->symbol_at(name_index());
-  }
-
-  Symbol* signature(const constantPoolHandle& cp) const {
-    return cp->symbol_at(signature_index());
-  }
-
-  Symbol* descriptor(const constantPoolHandle& cp) const {
-    return cp->symbol_at(descriptor_index());
-  }
+  u2 access_flags() const                                   { return _shorts[access_flags_offset];      }
+  Symbol* name(const constantPoolHandle& cp) const          { return cp->symbol_at(name_index());       }
+  Symbol* signature(const constantPoolHandle& cp) const     { return cp->symbol_at(signature_index());  }
+  Symbol* descriptor(const constantPoolHandle& cp) const    { return cp->symbol_at(descriptor_index()); }
+  void set_access_flags(u2 val)                             { _shorts[access_flags_offset] = val;       }
 };
 
 #endif // SHARE_VM_OOPS_RECORDPARAMINFO_HPP

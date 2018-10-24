@@ -51,6 +51,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/recordParamStreams.hpp"
 #include "prims/jvm_misc.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
@@ -1783,6 +1784,69 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
     }
   }
   assert(out_idx == num_fields, "just checking");
+  return (jobjectArray) JNIHandles::make_local(env, result());
+}
+JVM_END
+
+JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
+{
+  JVMWrapper("JVM_GetRecordParameters");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  // Exclude primitive types and array types
+  if (java_lang_Class::is_primitive(JNIHandles::resolve_non_null(ofClass)) ||
+      java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass))->is_array_klass()) {
+    // Return empty array
+    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
+    return (jobjectArray) JNIHandles::make_local(env, res);
+  }
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  constantPoolHandle cp(THREAD, k->constants());
+
+  // Ensure class is linked
+  k->link_class(CHECK_NULL);
+
+  // Allocate result
+  int num_record_params = k->record_params_count();
+  if (num_record_params == 0) {
+    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
+    return (jobjectArray) JNIHandles::make_local(env, res);
+  }
+
+  // all record components are public
+  int num_of_public_fields = 0;
+  for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
+    if (fileStream.access_flags().is_public()) ++num_of_public_fields;
+  }
+
+  objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
+  objArrayHandle result (THREAD, r);
+
+  int out_idx = 0;
+  fieldDescriptor fd;
+  if (num_record_params == num_of_public_fields) {
+    // all the fields are record components so just return the fields
+    for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
+      fd.reinitialize(k, fileStream.index());
+      oop field = Reflection::new_field(&fd, CHECK_NULL);
+      result->obj_at_put(out_idx, field);
+      ++out_idx;
+    }
+  } else {
+    // it gets a bit more complicated some fields are record params and some not
+    for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
+      for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
+        if (fileStream.name() == recordParamsStream.name()) {
+          fd.reinitialize(k, fileStream.index());
+          oop field = Reflection::new_field(&fd, CHECK_NULL);
+          result->obj_at_put(out_idx, field);
+          ++out_idx;
+        }
+      }
+    }
+  }
+  assert(out_idx == num_record_params, "just checking");
   return (jobjectArray) JNIHandles::make_local(env, result());
 }
 JVM_END

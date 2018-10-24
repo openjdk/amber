@@ -3394,6 +3394,7 @@ public final class Class<T> implements java.io.Serializable,
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
+    private native Field[]      getRecordParameters0();
 
     /**
      * Helper method to get the method name from arguments.

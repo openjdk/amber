@@ -26,8 +26,7 @@
 #define SHARE_VM_OOPS_RECORDPARAMSTREAMS_HPP
 
 #include "oops/instanceKlass.hpp"
-#include "oops/RecordParamInfo.hpp"
-#include "runtime/fieldDescriptor.hpp"
+#include "oops/recordParamInfo.hpp"
 
 // The is the base class for iteration over the record parameters array
 // describing the parameters in a record.
@@ -38,7 +37,7 @@ class RecordParameterStreamBase : public StackObj {
   int                 _index;
   int                 _limit;
 
-  RecordParamInfo* record_param() const { return RecordParamInfo::from_field_array(_record_parameters, _index); }
+  RecordParamInfo* record_param() const { return RecordParamInfo::from_record_params_array(_record_parameters, _index); }
   InstanceKlass* record_param_holder() const { return _constants->pool_holder(); }
 
   RecordParameterStreamBase(Array<u2>* record_params, const constantPoolHandle& constants, int start, int limit) {
@@ -54,7 +53,7 @@ class RecordParameterStreamBase : public StackObj {
   }
 
   RecordParameterStreamBase(Array<u2>* record_params, const constantPoolHandle& constants) {
-    _record_parameters = fields;
+    _record_parameters = record_params;
     _constants = constants;
     _index = 0;
     _limit = record_params->length() / RecordParamInfo::param_slots;;
@@ -62,7 +61,7 @@ class RecordParameterStreamBase : public StackObj {
 
  public:
   RecordParameterStreamBase(InstanceKlass* klass) {
-    _record_parameters = klass->fields();
+    _record_parameters = klass->record_params();
     _constants = klass->constants();
     _index = 0;
     _limit = klass->record_params_count();
@@ -77,7 +76,7 @@ class RecordParameterStreamBase : public StackObj {
   }
   bool done() const { return _index >= _limit; }
 
-  // Accessors for current field
+  // Accessors for current record parameter
   AccessFlags access_flags() const {
     AccessFlags flags;
     flags.set_flags(record_param()->access_flags());
@@ -108,7 +107,7 @@ class RecordParameterStreamBase : public StackObj {
 // Iterate over the record parameters
 class JavaRecordParameterStream : public RecordParameterStreamBase {
  public:
-  JavaRecordParameterStream(const InstanceKlass* k): RecordParameterStreamBase(k->record_params(), k->constants(), 0, k->record_parameters_count()) {}
+  JavaRecordParameterStream(const InstanceKlass* k): RecordParameterStreamBase(k->record_params(), k->constants(), 0, k->record_params_count()) {}
 
   int name_index() const {
     return record_param()->name_index();
