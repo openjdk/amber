@@ -27,20 +27,70 @@ package java.lang.compiler;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
 
 /**
  * PatternCarriers
  */
 public class ExtractorCarriers {
-    private static final MethodHandle CARRIER_CTOR;
-    private static final MethodHandle CARRIER_GET;
-    static {
-        try {
-            CARRIER_CTOR = MethodHandles.lookup().findConstructor(DumbCarrier.class, MethodType.methodType(void.class, Object[].class));
-            CARRIER_GET = MethodHandles.lookup().findVirtual(DumbCarrier.class, "get", MethodType.methodType(Object.class, int.class));
+
+    private static final CarrierFactory factory = CarrierFactories.DUMB;
+
+    interface CarrierFactory {
+        MethodHandle constructor(MethodType methodType);
+        MethodHandle component(MethodType methodType, int component);
+    }
+
+    static class DumbCarrier {
+        private final Object[] args;
+
+        DumbCarrier(Object... args) {
+            this.args = args.clone();
         }
-        catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
+
+        Object get(int i) {
+            return args[i];
+        }
+    }
+
+    enum CarrierFactories implements CarrierFactory {
+        DUMB {
+            private final MethodHandle CARRIER_CTOR;
+            private final MethodHandle CARRIER_GET;
+
+            {
+                try {
+                    CARRIER_CTOR = MethodHandles.lookup().findConstructor(DumbCarrier.class, MethodType.methodType(void.class, Object[].class));
+                    CARRIER_GET = MethodHandles.lookup().findVirtual(DumbCarrier.class, "get", MethodType.methodType(Object.class, int.class));
+                }
+                catch (ReflectiveOperationException e) {
+                    throw new ExceptionInInitializerError(e);
+                }
+            }
+
+            @Override
+            public MethodHandle constructor(MethodType methodType) {
+                return CARRIER_CTOR.asType(methodType.changeReturnType(Object.class));
+            }
+
+            @Override
+            public MethodHandle component(MethodType methodType, int component) {
+                return MethodHandles.insertArguments(CARRIER_GET, 1, component)
+                                    .asType(MethodType.methodType(methodType.parameterType(component), Object.class));
+            }
+        },
+        DUMB_SINGLE {
+            // An optimization of DUMB, where we use the value itself as carrier when there is only one value
+
+            @Override
+            public MethodHandle constructor(MethodType methodType) {
+                return methodType.parameterCount() == 1 ? MethodHandles.identity(methodType.parameterType(0)) : DUMB.constructor(methodType);
+            }
+
+            @Override
+            public MethodHandle component(MethodType methodType, int component) {
+                return methodType.parameterCount() == 1 ? MethodHandles.identity(methodType.parameterType(0)) : DUMB.component(methodType, component);
+            }
         }
     }
 
@@ -52,7 +102,7 @@ public class ExtractorCarriers {
      * @return the carrier factory
      */
     public static MethodHandle carrierFactory(MethodType methodType) {
-        return CARRIER_CTOR.asType(methodType.changeReturnType(Object.class));
+        return factory.constructor(methodType);
     }
 
     /**
@@ -63,19 +113,17 @@ public class ExtractorCarriers {
      * @return the component method handle
      */
     public static MethodHandle carrierComponent(MethodType methodType, int i) {
-        return MethodHandles.insertArguments(CARRIER_GET, 1, i)
-                .asType(MethodType.methodType(methodType.parameterType(i), Object.class));
+        return factory.component(methodType, i);
     }
 
-    static class DumbCarrier {
-        Object[] args;
-
-        DumbCarrier(Object... args) {
-            this.args = args.clone();
-        }
-
-        Object get(int i) {
-            return args[i];
-        }
+    /**
+     * Return all the components method handles for a carrier
+     * @param methodType the type of the carrier elements
+     * @return the component method handles
+     */
+    public static MethodHandle[] carrierComponents(MethodType methodType) {
+        MethodHandle[] components = new MethodHandle[methodType.parameterCount()];
+        Arrays.setAll(components, i -> factory.component(methodType, i));
+        return components;
     }
 }

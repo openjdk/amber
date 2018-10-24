@@ -29,6 +29,7 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.stream.Stream;
 
 import sun.invoke.util.BytecodeName;
 
@@ -69,6 +70,12 @@ public interface Extractor {
     MethodHandle component(int i);
 
     /**
+     * Whether this extractor might fail.
+     * @return if this extractor might fail
+     */
+    boolean isPartial();
+
+    /**
      * The descriptor of the {@linkplain Extractor}.  The parameter types of
      * the descriptor are the types of the binding variables.  The return type
      * is ignored.
@@ -100,122 +107,119 @@ public interface Extractor {
         return mh;
     }
 
+    private static MethodType descriptor(Class<?> targetType, MethodHandle[] components) {
+        Class<?>[] paramTypes = Stream.of(components)
+                                      .map(mh -> mh.type().returnType())
+                                      .toArray(Class[]::new);
+        return MethodType.methodType(targetType, paramTypes);
+    }
+
+    private static MethodHandle carrierTryExtract(MethodType descriptor, MethodHandle[] components) {
+        MethodHandle carrierFactory = ExtractorCarriers.carrierFactory(descriptor);
+        int[] reorder = new int[descriptor.parameterCount()]; // default value is what we want already
+
+        return MethodHandles.permuteArguments(MethodHandles.filterArguments(carrierFactory, 0, components),
+                                              MethodType.methodType(carrierFactory.type().returnType(), descriptor.returnType()),
+                                              reorder);
+    }
 
     /**
-     * Create an {@linkplain Extractor} from its components
+     * Create a total {@linkplain Extractor} with the given descriptor, which
+     * operates by feeding results into a factory method handle and returning
+     * the result.
      *
-     * @param descriptor the descriptor method type
-     * @param tryMatch the {@code tryMatch} method handle
-     * @param components the {@code components} method handles
-     * @return the {@linkplain Extractor}
+     * @param descriptor the descriptor
+     * @param digester the digester method handle
+     * @return the extractor
      */
     public static Extractor of(MethodType descriptor,
-                               MethodHandle tryMatch,
-                               MethodHandle... components) {
-        return new ExtractorImpl(descriptor, tryMatch, components);
+                               MethodHandle digester) {
+        return new ExtractorImpl(descriptor, false,
+                                 MethodHandles.insertArguments(digester,
+                                                               1, ExtractorCarriers.carrierFactory(descriptor)),
+                                 ExtractorCarriers.carrierComponents(descriptor));
     }
 
     /**
-     * Create a lazy, self-carrier {@linkplain Extractor}
+     * Create a partial {@linkplain Extractor} with the given descriptor, which
+     * operates by feeding results into a factory method handle and returning
+     * the result.
      *
-     * @param descriptor the descriptor method type
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofLazy(MethodType descriptor,
-                                   MethodHandle... components) {
-        return of(descriptor, MethodHandles.identity(descriptor.returnType()), components);
-    }
-
-    /**
-     * Create a lazy, partial, self-carrier {@linkplain Extractor}
-     *
-     * @param descriptor the descriptor method type
-     * @param components the {@code component} method handles
-     * @param predicate a {@link MethodHandle} that accepts the target and returns
-     *                  boolean, indicating whether the pattern matched
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofLazyPartial(MethodType descriptor,
-                                          MethodHandle predicate,
-                                          MethodHandle... components) {
-        Class<?> targetType = descriptor.returnType();
-        MethodHandle tryMatch = MethodHandles.guardWithTest(predicate,
-                                                            MethodHandles.identity(targetType),
-                                                            MethodHandles.dropArguments(MethodHandles.constant(targetType, null), 0, targetType));
-        return of(descriptor, tryMatch, components);
-    }
-
-    /**
-     * Create a partial, self-carrier {@linkplain Extractor}
-     * @param descriptor the descriptor method type
-     * @param copier a {@link MethodHandle} that clones the target
-     * @param predicate a {@link MethodHandle} that accepts the target and returns
-     *                  boolean, indicating whether the pattern matched
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
+     * @param descriptor the descriptor
+     * @param digester the digester method handle
+     * @return the extractor
      */
     public static Extractor ofPartial(MethodType descriptor,
-                                      MethodHandle copier,
-                                      MethodHandle predicate,
-                                      MethodHandle... components) {
-
-        Class<?> targetType = descriptor.returnType();
-        MethodHandle guarded = MethodHandles.guardWithTest(predicate,
-                                                           MethodHandles.identity(targetType),
-                                                           MethodHandles.dropArguments(MethodHandles.constant(targetType, null), 0, targetType));
-        MethodHandle tryMatch = MethodHandles.filterArguments(guarded, 0, copier);
-        return of(descriptor, tryMatch, components);
-    }
-
-    // target digester = (R, MH[CDESC]->Obj) -> Obj, where MH[...] is carrier ctor
-
-    /**
-     * Create a {@linkplain Extractor} using a carrier specified by a descriptor.
-     *
-     * <p>
-     *
-     * @param descriptor the extractor descriptor
-     * @param carrierFactory a method handle to create the carrier from the target
-     * @param digester a {@link MethodHandle} that accepts a target and a carrier
-     *                 factory method handle, and which calls the factory with the
-     *                 values extracted from the target
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofCarrier(MethodType descriptor,
-                                      MethodHandle carrierFactory,
-                                      MethodHandle digester,
-                                      MethodHandle... components) {
-        MethodHandle tryMatch = MethodHandles.insertArguments(digester, 1, carrierFactory);
-        return of(descriptor, tryMatch, components);
+                                      MethodHandle digester) {
+        return new ExtractorImpl(descriptor, true,
+                                 MethodHandles.insertArguments(digester,
+                                                               1, ExtractorCarriers.carrierFactory(descriptor)),
+                                 ExtractorCarriers.carrierComponents(descriptor));
     }
 
     /**
-     * Create a {@linkplain Extractor} using a carrier specified by a descriptor.
+     * Create a total {@linkplain Extractor} for a target of type {@code targetType}
+     * and a given set of component method handles.
      *
-     * <p>
-     *
-     * @param descriptor the extractor descriptor
-     * @param carrierFactory a method handle to create the carrier from the target
-     * @param digester a {@link MethodHandle} that accepts a target and a carrier
-     *                 factory method handle, and which calls the factory with the
-     *                 values extracted from the target
-     * @param predicate Predicate, applied to the carrier values, determining
-     *                  whether there was a match
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
+     * @param targetType The type of the match target
+     * @param components The component method handles
+     * @return the extractor
      */
-    public static Extractor ofCarrierPartial(MethodType descriptor,
-                                             MethodHandle carrierFactory,
-                                             MethodHandle digester,
-                                             MethodHandle predicate,
-                                             MethodHandle... components) {
-        MethodHandle nuller = MethodHandles.constant(Object.class, null);
-        nuller = MethodHandles.dropArguments(nuller, 0, carrierFactory.type().parameterList());
-        MethodHandle guarded = MethodHandles.guardWithTest(predicate, carrierFactory, nuller);
-        MethodHandle tryMatch = MethodHandles.insertArguments(digester, 1, guarded);
-        return of(descriptor, tryMatch, components);
+    public static Extractor ofTotal(Class<?> targetType, MethodHandle... components) {
+        MethodType descriptor = descriptor(targetType, components);
+        return new ExtractorImpl(descriptor, false,
+                                 carrierTryExtract(descriptor, components),
+                                 ExtractorCarriers.carrierComponents(descriptor));
+    }
+
+    /**
+     * Create a total {@linkplain Extractor} for a target of type {@code targetType}
+     * and a given set of component method handles, using itself as a carrier.
+     *
+     * @param targetType The type of the match target
+     * @param components The component method handles
+     * @return the extractor
+     */
+    public static Extractor ofSelfTotal(Class<?> targetType, MethodHandle... components) {
+        return new ExtractorImpl(descriptor(targetType, components), false,
+                                 MethodHandles.identity(targetType), components);
+    }
+
+    /**
+     * Create a partial {@linkplain Extractor} for a given set of component
+     * method handles.
+     *
+     * @param predicate The match predicate
+     * @param components The component method handles
+     * @return the extractor
+     */
+    public static Extractor ofPartial(MethodHandle predicate, MethodHandle... components) {
+        Class<?> targetType = predicate.type().parameterType(0);
+        MethodType descriptor = descriptor(targetType, components);
+        MethodHandle carrierTryExtract = carrierTryExtract(descriptor, components);
+        MethodHandle tryExtract = MethodHandles.guardWithTest(predicate,
+                                                              carrierTryExtract,
+                                                              MethodHandles.dropArguments(MethodHandles.constant(carrierTryExtract.type().returnType(), null),
+                                                                                          0, targetType));
+        return new ExtractorImpl(descriptor, true,
+                                 tryExtract, ExtractorCarriers.carrierComponents(descriptor));
+    }
+
+    /**
+     * Create a partial {@linkplain Extractor} for a given set of component
+     * method handles, using itself as a carrier.
+     *
+     * @param predicate The match predicate
+     * @param components The component method handles
+     * @return the extractor
+     */
+    public static Extractor ofSelfPartial(MethodHandle predicate, MethodHandle... components) {
+        Class<?> targetType = predicate.type().parameterType(0);
+        MethodHandle tryExtract = MethodHandles.guardWithTest(predicate,
+                                                              MethodHandles.identity(targetType),
+                                                              MethodHandles.dropArguments(MethodHandles.constant(targetType, null),
+                                                                                          0, targetType));
+        return new ExtractorImpl(descriptor(targetType, components), true, tryExtract, components);
     }
 
     /**
@@ -232,42 +236,11 @@ public interface Extractor {
     }
 
     /**
-     * Bootstrap for creating an {@linkplain Extractor} from components
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the descriptor method type
-     * @param tryMatch the {@code tryMatch} method handle
-     * @param components the {@code components} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor of(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                               MethodType descriptor, MethodHandle tryMatch, MethodHandle... components) {
-        return Extractor.of(descriptor, tryMatch, components);
-    }
-
-    /**
      * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
      *
      * @param lookup ignored
      * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the descriptor method type
-     * @param components the {@code components} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofLazy(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                   MethodType descriptor, MethodHandle... components) {
-        return Extractor.ofLazy(descriptor, components);
-    }
-
-    /**
-     * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType doc
+     * @param constantType Must be {@code ()Extractor}
      * @param descriptor the descriptor method type
      * @param components the {@code components} method handles
      * @return a callsite
@@ -275,92 +248,7 @@ public interface Extractor {
      */
     public static CallSite makeLazyExtractor(MethodHandles.Lookup lookup, String constantName, MethodType constantType,
                                              MethodType descriptor, MethodHandle... components) throws Throwable {
-        return new ConstantCallSite(MethodHandles.constant(Extractor.class, ofLazy(descriptor, components)));
-    }
-
-    /**
-     * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the descriptor method type
-     * @param predicate predicate method handle, applied to target
-     * @param components the {@code components} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofLazyPartial(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                          MethodType descriptor, MethodHandle predicate, MethodHandle... components) {
-        return ofLazyPartial(descriptor, predicate, components);
-    }
-
-    /**
-     * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the descriptor method type
-     * @param copier a {@link MethodHandle} that clones the target
-     * @param predicate predicate method handle, applied to target
-     * @param components the {@code components} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor ofPartial(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                      MethodType descriptor, MethodHandle copier, MethodHandle predicate, MethodHandle... components) {
-        return ofPartial(descriptor, copier, predicate, components);
-    }
-
-
-    /**
-     * Create a {@linkplain Extractor} using a carrier specified by a descriptor.
-     *
-     * <p>
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the extractor descriptor
-     * @param carrierFactory a method handle to create the carrier from the target
-     * @param digester a {@link MethodHandle} that accepts a target and a carrier
-     *                 factory method handle, and which calls the factory with the
-     *                 values extracted from the target
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor makeCarrierExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                                 MethodType descriptor,
-                                                 MethodHandle carrierFactory,
-                                                 MethodHandle digester,
-                                                 MethodHandle... components) {
-        return ofCarrier(descriptor, carrierFactory, digester, components);
-    }
-
-    /**
-     * Create a {@linkplain Extractor} using a carrier specified by a descriptor.
-     *
-     * <p>
-     *
-     * @param lookup ignored
-     * @param constantName ignored
-     * @param constantType Must be {@code Extractor.class}
-     * @param descriptor the extractor descriptor
-     * @param carrierFactory a method handle to create the carrier from the target
-     * @param digester a {@link MethodHandle} that accepts a target and a carrier
-     *                 factory method handle, and which calls the factory with the
-     *                 values extracted from the target
-     * @param predicate Predicate, applied to the carrier values, determining
-     *                  whether there was a match
-     * @param components the {@code component} method handles
-     * @return the {@linkplain Extractor}
-     */
-    public static Extractor makeCarrierPartialExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                                        MethodType descriptor,
-                                                        MethodHandle carrierFactory,
-                                                        MethodHandle digester,
-                                                        MethodHandle predicate,
-                                                        MethodHandle... components) {
-        return ofCarrierPartial(descriptor, carrierFactory, digester, predicate, components);
+        return new ConstantCallSite(MethodHandles.constant(Extractor.class, ofSelfTotal(descriptor.returnType(), components)));
     }
 
     /**
@@ -374,10 +262,9 @@ public interface Extractor {
      * @return the extractor factory
      * @throws Throwable if something went wrong
      */
-
-    public static Extractor makeLazyExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
-                                              MethodType descriptor, MethodHandle... components) throws Throwable {
-        return ofLazy(descriptor, components);
+    public static Extractor ofSelfTotal(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
+                                        MethodType descriptor, MethodHandle... components) throws Throwable {
+        return ofSelfTotal(descriptor.returnType(), components);
     }
 
 
