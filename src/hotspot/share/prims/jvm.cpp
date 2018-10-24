@@ -1809,15 +1809,13 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
 
   // Allocate result
   int num_record_params = k->record_params_count();
+  Array<u2>* record_parameters = k->record_params();
+  // DEBUG
+  //tty->print_cr("num_record_params == %d", num_record_params);
+
   if (num_record_params == 0) {
     oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
     return (jobjectArray) JNIHandles::make_local(env, res);
-  }
-
-  // all record components are public
-  int num_of_public_fields = 0;
-  for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
-    if (fileStream.access_flags().is_public()) ++num_of_public_fields;
   }
 
   objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
@@ -1825,24 +1823,13 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
 
   int out_idx = 0;
   fieldDescriptor fd;
-  if (num_record_params == num_of_public_fields) {
-    // all the fields are record components so just return the fields
+  for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
     for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
-      fd.reinitialize(k, fileStream.index());
-      oop field = Reflection::new_field(&fd, CHECK_NULL);
-      result->obj_at_put(out_idx, field);
-      ++out_idx;
-    }
-  } else {
-    // it gets a bit more complicated some fields are record params and some not
-    for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
-      for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
-        if (fileStream.name() == recordParamsStream.name()) {
-          fd.reinitialize(k, fileStream.index());
-          oop field = Reflection::new_field(&fd, CHECK_NULL);
-          result->obj_at_put(out_idx, field);
-          ++out_idx;
-        }
+      if (fileStream.name() == recordParamsStream.name()) {
+        fd.reinitialize(k, fileStream.index());
+        oop field = Reflection::new_field(&fd, CHECK_NULL);
+        result->obj_at_put(out_idx, field);
+        ++out_idx;
       }
     }
   }

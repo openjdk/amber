@@ -434,7 +434,7 @@ class InstanceKlass: public Klass {
   friend class fieldDescriptor;
   FieldInfo* field(int index) const { return FieldInfo::from_field_array(_fields, index); }
 
-  RecordParamInfo* record_param(int index) const { return RecordParamInfo::from_record_params_array(_fields, index); }
+  RecordParamInfo* record_param(int index) const { return RecordParamInfo::from_record_params_array(_record_params, index); }
 
  public:
   int     field_offset      (int index) const { return field(index)->offset(); }
