@@ -3314,6 +3314,13 @@ void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* co
     const Symbol* const sig = cp->symbol_at(signature_index);
     // DEBUG
     // tty->print_cr("signature read %s", sig->as_klass_external_name());
+
+    RecordParamInfo* const record_param_info = RecordParamInfo::from_record_params_array(record_params_array, n);
+    record_param_info->initialize(
+                      access_flags.as_short(),
+                      name_index,
+                      descriptor_index,
+                      signature_index);
   }
 
   assert(NULL == _record_params, "invariant");

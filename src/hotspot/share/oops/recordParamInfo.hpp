@@ -61,8 +61,18 @@ public:
   static RecordParamInfo* from_record_params_array(Array<u2>* record_params, int index) {
     return ((RecordParamInfo*)record_params->adr_at(index * param_slots));
   }
-  static RecordParamInfo* from_record_param_array(u2* record_params, int index) {
+  static RecordParamInfo* from_record_params_array(u2* record_params, int index) {
     return ((RecordParamInfo*)(record_params + index * param_slots));
+  }
+
+  void initialize(u2 access_flags,
+                  u2 name_index,
+                  u2 descriptor_index,
+                  u2 signature_index) {
+    _shorts[access_flags_offset] = access_flags;
+    _shorts[name_index_offset] = name_index;
+    _shorts[descriptor_index_offset] = descriptor_index;
+    _shorts[signature_index_offset] = signature_index;
   }
 
   u2 access_flags() const                                   { return _shorts[access_flags_offset];      }
