@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,11 +22,12 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 import java.lang.compiler.Extractor;
-import java.lang.compiler.PatternCarriers;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Objects;
 
 import org.testng.annotations.Test;
 
@@ -40,59 +41,42 @@ import static org.testng.Assert.assertTrue;
 /**
  * @test
  * @run testng ExtractorTest
- * @summary unit tests for java.lang.compiler.Extractor
+ * @summary Smoke tests for java.lang.compiler.Extractor
  */
 @Test
 public class ExtractorTest {
 
-    private Object[] extract(Extractor extractor, Object target) throws Throwable {
-        int count = extractor.descriptor().parameterCount();
-        Object[] result = new Object[count + 1];
-        Object carrier = extractor.tryMatch().invoke(target);
-        if (carrier == null)
-            return null;
-        for (int i=0; i<count; i++)
-            result[i] = extractor.component(i).invoke(carrier);
-        result[count] = carrier;
-        return result;
-    }
+    private enum MatchKind { CARRIER, SELF, FAIL, MATCH }
 
-    private void assertExtracted(Object[] result, Object... args) {
-        assertNotNull(result);
-        assertEquals(result.length - 1, args.length);
-        for (int i = 0; i < args.length; i++) {
-            assertEquals(result[i], args[i]);
+    private void assertMatches(MatchKind kind, Extractor e, Object target, Object... args) throws Throwable {
+        int count = e.descriptor().parameterCount();
+        Object[] bindings = new Object[count];
+        Object carrier = e.tryMatch().invoke(target);
+        if (carrier != null) {
+            for (int i = 0; i < count; i++)
+                bindings[i] = e.component(i).invoke(carrier);
+        }
+
+        if (kind == MatchKind.FAIL)
+            assertNull(carrier);
+        else {
+            assertNotNull(carrier);
+            assertEquals(bindings.length, args.length);
+            for (int i = 0; i < args.length; i++)
+                assertEquals(bindings[i], args[i]);
+
+            if (kind == MatchKind.SELF)
+                assertSame(carrier, target);
+            else if (kind == MatchKind.CARRIER)
+                assertNotSame(carrier, target);
         }
     }
 
-    private void testExtractLazy(Extractor e, Object target, Object... args) throws Throwable {
-        Object[] result = extract(e, target);
-        assertExtracted(result, args);
-        assertSame(carrier(result), target);
-    }
-
-    private void testExtractEager(Extractor e, Object target, Object... args) throws Throwable {
-        Object[] result = extract(e, target);
-        assertExtracted(result, args);
-        assertNotSame(carrier(result), target);
-    }
-
-    private void assertExtractFail(Extractor e, Object target) throws Throwable {
-        Object[] result = extract(e, target);
-        assertNull(result);
-    }
-
-    private Object carrier(Object[] result) {
-        return result[result.length-1];
-    }
-
     private static class TestClass {
-        static MethodHandle MH_S, MH_I, MH_L, MH_B;
+        static MethodHandle MH_S, MH_I, MH_L, MH_B, MH_PRED;
         static MethodHandle CONSTRUCTOR;
-        static MethodHandle COPIER;
         static MethodHandle DIGESTER;
-        static MethodHandle NON_NULL;
-        static MethodHandle NON_NULL_EXPLODED;
+        static MethodHandle DIGESTER_PARTIAL;
         static MethodType TYPE = MethodType.methodType(TestClass.class, String.class, int.class, long.class, byte.class);
         static {
             try {
@@ -100,11 +84,10 @@ public class ExtractorTest {
                 MH_S = MethodHandles.lookup().findGetter(TestClass.class, "s", String.class);
                 MH_I = MethodHandles.lookup().findGetter(TestClass.class, "i", int.class);
                 MH_L = MethodHandles.lookup().findGetter(TestClass.class, "l", long.class);
+                MH_PRED = MethodHandles.lookup().findVirtual(TestClass.class, "matches", MethodType.methodType(boolean.class));
                 CONSTRUCTOR = MethodHandles.lookup().findConstructor(TestClass.class, TYPE.changeReturnType(void.class));
-                COPIER = MethodHandles.lookup().findVirtual(TestClass.class, "copy", MethodType.methodType(TestClass.class));
-                NON_NULL = MethodHandles.lookup().findVirtual(TestClass.class, "test", MethodType.methodType(boolean.class));
-                NON_NULL_EXPLODED = MethodHandles.lookup().findStatic(TestClass.class, "testExploded", MethodType.methodType(boolean.class, String.class, int.class, long.class, byte.class));
                 DIGESTER = MethodHandles.lookup().findVirtual(TestClass.class, "digest", MethodType.methodType(Object.class, MethodHandle.class));
+                DIGESTER_PARTIAL = MethodHandles.lookup().findVirtual(TestClass.class, "digestPartial", MethodType.methodType(Object.class, MethodHandle.class));
             }
             catch (ReflectiveOperationException e) {
                 throw new ExceptionInInitializerError(e);
@@ -116,7 +99,7 @@ public class ExtractorTest {
         long l;
         byte b;
 
-        public TestClass(String s, int i, long l, byte b) {
+        TestClass(String s, int i, long l, byte b) {
             this.s = s;
             this.i = i;
             this.l = l;
@@ -127,81 +110,91 @@ public class ExtractorTest {
             return new TestClass(s, i, l, b);
         }
 
-        boolean test() {
-            return s != null;
-        }
-
-        static boolean testExploded(String s, int i, long l, byte b) {
-            return s != null;
-        }
+        boolean matches() { return s != null && s.length() == i; }
 
         Object digest(MethodHandle target) throws Throwable {
             return target.invoke(s, i, l, b);
         }
+
+        Object digestPartial(MethodHandle target) throws Throwable {
+            return matches() ? target.invoke(s, i, l, b) : null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TestClass aClass = (TestClass) o;
+            return i == aClass.i &&
+                   l == aClass.l &&
+                   b == aClass.b &&
+                   Objects.equals(s, aClass.s);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(s, i, l, b);
+        }
     }
 
-    static final MethodHandle[] COMPONENTS = { TestClass.MH_S, TestClass.MH_I, TestClass.MH_L, TestClass.MH_B };
-    static final MethodHandle CARRIER_FACTORY = PatternCarriers.carrierFactory(TestClass.TYPE);
-    static final MethodHandle[] CARRIER_COMPONENTS = { PatternCarriers.carrierComponent(TestClass.TYPE, 0),
-                                                       PatternCarriers.carrierComponent(TestClass.TYPE, 1),
-                                                       PatternCarriers.carrierComponent(TestClass.TYPE, 2),
-                                                       PatternCarriers.carrierComponent(TestClass.TYPE, 3) };
+    private static final MethodHandle[] COMPONENTS = {TestClass.MH_S, TestClass.MH_I, TestClass.MH_L, TestClass.MH_B };
 
-    public void testLazySelfTotal() throws Throwable {
-        Extractor e = Extractor.ofLazy(TestClass.TYPE, COMPONENTS);
-        testExtractLazy(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        testExtractLazy(e, new TestClass(null, 0, 0L, (byte) 0),
-                        null, 0, 0L, (byte) 0);
+    public void testTotal() throws Throwable {
+        Extractor e = Extractor.ofTotal(TestClass.class, COMPONENTS);
+        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
+                      null, 0, 0L, (byte) 0);
     }
 
-    public void testEagerSelfTotal() throws Throwable {
-        Extractor e = Extractor.of(TestClass.TYPE, TestClass.COPIER, COMPONENTS);
-        testExtractEager(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        testExtractEager(e, new TestClass(null, 0, 0L, (byte) 0),
-                        null, 0, 0L, (byte) 0);
+    public void testSelfTotal() throws Throwable {
+        Extractor e = Extractor.ofSelfTotal(TestClass.class, COMPONENTS);
+        assertMatches(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.SELF, e, new TestClass(null, 0, 0L, (byte) 0),
+                      null, 0, 0L, (byte) 0);
     }
 
-    public void testLazySelfPartial() throws Throwable {
-        Extractor e = Extractor.ofLazyPartial(TestClass.TYPE, TestClass.NON_NULL, COMPONENTS);
-        testExtractLazy(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        assertExtractFail(e, new TestClass(null, 0, 0L, (byte) 0));
+    public void testPartial() throws Throwable {
+        Extractor e = Extractor.ofPartial(TestClass.MH_PRED, COMPONENTS);
+        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
+        assertMatches(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
     }
 
-    public void testEagerSelfPartial() throws Throwable {
-        Extractor e = Extractor.ofPartial(TestClass.TYPE, TestClass.COPIER, TestClass.NON_NULL, COMPONENTS);
-        testExtractEager(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        assertExtractFail(e, new TestClass(null, 0, 0L, (byte) 0));
+    public void testSelfPartial() throws Throwable {
+        Extractor e = Extractor.ofSelfPartial(TestClass.MH_PRED, COMPONENTS);
+        assertMatches(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
+        assertMatches(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
     }
 
-    public void testCarrierTotal() throws Throwable {
-        Extractor e = Extractor.ofCarrier(TestClass.TYPE, CARRIER_FACTORY, TestClass.DIGESTER, CARRIER_COMPONENTS);
-        testExtractEager(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        testExtractEager(e, new TestClass(null, 0, 0L, (byte) 0),
-                        null, 0, 0L, (byte) 0);
+    public void testDigest() throws Throwable {
+        Extractor e = Extractor.of(TestClass.TYPE, TestClass.DIGESTER);
+        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 2, 4L, (byte) 5),
+                      "foo", 2, 4L, (byte) 5);
+        assertMatches(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
+                      null, 0, 0L, (byte) 0);
     }
 
-    public void testCarrierPartial() throws Throwable {
-        Extractor e = Extractor.ofCarrierPartial(TestClass.TYPE, CARRIER_FACTORY, TestClass.DIGESTER, TestClass.NON_NULL_EXPLODED, CARRIER_COMPONENTS);
-        testExtractEager(e, new TestClass("foo", 3, 4L, (byte) 5),
-                        "foo", 3, 4L, (byte) 5);
-        assertExtractFail(e, new TestClass(null, 0, 0L, (byte) 0));
+    public void testDigestPartial() throws Throwable {
+        Extractor e = Extractor.ofPartial(TestClass.TYPE, TestClass.DIGESTER_PARTIAL);
+        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                      "foo", 3, 4L, (byte) 5);
+        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
     }
 
-    public void testClamshell() throws Throwable {
-        Extractor e = Extractor.ofCarrier(TestClass.TYPE, CARRIER_FACTORY, TestClass.DIGESTER, CARRIER_COMPONENTS);
+    public void testCompose() throws Throwable {
+        Extractor e = Extractor.ofTotal(TestClass.class, COMPONENTS);
         MethodHandle mh = e.compose(TestClass.CONSTRUCTOR);
         TestClass target = new TestClass("foo", 3, 4L, (byte) 5);
         Object o = mh.invoke(target);
         assertTrue(o instanceof TestClass);
-        TestClass copy = (TestClass) o;
-        assertEquals(target.s, copy.s);
-        assertEquals(target.i, copy.i);
-        assertEquals(target.l, copy.l);
-        assertEquals(target.b, copy.b);
+        assertNotSame(target, o);
+        assertEquals(target, o);
     }
 }

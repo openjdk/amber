@@ -32,9 +32,10 @@ import java.util.List;
  * Non-public implementation of {@link Extractor}
  */
 class ExtractorImpl implements Extractor {
+    private final MethodType descriptor;
+    private final boolean partial;
     private final MethodHandle tryMatch;
     private final List<MethodHandle> components;
-    private final MethodType descriptor;
 
     /**
      * Construct an {@link Extractor} from components
@@ -47,7 +48,7 @@ class ExtractorImpl implements Extractor {
      * @param tryMatch The {@code tryMatch} method handle
      * @param components The {@code component} method handles
      */
-    ExtractorImpl(MethodType descriptor, MethodHandle tryMatch, MethodHandle[] components) {
+    ExtractorImpl(MethodType descriptor, boolean partial, MethodHandle tryMatch, MethodHandle[] components) {
         Class<?> carrierType = tryMatch.type().returnType();
         if (descriptor.parameterCount() != components.length)
             throw new IllegalArgumentException(String.format("MethodType %s arity should match component count %d", descriptor, components.length));
@@ -64,6 +65,7 @@ class ExtractorImpl implements Extractor {
         }
 
         this.descriptor = descriptor;
+        this.partial = partial;
         this.tryMatch = tryMatch;
         this.components = List.of(components);
     }
@@ -81,5 +83,10 @@ class ExtractorImpl implements Extractor {
     @Override
     public MethodType descriptor() {
         return descriptor;
+    }
+
+    @Override
+    public boolean isPartial() {
+        return partial;
     }
 }
