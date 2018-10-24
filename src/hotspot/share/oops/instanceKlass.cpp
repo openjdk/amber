@@ -564,6 +564,12 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
   }
   set_nest_members(NULL);
 
+  if (record_params() != NULL &&
+      record_params() != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<jushort>(loader_data, record_params());
+  }
+  set_record_params(NULL, 0);
+
   // We should deallocate the Annotations instance if it's not in shared spaces.
   if (annotations() != NULL && !annotations()->is_shared()) {
     MetadataFactory::free_metadata(loader_data, annotations());
@@ -2270,7 +2276,7 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   }
 
   it->push(&_nest_members);
-  it->push(&_recordParams);
+  it->push(&_record_params);
 }
 
 void InstanceKlass::remove_unshareable_info() {

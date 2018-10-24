@@ -55,6 +55,27 @@ private:
   u2 name_index() const                          { return _shorts[name_index_offset];        }
   u2 descriptor_index() const                    { return _shorts[descriptor_index_offset];  }
   u2 signature_index() const                     { return _shorts[signature_index_offset];   }
+public:
+  static RecordParamInfo* from_record_params_array(Array<u2>* record_params, int index) {
+    return ((RecordParamInfo*)record_params->adr_at(index * param_slots));
+  }
+  static RecordParamInfo* from_record_param_array(u2* record_params, int index) {
+    return ((RecordParamInfo*)(record_params + index * param_slots));
+  }
+
+  u2 access_flags() const                        { return _shorts[access_flags_offset];      }
+
+  Symbol* name(const constantPoolHandle& cp) const {
+    return cp->symbol_at(name_index());
+  }
+
+  Symbol* signature(const constantPoolHandle& cp) const {
+    return cp->symbol_at(signature_index());
+  }
+
+  Symbol* descriptor(const constantPoolHandle& cp) const {
+    return cp->symbol_at(descriptor_index());
+  }
 };
 
 #endif // SHARE_VM_OOPS_RECORDPARAMINFO_HPP
