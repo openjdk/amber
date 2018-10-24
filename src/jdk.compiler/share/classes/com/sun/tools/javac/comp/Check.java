@@ -3115,7 +3115,7 @@ public class Check {
             } else if (target == names.PARAMETER) {
                 if (s.kind == VAR &&
                     (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0) ||
-                    (s.owner.kind == TYP && s.owner.isDatum())) {
+                    (s.owner.kind == TYP && s.owner.isRecord())) {
                     return true;
                 }
             } else if (target == names.CONSTRUCTOR) {

@@ -35,6 +35,7 @@
 #include "oops/fieldInfo.hpp"
 #include "oops/instanceOop.hpp"
 #include "oops/klassVtable.hpp"
+#include "oops/recordParamInfo.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/os.hpp"
 #include "utilities/accessFlags.hpp"
@@ -188,7 +189,7 @@ class InstanceKlass: public Klass {
   // if this class is unloaded.
   Symbol*         _array_name;
 
-  Array<u2>*      _recordParams;
+  Array<u2>*      _record_params;
 
   // Number of heapOopSize words used by non-static fields in this klass
   // (including inherited fields but after header_size()).
@@ -433,6 +434,8 @@ class InstanceKlass: public Klass {
   friend class fieldDescriptor;
   FieldInfo* field(int index) const { return FieldInfo::from_field_array(_fields, index); }
 
+  RecordParamInfo* record_param(int index) const { return RecordParamInfo::from_record_params_array(_fields, index); }
+
  public:
   int     field_offset      (int index) const { return field(index)->offset(); }
   int     field_access_flags(int index) const { return field(index)->access_flags(); }
@@ -461,12 +464,18 @@ class InstanceKlass: public Klass {
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
 
+  // record parameters
+  int     record_param_access_flags(int index) const { return record_param(index)->access_flags(); }
+  Symbol* record_param_name(int index) const { return record_param(index)->name(constants()); }
+  Symbol* record_param_signature(int index) const { return record_param(index)->signature(constants()); }
+  Symbol* record_param_descriptor(int index) const { return record_param(index)->signature(constants()); }
+
   int record_params_count() const       { return (int)_record_params_count; }
 
-  Array<u2>* recordParams() const       { return _recordParams; }
-  void set_recordParams(Array<u2>* recordParams, u2 record_params_count) {
-    guarantee(_recordParams == NULL || recordParams == NULL, "Just checking");
-    _recordParams = recordParams;
+  Array<u2>* record_params() const       { return _record_params; }
+  void set_record_params(Array<u2>* record_params, u2 record_params_count) {
+    guarantee(_record_params == NULL || record_params == NULL, "Just checking");
+    _record_params = record_params;
     _record_params_count = record_params_count;
   }
 
