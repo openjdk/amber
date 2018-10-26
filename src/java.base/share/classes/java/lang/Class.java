@@ -2252,6 +2252,13 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * Returns the number of record parameters if this class is a record, 0 if not
+     * @return the number of record parameters
+     * @since 1.12
+     */
+    public native int getRecordParametersCount();
+
+    /**
      * Returns an array containing {@code Method} objects reflecting all the
      * declared methods of the class or interface represented by this {@code
      * Class} object, including public, protected, default (package)
