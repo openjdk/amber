@@ -52,6 +52,8 @@ import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
  * {@linkplain DirectMethodHandleDesc} directly.
+ *
+ * @since 12
  */
 public interface DirectMethodHandleDesc extends MethodHandleDesc {
     /**
@@ -110,18 +112,24 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
         }
 
         /**
-         * Find the enumeration member with the given {@code refKind} and
-         * {@code isInterface} fields. If {@code isInterface} is true and there
-         * is no such enumeration member, return the member, if any, with the
-         * same {@code refKind} and a false {@code isInterface} field. If
-         * {@code isInterface} is true but there is no such enumeration member,
-         * then the result of {@code valueOf(refKind, false)} is returned.  As
-         * a special case, if {@code refKind} is {@code REF_invokeVirtual} (5) and
-         * {@code isInterface} is true, then the result of
-         * {@code valueOf(REF_invokeInterface, false)} is returned, and if
-         * {@code isInterface} is false and {@code refKind} is {@code REF_invokeInterface},
-         * {@code INTERFACE_VIRTUAL} is returned.
-         *
+         * Find the enumeration member with the given the {@code refKind} and
+         * {@code isInterface} arguments.
+         * For most values of {@code refKind} there is an exact match regardless of the value of {@code isInterface}.
+         * These are:
+         * <UL>
+         *     <LI>{@code REF_invokeVirtual} which matches to {@code VIRTUAL}
+         *     <LI>{@code REF_invokeInterface} which matches to {@code INTERFACE_VIRTUAL}
+         *     <LI>{@code REF_newInvokeSpecial} which matches to {@code CONSTRUCTOR}
+         *     <LI>{@code REF_getField} which matches to {@code GETTER}
+         *     <LI>{@code REF_putField} which matches to {@code SETTER}
+         *     <LI>{@code REF_getStatic} which matches to {@code STATIC_GETTER}
+         *     <LI>{@code REF_putStatic} which matches to {@code STATIC_SETTER}
+         * </UL>
+         * As for the rest, the returned kind will depend on the value (false or true accordingly) of {@code isInterface}:
+         * <UL>
+         *     <LI>{@code REF_invokeStatic} which matches to {@code STATIC} or {@code INTERFACE_STATIC}
+         *     <LI>{@code REF_invokeSpecial} which matches to {@code SPECIAL} or {@code INTERFACE_SPECIAL}
+         * </UL>
          * @param refKind refKind of desired member
          * @param isInterface whether desired member is for interface methods
          * @return the matching enumeration member
@@ -131,16 +139,14 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
             int i = tableIndex(refKind, isInterface);
             if (i >= 0 && i < TABLE.length) {
                 Kind kind = TABLE[i];
+                if (kind == null) {
+                    throw new IllegalArgumentException(String.format("refKind=%d", refKind));
+                }
                 if (kind.refKind == refKind && kind.isInterface == isInterface) {
                     return kind;
                 }
             }
-            if (isInterface)
-                return valueOf(refKind);
-            else if (refKind == REF_invokeInterface)
-                return INTERFACE_VIRTUAL;
-            else
-                throw new IllegalArgumentException(String.format("refKind=%d", refKind));
+            throw new IllegalArgumentException(String.format("refKind=%d", refKind));
         }
 
         private static int tableIndex(int refKind, boolean isInterface) {
@@ -154,7 +160,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
             // Pack the static table.
             int max = 0;
             for (Kind k : values())
-                max = Math.max(max, tableIndex(k.refKind, k.isInterface));
+                max = Math.max(max, tableIndex(k.refKind, true));
 
             TABLE = new Kind[max+1];
             for (Kind kind : values()) {

@@ -43,6 +43,8 @@ import static java.util.Objects.requireNonNull;
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
  * {@linkplain MethodTypeDesc} directly.
+ *
+ * @since 12
  */
 public interface MethodTypeDesc
         extends ConstantDesc<MethodType>,

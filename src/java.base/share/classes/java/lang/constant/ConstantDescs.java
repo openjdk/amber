@@ -49,6 +49,8 @@ import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
  * bootstrap methods.
  *
  * @see ConstantDesc
+ *
+ * @since 12
  */
 public final class ConstantDescs {
     // No instances
@@ -213,24 +215,24 @@ public final class ConstantDescs {
     private static final ClassDesc[] INDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CD_MethodHandles_Lookup,
             ConstantDescs.CD_String,
-            ConstantDescs.CD_MethodType };
+            ConstantDescs.CD_MethodType};
 
     private static final ClassDesc[] CONDY_BOOTSTRAP_ARGS = {
             ConstantDescs.CD_MethodHandles_Lookup,
             ConstantDescs.CD_String,
-            ConstantDescs.CD_Class };
+            ConstantDescs.CD_Class};
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
     @Foldable
     public static final DirectMethodHandleDesc BSM_PRIMITIVE_CLASS
             = ofConstantBootstrap(CD_ConstantBootstraps, "primitiveClass",
-                                  CD_Class);
+            CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#enumConstant(Lookup, String, Class)} */
     @Foldable
     public static final DirectMethodHandleDesc BSM_ENUM_CONSTANT
             = ofConstantBootstrap(CD_ConstantBootstraps, "enumConstant",
-                                  CD_Enum);
+            CD_Enum);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class)} */
     @Foldable
@@ -242,25 +244,25 @@ public final class ConstantDescs {
     @Foldable
     public static final DirectMethodHandleDesc BSM_VARHANDLE_FIELD
             = ofConstantBootstrap(CD_ConstantBootstraps, "fieldVarHandle",
-                                  CD_VarHandle, CD_Class, CD_Class);
+            CD_VarHandle, CD_Class, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#staticFieldVarHandle(Lookup, String, Class, Class, Class)} */
     @Foldable
     public static final DirectMethodHandleDesc BSM_VARHANDLE_STATIC_FIELD
             = ofConstantBootstrap(CD_ConstantBootstraps, "staticFieldVarHandle",
-                                  CD_VarHandle, CD_Class, CD_Class);
+            CD_VarHandle, CD_Class, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#arrayVarHandle(Lookup, String, Class, Class)} */
     @Foldable
     public static final DirectMethodHandleDesc BSM_VARHANDLE_ARRAY
             = ofConstantBootstrap(CD_ConstantBootstraps, "arrayVarHandle",
-                                  CD_VarHandle, CD_Class);
+            CD_VarHandle, CD_Class);
 
     /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#invoke(Lookup, String, Class, MethodHandle, Object...)} */
     @Foldable
     public static final DirectMethodHandleDesc BSM_INVOKE
             = ofConstantBootstrap(CD_ConstantBootstraps, "invoke",
-                                  CD_Object, CD_MethodHandle, CD_Object.arrayType());
+            CD_Object, CD_MethodHandle, CD_Object.arrayType());
 
     /** {@link ClassDesc} representing the primitive type {@code int} */
     @Foldable

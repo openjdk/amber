@@ -60,6 +60,8 @@ import static java.util.stream.Collectors.joining;
  * <a href="../doc-files/ValueBased.html">value-based</a>.
  *
  * @param <T> the type of the dynamic constant
+ *
+ * @since 12
  */
 public abstract class DynamicConstantDesc<T>
         implements ConstantDesc<T>, Constable<ConstantDesc<T>> {

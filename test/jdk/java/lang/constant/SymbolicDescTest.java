@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -37,17 +35,17 @@ import java.util.stream.Stream;
 import static org.testng.Assert.assertEquals;
 
 /**
- * Base class for XxxRef tests
+ * Base class for XxxDesc tests
  */
 public abstract class SymbolicDescTest {
 
     public static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
-    static List<String> someRefs = List.of("Ljava/lang/String;", "Ljava/util/List;");
+    static List<String> someDescs = List.of("Ljava/lang/String;", "Ljava/util/List;");
     static String[] basicDescs = Stream.concat(Stream.of(Primitives.values())
                                                      .filter(p -> p != Primitives.VOID)
                                                      .map(p -> p.descriptor),
-                                               someRefs.stream())
+                                               someDescs.stream())
                                        .toArray(String[]::new);
     static String[] paramDescs = Stream.of(basicDescs)
                                        .flatMap(d -> Stream.of(d, "[" + d))
@@ -69,14 +67,14 @@ public abstract class SymbolicDescTest {
         public final String name;
         public final Class<?> clazz;
         public final Class<?> arrayClass;
-        public final ClassDesc classRef;
+        public final ClassDesc classDesc;
 
-        Primitives(String descriptor, String name, Class<?> clazz, Class<?> arrayClass, ClassDesc ref) {
+        Primitives(String descriptor, String name, Class<?> clazz, Class<?> arrayClass, ClassDesc desc) {
             this.descriptor = descriptor;
             this.name = name;
             this.clazz = clazz;
             this.arrayClass = arrayClass;
-            classRef = ref;
+            classDesc = desc;
         }
     }
 
@@ -84,31 +82,31 @@ public abstract class SymbolicDescTest {
         return MethodType.methodType(clazz).toMethodDescriptorString().substring(2);
     }
 
-    static ClassDesc classToRef(Class<?> c) {
+    static ClassDesc classToDesc(Class<?> c) {
         return ClassDesc.ofDescriptor(c.descriptorString());
     }
 
-    static<T> void testSymbolicDesc(ConstantDesc<T> ref) throws ReflectiveOperationException {
-        testSymbolicDesc(ref, false);
+    static<T> void testSymbolicDesc(ConstantDesc<T> desc) throws ReflectiveOperationException {
+        testSymbolicDesc(desc, false);
     }
 
-    static<T> void testSymbolicDescForwardOnly(ConstantDesc<T> ref) throws ReflectiveOperationException {
-        testSymbolicDesc(ref, true);
+    static<T> void testSymbolicDescForwardOnly(ConstantDesc<T> desc) throws ReflectiveOperationException {
+        testSymbolicDesc(desc, true);
     }
 
-    private static<T> void testSymbolicDesc(ConstantDesc<T> ref, boolean forwardOnly) throws ReflectiveOperationException {
+    private static<T> void testSymbolicDesc(ConstantDesc<T> desc, boolean forwardOnly) throws ReflectiveOperationException {
         // Round trip sym -> resolve -> toSymbolicDesc
-        Constable<ConstantDesc<T>> constable = (Constable<ConstantDesc<T>>) ref.resolveConstantDesc(LOOKUP);
+        Constable<ConstantDesc<T>> constable = (Constable<ConstantDesc<T>>) desc.resolveConstantDesc(LOOKUP);
         Optional<? extends ConstantDesc<ConstantDesc<T>>> described = constable.describeConstable();
         if (!forwardOnly) {
-            assertEquals(ref, described.orElseThrow());
+            assertEquals(desc, described.orElseThrow());
         }
 
         // Round trip sym -> quoted sym -> resolve
-        if (ref instanceof Constable) {
-            Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) ref).describeConstable();
+        if (desc instanceof Constable) {
+            Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) desc).describeConstable();
             ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
-            assertEquals(sr, ref);
+            assertEquals(sr, desc);
         }
     }
 }

@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -51,7 +49,7 @@ import static org.testng.Assert.fail;
 @Test
 public class ClassDescTest extends SymbolicDescTest {
 
-    private void testClassRef(ClassDesc r) throws ReflectiveOperationException {
+    private void testClassDesc(ClassDesc r) throws ReflectiveOperationException {
         testSymbolicDesc(r);
 
         // Test descriptor accessor, factory, equals
@@ -72,8 +70,8 @@ public class ClassDescTest extends SymbolicDescTest {
         }
     }
 
-    private void testClassRef(ClassDesc r, Class<?> c) throws ReflectiveOperationException {
-        testClassRef(r);
+    private void testClassDesc(ClassDesc r, Class<?> c) throws ReflectiveOperationException {
+        testClassDesc(r);
 
         assertEquals(r.resolveConstantDesc(LOOKUP), c);
         assertEquals(c.describeConstable().orElseThrow(), r);
@@ -90,7 +88,7 @@ public class ClassDescTest extends SymbolicDescTest {
                     && ((f.getModifiers() & Modifier.PUBLIC) != 0)) {
                     ClassDesc cr = (ClassDesc) f.get(null);
                     Class c = cr.resolveConstantDesc(MethodHandles.lookup());
-                    testClassRef(cr, c);
+                    testClassDesc(cr, c);
                     ++tested;
                 }
             }
@@ -103,58 +101,58 @@ public class ClassDescTest extends SymbolicDescTest {
         assertTrue(tested > 0);
     }
 
-    public void testPrimitiveClassRef() throws ReflectiveOperationException {
+    public void testPrimitiveClassDesc() throws ReflectiveOperationException {
         for (Primitives p : Primitives.values()) {
-            List<ClassDesc> refs = List.of(ClassDesc.ofDescriptor(p.descriptor),
-                                           p.classRef,
+            List<ClassDesc> descs = List.of(ClassDesc.ofDescriptor(p.descriptor),
+                                           p.classDesc,
                                            (ClassDesc) p.clazz.describeConstable().orElseThrow());
-            for (ClassDesc c : refs) {
-                testClassRef(c, p.clazz);
+            for (ClassDesc c : descs) {
+                testClassDesc(c, p.clazz);
                 assertTrue(c.isPrimitive());
                 assertEquals(p.descriptor, c.descriptorString());
                 assertEquals(p.name, c.displayName());
-                refs.forEach(cc -> assertEquals(c, cc));
+                descs.forEach(cc -> assertEquals(c, cc));
                 if (p != Primitives.VOID) {
-                    testClassRef(c.arrayType(), p.arrayClass);
+                    testClassDesc(c.arrayType(), p.arrayClass);
                     assertEquals(c, ((ClassDesc) p.arrayClass.describeConstable().orElseThrow()).componentType());
-                    assertEquals(c, p.classRef.arrayType().componentType());
+                    assertEquals(c, p.classDesc.arrayType().componentType());
                 }
             }
 
             for (Primitives other : Primitives.values()) {
                 ClassDesc otherDescr = ClassDesc.ofDescriptor(other.descriptor);
                 if (p != other)
-                    refs.forEach(c -> assertNotEquals(c, otherDescr));
+                    descs.forEach(c -> assertNotEquals(c, otherDescr));
                 else
-                    refs.forEach(c -> assertEquals(c, otherDescr));
+                    descs.forEach(c -> assertEquals(c, otherDescr));
             }
         }
     }
 
-    public void testSimpleClassRef() throws ReflectiveOperationException {
+    public void testSimpleClassDesc() throws ReflectiveOperationException {
 
-        List<ClassDesc> stringClassRefs = Arrays.asList(ClassDesc.ofDescriptor("Ljava/lang/String;"),
+        List<ClassDesc> stringClassDescs = Arrays.asList(ClassDesc.ofDescriptor("Ljava/lang/String;"),
                                                         ClassDesc.of("java.lang", "String"),
                                                         ClassDesc.of("java.lang.String"),
                                                         ClassDesc.of("java.lang.String").arrayType().componentType(),
                                                         String.class.describeConstable().orElseThrow());
-        for (ClassDesc r : stringClassRefs) {
-            testClassRef(r, String.class);
+        for (ClassDesc r : stringClassDescs) {
+            testClassDesc(r, String.class);
             assertFalse(r.isPrimitive());
             assertEquals("Ljava/lang/String;", r.descriptorString());
             assertEquals("String", r.displayName());
             assertEquals(r.arrayType().resolveConstantDesc(LOOKUP), String[].class);
-            stringClassRefs.forEach(rr -> assertEquals(r, rr));
+            stringClassDescs.forEach(rr -> assertEquals(r, rr));
         }
 
-        testClassRef(ClassDesc.of("java.lang.String").arrayType(), String[].class);
-        testClassRef(ClassDesc.of("java.util.Map").inner("Entry"), Map.Entry.class);
+        testClassDesc(ClassDesc.of("java.lang.String").arrayType(), String[].class);
+        testClassDesc(ClassDesc.of("java.util.Map").inner("Entry"), Map.Entry.class);
 
-        ClassDesc thisClassRef = ClassDesc.ofDescriptor("LClassDescTest;");
-        assertEquals(thisClassRef, ClassDesc.of("", "ClassDescTest"));
-        assertEquals(thisClassRef, ClassDesc.of("ClassDescTest"));
-        assertEquals(thisClassRef.displayName(), "ClassDescTest");
-        testClassRef(thisClassRef, ClassDescTest.class);
+        ClassDesc thisClassDesc = ClassDesc.ofDescriptor("LClassDescTest;");
+        assertEquals(thisClassDesc, ClassDesc.of("", "ClassDescTest"));
+        assertEquals(thisClassDesc, ClassDesc.of("ClassDescTest"));
+        assertEquals(thisClassDesc.displayName(), "ClassDescTest");
+        testClassDesc(thisClassDesc, ClassDescTest.class);
     }
 
     private void testBadPackageName(ClassDesc cr) {
@@ -187,15 +185,15 @@ public class ClassDescTest extends SymbolicDescTest {
         }
     }
 
-    public void testArrayClassRef() throws ReflectiveOperationException {
+    public void testArrayClassDesc() throws ReflectiveOperationException {
         for (String d : basicDescs) {
             ClassDesc a0 = ClassDesc.ofDescriptor(d);
             ClassDesc a1 = a0.arrayType();
             ClassDesc a2 = a1.arrayType();
 
-            testClassRef(a0);
-            testClassRef(a1);
-            testClassRef(a2);
+            testClassDesc(a0);
+            testClassDesc(a1);
+            testClassDesc(a2);
             assertFalse(a0.isArray());
             assertTrue(a1.isArray());
             assertTrue(a2.isArray());
@@ -224,7 +222,7 @@ public class ClassDescTest extends SymbolicDescTest {
         }
     }
 
-    public void testBadClassRefs() {
+    public void testBadClassDescs() {
         List<String> badDescriptors = List.of("II", "I;", "Q", "L",
                                               "java.lang.String", "[]", "Ljava/lang/String",
                                               "Ljava.lang.String;", "java/lang/String");

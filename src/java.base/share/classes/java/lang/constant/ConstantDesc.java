@@ -86,6 +86,8 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
  * @see ConstantDescs
  *
  * @jvms 4.4 The Constant Pool
+ *
+ * @since 12
  */
 public interface ConstantDesc<T> {
     /**

@@ -62,6 +62,8 @@ import java.util.Optional;
  * @jvms 4.4.10 The CONSTANT_InvokeDynamic_info Structure
  *
  * @param <T> the type of the constant value
+ *
+ * @since 12
  */
 public interface Constable<T> {
     /**

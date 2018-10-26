@@ -79,11 +79,11 @@ module java.base {
     exports java.io;
     exports java.lang;
     exports java.lang.annotation;
+    exports java.lang.constant;
     exports java.lang.invoke;
     exports java.lang.module;
     exports java.lang.ref;
     exports java.lang.reflect;
-    exports java.lang.constant;
     exports java.math;
     exports java.net;
     exports java.net.spi;

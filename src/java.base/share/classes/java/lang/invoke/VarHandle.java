@@ -1885,8 +1885,6 @@ public abstract class VarHandle implements Constable<VarHandle> {
 
     @Override
     public final String toString() {
-        // @@@ defer to concrete type for additional description
-        // see https://bugs.openjdk.java.net/browse/JDK-8199149
         return String.format("VarHandle[varType=%s, coord=%s]",
                              varType().getName(),
                              coordinateTypes());
@@ -2127,6 +2125,8 @@ public abstract class VarHandle implements Constable<VarHandle> {
     /**
      * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
      * {@link VarHandle} constant.
+     *
+     * @since 12
      */
     public static final class VarHandleDesc extends DynamicConstantDesc<VarHandle> {
 
@@ -2134,17 +2134,14 @@ public abstract class VarHandle implements Constable<VarHandle> {
          * Kinds of variable handle descs
          */
         private enum Kind {
-            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFFIELD),
-            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, ConstantDescs.MHD_VARHANDLEDESC_OFSTATIC),
-            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY, ConstantDescs.MHD_VARHANDLEDESC_OFARRAY);
+            FIELD(ConstantDescs.BSM_VARHANDLE_FIELD),
+            STATIC_FIELD(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD),
+            ARRAY(ConstantDescs.BSM_VARHANDLE_ARRAY);
 
             final DirectMethodHandleDesc bootstrapMethod;
-            final DirectMethodHandleDesc descFactory;
 
-            Kind(DirectMethodHandleDesc bootstrapMethod,
-                 DirectMethodHandleDesc descFactory) {
+            Kind(DirectMethodHandleDesc bootstrapMethod) {
                 this.bootstrapMethod = bootstrapMethod;
-                this.descFactory = descFactory;
             }
 
             ConstantDesc<?>[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {

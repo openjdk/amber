@@ -56,6 +56,8 @@ import static java.util.stream.Collectors.joining;
  * {@linkplain ClassDesc} directly.
  *
  * @see ConstantDescs
+ *
+ * @since 12
  */
 public interface ClassDesc
         extends ConstantDesc<Class<?>>,
