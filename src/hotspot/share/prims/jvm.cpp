@@ -1788,6 +1788,26 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
+JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
+{
+  JVMWrapper("JVM_GetRecordParametersCount");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  // Exclude primitive types and array types
+  if (java_lang_Class::is_primitive(JNIHandles::resolve_non_null(ofClass)) ||
+      java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass))->is_array_klass()) {
+    // Return 0
+    return 0;
+  }
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  // Ensure class is linked
+  k->link_class(CHECK_0);
+
+  return k->record_params_count();
+}
+JVM_END
+
 JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
 {
   JVMWrapper("JVM_GetRecordParameters");
