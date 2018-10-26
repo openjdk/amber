@@ -3549,12 +3549,12 @@ public final class Class<T> implements java.io.Serializable,
      * @return an array with the names of the components
      * @since 1.12
      */
-    public String[] getRecordComponentNames() {
+    public String[] getRecordParameterNames() {
         if (isRecord()) {
-            Field[] fields = privateGetDeclaredFields(false);
-            String[] names = new String[fields.length];
+            Field[] recordParameters = getRecordParameters();
+            String[] names = new String[recordParameters.length];
             int i = 0;
-            for (Field field : fields) {
+            for (Field field : recordParameters) {
                 names[i] = field.getName();
                 i++;
             }
