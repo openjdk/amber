@@ -3546,6 +3546,7 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Returns an array with the names of the components
+     *
      * @return an array with the names of the components
      * @since 1.12
      */
@@ -3561,6 +3562,27 @@ public final class Class<T> implements java.io.Serializable,
             return names;
         } else {
             return new String[0];
+        }
+    }
+
+    /**
+     * Returns an array with the types of the record parameters
+     *
+     * @return an array with the types of the record parameters
+     * @since 1.12
+     */
+    public Class<?>[] getRecordParameterTypes() {
+        if (isRecord()) {
+            Field[] recordParameters = getRecordParameters();
+            Class<?>[] types = new Class<?>[recordParameters.length];
+            int i = 0;
+            for (Field field : recordParameters) {
+                types[i] = field.getType();
+                i++;
+            }
+            return types;
+        } else {
+            return new Class<?>[0];
         }
     }
 
