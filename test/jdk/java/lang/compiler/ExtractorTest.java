@@ -254,14 +254,14 @@ public class ExtractorTest {
         Extractor STRING = Extractor.ofType(String.class);
         Extractor OBJECT  = Extractor.ofType(Object.class);
 
-        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.nested(TC2, STRING), 0), new TestClass2("foo"),
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, STRING), 0), new TestClass2("foo"),
                     "foo");
-        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.nested(TC2, OBJECT), 0), new TestClass2("foo"),
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, OBJECT), 0), new TestClass2("foo"),
                     "foo");
-        assertMatch(MatchKind.FAIL, Extractor.dropBindings(Extractor.nested(TC2, STRING), 0), new TestClass2(List.of(3)),
+        assertMatch(MatchKind.FAIL, Extractor.dropBindings(Extractor.ofNested(TC2, STRING), 0), new TestClass2(List.of(3)),
                     "foo");
 
-        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.nested(TC2, Extractor.nested(TC2, STRING)), 0, 1), new TestClass2(new TestClass2("foo")),
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, Extractor.ofNested(TC2, STRING)), 0, 1), new TestClass2(new TestClass2("foo")),
                     "foo");
 
     }

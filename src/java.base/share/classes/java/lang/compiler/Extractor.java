@@ -51,6 +51,11 @@ import static java.util.Objects.requireNonNull;
  * argument types of the descriptor indicate the types of the output binding
  * variables.
  *
+ * Notes:
+ *  - totality is erased;
+ *  - compilers expected to optimize away total type patterns;
+ *  - adaptation done in nest() and switch combinators
+ *
  * @author Brian Goetz
  */
 public interface Extractor {
@@ -309,7 +314,7 @@ public interface Extractor {
      *                   for this outer binding is desired
      * @return the nested extractor
      */
-    public static Extractor nested(Extractor outer, Extractor... extractors) {
+    public static Extractor ofNested(Extractor outer, Extractor... extractors) {
         int outerCount = outer.descriptor().parameterCount();
         Class<?> outerCarrierType = outer.tryMatch().type().returnType();
 
@@ -412,6 +417,49 @@ public interface Extractor {
     public static Extractor ofSelfTotal(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
                                         MethodType descriptor, MethodHandle... components) throws Throwable {
         return ofSelfTotal(descriptor.returnType(), components);
+    }
+
+    /**
+     * Condy bootstrap for creating nested extractors
+     *
+     * @param lookup ignored
+     * @param invocationName ignored
+     * @param invocationType ignored
+     * @param outer the outer extractor
+     * @param inners the inner extractors, null if no nesting is needed for this binding
+     * @return the nested extractor
+     */
+    public static Extractor ofNested(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+                                     Extractor outer, Extractor... inners) {
+        return ofNested(outer, inners);
+    }
+
+    /**
+     * Condy bootstrap for creating non-nullable type extractor
+     *
+     * @param lookup ignored
+     * @param invocationName ignored
+     * @param invocationType ignored
+     * @param type the type
+     * @return the extractor
+     */
+    public static Extractor ofType(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+                                   Class<?> type) {
+        return ofType(type);
+    }
+
+    /**
+     * Condy bootstrap for creating nullable type extractor
+     *
+     * @param lookup ignored
+     * @param invocationName ignored
+     * @param invocationType ignored
+     * @param type the type
+     * @return the extractor
+     */
+    public static Extractor ofTypeNullable(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+                                           Class<?> type) {
+        return ofTypeNullable(type);
     }
 
     /**
