@@ -29,6 +29,8 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Objects;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import sun.invoke.util.BytecodeName;
@@ -37,6 +39,7 @@ import static java.lang.invoke.MethodHandleInfo.REF_invokeInterface;
 import static java.lang.invoke.MethodHandleInfo.REF_invokeStatic;
 import static java.lang.invoke.MethodHandleInfo.REF_invokeVirtual;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Supporting type for implementation of pattern matching.  An {@linkplain Extractor}
@@ -70,10 +73,10 @@ public interface Extractor {
     MethodHandle component(int i);
 
     /**
-     * Whether this extractor might fail.
-     * @return if this extractor might fail
+     * Returns the component method handles, as an array
+     * @return the component method handles
      */
-    boolean isPartial();
+    MethodHandle[] components();
 
     /**
      * The descriptor of the {@linkplain Extractor}.  The parameter types of
@@ -88,22 +91,21 @@ public interface Extractor {
      * Compose an extractor with a method handle that receives the bindings
      *
      * @param target method handle to receive the bindings
+     * @param sentinel value to return when the extractor does not match
      * @return the composed method handle
      */
-    default MethodHandle compose(MethodHandle target) {
+    default MethodHandle compose(MethodHandle target, Object sentinel) {
         int count = descriptor().parameterCount();
-        MethodHandle[] components = new MethodHandle[count];
-        int[] reorder = new int[count];
-        for (int i=0; i<count; i++) {
-            components[i] = component(i);
-            reorder[i] = 0;
-        }
+        MethodHandle[] components = components();
+        Class<?> carrierType = tryMatch().type().returnType();
+        Class<?> resultType = target.type().returnType();
 
         MethodHandle mh = MethodHandles.filterArguments(target, 0, components);
-        mh = MethodHandles.permuteArguments(mh, MethodType.methodType(target.type().returnType(), tryMatch().type().returnType()),
-                                            reorder);
+        mh = MethodHandles.permuteArguments(mh, MethodType.methodType(resultType, carrierType), new int[count]);
+        mh = MethodHandles.guardWithTest(ExtractorImpl.MH_OBJECTS_NONNULL.asType(MethodType.methodType(boolean.class, carrierType)),
+                                         mh,
+                                         MethodHandles.dropArguments(MethodHandles.constant(resultType, sentinel), 0, carrierType));
         mh = MethodHandles.filterArguments(mh, 0, tryMatch());
-        // @@@ What if pattern doesn't match?
         return mh;
     }
 
@@ -124,6 +126,35 @@ public interface Extractor {
     }
 
     /**
+     * Construct a partial method handle that uses the predicate as guardWithTest,
+     * which applies the target if the test succeeds, and returns null if the
+     * test fails.  The resulting method handle is of the same type as the
+     * {@code target} method handle.
+     * @param target
+     * @param predicate
+     * @return
+     */
+    private static MethodHandle partialize(MethodHandle target, MethodHandle predicate) {
+        Class<?> targetType = target.type().parameterType(0);
+        Class<?> carrierType = target.type().returnType();
+        return MethodHandles.guardWithTest(predicate,
+                                           target,
+                                           MethodHandles.dropArguments(MethodHandles.constant(carrierType, null),
+                                                                       0, targetType));
+    }
+
+    /**
+     * Construct a method handle that delegates to target, unless the nth argument
+     * is null, in which case it returns null
+     */
+    private static MethodHandle bailIfNthNull(MethodHandle target, int n) {
+        MethodHandle test = ExtractorImpl.MH_OBJECTS_ISNULL.asType(ExtractorImpl.MH_OBJECTS_ISNULL.type().changeParameterType(0, target.type().parameterType(n)));
+        test = MethodHandles.permuteArguments(test, target.type().changeReturnType(boolean.class), n);
+        MethodHandle nullh = MethodHandles.dropArguments(MethodHandles.constant(target.type().returnType(), null), 0, target.type().parameterArray());
+        return MethodHandles.guardWithTest(test, nullh, target);
+    }
+
+    /**
      * Create a total {@linkplain Extractor} with the given descriptor, which
      * operates by feeding results into a factory method handle and returning
      * the result.
@@ -134,24 +165,7 @@ public interface Extractor {
      */
     public static Extractor of(MethodType descriptor,
                                MethodHandle digester) {
-        return new ExtractorImpl(descriptor, false,
-                                 MethodHandles.insertArguments(digester,
-                                                               1, ExtractorCarriers.carrierFactory(descriptor)),
-                                 ExtractorCarriers.carrierComponents(descriptor));
-    }
-
-    /**
-     * Create a partial {@linkplain Extractor} with the given descriptor, which
-     * operates by feeding results into a factory method handle and returning
-     * the result.
-     *
-     * @param descriptor the descriptor
-     * @param digester the digester method handle
-     * @return the extractor
-     */
-    public static Extractor ofPartial(MethodType descriptor,
-                                      MethodHandle digester) {
-        return new ExtractorImpl(descriptor, true,
+        return new ExtractorImpl(descriptor,
                                  MethodHandles.insertArguments(digester,
                                                                1, ExtractorCarriers.carrierFactory(descriptor)),
                                  ExtractorCarriers.carrierComponents(descriptor));
@@ -167,7 +181,7 @@ public interface Extractor {
      */
     public static Extractor ofTotal(Class<?> targetType, MethodHandle... components) {
         MethodType descriptor = descriptor(targetType, components);
-        return new ExtractorImpl(descriptor, false,
+        return new ExtractorImpl(descriptor,
                                  carrierTryExtract(descriptor, components),
                                  ExtractorCarriers.carrierComponents(descriptor));
     }
@@ -181,7 +195,7 @@ public interface Extractor {
      * @return the extractor
      */
     public static Extractor ofSelfTotal(Class<?> targetType, MethodHandle... components) {
-        return new ExtractorImpl(descriptor(targetType, components), false,
+        return new ExtractorImpl(descriptor(targetType, components),
                                  MethodHandles.identity(targetType), components);
     }
 
@@ -189,51 +203,184 @@ public interface Extractor {
      * Create a partial {@linkplain Extractor} for a given set of component
      * method handles.
      *
+     * @param targetType the target type
      * @param predicate The match predicate
      * @param components The component method handles
      * @return the extractor
      */
-    public static Extractor ofPartial(MethodHandle predicate, MethodHandle... components) {
-        Class<?> targetType = predicate.type().parameterType(0);
+    public static Extractor ofPartial(Class<?> targetType, MethodHandle predicate, MethodHandle... components) {
         MethodType descriptor = descriptor(targetType, components);
         MethodHandle carrierTryExtract = carrierTryExtract(descriptor, components);
-        MethodHandle tryExtract = MethodHandles.guardWithTest(predicate,
-                                                              carrierTryExtract,
-                                                              MethodHandles.dropArguments(MethodHandles.constant(carrierTryExtract.type().returnType(), null),
-                                                                                          0, targetType));
-        return new ExtractorImpl(descriptor, true,
-                                 tryExtract, ExtractorCarriers.carrierComponents(descriptor));
+        return new ExtractorImpl(descriptor,
+                                 partialize(carrierTryExtract, predicate),
+                                 ExtractorCarriers.carrierComponents(descriptor));
     }
 
     /**
      * Create a partial {@linkplain Extractor} for a given set of component
      * method handles, using itself as a carrier.
      *
+     * @param targetType the target type
      * @param predicate The match predicate
      * @param components The component method handles
      * @return the extractor
      */
-    public static Extractor ofSelfPartial(MethodHandle predicate, MethodHandle... components) {
-        Class<?> targetType = predicate.type().parameterType(0);
-        MethodHandle tryExtract = MethodHandles.guardWithTest(predicate,
-                                                              MethodHandles.identity(targetType),
-                                                              MethodHandles.dropArguments(MethodHandles.constant(targetType, null),
-                                                                                          0, targetType));
-        return new ExtractorImpl(descriptor(targetType, components), true, tryExtract, components);
+    public static Extractor ofSelfPartial(Class<?> targetType, MethodHandle predicate, MethodHandle... components) {
+        return new ExtractorImpl(descriptor(targetType, components),
+                                 partialize(MethodHandles.identity(targetType), predicate),
+                                 components);
     }
 
     /**
      * Create an {@linkplain Extractor} for a type pattern, with a single binding
-     * variable
+     * variable, whose target type is {@code Object}
      *
      * @param type the type to match against
      * @return the {@linkplain Extractor}
      */
     public static Extractor ofType(Class<?> type) {
-        // tryMatch = (t instanceof type) ? t : null
-        // component = (type) o
-        return null;
+        requireNonNull(type);
+        if (type.isPrimitive())
+            throw new IllegalArgumentException("Reference type expected, found: " + type);
+        return new ExtractorImpl(MethodType.methodType(type, type),
+                                 ExtractorImpl.MH_OF_TYPE_HELPER.bindTo(type).asType(MethodType.methodType(type, type)),
+                                 MethodHandles.identity(type));
     }
+
+    /**
+     * Create an {@linkplain Extractor} for a nullable type pattern, with a
+     * single binding variable, whose target type is {@code Object}
+     *
+     * @param type the type to match against
+     * @return the {@linkplain Extractor}
+     */
+    public static Extractor ofTypeNullable(Class<?> type) {
+        requireNonNull(type);
+        if (type.isPrimitive())
+            throw new IllegalArgumentException("Reference type expected, found: " + type);
+        return new ExtractorImpl(MethodType.methodType(type, type),
+                                 ExtractorImpl.MH_OF_TYPE_NULLABLE_HELPER.bindTo(type).asType(MethodType.methodType(type, type)),
+                                 MethodHandles.identity(type));
+    }
+
+    /**
+     * Create an {@linkplain Extractor} that is identical to another {@linkplain Extractor},
+     * but without the specified binding variables
+     * @param etor the original extractor
+     * @param positions which binding variables to drop
+     * @return the extractor
+     */
+    public static Extractor dropBindings(Extractor etor, int... positions) {
+        MethodHandle[] mhs = etor.components();
+        for (int position : positions)
+            mhs[position] = null;
+        mhs = Stream.of(mhs).filter(Objects::nonNull).toArray(MethodHandle[]::new);
+        return new ExtractorImpl(descriptor(etor.descriptor().returnType(), mhs), etor.tryMatch(), mhs);
+    }
+
+    /**
+     * Adapt an extractor to a new target type
+     *
+     * @param e the extractor
+     * @param newTarget the new target type
+     * @return the new extractor
+     */
+    public static Extractor adapt(Extractor e, Class<?> newTarget) {
+        if (e.descriptor().returnType().isAssignableFrom(newTarget))
+            return e;
+        MethodHandle tryMatch = partialize(e.tryMatch().asType(e.tryMatch().type().changeParameterType(0, newTarget)),
+                                           ExtractorImpl.MH_ADAPT_HELPER.bindTo(e.descriptor().returnType())
+        .asType(MethodType.methodType(boolean.class, newTarget)));
+        return new ExtractorImpl(e.descriptor().changeReturnType(newTarget),
+                                 tryMatch, e.components());
+    }
+
+    /**
+     * Construct a nested extractor, which first matches the target to the
+     * outer extractor, and then matches the resulting bindings to the inner
+     * extractors (if not null).  The resulting extractor is partial if any
+     * of the input extractors are; its target type is the target type of the
+     * outer extractor; and its bindings are the concatenation of the bindings
+     * of the outer extractor followed by the bindings of the non-null inner
+     * extractors.
+     *
+     * @param outer The outer extractor
+     * @param extractors The inner extractors, or null if no nested extraction
+     *                   for this outer binding is desired
+     * @return the nested extractor
+     */
+    public static Extractor nested(Extractor outer, Extractor... extractors) {
+        int outerCount = outer.descriptor().parameterCount();
+        Class<?> outerCarrierType = outer.tryMatch().type().returnType();
+
+        // Adapt inners to types of outer bindings
+        for (int i = 0; i < extractors.length; i++) {
+            Extractor extractor = extractors[i];
+            if (extractor.descriptor().returnType() != outer.descriptor().parameterType(i))
+                extractors[i] = adapt(extractor, outer.descriptor().parameterType(i));
+        }
+
+        int[] innerPositions = IntStream.range(0, extractors.length)
+                                        .filter(i -> extractors[i] != null)
+                                        .toArray();
+        MethodHandle[] innerComponents = Stream.of(extractors)
+                                               .filter(Objects::nonNull)
+                                               .map(Extractor::components)
+                                               .flatMap(Stream::of)
+                                               .toArray(MethodHandle[]::new);
+        MethodHandle[] innerTryMatches = Stream.of(extractors)
+                                               .filter(Objects::nonNull)
+                                               .map(e -> e.tryMatch())
+                                               .toArray(MethodHandle[]::new);
+        Class<?>[] innerCarriers = Stream.of(extractors)
+                                         .filter(Objects::nonNull)
+                                         .map(e -> e.tryMatch().type().returnType())
+                                         .toArray(Class[]::new);
+        Class<?>[] innerTypes = Stream.of(innerComponents)
+                                      .map(mh -> mh.type().returnType())
+                                      .toArray(Class[]::new);
+
+        MethodType descriptor = outer.descriptor().appendParameterTypes(innerTypes);
+
+        MethodHandle mh = ExtractorCarriers.carrierFactory(descriptor);
+        mh = MethodHandles.filterArguments(mh, outerCount, innerComponents);
+        int[] spreadInnerCarriers = new int[outerCount + innerComponents.length];
+        for (int i=0; i<outerCount; i++)
+            spreadInnerCarriers[i] = i;
+        int k = outerCount;
+        int j = 0;
+        for (Extractor e : extractors) {
+            if (e == null)
+                continue;
+            for (int i=0; i<e.descriptor().parameterCount(); i++)
+                spreadInnerCarriers[k++] = outerCount + j;
+            j++;
+        }
+        MethodType spreadInnerCarriersMT = outer.descriptor()
+                                                .appendParameterTypes(innerCarriers)
+                                                .changeReturnType(mh.type().returnType());
+        mh = MethodHandles.permuteArguments(mh, spreadInnerCarriersMT, spreadInnerCarriers);
+        for (int position : innerPositions)
+            mh = bailIfNthNull(mh, outerCount + position);
+        mh = MethodHandles.filterArguments(mh, outerCount, innerTryMatches);
+        int[] spreadNestedCarrier = new int[outerCount + innerPositions.length];
+        for (int i=0; i<outerCount; i++)
+            spreadNestedCarrier[i] = i;
+        for (int i=0; i<innerPositions.length; i++)
+            spreadNestedCarrier[outerCount+i] = innerPositions[i];
+        mh = MethodHandles.permuteArguments(mh, outer.descriptor().changeReturnType(mh.type().returnType()),
+                                            spreadNestedCarrier);
+        mh = MethodHandles.filterArguments(mh, 0, outer.components());
+        mh = MethodHandles.permuteArguments(mh, MethodType.methodType(mh.type().returnType(), outerCarrierType),
+                                            new int[outerCount]);
+        mh = bailIfNthNull(mh, 0);
+        mh = MethodHandles.filterArguments(mh, 0, outer.tryMatch());
+
+        MethodHandle tryExtract = mh;
+
+        return new ExtractorImpl(descriptor, tryExtract, ExtractorCarriers.carrierComponents(descriptor));
+    }
+
 
     /**
      * Bootstrap for creating a lazy, partial, self-carrier {@linkplain Extractor} from components
@@ -267,7 +414,6 @@ public interface Extractor {
         return ofSelfTotal(descriptor.returnType(), components);
     }
 
-
     /**
      * Condy bootstrap for finding extractors
      *
@@ -284,11 +430,10 @@ public interface Extractor {
     public static Extractor findExtractor(MethodHandles.Lookup lookup, String constantName, Class<Extractor> constantType,
                                           Class<?> owner, MethodType descriptor, String name, int refKind) throws Throwable {
         String dd = descriptor.toMethodDescriptorString();
-        dd = dd.substring(0, dd.indexOf(')') + 1);
         String patternMethodName
                 = BytecodeName.toBytecodeName(String.format("$pattern$%s$%s",
                                                             (refKind == REF_newInvokeSpecial ? owner.getSimpleName() : name),
-                                                            dd));
+                                                            dd.substring(0, dd.indexOf(')') + 1)));
         MethodType factoryDesc = MethodType.methodType(Extractor.class);
         MethodHandle mh;
         switch (refKind) {

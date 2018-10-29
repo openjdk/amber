@@ -25,17 +25,37 @@
 package java.lang.compiler;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Non-public implementation of {@link Extractor}
  */
 class ExtractorImpl implements Extractor {
     private final MethodType descriptor;
-    private final boolean partial;
     private final MethodHandle tryMatch;
     private final List<MethodHandle> components;
+
+    // These are helpers for Extractors
+    static final MethodHandle MH_OF_TYPE_HELPER;
+    static final MethodHandle MH_OF_TYPE_NULLABLE_HELPER;
+    static final MethodHandle MH_ADAPT_HELPER;
+    static final MethodHandle MH_OBJECTS_ISNULL;
+    static final MethodHandle MH_OBJECTS_NONNULL;
+    static {
+        try {
+            MH_OF_TYPE_HELPER = MethodHandles.lookup().findStatic(ExtractorImpl.class, "ofTypeHelper", MethodType.methodType(Object.class, Class.class, Object.class));
+            MH_OF_TYPE_NULLABLE_HELPER = MethodHandles.lookup().findStatic(ExtractorImpl.class, "ofTypeNullableHelper", MethodType.methodType(Object.class, Class.class, Object.class));
+            MH_ADAPT_HELPER = MethodHandles.lookup().findStatic(ExtractorImpl.class, "adaptHelper", MethodType.methodType(boolean.class, Class.class, Object.class));
+            MH_OBJECTS_ISNULL = MethodHandles.lookup().findStatic(Objects.class, "isNull", MethodType.methodType(boolean.class, Object.class));
+            MH_OBJECTS_NONNULL = MethodHandles.lookup().findStatic(Objects.class, "nonNull", MethodType.methodType(boolean.class, Object.class));
+        }
+        catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     /**
      * Construct an {@link Extractor} from components
@@ -48,7 +68,7 @@ class ExtractorImpl implements Extractor {
      * @param tryMatch The {@code tryMatch} method handle
      * @param components The {@code component} method handles
      */
-    ExtractorImpl(MethodType descriptor, boolean partial, MethodHandle tryMatch, MethodHandle[] components) {
+    ExtractorImpl(MethodType descriptor, MethodHandle tryMatch, MethodHandle... components) {
         Class<?> carrierType = tryMatch.type().returnType();
         if (descriptor.parameterCount() != components.length)
             throw new IllegalArgumentException(String.format("MethodType %s arity should match component count %d", descriptor, components.length));
@@ -65,7 +85,6 @@ class ExtractorImpl implements Extractor {
         }
 
         this.descriptor = descriptor;
-        this.partial = partial;
         this.tryMatch = tryMatch;
         this.components = List.of(components);
     }
@@ -81,12 +100,24 @@ class ExtractorImpl implements Extractor {
     }
 
     @Override
+    public MethodHandle[] components() {
+        return components.toArray(new MethodHandle[0]);
+    }
+
+    @Override
     public MethodType descriptor() {
         return descriptor;
     }
 
-    @Override
-    public boolean isPartial() {
-        return partial;
+    private static Object ofTypeHelper(Class<?> type, Object o) {
+        return o != null && type.isAssignableFrom(o.getClass()) ? o : null;
+    }
+
+    private static Object ofTypeNullableHelper(Class<?> type, Object o) {
+        return o == null || type.isAssignableFrom(o.getClass()) ? o : null;
+    }
+
+    private static boolean adaptHelper(Class<?> type, Object o) {
+        return o != null && type.isAssignableFrom(o.getClass());
     }
 }
