@@ -915,6 +915,34 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return METHODDEF;
         }
+
+        @Override
+        public BodyKind getBodyKind() {
+            if ((mods.flags & Flags.CONCISE_ARROW) != 0)
+                return BodyKind.EXPRESSION;
+            if ((mods.flags & Flags.CONCISE_EQUAL) != 0)
+                return BodyKind.REFERENCE;
+            return BodyKind.BLOCK;
+        }
+
+        @Override
+        public Tree getBodyTree() {
+            if ((mods.flags & Flags.CONCISE_ARROW) != 0) {
+                JCStatement first = body.stats.head;
+                if (first.hasTag(RETURN)) {
+                    return ((JCReturn) first).expr;
+                } else if (first.hasTag(EXEC)) {
+                    return ((JCExpressionStatement) first).expr;
+                } else {
+                    Assert.error("Unknown kind: " + first.getTag());
+                    return null;
+                }
+            }
+            if ((mods.flags & Flags.CONCISE_EQUAL) != 0)
+                return conciseMethodRef;
+            return body;
+        }
+
   }
 
     /**
