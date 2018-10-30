@@ -29,9 +29,11 @@ import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import com.sun.tools.javac.code.Printer;
 import com.sun.tools.javac.code.Symbol;
@@ -40,7 +42,9 @@ import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.TypeTag.*;
@@ -105,7 +109,15 @@ public class RichDiagnosticFormatter extends
         configuration = new RichConfiguration(Options.instance(context), formatter);
         for (WhereClauseKind kind : WhereClauseKind.values())
             whereClauses.put(kind, new LinkedHashMap<Type, JCDiagnostic>());
+        symbolsToRemove.add(syms.constableType.tsym);
+        symbolsToRemove.add(syms.constantDescType.tsym);
+        Options options = Options.instance(context);
+        compactMethodDiags = options.isSet(Option.XDIAGS, "compact") ||
+                options.isUnset(Option.XDIAGS) && options.isUnset("rawDiagnostics");
     }
+
+    Set<TypeSymbol> symbolsToRemove = new HashSet<>();
+    final boolean compactMethodDiags;
 
     @Override
     public String format(JCDiagnostic diag, Locale l) {
@@ -521,7 +533,22 @@ public class RichDiagnosticFormatter extends
                 if (indexOf(t, WhereClauseKind.INTERSECTION) == -1) {
                     Type supertype = types.supertype(t);
                     List<Type> interfaces = types.interfaces(t);
+                    ListBuffer<Type> interfaceBuffer = new ListBuffer<>();
+                    boolean removed = false;
+                    if (compactMethodDiags) {
+                        for (Type interf : interfaces) {
+                            if (!symbolsToRemove.contains(interf.tsym)) {
+                                interfaceBuffer.add(interf);
+                            } else {
+                                removed = true;
+                            }
+                        }
+                        interfaces = interfaceBuffer.toList();
+                    }
                     JCDiagnostic d = diags.fragment(Fragments.WhereIntersection(t, interfaces.prepend(supertype)));
+                    if (removed) {
+                        d.setFlag(DiagnosticFlag.COMPRESSED);
+                    }
                     whereClauses.get(WhereClauseKind.INTERSECTION).put(t, d);
                     visit(supertype);
                     visit(interfaces);
