@@ -2129,6 +2129,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public String replaceAll(String regex, String replacement) {
         return Pattern.compile(regex).matcher(this).replaceAll(replacement);
     }

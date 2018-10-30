@@ -303,6 +303,10 @@ public class JavaCompiler {
      */
     protected Flow flow;
 
+    /** The intrinsics analyzer.
+     */
+    protected IntrinsicsVisitor intrinsicsVisitor;
+
     /** The modules visitor
      */
     protected Modules modules;
@@ -415,6 +419,7 @@ public class JavaCompiler {
         chk = Check.instance(context);
         gen = Gen.instance(context);
         flow = Flow.instance(context);
+        intrinsicsVisitor = IntrinsicsVisitor.instance(context);
         transTypes = TransTypes.instance(context);
         lower = Lower.instance(context);
         annotate = Annotate.instance(context);
@@ -1552,6 +1557,8 @@ public class JavaCompiler {
 
             env.tree = transTypes.translateTopLevelClass(env.tree, localMake);
             compileStates.put(env, CompileState.TRANSTYPES);
+
+            env.tree = intrinsicsVisitor.analyzeTree(env.tree, env);
 
             if (Feature.LAMBDA.allowedInSource(source) && scanner.hasLambdas) {
                 if (shouldStop(CompileState.UNLAMBDA))
