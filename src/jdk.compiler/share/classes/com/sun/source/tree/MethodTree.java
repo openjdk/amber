@@ -94,7 +94,8 @@ public interface MethodTree extends Tree {
     List<? extends ExpressionTree> getThrows();
 
     /**
-     * Returns the method body, or {@code null} if this is an abstract or native method.
+     * Returns the method body, or {@code null} if this is an abstract or native method, or if the
+     * {@link #BodyKind} is not {@linkplain BLOCK}.
      * @return the method body
      */
     BlockTree getBody();
@@ -106,4 +107,37 @@ public interface MethodTree extends Tree {
      * @return the default value
      */
     Tree getDefaultValue(); // for annotation types
+
+    /**
+     * Returns the method body, or {@code null} if this is an abstract or native method.
+     * @return the method body
+     */
+    public default Tree getBodyTree() {
+        return getBody();
+    }
+
+    /**
+     * The type of the body of this method.
+     * @return the type of the body of this method
+     */
+    public default BodyKind getBodyKind() {
+        return BodyKind.BLOCK;
+    }
+    /**
+     * Defines types of bodies of methods.
+     */
+    public enum BodyKind {
+        /**
+         * The body is a block.
+         */
+        BLOCK,
+        /**
+         * The body is an expression.
+         */
+        EXPRESSION,
+        /**
+         * The body is a method reference.
+         */
+        REFERENCE
+    }
 }
