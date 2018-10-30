@@ -3744,10 +3744,6 @@ public class JavacParser implements Parser {
 
         Map<Name, JCVariableDecl> optHeaderFields = headerFields(mods);
 
-        if (optHeaderFields.isEmpty()) {
-            log.error(token.pos, Errors.RecordMustDeclareAtLeastOneField);
-        }
-
         List<JCExpression> implementing = List.nil();
         if (token.kind == IMPLEMENTS) {
             nextToken();

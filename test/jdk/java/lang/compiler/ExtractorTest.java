@@ -27,6 +27,8 @@ import java.lang.compiler.Extractor;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.testng.annotations.Test;
@@ -48,10 +50,10 @@ public class ExtractorTest {
 
     private enum MatchKind { CARRIER, SELF, FAIL, MATCH }
 
-    private void assertMatches(MatchKind kind, Extractor e, Object target, Object... args) throws Throwable {
+    private void assertMatch(MatchKind kind, Extractor e, Object target, Object... args) throws Throwable {
         int count = e.descriptor().parameterCount();
         Object[] bindings = new Object[count];
-        Object carrier = e.tryMatch().invoke(target);
+        Object carrier = Extractor.adapt(e, Object.class).tryMatch().invoke(target);
         if (carrier != null) {
             for (int i = 0; i < count; i++)
                 bindings[i] = e.component(i).invoke(carrier);
@@ -60,7 +62,8 @@ public class ExtractorTest {
         if (kind == MatchKind.FAIL)
             assertNull(carrier);
         else {
-            assertNotNull(carrier);
+            if (target != null)
+                assertNotNull(carrier);
             assertEquals(bindings.length, args.length);
             for (int i = 0; i < args.length; i++)
                 assertEquals(bindings[i], args[i]);
@@ -137,64 +140,129 @@ public class ExtractorTest {
         }
     }
 
+    private static class TestClass2 {
+        static MethodHandle MH_X;
+        static MethodType TYPE = MethodType.methodType(TestClass2.class, Object.class);
+        static {
+            try {
+                MH_X = MethodHandles.lookup().findGetter(TestClass2.class, "x", Object.class);
+            }
+            catch (ReflectiveOperationException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        }
+
+        Object x;
+
+        public TestClass2(Object x) {
+            this.x = x;
+        }
+    }
+
     private static final MethodHandle[] COMPONENTS = {TestClass.MH_S, TestClass.MH_I, TestClass.MH_L, TestClass.MH_B };
 
     public void testTotal() throws Throwable {
         Extractor e = Extractor.ofTotal(TestClass.class, COMPONENTS);
-        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
-                      null, 0, 0L, (byte) 0);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
+                    null, 0, 0L, (byte) 0);
     }
 
     public void testSelfTotal() throws Throwable {
         Extractor e = Extractor.ofSelfTotal(TestClass.class, COMPONENTS);
-        assertMatches(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.SELF, e, new TestClass(null, 0, 0L, (byte) 0),
-                      null, 0, 0L, (byte) 0);
+        assertMatch(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.SELF, e, new TestClass(null, 0, 0L, (byte) 0),
+                    null, 0, 0L, (byte) 0);
     }
 
     public void testPartial() throws Throwable {
-        Extractor e = Extractor.ofPartial(TestClass.MH_PRED, COMPONENTS);
-        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
-        assertMatches(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
+        Extractor e = Extractor.ofPartial(TestClass.class, TestClass.MH_PRED, COMPONENTS);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
+        assertMatch(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
     }
 
     public void testSelfPartial() throws Throwable {
-        Extractor e = Extractor.ofSelfPartial(TestClass.MH_PRED, COMPONENTS);
-        assertMatches(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
-        assertMatches(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
+        Extractor e = Extractor.ofSelfPartial(TestClass.class, TestClass.MH_PRED, COMPONENTS);
+        assertMatch(MatchKind.SELF, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
+        assertMatch(MatchKind.FAIL, e, new TestClass(null, 0, 0L, (byte) 0));
     }
 
     public void testDigest() throws Throwable {
         Extractor e = Extractor.of(TestClass.TYPE, TestClass.DIGESTER);
-        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 2, 4L, (byte) 5),
-                      "foo", 2, 4L, (byte) 5);
-        assertMatches(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
-                      null, 0, 0L, (byte) 0);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 2, 4L, (byte) 5),
+                    "foo", 2, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, e, new TestClass(null, 0, 0L, (byte) 0),
+                    null, 0, 0L, (byte) 0);
     }
 
     public void testDigestPartial() throws Throwable {
-        Extractor e = Extractor.ofPartial(TestClass.TYPE, TestClass.DIGESTER_PARTIAL);
-        assertMatches(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
-                      "foo", 3, 4L, (byte) 5);
-        assertMatches(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
+        Extractor e = Extractor.of(TestClass.TYPE, TestClass.DIGESTER_PARTIAL);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.FAIL, e, new TestClass("foo", 2, 4L, (byte) 5));
     }
 
     public void testCompose() throws Throwable {
         Extractor e = Extractor.ofTotal(TestClass.class, COMPONENTS);
-        MethodHandle mh = e.compose(TestClass.CONSTRUCTOR);
+        MethodHandle mh = e.compose(TestClass.CONSTRUCTOR, null);
         TestClass target = new TestClass("foo", 3, 4L, (byte) 5);
         Object o = mh.invoke(target);
         assertTrue(o instanceof TestClass);
         assertNotSame(target, o);
         assertEquals(target, o);
+    }
+
+    public void testDropBindings() throws Throwable {
+        Extractor e = Extractor.ofTotal(TestClass.class, COMPONENTS);
+        assertMatch(MatchKind.CARRIER, e, new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(e, 0), new TestClass("foo", 3, 4L, (byte) 5),
+                    3, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(e, 0, 0), new TestClass("foo", 3, 4L, (byte) 5),
+                    3, 4L, (byte) 5);
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(e, 3), new TestClass("foo", 3, 4L, (byte) 5),
+                    "foo", 3, 4L);
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(e, 0, 1, 2, 3), new TestClass("foo", 3, 4L, (byte) 5));
+    }
+
+    public void testAsType() throws Throwable {
+        assertMatch(MatchKind.SELF, Extractor.ofType(String.class), "Foo", "Foo");
+        assertMatch(MatchKind.FAIL, Extractor.ofType(String.class), 3);
+        assertMatch(MatchKind.FAIL, Extractor.ofType(String.class), null);
+
+        assertMatch(MatchKind.SELF, Extractor.ofType(List.class), List.of(3), List.of(3));
+        assertMatch(MatchKind.SELF, Extractor.ofType(List.class), List.of(), List.of());
+        assertMatch(MatchKind.SELF, Extractor.ofType(List.class), new ArrayList<>(), List.of());
+    }
+
+    public void testAsNullableType() throws Throwable {
+        assertMatch(MatchKind.SELF, Extractor.ofTypeNullable(String.class), "Foo", "Foo");
+        assertMatch(MatchKind.FAIL, Extractor.ofTypeNullable(String.class), 3);
+        assertMatch(MatchKind.MATCH, Extractor.ofTypeNullable(String.class), null, (Object) null);
+    }
+
+    public void testNested() throws Throwable {
+        Extractor TC2 = Extractor.ofTotal(TestClass2.class, TestClass2.MH_X);
+        Extractor STRING = Extractor.ofType(String.class);
+        Extractor OBJECT  = Extractor.ofType(Object.class);
+
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, STRING), 0), new TestClass2("foo"),
+                    "foo");
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, OBJECT), 0), new TestClass2("foo"),
+                    "foo");
+        assertMatch(MatchKind.FAIL, Extractor.dropBindings(Extractor.ofNested(TC2, STRING), 0), new TestClass2(List.of(3)),
+                    "foo");
+
+        assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, Extractor.ofNested(TC2, STRING)), 0, 1), new TestClass2(new TestClass2("foo")),
+                    "foo");
+
     }
 }
