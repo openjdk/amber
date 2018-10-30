@@ -40,6 +40,7 @@ import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
 import com.sun.tools.javac.resources.CompilerProperties.Notes;
@@ -84,7 +85,6 @@ import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 import com.sun.tools.javac.util.Position;
 
-import static com.sun.tools.javac.code.Flags.ANONCONSTR;
 import static com.sun.tools.javac.code.Flags.GENERATEDCONSTR;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
@@ -94,6 +94,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.METHODDEF;
 import static com.sun.tools.javac.tree.JCTree.Tag.NEWCLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.NULLCHK;
 import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
+import static com.sun.tools.javac.tree.JCTree.Tag.SKIP;
 import static com.sun.tools.javac.tree.JCTree.Tag.TYPEAPPLY;
 import static com.sun.tools.javac.tree.JCTree.Tag.VARDEF;
 
@@ -150,6 +151,8 @@ public class Analyzer {
         LAMBDA("lambda", Feature.LAMBDA),
         METHOD("method", Feature.GRAPH_INFERENCE),
         CONCISE_METHOD("concise_method", Feature.CONCISE_METHOD_BODIES),
+        // will use GRAPH_INFERECE just to have something that works for JDK8 and up
+        GENERIC_ARRAY_IN_SIGNATURE("generic_array_in_signature", Feature.GRAPH_INFERENCE),
         LOCAL("local", Feature.LOCAL_VARIABLE_TYPE_INFERENCE);
 
         final String opt;
@@ -439,6 +442,99 @@ public class Analyzer {
         }
     }
 
+    class GenericArrayAnalyzer extends StatementAnalyzer<JCTree, JCTree> {
+
+        GenericArrayAnalyzer() {
+            // we will be accepting more than one tree so using SKIP as we could have used any other
+            super(AnalyzerMode.GENERIC_ARRAY_IN_SIGNATURE, SKIP);
+        }
+
+        @Override
+        boolean accepts(JCTree tree) {
+            return tree.hasTag(Tag.VARDEF) || tree.hasTag(Tag.METHODDEF);
+        }
+
+        @Override
+        boolean match (JCTree tree, Env<AttrContext> env) {
+            boolean result = false;
+            if (tree.hasTag(METHODDEF)) {
+                JCMethodDecl methodDec = (JCMethodDecl)tree;
+                if (((methodDec.mods.flags & Flags.SYNTHETIC) == 0) &&
+                    methodDec.name != names.init) {
+                    return methodDeclMatchHelper(methodDec, false);
+                }
+            } else if (tree.hasTag(VARDEF)) {
+                JCVariableDecl varDec = (JCVariableDecl)tree;
+                if ((varDec.mods.flags & Flags.SYNTHETIC) == 0) {
+                    return fieldDeclMatchHelper(varDec, false);
+                }
+            }
+
+            return result;
+        }
+        //where
+            boolean fieldDeclMatchHelper(JCVariableDecl varDecl, boolean generic) {
+                if ((varDecl.sym.flags() & Flags.PUBLIC) != 0 &&
+                        areOwnersPublicTypesAllWayUp(varDecl.sym)) {
+                    return generic ? isGenericArray(varDecl.sym.type) : true;
+                }
+                return false;
+            }
+
+            boolean isGenericArray(Type t) {
+                return (t.hasTag(TypeTag.ARRAY)) && (t != types.erasure(t));
+            }
+
+            boolean methodDeclMatchHelper(JCMethodDecl methodDecl, boolean generic) {
+                if ((methodDecl.sym.flags() & Flags.PUBLIC) != 0 &&
+                        areOwnersPublicTypesAllWayUp(methodDecl.sym)) {
+                    Type.MethodType mt = methodDecl.sym.type.asMethodType();
+                    if (!generic) return true;
+                    if (mt.argtypes.stream().anyMatch((arg) -> (isGenericArray(arg)))) {
+                        return true;
+                    }
+                    return isGenericArray(mt.restype);
+                }
+                return false;
+            }
+
+            boolean areOwnersPublicTypesAllWayUp(Symbol sym) {
+                Symbol currentOwner = sym.owner;
+                Symbol outerMostClass = sym.outermostClass();
+                while (currentOwner != outerMostClass &&
+                        currentOwner.kind == Kind.TYP &&
+                        ((currentOwner.flags() & Flags.PUBLIC) != 0)) {
+                    currentOwner = currentOwner.owner;
+                }
+                return currentOwner == outerMostClass;
+            }
+
+        @Override
+        List<JCTree> rewrite(JCTree oldTree){
+            return List.of(oldTree);
+        }
+
+        @Override
+        void process (JCTree oldTree, JCTree newTree, boolean hasErrors){
+            if (!hasErrors) {
+                // this version is for experiments only, printing warnings breaks the OpenJDK build
+                boolean generic = false;
+                if (oldTree.hasTag(METHODDEF)) {
+                    JCMethodDecl methodDec = (JCMethodDecl)oldTree;
+                    generic = methodDeclMatchHelper(methodDec, true);
+                } else if (oldTree.hasTag(VARDEF)) {
+                    JCVariableDecl varDec = (JCVariableDecl)oldTree;
+                    generic = fieldDeclMatchHelper(varDec, true);
+                }
+                if (generic) {
+                    log.note(oldTree, Notes.ApiWithGenericTypeInSignatureFound);
+                } else {
+                    log.note(oldTree, Notes.ApiWithNonGenericTypeInSignatureFound);
+                }
+            }
+        }
+    }
+
     /**
      * This analyzer checks if generic method call has redundant type arguments.
      */
@@ -561,6 +657,7 @@ public class Analyzer {
             new RedundantLocalVarTypeAnalyzer(),
             new RedundantLocalVarTypeAnalyzerForEach(),
             new ConciseMethodsAnalyzer(),
+            new GenericArrayAnalyzer(),
     };
 
     /**
@@ -569,7 +666,8 @@ public class Analyzer {
     Env<AttrContext> copyEnvIfNeeded(JCTree tree, Env<AttrContext> env) {
         if (!analyzerModes.isEmpty() &&
                 !env.info.isSpeculative &&
-                TreeInfo.isStatement(tree) &&
+                (TreeInfo.isStatement(tree) ||
+                tree.hasTag(METHODDEF)) &&
                 !tree.hasTag(LABELLED)) {
             Env<AttrContext> analyzeEnv =
                     env.dup(env.tree, env.info.dup(env.info.scope.dupUnshared(env.info.scope.owner)));
@@ -587,8 +685,7 @@ public class Analyzer {
      */
     void analyzeIfNeeded(JCTree tree, Env<AttrContext> env) {
         if (env != null) {
-            JCStatement stmt = (JCStatement)tree;
-            analyze(stmt, env);
+            analyze(tree, env);
         }
     }
 
@@ -596,7 +693,7 @@ public class Analyzer {
      * Analyze an AST node; this involves collecting a list of all the nodes that needs rewriting,
      * and speculatively type-check the rewritten code to compare results against previously attributed code.
      */
-    protected void analyze(JCStatement statement, Env<AttrContext> env) {
+    protected void analyze(JCTree statement, Env<AttrContext> env) {
         StatementScanner statementScanner = new StatementScanner(statement, env);
         statementScanner.scan();
 
@@ -675,11 +772,13 @@ public class Analyzer {
         try {
             log.useSource(rewriting.env.toplevel.getSourceFile());
 
-            JCStatement treeToAnalyze = (JCStatement)rewriting.originalTree;
+            JCTree treeToAnalyze = rewriting.originalTree;
             if (rewriting.env.info.scope.owner.kind == Kind.TYP) {
                 //add a block to hoist potential dangling variable declarations
-                treeToAnalyze = make.at(Position.NOPOS)
+                if (TreeInfo.isStatement(treeToAnalyze)) {
+                    treeToAnalyze = make.at(Position.NOPOS)
                                     .Block(Flags.SYNTHETIC, List.of((JCStatement)rewriting.originalTree));
+                }
             }
 
             //TODO: to further refine the analysis, try all rewriting combinations
