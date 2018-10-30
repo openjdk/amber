@@ -42,12 +42,5 @@ public interface IntrinsicContext {
     public void error(String message);
     public void error(String message, int arg);
     public void error(String message, int arg, int offset);
-
-    public ClassDesc getThisClass();
-    public ClassDesc getOuterMostClass();
-    public DirectMethodHandleDesc getMethod();
-
-    public String getSourceName();
-    public int getLineNumber();
 }
 

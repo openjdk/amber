@@ -495,55 +495,5 @@ public class IntrinsicsVisitor {
             log.error(new SimpleDiagnosticPosition(allArgs[arg].pos + offset),
                     Errors.IntrinsicError(message));
         }
-
-        @Override
-        public ClassDesc getThisClass() {
-            return typeClassDesc(thisClass.type);
-        }
-
-        @Override
-        public ClassDesc getOuterMostClass() {
-            return typeClassDesc(outerMostClass.type);
-        }
-
-        @Override
-        public DirectMethodHandleDesc getMethod() {
-            if (thisMethod == null) {
-                return null;
-            }
-
-            Name name = thisMethod.name;
-
-            Kind kind = name == names.init                 ? Kind.CONSTRUCTOR :
-                        (thisMethod.flags() & STATIC) != 0 ? Kind.STATIC :
-                                                             Kind.VIRTUAL;
-
-            ClassDesc returnClassDesc =  typeClassDesc(thisMethod.getReturnType());
-            List<VarSymbol> parameters = thisMethod.getParameters();
-            int length = parameters.length();
-            ClassDesc[] argTypes = new ClassDesc[length];
-            for (int i = 0; i < length; i++) {
-                argTypes[i] = typeClassDesc(parameters.get(i).type);
-            }
-
-            DirectMethodHandleDesc result = MethodHandleDesc.of(
-                    kind,
-                    getThisClass(),
-                    name.toString(),
-                    returnClassDesc,
-                    argTypes
-            );
-            return result;
-        }
-
-        @Override
-        public String getSourceName() {
-            return attrEnv.toplevel.sourcefile.getName();
-        }
-
-        @Override
-        public int getLineNumber() {
-            return attrEnv.toplevel.lineMap.getLineNumber(tree.pos);
-        }
     }
 }
