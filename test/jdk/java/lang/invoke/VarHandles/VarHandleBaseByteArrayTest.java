@@ -338,10 +338,10 @@ public abstract class VarHandleBaseByteArrayTest extends VarHandleBaseTest {
     @BeforeClass
     public void setup() {
         setupByteSources();
-        vhss = setupVarHandleSources(true);
+        setupVarHandleSources();
     }
 
-    abstract List<VarHandleSource> setupVarHandleSources(boolean same);
+    abstract void setupVarHandleSources();
 
 
     @DataProvider

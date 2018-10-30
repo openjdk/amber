@@ -213,10 +213,7 @@ public class Symtab {
     public final Type documentedType;
     public final Type elementTypeType;
     public final Type functionalInterfaceType;
-    public final Type constableType;
-    public final Type constantDescType;
-    public final Type intrinsicCandidateType;
-    public final Type programType;
+
     /** The symbol representing the length field of an array.
      */
     public final VarSymbol lengthVar;
@@ -570,11 +567,6 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
-        constableType = enterClass("java.lang.constant.Constable");
-        constantDescType = enterClass("java.lang.constant.ConstantDesc");
-        intrinsicCandidateType =
-                enterClass("java.lang.compiler.IntrinsicCandidate");
-        programType = enterClass("java.lang.Program");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);

@@ -27,6 +27,7 @@
  * @summary Basic test for null argument
  */
 
+import java.util.Formatter;
 import java.util.Locale;
 
 public class NullArg {
@@ -51,16 +52,10 @@ public class NullArg {
                     if (!String.format("%" + c + ct, null).equals(expected)) {
                         throw new RuntimeException("%t" + ct + "null check failed.");
                     }
-                    if (!JavacIntrinsicsSupport.stringFormat("%" + c + ct, null).equals(expected)) {
-                        throw new RuntimeException("%t" + ct + "null check failed. " + JavacIntrinsicsSupport.stringFormat("%" + c + ct, null) + " // " + expected);
-                    }
                 }
             } else {
                 if (!String.format("%" + c , null).equals(expected)) {
                     throw new RuntimeException("%" + c + "null check failed.");
-                }
-                if (!JavacIntrinsicsSupport.stringFormat("%" + c , null).equals(expected)) {
-                    throw new RuntimeException("%" + c + "null check failed. " + JavacIntrinsicsSupport.stringFormat("%" + c , null) + " // " + expected);
                 }
             }
         }

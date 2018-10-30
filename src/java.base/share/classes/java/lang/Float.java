@@ -25,11 +25,6 @@
 
 package java.lang;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.constant.Constable;
-import java.lang.constant.ConstantDesc;
-import java.util.Optional;
-
 import jdk.internal.math.FloatingDecimal;
 import jdk.internal.HotSpotIntrinsicCandidate;
 
@@ -50,8 +45,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Float extends Number
-        implements Comparable<Float>, ConstantDesc<Float>, Constable<Float> {
+public final class Float extends Number implements Comparable<Float> {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by
@@ -986,29 +980,6 @@ public final class Float extends Number
      */
     public static float min(float a, float b) {
         return Math.min(a, b);
-    }
-
-    /**
-     * Returns a nominal descriptor for this instance, which is the instance
-     * itself.
-     *
-     * @return an {@link Optional} describing the {@linkplain Float} instance
-     */
-    @Override
-    public Optional<Float> describeConstable() {
-        return Optional.of(this);
-    }
-
-    /**
-     * Resolve this instance as a {@link ConstantDesc}, the result of which is
-     * the instance itself.
-     *
-     * @param lookup ignored
-     * @return the {@linkplain Float} instance
-     */
-    @Override
-    public Float resolveConstantDesc(MethodHandles.Lookup lookup) {
-        return this;
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

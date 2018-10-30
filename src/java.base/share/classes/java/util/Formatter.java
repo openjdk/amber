@@ -61,7 +61,6 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
-import java.lang.compiler.IntrinsicCandidate;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FormattedFloatingDecimal;
 import sun.util.locale.provider.LocaleProviderAdapter;
@@ -1914,21 +1913,17 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  * @since 1.5
  */
 public final class Formatter implements Closeable, Flushable {
-    /** Receiving Appendable */
-    Appendable a;
-    /** Formatter locale */
-    final Locale l;
-    /** Last low level exception caught */
-    IOException lastException;
-    /** Zero for the locale */
-    final char zero;
-    /** Round up scaler */
-    static double SCALEUP = Math.scalb(1.0, 54);
-    /** Maximum floating decimal digits
-     *    1 (sign) + 19 (max # sig digits) + 1 ('.') + 1 ('e') + 1 (sign)
-     *    + 3 (max # exp digits) + 4 (error) = 30
-     */
-    static final int MAX_FD_CHARS = 30;
+    private Appendable a;
+    private final Locale l;
+
+    private IOException lastException;
+
+    private final char zero;
+    private static double scaleUp;
+
+    // 1 (sign) + 19 (max # sig digits) + 1 ('.') + 1 ('e') + 1 (sign)
+    // + 3 (max # exp digits) + 4 (error) = 30
+    private static final int MAX_FD_CHARS = 30;
 
     /**
      * Returns a charset object for the given charset name.
@@ -2446,10 +2441,6 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private boolean usesDefaultZero(Locale l) {
-        return zero == '0' && (l == null || l.equals(this.l) || l.equals(Locale.US));
-    }
-
     /**
      * Returns the locale set by the construction of this formatter.
      *
@@ -2614,7 +2605,6 @@ public final class Formatter implements Closeable, Flushable {
      *
      * @return  This formatter
      */
-    @IntrinsicCandidate
     public Formatter format(String format, Object ... args) {
         return format(l, format, args);
     }
@@ -2654,14 +2644,7 @@ public final class Formatter implements Closeable, Flushable {
      *
      * @return  This formatter
      */
-    @IntrinsicCandidate
     public Formatter format(Locale l, String format, Object ... args) {
-        List<Specifier> fsa = parse(format);
-        format(l, fsa, args);
-        return this;
-    }
-
-    void format(Locale l, List<Specifier> fsa, Object ... args) {
         ensureOpen();
 
         // index of last argument referenced
@@ -2669,106 +2652,38 @@ public final class Formatter implements Closeable, Flushable {
         // last ordinary index
         int lasto = -1;
 
-        for (Specifier fs : fsa) {
+        List<FormatString> fsa = parse(format);
+        for (FormatString fs : fsa) {
             int index = fs.index();
             try {
                 switch (index) {
                 case -2:  // fixed string, "%n", or "%%"
-                    fs.print(this, null, l);
+                    fs.print(null, l);
                     break;
                 case -1:  // relative index
                     if (last < 0 || (args != null && last > args.length - 1))
                         throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[last]), l);
+                    fs.print((args == null ? null : args[last]), l);
                     break;
                 case 0:  // ordinary index
                     lasto++;
                     last = lasto;
                     if (args != null && lasto > args.length - 1)
                         throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[lasto]), l);
+                    fs.print((args == null ? null : args[lasto]), l);
                     break;
                 default:  // explicit index
                     last = index - 1;
                     if (args != null && last > args.length - 1)
                         throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[last]), l);
+                    fs.print((args == null ? null : args[last]), l);
                     break;
                 }
             } catch (IOException x) {
                 lastException = x;
             }
         }
-
-    }
-
-    /**
-     * Internal interface used to intrinsic-fy formatter usage.
-     */
-    public static class CompiledFormat {
-        private List<Specifier> specifiers;
-
-        private CompiledFormat(List<Specifier> specifiers) {
-            this.specifiers = specifiers;
-        }
-
-        /**
-         * Format the arguments using the compiled format.
-         * @param formatter formatter to use
-         * @param args      format arguments
-         * @return this CompiledFormat
-         */
-        public CompiledFormat format(Formatter formatter, Object... args) {
-            formatter.format(formatter.l, specifiers, args);
-            return this;
-        }
-
-        /**
-         * Format the arguments using the compiled format.
-         * @param formatter formatter to use
-         * @param locale locale to use with format
-         * @param args   format arguments
-         * @return this CompiledFormat
-         */
-        public CompiledFormat format(Formatter formatter, Locale locale, Object... args) {
-            formatter.format(locale, specifiers, args);
-            return this;
-        }
-
-        /**
-         * Returns the number of specifiers.
-         * @return number of specifiers.
-         */
-        public int count() {
-            return specifiers.size();
-        }
-
-        /**
-         * Returns a list of format specifier information.
-         * @return a list of format specifier information
-         */
-        public List<Specifier> specifiers() {
-            return new ArrayList<>(specifiers);
-        }
-
-        /**
-         * Returns the string from the wrapping
-         * @param formatter formatter to use
-         * @return formatter toString
-         */
-        public String toString(Formatter formatter) {
-            return formatter.toString();
-        }
-    }
-
-    /**
-     * Creates a compiled format object.
-     * @param format to compile
-     * @return a compiled format
-     */
-    public static CompiledFormat compile(String format) {
-        List<Specifier> specifiers = parse(format);
-        return new CompiledFormat(specifiers);
+        return this;
     }
 
     // %[argument_index$][flags][width][.precision][t]conversion
@@ -2780,8 +2695,8 @@ public final class Formatter implements Closeable, Flushable {
     /**
      * Finds format specifiers in the format string.
      */
-    private static List<Specifier> parse(String s) {
-        ArrayList<Specifier> al = new ArrayList<>();
+    private List<FormatString> parse(String s) {
+        ArrayList<FormatString> al = new ArrayList<>();
         Matcher m = fsPattern.matcher(s);
         for (int i = 0, len = s.length(); i < len; ) {
             if (m.find(i)) {
@@ -2819,68 +2734,13 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private StringBuilder maybeNewStringBuilder(int width) {
-        return  width == -1 && a instanceof StringBuilder ? (StringBuilder) a : new StringBuilder();
-    }
-
-    /**
-     * Interface for Formatter specifiers.
-     */
-    public interface Specifier {
-        /**
-         * Return the specifier index.
-         * @return the index
-         */
+    private interface FormatString {
         int index();
-
-        /**
-         * Print the specifier to the formatter's appendable.
-         * @param formatter the formatter
-         * @param arg the argument
-         * @param l the locale
-         * @return the formatter
-         * @throws IOException an error occurred
-         */
-        Formatter print(Formatter formatter, Object arg, Locale l) throws IOException;
-
-        /**
-         * Return the specifier value.
-         * @return the value
-         */
-        String value();
-
-        /**
-         * Return the conversion type.
-         * @return the conversion type
-         */
-        char conversion();
-
-        /**
-         * Return a string representation of the specifier.
-         * @return a string representation
-         */
+        void print(Object arg, Locale l) throws IOException;
         String toString();
-
-        /**
-         * Is this specifier has empty flags.
-         * @return true if flags are empty
-         */
-        boolean hasEmptyFlags();
-
-        /**
-         * Is this a date-time specifier?
-         * @return true if date-time specifier
-         */
-        boolean isDateTime();
-
-        /**
-         * is this an upper case sepcifier?
-         * @return true if upper case flag is set
-         */
-        boolean isUpperCase();
     }
 
-    private static class FixedString implements Specifier {
+    private class FixedString implements FormatString {
         private String s;
         private int start;
         private int end;
@@ -2890,16 +2750,9 @@ public final class Formatter implements Closeable, Flushable {
             this.end = end;
         }
         public int index() { return -2; }
-        public Formatter print(Formatter formatter, Object arg, Locale l) throws IOException {
-            formatter.a.append(s, start, end);
-            return formatter;
-        }
-        public String value() { return toString(); }
-        public char conversion() { return '\0'; }
+        public void print(Object arg, Locale l)
+            throws IOException { a.append(s, start, end); }
         public String toString() { return s.substring(start, end); }
-        public boolean hasEmptyFlags() { return true; }
-        public boolean isDateTime() { return false; }
-        public boolean isUpperCase() { return false; }
     }
 
     /**
@@ -2917,21 +2770,13 @@ public final class Formatter implements Closeable, Flushable {
         DECIMAL_FLOAT
     };
 
-    private static class FormatSpecifier implements Specifier {
+    private class FormatSpecifier implements FormatString {
         private int index = -1;
         private Flags f = Flags.NONE;
         private int width;
         private int precision;
         private boolean dt = false;
         private char c;
-
-        public String value() {
-            return toString();
-        }
-
-        public char conversion() {
-            return c;
-        }
 
         private int index(String s, int start, int end) {
             if (start >= 0) {
@@ -3035,94 +2880,80 @@ public final class Formatter implements Closeable, Flushable {
                 throw new UnknownFormatConversionException(String.valueOf(c));
         }
 
-
-        public boolean hasEmptyFlags() {
-            return (f.isEmpty() || f.valueOf() == Flags.UPPERCASE.valueOf()) && width == -1;
-        }
-
-        public boolean isDateTime() {
-            return dt;
-        }
-
-        public boolean isUpperCase() {
-            return f.valueOf() == Flags.UPPERCASE.valueOf();
-        }
-
-        public Formatter print(Formatter formatter, Object arg, Locale l) throws IOException {
+        public void print(Object arg, Locale l) throws IOException {
             if (dt) {
-                printDateTime(formatter, arg, l);
-                return formatter;
+                printDateTime(arg, l);
+                return;
             }
             switch(c) {
             case Conversion.DECIMAL_INTEGER:
             case Conversion.OCTAL_INTEGER:
             case Conversion.HEXADECIMAL_INTEGER:
-                printInteger(formatter, arg, l);
+                printInteger(arg, l);
                 break;
             case Conversion.SCIENTIFIC:
             case Conversion.GENERAL:
             case Conversion.DECIMAL_FLOAT:
             case Conversion.HEXADECIMAL_FLOAT:
-                printFloat(formatter, arg, l);
+                printFloat(arg, l);
                 break;
             case Conversion.CHARACTER:
             case Conversion.CHARACTER_UPPER:
-                printCharacter(formatter, arg, l);
+                printCharacter(arg, l);
                 break;
             case Conversion.BOOLEAN:
-                printBoolean(formatter, arg, l);
+                printBoolean(arg, l);
                 break;
             case Conversion.STRING:
-                printString(formatter, arg, l);
+                printString(arg, l);
                 break;
             case Conversion.HASHCODE:
-                printHashCode(formatter, arg, l);
+                printHashCode(arg, l);
                 break;
             case Conversion.LINE_SEPARATOR:
-                formatter.a.append(System.lineSeparator());
+                a.append(System.lineSeparator());
                 break;
             case Conversion.PERCENT_SIGN:
-                print(formatter, "%", l);
+                print("%", l);
                 break;
             default:
                 assert false;
             }
-            return formatter;
         }
 
-        private void printInteger(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printInteger(Object arg, Locale l) throws IOException {
             if (arg == null)
-                print(formatter, "null", l);
+                print("null", l);
             else if (arg instanceof Byte)
-                print(formatter, ((Byte)arg).byteValue(), l);
+                print(((Byte)arg).byteValue(), l);
             else if (arg instanceof Short)
-                print(formatter, ((Short)arg).shortValue(), l);
+                print(((Short)arg).shortValue(), l);
             else if (arg instanceof Integer)
-                print(formatter, ((Integer)arg).intValue(), l);
+                print(((Integer)arg).intValue(), l);
             else if (arg instanceof Long)
-                print(formatter, ((Long)arg).longValue(), l);
+                print(((Long)arg).longValue(), l);
             else if (arg instanceof BigInteger)
-                print(formatter, ((BigInteger)arg), l);
+                print(((BigInteger)arg), l);
             else
                 failConversion(c, arg);
         }
 
-        private void printFloat(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printFloat(Object arg, Locale l) throws IOException {
             if (arg == null)
-                print(formatter, "null", l);
+                print("null", l);
             else if (arg instanceof Float)
-                print(formatter, ((Float)arg).floatValue(), l);
+                print(((Float)arg).floatValue(), l);
             else if (arg instanceof Double)
-                print(formatter, ((Double)arg).doubleValue(), l);
+                print(((Double)arg).doubleValue(), l);
             else if (arg instanceof BigDecimal)
-                print(formatter, ((BigDecimal)arg), l);
+                print(((BigDecimal)arg), l);
             else
                 failConversion(c, arg);
         }
 
-        void printDateTime(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printDateTime(Object arg, Locale l) throws IOException {
             if (arg == null) {
-                print(formatter, "null", l);
+                print("null", l);
                 return;
             }
             Calendar cal = null;
@@ -3143,19 +2974,19 @@ public final class Formatter implements Closeable, Flushable {
                 cal = (Calendar) ((Calendar) arg).clone();
                 cal.setLenient(true);
             } else if (arg instanceof TemporalAccessor) {
-                print(formatter, (TemporalAccessor) arg, c, l);
+                print((TemporalAccessor) arg, c, l);
                 return;
             } else {
                 failConversion(c, arg);
             }
             // Use the provided locale so that invocations of
             // localizedMagnitude() use optimizations for null.
-            print(formatter, cal, c, l);
+            print(cal, c, l);
         }
 
-        private void printCharacter(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printCharacter(Object arg, Locale l) throws IOException {
             if (arg == null) {
-                print(formatter, "null", l);
+                print("null", l);
                 return;
             }
             String s = null;
@@ -3182,12 +3013,12 @@ public final class Formatter implements Closeable, Flushable {
             } else {
                 failConversion(c, arg);
             }
-            print(formatter, s, l);
+            print(s, l);
         }
 
-        private void printString(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printString(Object arg, Locale l) throws IOException {
             if (arg instanceof Formattable) {
-                Formatter fmt = formatter;
+                Formatter fmt = Formatter.this;
                 if (fmt.locale() != l)
                     fmt = new Formatter(fmt.out(), l);
                 ((Formattable)arg).formatTo(fmt, f.valueOf(), width, precision);
@@ -3195,13 +3026,13 @@ public final class Formatter implements Closeable, Flushable {
                 if (f.contains(Flags.ALTERNATE))
                     failMismatch(Flags.ALTERNATE, 's');
                 if (arg == null)
-                    print(formatter, "null", l);
+                    print("null", l);
                 else
-                    print(formatter, arg.toString(), l);
+                    print(arg.toString(), l);
             }
         }
 
-        private void printBoolean(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printBoolean(Object arg, Locale l) throws IOException {
             String s;
             if (arg != null)
                 s = ((arg instanceof Boolean)
@@ -3209,32 +3040,30 @@ public final class Formatter implements Closeable, Flushable {
                      : Boolean.toString(true));
             else
                 s = Boolean.toString(false);
-            print(formatter, s, l);
+            print(s, l);
         }
 
-        private Formatter printHashCode(Formatter formatter, Object arg, Locale l) throws IOException {
+        private void printHashCode(Object arg, Locale l) throws IOException {
             String s = (arg == null
                         ? "null"
                         : Integer.toHexString(arg.hashCode()));
-            print(formatter, s, l);
-            return formatter;
+            print(s, l);
         }
 
-        Formatter print(Formatter formatter, String s, Locale l) throws IOException {
+        private void print(String s, Locale l) throws IOException {
             if (precision != -1 && precision < s.length())
                 s = s.substring(0, precision);
             if (f.contains(Flags.UPPERCASE))
                 s = toUpperCaseWithLocale(s, l);
-            appendJustified(formatter.a, s);
-            return formatter;
+            appendJustified(a, s);
         }
 
-        String toUpperCaseWithLocale(String s, Locale l) {
+        private String toUpperCaseWithLocale(String s, Locale l) {
             return s.toUpperCase(Objects.requireNonNullElse(l,
                     Locale.getDefault(Locale.Category.FORMAT)));
         }
 
-        Appendable appendJustified(Appendable a, CharSequence cs) throws IOException {
+        private Appendable appendJustified(Appendable a, CharSequence cs) throws IOException {
              if (width == -1) {
                  return a.append(cs);
              }
@@ -3375,69 +3204,62 @@ public final class Formatter implements Closeable, Flushable {
             }
         }
 
-        private Formatter print(Formatter formatter, byte value, Locale l) throws IOException {
+        private void print(byte value, Locale l) throws IOException {
             long v = value;
             if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
+                && (c == Conversion.OCTAL_INTEGER
                     || c == Conversion.HEXADECIMAL_INTEGER)) {
                 v += (1L << 8);
                 assert v >= 0 : v;
             }
-            return print(formatter, v, l);
+            print(v, l);
         }
 
-        private Formatter print(Formatter formatter, short value, Locale l) throws IOException {
+        private void print(short value, Locale l) throws IOException {
             long v = value;
             if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
+                && (c == Conversion.OCTAL_INTEGER
                     || c == Conversion.HEXADECIMAL_INTEGER)) {
                 v += (1L << 16);
                 assert v >= 0 : v;
             }
-            return print(formatter, v, l);
+            print(v, l);
         }
 
-        private Formatter print(Formatter formatter, int value, Locale l) throws IOException {
-
-            if (c == Conversion.DECIMAL_INTEGER && hasEmptyFlags() && !dt && formatter.usesDefaultZero(l)) {
-                formatter.a.append(Integer.toString(value));
-                return formatter;
-            }
-
+        private void print(int value, Locale l) throws IOException {
             long v = value;
             if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
+                && (c == Conversion.OCTAL_INTEGER
                     || c == Conversion.HEXADECIMAL_INTEGER)) {
                 v += (1L << 32);
                 assert v >= 0 : v;
             }
-            return print(formatter, v, l);
+            print(v, l);
         }
 
-        private Formatter print(Formatter formatter, long value, Locale l) throws IOException {
+        private void print(long value, Locale l) throws IOException {
 
             StringBuilder sb = new StringBuilder();
 
             if (c == Conversion.DECIMAL_INTEGER) {
                 boolean neg = value < 0;
                 String valueStr = Long.toString(value, 10);
-                int pos0 = sb.length();
 
                 // leading sign indicator
                 leadingSign(sb, neg);
 
                 // the value
-                localizedMagnitude(formatter, sb, pos0, valueStr, neg ? 1 : 0, f, adjustWidth(width, f, neg), l);
+                localizedMagnitude(sb, valueStr, neg ? 1 : 0, f, adjustWidth(width, f, neg), l);
 
                 // trailing sign indicator
                 trailingSign(sb, neg);
             } else if (c == Conversion.OCTAL_INTEGER) {
                 checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE,
-                        Flags.PLUS);
+                              Flags.PLUS);
                 String s = Long.toOctalString(value);
                 int len = (f.contains(Flags.ALTERNATE)
-                        ? s.length() + 1
-                        : s.length());
+                           ? s.length() + 1
+                           : s.length());
 
                 // apply ALTERNATE (radix indicator for octal) before ZERO_PAD
                 if (f.contains(Flags.ALTERNATE))
@@ -3448,11 +3270,11 @@ public final class Formatter implements Closeable, Flushable {
                 sb.append(s);
             } else if (c == Conversion.HEXADECIMAL_INTEGER) {
                 checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE,
-                        Flags.PLUS);
+                              Flags.PLUS);
                 String s = Long.toHexString(value);
                 int len = (f.contains(Flags.ALTERNATE)
-                        ? s.length() + 2
-                        : s.length());
+                           ? s.length() + 2
+                           : s.length());
 
                 // apply ALTERNATE (radix indicator for hex) before ZERO_PAD
                 if (f.contains(Flags.ALTERNATE))
@@ -3466,12 +3288,11 @@ public final class Formatter implements Closeable, Flushable {
             }
 
             // justify based on width
-            appendJustified(formatter.a, sb);
-            return formatter;
+            appendJustified(a, sb);
         }
 
         // neg := val < 0
-        void leadingSign(StringBuilder sb, boolean neg) {
+        private StringBuilder leadingSign(StringBuilder sb, boolean neg) {
             if (!neg) {
                 if (f.contains(Flags.PLUS)) {
                     sb.append('+');
@@ -3484,26 +3305,27 @@ public final class Formatter implements Closeable, Flushable {
                 else
                     sb.append('-');
             }
+            return sb;
         }
 
         // neg := val < 0
-        void trailingSign(StringBuilder sb, boolean neg) {
+        private StringBuilder trailingSign(StringBuilder sb, boolean neg) {
             if (neg && f.contains(Flags.PARENTHESES))
                 sb.append(')');
+            return sb;
         }
 
-        private void print(Formatter formatter, BigInteger value, Locale l) throws IOException {
+        private void print(BigInteger value, Locale l) throws IOException {
             StringBuilder sb = new StringBuilder();
             boolean neg = value.signum() == -1;
             BigInteger v = value.abs();
-            int pos0 = sb.length();
 
             // leading sign indicator
             leadingSign(sb, neg);
 
             // the value
             if (c == Conversion.DECIMAL_INTEGER) {
-                localizedMagnitude(formatter, sb, pos0, v.toString(), 0, f, adjustWidth(width, f, neg), l);
+                localizedMagnitude(sb, v.toString(), 0, f, adjustWidth(width, f, neg), l);
             } else if (c == Conversion.OCTAL_INTEGER) {
                 String s = v.toString(8);
 
@@ -3544,27 +3366,26 @@ public final class Formatter implements Closeable, Flushable {
             trailingSign(sb, (value.signum() == -1));
 
             // justify based on width
-            appendJustified(formatter.a, sb);
+            appendJustified(a, sb);
         }
 
-        private Formatter print(Formatter formatter, float value, Locale l) throws IOException {
-            return print(formatter, (double) value, l);
+        private void print(float value, Locale l) throws IOException {
+            print((double) value, l);
         }
 
-        private Formatter print(Formatter formatter, double value, Locale l) throws IOException {
-            StringBuilder sb = formatter.maybeNewStringBuilder(width);
+        private void print(double value, Locale l) throws IOException {
+            StringBuilder sb = new StringBuilder();
             boolean neg = Double.compare(value, 0.0) == -1;
 
             if (!Double.isNaN(value)) {
                 double v = Math.abs(value);
-                int pos0 = sb.length();
 
                 // leading sign indicator
                 leadingSign(sb, neg);
 
                 // the value
                 if (!Double.isInfinite(v))
-                    print(formatter, sb, pos0, v, l, f, c, precision, neg);
+                    print(sb, v, l, f, c, precision, neg);
                 else
                     sb.append(f.contains(Flags.UPPERCASE)
                               ? "INFINITY" : "Infinity");
@@ -3576,14 +3397,11 @@ public final class Formatter implements Closeable, Flushable {
             }
 
             // justify based on width
-            if (sb != formatter.a) {
-                appendJustified(formatter.a, sb);
-            }
-            return formatter;
+            appendJustified(a, sb);
         }
 
         // !Double.isInfinite(value) && !Double.isNaN(value)
-        private void print(Formatter formatter, StringBuilder sb, int pos0, double value, Locale l,
+        private void print(StringBuilder sb, double value, Locale l,
                            Flags f, char c, int precision, boolean neg)
             throws IOException
         {
@@ -3612,7 +3430,7 @@ public final class Formatter implements Closeable, Flushable {
                 if (width != -1) {
                     newW = adjustWidth(width - exp.length - 1, f, neg);
                 }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
+                localizedMagnitude(sb, mant, 0, f, newW, l);
 
                 sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
 
@@ -3620,7 +3438,7 @@ public final class Formatter implements Closeable, Flushable {
                 assert(sign == '+' || sign == '-');
                 sb.append(sign);
 
-                localizedMagnitudeExp(formatter, sb, exp, 1, l);
+                localizedMagnitudeExp(sb, exp, 1, l);
             } else if (c == Conversion.DECIMAL_FLOAT) {
                 // Create a new FormattedFloatingDecimal with the desired
                 // precision.
@@ -3641,7 +3459,7 @@ public final class Formatter implements Closeable, Flushable {
                 int newW = width;
                 if (width != -1)
                     newW = adjustWidth(width, f, neg);
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
+                localizedMagnitude(sb, mant, 0, f, newW, l);
             } else if (c == Conversion.GENERAL) {
                 int prec = precision;
                 if (precision == -1)
@@ -3685,7 +3503,7 @@ public final class Formatter implements Closeable, Flushable {
                     else
                         newW = adjustWidth(width, f, neg);
                 }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
+                localizedMagnitude(sb, mant, 0, f, newW, l);
 
                 if (exp != null) {
                     sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
@@ -3694,7 +3512,7 @@ public final class Formatter implements Closeable, Flushable {
                     assert(sign == '+' || sign == '-');
                     sb.append(sign);
 
-                    localizedMagnitudeExp(formatter, sb, exp, 1, l);
+                    localizedMagnitudeExp(sb, exp, 1, l);
                 }
             } else if (c == Conversion.HEXADECIMAL_FLOAT) {
                 int prec = precision;
@@ -3743,7 +3561,10 @@ public final class Formatter implements Closeable, Flushable {
                     break;
                 }
             }
-            boolean needDot = i == len;
+            boolean needDot = false;
+            if (i == len) {
+                needDot = true;
+            }
 
             // Determine existing precision.
             int outPrec = len - i - (needDot ? 0 : 1);
@@ -3777,7 +3598,8 @@ public final class Formatter implements Closeable, Flushable {
                 // If this is subnormal input so normalize (could be faster to
                 // do as integer operation).
                 if (subnormal) {
-                    d *= SCALEUP;
+                    scaleUp = Math.scalb(1.0, 54);
+                    d *= scaleUp;
                     // Calculate the exponent.  This is not just exponent + 54
                     // since the former is not the normalized exponent.
                     exponent = Math.getExponent(d);
@@ -3843,28 +3665,27 @@ public final class Formatter implements Closeable, Flushable {
             }
         }
 
-        private void print(Formatter formatter, BigDecimal value, Locale l) throws IOException {
+        private void print(BigDecimal value, Locale l) throws IOException {
             if (c == Conversion.HEXADECIMAL_FLOAT)
                 failConversion(c, value);
             StringBuilder sb = new StringBuilder();
             boolean neg = value.signum() == -1;
             BigDecimal v = value.abs();
-            int pos0 = sb.length();
             // leading sign indicator
             leadingSign(sb, neg);
 
             // the value
-            print(formatter, sb, pos0, v, l, f, c, precision, neg);
+            print(sb, v, l, f, c, precision, neg);
 
             // trailing sign indicator
             trailingSign(sb, neg);
 
             // justify based on width
-            appendJustified(formatter.a, sb);
+            appendJustified(a, sb);
         }
 
         // value > 0
-        private void print(Formatter formatter, StringBuilder sb, int pos0, BigDecimal value, Locale l,
+        private void print(StringBuilder sb, BigDecimal value, Locale l,
                            Flags f, char c, int precision, boolean neg)
             throws IOException
         {
@@ -3912,7 +3733,7 @@ public final class Formatter implements Closeable, Flushable {
                 if (width != -1) {
                     newW = adjustWidth(width - exp.length() - 1, f, neg);
                 }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
+                localizedMagnitude(sb, mant, 0, f, newW, l);
 
                 sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
 
@@ -3921,7 +3742,7 @@ public final class Formatter implements Closeable, Flushable {
                 assert(sign == '+' || sign == '-');
                 sb.append(sign);
 
-                localizedMagnitude(formatter, sb, exp, 1, flags, -1, l);
+                sb.append(localizedMagnitude(null, exp, 1, flags, -1, l));
             } else if (c == Conversion.DECIMAL_FLOAT) {
                 // Create a new BigDecimal with the desired precision.
                 int prec = (precision == -1 ? 6 : precision);
@@ -3962,7 +3783,7 @@ public final class Formatter implements Closeable, Flushable {
                 // number of available digits after the decimal separator.
                 trailingZeros(mant, nzeros);
 
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, adjustWidth(width, f, neg), l);
+                localizedMagnitude(sb, mant, 0, f, adjustWidth(width, f, neg), l);
             } else if (c == Conversion.GENERAL) {
                 int prec = precision;
                 if (precision == -1)
@@ -3991,10 +3812,10 @@ public final class Formatter implements Closeable, Flushable {
                     // => f precision = g precision - exponent - 1
                     prec = prec - e - 1;
 
-                    print(formatter, sb, pos0, value, l, f, Conversion.DECIMAL_FLOAT, prec,
+                    print(sb, value, l, f, Conversion.DECIMAL_FLOAT, prec,
                           neg);
                 } else {
-                    print(formatter, sb, pos0, value, l, f, Conversion.SCIENTIFIC, prec - 1, neg);
+                    print(sb, value, l, f, Conversion.SCIENTIFIC, prec - 1, neg);
                 }
             } else if (c == Conversion.HEXADECIMAL_FLOAT) {
                 // This conversion isn't supported.  The error should be
@@ -4130,19 +3951,19 @@ public final class Formatter implements Closeable, Flushable {
             }
         }
 
-        private void print(Formatter formatter, Calendar t, char c, Locale l)  throws IOException {
+        private void print(Calendar t, char c, Locale l)  throws IOException {
             StringBuilder sb = new StringBuilder();
-            print(formatter, sb, t, c, l);
+            print(sb, t, c, l);
 
             // justify based on width
             if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(formatter.a, toUpperCaseWithLocale(sb.toString(), l));
+                appendJustified(a, toUpperCaseWithLocale(sb.toString(), l));
             } else {
-                appendJustified(formatter.a, sb);
+                appendJustified(a, sb);
             }
         }
 
-        private Appendable print(Formatter formatter, StringBuilder sb, Calendar t, char c, Locale l)
+        private Appendable print(StringBuilder sb, Calendar t, char c, Locale l)
                 throws IOException {
             if (sb == null)
                 sb = new StringBuilder();
@@ -4158,31 +3979,31 @@ public final class Formatter implements Closeable, Flushable {
                                || c == DateTime.HOUR_0
                                ? Flags.ZERO_PAD
                                : Flags.NONE);
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
                 break;
             }
             case DateTime.MINUTE:      { // 'M' (00 - 59)
                 int i = t.get(Calendar.MINUTE);
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
                 break;
             }
             case DateTime.NANOSECOND:  { // 'N' (000000000 - 999999999)
                 int i = t.get(Calendar.MILLISECOND) * 1000000;
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 9, l);
+                sb.append(localizedMagnitude(null, i, flags, 9, l));
                 break;
             }
             case DateTime.MILLISECOND: { // 'L' (000 - 999)
                 int i = t.get(Calendar.MILLISECOND);
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 3, l);
+                sb.append(localizedMagnitude(null, i, flags, 3, l));
                 break;
             }
             case DateTime.MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
                 long i = t.getTimeInMillis();
                 Flags flags = Flags.NONE;
-                localizedMagnitude(formatter, sb, i, flags, width, l);
+                sb.append(localizedMagnitude(null, i, flags, width, l));
                 break;
             }
             case DateTime.AM_PM:       { // 'p' (am or pm)
@@ -4200,13 +4021,13 @@ public final class Formatter implements Closeable, Flushable {
             case DateTime.SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
                 long i = t.getTimeInMillis() / 1000;
                 Flags flags = Flags.NONE;
-                localizedMagnitude(formatter, sb, i, flags, width, l);
+                sb.append(localizedMagnitude(null, i, flags, width, l));
                 break;
             }
             case DateTime.SECOND:      { // 'S' (00 - 60 - leap second)
                 int i = t.get(Calendar.SECOND);
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
                 break;
             }
             case DateTime.ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
@@ -4220,7 +4041,7 @@ public final class Formatter implements Closeable, Flushable {
                 int offset = (min / 60) * 100 + (min % 60);
                 Flags flags = Flags.ZERO_PAD;
 
-                localizedMagnitude(formatter, sb, offset, flags, 4, l);
+                sb.append(localizedMagnitude(null, offset, flags, 4, l));
                 break;
             }
             case DateTime.ZONE:        { // 'Z' (symbol)
@@ -4272,7 +4093,7 @@ public final class Formatter implements Closeable, Flushable {
                     break;
                 }
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, size, l);
+                sb.append(localizedMagnitude(null, i, flags, size, l));
                 break;
             }
             case DateTime.DAY_OF_MONTH_0:         // 'd' (01 - 31)
@@ -4281,19 +4102,19 @@ public final class Formatter implements Closeable, Flushable {
                 Flags flags = (c == DateTime.DAY_OF_MONTH_0
                                ? Flags.ZERO_PAD
                                : Flags.NONE);
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
                 break;
             }
             case DateTime.DAY_OF_YEAR:          { // 'j' (001 - 366)
                 int i = t.get(Calendar.DAY_OF_YEAR);
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 3, l);
+                sb.append(localizedMagnitude(null, i, flags, 3, l));
                 break;
             }
             case DateTime.MONTH:                { // 'm' (01 - 12)
                 int i = t.get(Calendar.MONTH) + 1;
                 Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
                 break;
             }
 
@@ -4301,48 +4122,48 @@ public final class Formatter implements Closeable, Flushable {
             case DateTime.TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
             case DateTime.TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
                 char sep = ':';
-                print(formatter, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
-                print(formatter, sb, t, DateTime.MINUTE, l);
+                print(sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
+                print(sb, t, DateTime.MINUTE, l);
                 if (c == DateTime.TIME) {
                     sb.append(sep);
-                    print(formatter, sb, t, DateTime.SECOND, l);
+                    print(sb, t, DateTime.SECOND, l);
                 }
                 break;
             }
             case DateTime.TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
                 char sep = ':';
-                print(formatter, sb, t, DateTime.HOUR_0, l).append(sep);
-                print(formatter, sb, t, DateTime.MINUTE, l).append(sep);
-                print(formatter, sb, t, DateTime.SECOND, l).append(' ');
+                print(sb, t, DateTime.HOUR_0, l).append(sep);
+                print(sb, t, DateTime.MINUTE, l).append(sep);
+                print(sb, t, DateTime.SECOND, l).append(' ');
                 // this may be in wrong place for some locales
                 StringBuilder tsb = new StringBuilder();
-                print(formatter, tsb, t, DateTime.AM_PM, l);
+                print(tsb, t, DateTime.AM_PM, l);
 
                 sb.append(toUpperCaseWithLocale(tsb.toString(), l));
                 break;
             }
             case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
                 char sep = ' ';
-                print(formatter, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
-                print(formatter, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                print(formatter, sb, t, DateTime.TIME, l).append(sep);
-                print(formatter, sb, t, DateTime.ZONE, l).append(sep);
-                print(formatter, sb, t, DateTime.YEAR_4, l);
+                print(sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
+                print(sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
+                print(sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                print(sb, t, DateTime.TIME, l).append(sep);
+                print(sb, t, DateTime.ZONE, l).append(sep);
+                print(sb, t, DateTime.YEAR_4, l);
                 break;
             }
             case DateTime.DATE:            { // 'D' (mm/dd/yy)
                 char sep = '/';
-                print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                print(formatter, sb, t, DateTime.YEAR_2, l);
+                print(sb, t, DateTime.MONTH, l).append(sep);
+                print(sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                print(sb, t, DateTime.YEAR_2, l);
                 break;
             }
             case DateTime.ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
                 char sep = '-';
-                print(formatter, sb, t, DateTime.YEAR_4, l).append(sep);
-                print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l);
+                print(sb, t, DateTime.YEAR_4, l).append(sep);
+                print(sb, t, DateTime.MONTH, l).append(sep);
+                print(sb, t, DateTime.DAY_OF_MONTH_0, l);
                 break;
             }
             default:
@@ -4351,18 +4172,18 @@ public final class Formatter implements Closeable, Flushable {
             return sb;
         }
 
-        private void print(Formatter formatter, TemporalAccessor t, char c, Locale l)  throws IOException {
+        private void print(TemporalAccessor t, char c, Locale l)  throws IOException {
             StringBuilder sb = new StringBuilder();
-            print(formatter, sb, t, c, l);
+            print(sb, t, c, l);
             // justify based on width
             if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(formatter.a, toUpperCaseWithLocale(sb.toString(), l));
+                appendJustified(a, toUpperCaseWithLocale(sb.toString(), l));
             } else {
-                appendJustified(formatter.a, sb);
+                appendJustified(a, sb);
             }
         }
 
-        private Appendable print(Formatter formatter, StringBuilder sb, TemporalAccessor t, char c,
+        private Appendable print(StringBuilder sb, TemporalAccessor t, char c,
                                  Locale l) throws IOException {
             if (sb == null)
                 sb = new StringBuilder();
@@ -4370,28 +4191,28 @@ public final class Formatter implements Closeable, Flushable {
                 switch (c) {
                 case DateTime.HOUR_OF_DAY_0: {  // 'H' (00 - 23)
                     int i = t.get(ChronoField.HOUR_OF_DAY);
-                    localizedMagnitude(formatter, sb, i, Flags.ZERO_PAD, 2, l);
+                    sb.append(localizedMagnitude(null, i, Flags.ZERO_PAD, 2, l));
                     break;
                 }
                 case DateTime.HOUR_OF_DAY: {   // 'k' (0 - 23) -- like H
                     int i = t.get(ChronoField.HOUR_OF_DAY);
-                    localizedMagnitude(formatter, sb, i, Flags.NONE, 2, l);
+                    sb.append(localizedMagnitude(null, i, Flags.NONE, 2, l));
                     break;
                 }
                 case DateTime.HOUR_0:      {  // 'I' (01 - 12)
                     int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
-                    localizedMagnitude(formatter, sb, i, Flags.ZERO_PAD, 2, l);
+                    sb.append(localizedMagnitude(null, i, Flags.ZERO_PAD, 2, l));
                     break;
                 }
                 case DateTime.HOUR:        { // 'l' (1 - 12) -- like I
                     int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
-                    localizedMagnitude(formatter, sb, i, Flags.NONE, 2, l);
+                    sb.append(localizedMagnitude(null, i, Flags.NONE, 2, l));
                     break;
                 }
                 case DateTime.MINUTE:      { // 'M' (00 - 59)
                     int i = t.get(ChronoField.MINUTE_OF_HOUR);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
                     break;
                 }
                 case DateTime.NANOSECOND:  { // 'N' (000000000 - 999999999)
@@ -4402,20 +4223,20 @@ public final class Formatter implements Closeable, Flushable {
                         i = t.get(ChronoField.MILLI_OF_SECOND) * 1000000;
                     }
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 9, l);
+                    sb.append(localizedMagnitude(null, i, flags, 9, l));
                     break;
                 }
                 case DateTime.MILLISECOND: { // 'L' (000 - 999)
                     int i = t.get(ChronoField.MILLI_OF_SECOND);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 3, l);
+                    sb.append(localizedMagnitude(null, i, flags, 3, l));
                     break;
                 }
                 case DateTime.MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
                     long i = t.getLong(ChronoField.INSTANT_SECONDS) * 1000L +
                              t.getLong(ChronoField.MILLI_OF_SECOND);
                     Flags flags = Flags.NONE;
-                    localizedMagnitude(formatter, sb, i, flags, width, l);
+                    sb.append(localizedMagnitude(null, i, flags, width, l));
                     break;
                 }
                 case DateTime.AM_PM:       { // 'p' (am or pm)
@@ -4433,13 +4254,13 @@ public final class Formatter implements Closeable, Flushable {
                 case DateTime.SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
                     long i = t.getLong(ChronoField.INSTANT_SECONDS);
                     Flags flags = Flags.NONE;
-                    localizedMagnitude(formatter, sb, i, flags, width, l);
+                    sb.append(localizedMagnitude(null, i, flags, width, l));
                     break;
                 }
                 case DateTime.SECOND:      { // 'S' (00 - 60 - leap second)
                     int i = t.get(ChronoField.SECOND_OF_MINUTE);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
                     break;
                 }
                 case DateTime.ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
@@ -4452,7 +4273,7 @@ public final class Formatter implements Closeable, Flushable {
                     // combine minute and hour into a single integer
                     int offset = (min / 60) * 100 + (min % 60);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, offset, flags, 4, l);
+                    sb.append(localizedMagnitude(null, offset, flags, 4, l));
                     break;
                 }
                 case DateTime.ZONE:        { // 'Z' (symbol)
@@ -4513,7 +4334,7 @@ public final class Formatter implements Closeable, Flushable {
                         break;
                     }
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, size, l);
+                    sb.append(localizedMagnitude(null, i, flags, size, l));
                     break;
                 }
                 case DateTime.DAY_OF_MONTH_0:         // 'd' (01 - 31)
@@ -4522,19 +4343,19 @@ public final class Formatter implements Closeable, Flushable {
                     Flags flags = (c == DateTime.DAY_OF_MONTH_0
                                    ? Flags.ZERO_PAD
                                    : Flags.NONE);
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
                     break;
                 }
                 case DateTime.DAY_OF_YEAR:          { // 'j' (001 - 366)
                     int i = t.get(ChronoField.DAY_OF_YEAR);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 3, l);
+                    sb.append(localizedMagnitude(null, i, flags, 3, l));
                     break;
                 }
                 case DateTime.MONTH:                { // 'm' (01 - 12)
                     int i = t.get(ChronoField.MONTH_OF_YEAR);
                     Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
                     break;
                 }
 
@@ -4542,47 +4363,47 @@ public final class Formatter implements Closeable, Flushable {
                 case DateTime.TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
                 case DateTime.TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
                     char sep = ':';
-                    print(formatter, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.MINUTE, l);
+                    print(sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
+                    print(sb, t, DateTime.MINUTE, l);
                     if (c == DateTime.TIME) {
                         sb.append(sep);
-                        print(formatter, sb, t, DateTime.SECOND, l);
+                        print(sb, t, DateTime.SECOND, l);
                     }
                     break;
                 }
                 case DateTime.TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
                     char sep = ':';
-                    print(formatter, sb, t, DateTime.HOUR_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.MINUTE, l).append(sep);
-                    print(formatter, sb, t, DateTime.SECOND, l).append(' ');
+                    print(sb, t, DateTime.HOUR_0, l).append(sep);
+                    print(sb, t, DateTime.MINUTE, l).append(sep);
+                    print(sb, t, DateTime.SECOND, l).append(' ');
                     // this may be in wrong place for some locales
                     StringBuilder tsb = new StringBuilder();
-                    print(formatter, tsb, t, DateTime.AM_PM, l);
+                    print(tsb, t, DateTime.AM_PM, l);
                     sb.append(toUpperCaseWithLocale(tsb.toString(), l));
                     break;
                 }
                 case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
                     char sep = ' ';
-                    print(formatter, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
-                    print(formatter, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.TIME, l).append(sep);
-                    print(formatter, sb, t, DateTime.ZONE, l).append(sep);
-                    print(formatter, sb, t, DateTime.YEAR_4, l);
+                    print(sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
+                    print(sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
+                    print(sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                    print(sb, t, DateTime.TIME, l).append(sep);
+                    print(sb, t, DateTime.ZONE, l).append(sep);
+                    print(sb, t, DateTime.YEAR_4, l);
                     break;
                 }
                 case DateTime.DATE:            { // 'D' (mm/dd/yy)
                     char sep = '/';
-                    print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.YEAR_2, l);
+                    print(sb, t, DateTime.MONTH, l).append(sep);
+                    print(sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                    print(sb, t, DateTime.YEAR_2, l);
                     break;
                 }
                 case DateTime.ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
                     char sep = '-';
-                    print(formatter, sb, t, DateTime.YEAR_4, l).append(sep);
-                    print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l);
+                    print(sb, t, DateTime.YEAR_4, l).append(sep);
+                    print(sb, t, DateTime.MONTH, l).append(sep);
+                    print(sb, t, DateTime.DAY_OF_MONTH_0, l);
                     break;
                 }
                 default:
@@ -4601,36 +4422,32 @@ public final class Formatter implements Closeable, Flushable {
             throw new FormatFlagsConversionMismatchException(fs, c);
         }
 
-        void failConversion(char c, Object arg) {
+        private void failConversion(char c, Object arg) {
             throw new IllegalFormatConversionException(c, arg.getClass());
         }
 
-        private char getZero(Formatter formatter, Locale l) {
-            if ((l != null) &&  !l.equals(formatter.locale())) {
+        private char getZero(Locale l) {
+            if ((l != null) &&  !l.equals(locale())) {
                 DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
                 return dfs.getZeroDigit();
             }
-            return formatter.zero;
+            return zero;
         }
 
-        private StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb,
+        private StringBuilder localizedMagnitude(StringBuilder sb,
                 long value, Flags f, int width, Locale l) {
-            return localizedMagnitude(formatter, sb, Long.toString(value, 10), 0, f, width, l);
+            return localizedMagnitude(sb, Long.toString(value, 10), 0, f, width, l);
         }
 
-        StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb,
-                                         CharSequence value, final int offset, Flags f, int width, Locale l) {
-            return localizedMagnitude(formatter, sb, sb == null ? 0 : sb.length(), value, offset, f, width, l);
-        }
-
-        StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb, int pos0,
-                                         CharSequence value, final int offset, Flags f, int width, Locale l) {
+        private StringBuilder localizedMagnitude(StringBuilder sb,
+                CharSequence value, final int offset, Flags f, int width,
+                Locale l) {
             if (sb == null) {
                 sb = new StringBuilder();
             }
             int begin = sb.length();
 
-            char zero = getZero(formatter, l);
+            char zero = getZero(l);
 
             // determine localized grouping separator and size
             char grpSep = '\0';
@@ -4710,7 +4527,7 @@ public final class Formatter implements Closeable, Flushable {
 
             // apply zero padding
             if (width != -1 && f.contains(Flags.ZERO_PAD)) {
-                for (int k = sb.length() - pos0; k < width; k++) {
+                for (int k = sb.length(); k < width; k++) {
                     sb.insert(begin, zero);
                 }
             }
@@ -4721,9 +4538,9 @@ public final class Formatter implements Closeable, Flushable {
         // Specialized localization of exponents, where the source value can only
         // contain characters '0' through '9', starting at index offset, and no
         // group separators is added for any locale.
-        private void localizedMagnitudeExp(Formatter formatter, StringBuilder sb, char[] value,
+        private void localizedMagnitudeExp(StringBuilder sb, char[] value,
                 final int offset, Locale l) {
-            char zero = getZero(formatter, l);
+            char zero = getZero(l);
 
             int len = value.length;
             for (int j = offset; j < len; j++) {
@@ -4763,10 +4580,6 @@ public final class Formatter implements Closeable, Flushable {
 
         public boolean contains(Flags f) {
             return (flags & f.valueOf()) == f.valueOf();
-        }
-
-        public boolean isEmpty() {
-            return flags == 0;
         }
 
         public Flags dup() {

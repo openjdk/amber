@@ -25,30 +25,21 @@
 
 package java.lang.invoke;
 
-import java.lang.constant.ClassDesc;
-import java.lang.constant.Constable;
-import java.lang.constant.MethodTypeDesc;
+import jdk.internal.vm.annotation.Stable;
+import sun.invoke.util.Wrapper;
+import java.lang.ref.WeakReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Stream;
-
-import jdk.internal.vm.annotation.Stable;
+import java.util.concurrent.ConcurrentHashMap;
 import sun.invoke.util.BytecodeDescriptor;
+import static java.lang.invoke.MethodHandleStatics.*;
 import sun.invoke.util.VerifyType;
-import sun.invoke.util.Wrapper;
-
-import static java.lang.invoke.MethodHandleStatics.UNSAFE;
-import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 
 /**
  * A method type represents the arguments and return type accepted and
@@ -100,10 +91,7 @@ import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
  * @since 1.7
  */
 public final
-class MethodType
-        implements Constable<MethodType>,
-                   TypeDescriptor.OfMethod<Class<?>, MethodType>,
-                   java.io.Serializable {
+class MethodType implements java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 
     // The rtype and ptypes fields define the structural identity of the method type:
@@ -1187,26 +1175,8 @@ class MethodType
         return desc;
     }
 
-    @Override
-    public String descriptorString() {
-        return toMethodDescriptorString();
-    }
-
     /*non-public*/ static String toFieldDescriptorString(Class<?> cls) {
         return BytecodeDescriptor.unparse(cls);
-    }
-
-    @Override
-    public Optional<MethodTypeDesc> describeConstable() {
-        try {
-            return Optional.of(MethodTypeDesc.of(returnType().describeConstable().orElseThrow(),
-                                                 Stream.of(parameterArray())
-                                                      .map(p -> p.describeConstable().orElseThrow())
-                                                      .toArray(ClassDesc[]::new)));
-        }
-        catch (NoSuchElementException e) {
-            return Optional.empty();
-        }
     }
 
     /// Serialization.

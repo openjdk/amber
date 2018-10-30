@@ -25,19 +25,11 @@
 
 package java.lang;
 
+import java.io.Serializable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
-import java.io.Serializable;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.Constable;
-import java.lang.constant.ConstantDescs;
-import java.lang.constant.DynamicConstantDesc;
-import java.lang.invoke.MethodHandles;
-import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This is the common base class of all Java language enumeration types.
@@ -64,7 +56,7 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum types.
 public abstract class Enum<E extends Enum<E>>
-        implements Constable<E>, Comparable<E>, Serializable {
+        implements Comparable<E>, Serializable {
     /**
      * The name of this enum constant, as declared in the enum declaration.
      * Most programmers should use the {@link #toString} method rather than
@@ -211,13 +203,6 @@ public abstract class Enum<E extends Enum<E>>
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
     }
 
-    @Override
-    public final Optional<EnumDesc<E>> describeConstable() {
-        return getDeclaringClass()
-                .describeConstable()
-                .map(c -> EnumDesc.of(c, name));
-    }
-
     /**
      * Returns the enum constant of the specified enum type with the
      * specified name.  The name must match exactly an identifier used
@@ -272,56 +257,5 @@ public abstract class Enum<E extends Enum<E>>
 
     private void readObjectNoData() throws ObjectStreamException {
         throw new InvalidObjectException("can't deserialize enum");
-    }
-
-    /**
-     * A <a href="package-summary.html#nominal">nominal descriptor</a> for an
-     * {@code enum} constant.
-     *
-     * @param <E> the type of the enum constant
-     *
-     * @since 12
-     */
-    public static final class EnumDesc<E extends Enum<E>>
-            extends DynamicConstantDesc<E> {
-
-        /**
-         * Construct a nominal descriptor for the specified {@code enum} class and name.
-         *
-         * @param constantType a {@link ClassDesc} describing the {@code enum} class
-         * @param constantName the name of the enum constant, as per JVMS 4.2.2
-         * @throws NullPointerException if any argument is null
-         * @jvms 4.2.2 Unqualified Names
-         */
-        private EnumDesc(ClassDesc constantType, String constantName) {
-            super(ConstantDescs.BSM_ENUM_CONSTANT, requireNonNull(constantName), requireNonNull(constantType));
-        }
-
-        /**
-         * Return a nominal descriptor for the specified {@code enum} class and name
-         *
-         * @param <E> the type of the enum constant
-         * @param enumClass a {@link ClassDesc} describing the {@code enum} class
-         * @param constantName the name of the enum constant, as per JVMS 4.2.2
-         * @return the nominal descriptor
-         * @throws NullPointerException if any argument is null
-         * @jvms 4.2.2 Unqualified Names
-         */
-        public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
-                                                        String constantName) {
-            return new EnumDesc<>(enumClass, constantName);
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public E resolveConstantDesc(MethodHandles.Lookup lookup)
-                throws ReflectiveOperationException {
-            return Enum.valueOf((Class<E>) constantType().resolveConstantDesc(lookup), constantName());
-        }
-
-        @Override
-        public String toString() {
-            return String.format("EnumDesc[%s.%s]", constantType().displayName(), constantName());
-        }
     }
 }

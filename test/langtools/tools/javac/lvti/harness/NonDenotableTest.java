@@ -125,6 +125,8 @@ class NonDenotableTest {
         @InferredType(SEL_INT_ENUM_SEL)
         var c = s;
         for (@InferredType(SEL_INT_ENUM_SEL) var s2 = s ; ;) { break; }
+        for (@InferredType(SEL_INT_ENUM_SEL) var s2 : arrayOf(s)) { break; }
+        for (@InferredType(SEL_INT_ENUM_SEL) var s2 : listOf(s)) { break; }
     }
 
     List<? extends String> extString() { return null; }

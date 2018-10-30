@@ -522,9 +522,7 @@ public abstract class JavadocTester {
                         + stringToFind);
             } else {
                 failed(path + ": following text " + (isFound ? "found:" : "not found:") + "\n"
-                        + stringToFind + '\n' +
-                        "found \n" +
-                        fileString);
+                        + stringToFind);
             }
         }
     }

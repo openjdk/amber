@@ -28,7 +28,6 @@ package java.util;
 import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 
-import java.lang.compiler.IntrinsicCandidate;
 import java.util.function.Supplier;
 
 /**
@@ -143,7 +142,6 @@ public final class Objects {
     * @see Arrays#hashCode(Object[])
     * @see List#hashCode
     */
-    @IntrinsicCandidate
     public static int hash(Object... values) {
         return Arrays.hashCode(values);
     }
