@@ -3451,7 +3451,7 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   _inner_classes = Universe::the_empty_short_array();
   // Set nest members attribute to default sentinel
   _nest_members = Universe::the_empty_short_array();
-  // Set nest members attribute to default sentinel
+  // Set record params to default sentinel
   _record_params = Universe::the_empty_short_array();
   cfs->guarantee_more(2, CHECK);  // attributes_count
   u2 attributes_count = cfs->get_u2_fast();
@@ -3672,6 +3672,9 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
           record_attribute_start = cfs->current();
           record_attribute_length = attribute_length;
           cfs->skip_u1(record_attribute_length, CHECK);
+        } else {
+          // Unknown attribute
+          cfs->skip_u1(attribute_length, CHECK);
         }
       } else {
         // Unknown attribute
