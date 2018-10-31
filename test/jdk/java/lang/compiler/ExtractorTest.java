@@ -249,6 +249,15 @@ public class ExtractorTest {
         assertMatch(MatchKind.MATCH, Extractor.ofTypeNullable(String.class), null, (Object) null);
     }
 
+    public void testConstant() throws Throwable {
+        assertMatch(MatchKind.MATCH, Extractor.ofConstant(null), null);
+        assertMatch(MatchKind.FAIL, Extractor.ofConstant(null), "foo");
+        assertMatch(MatchKind.MATCH, Extractor.ofConstant("foo"), "foo");
+        assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), "bar");
+        assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), 3);
+        assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), null);
+    }
+
     public void testNested() throws Throwable {
         Extractor TC2 = Extractor.ofTotal(TestClass2.class, TestClass2.MH_X);
         Extractor STRING = Extractor.ofType(String.class);

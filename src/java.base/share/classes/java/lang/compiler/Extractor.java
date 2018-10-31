@@ -253,6 +253,18 @@ public interface Extractor {
     }
 
     /**
+     * Create an {@linkplain Extractor} for a constant pattern
+     *
+     * @param o the constant
+     * @return the extractor
+     */
+    public static Extractor ofConstant(Object o) {
+        MethodHandle match = partialize(MethodHandles.dropArguments(MethodHandles.constant(Object.class, Boolean.TRUE), 0, Object.class),
+                                        MethodHandles.insertArguments(ExtractorImpl.MH_OBJECTS_EQUAL, 0, o));
+        return new ExtractorImpl(MethodType.methodType(Object.class), match);
+    }
+
+    /**
      * Create an {@linkplain Extractor} for a nullable type pattern, with a
      * single binding variable, whose target type is {@code Object}
      *
@@ -424,12 +436,12 @@ public interface Extractor {
      *
      * @param lookup ignored
      * @param invocationName ignored
-     * @param invocationType ignored
+     * @param invocationType must be {@code Class<Extractor>}
      * @param outer the outer extractor
      * @param inners the inner extractors, null if no nesting is needed for this binding
      * @return the nested extractor
      */
-    public static Extractor ofNested(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+    public static Extractor ofNested(MethodHandles.Lookup lookup, String invocationName, Class<Extractor> invocationType,
                                      Extractor outer, Extractor... inners) {
         return ofNested(outer, inners);
     }
@@ -439,11 +451,11 @@ public interface Extractor {
      *
      * @param lookup ignored
      * @param invocationName ignored
-     * @param invocationType ignored
+     * @param invocationType must be {@code Class<Extractor>}
      * @param type the type
      * @return the extractor
      */
-    public static Extractor ofType(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+    public static Extractor ofType(MethodHandles.Lookup lookup, String invocationName, Class<Extractor> invocationType,
                                    Class<?> type) {
         return ofType(type);
     }
@@ -453,13 +465,27 @@ public interface Extractor {
      *
      * @param lookup ignored
      * @param invocationName ignored
-     * @param invocationType ignored
+     * @param invocationType must be {@code Class<Extractor>}
      * @param type the type
      * @return the extractor
      */
-    public static Extractor ofTypeNullable(MethodHandles.Lookup lookup, String invocationName, MethodType invocationType,
+    public static Extractor ofTypeNullable(MethodHandles.Lookup lookup, String invocationName, Class<Extractor> invocationType,
                                            Class<?> type) {
         return ofTypeNullable(type);
+    }
+
+    /**
+     * Condy bootstrap for creating constant extractor
+     *
+     * @param lookup ignored
+     * @param invocationName ignored
+     * @param invocationType must be {@code Class<Extractor>}
+     * @param constant the constant
+     * @return the extractor
+     */
+    public static Extractor ofConstant(MethodHandles.Lookup lookup, String invocationName, Class<Extractor> invocationType,
+                                       Object constant) {
+        return ofConstant(constant);
     }
 
     /**
