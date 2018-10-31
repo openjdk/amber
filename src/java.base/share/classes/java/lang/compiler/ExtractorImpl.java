@@ -44,6 +44,7 @@ class ExtractorImpl implements Extractor {
     static final MethodHandle MH_ADAPT_HELPER;
     static final MethodHandle MH_OBJECTS_ISNULL;
     static final MethodHandle MH_OBJECTS_NONNULL;
+    static final MethodHandle MH_OBJECTS_EQUAL;
     static {
         try {
             MH_OF_TYPE_HELPER = MethodHandles.lookup().findStatic(ExtractorImpl.class, "ofTypeHelper", MethodType.methodType(Object.class, Class.class, Object.class));
@@ -51,6 +52,7 @@ class ExtractorImpl implements Extractor {
             MH_ADAPT_HELPER = MethodHandles.lookup().findStatic(ExtractorImpl.class, "adaptHelper", MethodType.methodType(boolean.class, Class.class, Object.class));
             MH_OBJECTS_ISNULL = MethodHandles.lookup().findStatic(Objects.class, "isNull", MethodType.methodType(boolean.class, Object.class));
             MH_OBJECTS_NONNULL = MethodHandles.lookup().findStatic(Objects.class, "nonNull", MethodType.methodType(boolean.class, Object.class));
+            MH_OBJECTS_EQUAL = MethodHandles.lookup().findStatic(Objects.class, "equals", MethodType.methodType(boolean.class, Object.class, Object.class));
         }
         catch (ReflectiveOperationException e) {
             throw new ExceptionInInitializerError(e);
