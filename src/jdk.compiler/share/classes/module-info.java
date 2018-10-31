@@ -134,5 +134,13 @@ module jdk.compiler {
 
     provides javax.tools.Tool with
         com.sun.tools.javac.api.JavacTool;
+
+    uses com.sun.tools.javac.intrinsics.IntrinsicProcessorFactory;
+
+    provides com.sun.tools.javac.intrinsics.IntrinsicProcessorFactory with
+        com.sun.tools.javac.intrinsics.FormatterProcessorFactory,
+        com.sun.tools.javac.intrinsics.HashProcessorFactory,
+        com.sun.tools.javac.intrinsics.StringProcessorFactory;
+
 }
 

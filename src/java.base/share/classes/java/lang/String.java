@@ -29,6 +29,7 @@ import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
 import java.lang.invoke.MethodHandles;
+import java.lang.compiler.IntrinsicCandidate;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.nio.charset.Charset;
@@ -661,6 +662,7 @@ public final class String
      * @return  the length of the sequence of characters represented by this
      *          object.
      */
+    @IntrinsicCandidate
     public int length() {
         return value.length >> coder();
     }
@@ -2027,6 +2029,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public boolean matches(String regex) {
         return Pattern.matches(regex, this);
     }
@@ -2084,6 +2087,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public String replaceFirst(String regex, String replacement) {
         return Pattern.compile(regex).matcher(this).replaceFirst(replacement);
     }
@@ -2129,6 +2133,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public String replaceAll(String regex, String replacement) {
         return Pattern.compile(regex).matcher(this).replaceAll(replacement);
     }
@@ -2269,6 +2274,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public String[] split(String regex, int limit) {
         /* fastpath if the regex is a
          (1)one-char String and this character is not one of the
@@ -2367,6 +2373,7 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
+    @IntrinsicCandidate
     public String[] split(String regex) {
         return split(regex, 0);
     }
@@ -2679,6 +2686,7 @@ public final class String
      *
      * @since 11
      */
+    @IntrinsicCandidate
     public String strip() {
         String ret = isLatin1() ? StringLatin1.strip(value)
                                 : StringUTF16.strip(value);
@@ -2709,6 +2717,7 @@ public final class String
      *
      * @since 11
      */
+    @IntrinsicCandidate
     public String stripLeading() {
         String ret = isLatin1() ? StringLatin1.stripLeading(value)
                                 : StringUTF16.stripLeading(value);
@@ -2739,6 +2748,7 @@ public final class String
      *
      * @since 11
      */
+    @IntrinsicCandidate
     public String stripTrailing() {
         String ret = isLatin1() ? StringLatin1.stripTrailing(value)
                                 : StringUTF16.stripTrailing(value);
@@ -2839,6 +2849,7 @@ public final class String
      *
      * @since 12
      */
+    @IntrinsicCandidate
     public String indent(int n) {
         return isEmpty() ? "" :  indent(n, false);
     }
@@ -2964,6 +2975,7 @@ public final class String
      *
      * @since 12
      */
+    @IntrinsicCandidate
     public String align(int n) {
         if (isEmpty()) {
             return "";
@@ -3070,6 +3082,7 @@ public final class String
      * @see  java.util.Formatter
      * @since  1.5
      */
+    @IntrinsicCandidate
     public static String format(String format, Object... args) {
         return new Formatter().format(format, args).toString();
     }
@@ -3111,8 +3124,91 @@ public final class String
      * @see  java.util.Formatter
      * @since  1.5
      */
+    @IntrinsicCandidate
     public static String format(Locale l, String format, Object... args) {
         return new Formatter(l).format(format, args).toString();
+    }
+
+    /**
+     * Returns a formatted string using this string, as the specified
+     * <a href="../util/Formatter.html#syntax">format</a>, and
+     * arguments.
+     *
+     * <p> The locale always used is the one returned by {@link
+     * java.util.Locale#getDefault(java.util.Locale.Category)
+     * Locale.getDefault(Locale.Category)} with
+     * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in the format
+     *         string.  If there are more arguments than format specifiers, the
+     *         extra arguments are ignored.  The number of arguments is
+     *         variable and may be zero.  The maximum number of arguments is
+     *         limited by the maximum dimension of a Java array as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         The behaviour on a
+     *         {@code null} argument depends on the <a
+     *         href="../util/Formatter.html#syntax">conversion</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification.
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     *
+     * @since  12
+     */
+    @IntrinsicCandidate
+    public String format(Object... args) {
+        return new Formatter().format(this, args).toString();
+    }
+
+    /**
+     * Returns a formatted string using this string, as the specified
+     * <a href="../util/Formatter.html#syntax">format</a>, the specified locale,
+     * and  arguments.
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in the format
+     *         string.  If there are more arguments than format specifiers, the
+     *         extra arguments are ignored.  The number of arguments is
+     *         variable and may be zero.  The maximum number of arguments is
+     *         limited by the maximum dimension of a Java array as defined by
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         The behaviour on a
+     *         {@code null} argument depends on the
+     *         <a href="../util/Formatter.html#syntax">conversion</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     *
+     * @since  12
+     */
+    @IntrinsicCandidate
+    public String format(Locale l, Object... args) {
+        return new Formatter(l).format(this, args).toString();
     }
 
     /**
@@ -3321,6 +3417,7 @@ public final class String
      *
      * @since 11
      */
+    @IntrinsicCandidate
     public String repeat(int count) {
         if (count < 0) {
             throw new IllegalArgumentException("count is negative: " + count);

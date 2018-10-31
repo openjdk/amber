@@ -25,11 +25,12 @@
 
 package java.io;
 
-import java.util.Formatter;
-import java.util.Locale;
+import java.lang.compiler.IntrinsicCandidate;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Formatter;
+import java.util.Locale;
 
 /**
  * A {@code PrintStream} adds functionality to another output stream,
@@ -945,6 +946,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
+    @IntrinsicCandidate
     public PrintStream printf(String format, Object ... args) {
         return format(format, args);
     }
@@ -997,6 +999,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
+    @IntrinsicCandidate
     public PrintStream printf(Locale l, String format, Object ... args) {
         return format(l, format, args);
     }
@@ -1042,6 +1045,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
+    @IntrinsicCandidate
     public PrintStream format(String format, Object ... args) {
         try {
             synchronized (this) {
@@ -1101,6 +1105,7 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
+    @IntrinsicCandidate
     public PrintStream format(Locale l, String format, Object ... args) {
         try {
             synchronized (this) {
