@@ -2248,7 +2248,7 @@ public final class Class<T> implements java.io.Serializable,
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
-        return copyFields(privateGetRecordParameters());
+        return isPrimitive() || isArray() ? new Field[0] : copyFields(privateGetRecordParameters());
     }
 
     /**
@@ -2256,7 +2256,9 @@ public final class Class<T> implements java.io.Serializable,
      * @return the number of record parameters
      * @since 1.12
      */
-    public native int getRecordParametersCount();
+    public int getRecordParametersCount() {
+        return isPrimitive() || isArray() ? 0 : getRecordParametersCount0();
+    }
 
     /**
      * Returns an array containing {@code Method} objects reflecting all the
@@ -3433,6 +3435,7 @@ public final class Class<T> implements java.io.Serializable,
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
     private native Field[]      getRecordParameters0();
+    private native int          getRecordParametersCount0();
 
     /**
      * Helper method to get the method name from arguments.

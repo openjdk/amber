@@ -1793,13 +1793,6 @@ JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
   JVMWrapper("JVM_GetRecordParametersCount");
   JvmtiVMObjectAllocEventCollector oam;
 
-  // Exclude primitive types and array types
-  if (java_lang_Class::is_primitive(JNIHandles::resolve_non_null(ofClass)) ||
-      java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass))->is_array_klass()) {
-    // Return 0
-    return 0;
-  }
-
   InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
   // Ensure class is linked
   k->link_class(CHECK_0);
@@ -1812,14 +1805,6 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
 {
   JVMWrapper("JVM_GetRecordParameters");
   JvmtiVMObjectAllocEventCollector oam;
-
-  // Exclude primitive types and array types
-  if (java_lang_Class::is_primitive(JNIHandles::resolve_non_null(ofClass)) ||
-      java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass))->is_array_klass()) {
-    // Return empty array
-    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
-    return (jobjectArray) JNIHandles::make_local(env, res);
-  }
 
   InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
   constantPoolHandle cp(THREAD, k->constants());

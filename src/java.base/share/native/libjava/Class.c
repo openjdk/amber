@@ -77,7 +77,7 @@ static JNINativeMethod methods[] = {
     {"getNestHost0",         "()" CLS,      (void *)&JVM_GetNestHost},
     {"getNestMembers0",      "()[" CLS,     (void *)&JVM_GetNestMembers},
     {"getRecordParameters0",  "()[" FLD,    (void *)&JVM_GetRecordParameters},
-    {"getRecordParametersCount", "()I",     (void *)&JVM_GetRecordParametersCount},
+    {"getRecordParametersCount0", "()I",    (void *)&JVM_GetRecordParametersCount},
 };
 
 #undef OBJ
