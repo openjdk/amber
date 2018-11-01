@@ -1790,6 +1790,7 @@ JVM_END
 
 JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
 {
+  // current is not a primitive or array class
   JVMWrapper("JVM_GetRecordParametersCount");
   JvmtiVMObjectAllocEventCollector oam;
 
@@ -1803,6 +1804,7 @@ JVM_END
 
 JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
 {
+  // current is not a primitive or array class
   JVMWrapper("JVM_GetRecordParameters");
   JvmtiVMObjectAllocEventCollector oam;
 
