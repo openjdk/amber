@@ -62,7 +62,7 @@ import static java.lang.String.UTF16;
  * @since 1.0
  */
 public final class Integer extends Number
-        implements Comparable<Integer>, ConstantDesc<Integer>, Constable<Integer> {
+        implements Comparable<Integer>, ConstantDesc, Constable {
     /**
      * A constant holding the minimum value an {@code int} can
      * have, -2<sup>31</sup>.

@@ -246,7 +246,7 @@ public final class ConstantDescs {
     public static final ClassDesc CD_void = ClassDesc.ofDescriptor("V");
 
     /** Nominal descriptor representing the constant {@code null} */
-    public static final ConstantDesc<?> NULL
+    public static final ConstantDesc NULL
             = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT,
                                           DEFAULT_NAME, ConstantDescs.CD_Object);
 

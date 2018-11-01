@@ -131,7 +131,7 @@ import static java.util.function.Predicate.not;
 
 public final class String
     implements java.io.Serializable, Comparable<String>, CharSequence,
-               ConstantDesc<String>, Constable<String> {
+               ConstantDesc, Constable {
 
     /**
      * The value is used for character storage.

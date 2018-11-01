@@ -437,7 +437,7 @@ mh.invokeExact(System.out, "Hello, world.");
  * @author John Rose, JSR 292 EG
  * @since 1.7
  */
-public abstract class MethodHandle implements Constable<MethodHandle> {
+public abstract class MethodHandle implements Constable {
 
     /**
      * Internal marker interface which distinguishes (to the Java compiler)
@@ -1521,7 +1521,7 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
     }
 
     @Override
-    public Optional<? extends ConstantDesc<MethodHandle>> describeConstable() {
+    public Optional<? extends ConstantDesc> describeConstable() {
         MethodHandleInfo info;
         ClassDesc owner;
         String name;

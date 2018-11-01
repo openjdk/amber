@@ -51,7 +51,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @since 1.0
  */
 public final class Float extends Number
-        implements Comparable<Float>, ConstantDesc<Float>, Constable<Float> {
+        implements Comparable<Float>, ConstantDesc, Constable {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by

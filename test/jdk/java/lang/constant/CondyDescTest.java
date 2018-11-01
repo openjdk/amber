@@ -22,6 +22,7 @@
  */
 
 import java.lang.Enum.EnumDesc;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.VarHandleDesc;
@@ -55,7 +56,7 @@ import static org.testng.Assert.assertTrue;
  */
 @Test
 public class CondyDescTest extends SymbolicDescTest {
-    private final static ConstantDesc<?>[] EMPTY_ARGS = new ConstantDesc<?>[0];
+    private final static ConstantDesc[] EMPTY_ARGS = new ConstantDesc[0];
     private final static ClassDesc CD_ConstantBootstraps = ClassDesc.of("java.lang.invoke.ConstantBootstraps");
 
     private static<T> void testDCR(DynamicConstantDesc<T> r, T c) throws ReflectiveOperationException {
@@ -97,7 +98,7 @@ public class CondyDescTest extends SymbolicDescTest {
         DirectMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CD_ConstantBootstraps, "invoke", CD_Object, CD_MethodHandle, CD_Object.arrayType());
         DirectMethodHandleDesc format = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_String, "format", CD_String, CD_String, CD_Object.arrayType());
 
-        String s = (String) invoker.resolveConstantDesc(LOOKUP)
+        String s = (String) ((MethodHandle) invoker.resolveConstantDesc(LOOKUP))
                                    .invoke(LOOKUP, "", String.class,
                                            format.resolveConstantDesc(LOOKUP), "%s%s", "moo", "cow");
         assertEquals(s, "moocow");
@@ -165,9 +166,9 @@ public class CondyDescTest extends SymbolicDescTest {
         assertEquals(3, ints[2]);
     }
 
-    private<T> void assertLifted(ConstantDesc<T> prototype,
+    private<T> void assertLifted(ConstantDesc prototype,
                                  DynamicConstantDesc<T> nonCanonical,
-                                 ConstantDesc<T> canonical) {
+                                 ConstantDesc canonical) {
         Class<?> clazz = prototype.getClass();
 
         assertNotSame(canonical, nonCanonical);
@@ -202,14 +203,14 @@ public class CondyDescTest extends SymbolicDescTest {
 
         ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
         assertLifted(VarHandleDesc.ofStaticField(testClass, "sf", CD_int),
-                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CD_int }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc<?>[] {testClass, "sf", CD_int }));
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, "sf", CD_int }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, "sf", CD_int }));
         assertLifted(VarHandleDesc.ofField(testClass, "f", CD_int),
-                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc<?>[] {testClass, "f", CD_int }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc<?>[] {testClass, "f", CD_int }));
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, "f", CD_int }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, "f", CD_int }));
         assertLifted(VarHandleDesc.ofArray(CD_int.arrayType()),
-                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc<?>[] {CD_int.arrayType() }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc<?>[] {CD_int.arrayType() }));
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() }));
     }
 
 }
