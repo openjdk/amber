@@ -48,9 +48,9 @@ import static org.testng.Assert.assertTrue;
 @Test
 public class ExtractorTest {
 
-    private enum MatchKind { CARRIER, SELF, FAIL, MATCH }
+    enum MatchKind { CARRIER, SELF, FAIL, MATCH }
 
-    private void assertMatch(MatchKind kind, Extractor e, Object target, Object... args) throws Throwable {
+    static void assertMatch(MatchKind kind, Extractor e, Object target, Object... args) throws Throwable {
         int count = e.descriptor().parameterCount();
         Object[] bindings = new Object[count];
         Object carrier = Extractor.adapt(e, Object.class).tryMatch().invoke(target);
@@ -256,6 +256,7 @@ public class ExtractorTest {
         assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), "bar");
         assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), 3);
         assertMatch(MatchKind.FAIL, Extractor.ofConstant("foo"), null);
+        assertMatch(MatchKind.MATCH, Extractor.ofConstant(3), 3);
     }
 
     public void testNested() throws Throwable {
@@ -272,6 +273,5 @@ public class ExtractorTest {
 
         assertMatch(MatchKind.CARRIER, Extractor.dropBindings(Extractor.ofNested(TC2, Extractor.ofNested(TC2, STRING)), 0, 1), new TestClass2(new TestClass2("foo")),
                     "foo");
-
     }
 }

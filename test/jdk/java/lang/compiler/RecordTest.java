@@ -207,6 +207,42 @@ public class RecordTest {
         assertEquals(((SwitchBootstraps.PatternSwitchResult) mh.invoke(new Box(null))).index, 2);
         assertEquals(((SwitchBootstraps.PatternSwitchResult) mh.invoke("foo")).index, 2);
         assertEquals(((SwitchBootstraps.PatternSwitchResult) mh.invoke(null)).index, -1);
+    }
 
+    record RString(String i) { }
+    record RObject(Object i) { }
+    record Rint(int i) { }
+
+
+    public void testNestedWithConstant() throws Throwable {
+        Extractor rb = recordExtractor(Box.class, Object.class);
+        Extractor rs = recordExtractor(RString.class, String.class);
+        Extractor ro = recordExtractor(RObject.class, Object.class);
+        Extractor ri = recordExtractor(Rint.class, int.class);
+        Extractor cs = Extractor.ofConstant("foo");
+        Extractor cn = Extractor.ofConstant(null);
+        Extractor ci = Extractor.ofConstant(3);
+
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(rs, cs), new RString("foo"), "foo");
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(rs, cs), new RString("bar"));
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(rs, cs), new RString(null));
+
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(ro, cs), new RObject("foo"), "foo");
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject("bar"));
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject(3));
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject(null));
+
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(ri, ci), new Rint(3), 3);
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ri, ci), new Rint(2));
+
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH,
+                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
+                                  new Box(new RString("foo")), new RString("foo"), "foo");
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL,
+                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
+                                  new Box(new RString("bar")));
+        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL,
+                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
+                                  new Box("foo"));
     }
 }

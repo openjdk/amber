@@ -29,6 +29,7 @@ import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -259,9 +260,11 @@ public interface Extractor {
      * @return the extractor
      */
     public static Extractor ofConstant(Object o) {
-        MethodHandle match = partialize(MethodHandles.dropArguments(MethodHandles.constant(Object.class, Boolean.TRUE), 0, Object.class),
-                                        MethodHandles.insertArguments(ExtractorImpl.MH_OBJECTS_EQUAL, 0, o));
-        return new ExtractorImpl(MethodType.methodType(Object.class), match);
+        Class<?> type = o == null ? Object.class : o.getClass();
+        MethodHandle match = partialize(MethodHandles.dropArguments(MethodHandles.constant(Object.class, Boolean.TRUE), 0, type),
+                                        MethodHandles.insertArguments(ExtractorImpl.MH_OBJECTS_EQUAL, 0, o)
+                                                     .asType(MethodType.methodType(boolean.class, type)));
+        return new ExtractorImpl(MethodType.methodType(type), match);
     }
 
     /**
