@@ -42,7 +42,7 @@ import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
  * @since 12
  */
 public interface MethodHandleDesc
-        extends ConstantDesc<MethodHandle> {
+        extends ConstantDesc {
 
     /**
      * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a

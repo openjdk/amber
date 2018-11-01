@@ -64,7 +64,7 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum types.
 public abstract class Enum<E extends Enum<E>>
-        implements Constable<E>, Comparable<E>, Serializable {
+        implements Constable, Comparable<E>, Serializable {
     /**
      * The name of this enum constant, as declared in the enum declaration.
      * Most programmers should use the {@link #toString} method rather than

@@ -57,14 +57,14 @@ import static java.util.stream.Collectors.joining;
  * @since 12
  */
 public abstract class DynamicConstantDesc<T>
-        implements ConstantDesc<T> {
+        implements ConstantDesc {
 
     private final DirectMethodHandleDesc bootstrapMethod;
-    private final ConstantDesc<?>[] bootstrapArgs;
+    private final ConstantDesc[] bootstrapArgs;
     private final String constantName;
     private final ClassDesc constantType;
 
-    private static final Map<MethodHandleDesc, Function<DynamicConstantDesc<?>, ConstantDesc<?>>> canonicalMap
+    private static final Map<MethodHandleDesc, Function<DynamicConstantDesc<?>, ConstantDesc>> canonicalMap
             = Map.ofEntries(Map.entry(ConstantDescs.BSM_PRIMITIVE_CLASS, DynamicConstantDesc::canonicalizePrimitiveClass),
                             Map.entry(ConstantDescs.BSM_ENUM_CONSTANT, DynamicConstantDesc::canonicalizeEnum),
                             Map.entry(ConstantDescs.BSM_NULL_CONSTANT, DynamicConstantDesc::canonicalizeNull),
@@ -95,7 +95,7 @@ public abstract class DynamicConstantDesc<T>
     protected DynamicConstantDesc(DirectMethodHandleDesc bootstrapMethod,
                                   String constantName,
                                   ClassDesc constantType,
-                                  ConstantDesc<?>... bootstrapArgs) {
+                                  ConstantDesc... bootstrapArgs) {
         this.bootstrapMethod = requireNonNull(bootstrapMethod);
         this.constantName = validateMemberName(requireNonNull(constantName));
         this.constantType = requireNonNull(constantType);
@@ -139,10 +139,10 @@ public abstract class DynamicConstantDesc<T>
      * format
      * @jvms 4.2.2 Unqualified Names
      */
-    public static<T> ConstantDesc<T> ofCanonical(DirectMethodHandleDesc bootstrapMethod,
+    public static<T> ConstantDesc ofCanonical(DirectMethodHandleDesc bootstrapMethod,
                                                  String constantName,
                                                  ClassDesc constantType,
-                                                 ConstantDesc<?>[] bootstrapArgs) {
+                                              ConstantDesc[] bootstrapArgs) {
         return DynamicConstantDesc.<T>ofNamed(bootstrapMethod, constantName, constantType, bootstrapArgs)
                 .tryCanonicalize();
     }
@@ -172,7 +172,7 @@ public abstract class DynamicConstantDesc<T>
     public static<T> DynamicConstantDesc<T> ofNamed(DirectMethodHandleDesc bootstrapMethod,
                                                     String constantName,
                                                     ClassDesc constantType,
-                                                    ConstantDesc<?>... bootstrapArgs) {
+                                                    ConstantDesc... bootstrapArgs) {
         return new AnonymousDynamicConstantDesc<>(bootstrapMethod, constantName, constantType, bootstrapArgs);
     }
 
@@ -194,7 +194,7 @@ public abstract class DynamicConstantDesc<T>
      * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
-                                               ConstantDesc<?>... bootstrapArgs) {
+                                               ConstantDesc... bootstrapArgs) {
         return ofNamed(bootstrapMethod, DEFAULT_NAME, bootstrapMethod.methodType().returnType(), bootstrapArgs);
     }
 
@@ -249,7 +249,7 @@ public abstract class DynamicConstantDesc<T>
      * Returns the bootstrap arguments for this constant
      * @return the bootstrap arguments
      */
-    public ConstantDesc<?>[] bootstrapArgs() {
+    public ConstantDesc[] bootstrapArgs() {
         return bootstrapArgs.clone();
     }
 
@@ -258,7 +258,7 @@ public abstract class DynamicConstantDesc<T>
      *
      * @return a {@link List} of the bootstrap arguments, described as {@link ConstantDesc}
      */
-    public List<ConstantDesc<?>> bootstrapArgsList() {
+    public List<ConstantDesc> bootstrapArgsList() {
         return List.of(bootstrapArgs);
     }
 
@@ -266,7 +266,7 @@ public abstract class DynamicConstantDesc<T>
     public T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
         // TODO replace with public supported method
         try {
-            MethodHandle bsm = bootstrapMethod.resolveConstantDesc(lookup);
+            MethodHandle bsm = (MethodHandle) bootstrapMethod.resolveConstantDesc(lookup);
             if (bsm.type().parameterCount() < 2 ||
                 !MethodHandles.Lookup.class.isAssignableFrom(bsm.type().parameterType(0))) {
                 throw new BootstrapMethodError(
@@ -287,13 +287,11 @@ public abstract class DynamicConstantDesc<T>
         }
     }
 
-    private ConstantDesc<T> tryCanonicalize() {
-        Function<DynamicConstantDesc<?>, ConstantDesc<?>> f = canonicalMap.get(bootstrapMethod);
+    private ConstantDesc tryCanonicalize() {
+        Function<DynamicConstantDesc<?>, ConstantDesc> f = canonicalMap.get(bootstrapMethod);
         if (f != null) {
             try {
-                @SuppressWarnings("unchecked")
-                ConstantDesc<T> converted = (ConstantDesc<T>) f.apply(this);
-                return converted;
+                return f.apply(this);
             }
             catch (Throwable t) {
                 return this;
@@ -302,20 +300,20 @@ public abstract class DynamicConstantDesc<T>
         return this;
     }
 
-    private static ConstantDesc<?> canonicalizeNull(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizeNull(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0)
             return desc;
         return ConstantDescs.NULL;
     }
 
-    private static ConstantDesc<?> canonicalizeEnum(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizeEnum(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0
             || desc.constantName == null)
             return desc;
         return EnumDesc.of(desc.constantType, desc.constantName);
     }
 
-    private static ConstantDesc<?> canonicalizePrimitiveClass(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizePrimitiveClass(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 0
             || !desc.constantType().equals(CD_Class)
             || desc.constantName == null)
@@ -323,7 +321,7 @@ public abstract class DynamicConstantDesc<T>
         return ClassDesc.ofDescriptor(desc.constantName);
     }
 
-    private static ConstantDesc<?> canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
             || !desc.constantType().equals(CD_VarHandle))
             return desc;
@@ -332,7 +330,7 @@ public abstract class DynamicConstantDesc<T>
                                            (ClassDesc) desc.bootstrapArgs[2]);
     }
 
-    private static ConstantDesc<?> canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 3
             || !desc.constantType().equals(CD_VarHandle))
             return desc;
@@ -341,7 +339,7 @@ public abstract class DynamicConstantDesc<T>
                                      (ClassDesc) desc.bootstrapArgs[2]);
     }
 
-    private static ConstantDesc<?> canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
+    private static ConstantDesc canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
         if (desc.bootstrapArgs.length != 1
             || !desc.constantType().equals(CD_VarHandle))
             return desc;
@@ -379,7 +377,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     private static class AnonymousDynamicConstantDesc<T> extends DynamicConstantDesc<T> {
-        AnonymousDynamicConstantDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc<?>... bootstrapArgs) {
+        AnonymousDynamicConstantDesc(DirectMethodHandleDesc bootstrapMethod, String constantName, ClassDesc constantType, ConstantDesc... bootstrapArgs) {
             super(bootstrapMethod, constantName, constantType, bootstrapArgs);
         }
     }

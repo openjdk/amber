@@ -129,8 +129,8 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
 
     public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        Class<?> resolvedOwner = owner.resolveConstantDesc(lookup);
-        MethodType resolvedType = this.type.resolveConstantDesc(lookup);
+        Class<?> resolvedOwner = (Class<?>) owner.resolveConstantDesc(lookup);
+        MethodType resolvedType = (MethodType) this.type.resolveConstantDesc(lookup);
         switch (kind) {
             case STATIC:
             case INTERFACE_STATIC:

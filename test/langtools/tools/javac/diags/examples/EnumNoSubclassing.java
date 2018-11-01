@@ -22,5 +22,7 @@
  */
 
 // key: compiler.err.enum.no.subclassing
+// key: compiler.note.unchecked.filename
+// key: compiler.note.unchecked.recompile
 
 class EnumNoSubclassing extends Enum { }

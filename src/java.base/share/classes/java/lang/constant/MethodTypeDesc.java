@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  * @since 12
  */
 public interface MethodTypeDesc
-        extends ConstantDesc<MethodType>,
+        extends ConstantDesc,
                 TypeDescriptor.OfMethod<ClassDesc, MethodTypeDesc> {
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string
