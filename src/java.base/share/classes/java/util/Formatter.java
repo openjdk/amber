@@ -48,9 +48,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.spi.NumberFormatProvider;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.Objects;
 
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -64,8 +61,16 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 import java.lang.compiler.IntrinsicCandidate;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FormattedFloatingDecimal;
+import jdk.internal.util.FormatString;
+import jdk.internal.util.FormatString.FixedString;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.ResourceBundleBasedAdapter;
+
+import static jdk.internal.util.FormatString.Conversion;
+import static jdk.internal.util.FormatString.DateTime;
+import static jdk.internal.util.FormatString.Flags;
+import static jdk.internal.util.FormatString.FormatToken;
+import static jdk.internal.util.FormatString.FormatSpecifier;
 
 /**
  * An interpreter for printf-style format strings.  This class provides support
@@ -2446,10 +2451,6 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private boolean usesDefaultZero(Locale l) {
-        return zero == '0' && (l == null || l.equals(this.l) || l.equals(Locale.US));
-    }
-
     /**
      * Returns the locale set by the construction of this formatter.
      *
@@ -2656,12 +2657,12 @@ public final class Formatter implements Closeable, Flushable {
      */
     @IntrinsicCandidate
     public Formatter format(Locale l, String format, Object ... args) {
-        List<Specifier> fsa = parse(format);
-        format(l, fsa, args);
+        List<FormatToken> fts = FormatString.parse(format);
+        format(l, fts, args);
         return this;
     }
 
-    void format(Locale l, List<Specifier> fsa, Object ... args) {
+    void format(Locale l, List<FormatToken> fts, Object ... args) {
         ensureOpen();
 
         // index of last argument referenced
@@ -2669,30 +2670,35 @@ public final class Formatter implements Closeable, Flushable {
         // last ordinary index
         int lasto = -1;
 
-        for (Specifier fs : fsa) {
-            int index = fs.index();
+        for (FormatToken ft : fts) {
             try {
+
+                int index = ft.index();
                 switch (index) {
                 case -2:  // fixed string, "%n", or "%%"
-                    fs.print(this, null, l);
+                    if (ft instanceof FixedString) {
+                        ((FixedString) ft).print(this);
+                    } else {
+                        print((FormatSpecifier) ft, (Object) null, l);
+                    }
                     break;
                 case -1:  // relative index
                     if (last < 0 || (args != null && last > args.length - 1))
-                        throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[last]), l);
+                        throw new MissingFormatArgumentException(ft.toString());
+                    print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
                     break;
                 case 0:  // ordinary index
                     lasto++;
                     last = lasto;
                     if (args != null && lasto > args.length - 1)
-                        throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[lasto]), l);
+                        throw new MissingFormatArgumentException(ft.toString());
+                    print((FormatSpecifier) ft, (args == null ? null : args[lasto]), l);
                     break;
                 default:  // explicit index
                     last = index - 1;
                     if (args != null && last > args.length - 1)
-                        throw new MissingFormatArgumentException(fs.toString());
-                    fs.print(this, (args == null ? null : args[last]), l);
+                        throw new MissingFormatArgumentException(ft.toString());
+                    print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
                     break;
                 }
             } catch (IOException x) {
@@ -2702,205 +2708,1545 @@ public final class Formatter implements Closeable, Flushable {
 
     }
 
-    /**
-     * Internal interface used to intrinsic-fy formatter usage.
-     */
-    public static class CompiledFormat {
-        private List<Specifier> specifiers;
-
-        private CompiledFormat(List<Specifier> specifiers) {
-            this.specifiers = specifiers;
+    private Formatter print(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        switch (spec.conversion()) {
+            case DECIMAL_INTEGER:
+            case OCTAL_INTEGER:
+            case HEXADECIMAL_INTEGER:
+                printInteger(spec, arg, l);
+                break;
+            case DATE_TIME:
+                printDateTime(spec, arg, l);
+                break;
+            case SCIENTIFIC:
+            case GENERAL:
+            case DECIMAL_FLOAT:
+            case HEXADECIMAL_FLOAT:
+                printFloat(spec, arg, l);
+                break;
+            case CHARACTER:
+            case CHARACTER_UPPER:
+                printCharacter(spec, arg, l);
+                break;
+            case BOOLEAN:
+                printBoolean(spec, arg, l);
+                break;
+            case STRING:
+                printString(spec, arg, l);
+                break;
+            case HASHCODE:
+                printHashCode(spec, arg, l);
+                break;
+            case LINE_SEPARATOR:
+                out().append(System.lineSeparator());
+                break;
+            case PERCENT_SIGN:
+                print(spec, "%", l);
+                break;
+            default:
+                assert false;
         }
+        return this;
+    }
 
-        /**
-         * Format the arguments using the compiled format.
-         * @param formatter formatter to use
-         * @param args      format arguments
-         * @return this CompiledFormat
-         */
-        public CompiledFormat format(Formatter formatter, Object... args) {
-            formatter.format(formatter.l, specifiers, args);
-            return this;
+
+    private void printInteger(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        if (arg == null)
+            print(spec, "null", l);
+        else if (arg instanceof Byte)
+            print(spec, ((Byte) arg).byteValue(), l);
+        else if (arg instanceof Short)
+            print(spec, ((Short) arg).shortValue(), l);
+        else if (arg instanceof Integer)
+            print(spec, ((Integer) arg).intValue(), l);
+        else if (arg instanceof Long)
+            print(spec, ((Long) arg).longValue(), l);
+        else if (arg instanceof BigInteger)
+            print(spec, (BigInteger) arg, l);
+        else
+            spec.conversion().fail(arg);
+    }
+
+    private void printFloat(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        if (arg == null)
+            print(spec, "null", l);
+        else if (arg instanceof Float)
+            print(spec, ((Float) arg).floatValue(), l);
+        else if (arg instanceof Double)
+            print(spec, ((Double) arg).doubleValue(), l);
+        else if (arg instanceof BigDecimal)
+            print(spec, (BigDecimal) arg, l);
+        else
+            spec.conversion().fail(arg);
+    }
+
+    private void printDateTime(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        if (arg == null) {
+            print(spec, "null", l);
+            return;
         }
+        Calendar cal = null;
 
-        /**
-         * Format the arguments using the compiled format.
-         * @param formatter formatter to use
-         * @param locale locale to use with format
-         * @param args   format arguments
-         * @return this CompiledFormat
-         */
-        public CompiledFormat format(Formatter formatter, Locale locale, Object... args) {
-            formatter.format(locale, specifiers, args);
-            return this;
+        // Instead of Calendar.setLenient(true), perhaps we should
+        // wrap the IllegalArgumentException that might be thrown?
+        if (arg instanceof Long) {
+            // Note that the following method uses an instance of the
+            // default time zone (TimeZone.getDefaultRef().
+            cal = Calendar.getInstance(l == null ? Locale.US : l);
+            cal.setTimeInMillis((Long)arg);
+        } else if (arg instanceof Date) {
+            // Note that the following method uses an instance of the
+            // default time zone (TimeZone.getDefaultRef().
+            cal = Calendar.getInstance(l == null ? Locale.US : l);
+            cal.setTime((Date)arg);
+        } else if (arg instanceof Calendar) {
+            cal = (Calendar) ((Calendar) arg).clone();
+            cal.setLenient(true);
+        } else if (arg instanceof TemporalAccessor) {
+            print(spec, (TemporalAccessor) arg, spec.dateTime(), l);
+            return;
+        } else {
+            spec.conversion().fail(arg);
         }
+        // Use the provided locale so that invocations of
+        // localizedMagnitude() use optimizations for null.
+        print(spec, cal, spec.dateTime(), l);
+    }
 
-        /**
-         * Returns the number of specifiers.
-         * @return number of specifiers.
-         */
-        public int count() {
-            return specifiers.size();
+    private void printCharacter(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        if (arg == null) {
+            print(spec, "null", l);
+            return;
         }
-
-        /**
-         * Returns a list of format specifier information.
-         * @return a list of format specifier information
-         */
-        public List<Specifier> specifiers() {
-            return new ArrayList<>(specifiers);
+        String s = null;
+        if (arg instanceof Character) {
+            s = ((Character)arg).toString();
+        } else if (arg instanceof Byte) {
+            byte i = (Byte) arg;
+            if (Character.isValidCodePoint(i))
+                s = new String(Character.toChars(i));
+            else
+                throw new IllegalFormatCodePointException(i);
+        } else if (arg instanceof Short) {
+            short i = (Short) arg;
+            if (Character.isValidCodePoint(i))
+                s = new String(Character.toChars(i));
+            else
+                throw new IllegalFormatCodePointException(i);
+        } else if (arg instanceof Integer) {
+            int i = (Integer) arg;
+            if (Character.isValidCodePoint(i))
+                s = new String(Character.toChars(i));
+            else
+                throw new IllegalFormatCodePointException(i);
+        } else {
+            spec.conversion().fail(arg);
         }
+        print(spec, s, l);
+    }
 
-        /**
-         * Returns the string from the wrapping
-         * @param formatter formatter to use
-         * @return formatter toString
-         */
-        public String toString(Formatter formatter) {
-            return formatter.toString();
+    private void printString(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        if (arg instanceof Formattable) {
+            Formatter fmt = this;
+            if (fmt.locale() != l)
+                fmt = new Formatter(fmt.out(), l);
+            ((Formattable)arg).formatTo(fmt, spec.flags(), spec.width(), spec.precision());
+        } else {
+            if (Flags.contains(spec.flags(), Flags.ALTERNATE))
+                failMismatch(Flags.ALTERNATE, 's');
+            if (arg == null)
+                print(spec, "null", l);
+            else
+                print(spec, arg.toString(), l);
         }
     }
 
-    /**
-     * Creates a compiled format object.
-     * @param format to compile
-     * @return a compiled format
-     */
-    public static CompiledFormat compile(String format) {
-        List<Specifier> specifiers = parse(format);
-        return new CompiledFormat(specifiers);
+    private void printBoolean(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        String s;
+        if (arg != null)
+            s = ((arg instanceof Boolean)
+                    ? ((Boolean)arg).toString()
+                    : Boolean.toString(true));
+        else
+            s = Boolean.toString(false);
+        print(spec, s, l);
     }
 
-    // %[argument_index$][flags][width][.precision][t]conversion
-    private static final String formatSpecifier
-        = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
+    Formatter printHashCode(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+        String s = (arg == null
+                ? "null"
+                : Integer.toHexString(arg.hashCode()));
+        print(spec, s, l);
+        return this;
+    }
 
-    private static Pattern fsPattern = Pattern.compile(formatSpecifier);
+    Formatter print(FormatSpecifier spec, String s, Locale l) throws IOException {
+        if (spec.precision() != -1 && spec.precision() < s.length())
+            s = s.substring(0, spec.precision());
+        if (Flags.contains(spec.flags(), Flags.UPPERCASE))
+            s = toUpperCaseWithLocale(s, l);
+        appendJustified(spec, a, s);
+        return this;
+    }
 
-    /**
-     * Finds format specifiers in the format string.
-     */
-    private static List<Specifier> parse(String s) {
-        ArrayList<Specifier> al = new ArrayList<>();
-        Matcher m = fsPattern.matcher(s);
-        for (int i = 0, len = s.length(); i < len; ) {
-            if (m.find(i)) {
-                // Anything between the start of the string and the beginning
-                // of the format specifier is either fixed text or contains
-                // an invalid format string.
-                if (m.start() != i) {
-                    // Make sure we didn't miss any invalid format specifiers
-                    checkText(s, i, m.start());
-                    // Assume previous characters were fixed text
-                    al.add(new FixedString(s, i, m.start()));
-                }
+    String toUpperCaseWithLocale(String s, Locale l) {
+        return s.toUpperCase(Objects.requireNonNullElse(l,
+                Locale.getDefault(Locale.Category.FORMAT)));
+    }
 
-                al.add(new FormatSpecifier(s, m));
-                i = m.end();
+    Appendable appendJustified(FormatSpecifier spec, Appendable a, CharSequence cs) throws IOException {
+        if (spec.width() == -1) {
+            return a.append(cs);
+        }
+        boolean padRight = Flags.contains(spec.flags(), Flags.LEFT_JUSTIFY);
+        int sp = spec.width() - cs.length();
+        if (padRight) {
+            a.append(cs);
+        }
+        for (int i = 0; i < sp; i++) {
+            a.append(' ');
+        }
+        if (!padRight) {
+            a.append(cs);
+        }
+        return a;
+    }
+
+    Formatter print(FormatSpecifier spec, byte value, Locale l) throws IOException {
+        long v = value;
+        if (value < 0
+                && (spec.conversion() == Conversion.OCTAL_INTEGER
+                || spec.conversion() == Conversion.HEXADECIMAL_INTEGER)) {
+            v += (1L << 8);
+            assert v >= 0 : v;
+        }
+        return print(spec, v, l);
+    }
+
+    Formatter print(FormatSpecifier spec, short value, Locale l) throws IOException {
+        long v = value;
+        if (value < 0
+                && (spec.conversion() == Conversion.OCTAL_INTEGER
+                || spec.conversion() == Conversion.HEXADECIMAL_INTEGER)) {
+            v += (1L << 16);
+            assert v >= 0 : v;
+        }
+        return print(spec, v, l);
+    }
+
+    Formatter print(FormatSpecifier spec, int value, Locale l) throws IOException {
+        long v = value;
+        if (value < 0
+                && (spec.conversion() == Conversion.OCTAL_INTEGER
+                || spec.conversion() == Conversion.HEXADECIMAL_INTEGER)) {
+            v += (1L << 32);
+            assert v >= 0 : v;
+        }
+        return print(spec, v, l);
+    }
+
+    Formatter print(FormatSpecifier spec, long value, Locale l) throws IOException {
+
+        StringBuilder sb = new StringBuilder();
+
+        if (spec.conversion() == Conversion.DECIMAL_INTEGER) {
+            boolean neg = value < 0;
+            String valueStr = Long.toString(value, 10);
+
+            // leading sign indicator
+            leadingSign(spec, sb, neg);
+
+            // the value
+            localizedMagnitude(sb, valueStr, neg ? 1 : 0, spec.flags(), adjustWidth(spec.width(), spec.flags(), neg), l);
+
+            // trailing sign indicator
+            trailingSign(spec, sb, neg);
+        } else if (spec.conversion() == Conversion.OCTAL_INTEGER) {
+            spec.checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE, Flags.PLUS);
+            String s = Long.toOctalString(value);
+            int len = (Flags.contains(spec.flags(), Flags.ALTERNATE)
+                    ? s.length() + 1
+                    : s.length());
+
+            // apply ALTERNATE (radix indicator for octal) before ZERO_PAD
+            if (Flags.contains(spec.flags(), Flags.ALTERNATE))
+                sb.append('0');
+            if (Flags.contains(spec.flags(), Flags.ZERO_PAD)) {
+                trailingZeros(sb, spec.width() - len);
+            }
+            sb.append(s);
+        } else if (spec.conversion() == Conversion.HEXADECIMAL_INTEGER) {
+            spec.checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE,
+                    Flags.PLUS);
+            String s = Long.toHexString(value);
+            int len = (Flags.contains(spec.flags(), Flags.ALTERNATE)
+                    ? s.length() + 2
+                    : s.length());
+
+            // apply ALTERNATE (radix indicator for hex) before ZERO_PAD
+            if (Flags.contains(spec.flags(), Flags.ALTERNATE))
+                sb.append(Flags.contains(spec.flags(), Flags.UPPERCASE) ? "0X" : "0x");
+            if (Flags.contains(spec.flags(), Flags.ZERO_PAD)) {
+                trailingZeros(sb, spec.width() - len);
+            }
+            if (Flags.contains(spec.flags(), Flags.UPPERCASE))
+                s = toUpperCaseWithLocale(s, l);
+            sb.append(s);
+        }
+
+        // justify based on width
+        appendJustified(spec, a, sb);
+        return this;
+    }
+
+    // neg := val < 0
+    void leadingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
+        if (!neg) {
+            if (Flags.contains(spec.flags(), Flags.PLUS)) {
+                sb.append('+');
+            } else if (Flags.contains(spec.flags(), Flags.LEADING_SPACE)) {
+                sb.append(' ');
+            }
+        } else {
+            if (Flags.contains(spec.flags(), Flags.PARENTHESES))
+                sb.append('(');
+            else
+                sb.append('-');
+        }
+    }
+
+    // neg := val < 0
+    void trailingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
+        if (neg && Flags.contains(spec.flags(), Flags.PARENTHESES))
+            sb.append(')');
+    }
+
+    private void print(FormatSpecifier spec, BigInteger value, Locale l) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        boolean neg = value.signum() == -1;
+        BigInteger v = value.abs();
+
+        // leading sign indicator
+        leadingSign(spec, sb, neg);
+
+        // the value
+        if (spec.conversion() == Conversion.DECIMAL_INTEGER) {
+            localizedMagnitude(sb, v.toString(), 0, spec.flags(), adjustWidth(spec.width(), spec.flags(), neg), l);
+        } else if (spec.conversion() == Conversion.OCTAL_INTEGER) {
+            String s = v.toString(8);
+
+            int len = s.length() + sb.length();
+            if (neg && Flags.contains(spec.flags(), Flags.PARENTHESES))
+                len++;
+
+            // apply ALTERNATE (radix indicator for octal) before ZERO_PAD
+            if (Flags.contains(spec.flags(), Flags.ALTERNATE)) {
+                len++;
+                sb.append('0');
+            }
+            if (Flags.contains(spec.flags(), Flags.ZERO_PAD)) {
+                trailingZeros(sb, spec.width() - len);
+            }
+            sb.append(s);
+        } else if (spec.conversion() == Conversion.HEXADECIMAL_INTEGER) {
+            String s = v.toString(16);
+
+            int len = s.length() + sb.length();
+            if (neg && Flags.contains(spec.flags(), Flags.PARENTHESES))
+                len++;
+
+            // apply ALTERNATE (radix indicator for hex) before ZERO_PAD
+            if (Flags.contains(spec.flags(), Flags.ALTERNATE)) {
+                len += 2;
+                sb.append(Flags.contains(spec.flags(), Flags.UPPERCASE) ? "0X" : "0x");
+            }
+            if (Flags.contains(spec.flags(), Flags.ZERO_PAD)) {
+                trailingZeros(sb, spec.width() - len);
+            }
+            if (Flags.contains(spec.flags(), Flags.UPPERCASE))
+                s = toUpperCaseWithLocale(s, l);
+            sb.append(s);
+        }
+
+        // trailing sign indicator
+        trailingSign(spec, sb, (value.signum() == -1));
+
+        // justify based on width
+        appendJustified(spec, a, sb);
+    }
+
+    Formatter print(FormatSpecifier spec, float value, Locale l) throws IOException {
+        return print(spec, (double) value, l);
+    }
+
+    Formatter print(FormatSpecifier spec, double value, Locale l) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        boolean neg = Double.compare(value, 0.0) == -1;
+
+        if (!Double.isNaN(value)) {
+            double v = Math.abs(value);
+
+            // leading sign indicator
+            leadingSign(spec, sb, neg);
+
+            // the value
+            if (!Double.isInfinite(v))
+                print(spec, sb, v, l, spec.flags(), spec.conversion(), spec.precision(), neg);
+            else
+                sb.append(Flags.contains(spec.flags(), Flags.UPPERCASE)
+                        ? "INFINITY" : "Infinity");
+
+            // trailing sign indicator
+            trailingSign(spec, sb, neg);
+        } else {
+            sb.append(Flags.contains(spec.flags(), Flags.UPPERCASE) ? "NAN" : "NaN");
+        }
+
+        // justify based on width
+        appendJustified(spec, a, sb);
+        return this;
+    }
+
+    // !Double.isInfinite(value) && !Double.isNaN(value)
+    private void print(FormatSpecifier spec, StringBuilder sb, double value, Locale l,
+                       int f, Conversion conversion, int precision, boolean neg)
+            throws IOException
+    {
+        if (conversion == Conversion.SCIENTIFIC) {
+            // Create a new FormattedFloatingDecimal with the desired
+            // precision.
+            int prec = (precision == -1 ? 6 : precision);
+
+            FormattedFloatingDecimal fd
+                    = FormattedFloatingDecimal.valueOf(value, prec,
+                    FormattedFloatingDecimal.Form.SCIENTIFIC);
+
+            StringBuilder mant = new StringBuilder().append(fd.getMantissa());
+            addZeros(mant, prec);
+
+            // If the precision is zero and the '#' flag is set, add the
+            // requested decimal point.
+            if (Flags.contains(f, Flags.ALTERNATE) && (prec == 0)) {
+                mant.append('.');
+            }
+
+            char[] exp = (value == 0.0)
+                    ? new char[] {'+','0','0'} : fd.getExponent();
+
+            int width = spec.width();
+            if (width != -1) {
+                width = adjustWidth(width - exp.length - 1, f, neg);
+            }
+            localizedMagnitude(sb, mant, 0, f, width, l);
+
+            sb.append(Flags.contains(f, Flags.UPPERCASE) ? 'E' : 'e');
+
+            char sign = exp[0];
+            assert(sign == '+' || sign == '-');
+            sb.append(sign);
+
+            localizedMagnitudeExp(spec, sb, exp, 1, l);
+        } else if (conversion == Conversion.DECIMAL_FLOAT) {
+            // Create a new FormattedFloatingDecimal with the desired
+            // precision.
+            int prec = (precision == -1 ? 6 : precision);
+
+            FormattedFloatingDecimal fd
+                    = FormattedFloatingDecimal.valueOf(value, prec,
+                    FormattedFloatingDecimal.Form.DECIMAL_FLOAT);
+
+            StringBuilder mant = new StringBuilder().append(fd.getMantissa());
+            addZeros(mant, prec);
+
+            // If the precision is zero and the '#' flag is set, add the
+            // requested decimal point.
+            if (Flags.contains(f, Flags.ALTERNATE) && (prec == 0))
+                mant.append('.');
+
+            int width = spec.width();
+            if (width != -1)
+                width = adjustWidth(width, f, neg);
+            localizedMagnitude(sb, mant, 0, f, width, l);
+        } else if (conversion == Conversion.GENERAL) {
+            int prec = precision;
+            if (precision == -1)
+                prec = 6;
+            else if (precision == 0)
+                prec = 1;
+
+            char[] exp;
+            StringBuilder mant = new StringBuilder();
+            int expRounded;
+            if (value == 0.0) {
+                exp = null;
+                mant.append('0');
+                expRounded = 0;
             } else {
-                // No more valid format specifiers.  Check for possible invalid
-                // format specifiers.
-                checkText(s, i, len);
-                // The rest of the string is fixed text
-                al.add(new FixedString(s, i, s.length()));
+                FormattedFloatingDecimal fd
+                        = FormattedFloatingDecimal.valueOf(value, prec,
+                        FormattedFloatingDecimal.Form.GENERAL);
+                exp = fd.getExponent();
+                mant.append(fd.getMantissa());
+                expRounded = fd.getExponentRounded();
+            }
+
+            if (exp != null) {
+                prec -= 1;
+            } else {
+                prec -= expRounded + 1;
+            }
+
+            addZeros(mant, prec);
+            // If the precision is zero and the '#' flag is set, add the
+            // requested decimal point.
+            if (Flags.contains(f, Flags.ALTERNATE) && (prec == 0)) {
+                mant.append('.');
+            }
+
+            int width = spec.width();
+            if (width != -1) {
+                if (exp != null)
+                    width = adjustWidth(width - exp.length - 1, f, neg);
+                else
+                    width = adjustWidth(width, f, neg);
+            }
+            localizedMagnitude(sb, mant, 0, f, width, l);
+
+            if (exp != null) {
+                sb.append(Flags.contains(f, Flags.UPPERCASE) ? 'E' : 'e');
+
+                char sign = exp[0];
+                assert(sign == '+' || sign == '-');
+                sb.append(sign);
+
+                localizedMagnitudeExp(spec, sb, exp, 1, l);
+            }
+        } else if (conversion == Conversion.HEXADECIMAL_FLOAT) {
+            int prec = precision;
+            if (precision == -1)
+                // assume that we want all of the digits
+                prec = 0;
+            else if (precision == 0)
+                prec = 1;
+
+            String s = hexDouble(value, prec);
+
+            StringBuilder va = new StringBuilder();
+            boolean upper = Flags.contains(f, Flags.UPPERCASE);
+            sb.append(upper ? "0X" : "0x");
+
+            if (Flags.contains(f, Flags.ZERO_PAD)) {
+                trailingZeros(sb, spec.width() - s.length() - 2);
+            }
+
+            int idx = s.indexOf('p');
+            if (upper) {
+                String tmp = s.substring(0, idx);
+                // don't localize hex
+                tmp = tmp.toUpperCase(Locale.ROOT);
+                va.append(tmp);
+            } else {
+                va.append(s, 0, idx);
+            }
+            if (prec != 0) {
+                addZeros(va, prec);
+            }
+            sb.append(va);
+            sb.append(upper ? 'P' : 'p');
+            sb.append(s, idx+1, s.length());
+        }
+    }
+
+    // Add zeros to the requested precision.
+    private void addZeros(StringBuilder sb, int prec) {
+        // Look for the dot.  If we don't find one, the we'll need to add
+        // it before we add the zeros.
+        int len = sb.length();
+        int i;
+        for (i = 0; i < len; i++) {
+            if (sb.charAt(i) == '.') {
                 break;
             }
         }
-        return al;
+        boolean needDot = i == len;
+
+        // Determine existing precision.
+        int outPrec = len - i - (needDot ? 0 : 1);
+        assert (outPrec <= prec);
+        if (outPrec == prec) {
+            return;
+        }
+
+        // Add dot if previously determined to be necessary.
+        if (needDot) {
+            sb.append('.');
+        }
+
+        // Add zeros.
+        trailingZeros(sb, prec - outPrec);
     }
 
-    private static void checkText(String s, int start, int end) {
-        for (int i = start; i < end; i++) {
-            // Any '%' found in the region starts an invalid format specifier.
-            if (s.charAt(i) == '%') {
-                char c = (i == end - 1) ? '%' : s.charAt(i + 1);
-                throw new UnknownFormatConversionException(String.valueOf(c));
+    // Method assumes that d > 0.
+    private String hexDouble(double d, int prec) {
+        // Let Double.toHexString handle simple cases
+        if (!Double.isFinite(d) || d == 0.0 || prec == 0 || prec >= 13) {
+            // remove "0x"
+            return Double.toHexString(d).substring(2);
+        } else {
+            assert(prec >= 1 && prec <= 12);
+
+            int exponent  = Math.getExponent(d);
+            boolean subnormal
+                    = (exponent == Double.MIN_EXPONENT - 1);
+
+            // If this is subnormal input so normalize (could be faster to
+            // do as integer operation).
+            if (subnormal) {
+                d *= SCALEUP;
+                // Calculate the exponent.  This is not just exponent + 54
+                // since the former is not the normalized exponent.
+                exponent = Math.getExponent(d);
+                assert exponent >= Double.MIN_EXPONENT &&
+                        exponent <= Double.MAX_EXPONENT: exponent;
+            }
+
+            int precision = 1 + prec*4;
+            int shiftDistance
+                    =  DoubleConsts.SIGNIFICAND_WIDTH - precision;
+            assert(shiftDistance >= 1 && shiftDistance < DoubleConsts.SIGNIFICAND_WIDTH);
+
+            long doppel = Double.doubleToLongBits(d);
+            // Deterime the number of bits to keep.
+            long newSignif
+                    = (doppel & (DoubleConsts.EXP_BIT_MASK
+                    | DoubleConsts.SIGNIF_BIT_MASK))
+                    >> shiftDistance;
+            // Bits to round away.
+            long roundingBits = doppel & ~(~0L << shiftDistance);
+
+            // To decide how to round, look at the low-order bit of the
+            // working significand, the highest order discarded bit (the
+            // round bit) and whether any of the lower order discarded bits
+            // are nonzero (the sticky bit).
+
+            boolean leastZero = (newSignif & 0x1L) == 0L;
+            boolean round
+                    = ((1L << (shiftDistance - 1) ) & roundingBits) != 0L;
+            boolean sticky  = shiftDistance > 1 &&
+                    (~(1L<< (shiftDistance - 1)) & roundingBits) != 0;
+            if((leastZero && round && sticky) || (!leastZero && round)) {
+                newSignif++;
+            }
+
+            long signBit = doppel & DoubleConsts.SIGN_BIT_MASK;
+            newSignif = signBit | (newSignif << shiftDistance);
+            double result = Double.longBitsToDouble(newSignif);
+
+            if (Double.isInfinite(result) ) {
+                // Infinite result generated by rounding
+                return "1.0p1024";
+            } else {
+                String res = Double.toHexString(result).substring(2);
+                if (!subnormal)
+                    return res;
+                else {
+                    // Create a normalized subnormal string.
+                    int idx = res.indexOf('p');
+                    if (idx == -1) {
+                        // No 'p' character in hex string.
+                        assert false;
+                        return null;
+                    } else {
+                        // Get exponent and append at the end.
+                        String exp = res.substring(idx + 1);
+                        int iexp = Integer.parseInt(exp) -54;
+                        return res.substring(0, idx) + "p"
+                                + Integer.toString(iexp);
+                    }
+                }
             }
         }
     }
 
-    private StringBuilder maybeNewStringBuilder(int width) {
-        return  width == -1 && a instanceof StringBuilder ? (StringBuilder) a : new StringBuilder();
+    private void print(FormatSpecifier spec, BigDecimal value, Locale l) throws IOException {
+        if (spec.conversion() == Conversion.HEXADECIMAL_FLOAT)
+            spec.conversion().fail(value);
+        StringBuilder sb = new StringBuilder();
+        boolean neg = value.signum() == -1;
+        BigDecimal v = value.abs();
+        // leading sign indicator
+        leadingSign(spec, sb, neg);
+
+        // the value
+        print(sb, v, l, spec.flags(), spec.conversion(), spec.width(), spec.precision(), neg);
+
+        // trailing sign indicator
+        trailingSign(spec, sb, neg);
+
+        // justify based on width
+        appendJustified(spec, a, sb);
     }
 
-    /**
-     * Interface for Formatter specifiers.
-     */
-    public interface Specifier {
-        /**
-         * Return the specifier index.
-         * @return the index
-         */
-        int index();
+    // value > 0
+    private void print(StringBuilder sb, BigDecimal value, Locale l,
+                       int f, Conversion conversion, int width, int precision, boolean neg)
+            throws IOException
+    {
+        if (conversion == Conversion.SCIENTIFIC) {
+            // Create a new BigDecimal with the desired precision.
+            int prec = (precision == -1 ? 6 : precision);
+            int scale = value.scale();
+            int origPrec = value.precision();
+            int nzeros = 0;
+            int compPrec;
 
-        /**
-         * Print the specifier to the formatter's appendable.
-         * @param formatter the formatter
-         * @param arg the argument
-         * @param l the locale
-         * @return the formatter
-         * @throws IOException an error occurred
-         */
-        Formatter print(Formatter formatter, Object arg, Locale l) throws IOException;
+            if (prec > origPrec - 1) {
+                compPrec = origPrec;
+                nzeros = prec - (origPrec - 1);
+            } else {
+                compPrec = prec + 1;
+            }
 
-        /**
-         * Return the specifier value.
-         * @return the value
-         */
-        String value();
+            MathContext mc = new MathContext(compPrec);
+            BigDecimal v
+                    = new BigDecimal(value.unscaledValue(), scale, mc);
 
-        /**
-         * Return the conversion type.
-         * @return the conversion type
-         */
-        char conversion();
+            BigDecimalLayout bdl
+                    = new BigDecimalLayout(v.unscaledValue(), v.scale(),
+                    BigDecimalLayoutForm.SCIENTIFIC);
 
-        /**
-         * Return a string representation of the specifier.
-         * @return a string representation
-         */
-        String toString();
+            StringBuilder mant = bdl.mantissa();
 
-        /**
-         * Is this specifier has empty flags.
-         * @return true if flags are empty
-         */
-        boolean hasEmptyFlags();
+            // Add a decimal point if necessary.  The mantissa may not
+            // contain a decimal point if the scale is zero (the internal
+            // representation has no fractional part) or the original
+            // precision is one. Append a decimal point if '#' is set or if
+            // we require zero padding to get to the requested precision.
+            if ((origPrec == 1 || !bdl.hasDot())
+                    && (nzeros > 0 || (Flags.contains(f, Flags.ALTERNATE)))) {
+                mant.append('.');
+            }
 
-        /**
-         * Is this a date-time specifier?
-         * @return true if date-time specifier
-         */
-        boolean isDateTime();
+            // Add trailing zeros in the case precision is greater than
+            // the number of available digits after the decimal separator.
+            trailingZeros(mant, nzeros);
 
-        /**
-         * is this an upper case sepcifier?
-         * @return true if upper case flag is set
-         */
-        boolean isUpperCase();
-    }
+            StringBuilder exp = bdl.exponent();
+            int newW = width;
+            if (newW != -1) {
+                newW = adjustWidth(newW - exp.length() - 1, f, neg);
+            }
+            localizedMagnitude(sb, mant, 0, f, newW, l);
 
-    private static class FixedString implements Specifier {
-        private String s;
-        private int start;
-        private int end;
-        FixedString(String s, int start, int end) {
-            this.s = s;
-            this.start = start;
-            this.end = end;
+            sb.append(Flags.contains(f, Flags.UPPERCASE) ? 'E' : 'e');
+
+            int flags = Flags.remove(f, Flags.GROUP);
+            char sign = exp.charAt(0);
+            assert(sign == '+' || sign == '-');
+            sb.append(sign);
+
+            sb.append(localizedMagnitude(null, exp, 1, flags, -1, l));
+        } else if (conversion == Conversion.DECIMAL_FLOAT) {
+            // Create a new BigDecimal with the desired precision.
+            int prec = (precision == -1 ? 6 : precision);
+            int scale = value.scale();
+
+            if (scale > prec) {
+                // more "scale" digits than the requested "precision"
+                int compPrec = value.precision();
+                if (compPrec <= scale) {
+                    // case of 0.xxxxxx
+                    value = value.setScale(prec, RoundingMode.HALF_UP);
+                } else {
+                    compPrec -= (scale - prec);
+                    value = new BigDecimal(value.unscaledValue(),
+                            scale,
+                            new MathContext(compPrec));
+                }
+            }
+            BigDecimalLayout bdl = new BigDecimalLayout(
+                    value.unscaledValue(),
+                    value.scale(),
+                    BigDecimalLayoutForm.DECIMAL_FLOAT);
+
+            StringBuilder mant = bdl.mantissa();
+            int nzeros = (bdl.scale() < prec ? prec - bdl.scale() : 0);
+
+            // Add a decimal point if necessary.  The mantissa may not
+            // contain a decimal point if the scale is zero (the internal
+            // representation has no fractional part).  Append a decimal
+            // point if '#' is set or we require zero padding to get to the
+            // requested precision.
+            if (bdl.scale() == 0 && (Flags.contains(f, Flags.ALTERNATE)
+                    || nzeros > 0)) {
+                mant.append('.');
+            }
+
+            // Add trailing zeros if the precision is greater than the
+            // number of available digits after the decimal separator.
+            trailingZeros(mant, nzeros);
+
+            localizedMagnitude(sb, mant, 0, f, adjustWidth(width, f, neg), l);
+        } else if (conversion == Conversion.GENERAL) {
+            int prec = precision;
+            if (precision == -1)
+                prec = 6;
+            else if (precision == 0)
+                prec = 1;
+
+            BigDecimal tenToTheNegFour = BigDecimal.valueOf(1, 4);
+            BigDecimal tenToThePrec = BigDecimal.valueOf(1, -prec);
+            if ((value.equals(BigDecimal.ZERO))
+                    || ((value.compareTo(tenToTheNegFour) != -1)
+                    && (value.compareTo(tenToThePrec) == -1))) {
+
+                int e = - value.scale()
+                        + (value.unscaledValue().toString().length() - 1);
+
+                // xxx.yyy
+                //   g precision (# sig digits) = #x + #y
+                //   f precision = #y
+                //   exponent = #x - 1
+                // => f precision = g precision - exponent - 1
+                // 0.000zzz
+                //   g precision (# sig digits) = #z
+                //   f precision = #0 (after '.') + #z
+                //   exponent = - #0 (after '.') - 1
+                // => f precision = g precision - exponent - 1
+                prec = prec - e - 1;
+
+                print(sb, value, l, f, Conversion.DECIMAL_FLOAT, width, prec, neg);
+            } else {
+                print(sb, value, l, f, Conversion.SCIENTIFIC, width, prec - 1, neg);
+            }
+        } else if (conversion == Conversion.HEXADECIMAL_FLOAT) {
+            // This conversion isn't supported.  The error should be
+            // reported earlier.
+            assert false;
         }
-        public int index() { return -2; }
-        public Formatter print(Formatter formatter, Object arg, Locale l) throws IOException {
-            formatter.a.append(s, start, end);
-            return formatter;
-        }
-        public String value() { return toString(); }
-        public char conversion() { return '\0'; }
-        public String toString() { return s.substring(start, end); }
-        public boolean hasEmptyFlags() { return true; }
-        public boolean isDateTime() { return false; }
-        public boolean isUpperCase() { return false; }
     }
+
+    private class BigDecimalLayout {
+        private StringBuilder mant;
+        private StringBuilder exp;
+        private boolean dot = false;
+        private int scale;
+
+        public BigDecimalLayout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
+            layout(intVal, scale, form);
+        }
+
+        public boolean hasDot() {
+            return dot;
+        }
+
+        public int scale() {
+            return scale;
+        }
+
+        public StringBuilder mantissa() {
+            return mant;
+        }
+
+        // The exponent will be formatted as a sign ('+' or '-') followed
+        // by the exponent zero-padded to include at least two digits.
+        public StringBuilder exponent() {
+            return exp;
+        }
+
+        private void layout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
+            String coeff = intVal.toString();
+            this.scale = scale;
+
+            // Construct a buffer, with sufficient capacity for all cases.
+            // If E-notation is needed, length will be: +1 if negative, +1
+            // if '.' needed, +2 for "E+", + up to 10 for adjusted
+            // exponent.  Otherwise it could have +1 if negative, plus
+            // leading "0.00000"
+            int len = coeff.length();
+            mant = new StringBuilder(len + 14);
+
+            if (scale == 0) {
+                if (len > 1) {
+                    mant.append(coeff.charAt(0));
+                    if (form == BigDecimalLayoutForm.SCIENTIFIC) {
+                        mant.append('.');
+                        dot = true;
+                        mant.append(coeff, 1, len);
+                        exp = new StringBuilder("+");
+                        if (len < 10) {
+                            exp.append('0').append(len - 1);
+                        } else {
+                            exp.append(len - 1);
+                        }
+                    } else {
+                        mant.append(coeff, 1, len);
+                    }
+                } else {
+                    mant.append(coeff);
+                    if (form == BigDecimalLayoutForm.SCIENTIFIC) {
+                        exp = new StringBuilder("+00");
+                    }
+                }
+            } else if (form == BigDecimalLayoutForm.DECIMAL_FLOAT) {
+                // count of padding zeros
+
+                if (scale >= len) {
+                    // 0.xxx form
+                    mant.append("0.");
+                    dot = true;
+                    trailingZeros(mant, scale - len);
+                    mant.append(coeff);
+                } else {
+                    if (scale > 0) {
+                        // xx.xx form
+                        int pad = len - scale;
+                        mant.append(coeff, 0, pad);
+                        mant.append('.');
+                        dot = true;
+                        mant.append(coeff, pad, len);
+                    } else { // scale < 0
+                        // xx form
+                        mant.append(coeff, 0, len);
+                        if (intVal.signum() != 0) {
+                            trailingZeros(mant, -scale);
+                        }
+                        this.scale = 0;
+                    }
+                }
+            } else {
+                // x.xxx form
+                mant.append(coeff.charAt(0));
+                if (len > 1) {
+                    mant.append('.');
+                    dot = true;
+                    mant.append(coeff, 1, len);
+                }
+                exp = new StringBuilder();
+                long adjusted = -(long) scale + (len - 1);
+                if (adjusted != 0) {
+                    long abs = Math.abs(adjusted);
+                    // require sign
+                    exp.append(adjusted < 0 ? '-' : '+');
+                    if (abs < 10) {
+                        exp.append('0');
+                    }
+                    exp.append(abs);
+                } else {
+                    exp.append("+00");
+                }
+            }
+        }
+    }
+
+    private int adjustWidth(int width, int f, boolean neg) {
+        int newW = width;
+        if (newW != -1 && neg && Flags.contains(f, Flags.PARENTHESES))
+            newW--;
+        return newW;
+    }
+
+    // Add trailing zeros
+    private void trailingZeros(StringBuilder sb, int nzeros) {
+        for (int i = 0; i < nzeros; i++) {
+            sb.append('0');
+        }
+    }
+
+    private void print(FormatSpecifier spec, Calendar t, DateTime dt, Locale l)  throws IOException {
+        StringBuilder sb = new StringBuilder();
+        print(spec, sb, t, dt, l);
+
+        // justify based on width
+        if (Flags.contains(spec.flags(), Flags.UPPERCASE)) {
+            appendJustified(spec, a, toUpperCaseWithLocale(sb.toString(), l));
+        } else {
+            appendJustified(spec, a, sb);
+        }
+    }
+
+    private Appendable print(FormatSpecifier spec, StringBuilder sb, Calendar t, DateTime dt, Locale l)
+            throws IOException {
+        if (sb == null)
+            sb = new StringBuilder();
+        switch (dt) {
+            case HOUR_OF_DAY_0: // 'H' (00 - 23)
+            case HOUR_0:        // 'I' (01 - 12)
+            case HOUR_OF_DAY:   // 'k' (0 - 23) -- like H
+            case HOUR:        { // 'l' (1 - 12) -- like I
+                int i = t.get(Calendar.HOUR_OF_DAY);
+                if (dt == DateTime.HOUR_0 || dt == DateTime.HOUR)
+                    i = (i == 0 || i == 12 ? 12 : i % 12);
+                int flags = (dt == DateTime.HOUR_OF_DAY_0
+                        || dt == DateTime.HOUR_0
+                        ? Flags.ZERO_PAD
+                        : Flags.NONE);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
+                break;
+            }
+            case MINUTE:      { // 'M' (00 - 59)
+                int i = t.get(Calendar.MINUTE);
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
+                break;
+            }
+            case NANOSECOND:  { // 'N' (000000000 - 999999999)
+                int i = t.get(Calendar.MILLISECOND) * 1000000;
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 9, l));
+                break;
+            }
+            case MILLISECOND: { // 'L' (000 - 999)
+                int i = t.get(Calendar.MILLISECOND);
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 3, l));
+                break;
+            }
+            case MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
+                long i = t.getTimeInMillis();
+                int flags = Flags.NONE;
+                sb.append(localizedMagnitude(null, i, flags, spec.width(), l));
+                break;
+            }
+            case AM_PM:       { // 'p' (am or pm)
+                // Calendar.AM = 0, Calendar.PM = 1, LocaleElements defines upper
+                String[] ampm = { "AM", "PM" };
+                if (l != null && l != Locale.US) {
+                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(l);
+                    ampm = dfs.getAmPmStrings();
+                }
+                String s = ampm[t.get(Calendar.AM_PM)];
+                sb.append(s.toLowerCase(Objects.requireNonNullElse(l,
+                        Locale.getDefault(Locale.Category.FORMAT))));
+                break;
+            }
+            case SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
+                long i = t.getTimeInMillis() / 1000;
+                int flags = Flags.NONE;
+                sb.append(localizedMagnitude(null, i, flags, spec.width(), l));
+                break;
+            }
+            case SECOND:      { // 'S' (00 - 60 - leap second)
+                int i = t.get(Calendar.SECOND);
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
+                break;
+            }
+            case ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
+                int i = t.get(Calendar.ZONE_OFFSET) + t.get(Calendar.DST_OFFSET);
+                boolean neg = i < 0;
+                sb.append(neg ? '-' : '+');
+                if (neg)
+                    i = -i;
+                int min = i / 60000;
+                // combine minute and hour into a single integer
+                int offset = (min / 60) * 100 + (min % 60);
+                int flags = Flags.ZERO_PAD;
+
+                sb.append(localizedMagnitude(null, offset, flags, 4, l));
+                break;
+            }
+            case ZONE:        { // 'Z' (symbol)
+                TimeZone tz = t.getTimeZone();
+                sb.append(tz.getDisplayName((t.get(Calendar.DST_OFFSET) != 0),
+                        TimeZone.SHORT,
+                        Objects.requireNonNullElse(l, Locale.US)));
+                break;
+            }
+
+            // Date
+            case NAME_OF_DAY_ABBREV:     // 'a'
+            case NAME_OF_DAY:          { // 'A'
+                int i = t.get(Calendar.DAY_OF_WEEK);
+                Locale lt = Objects.requireNonNullElse(l, Locale.US);
+                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                if (dt == DateTime.NAME_OF_DAY)
+                    sb.append(dfs.getWeekdays()[i]);
+                else
+                    sb.append(dfs.getShortWeekdays()[i]);
+                break;
+            }
+            case NAME_OF_MONTH_ABBREV:   // 'b'
+            case NAME_OF_MONTH_ABBREV_X: // 'h' -- same b
+            case NAME_OF_MONTH:        { // 'B'
+                int i = t.get(Calendar.MONTH);
+                Locale lt = Objects.requireNonNullElse(l, Locale.US);
+                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                if (dt == DateTime.NAME_OF_MONTH)
+                    sb.append(dfs.getMonths()[i]);
+                else
+                    sb.append(dfs.getShortMonths()[i]);
+                break;
+            }
+            case CENTURY:                // 'C' (00 - 99)
+            case YEAR_2:                 // 'y' (00 - 99)
+            case YEAR_4:               { // 'Y' (0000 - 9999)
+                int i = t.get(Calendar.YEAR);
+                int size = 2;
+                switch (dt) {
+                    case CENTURY:
+                        i /= 100;
+                        break;
+                    case YEAR_2:
+                        i %= 100;
+                        break;
+                    case YEAR_4:
+                        size = 4;
+                        break;
+                }
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, size, l));
+                break;
+            }
+            case DAY_OF_MONTH_0:         // 'd' (01 - 31)
+            case DAY_OF_MONTH:         { // 'e' (1 - 31) -- like d
+                int i = t.get(Calendar.DATE);
+                int flags = (dt == DateTime.DAY_OF_MONTH_0
+                        ? Flags.ZERO_PAD
+                        : Flags.NONE);
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
+                break;
+            }
+            case DAY_OF_YEAR:          { // 'j' (001 - 366)
+                int i = t.get(Calendar.DAY_OF_YEAR);
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 3, l));
+                break;
+            }
+            case MONTH:                { // 'm' (01 - 12)
+                int i = t.get(Calendar.MONTH) + 1;
+                int flags = Flags.ZERO_PAD;
+                sb.append(localizedMagnitude(null, i, flags, 2, l));
+                break;
+            }
+
+            // Composites
+            case TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
+            case TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
+                char sep = ':';
+                print(spec, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
+                print(spec, sb, t, DateTime.MINUTE, l);
+                if (dt == DateTime.TIME) {
+                    sb.append(sep);
+                    print(spec, sb, t, DateTime.SECOND, l);
+                }
+                break;
+            }
+            case TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
+                char sep = ':';
+                print(spec, sb, t, DateTime.HOUR_0, l).append(sep);
+                print(spec, sb, t, DateTime.MINUTE, l).append(sep);
+                print(spec, sb, t, DateTime.SECOND, l).append(' ');
+                // this may be in wrong place for some locales
+                StringBuilder tsb = new StringBuilder();
+                print(spec, tsb, t, DateTime.AM_PM, l);
+
+                sb.append(toUpperCaseWithLocale(tsb.toString(), l));
+                break;
+            }
+            case DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
+                char sep = ' ';
+                print(spec, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
+                print(spec, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
+                print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                print(spec, sb, t, DateTime.TIME, l).append(sep);
+                print(spec, sb, t, DateTime.ZONE, l).append(sep);
+                print(spec, sb, t, DateTime.YEAR_4, l);
+                break;
+            }
+            case DATE:            { // 'D' (mm/dd/yy)
+                char sep = '/';
+                print(spec, sb, t, DateTime.MONTH, l).append(sep);
+                print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                print(spec, sb, t, DateTime.YEAR_2, l);
+                break;
+            }
+            case ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
+                char sep = '-';
+                print(spec, sb, t, DateTime.YEAR_4, l).append(sep);
+                print(spec, sb, t, DateTime.MONTH, l).append(sep);
+                print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l);
+                break;
+            }
+            default:
+                assert false;
+        }
+        return sb;
+    }
+
+    private void print(FormatSpecifier spec, TemporalAccessor t, DateTime dt, Locale l)
+            throws IOException {
+        StringBuilder sb = new StringBuilder();
+        print(spec, sb, t, dt, l);
+        // justify based on width
+        if (Flags.contains(spec.flags(), Flags.UPPERCASE)) {
+            appendJustified(spec, a, toUpperCaseWithLocale(sb.toString(), l));
+        } else {
+            appendJustified(spec, a, sb);
+        }
+    }
+
+    private Appendable print(FormatSpecifier spec, StringBuilder sb, TemporalAccessor t,
+                             DateTime dt, Locale l) throws IOException {
+        if (sb == null)
+            sb = new StringBuilder();
+        try {
+            switch (dt) {
+                case HOUR_OF_DAY_0: {  // 'H' (00 - 23)
+                    int i = t.get(ChronoField.HOUR_OF_DAY);
+                    sb.append(localizedMagnitude(null, i, Flags.ZERO_PAD, 2, l));
+                    break;
+                }
+                case HOUR_OF_DAY: {   // 'k' (0 - 23) -- like H
+                    int i = t.get(ChronoField.HOUR_OF_DAY);
+                    sb.append(localizedMagnitude(null, i, Flags.NONE, 2, l));
+                    break;
+                }
+                case HOUR_0:      {  // 'I' (01 - 12)
+                    int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
+                    sb.append(localizedMagnitude(null, i, Flags.ZERO_PAD, 2, l));
+                    break;
+                }
+                case HOUR:        { // 'l' (1 - 12) -- like I
+                    int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
+                    sb.append(localizedMagnitude(null, i, Flags.NONE, 2, l));
+                    break;
+                }
+                case MINUTE:      { // 'M' (00 - 59)
+                    int i = t.get(ChronoField.MINUTE_OF_HOUR);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
+                    break;
+                }
+                case NANOSECOND:  { // 'N' (000000000 - 999999999)
+                    int i;
+                    try {
+                        i = t.get(ChronoField.NANO_OF_SECOND);
+                    } catch (UnsupportedTemporalTypeException u) {
+                        i = t.get(ChronoField.MILLI_OF_SECOND) * 1000000;
+                    }
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 9, l));
+                    break;
+                }
+                case MILLISECOND: { // 'L' (000 - 999)
+                    int i = t.get(ChronoField.MILLI_OF_SECOND);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 3, l));
+                    break;
+                }
+                case MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
+                    long i = t.getLong(ChronoField.INSTANT_SECONDS) * 1000L +
+                            t.getLong(ChronoField.MILLI_OF_SECOND);
+                    int flags = Flags.NONE;
+                    sb.append(localizedMagnitude(null, i, flags, spec.width(), l));
+                    break;
+                }
+                case AM_PM:       { // 'p' (am or pm)
+                    // Calendar.AM = 0, Calendar.PM = 1, LocaleElements defines upper
+                    String[] ampm = { "AM", "PM" };
+                    if (l != null && l != Locale.US) {
+                        DateFormatSymbols dfs = DateFormatSymbols.getInstance(l);
+                        ampm = dfs.getAmPmStrings();
+                    }
+                    String s = ampm[t.get(ChronoField.AMPM_OF_DAY)];
+                    sb.append(s.toLowerCase(Objects.requireNonNullElse(l,
+                            Locale.getDefault(Locale.Category.FORMAT))));
+                    break;
+                }
+                case SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
+                    long i = t.getLong(ChronoField.INSTANT_SECONDS);
+                    int flags = Flags.NONE;
+                    sb.append(localizedMagnitude(null, i, flags, spec.width(), l));
+                    break;
+                }
+                case SECOND:      { // 'S' (00 - 60 - leap second)
+                    int i = t.get(ChronoField.SECOND_OF_MINUTE);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
+                    break;
+                }
+                case ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
+                    int i = t.get(ChronoField.OFFSET_SECONDS);
+                    boolean neg = i < 0;
+                    sb.append(neg ? '-' : '+');
+                    if (neg)
+                        i = -i;
+                    int min = i / 60;
+                    // combine minute and hour into a single integer
+                    int offset = (min / 60) * 100 + (min % 60);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, offset, flags, 4, l));
+                    break;
+                }
+                case ZONE:        { // 'Z' (symbol)
+                    ZoneId zid = t.query(TemporalQueries.zone());
+                    if (zid == null) {
+                        dt.fail(t);
+                    }
+                    if (!(zid instanceof ZoneOffset) &&
+                            t.isSupported(ChronoField.INSTANT_SECONDS)) {
+                        Instant instant = Instant.from(t);
+                        sb.append(TimeZone.getTimeZone(zid.getId())
+                                .getDisplayName(zid.getRules().isDaylightSavings(instant),
+                                        TimeZone.SHORT,
+                                        Objects.requireNonNullElse(l, Locale.US)));
+                        break;
+                    }
+                    sb.append(zid.getId());
+                    break;
+                }
+                // Date
+                case NAME_OF_DAY_ABBREV:     // 'a'
+                case NAME_OF_DAY:          { // 'A'
+                    int i = t.get(ChronoField.DAY_OF_WEEK) % 7 + 1;
+                    Locale lt = Objects.requireNonNullElse(l, Locale.US);
+                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                    if (dt == DateTime.NAME_OF_DAY)
+                        sb.append(dfs.getWeekdays()[i]);
+                    else
+                        sb.append(dfs.getShortWeekdays()[i]);
+                    break;
+                }
+                case NAME_OF_MONTH_ABBREV:   // 'b'
+                case NAME_OF_MONTH_ABBREV_X: // 'h' -- same b
+                case NAME_OF_MONTH:        { // 'B'
+                    int i = t.get(ChronoField.MONTH_OF_YEAR) - 1;
+                    Locale lt = Objects.requireNonNullElse(l, Locale.US);
+                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
+                    if (dt == DateTime.NAME_OF_MONTH)
+                        sb.append(dfs.getMonths()[i]);
+                    else
+                        sb.append(dfs.getShortMonths()[i]);
+                    break;
+                }
+                case CENTURY:                // 'C' (00 - 99)
+                case YEAR_2:                 // 'y' (00 - 99)
+                case YEAR_4:               { // 'Y' (0000 - 9999)
+                    int i = t.get(ChronoField.YEAR_OF_ERA);
+                    int size = 2;
+                    switch (dt) {
+                        case CENTURY:
+                            i /= 100;
+                            break;
+                        case YEAR_2:
+                            i %= 100;
+                            break;
+                        case YEAR_4:
+                            size = 4;
+                            break;
+                    }
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, size, l));
+                    break;
+                }
+                case DAY_OF_MONTH_0:         // 'd' (01 - 31)
+                case DAY_OF_MONTH:         { // 'e' (1 - 31) -- like d
+                    int i = t.get(ChronoField.DAY_OF_MONTH);
+                    int flags = (dt == DateTime.DAY_OF_MONTH_0
+                            ? Flags.ZERO_PAD
+                            : Flags.NONE);
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
+                    break;
+                }
+                case DAY_OF_YEAR:          { // 'j' (001 - 366)
+                    int i = t.get(ChronoField.DAY_OF_YEAR);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 3, l));
+                    break;
+                }
+                case MONTH:                { // 'm' (01 - 12)
+                    int i = t.get(ChronoField.MONTH_OF_YEAR);
+                    int flags = Flags.ZERO_PAD;
+                    sb.append(localizedMagnitude(null, i, flags, 2, l));
+                    break;
+                }
+
+                // Composites
+                case TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
+                case TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
+                    char sep = ':';
+                    print(spec, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
+                    print(spec, sb, t, DateTime.MINUTE, l);
+                    if (dt == DateTime.TIME) {
+                        sb.append(sep);
+                        print(spec, sb, t, DateTime.SECOND, l);
+                    }
+                    break;
+                }
+                case TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
+                    char sep = ':';
+                    print(spec, sb, t, DateTime.HOUR_0, l).append(sep);
+                    print(spec, sb, t, DateTime.MINUTE, l).append(sep);
+                    print(spec, sb, t, DateTime.SECOND, l).append(' ');
+                    // this may be in wrong place for some locales
+                    StringBuilder tsb = new StringBuilder();
+                    print(spec, tsb, t, DateTime.AM_PM, l);
+                    sb.append(toUpperCaseWithLocale(tsb.toString(), l));
+                    break;
+                }
+                case DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
+                    char sep = ' ';
+                    print(spec, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
+                    print(spec, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
+                    print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                    print(spec, sb, t, DateTime.TIME, l).append(sep);
+                    print(spec, sb, t, DateTime.ZONE, l).append(sep);
+                    print(spec, sb, t, DateTime.YEAR_4, l);
+                    break;
+                }
+                case DATE:            { // 'D' (mm/dd/yy)
+                    char sep = '/';
+                    print(spec, sb, t, DateTime.MONTH, l).append(sep);
+                    print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
+                    print(spec, sb, t, DateTime.YEAR_2, l);
+                    break;
+                }
+                case ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
+                    char sep = '-';
+                    print(spec, sb, t, DateTime.YEAR_4, l).append(sep);
+                    print(spec, sb, t, DateTime.MONTH, l).append(sep);
+                    print(spec, sb, t, DateTime.DAY_OF_MONTH_0, l);
+                    break;
+                }
+                default:
+                    assert false;
+            }
+        } catch (DateTimeException x) {
+            spec.conversion().fail(t);
+        }
+        return sb;
+    }
+
+    // -- Methods to support throwing exceptions --
+
+    private void failMismatch(int flags, char c) {
+        String fs = Flags.toString(flags);
+        throw new FormatFlagsConversionMismatchException(fs, c);
+    }
+
+    private static char getZero(Formatter fmt, Locale l) {
+        if (l != null && !l.equals(fmt.locale())) {
+            DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+            return dfs.getZeroDigit();
+        }
+        return fmt.zero;
+    }
+
+    private StringBuilder localizedMagnitude(StringBuilder sb, long value, int flags, int width, Locale l) {
+        return localizedMagnitude(sb, Long.toString(value, 10), 0, flags, width, l);
+    }
+
+    StringBuilder localizedMagnitude(StringBuilder sb,
+                                     CharSequence value, final int offset, int flags,
+                                     int width, Locale l) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+        int begin = sb.length();
+
+        char zero = getZero(this, l);
+
+        // determine localized grouping separator and size
+        char grpSep = '\0';
+        int  grpSize = -1;
+        char decSep = '\0';
+
+        int len = value.length();
+        int dot = len;
+        for (int j = offset; j < len; j++) {
+            if (value.charAt(j) == '.') {
+                dot = j;
+                break;
+            }
+        }
+
+        if (dot < len) {
+            if (l == null || l.equals(Locale.US)) {
+                decSep  = '.';
+            } else {
+                DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+                decSep  = dfs.getDecimalSeparator();
+            }
+        }
+
+        if (Flags.contains(flags, Flags.GROUP)) {
+            if (l == null || l.equals(Locale.US)) {
+                grpSep = ',';
+                grpSize = 3;
+            } else {
+                DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
+                grpSep = dfs.getGroupingSeparator();
+                DecimalFormat df = null;
+                NumberFormat nf = NumberFormat.getNumberInstance(l);
+                if (nf instanceof DecimalFormat) {
+                    df = (DecimalFormat) nf;
+                } else {
+
+                    // Use DecimalFormat constructor to obtain the instance,
+                    // in case NumberFormat.getNumberInstance(l)
+                    // returns instance other than DecimalFormat
+                    LocaleProviderAdapter adapter = LocaleProviderAdapter
+                            .getAdapter(NumberFormatProvider.class, l);
+                    if (!(adapter instanceof ResourceBundleBasedAdapter)) {
+                        adapter = LocaleProviderAdapter.getResourceBundleBased();
+                    }
+                    String[] all = adapter.getLocaleResources(l)
+                            .getNumberPatterns();
+                    df = new DecimalFormat(all[0], dfs);
+                }
+                grpSize = df.getGroupingSize();
+                // Some locales do not use grouping (the number
+                // pattern for these locales does not contain group, e.g.
+                // ("#0.###")), but specify a grouping separator.
+                // To avoid unnecessary identification of the position of
+                // grouping separator, reset its value with null character
+                if (!df.isGroupingUsed() || grpSize == 0) {
+                    grpSep = '\0';
+                }
+            }
+        }
+
+        // localize the digits inserting group separators as necessary
+        for (int j = offset; j < len; j++) {
+            if (j == dot) {
+                sb.append(decSep);
+                // no more group separators after the decimal separator
+                grpSep = '\0';
+                continue;
+            }
+
+            char c = value.charAt(j);
+            sb.append((char) ((c - '0') + zero));
+            if (grpSep != '\0' && j != dot - 1 && ((dot - j) % grpSize == 1)) {
+                sb.append(grpSep);
+            }
+        }
+
+        // apply zero padding
+        if (width != -1 && Flags.contains(flags, Flags.ZERO_PAD)) {
+            for (int k = sb.length(); k < width; k++) {
+                sb.insert(begin, zero);
+            }
+        }
+
+        return sb;
+    }
+
+    // Specialized localization of exponents, where the source value can only
+    // contain characters '0' through '9', starting at index offset, and no
+    // group separators is added for any locale.
+    private void localizedMagnitudeExp(FormatSpecifier spec, StringBuilder sb, char[] value,
+                                       final int offset, Locale l) {
+        char zero = getZero(this, l);
+
+        int len = value.length;
+        for (int j = offset; j < len; j++) {
+            char c = value[j];
+            sb.append((char) ((c - '0') + zero));
+        }
+    }
+
 
     /**
      * Enum for {@code BigDecimal} formatting.
@@ -2917,2131 +4263,5 @@ public final class Formatter implements Closeable, Flushable {
         DECIMAL_FLOAT
     };
 
-    private static class FormatSpecifier implements Specifier {
-        private int index = -1;
-        private Flags f = Flags.NONE;
-        private int width;
-        private int precision;
-        private boolean dt = false;
-        private char c;
 
-        public String value() {
-            return toString();
-        }
-
-        public char conversion() {
-            return c;
-        }
-
-        private int index(String s, int start, int end) {
-            if (start >= 0) {
-                try {
-                    // skip the trailing '$'
-                    index = Integer.parseInt(s, start, end - 1, 10);
-                } catch (NumberFormatException x) {
-                    assert(false);
-                }
-            } else {
-                index = 0;
-            }
-            return index;
-        }
-
-        public int index() {
-            return index;
-        }
-
-        private Flags flags(String s, int start, int end) {
-            f = Flags.parse(s, start, end);
-            if (f.contains(Flags.PREVIOUS))
-                index = -1;
-            return f;
-        }
-
-        private int width(String s, int start, int end) {
-            width = -1;
-            if (start >= 0) {
-                try {
-                    width = Integer.parseInt(s, start, end, 10);
-                    if (width < 0)
-                        throw new IllegalFormatWidthException(width);
-                } catch (NumberFormatException x) {
-                    assert(false);
-                }
-            }
-            return width;
-        }
-
-        private int precision(String s, int start, int end) {
-            precision = -1;
-            if (start >= 0) {
-                try {
-                    // skip the leading '.'
-                    precision = Integer.parseInt(s, start + 1, end, 10);
-                    if (precision < 0)
-                        throw new IllegalFormatPrecisionException(precision);
-                } catch (NumberFormatException x) {
-                    assert(false);
-                }
-            }
-            return precision;
-        }
-
-        private char conversion(char conv) {
-            c = conv;
-            if (!dt) {
-                if (!Conversion.isValid(c)) {
-                    throw new UnknownFormatConversionException(String.valueOf(c));
-                }
-                if (Character.isUpperCase(c)) {
-                    f.add(Flags.UPPERCASE);
-                    c = Character.toLowerCase(c);
-                }
-                if (Conversion.isText(c)) {
-                    index = -2;
-                }
-            }
-            return c;
-        }
-
-        FormatSpecifier(String s, Matcher m) {
-            index(s, m.start(1), m.end(1));
-            flags(s, m.start(2), m.end(2));
-            width(s, m.start(3), m.end(3));
-            precision(s, m.start(4), m.end(4));
-
-            int tTStart = m.start(5);
-            if (tTStart >= 0) {
-                dt = true;
-                if (s.charAt(tTStart) == 'T') {
-                    f.add(Flags.UPPERCASE);
-                }
-            }
-            conversion(s.charAt(m.start(6)));
-
-            if (dt)
-                checkDateTime();
-            else if (Conversion.isGeneral(c))
-                checkGeneral();
-            else if (Conversion.isCharacter(c))
-                checkCharacter();
-            else if (Conversion.isInteger(c))
-                checkInteger();
-            else if (Conversion.isFloat(c))
-                checkFloat();
-            else if (Conversion.isText(c))
-                checkText();
-            else
-                throw new UnknownFormatConversionException(String.valueOf(c));
-        }
-
-
-        public boolean hasEmptyFlags() {
-            return (f.isEmpty() || f.valueOf() == Flags.UPPERCASE.valueOf()) && width == -1;
-        }
-
-        public boolean isDateTime() {
-            return dt;
-        }
-
-        public boolean isUpperCase() {
-            return f.valueOf() == Flags.UPPERCASE.valueOf();
-        }
-
-        public Formatter print(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (dt) {
-                printDateTime(formatter, arg, l);
-                return formatter;
-            }
-            switch(c) {
-            case Conversion.DECIMAL_INTEGER:
-            case Conversion.OCTAL_INTEGER:
-            case Conversion.HEXADECIMAL_INTEGER:
-                printInteger(formatter, arg, l);
-                break;
-            case Conversion.SCIENTIFIC:
-            case Conversion.GENERAL:
-            case Conversion.DECIMAL_FLOAT:
-            case Conversion.HEXADECIMAL_FLOAT:
-                printFloat(formatter, arg, l);
-                break;
-            case Conversion.CHARACTER:
-            case Conversion.CHARACTER_UPPER:
-                printCharacter(formatter, arg, l);
-                break;
-            case Conversion.BOOLEAN:
-                printBoolean(formatter, arg, l);
-                break;
-            case Conversion.STRING:
-                printString(formatter, arg, l);
-                break;
-            case Conversion.HASHCODE:
-                printHashCode(formatter, arg, l);
-                break;
-            case Conversion.LINE_SEPARATOR:
-                formatter.a.append(System.lineSeparator());
-                break;
-            case Conversion.PERCENT_SIGN:
-                print(formatter, "%", l);
-                break;
-            default:
-                assert false;
-            }
-            return formatter;
-        }
-
-        private void printInteger(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (arg == null)
-                print(formatter, "null", l);
-            else if (arg instanceof Byte)
-                print(formatter, ((Byte)arg).byteValue(), l);
-            else if (arg instanceof Short)
-                print(formatter, ((Short)arg).shortValue(), l);
-            else if (arg instanceof Integer)
-                print(formatter, ((Integer)arg).intValue(), l);
-            else if (arg instanceof Long)
-                print(formatter, ((Long)arg).longValue(), l);
-            else if (arg instanceof BigInteger)
-                print(formatter, ((BigInteger)arg), l);
-            else
-                failConversion(c, arg);
-        }
-
-        private void printFloat(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (arg == null)
-                print(formatter, "null", l);
-            else if (arg instanceof Float)
-                print(formatter, ((Float)arg).floatValue(), l);
-            else if (arg instanceof Double)
-                print(formatter, ((Double)arg).doubleValue(), l);
-            else if (arg instanceof BigDecimal)
-                print(formatter, ((BigDecimal)arg), l);
-            else
-                failConversion(c, arg);
-        }
-
-        void printDateTime(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (arg == null) {
-                print(formatter, "null", l);
-                return;
-            }
-            Calendar cal = null;
-
-            // Instead of Calendar.setLenient(true), perhaps we should
-            // wrap the IllegalArgumentException that might be thrown?
-            if (arg instanceof Long) {
-                // Note that the following method uses an instance of the
-                // default time zone (TimeZone.getDefaultRef().
-                cal = Calendar.getInstance(l == null ? Locale.US : l);
-                cal.setTimeInMillis((Long)arg);
-            } else if (arg instanceof Date) {
-                // Note that the following method uses an instance of the
-                // default time zone (TimeZone.getDefaultRef().
-                cal = Calendar.getInstance(l == null ? Locale.US : l);
-                cal.setTime((Date)arg);
-            } else if (arg instanceof Calendar) {
-                cal = (Calendar) ((Calendar) arg).clone();
-                cal.setLenient(true);
-            } else if (arg instanceof TemporalAccessor) {
-                print(formatter, (TemporalAccessor) arg, c, l);
-                return;
-            } else {
-                failConversion(c, arg);
-            }
-            // Use the provided locale so that invocations of
-            // localizedMagnitude() use optimizations for null.
-            print(formatter, cal, c, l);
-        }
-
-        private void printCharacter(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (arg == null) {
-                print(formatter, "null", l);
-                return;
-            }
-            String s = null;
-            if (arg instanceof Character) {
-                s = ((Character)arg).toString();
-            } else if (arg instanceof Byte) {
-                byte i = ((Byte)arg).byteValue();
-                if (Character.isValidCodePoint(i))
-                    s = new String(Character.toChars(i));
-                else
-                    throw new IllegalFormatCodePointException(i);
-            } else if (arg instanceof Short) {
-                short i = ((Short)arg).shortValue();
-                if (Character.isValidCodePoint(i))
-                    s = new String(Character.toChars(i));
-                else
-                    throw new IllegalFormatCodePointException(i);
-            } else if (arg instanceof Integer) {
-                int i = ((Integer)arg).intValue();
-                if (Character.isValidCodePoint(i))
-                    s = new String(Character.toChars(i));
-                else
-                    throw new IllegalFormatCodePointException(i);
-            } else {
-                failConversion(c, arg);
-            }
-            print(formatter, s, l);
-        }
-
-        private void printString(Formatter formatter, Object arg, Locale l) throws IOException {
-            if (arg instanceof Formattable) {
-                Formatter fmt = formatter;
-                if (fmt.locale() != l)
-                    fmt = new Formatter(fmt.out(), l);
-                ((Formattable)arg).formatTo(fmt, f.valueOf(), width, precision);
-            } else {
-                if (f.contains(Flags.ALTERNATE))
-                    failMismatch(Flags.ALTERNATE, 's');
-                if (arg == null)
-                    print(formatter, "null", l);
-                else
-                    print(formatter, arg.toString(), l);
-            }
-        }
-
-        private void printBoolean(Formatter formatter, Object arg, Locale l) throws IOException {
-            String s;
-            if (arg != null)
-                s = ((arg instanceof Boolean)
-                     ? ((Boolean)arg).toString()
-                     : Boolean.toString(true));
-            else
-                s = Boolean.toString(false);
-            print(formatter, s, l);
-        }
-
-        private Formatter printHashCode(Formatter formatter, Object arg, Locale l) throws IOException {
-            String s = (arg == null
-                        ? "null"
-                        : Integer.toHexString(arg.hashCode()));
-            print(formatter, s, l);
-            return formatter;
-        }
-
-        Formatter print(Formatter formatter, String s, Locale l) throws IOException {
-            if (precision != -1 && precision < s.length())
-                s = s.substring(0, precision);
-            if (f.contains(Flags.UPPERCASE))
-                s = toUpperCaseWithLocale(s, l);
-            appendJustified(formatter.a, s);
-            return formatter;
-        }
-
-        String toUpperCaseWithLocale(String s, Locale l) {
-            return s.toUpperCase(Objects.requireNonNullElse(l,
-                    Locale.getDefault(Locale.Category.FORMAT)));
-        }
-
-        Appendable appendJustified(Appendable a, CharSequence cs) throws IOException {
-             if (width == -1) {
-                 return a.append(cs);
-             }
-             boolean padRight = f.contains(Flags.LEFT_JUSTIFY);
-             int sp = width - cs.length();
-             if (padRight) {
-                 a.append(cs);
-             }
-             for (int i = 0; i < sp; i++) {
-                 a.append(' ');
-             }
-             if (!padRight) {
-                 a.append(cs);
-             }
-             return a;
-        }
-
-        public String toString() {
-            StringBuilder sb = new StringBuilder("%");
-            // Flags.UPPERCASE is set internally for legal conversions.
-            Flags dupf = f.dup().remove(Flags.UPPERCASE);
-            sb.append(dupf.toString());
-            if (index > 0)
-                sb.append(index).append('$');
-            if (width != -1)
-                sb.append(width);
-            if (precision != -1)
-                sb.append('.').append(precision);
-            if (dt)
-                sb.append(f.contains(Flags.UPPERCASE) ? 'T' : 't');
-            sb.append(f.contains(Flags.UPPERCASE)
-                      ? Character.toUpperCase(c) : c);
-            return sb.toString();
-        }
-
-        private void checkGeneral() {
-            if ((c == Conversion.BOOLEAN || c == Conversion.HASHCODE)
-                && f.contains(Flags.ALTERNATE))
-                failMismatch(Flags.ALTERNATE, c);
-            // '-' requires a width
-            if (width == -1 && f.contains(Flags.LEFT_JUSTIFY))
-                throw new MissingFormatWidthException(toString());
-            checkBadFlags(Flags.PLUS, Flags.LEADING_SPACE, Flags.ZERO_PAD,
-                          Flags.GROUP, Flags.PARENTHESES);
-        }
-
-        private void checkDateTime() {
-            if (precision != -1)
-                throw new IllegalFormatPrecisionException(precision);
-            if (!DateTime.isValid(c))
-                throw new UnknownFormatConversionException("t" + c);
-            checkBadFlags(Flags.ALTERNATE, Flags.PLUS, Flags.LEADING_SPACE,
-                          Flags.ZERO_PAD, Flags.GROUP, Flags.PARENTHESES);
-            // '-' requires a width
-            if (width == -1 && f.contains(Flags.LEFT_JUSTIFY))
-                throw new MissingFormatWidthException(toString());
-        }
-
-        private void checkCharacter() {
-            if (precision != -1)
-                throw new IllegalFormatPrecisionException(precision);
-            checkBadFlags(Flags.ALTERNATE, Flags.PLUS, Flags.LEADING_SPACE,
-                          Flags.ZERO_PAD, Flags.GROUP, Flags.PARENTHESES);
-            // '-' requires a width
-            if (width == -1 && f.contains(Flags.LEFT_JUSTIFY))
-                throw new MissingFormatWidthException(toString());
-        }
-
-        private void checkInteger() {
-            checkNumeric();
-            if (precision != -1)
-                throw new IllegalFormatPrecisionException(precision);
-
-            if (c == Conversion.DECIMAL_INTEGER)
-                checkBadFlags(Flags.ALTERNATE);
-            else if (c == Conversion.OCTAL_INTEGER)
-                checkBadFlags(Flags.GROUP);
-            else
-                checkBadFlags(Flags.GROUP);
-        }
-
-        private void checkBadFlags(Flags ... badFlags) {
-            for (Flags badFlag : badFlags)
-                if (f.contains(badFlag))
-                    failMismatch(badFlag, c);
-        }
-
-        private void checkFloat() {
-            checkNumeric();
-            if (c == Conversion.DECIMAL_FLOAT) {
-            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
-                checkBadFlags(Flags.PARENTHESES, Flags.GROUP);
-            } else if (c == Conversion.SCIENTIFIC) {
-                checkBadFlags(Flags.GROUP);
-            } else if (c == Conversion.GENERAL) {
-                checkBadFlags(Flags.ALTERNATE);
-            }
-        }
-
-        private void checkNumeric() {
-            if (width != -1 && width < 0)
-                throw new IllegalFormatWidthException(width);
-
-            if (precision != -1 && precision < 0)
-                throw new IllegalFormatPrecisionException(precision);
-
-            // '-' and '0' require a width
-            if (width == -1
-                && (f.contains(Flags.LEFT_JUSTIFY) || f.contains(Flags.ZERO_PAD)))
-                throw new MissingFormatWidthException(toString());
-
-            // bad combination
-            if ((f.contains(Flags.PLUS) && f.contains(Flags.LEADING_SPACE))
-                || (f.contains(Flags.LEFT_JUSTIFY) && f.contains(Flags.ZERO_PAD)))
-                throw new IllegalFormatFlagsException(f.toString());
-        }
-
-        private void checkText() {
-            if (precision != -1)
-                throw new IllegalFormatPrecisionException(precision);
-            switch (c) {
-            case Conversion.PERCENT_SIGN:
-                if (f.valueOf() != Flags.LEFT_JUSTIFY.valueOf()
-                    && f.valueOf() != Flags.NONE.valueOf())
-                    throw new IllegalFormatFlagsException(f.toString());
-                // '-' requires a width
-                if (width == -1 && f.contains(Flags.LEFT_JUSTIFY))
-                    throw new MissingFormatWidthException(toString());
-                break;
-            case Conversion.LINE_SEPARATOR:
-                if (width != -1)
-                    throw new IllegalFormatWidthException(width);
-                if (f.valueOf() != Flags.NONE.valueOf())
-                    throw new IllegalFormatFlagsException(f.toString());
-                break;
-            default:
-                assert false;
-            }
-        }
-
-        private Formatter print(Formatter formatter, byte value, Locale l) throws IOException {
-            long v = value;
-            if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
-                    || c == Conversion.HEXADECIMAL_INTEGER)) {
-                v += (1L << 8);
-                assert v >= 0 : v;
-            }
-            return print(formatter, v, l);
-        }
-
-        private Formatter print(Formatter formatter, short value, Locale l) throws IOException {
-            long v = value;
-            if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
-                    || c == Conversion.HEXADECIMAL_INTEGER)) {
-                v += (1L << 16);
-                assert v >= 0 : v;
-            }
-            return print(formatter, v, l);
-        }
-
-        private Formatter print(Formatter formatter, int value, Locale l) throws IOException {
-
-            if (c == Conversion.DECIMAL_INTEGER && hasEmptyFlags() && !dt && formatter.usesDefaultZero(l)) {
-                formatter.a.append(Integer.toString(value));
-                return formatter;
-            }
-
-            long v = value;
-            if (value < 0
-                    && (c == Conversion.OCTAL_INTEGER
-                    || c == Conversion.HEXADECIMAL_INTEGER)) {
-                v += (1L << 32);
-                assert v >= 0 : v;
-            }
-            return print(formatter, v, l);
-        }
-
-        private Formatter print(Formatter formatter, long value, Locale l) throws IOException {
-
-            StringBuilder sb = new StringBuilder();
-
-            if (c == Conversion.DECIMAL_INTEGER) {
-                boolean neg = value < 0;
-                String valueStr = Long.toString(value, 10);
-                int pos0 = sb.length();
-
-                // leading sign indicator
-                leadingSign(sb, neg);
-
-                // the value
-                localizedMagnitude(formatter, sb, pos0, valueStr, neg ? 1 : 0, f, adjustWidth(width, f, neg), l);
-
-                // trailing sign indicator
-                trailingSign(sb, neg);
-            } else if (c == Conversion.OCTAL_INTEGER) {
-                checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE,
-                        Flags.PLUS);
-                String s = Long.toOctalString(value);
-                int len = (f.contains(Flags.ALTERNATE)
-                        ? s.length() + 1
-                        : s.length());
-
-                // apply ALTERNATE (radix indicator for octal) before ZERO_PAD
-                if (f.contains(Flags.ALTERNATE))
-                    sb.append('0');
-                if (f.contains(Flags.ZERO_PAD)) {
-                    trailingZeros(sb, width - len);
-                }
-                sb.append(s);
-            } else if (c == Conversion.HEXADECIMAL_INTEGER) {
-                checkBadFlags(Flags.PARENTHESES, Flags.LEADING_SPACE,
-                        Flags.PLUS);
-                String s = Long.toHexString(value);
-                int len = (f.contains(Flags.ALTERNATE)
-                        ? s.length() + 2
-                        : s.length());
-
-                // apply ALTERNATE (radix indicator for hex) before ZERO_PAD
-                if (f.contains(Flags.ALTERNATE))
-                    sb.append(f.contains(Flags.UPPERCASE) ? "0X" : "0x");
-                if (f.contains(Flags.ZERO_PAD)) {
-                    trailingZeros(sb, width - len);
-                }
-                if (f.contains(Flags.UPPERCASE))
-                    s = toUpperCaseWithLocale(s, l);
-                sb.append(s);
-            }
-
-            // justify based on width
-            appendJustified(formatter.a, sb);
-            return formatter;
-        }
-
-        // neg := val < 0
-        void leadingSign(StringBuilder sb, boolean neg) {
-            if (!neg) {
-                if (f.contains(Flags.PLUS)) {
-                    sb.append('+');
-                } else if (f.contains(Flags.LEADING_SPACE)) {
-                    sb.append(' ');
-                }
-            } else {
-                if (f.contains(Flags.PARENTHESES))
-                    sb.append('(');
-                else
-                    sb.append('-');
-            }
-        }
-
-        // neg := val < 0
-        void trailingSign(StringBuilder sb, boolean neg) {
-            if (neg && f.contains(Flags.PARENTHESES))
-                sb.append(')');
-        }
-
-        private void print(Formatter formatter, BigInteger value, Locale l) throws IOException {
-            StringBuilder sb = new StringBuilder();
-            boolean neg = value.signum() == -1;
-            BigInteger v = value.abs();
-            int pos0 = sb.length();
-
-            // leading sign indicator
-            leadingSign(sb, neg);
-
-            // the value
-            if (c == Conversion.DECIMAL_INTEGER) {
-                localizedMagnitude(formatter, sb, pos0, v.toString(), 0, f, adjustWidth(width, f, neg), l);
-            } else if (c == Conversion.OCTAL_INTEGER) {
-                String s = v.toString(8);
-
-                int len = s.length() + sb.length();
-                if (neg && f.contains(Flags.PARENTHESES))
-                    len++;
-
-                // apply ALTERNATE (radix indicator for octal) before ZERO_PAD
-                if (f.contains(Flags.ALTERNATE)) {
-                    len++;
-                    sb.append('0');
-                }
-                if (f.contains(Flags.ZERO_PAD)) {
-                    trailingZeros(sb, width - len);
-                }
-                sb.append(s);
-            } else if (c == Conversion.HEXADECIMAL_INTEGER) {
-                String s = v.toString(16);
-
-                int len = s.length() + sb.length();
-                if (neg && f.contains(Flags.PARENTHESES))
-                    len++;
-
-                // apply ALTERNATE (radix indicator for hex) before ZERO_PAD
-                if (f.contains(Flags.ALTERNATE)) {
-                    len += 2;
-                    sb.append(f.contains(Flags.UPPERCASE) ? "0X" : "0x");
-                }
-                if (f.contains(Flags.ZERO_PAD)) {
-                    trailingZeros(sb, width - len);
-                }
-                if (f.contains(Flags.UPPERCASE))
-                    s = toUpperCaseWithLocale(s, l);
-                sb.append(s);
-            }
-
-            // trailing sign indicator
-            trailingSign(sb, (value.signum() == -1));
-
-            // justify based on width
-            appendJustified(formatter.a, sb);
-        }
-
-        private Formatter print(Formatter formatter, float value, Locale l) throws IOException {
-            return print(formatter, (double) value, l);
-        }
-
-        private Formatter print(Formatter formatter, double value, Locale l) throws IOException {
-            StringBuilder sb = formatter.maybeNewStringBuilder(width);
-            boolean neg = Double.compare(value, 0.0) == -1;
-
-            if (!Double.isNaN(value)) {
-                double v = Math.abs(value);
-                int pos0 = sb.length();
-
-                // leading sign indicator
-                leadingSign(sb, neg);
-
-                // the value
-                if (!Double.isInfinite(v))
-                    print(formatter, sb, pos0, v, l, f, c, precision, neg);
-                else
-                    sb.append(f.contains(Flags.UPPERCASE)
-                              ? "INFINITY" : "Infinity");
-
-                // trailing sign indicator
-                trailingSign(sb, neg);
-            } else {
-                sb.append(f.contains(Flags.UPPERCASE) ? "NAN" : "NaN");
-            }
-
-            // justify based on width
-            if (sb != formatter.a) {
-                appendJustified(formatter.a, sb);
-            }
-            return formatter;
-        }
-
-        // !Double.isInfinite(value) && !Double.isNaN(value)
-        private void print(Formatter formatter, StringBuilder sb, int pos0, double value, Locale l,
-                           Flags f, char c, int precision, boolean neg)
-            throws IOException
-        {
-            if (c == Conversion.SCIENTIFIC) {
-                // Create a new FormattedFloatingDecimal with the desired
-                // precision.
-                int prec = (precision == -1 ? 6 : precision);
-
-                FormattedFloatingDecimal fd
-                        = FormattedFloatingDecimal.valueOf(value, prec,
-                          FormattedFloatingDecimal.Form.SCIENTIFIC);
-
-                StringBuilder mant = new StringBuilder().append(fd.getMantissa());
-                addZeros(mant, prec);
-
-                // If the precision is zero and the '#' flag is set, add the
-                // requested decimal point.
-                if (f.contains(Flags.ALTERNATE) && (prec == 0)) {
-                    mant.append('.');
-                }
-
-                char[] exp = (value == 0.0)
-                    ? new char[] {'+','0','0'} : fd.getExponent();
-
-                int newW = width;
-                if (width != -1) {
-                    newW = adjustWidth(width - exp.length - 1, f, neg);
-                }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
-
-                sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
-
-                char sign = exp[0];
-                assert(sign == '+' || sign == '-');
-                sb.append(sign);
-
-                localizedMagnitudeExp(formatter, sb, exp, 1, l);
-            } else if (c == Conversion.DECIMAL_FLOAT) {
-                // Create a new FormattedFloatingDecimal with the desired
-                // precision.
-                int prec = (precision == -1 ? 6 : precision);
-
-                FormattedFloatingDecimal fd
-                        = FormattedFloatingDecimal.valueOf(value, prec,
-                          FormattedFloatingDecimal.Form.DECIMAL_FLOAT);
-
-                StringBuilder mant = new StringBuilder().append(fd.getMantissa());
-                addZeros(mant, prec);
-
-                // If the precision is zero and the '#' flag is set, add the
-                // requested decimal point.
-                if (f.contains(Flags.ALTERNATE) && (prec == 0))
-                    mant.append('.');
-
-                int newW = width;
-                if (width != -1)
-                    newW = adjustWidth(width, f, neg);
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
-            } else if (c == Conversion.GENERAL) {
-                int prec = precision;
-                if (precision == -1)
-                    prec = 6;
-                else if (precision == 0)
-                    prec = 1;
-
-                char[] exp;
-                StringBuilder mant = new StringBuilder();
-                int expRounded;
-                if (value == 0.0) {
-                    exp = null;
-                    mant.append('0');
-                    expRounded = 0;
-                } else {
-                    FormattedFloatingDecimal fd
-                        = FormattedFloatingDecimal.valueOf(value, prec,
-                          FormattedFloatingDecimal.Form.GENERAL);
-                    exp = fd.getExponent();
-                    mant.append(fd.getMantissa());
-                    expRounded = fd.getExponentRounded();
-                }
-
-                if (exp != null) {
-                    prec -= 1;
-                } else {
-                    prec -= expRounded + 1;
-                }
-
-                addZeros(mant, prec);
-                // If the precision is zero and the '#' flag is set, add the
-                // requested decimal point.
-                if (f.contains(Flags.ALTERNATE) && (prec == 0)) {
-                    mant.append('.');
-                }
-
-                int newW = width;
-                if (width != -1) {
-                    if (exp != null)
-                        newW = adjustWidth(width - exp.length - 1, f, neg);
-                    else
-                        newW = adjustWidth(width, f, neg);
-                }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
-
-                if (exp != null) {
-                    sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
-
-                    char sign = exp[0];
-                    assert(sign == '+' || sign == '-');
-                    sb.append(sign);
-
-                    localizedMagnitudeExp(formatter, sb, exp, 1, l);
-                }
-            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
-                int prec = precision;
-                if (precision == -1)
-                    // assume that we want all of the digits
-                    prec = 0;
-                else if (precision == 0)
-                    prec = 1;
-
-                String s = hexDouble(value, prec);
-
-                StringBuilder va = new StringBuilder();
-                boolean upper = f.contains(Flags.UPPERCASE);
-                sb.append(upper ? "0X" : "0x");
-
-                if (f.contains(Flags.ZERO_PAD)) {
-                    trailingZeros(sb, width - s.length() - 2);
-                }
-
-                int idx = s.indexOf('p');
-                if (upper) {
-                    String tmp = s.substring(0, idx);
-                    // don't localize hex
-                    tmp = tmp.toUpperCase(Locale.ROOT);
-                    va.append(tmp);
-                } else {
-                    va.append(s, 0, idx);
-                }
-                if (prec != 0) {
-                    addZeros(va, prec);
-                }
-                sb.append(va);
-                sb.append(upper ? 'P' : 'p');
-                sb.append(s, idx+1, s.length());
-            }
-        }
-
-        // Add zeros to the requested precision.
-        private void addZeros(StringBuilder sb, int prec) {
-            // Look for the dot.  If we don't find one, the we'll need to add
-            // it before we add the zeros.
-            int len = sb.length();
-            int i;
-            for (i = 0; i < len; i++) {
-                if (sb.charAt(i) == '.') {
-                    break;
-                }
-            }
-            boolean needDot = i == len;
-
-            // Determine existing precision.
-            int outPrec = len - i - (needDot ? 0 : 1);
-            assert (outPrec <= prec);
-            if (outPrec == prec) {
-                return;
-            }
-
-            // Add dot if previously determined to be necessary.
-            if (needDot) {
-                sb.append('.');
-            }
-
-            // Add zeros.
-            trailingZeros(sb, prec - outPrec);
-        }
-
-        // Method assumes that d > 0.
-        private String hexDouble(double d, int prec) {
-            // Let Double.toHexString handle simple cases
-            if (!Double.isFinite(d) || d == 0.0 || prec == 0 || prec >= 13) {
-                // remove "0x"
-                return Double.toHexString(d).substring(2);
-            } else {
-                assert(prec >= 1 && prec <= 12);
-
-                int exponent  = Math.getExponent(d);
-                boolean subnormal
-                    = (exponent == Double.MIN_EXPONENT - 1);
-
-                // If this is subnormal input so normalize (could be faster to
-                // do as integer operation).
-                if (subnormal) {
-                    d *= SCALEUP;
-                    // Calculate the exponent.  This is not just exponent + 54
-                    // since the former is not the normalized exponent.
-                    exponent = Math.getExponent(d);
-                    assert exponent >= Double.MIN_EXPONENT &&
-                        exponent <= Double.MAX_EXPONENT: exponent;
-                }
-
-                int precision = 1 + prec*4;
-                int shiftDistance
-                    =  DoubleConsts.SIGNIFICAND_WIDTH - precision;
-                assert(shiftDistance >= 1 && shiftDistance < DoubleConsts.SIGNIFICAND_WIDTH);
-
-                long doppel = Double.doubleToLongBits(d);
-                // Deterime the number of bits to keep.
-                long newSignif
-                    = (doppel & (DoubleConsts.EXP_BIT_MASK
-                                 | DoubleConsts.SIGNIF_BIT_MASK))
-                                     >> shiftDistance;
-                // Bits to round away.
-                long roundingBits = doppel & ~(~0L << shiftDistance);
-
-                // To decide how to round, look at the low-order bit of the
-                // working significand, the highest order discarded bit (the
-                // round bit) and whether any of the lower order discarded bits
-                // are nonzero (the sticky bit).
-
-                boolean leastZero = (newSignif & 0x1L) == 0L;
-                boolean round
-                    = ((1L << (shiftDistance - 1) ) & roundingBits) != 0L;
-                boolean sticky  = shiftDistance > 1 &&
-                    (~(1L<< (shiftDistance - 1)) & roundingBits) != 0;
-                if((leastZero && round && sticky) || (!leastZero && round)) {
-                    newSignif++;
-                }
-
-                long signBit = doppel & DoubleConsts.SIGN_BIT_MASK;
-                newSignif = signBit | (newSignif << shiftDistance);
-                double result = Double.longBitsToDouble(newSignif);
-
-                if (Double.isInfinite(result) ) {
-                    // Infinite result generated by rounding
-                    return "1.0p1024";
-                } else {
-                    String res = Double.toHexString(result).substring(2);
-                    if (!subnormal)
-                        return res;
-                    else {
-                        // Create a normalized subnormal string.
-                        int idx = res.indexOf('p');
-                        if (idx == -1) {
-                            // No 'p' character in hex string.
-                            assert false;
-                            return null;
-                        } else {
-                            // Get exponent and append at the end.
-                            String exp = res.substring(idx + 1);
-                            int iexp = Integer.parseInt(exp) -54;
-                            return res.substring(0, idx) + "p"
-                                + Integer.toString(iexp);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void print(Formatter formatter, BigDecimal value, Locale l) throws IOException {
-            if (c == Conversion.HEXADECIMAL_FLOAT)
-                failConversion(c, value);
-            StringBuilder sb = new StringBuilder();
-            boolean neg = value.signum() == -1;
-            BigDecimal v = value.abs();
-            int pos0 = sb.length();
-            // leading sign indicator
-            leadingSign(sb, neg);
-
-            // the value
-            print(formatter, sb, pos0, v, l, f, c, precision, neg);
-
-            // trailing sign indicator
-            trailingSign(sb, neg);
-
-            // justify based on width
-            appendJustified(formatter.a, sb);
-        }
-
-        // value > 0
-        private void print(Formatter formatter, StringBuilder sb, int pos0, BigDecimal value, Locale l,
-                           Flags f, char c, int precision, boolean neg)
-            throws IOException
-        {
-            if (c == Conversion.SCIENTIFIC) {
-                // Create a new BigDecimal with the desired precision.
-                int prec = (precision == -1 ? 6 : precision);
-                int scale = value.scale();
-                int origPrec = value.precision();
-                int nzeros = 0;
-                int compPrec;
-
-                if (prec > origPrec - 1) {
-                    compPrec = origPrec;
-                    nzeros = prec - (origPrec - 1);
-                } else {
-                    compPrec = prec + 1;
-                }
-
-                MathContext mc = new MathContext(compPrec);
-                BigDecimal v
-                    = new BigDecimal(value.unscaledValue(), scale, mc);
-
-                BigDecimalLayout bdl
-                    = new BigDecimalLayout(v.unscaledValue(), v.scale(),
-                                           BigDecimalLayoutForm.SCIENTIFIC);
-
-                StringBuilder mant = bdl.mantissa();
-
-                // Add a decimal point if necessary.  The mantissa may not
-                // contain a decimal point if the scale is zero (the internal
-                // representation has no fractional part) or the original
-                // precision is one. Append a decimal point if '#' is set or if
-                // we require zero padding to get to the requested precision.
-                if ((origPrec == 1 || !bdl.hasDot())
-                        && (nzeros > 0 || (f.contains(Flags.ALTERNATE)))) {
-                    mant.append('.');
-                }
-
-                // Add trailing zeros in the case precision is greater than
-                // the number of available digits after the decimal separator.
-                trailingZeros(mant, nzeros);
-
-                StringBuilder exp = bdl.exponent();
-                int newW = width;
-                if (width != -1) {
-                    newW = adjustWidth(width - exp.length() - 1, f, neg);
-                }
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, newW, l);
-
-                sb.append(f.contains(Flags.UPPERCASE) ? 'E' : 'e');
-
-                Flags flags = f.dup().remove(Flags.GROUP);
-                char sign = exp.charAt(0);
-                assert(sign == '+' || sign == '-');
-                sb.append(sign);
-
-                localizedMagnitude(formatter, sb, exp, 1, flags, -1, l);
-            } else if (c == Conversion.DECIMAL_FLOAT) {
-                // Create a new BigDecimal with the desired precision.
-                int prec = (precision == -1 ? 6 : precision);
-                int scale = value.scale();
-
-                if (scale > prec) {
-                    // more "scale" digits than the requested "precision"
-                    int compPrec = value.precision();
-                    if (compPrec <= scale) {
-                        // case of 0.xxxxxx
-                        value = value.setScale(prec, RoundingMode.HALF_UP);
-                    } else {
-                        compPrec -= (scale - prec);
-                        value = new BigDecimal(value.unscaledValue(),
-                                               scale,
-                                               new MathContext(compPrec));
-                    }
-                }
-                BigDecimalLayout bdl = new BigDecimalLayout(
-                                           value.unscaledValue(),
-                                           value.scale(),
-                                           BigDecimalLayoutForm.DECIMAL_FLOAT);
-
-                StringBuilder mant = bdl.mantissa();
-                int nzeros = (bdl.scale() < prec ? prec - bdl.scale() : 0);
-
-                // Add a decimal point if necessary.  The mantissa may not
-                // contain a decimal point if the scale is zero (the internal
-                // representation has no fractional part).  Append a decimal
-                // point if '#' is set or we require zero padding to get to the
-                // requested precision.
-                if (bdl.scale() == 0 && (f.contains(Flags.ALTERNATE)
-                        || nzeros > 0)) {
-                    mant.append('.');
-                }
-
-                // Add trailing zeros if the precision is greater than the
-                // number of available digits after the decimal separator.
-                trailingZeros(mant, nzeros);
-
-                localizedMagnitude(formatter, sb, pos0, mant, 0, f, adjustWidth(width, f, neg), l);
-            } else if (c == Conversion.GENERAL) {
-                int prec = precision;
-                if (precision == -1)
-                    prec = 6;
-                else if (precision == 0)
-                    prec = 1;
-
-                BigDecimal tenToTheNegFour = BigDecimal.valueOf(1, 4);
-                BigDecimal tenToThePrec = BigDecimal.valueOf(1, -prec);
-                if ((value.equals(BigDecimal.ZERO))
-                    || ((value.compareTo(tenToTheNegFour) != -1)
-                        && (value.compareTo(tenToThePrec) == -1))) {
-
-                    int e = - value.scale()
-                        + (value.unscaledValue().toString().length() - 1);
-
-                    // xxx.yyy
-                    //   g precision (# sig digits) = #x + #y
-                    //   f precision = #y
-                    //   exponent = #x - 1
-                    // => f precision = g precision - exponent - 1
-                    // 0.000zzz
-                    //   g precision (# sig digits) = #z
-                    //   f precision = #0 (after '.') + #z
-                    //   exponent = - #0 (after '.') - 1
-                    // => f precision = g precision - exponent - 1
-                    prec = prec - e - 1;
-
-                    print(formatter, sb, pos0, value, l, f, Conversion.DECIMAL_FLOAT, prec,
-                          neg);
-                } else {
-                    print(formatter, sb, pos0, value, l, f, Conversion.SCIENTIFIC, prec - 1, neg);
-                }
-            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
-                // This conversion isn't supported.  The error should be
-                // reported earlier.
-                assert false;
-            }
-        }
-
-        private class BigDecimalLayout {
-            private StringBuilder mant;
-            private StringBuilder exp;
-            private boolean dot = false;
-            private int scale;
-
-            public BigDecimalLayout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
-                layout(intVal, scale, form);
-            }
-
-            public boolean hasDot() {
-                return dot;
-            }
-
-            public int scale() {
-                return scale;
-            }
-
-            public StringBuilder mantissa() {
-                return mant;
-            }
-
-            // The exponent will be formatted as a sign ('+' or '-') followed
-            // by the exponent zero-padded to include at least two digits.
-            public StringBuilder exponent() {
-                return exp;
-            }
-
-            private void layout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
-                String coeff = intVal.toString();
-                this.scale = scale;
-
-                // Construct a buffer, with sufficient capacity for all cases.
-                // If E-notation is needed, length will be: +1 if negative, +1
-                // if '.' needed, +2 for "E+", + up to 10 for adjusted
-                // exponent.  Otherwise it could have +1 if negative, plus
-                // leading "0.00000"
-                int len = coeff.length();
-                mant = new StringBuilder(len + 14);
-
-                if (scale == 0) {
-                    if (len > 1) {
-                        mant.append(coeff.charAt(0));
-                        if (form == BigDecimalLayoutForm.SCIENTIFIC) {
-                            mant.append('.');
-                            dot = true;
-                            mant.append(coeff, 1, len);
-                            exp = new StringBuilder("+");
-                            if (len < 10) {
-                                exp.append('0').append(len - 1);
-                            } else {
-                                exp.append(len - 1);
-                            }
-                        } else {
-                            mant.append(coeff, 1, len);
-                        }
-                    } else {
-                        mant.append(coeff);
-                        if (form == BigDecimalLayoutForm.SCIENTIFIC) {
-                            exp = new StringBuilder("+00");
-                        }
-                    }
-                } else if (form == BigDecimalLayoutForm.DECIMAL_FLOAT) {
-                    // count of padding zeros
-
-                    if (scale >= len) {
-                        // 0.xxx form
-                        mant.append("0.");
-                        dot = true;
-                        trailingZeros(mant, scale - len);
-                        mant.append(coeff);
-                    } else {
-                        if (scale > 0) {
-                            // xx.xx form
-                            int pad = len - scale;
-                            mant.append(coeff, 0, pad);
-                            mant.append('.');
-                            dot = true;
-                            mant.append(coeff, pad, len);
-                        } else { // scale < 0
-                            // xx form
-                            mant.append(coeff, 0, len);
-                            if (intVal.signum() != 0) {
-                                trailingZeros(mant, -scale);
-                            }
-                            this.scale = 0;
-                        }
-                    }
-                } else {
-                    // x.xxx form
-                    mant.append(coeff.charAt(0));
-                    if (len > 1) {
-                        mant.append('.');
-                        dot = true;
-                        mant.append(coeff, 1, len);
-                    }
-                    exp = new StringBuilder();
-                    long adjusted = -(long) scale + (len - 1);
-                    if (adjusted != 0) {
-                        long abs = Math.abs(adjusted);
-                        // require sign
-                        exp.append(adjusted < 0 ? '-' : '+');
-                        if (abs < 10) {
-                            exp.append('0');
-                        }
-                        exp.append(abs);
-                    } else {
-                        exp.append("+00");
-                    }
-                }
-            }
-        }
-
-        private int adjustWidth(int width, Flags f, boolean neg) {
-            int newW = width;
-            if (newW != -1 && neg && f.contains(Flags.PARENTHESES))
-                newW--;
-            return newW;
-        }
-
-        // Add trailing zeros
-        private void trailingZeros(StringBuilder sb, int nzeros) {
-            for (int i = 0; i < nzeros; i++) {
-                sb.append('0');
-            }
-        }
-
-        private void print(Formatter formatter, Calendar t, char c, Locale l)  throws IOException {
-            StringBuilder sb = new StringBuilder();
-            print(formatter, sb, t, c, l);
-
-            // justify based on width
-            if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(formatter.a, toUpperCaseWithLocale(sb.toString(), l));
-            } else {
-                appendJustified(formatter.a, sb);
-            }
-        }
-
-        private Appendable print(Formatter formatter, StringBuilder sb, Calendar t, char c, Locale l)
-                throws IOException {
-            if (sb == null)
-                sb = new StringBuilder();
-            switch (c) {
-            case DateTime.HOUR_OF_DAY_0: // 'H' (00 - 23)
-            case DateTime.HOUR_0:        // 'I' (01 - 12)
-            case DateTime.HOUR_OF_DAY:   // 'k' (0 - 23) -- like H
-            case DateTime.HOUR:        { // 'l' (1 - 12) -- like I
-                int i = t.get(Calendar.HOUR_OF_DAY);
-                if (c == DateTime.HOUR_0 || c == DateTime.HOUR)
-                    i = (i == 0 || i == 12 ? 12 : i % 12);
-                Flags flags = (c == DateTime.HOUR_OF_DAY_0
-                               || c == DateTime.HOUR_0
-                               ? Flags.ZERO_PAD
-                               : Flags.NONE);
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
-                break;
-            }
-            case DateTime.MINUTE:      { // 'M' (00 - 59)
-                int i = t.get(Calendar.MINUTE);
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
-                break;
-            }
-            case DateTime.NANOSECOND:  { // 'N' (000000000 - 999999999)
-                int i = t.get(Calendar.MILLISECOND) * 1000000;
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 9, l);
-                break;
-            }
-            case DateTime.MILLISECOND: { // 'L' (000 - 999)
-                int i = t.get(Calendar.MILLISECOND);
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 3, l);
-                break;
-            }
-            case DateTime.MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
-                long i = t.getTimeInMillis();
-                Flags flags = Flags.NONE;
-                localizedMagnitude(formatter, sb, i, flags, width, l);
-                break;
-            }
-            case DateTime.AM_PM:       { // 'p' (am or pm)
-                // Calendar.AM = 0, Calendar.PM = 1, LocaleElements defines upper
-                String[] ampm = { "AM", "PM" };
-                if (l != null && l != Locale.US) {
-                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(l);
-                    ampm = dfs.getAmPmStrings();
-                }
-                String s = ampm[t.get(Calendar.AM_PM)];
-                sb.append(s.toLowerCase(Objects.requireNonNullElse(l,
-                            Locale.getDefault(Locale.Category.FORMAT))));
-                break;
-            }
-            case DateTime.SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
-                long i = t.getTimeInMillis() / 1000;
-                Flags flags = Flags.NONE;
-                localizedMagnitude(formatter, sb, i, flags, width, l);
-                break;
-            }
-            case DateTime.SECOND:      { // 'S' (00 - 60 - leap second)
-                int i = t.get(Calendar.SECOND);
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
-                break;
-            }
-            case DateTime.ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
-                int i = t.get(Calendar.ZONE_OFFSET) + t.get(Calendar.DST_OFFSET);
-                boolean neg = i < 0;
-                sb.append(neg ? '-' : '+');
-                if (neg)
-                    i = -i;
-                int min = i / 60000;
-                // combine minute and hour into a single integer
-                int offset = (min / 60) * 100 + (min % 60);
-                Flags flags = Flags.ZERO_PAD;
-
-                localizedMagnitude(formatter, sb, offset, flags, 4, l);
-                break;
-            }
-            case DateTime.ZONE:        { // 'Z' (symbol)
-                TimeZone tz = t.getTimeZone();
-                sb.append(tz.getDisplayName((t.get(Calendar.DST_OFFSET) != 0),
-                                           TimeZone.SHORT,
-                                           Objects.requireNonNullElse(l, Locale.US)));
-                break;
-            }
-
-            // Date
-            case DateTime.NAME_OF_DAY_ABBREV:     // 'a'
-            case DateTime.NAME_OF_DAY:          { // 'A'
-                int i = t.get(Calendar.DAY_OF_WEEK);
-                Locale lt = Objects.requireNonNullElse(l, Locale.US);
-                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
-                if (c == DateTime.NAME_OF_DAY)
-                    sb.append(dfs.getWeekdays()[i]);
-                else
-                    sb.append(dfs.getShortWeekdays()[i]);
-                break;
-            }
-            case DateTime.NAME_OF_MONTH_ABBREV:   // 'b'
-            case DateTime.NAME_OF_MONTH_ABBREV_X: // 'h' -- same b
-            case DateTime.NAME_OF_MONTH:        { // 'B'
-                int i = t.get(Calendar.MONTH);
-                Locale lt = Objects.requireNonNullElse(l, Locale.US);
-                DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
-                if (c == DateTime.NAME_OF_MONTH)
-                    sb.append(dfs.getMonths()[i]);
-                else
-                    sb.append(dfs.getShortMonths()[i]);
-                break;
-            }
-            case DateTime.CENTURY:                // 'C' (00 - 99)
-            case DateTime.YEAR_2:                 // 'y' (00 - 99)
-            case DateTime.YEAR_4:               { // 'Y' (0000 - 9999)
-                int i = t.get(Calendar.YEAR);
-                int size = 2;
-                switch (c) {
-                case DateTime.CENTURY:
-                    i /= 100;
-                    break;
-                case DateTime.YEAR_2:
-                    i %= 100;
-                    break;
-                case DateTime.YEAR_4:
-                    size = 4;
-                    break;
-                }
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, size, l);
-                break;
-            }
-            case DateTime.DAY_OF_MONTH_0:         // 'd' (01 - 31)
-            case DateTime.DAY_OF_MONTH:         { // 'e' (1 - 31) -- like d
-                int i = t.get(Calendar.DATE);
-                Flags flags = (c == DateTime.DAY_OF_MONTH_0
-                               ? Flags.ZERO_PAD
-                               : Flags.NONE);
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
-                break;
-            }
-            case DateTime.DAY_OF_YEAR:          { // 'j' (001 - 366)
-                int i = t.get(Calendar.DAY_OF_YEAR);
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 3, l);
-                break;
-            }
-            case DateTime.MONTH:                { // 'm' (01 - 12)
-                int i = t.get(Calendar.MONTH) + 1;
-                Flags flags = Flags.ZERO_PAD;
-                localizedMagnitude(formatter, sb, i, flags, 2, l);
-                break;
-            }
-
-            // Composites
-            case DateTime.TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
-            case DateTime.TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
-                char sep = ':';
-                print(formatter, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
-                print(formatter, sb, t, DateTime.MINUTE, l);
-                if (c == DateTime.TIME) {
-                    sb.append(sep);
-                    print(formatter, sb, t, DateTime.SECOND, l);
-                }
-                break;
-            }
-            case DateTime.TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
-                char sep = ':';
-                print(formatter, sb, t, DateTime.HOUR_0, l).append(sep);
-                print(formatter, sb, t, DateTime.MINUTE, l).append(sep);
-                print(formatter, sb, t, DateTime.SECOND, l).append(' ');
-                // this may be in wrong place for some locales
-                StringBuilder tsb = new StringBuilder();
-                print(formatter, tsb, t, DateTime.AM_PM, l);
-
-                sb.append(toUpperCaseWithLocale(tsb.toString(), l));
-                break;
-            }
-            case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
-                char sep = ' ';
-                print(formatter, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
-                print(formatter, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                print(formatter, sb, t, DateTime.TIME, l).append(sep);
-                print(formatter, sb, t, DateTime.ZONE, l).append(sep);
-                print(formatter, sb, t, DateTime.YEAR_4, l);
-                break;
-            }
-            case DateTime.DATE:            { // 'D' (mm/dd/yy)
-                char sep = '/';
-                print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                print(formatter, sb, t, DateTime.YEAR_2, l);
-                break;
-            }
-            case DateTime.ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
-                char sep = '-';
-                print(formatter, sb, t, DateTime.YEAR_4, l).append(sep);
-                print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l);
-                break;
-            }
-            default:
-                assert false;
-            }
-            return sb;
-        }
-
-        private void print(Formatter formatter, TemporalAccessor t, char c, Locale l)  throws IOException {
-            StringBuilder sb = new StringBuilder();
-            print(formatter, sb, t, c, l);
-            // justify based on width
-            if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(formatter.a, toUpperCaseWithLocale(sb.toString(), l));
-            } else {
-                appendJustified(formatter.a, sb);
-            }
-        }
-
-        private Appendable print(Formatter formatter, StringBuilder sb, TemporalAccessor t, char c,
-                                 Locale l) throws IOException {
-            if (sb == null)
-                sb = new StringBuilder();
-            try {
-                switch (c) {
-                case DateTime.HOUR_OF_DAY_0: {  // 'H' (00 - 23)
-                    int i = t.get(ChronoField.HOUR_OF_DAY);
-                    localizedMagnitude(formatter, sb, i, Flags.ZERO_PAD, 2, l);
-                    break;
-                }
-                case DateTime.HOUR_OF_DAY: {   // 'k' (0 - 23) -- like H
-                    int i = t.get(ChronoField.HOUR_OF_DAY);
-                    localizedMagnitude(formatter, sb, i, Flags.NONE, 2, l);
-                    break;
-                }
-                case DateTime.HOUR_0:      {  // 'I' (01 - 12)
-                    int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
-                    localizedMagnitude(formatter, sb, i, Flags.ZERO_PAD, 2, l);
-                    break;
-                }
-                case DateTime.HOUR:        { // 'l' (1 - 12) -- like I
-                    int i = t.get(ChronoField.CLOCK_HOUR_OF_AMPM);
-                    localizedMagnitude(formatter, sb, i, Flags.NONE, 2, l);
-                    break;
-                }
-                case DateTime.MINUTE:      { // 'M' (00 - 59)
-                    int i = t.get(ChronoField.MINUTE_OF_HOUR);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
-                    break;
-                }
-                case DateTime.NANOSECOND:  { // 'N' (000000000 - 999999999)
-                    int i;
-                    try {
-                        i = t.get(ChronoField.NANO_OF_SECOND);
-                    } catch (UnsupportedTemporalTypeException u) {
-                        i = t.get(ChronoField.MILLI_OF_SECOND) * 1000000;
-                    }
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 9, l);
-                    break;
-                }
-                case DateTime.MILLISECOND: { // 'L' (000 - 999)
-                    int i = t.get(ChronoField.MILLI_OF_SECOND);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 3, l);
-                    break;
-                }
-                case DateTime.MILLISECOND_SINCE_EPOCH: { // 'Q' (0 - 99...?)
-                    long i = t.getLong(ChronoField.INSTANT_SECONDS) * 1000L +
-                             t.getLong(ChronoField.MILLI_OF_SECOND);
-                    Flags flags = Flags.NONE;
-                    localizedMagnitude(formatter, sb, i, flags, width, l);
-                    break;
-                }
-                case DateTime.AM_PM:       { // 'p' (am or pm)
-                    // Calendar.AM = 0, Calendar.PM = 1, LocaleElements defines upper
-                    String[] ampm = { "AM", "PM" };
-                    if (l != null && l != Locale.US) {
-                        DateFormatSymbols dfs = DateFormatSymbols.getInstance(l);
-                        ampm = dfs.getAmPmStrings();
-                    }
-                    String s = ampm[t.get(ChronoField.AMPM_OF_DAY)];
-                    sb.append(s.toLowerCase(Objects.requireNonNullElse(l,
-                            Locale.getDefault(Locale.Category.FORMAT))));
-                    break;
-                }
-                case DateTime.SECONDS_SINCE_EPOCH: { // 's' (0 - 99...?)
-                    long i = t.getLong(ChronoField.INSTANT_SECONDS);
-                    Flags flags = Flags.NONE;
-                    localizedMagnitude(formatter, sb, i, flags, width, l);
-                    break;
-                }
-                case DateTime.SECOND:      { // 'S' (00 - 60 - leap second)
-                    int i = t.get(ChronoField.SECOND_OF_MINUTE);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
-                    break;
-                }
-                case DateTime.ZONE_NUMERIC: { // 'z' ({-|+}####) - ls minus?
-                    int i = t.get(ChronoField.OFFSET_SECONDS);
-                    boolean neg = i < 0;
-                    sb.append(neg ? '-' : '+');
-                    if (neg)
-                        i = -i;
-                    int min = i / 60;
-                    // combine minute and hour into a single integer
-                    int offset = (min / 60) * 100 + (min % 60);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, offset, flags, 4, l);
-                    break;
-                }
-                case DateTime.ZONE:        { // 'Z' (symbol)
-                    ZoneId zid = t.query(TemporalQueries.zone());
-                    if (zid == null) {
-                        throw new IllegalFormatConversionException(c, t.getClass());
-                    }
-                    if (!(zid instanceof ZoneOffset) &&
-                        t.isSupported(ChronoField.INSTANT_SECONDS)) {
-                        Instant instant = Instant.from(t);
-                        sb.append(TimeZone.getTimeZone(zid.getId())
-                                          .getDisplayName(zid.getRules().isDaylightSavings(instant),
-                                                          TimeZone.SHORT,
-                                                          Objects.requireNonNullElse(l, Locale.US)));
-                        break;
-                    }
-                    sb.append(zid.getId());
-                    break;
-                }
-                // Date
-                case DateTime.NAME_OF_DAY_ABBREV:     // 'a'
-                case DateTime.NAME_OF_DAY:          { // 'A'
-                    int i = t.get(ChronoField.DAY_OF_WEEK) % 7 + 1;
-                    Locale lt = Objects.requireNonNullElse(l, Locale.US);
-                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
-                    if (c == DateTime.NAME_OF_DAY)
-                        sb.append(dfs.getWeekdays()[i]);
-                    else
-                        sb.append(dfs.getShortWeekdays()[i]);
-                    break;
-                }
-                case DateTime.NAME_OF_MONTH_ABBREV:   // 'b'
-                case DateTime.NAME_OF_MONTH_ABBREV_X: // 'h' -- same b
-                case DateTime.NAME_OF_MONTH:        { // 'B'
-                    int i = t.get(ChronoField.MONTH_OF_YEAR) - 1;
-                    Locale lt = Objects.requireNonNullElse(l, Locale.US);
-                    DateFormatSymbols dfs = DateFormatSymbols.getInstance(lt);
-                    if (c == DateTime.NAME_OF_MONTH)
-                        sb.append(dfs.getMonths()[i]);
-                    else
-                        sb.append(dfs.getShortMonths()[i]);
-                    break;
-                }
-                case DateTime.CENTURY:                // 'C' (00 - 99)
-                case DateTime.YEAR_2:                 // 'y' (00 - 99)
-                case DateTime.YEAR_4:               { // 'Y' (0000 - 9999)
-                    int i = t.get(ChronoField.YEAR_OF_ERA);
-                    int size = 2;
-                    switch (c) {
-                    case DateTime.CENTURY:
-                        i /= 100;
-                        break;
-                    case DateTime.YEAR_2:
-                        i %= 100;
-                        break;
-                    case DateTime.YEAR_4:
-                        size = 4;
-                        break;
-                    }
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, size, l);
-                    break;
-                }
-                case DateTime.DAY_OF_MONTH_0:         // 'd' (01 - 31)
-                case DateTime.DAY_OF_MONTH:         { // 'e' (1 - 31) -- like d
-                    int i = t.get(ChronoField.DAY_OF_MONTH);
-                    Flags flags = (c == DateTime.DAY_OF_MONTH_0
-                                   ? Flags.ZERO_PAD
-                                   : Flags.NONE);
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
-                    break;
-                }
-                case DateTime.DAY_OF_YEAR:          { // 'j' (001 - 366)
-                    int i = t.get(ChronoField.DAY_OF_YEAR);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 3, l);
-                    break;
-                }
-                case DateTime.MONTH:                { // 'm' (01 - 12)
-                    int i = t.get(ChronoField.MONTH_OF_YEAR);
-                    Flags flags = Flags.ZERO_PAD;
-                    localizedMagnitude(formatter, sb, i, flags, 2, l);
-                    break;
-                }
-
-                // Composites
-                case DateTime.TIME:         // 'T' (24 hour hh:mm:ss - %tH:%tM:%tS)
-                case DateTime.TIME_24_HOUR:    { // 'R' (hh:mm same as %H:%M)
-                    char sep = ':';
-                    print(formatter, sb, t, DateTime.HOUR_OF_DAY_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.MINUTE, l);
-                    if (c == DateTime.TIME) {
-                        sb.append(sep);
-                        print(formatter, sb, t, DateTime.SECOND, l);
-                    }
-                    break;
-                }
-                case DateTime.TIME_12_HOUR:    { // 'r' (hh:mm:ss [AP]M)
-                    char sep = ':';
-                    print(formatter, sb, t, DateTime.HOUR_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.MINUTE, l).append(sep);
-                    print(formatter, sb, t, DateTime.SECOND, l).append(' ');
-                    // this may be in wrong place for some locales
-                    StringBuilder tsb = new StringBuilder();
-                    print(formatter, tsb, t, DateTime.AM_PM, l);
-                    sb.append(toUpperCaseWithLocale(tsb.toString(), l));
-                    break;
-                }
-                case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
-                    char sep = ' ';
-                    print(formatter, sb, t, DateTime.NAME_OF_DAY_ABBREV, l).append(sep);
-                    print(formatter, sb, t, DateTime.NAME_OF_MONTH_ABBREV, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.TIME, l).append(sep);
-                    print(formatter, sb, t, DateTime.ZONE, l).append(sep);
-                    print(formatter, sb, t, DateTime.YEAR_4, l);
-                    break;
-                }
-                case DateTime.DATE:            { // 'D' (mm/dd/yy)
-                    char sep = '/';
-                    print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l).append(sep);
-                    print(formatter, sb, t, DateTime.YEAR_2, l);
-                    break;
-                }
-                case DateTime.ISO_STANDARD_DATE: { // 'F' (%Y-%m-%d)
-                    char sep = '-';
-                    print(formatter, sb, t, DateTime.YEAR_4, l).append(sep);
-                    print(formatter, sb, t, DateTime.MONTH, l).append(sep);
-                    print(formatter, sb, t, DateTime.DAY_OF_MONTH_0, l);
-                    break;
-                }
-                default:
-                    assert false;
-                }
-            } catch (DateTimeException x) {
-                throw new IllegalFormatConversionException(c, t.getClass());
-            }
-            return sb;
-        }
-
-        // -- Methods to support throwing exceptions --
-
-        private void failMismatch(Flags f, char c) {
-            String fs = f.toString();
-            throw new FormatFlagsConversionMismatchException(fs, c);
-        }
-
-        void failConversion(char c, Object arg) {
-            throw new IllegalFormatConversionException(c, arg.getClass());
-        }
-
-        private char getZero(Formatter formatter, Locale l) {
-            if ((l != null) &&  !l.equals(formatter.locale())) {
-                DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
-                return dfs.getZeroDigit();
-            }
-            return formatter.zero;
-        }
-
-        private StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb,
-                long value, Flags f, int width, Locale l) {
-            return localizedMagnitude(formatter, sb, Long.toString(value, 10), 0, f, width, l);
-        }
-
-        StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb,
-                                         CharSequence value, final int offset, Flags f, int width, Locale l) {
-            return localizedMagnitude(formatter, sb, sb == null ? 0 : sb.length(), value, offset, f, width, l);
-        }
-
-        StringBuilder localizedMagnitude(Formatter formatter, StringBuilder sb, int pos0,
-                                         CharSequence value, final int offset, Flags f, int width, Locale l) {
-            if (sb == null) {
-                sb = new StringBuilder();
-            }
-            int begin = sb.length();
-
-            char zero = getZero(formatter, l);
-
-            // determine localized grouping separator and size
-            char grpSep = '\0';
-            int  grpSize = -1;
-            char decSep = '\0';
-
-            int len = value.length();
-            int dot = len;
-            for (int j = offset; j < len; j++) {
-                if (value.charAt(j) == '.') {
-                    dot = j;
-                    break;
-                }
-            }
-
-            if (dot < len) {
-                if (l == null || l.equals(Locale.US)) {
-                    decSep  = '.';
-                } else {
-                    DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
-                    decSep  = dfs.getDecimalSeparator();
-                }
-            }
-
-            if (f.contains(Flags.GROUP)) {
-                if (l == null || l.equals(Locale.US)) {
-                    grpSep = ',';
-                    grpSize = 3;
-                } else {
-                    DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
-                    grpSep = dfs.getGroupingSeparator();
-                    DecimalFormat df = null;
-                    NumberFormat nf = NumberFormat.getNumberInstance(l);
-                    if (nf instanceof DecimalFormat) {
-                        df = (DecimalFormat) nf;
-                    } else {
-
-                        // Use DecimalFormat constructor to obtain the instance,
-                        // in case NumberFormat.getNumberInstance(l)
-                        // returns instance other than DecimalFormat
-                        LocaleProviderAdapter adapter = LocaleProviderAdapter
-                                .getAdapter(NumberFormatProvider.class, l);
-                        if (!(adapter instanceof ResourceBundleBasedAdapter)) {
-                            adapter = LocaleProviderAdapter.getResourceBundleBased();
-                        }
-                        String[] all = adapter.getLocaleResources(l)
-                                .getNumberPatterns();
-                        df = new DecimalFormat(all[0], dfs);
-                    }
-                    grpSize = df.getGroupingSize();
-                    // Some locales do not use grouping (the number
-                    // pattern for these locales does not contain group, e.g.
-                    // ("#0.###")), but specify a grouping separator.
-                    // To avoid unnecessary identification of the position of
-                    // grouping separator, reset its value with null character
-                    if (!df.isGroupingUsed() || grpSize == 0) {
-                        grpSep = '\0';
-                    }
-                }
-            }
-
-            // localize the digits inserting group separators as necessary
-            for (int j = offset; j < len; j++) {
-                if (j == dot) {
-                    sb.append(decSep);
-                    // no more group separators after the decimal separator
-                    grpSep = '\0';
-                    continue;
-                }
-
-                char c = value.charAt(j);
-                sb.append((char) ((c - '0') + zero));
-                if (grpSep != '\0' && j != dot - 1 && ((dot - j) % grpSize == 1)) {
-                    sb.append(grpSep);
-                }
-            }
-
-            // apply zero padding
-            if (width != -1 && f.contains(Flags.ZERO_PAD)) {
-                for (int k = sb.length() - pos0; k < width; k++) {
-                    sb.insert(begin, zero);
-                }
-            }
-
-            return sb;
-        }
-
-        // Specialized localization of exponents, where the source value can only
-        // contain characters '0' through '9', starting at index offset, and no
-        // group separators is added for any locale.
-        private void localizedMagnitudeExp(Formatter formatter, StringBuilder sb, char[] value,
-                final int offset, Locale l) {
-            char zero = getZero(formatter, l);
-
-            int len = value.length;
-            for (int j = offset; j < len; j++) {
-                char c = value[j];
-                sb.append((char) ((c - '0') + zero));
-            }
-        }
-    }
-
-    private static class Flags {
-        private int flags;
-
-        static final Flags NONE          = new Flags(0);      // ''
-
-        // duplicate declarations from Formattable.java
-        static final Flags LEFT_JUSTIFY  = new Flags(1<<0);   // '-'
-        static final Flags UPPERCASE     = new Flags(1<<1);   // '^'
-        static final Flags ALTERNATE     = new Flags(1<<2);   // '#'
-
-        // numerics
-        static final Flags PLUS          = new Flags(1<<3);   // '+'
-        static final Flags LEADING_SPACE = new Flags(1<<4);   // ' '
-        static final Flags ZERO_PAD      = new Flags(1<<5);   // '0'
-        static final Flags GROUP         = new Flags(1<<6);   // ','
-        static final Flags PARENTHESES   = new Flags(1<<7);   // '('
-
-        // indexing
-        static final Flags PREVIOUS      = new Flags(1<<8);   // '<'
-
-        private Flags(int f) {
-            flags = f;
-        }
-
-        public int valueOf() {
-            return flags;
-        }
-
-        public boolean contains(Flags f) {
-            return (flags & f.valueOf()) == f.valueOf();
-        }
-
-        public boolean isEmpty() {
-            return flags == 0;
-        }
-
-        public Flags dup() {
-            return new Flags(flags);
-        }
-
-        private Flags add(Flags f) {
-            flags |= f.valueOf();
-            return this;
-        }
-
-        public Flags remove(Flags f) {
-            flags &= ~f.valueOf();
-            return this;
-        }
-
-        public static Flags parse(String s, int start, int end) {
-            Flags f = new Flags(0);
-            for (int i = start; i < end; i++) {
-                char c = s.charAt(i);
-                Flags v = parse(c);
-                if (f.contains(v))
-                    throw new DuplicateFormatFlagsException(v.toString());
-                f.add(v);
-            }
-            return f;
-        }
-
-        // parse those flags which may be provided by users
-        private static Flags parse(char c) {
-            switch (c) {
-            case '-': return LEFT_JUSTIFY;
-            case '#': return ALTERNATE;
-            case '+': return PLUS;
-            case ' ': return LEADING_SPACE;
-            case '0': return ZERO_PAD;
-            case ',': return GROUP;
-            case '(': return PARENTHESES;
-            case '<': return PREVIOUS;
-            default:
-                throw new UnknownFormatFlagsException(String.valueOf(c));
-            }
-        }
-
-        // Returns a string representation of the current {@code Flags}.
-        public static String toString(Flags f) {
-            return f.toString();
-        }
-
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            if (contains(LEFT_JUSTIFY))  sb.append('-');
-            if (contains(UPPERCASE))     sb.append('^');
-            if (contains(ALTERNATE))     sb.append('#');
-            if (contains(PLUS))          sb.append('+');
-            if (contains(LEADING_SPACE)) sb.append(' ');
-            if (contains(ZERO_PAD))      sb.append('0');
-            if (contains(GROUP))         sb.append(',');
-            if (contains(PARENTHESES))   sb.append('(');
-            if (contains(PREVIOUS))      sb.append('<');
-            return sb.toString();
-        }
-    }
-
-    private static class Conversion {
-        // Byte, Short, Integer, Long, BigInteger
-        // (and associated primitives due to autoboxing)
-        static final char DECIMAL_INTEGER     = 'd';
-        static final char OCTAL_INTEGER       = 'o';
-        static final char HEXADECIMAL_INTEGER = 'x';
-        static final char HEXADECIMAL_INTEGER_UPPER = 'X';
-
-        // Float, Double, BigDecimal
-        // (and associated primitives due to autoboxing)
-        static final char SCIENTIFIC          = 'e';
-        static final char SCIENTIFIC_UPPER    = 'E';
-        static final char GENERAL             = 'g';
-        static final char GENERAL_UPPER       = 'G';
-        static final char DECIMAL_FLOAT       = 'f';
-        static final char HEXADECIMAL_FLOAT   = 'a';
-        static final char HEXADECIMAL_FLOAT_UPPER = 'A';
-
-        // Character, Byte, Short, Integer
-        // (and associated primitives due to autoboxing)
-        static final char CHARACTER           = 'c';
-        static final char CHARACTER_UPPER     = 'C';
-
-        // java.util.Date, java.util.Calendar, long
-        static final char DATE_TIME           = 't';
-        static final char DATE_TIME_UPPER     = 'T';
-
-        // if (arg.TYPE != boolean) return boolean
-        // if (arg != null) return true; else return false;
-        static final char BOOLEAN             = 'b';
-        static final char BOOLEAN_UPPER       = 'B';
-        // if (arg instanceof Formattable) arg.formatTo()
-        // else arg.toString();
-        static final char STRING              = 's';
-        static final char STRING_UPPER        = 'S';
-        // arg.hashCode()
-        static final char HASHCODE            = 'h';
-        static final char HASHCODE_UPPER      = 'H';
-
-        static final char LINE_SEPARATOR      = 'n';
-        static final char PERCENT_SIGN        = '%';
-
-        static boolean isValid(char c) {
-            return (isGeneral(c) || isInteger(c) || isFloat(c) || isText(c)
-                    || c == 't' || isCharacter(c));
-        }
-
-        // Returns true iff the Conversion is applicable to all objects.
-        static boolean isGeneral(char c) {
-            switch (c) {
-            case BOOLEAN:
-            case BOOLEAN_UPPER:
-            case STRING:
-            case STRING_UPPER:
-            case HASHCODE:
-            case HASHCODE_UPPER:
-                return true;
-            default:
-                return false;
-            }
-        }
-
-        // Returns true iff the Conversion is applicable to character.
-        static boolean isCharacter(char c) {
-            switch (c) {
-            case CHARACTER:
-            case CHARACTER_UPPER:
-                return true;
-            default:
-                return false;
-            }
-        }
-
-        // Returns true iff the Conversion is an integer type.
-        static boolean isInteger(char c) {
-            switch (c) {
-            case DECIMAL_INTEGER:
-            case OCTAL_INTEGER:
-            case HEXADECIMAL_INTEGER:
-            case HEXADECIMAL_INTEGER_UPPER:
-                return true;
-            default:
-                return false;
-            }
-        }
-
-        // Returns true iff the Conversion is a floating-point type.
-        static boolean isFloat(char c) {
-            switch (c) {
-            case SCIENTIFIC:
-            case SCIENTIFIC_UPPER:
-            case GENERAL:
-            case GENERAL_UPPER:
-            case DECIMAL_FLOAT:
-            case HEXADECIMAL_FLOAT:
-            case HEXADECIMAL_FLOAT_UPPER:
-                return true;
-            default:
-                return false;
-            }
-        }
-
-        // Returns true iff the Conversion does not require an argument
-        static boolean isText(char c) {
-            switch (c) {
-            case LINE_SEPARATOR:
-            case PERCENT_SIGN:
-                return true;
-            default:
-                return false;
-            }
-        }
-    }
-
-    private static class DateTime {
-        static final char HOUR_OF_DAY_0 = 'H'; // (00 - 23)
-        static final char HOUR_0        = 'I'; // (01 - 12)
-        static final char HOUR_OF_DAY   = 'k'; // (0 - 23) -- like H
-        static final char HOUR          = 'l'; // (1 - 12) -- like I
-        static final char MINUTE        = 'M'; // (00 - 59)
-        static final char NANOSECOND    = 'N'; // (000000000 - 999999999)
-        static final char MILLISECOND   = 'L'; // jdk, not in gnu (000 - 999)
-        static final char MILLISECOND_SINCE_EPOCH = 'Q'; // (0 - 99...?)
-        static final char AM_PM         = 'p'; // (am or pm)
-        static final char SECONDS_SINCE_EPOCH = 's'; // (0 - 99...?)
-        static final char SECOND        = 'S'; // (00 - 60 - leap second)
-        static final char TIME          = 'T'; // (24 hour hh:mm:ss)
-        static final char ZONE_NUMERIC  = 'z'; // (-1200 - +1200) - ls minus?
-        static final char ZONE          = 'Z'; // (symbol)
-
-        // Date
-        static final char NAME_OF_DAY_ABBREV    = 'a'; // 'a'
-        static final char NAME_OF_DAY           = 'A'; // 'A'
-        static final char NAME_OF_MONTH_ABBREV  = 'b'; // 'b'
-        static final char NAME_OF_MONTH         = 'B'; // 'B'
-        static final char CENTURY               = 'C'; // (00 - 99)
-        static final char DAY_OF_MONTH_0        = 'd'; // (01 - 31)
-        static final char DAY_OF_MONTH          = 'e'; // (1 - 31) -- like d
-// *    static final char ISO_WEEK_OF_YEAR_2    = 'g'; // cross %y %V
-// *    static final char ISO_WEEK_OF_YEAR_4    = 'G'; // cross %Y %V
-        static final char NAME_OF_MONTH_ABBREV_X  = 'h'; // -- same b
-        static final char DAY_OF_YEAR           = 'j'; // (001 - 366)
-        static final char MONTH                 = 'm'; // (01 - 12)
-// *    static final char DAY_OF_WEEK_1         = 'u'; // (1 - 7) Monday
-// *    static final char WEEK_OF_YEAR_SUNDAY   = 'U'; // (0 - 53) Sunday+
-// *    static final char WEEK_OF_YEAR_MONDAY_01 = 'V'; // (01 - 53) Monday+
-// *    static final char DAY_OF_WEEK_0         = 'w'; // (0 - 6) Sunday
-// *    static final char WEEK_OF_YEAR_MONDAY   = 'W'; // (00 - 53) Monday
-        static final char YEAR_2                = 'y'; // (00 - 99)
-        static final char YEAR_4                = 'Y'; // (0000 - 9999)
-
-        // Composites
-        static final char TIME_12_HOUR  = 'r'; // (hh:mm:ss [AP]M)
-        static final char TIME_24_HOUR  = 'R'; // (hh:mm same as %H:%M)
-// *    static final char LOCALE_TIME   = 'X'; // (%H:%M:%S) - parse format?
-        static final char DATE_TIME             = 'c';
-                                            // (Sat Nov 04 12:02:33 EST 1999)
-        static final char DATE                  = 'D'; // (mm/dd/yy)
-        static final char ISO_STANDARD_DATE     = 'F'; // (%Y-%m-%d)
-// *    static final char LOCALE_DATE           = 'x'; // (mm/dd/yy)
-
-        static boolean isValid(char c) {
-            switch (c) {
-            case HOUR_OF_DAY_0:
-            case HOUR_0:
-            case HOUR_OF_DAY:
-            case HOUR:
-            case MINUTE:
-            case NANOSECOND:
-            case MILLISECOND:
-            case MILLISECOND_SINCE_EPOCH:
-            case AM_PM:
-            case SECONDS_SINCE_EPOCH:
-            case SECOND:
-            case TIME:
-            case ZONE_NUMERIC:
-            case ZONE:
-
-            // Date
-            case NAME_OF_DAY_ABBREV:
-            case NAME_OF_DAY:
-            case NAME_OF_MONTH_ABBREV:
-            case NAME_OF_MONTH:
-            case CENTURY:
-            case DAY_OF_MONTH_0:
-            case DAY_OF_MONTH:
-// *        case ISO_WEEK_OF_YEAR_2:
-// *        case ISO_WEEK_OF_YEAR_4:
-            case NAME_OF_MONTH_ABBREV_X:
-            case DAY_OF_YEAR:
-            case MONTH:
-// *        case DAY_OF_WEEK_1:
-// *        case WEEK_OF_YEAR_SUNDAY:
-// *        case WEEK_OF_YEAR_MONDAY_01:
-// *        case DAY_OF_WEEK_0:
-// *        case WEEK_OF_YEAR_MONDAY:
-            case YEAR_2:
-            case YEAR_4:
-
-            // Composites
-            case TIME_12_HOUR:
-            case TIME_24_HOUR:
-// *        case LOCALE_TIME:
-            case DATE_TIME:
-            case DATE:
-            case ISO_STANDARD_DATE:
-// *        case LOCALE_DATE:
-                return true;
-            default:
-                return false;
-            }
-        }
-    }
 }
