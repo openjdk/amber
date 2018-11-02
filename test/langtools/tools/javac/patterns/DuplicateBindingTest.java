@@ -12,7 +12,7 @@ public class DuplicateBindingTest {
 
         if (args != null) {
             int s;
-            if (args[0] matches String s) { // NOT OK. Redef same scope.
+            if (args[0] __matches String s) { // NOT OK. Redef same scope.
             }
             int k;
             switch(args[0]) {

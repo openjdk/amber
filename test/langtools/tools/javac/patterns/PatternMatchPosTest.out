@@ -1,14 +1,14 @@
-(o matches 1)
-o matches 1
+(o __matches 1)
+o __matches 1
 o
 1
 1
-(o matches var s)
-o matches var s
+(o __matches var s)
+o __matches var s
 o
 var s
-(o matches String s)
-o matches String s
+(o __matches String s)
+o __matches String s
 o
 String s
 String

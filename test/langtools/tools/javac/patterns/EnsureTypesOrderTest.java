@@ -5,9 +5,9 @@
  * @compile/fail/ref=EnsureTypesOrderTest.out -XDrawDiagnostics EnsureTypesOrderTest.java
  */
 public class EnsureTypesOrderTest {
-    public static void main(String [] args) {
-        if (args matches String s) {
-            System.out.println("Broken");
-        }
-    }
+    public static void main(String [] args) { 
+        if (args __matches String s) { 
+            System.out.println("Broken"); 
+        } 
+    } 
 }

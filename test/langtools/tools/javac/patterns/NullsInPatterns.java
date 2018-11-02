@@ -29,29 +29,29 @@
 import java.util.List;
 
 public class NullsInPatterns {
-
+    
     public static void main(String[] args) {
-        if (null matches List t) {
+        if (null __matches List t) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List type pattern");
         }
-        if (null matches List<Integer> l) {
+        if (null __matches List<Integer> l) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List<Integer> type pattern");
         }
-        if (null matches List<?> l) {
+        if (null __matches List<?> l) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List<?> type pattern");
         }
-        if (null matches var x) {
+        if (null __matches var x) {
             System.out.println("null matches var type pattern");
         } else {
             throw new AssertionError("broken");
         }
-        if (null matches null) {
+        if (null __matches null) {
             System.out.println("null matches null constant pattern");
         } else {
             throw new AssertionError("broken");

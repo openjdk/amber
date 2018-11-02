@@ -34,7 +34,7 @@ public class PatternTypeTest1 {
         String s = "Hello";
         Object o = i;
 
-        if (o matches var j) {
+        if (o __matches var j) {
             System.out.println("Match all");
         } else {
             throw new AssertionError("Broken");

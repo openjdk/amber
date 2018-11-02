@@ -36,21 +36,21 @@ public class ConstantPatternTest1 {
 
 
         // Simple literal constant pattern
-        if (i matches 42) {
+        if (i __matches 42) {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Simple constant expression pattern
-        if (i matches 41+1) {
+        if (i __matches 41+1) {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Constant expression pattern using a final local
-        if (i matches constantInt) {
+        if (i __matches constantInt) {
             message();
         } else {
             throw new AssertionError("Broken");
@@ -151,21 +151,21 @@ public class ConstantPatternTest1 {
 
 
         // Simple literal constant pattern
-        if (d matches 42.0) {
+        if (d __matches 42.0) {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Simple constant expression pattern
-        if (d matches 41.0+1.0) {
+        if (d __matches 41.0+1.0) {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Constant expression pattern using a final local
-        if (d matches constant) {
+        if (d __matches constant) {
             message();
         } else {
             throw new AssertionError("Broken");
@@ -261,21 +261,21 @@ public class ConstantPatternTest1 {
         final String hello = "Hello";
 
         // Simple literal constant pattern
-        if (s matches "Hello") {
+        if (s __matches "Hello") {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Simple constant expression pattern
-        if (s matches "Hell"+"o") {
+        if (s __matches "Hell"+"o") {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
         // Constant expression pattern using a final local
-        if (s matches hello) {
+        if (s __matches hello) {
             message();
         } else {
             throw new AssertionError("Broken");
@@ -389,23 +389,23 @@ public class ConstantPatternTest1 {
 
         Object obj = "Hello";
 
-        if (obj matches "Hello") {
+        if (obj __matches "Hello") {
             message();
         } else {
             throw new AssertionError("Broken");
         }
-        if (obj matches null) {
+        if (obj __matches null) {
             throw new AssertionError("Broken");
         }
         obj = 42;
-        if (obj matches 42) {
+        if (obj __matches 42) {
             message();
         } else {
             throw new AssertionError("Broken");
         }
 
-        if (obj matches var x) {
-            if (obj matches 42) {
+        if (obj __matches var x) {
+            if (obj __matches 42) {
                 message();
             } else {
                 throw new AssertionError("Broken");
@@ -414,15 +414,15 @@ public class ConstantPatternTest1 {
             throw new AssertionError("Broken");
         }
 
-        if (obj matches 42) {
-            if (obj matches var x) {
+        if (obj __matches 42) {
+            if (obj __matches var x) {
                 message();
             }
         }
-        if (obj matches null) {
+        if (obj __matches null) {
             throw new AssertionError("Broken");
         }
-        if (null matches "Hello") {
+        if (null __matches "Hello") {
             throw new AssertionError("Broken");
         }
 

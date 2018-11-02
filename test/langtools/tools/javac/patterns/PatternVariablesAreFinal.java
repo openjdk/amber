@@ -6,7 +6,7 @@
 public class PatternVariablesAreFinal {
     public static void main(String[] args) {
         Object o = 32;
-        if (o matches String s) {
+        if (o __matches String s) {
             s = "hello again";
             System.out.println(s);
         }
