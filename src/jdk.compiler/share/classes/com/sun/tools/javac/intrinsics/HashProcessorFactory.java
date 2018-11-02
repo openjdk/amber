@@ -65,7 +65,7 @@ public class HashProcessorFactory implements IntrinsicProcessorFactory {
                                     MethodTypeDesc methodType,
                                     boolean isStatic,
                                     ClassDesc[] argClassDescs,
-                                    ConstantDesc<?>[] constantArgs) {
+                                    ConstantDesc[] constantArgs) {
             if (ClassDesc.of("java.util.Objects").equals(ownerDesc)) {
                 switch (methodName) {
                     case "hash":
@@ -88,7 +88,7 @@ public class HashProcessorFactory implements IntrinsicProcessorFactory {
                                             ),
                                             methodName,
                                             methodType,
-                                            new ConstantDesc<?>[0]),
+                                            new ConstantDesc[0]),
                                     argClassDescs.length
                             );
                         }

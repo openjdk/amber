@@ -121,7 +121,7 @@ public class FormatterProcessorFactory implements IntrinsicProcessorFactory {
                                     MethodTypeDesc methodType,
                                     boolean isStatic,
                                     ClassDesc[] argClassDescs,
-                                    ConstantDesc<?>[] constantArgs) {
+                                    ConstantDesc[] constantArgs) {
             // Don't bother in array vararg case.
             if (Intrinsics.isArrayVarArg(argClassDescs, methodType.parameterCount())) {
                 return new Result.None();
@@ -141,7 +141,7 @@ public class FormatterProcessorFactory implements IntrinsicProcessorFactory {
                 formatArg = 0;
             }
 
-            ConstantDesc<?> constantFormat = constantArgs[formatArg];
+            ConstantDesc constantFormat = constantArgs[formatArg];
 
             if (constantFormat == null) {
                 return new Result.None();
@@ -161,7 +161,7 @@ public class FormatterProcessorFactory implements IntrinsicProcessorFactory {
                             ),
                             methodName,
                             methodTypeLessFormat,
-                            new ConstantDesc<?>[]{constantFormat}),
+                            new ConstantDesc[]{constantFormat}),
                     Intrinsics.dropArg(argClassDescs.length, formatArg)
             );
         }

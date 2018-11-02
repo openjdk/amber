@@ -138,7 +138,7 @@ public class IntrinsicsVisitor {
         return translator.translate(tree);
     }
 
-    private static ConstantDesc<?> typeConstantDesc(Type type) {
+    private static ConstantDesc typeConstantDesc(Type type) {
         if (type.getTag() == BOT) {
             return ConstantDescs.NULL;
         }
@@ -149,10 +149,10 @@ public class IntrinsicsVisitor {
             return null;
         }
 
-        return constant instanceof ConstantDesc ? (ConstantDesc<?>)constant : null;
+        return constant instanceof ConstantDesc ? (ConstantDesc)constant : null;
     }
 
-    private Object resolveConstantDesc(ConstantDesc<?> constantDesc) {
+    private Object resolveConstantDesc(ConstantDesc constantDesc) {
         try {
             return constantDesc.resolveConstantDesc(lookup);
         } catch (ReflectiveOperationException ex) {
@@ -201,7 +201,7 @@ public class IntrinsicsVisitor {
             int allArgsSize = offset + argSize;
             JCExpression[] allArgs = new JCExpression[allArgsSize];
             ClassDesc[] argClassDescs = new ClassDesc[allArgsSize];
-            ConstantDesc<?>[] constantArgs = new ConstantDesc<?>[allArgsSize];
+            ConstantDesc[] constantArgs = new ConstantDesc[allArgsSize];
 
             if (!isStatic) {
                 JCExpression selected = meth.selected;
@@ -273,7 +273,7 @@ public class IntrinsicsVisitor {
                 String bootstrapName = bootstrapMethod.methodName();
                 List<Object> staticArgs = List.nil();
 
-                for (ConstantDesc<?> constantDesc : callSite.bootstrapArgs()) {
+                for (ConstantDesc constantDesc : callSite.bootstrapArgs()) {
                     staticArgs = staticArgs.append(resolveConstantDesc(constantDesc));
                 }
 

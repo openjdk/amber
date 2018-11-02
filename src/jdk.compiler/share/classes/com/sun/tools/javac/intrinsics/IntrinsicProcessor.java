@@ -60,13 +60,13 @@ public interface IntrinsicProcessor {
          *  deletion without notice.</b>
          */
         public class Ldc implements Result {
-            private final ConstantDesc<?> constant;
+            private final ConstantDesc constant;
 
             /**
              * <p><b>This is NOT part of any supported API.</b>
              * @param constant  constant value result
              */
-            public Ldc(ConstantDesc<?> constant) {
+            public Ldc(ConstantDesc constant) {
                 this.constant = constant;
             }
 
@@ -74,7 +74,7 @@ public interface IntrinsicProcessor {
              * <p><b>This is NOT part of any supported API.</b>
              * @return constant result descriptor
              */
-            public ConstantDesc<?> constant() {
+            public ConstantDesc constant() {
                 return constant;
             }
         }
@@ -145,6 +145,6 @@ public interface IntrinsicProcessor {
                                 MethodTypeDesc methodType,
                                 boolean isStatic,
                                 ClassDesc[] argClassDescs,
-                                ConstantDesc<?>[] constantArgs);
+                                ConstantDesc[] constantArgs);
 }
 

@@ -116,14 +116,14 @@ public class Intrinsics {
 
     static Class<?> getClass(ClassDesc classDesc) {
         try {
-            return classDesc.resolveConstantDesc(LOOKUP);
+            return (Class<?>)classDesc.resolveConstantDesc(LOOKUP);
         } catch (ReflectiveOperationException ex) {
             // Fall thru
         }
         return null;
     }
 
-    static Object getConstant(ConstantDesc<?> constantDesc) {
+    static Object getConstant(ConstantDesc constantDesc) {
         try {
             return constantDesc.resolveConstantDesc(LOOKUP);
         } catch (ReflectiveOperationException ex) {
@@ -132,7 +132,7 @@ public class Intrinsics {
         return null;
     }
 
-    static Object getConstant(ClassDesc classDesc, ConstantDesc<?> constantDesc) {
+    static Object getConstant(ClassDesc classDesc, ConstantDesc constantDesc) {
         try {
             Object constant = constantDesc.resolveConstantDesc(LOOKUP);
             if (ConstantDescs.CD_boolean.equals(classDesc) ||
@@ -160,7 +160,7 @@ public class Intrinsics {
     }
 
     static Object[] getConstants(ClassDesc[] classDescs,
-                                 ConstantDesc<?>[] constantDescs,
+                                 ConstantDesc[] constantDescs,
                                  boolean skipReceiver) {
         int length = constantDescs.length;
         if (skipReceiver) {
@@ -179,11 +179,11 @@ public class Intrinsics {
     }
 
     static Object[] getConstants(ClassDesc[] classDescs,
-                                 ConstantDesc<?>[] constantDescs) {
+                                 ConstantDesc[] constantDescs) {
         return getConstants(classDescs, constantDescs, false);
     }
 
-    static boolean isAllConstants(ConstantDesc<?>[] constantDescs, boolean skipReceiver) {
+    static boolean isAllConstants(ConstantDesc[] constantDescs, boolean skipReceiver) {
         int length = constantDescs.length;
         for (int i = skipReceiver ? 1 : 0; i < length; i++) {
             if (constantDescs[i] == null) {
@@ -193,7 +193,7 @@ public class Intrinsics {
         return true;
     }
 
-    static boolean isAllConstants(ConstantDesc<?>[] constantDescs) {
+    static boolean isAllConstants(ConstantDesc[] constantDescs) {
         return isAllConstants(constantDescs, false);
     }
 
@@ -208,7 +208,7 @@ public class Intrinsics {
     }
 
     static boolean checkRegex(IntrinsicContext intrinsicContext,
-                              ConstantDesc<?>[] constantArgs,
+                              ConstantDesc[] constantArgs,
                               int arg) {
         if (constantArgs[arg] != null) {
             try {

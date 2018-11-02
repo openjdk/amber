@@ -85,7 +85,7 @@ public class StringProcessorFactory implements IntrinsicProcessorFactory {
                                     MethodTypeDesc methodType,
                                     boolean isStatic,
                                     ClassDesc[] argClassDescs,
-                                    ConstantDesc<?>[] constantArgs) {
+                                    ConstantDesc[] constantArgs) {
             if (ClassDesc.of("java.lang.String").equals(ownerDesc)) {
                 // Compile time checks
                 switch (methodName) {
