@@ -10,42 +10,16 @@ public class NestingMatchAndMatches {
 
         Object o = "Hello";
 
-        //Nested matches
-        if ((o __matches String s) __matches boolean b) {
-            System.out.println("String!");
-        } else {
-            throw new AssertionError("broken");
-        }
-        if ((o __matches String s) __matches false) {
-            throw new AssertionError("broken");
-        } else {
-            System.out.println("String ");
-        }
-
-        if ((o __matches String s) __matches true) {
-            System.out.println("String!");
-        } else {
-            throw new AssertionError("broken");
-        }
-
-        boolean b = (o __matches String s) ? (s __matches "Hello") : false;
-
-        if (b) {
-            System.out.println("yes!");
-        } else {
-            throw new AssertionError("broken");
-        }
-
         //matches inside a match
         switch (o) {
             case String s:
-                if (s __matches String t) {
+                if (s instanceof String t) {
                     System.out.println(s+"-"+t);
                 }
         }
         switch (o) {
             case String s:
-                if (o __matches Integer t) {
+                if (o instanceof Integer t) {
                     System.out.println(s+"-"+t);
                     throw new AssertionError("broken");
                 } else {
@@ -107,7 +81,7 @@ public class NestingMatchAndMatches {
             case String s:
                 switch (o2) {
                     case String t:
-                        if (t __matches String u) {
+                        if (t instanceof String u) {
                             System.out.println(s+"-"+t+"--"+u);
                         } else {
                             throw new AssertionError("broken");

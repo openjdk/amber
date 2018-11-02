@@ -11,7 +11,7 @@ public class UncheckedWarningOnMatchesTest {
     public static void main(String [] args) {
 
         Object o = new ArrayList<UncheckedWarningOnMatchesTest>();
-        if (o __matches ArrayList<Integer> ai) {  // unchecked conversion
+        if (o instanceof ArrayList<Integer> ai) {  // unchecked conversion
             System.out.println("Blah");
         }
         switch (o) {

@@ -103,7 +103,7 @@ public class ExamplesFromProposal {
     public static void main(String[] args) {
         Object x = new Integer(42);
 
-        if (x __matches Integer i) {
+        if (x instanceof Integer i) {
             // can use i here
             System.out.println(i.intValue());
         }
@@ -111,19 +111,19 @@ public class ExamplesFromProposal {
         Object obj = getSomething();
 
         String formatted = "unknown";
-        if (obj __matches Integer i) {
+        if (obj instanceof Integer i) {
             formatted = String.format("int %d", i);
         }
-        else if (obj __matches Byte b) {
+        else if (obj instanceof Byte b) {
             formatted = String.format("byte %d", b);
         }
-        else if (obj __matches Long l) {
+        else if (obj instanceof Long l) {
             formatted = String.format("long %d", l);
         }
-        else if (obj __matches Double d) {
+        else if (obj instanceof Double d) {
             formatted = String.format("double %f", d);
         }
-        else if (obj __matches String s) {
+        else if (obj instanceof String s) {
             formatted = String.format("String %s", s);
         }
         System.out.println(formatted);
@@ -189,19 +189,19 @@ public class ExamplesFromProposal {
 
         x = "Hello";
 
-        if (x __matches String s1) {
+        if (x instanceof String s1) {
             System.out.println(s1);
         }
-        if (x __matches String s1 && s1.length() > 0) {
+        if (x instanceof String s1 && s1.length() > 0) {
             System.out.println(s1);
         }
-        if (x __matches String s1) {
+        if (x instanceof String s1) {
             System.out.println(s1 + " is a string");
         } else {
             System.out.println("not a string");
         }
 
-        if (!(x __matches String s1)) {
+        if (!(x instanceof String s1)) {
             System.out.println("not a string");
         } else {
             System.out.println(s1 + " is a string");

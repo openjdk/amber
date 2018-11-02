@@ -34,28 +34,6 @@ public class ConstantPatternTest1 {
         i++;
         final int constantInt = 42;
 
-
-        // Simple literal constant pattern
-        if (i __matches 42) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Simple constant expression pattern
-        if (i __matches 41+1) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Constant expression pattern using a final local
-        if (i __matches constantInt) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
         //--- Tests for match statement
 
         // Simple literal constant pattern
@@ -150,27 +128,6 @@ public class ConstantPatternTest1 {
         //--- Tests for matches expression
 
 
-        // Simple literal constant pattern
-        if (d __matches 42.0) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Simple constant expression pattern
-        if (d __matches 41.0+1.0) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Constant expression pattern using a final local
-        if (d __matches constant) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
         //--- Tests for match statement
 
         // Simple literal constant pattern
@@ -259,27 +216,6 @@ public class ConstantPatternTest1 {
 
         String s = "Hello";
         final String hello = "Hello";
-
-        // Simple literal constant pattern
-        if (s __matches "Hello") {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Simple constant expression pattern
-        if (s __matches "Hell"+"o") {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        // Constant expression pattern using a final local
-        if (s __matches hello) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
 
         //--- Tests for match statement
 
@@ -385,47 +321,6 @@ public class ConstantPatternTest1 {
                 throw new AssertionError("Broken");
             }
         }
-// ----- Constant expression patterns and reference typed expressions
-
-        Object obj = "Hello";
-
-        if (obj __matches "Hello") {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-        if (obj __matches null) {
-            throw new AssertionError("Broken");
-        }
-        obj = 42;
-        if (obj __matches 42) {
-            message();
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        if (obj __matches var x) {
-            if (obj __matches 42) {
-                message();
-            } else {
-                throw new AssertionError("Broken");
-            }
-        } else {
-            throw new AssertionError("Broken");
-        }
-
-        if (obj __matches 42) {
-            if (obj __matches var x) {
-                message();
-            }
-        }
-        if (obj __matches null) {
-            throw new AssertionError("Broken");
-        }
-        if (null __matches "Hello") {
-            throw new AssertionError("Broken");
-        }
-
 
         fortyTwoTester(42);
         fortyTwoTester(42.0);

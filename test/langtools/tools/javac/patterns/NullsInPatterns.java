@@ -24,37 +24,28 @@
 /*
  * @test
  * @summary Testing pattern matching against the null constant
+ * @compile NullsInPatterns.java
  * @run main NullsInPatterns
  */
 import java.util.List;
 
 public class NullsInPatterns {
-    
+
     public static void main(String[] args) {
-        if (null __matches List t) {
+        if (null instanceof List t) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List type pattern");
         }
-        if (null __matches List<Integer> l) {
+        if (null instanceof List<Integer> l) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List<Integer> type pattern");
         }
-        if (null __matches List<?> l) {
+        if (null instanceof List<?> l) {
             throw new AssertionError("broken");
         } else {
             System.out.println("null does not match List<?> type pattern");
-        }
-        if (null __matches var x) {
-            System.out.println("null matches var type pattern");
-        } else {
-            throw new AssertionError("broken");
-        }
-        if (null __matches null) {
-            System.out.println("null matches null constant pattern");
-        } else {
-            throw new AssertionError("broken");
         }
     }
 }

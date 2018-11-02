@@ -34,7 +34,7 @@ public class PatternTypeTest2 {
         String s = "Hello";
         Object o = i;
 
-        if (o __matches Integer j) {
+        if (o instanceof Integer j) {
             System.out.println("It's an Integer");
         } else {
             throw new AssertionError("Broken");

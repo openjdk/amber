@@ -1,0 +1,4 @@
+NullsInPatterns2.java:33:18: compiler.err.var.not.allowed
+NullsInPatterns2.java:35:29: compiler.err.illegal.start.of.type
+NullsInPatterns2.java:35:33: compiler.err.expected: ';'
+3 errors

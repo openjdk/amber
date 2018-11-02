@@ -6,7 +6,7 @@
  */
 public class EnsureTypesOrderTest {
     public static void main(String [] args) { 
-        if (args __matches String s) { 
+        if (args instanceof String s) { 
             System.out.println("Broken"); 
         } 
     } 

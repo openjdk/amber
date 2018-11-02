@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import javax.lang.model.element.Name;
+
 /**
  * A binding pattern tree
  */
@@ -35,6 +37,12 @@ public interface BindingPatternTree extends PatternTree {
      * @return the type
      */
     Tree getType();
+
+    /**
+     * A binding variable name.
+     * @return something
+     */
+    Name getBinding();
 
 }
 

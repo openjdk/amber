@@ -179,11 +179,6 @@ public interface Tree {
         LABELED_STATEMENT(LabeledStatementTree.class),
 
         /**
-         * Used for instances of {@link MatchesTree}.
-         */
-        MATCHES(MatchesTree.class),
-
-        /**
          * Used for instances of {@link MethodTree}.
          */
         METHOD(MethodTree.class),

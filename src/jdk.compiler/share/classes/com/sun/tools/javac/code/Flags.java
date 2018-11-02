@@ -340,6 +340,11 @@ public class Flags {
      */
     public static final long CONCISE_ARROW = 1L<<61;
 
+    /**
+     * A flag to indicate a match binding variable whose scope extends after the current statement.
+     */
+    public static final long MATCH_BINDING_TO_OUTER = 1L<<59;
+
     /** Modifier masks.
      */
     public static final int

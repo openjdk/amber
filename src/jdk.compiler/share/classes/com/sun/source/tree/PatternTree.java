@@ -32,9 +32,4 @@ import javax.lang.model.element.Name;
  */
 public interface PatternTree extends Tree {
 
-    /**
-     * A doc to make build happy
-     * @return something
-     */
-    Name getBinding();
 }

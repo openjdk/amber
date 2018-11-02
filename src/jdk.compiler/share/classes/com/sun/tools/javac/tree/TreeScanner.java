@@ -296,11 +296,6 @@ public class TreeScanner extends Visitor {
 
     public void visitTypeTest(JCInstanceOf tree) {
         scan(tree.expr);
-        scan(tree.clazz);
-    }
-
-    public void visitPatternTest(JCMatches tree) {
-        scan(tree.expr);
         scan(tree.pattern);
     }
 
