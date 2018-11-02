@@ -2929,6 +2929,7 @@ public final class String
      *
      * @since 12
      */
+    @IntrinsicCandidate
     public String align() {
         return align(0);
     }

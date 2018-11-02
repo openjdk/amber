@@ -102,35 +102,10 @@ public class StringProcessorFactory implements IntrinsicProcessorFactory {
                 // Fold when all arguments are constant
                 if (Intrinsics.isAllConstants(constantArgs)) {
                     try {
-                        String string = (String)constantArgs[0];
-
-                        switch (methodName) {
-                            case "align": {
-                                if (constantArgs.length == 2) {
-                                    return new Result.Ldc(string.align((Integer)constantArgs[1]));
-                                } else {
-                                    return new Result.Ldc(string.align());
-                                }
-                            }
-                            case "indent": {
-                                return new Result.Ldc(string.indent((Integer)constantArgs[1]));
-                            }
-                            case "length": {
-                                 return new Result.Ldc(string.length());
-                            }
-                            case "repeat": {
-                                return new Result.Ldc(string.repeat((Integer)constantArgs[1]));
-                            }
-                            case "strip": {
-                                return new Result.Ldc(string.strip());
-                            }
-                            case "stripLeading": {
-                                return new Result.Ldc(string.stripLeading());
-                            }
-                            case "stripTrailing": {
-                                return new Result.Ldc(string.stripTrailing());
-                            }
-                        }
+                        ConstantDesc value =
+                                Intrinsics.invoke(String.class, methodName, isStatic,
+                                        methodType.returnType(), argClassDescs, constantArgs);
+                        return new Result.Ldc(value);
                     } catch (Exception ex) {
                         return new Result.None();
                     }

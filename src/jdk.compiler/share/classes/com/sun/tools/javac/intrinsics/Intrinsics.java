@@ -30,6 +30,9 @@ import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -56,15 +59,6 @@ public class Intrinsics {
         for (IntrinsicProcessorFactory ip : serviceLoader) {
             ip.register();
         }
-    }
-
-    static ClassDesc[] describeConstables(Class<?>[] types) {
-        int length = types.length;
-        ClassDesc[] classDescs = new ClassDesc[length];
-        for (int i = 0; i < length; i++) {
-            classDescs[i] = types[i].describeConstable().get();
-        }
-        return classDescs;
     }
 
     static class EntryKey {
@@ -114,6 +108,15 @@ public class Intrinsics {
         }
     }
 
+    static ClassDesc[] describeConstables(Class<?>[] types) {
+        int length = types.length;
+        ClassDesc[] classDescs = new ClassDesc[length];
+        for (int i = 0; i < length; i++) {
+            classDescs[i] = types[i].describeConstable().get();
+        }
+        return classDescs;
+    }
+
     static Class<?> getClass(ClassDesc classDesc) {
         try {
             return (Class<?>)classDesc.resolveConstantDesc(LOOKUP);
@@ -123,13 +126,15 @@ public class Intrinsics {
         return null;
     }
 
-    static Object getConstant(ConstantDesc constantDesc) {
-        try {
-            return constantDesc.resolveConstantDesc(LOOKUP);
-        } catch (ReflectiveOperationException ex) {
-            // Fall thru
+    static Class<?>[] getClasses(ClassDesc[] classDescs) {
+        int length = classDescs.length;
+        Class<?>[] classes = new Class<?>[length];
+
+        for (int i = 0; i < length; i++) {
+            classes[i] = getClass(classDescs[i]);
         }
-        return null;
+
+        return classes;
     }
 
     static Object getConstant(ClassDesc classDesc, ConstantDesc constantDesc) {
@@ -160,41 +165,27 @@ public class Intrinsics {
     }
 
     static Object[] getConstants(ClassDesc[] classDescs,
-                                 ConstantDesc[] constantDescs,
-                                 boolean skipReceiver) {
-        int length = constantDescs.length;
-        if (skipReceiver) {
-            Object[] constants = new Object[length - 1];
-            for (int i = 1; i < length; i++) {
-                constants[i - 1] = getConstant(classDescs[i], constantDescs[i]);
-            }
-            return constants;
-        } else {
-            Object[] constants = new Object[length];
-            for (int i = 0; i < length; i++) {
-                constants[i] = getConstant(classDescs[i], constantDescs[i]);
-            }
-            return constants;
-        }
-    }
-
-    static Object[] getConstants(ClassDesc[] classDescs,
                                  ConstantDesc[] constantDescs) {
-        return getConstants(classDescs, constantDescs, false);
+        int length = constantDescs.length;
+        Object[] constants = new Object[length];
+
+        for (int i = 0; i < length; i++) {
+            constants[i] = getConstant(classDescs[i], constantDescs[i]);
+        }
+
+        return constants;
     }
 
-    static boolean isAllConstants(ConstantDesc[] constantDescs, boolean skipReceiver) {
+     static boolean isAllConstants(ConstantDesc[] constantDescs) {
         int length = constantDescs.length;
-        for (int i = skipReceiver ? 1 : 0; i < length; i++) {
+
+        for (int i = 0; i < length; i++) {
             if (constantDescs[i] == null) {
                 return false;
             }
         }
-        return true;
-    }
 
-    static boolean isAllConstants(ConstantDesc[] constantDescs) {
-        return isAllConstants(constantDescs, false);
+        return true;
     }
 
     static boolean isArrayVarArg(ClassDesc[] argClassDescs, int i) {
@@ -222,6 +213,45 @@ public class Intrinsics {
         }
 
         return true;
+    }
+
+    static ConstantDesc invoke(Class<?> owner,
+                               String methodName,
+                               boolean isStatic,
+                               ClassDesc returnTypeDesc,
+                               ClassDesc[] argClassDescs,
+                               ConstantDesc[] constantArgs)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<?>[] argTypes = getClasses(argClassDescs);
+        Object[] constants = getConstants(argClassDescs, constantArgs);
+        Object result;
+
+        if (isStatic) {
+            Method method = owner.getMethod(methodName, argTypes);
+            result = method.invoke(owner, constants);
+        } else {
+            argTypes = Arrays.copyOfRange(argTypes, 1, argTypes.length);
+            Method method = owner.getMethod(methodName, argTypes);
+            Object receiver = constants[0];
+            constants = Arrays.copyOfRange(constants, 1, constants.length);
+            result = method.invoke(receiver, constants);
+        }
+
+        if (result == null) {
+            return ConstantDescs.NULL;
+        } else if (result instanceof Boolean) {
+            return (Boolean)result ? 1 : 0;
+        } else if (result instanceof Byte) {
+            return ((Byte)result).intValue();
+        } else if (result instanceof Short) {
+            return ((Short)result).intValue();
+        } else if (result instanceof Character) {
+            return (int)(Character)result;
+        } else if (result instanceof ConstantDesc) {
+            return (ConstantDesc)result;
+        }
+
+        throw new RuntimeException("Unknown ConstantDesc");
     }
 
     /**
