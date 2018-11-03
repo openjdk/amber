@@ -80,7 +80,6 @@ public class GenManyIndyCorrectBootstrap extends GenFullCP {
      */
     @Override
     protected void generateCommonData(ClassWriterExt cw) {
-        cw.setCacheInvokeDynamic(false);
         super.generateCommonData(cw);
     }
 

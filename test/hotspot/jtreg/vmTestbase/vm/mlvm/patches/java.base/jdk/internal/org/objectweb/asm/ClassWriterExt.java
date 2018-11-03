@@ -26,11 +26,6 @@ package jdk.internal.org.objectweb.asm;
 import java.lang.reflect.InaccessibleObjectException;
 
 public class ClassWriterExt extends ClassWriter {
-    private boolean cacheInvokeDynamic = true;
-    private boolean cacheMTypes = true;
-    private boolean cacheMHandles = true;
-
-    private final Item key = new Item();
 
     public ClassWriterExt(ClassReader cr, int flags) {
         super(cr, flags);
@@ -38,85 +33,6 @@ public class ClassWriterExt extends ClassWriter {
 
     public ClassWriterExt(int flags) {
         super(flags);
-    }
-
-    @Override
-    Item newInvokeDynamicItem(final String name, final String desc,
-                    final Handle bsm, final Object... bsmArgs) {
-        if (cacheInvokeDynamic) {
-            return super.newInvokeDynamicItem(name, desc, bsm, bsmArgs);
-        }
-        int type = ClassWriter.INDY;
-        disableItemHashTableFor(type);
-        Item result;
-        try {
-            return super.newInvokeDynamicItem(name, desc, bsm, bsmArgs);
-        } finally {
-            restoreItemHashTableFor(type);
-        }
-    }
-
-    @Override
-    Item newStringishItem(final int type, final String value) {
-        if (type != ClassWriter.MTYPE) {
-            return super.newStringishItem(type, value);
-        }
-        if (cacheMTypes) {
-            return super.newStringishItem(type, value);
-        }
-        disableItemHashTableFor(type);
-        try {
-            return super.newStringishItem(type, value);
-        } finally {
-            restoreItemHashTableFor(type);
-        }
-    }
-
-    @Override
-    Item newHandleItem(final int tag, final String owner, final String name,
-            final String desc, final boolean itf) {
-        if (cacheMHandles) {
-            return super.newHandleItem(tag, owner, name, desc, itf);
-        }
-        int type = ClassWriter.HANDLE_BASE + tag;
-        disableItemHashTableFor(type);
-        try {
-            return super.newHandleItem(tag, owner, name, desc, itf);
-        } finally {
-            restoreItemHashTableFor(type);
-        }
-    }
-
-    private void disableItemHashTableFor(int type) {
-        for (Item i : items) {
-            while (i != null) {
-                if (i.type == type) {
-                    i.type = -type;
-                }
-                i = i.next;
-            }
-        }
-    }
-
-    private void restoreItemHashTableFor(int type) {
-        for (Item i : items) {
-            while (i != null) {
-                if (i.type == -type) {
-                    i.type = type;
-                }
-                i = i.next;
-            }
-        }
-    }
-
-    public void setCacheInvokeDynamic(boolean value) {
-        cacheInvokeDynamic = value;
-    }
-    public void setCacheMTypes(boolean value) {
-        cacheMTypes = value;
-    }
-    public void setCacheMHandles(boolean value) {
-        cacheMHandles = value;
     }
 
     public int getBytecodeLength(MethodVisitor mv) {

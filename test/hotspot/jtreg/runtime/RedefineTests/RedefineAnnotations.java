@@ -63,7 +63,7 @@ import jdk.internal.org.objectweb.asm.ClassReader;
 import jdk.internal.org.objectweb.asm.ClassVisitor;
 import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.FieldVisitor;
-import static jdk.internal.org.objectweb.asm.Opcodes.ASM5;
+import static jdk.internal.org.objectweb.asm.Opcodes.ASM7;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE_USE)
@@ -85,7 +85,7 @@ public class RedefineAnnotations {
             throws IllegalClassFormatException {
 
             ClassWriter cw = new ClassWriter(0);
-            ClassVisitor cv = new ReAddDummyFieldsClassVisitor(ASM5, cw) { };
+            ClassVisitor cv = new ReAddDummyFieldsClassVisitor(ASM7, cw) { };
             ClassReader cr = new ClassReader(classfileBuffer);
             cr.accept(cv, 0);
             return cw.toByteArray();
