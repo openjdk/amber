@@ -89,7 +89,7 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
  *
  * @since 12
  */
-public interface ConstantDesc<T> {
+public interface ConstantDesc {
     /**
      * Resolve this descriptor reflectively, emulating the resolution behavior
      * of JVMS 5.4.3 and the access control behavior of JVMS 5.4.4.  The resolution
@@ -105,5 +105,5 @@ public interface ConstantDesc<T> {
      * @jvms 5.4.3 Resolution
      * @jvms 5.4.4 Access Control
      */
-    T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
+    Object resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException;
 }

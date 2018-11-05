@@ -30,12 +30,6 @@ import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.Optional;
 
-import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.BSM_METHODHANDLEDESC;
-import static java.lang.constant.ConstantDescs.CD_DirectMethodHandleDesc;
-import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
-import static java.lang.constant.ConstantDescs.MHD_METHODHANDLEDESC_FACTORY;
-import static java.lang.constant.ConstantDescs.MHD_METHODTYPEDESC_FACTORY;
 import static java.lang.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
@@ -136,8 +130,8 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
 
     public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        Class<?> resolvedOwner = owner.resolveConstantDesc(lookup);
-        MethodType resolvedType = this.type.resolveConstantDesc(lookup);
+        Class<?> resolvedOwner = (Class<?>) owner.resolveConstantDesc(lookup);
+        MethodType resolvedType = (MethodType) this.type.resolveConstantDesc(lookup);
         switch (kind) {
             case STATIC:
             case INTERFACE_STATIC:
@@ -164,12 +158,8 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<MethodHandle>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHD_METHODHANDLEDESC_FACTORY,
-                                                  kind.toString(),
-                                                  owner.descriptorString(),
-                                                  name,
-                                                  type.descriptorString()));
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return null;
     }
 
     @Override

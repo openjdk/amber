@@ -444,7 +444,7 @@ import static java.lang.invoke.MethodHandleStatics.UNSAFE;
  * @see MethodType
  * @since 9
  */
-public abstract class VarHandle implements Constable<VarHandle> {
+public abstract class VarHandle implements Constable {
     final VarForm vform;
 
     VarHandle(VarForm vform) {
@@ -2144,13 +2144,13 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 this.bootstrapMethod = bootstrapMethod;
             }
 
-            ConstantDesc<?>[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
+            ConstantDesc[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
                 switch (this) {
                     case FIELD:
                     case STATIC_FIELD:
-                        return new ConstantDesc<?>[] { declaringClass, name, varType };
+                        return new ConstantDesc[] {declaringClass, name, varType };
                     case ARRAY:
-                        return new ConstantDesc<?>[] { declaringClass };
+                        return new ConstantDesc[] {declaringClass };
                     default:
                         throw new InternalError("Cannot reach here");
                 }
@@ -2251,15 +2251,15 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 throws ReflectiveOperationException {
             switch (kind) {
                 case FIELD:
-                    return lookup.findVarHandle(declaringClass.resolveConstantDesc(lookup),
+                    return lookup.findVarHandle((Class<?>) declaringClass.resolveConstantDesc(lookup),
                                                 constantName(),
-                                                varType.resolveConstantDesc(lookup));
+                                                (Class<?>) varType.resolveConstantDesc(lookup));
                 case STATIC_FIELD:
-                    return lookup.findStaticVarHandle(declaringClass.resolveConstantDesc(lookup),
+                    return lookup.findStaticVarHandle((Class<?>) declaringClass.resolveConstantDesc(lookup),
                                                       constantName(),
-                                                      varType.resolveConstantDesc(lookup));
+                                                      (Class<?>) varType.resolveConstantDesc(lookup));
                 case ARRAY:
-                    return MethodHandles.arrayElementVarHandle(declaringClass.resolveConstantDesc(lookup));
+                    return MethodHandles.arrayElementVarHandle((Class<?>) declaringClass.resolveConstantDesc(lookup));
                 default:
                     throw new InternalError("Cannot reach here");
             }
@@ -2278,6 +2278,11 @@ public abstract class VarHandle implements Constable<VarHandle> {
                 default:
                     throw new InternalError("Cannot reach here");
             }
+        }
+
+        @Override
+        public Optional<? extends ConstantDesc> describeConstable() {
+            return Optional.empty();
         }
     }
 

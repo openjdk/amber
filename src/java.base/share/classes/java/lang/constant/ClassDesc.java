@@ -60,8 +60,8 @@ import static java.util.stream.Collectors.joining;
  * @since 12
  */
 public interface ClassDesc
-        extends ConstantDesc<Class<?>>,
-                Constable<ConstantDesc<Class<?>>>,
+        extends ConstantDesc,
+                Constable,
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**

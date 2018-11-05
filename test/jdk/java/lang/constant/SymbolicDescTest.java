@@ -86,26 +86,26 @@ public abstract class SymbolicDescTest {
         return ClassDesc.ofDescriptor(c.descriptorString());
     }
 
-    static<T> void testSymbolicDesc(ConstantDesc<T> desc) throws ReflectiveOperationException {
+    static<T> void testSymbolicDesc(ConstantDesc desc) throws ReflectiveOperationException {
         testSymbolicDesc(desc, false);
     }
 
-    static<T> void testSymbolicDescForwardOnly(ConstantDesc<T> desc) throws ReflectiveOperationException {
+    static<T> void testSymbolicDescForwardOnly(ConstantDesc desc) throws ReflectiveOperationException {
         testSymbolicDesc(desc, true);
     }
 
-    private static<T> void testSymbolicDesc(ConstantDesc<T> desc, boolean forwardOnly) throws ReflectiveOperationException {
+    private static<T> void testSymbolicDesc(ConstantDesc desc, boolean forwardOnly) throws ReflectiveOperationException {
         // Round trip sym -> resolve -> toSymbolicDesc
-        Constable<ConstantDesc<T>> constable = (Constable<ConstantDesc<T>>) desc.resolveConstantDesc(LOOKUP);
-        Optional<? extends ConstantDesc<ConstantDesc<T>>> described = constable.describeConstable();
+        Constable constable = (Constable) desc.resolveConstantDesc(LOOKUP);
+        Optional<? extends ConstantDesc> described = constable.describeConstable();
         if (!forwardOnly) {
             assertEquals(desc, described.orElseThrow());
         }
 
         // Round trip sym -> quoted sym -> resolve
         if (desc instanceof Constable) {
-            Optional<ConstantDesc<ConstantDesc<T>>> opt = (Optional<ConstantDesc<ConstantDesc<T>>>) ((Constable) desc).describeConstable();
-            ConstantDesc<T> sr = opt.orElseThrow().resolveConstantDesc(LOOKUP);
+            Optional<ConstantDesc> opt = (Optional<ConstantDesc>) ((Constable) desc).describeConstable();
+            ConstantDesc sr = (ConstantDesc) opt.orElseThrow().resolveConstantDesc(LOOKUP);
             assertEquals(sr, desc);
         }
     }

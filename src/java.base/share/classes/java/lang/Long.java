@@ -62,7 +62,7 @@ import static java.lang.String.UTF16;
  * @since   1.0
  */
 public final class Long extends Number
-        implements Comparable<Long>, ConstantDesc<Long>, Constable<Long> {
+        implements Comparable<Long>, ConstantDesc, Constable {
     /**
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.

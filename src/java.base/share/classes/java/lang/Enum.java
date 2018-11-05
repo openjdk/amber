@@ -32,11 +32,8 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
+import java.lang.constant.*;
 import java.lang.invoke.MethodHandles;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.Constable;
-import java.lang.constant.ConstantDescs;
-import java.lang.constant.DynamicConstantDesc;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -66,7 +63,7 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("serial") // No serialVersionUID needed due to
                             // special-casing of enum types.
 public abstract class Enum<E extends Enum<E>>
-        implements Constable<E>, Comparable<E>, Serializable {
+        implements Constable, Comparable<E>, Serializable {
     /**
      * The name of this enum constant, as declared in the enum declaration.
      * Most programmers should use the {@link #toString} method rather than
@@ -325,6 +322,11 @@ public abstract class Enum<E extends Enum<E>>
         @Override
         public String toString() {
             return String.format("EnumDesc[%s.%s]", constantType().displayName(), constantName());
+        }
+
+        @Override
+        public Optional<? extends ConstantDesc> describeConstable() {
+            return Optional.empty();
         }
     }
 }

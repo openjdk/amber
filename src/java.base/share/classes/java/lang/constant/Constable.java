@@ -61,11 +61,9 @@ import java.util.Optional;
  * @jvms 4.4 The Constant Pool
  * @jvms 4.4.10 The CONSTANT_InvokeDynamic_info Structure
  *
- * @param <T> the type of the constant value
- *
  * @since 12
  */
-public interface Constable<T> {
+public interface Constable {
     /**
      * Return a nominal descriptor for this instance, if one can be
      * constructed, or an empty {@link Optional} if one cannot be.
@@ -73,5 +71,5 @@ public interface Constable<T> {
      * @return An {@link Optional} containing the resulting nominal descriptor,
      * or an empty {@link Optional} if one cannot be constructed.
      */
-    Optional<? extends ConstantDesc<T>> describeConstable();
+    Optional<? extends ConstantDesc> describeConstable();
 }

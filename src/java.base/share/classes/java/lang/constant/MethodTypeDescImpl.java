@@ -32,7 +32,6 @@ import java.util.Optional;
 
 import jdk.internal.lang.annotation.Foldable;
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
-import static java.lang.constant.ConstantDescs.MHD_METHODTYPEDESC_FACTORY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -150,8 +149,8 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     }
 
     @Override
-    public Optional<? extends ConstantDesc<ConstantDesc<MethodType>>> describeConstable() {
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, MHD_METHODTYPEDESC_FACTORY, descriptorString()));
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 
     @Override

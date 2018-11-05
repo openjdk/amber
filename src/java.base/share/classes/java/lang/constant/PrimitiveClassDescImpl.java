@@ -25,6 +25,7 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Optional;
 
 import sun.invoke.util.Wrapper;
 
@@ -70,5 +71,10 @@ final class PrimitiveClassDescImpl
     @Override
     public String toString() {
         return String.format("PrimitiveClassDesc[%s]", displayName());
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 }

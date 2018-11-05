@@ -43,11 +43,10 @@ public final class Intrinsics {
      * called reflectively; invocations of this method should always be
      * intrinsified at compile time.
      *
-     * @param <T> the type of the constant
      * @param constant a nominal descriptor for the constant to be loaded
      * @return the constant value
      */
-    public static <T> T ldc(ConstantDesc<T> constant) {
+    public static Object ldc(ConstantDesc constant) {
         throw new UnsupportedOperationException("no reflective access");
     }
 

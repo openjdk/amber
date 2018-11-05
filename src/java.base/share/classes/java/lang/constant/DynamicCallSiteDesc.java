@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.joining;
 public class DynamicCallSiteDesc {
 
     private final DirectMethodHandleDesc bootstrapMethod;
-    private final ConstantDesc<?>[] bootstrapArgs;
+    private final ConstantDesc[] bootstrapArgs;
     private final String invocationName;
     private final MethodTypeDesc invocationType;
 
@@ -77,7 +77,7 @@ public class DynamicCallSiteDesc {
     private DynamicCallSiteDesc(DirectMethodHandleDesc bootstrapMethod,
                                 String invocationName,
                                 MethodTypeDesc invocationType,
-                                ConstantDesc<?>[] bootstrapArgs) {
+                                ConstantDesc[] bootstrapArgs) {
         this.invocationName = validateMemberName(requireNonNull(invocationName));
         this.invocationType = requireNonNull(invocationType);
         this.bootstrapMethod = requireNonNull(bootstrapMethod);
@@ -110,7 +110,7 @@ public class DynamicCallSiteDesc {
     public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          String invocationName,
                                          MethodTypeDesc invocationType,
-                                         ConstantDesc<?>... bootstrapArgs) {
+                                         ConstantDesc... bootstrapArgs) {
         return new DynamicCallSiteDesc(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
@@ -166,7 +166,7 @@ public class DynamicCallSiteDesc {
      * @throws NullPointerException if any parameter is null
      */
     @Foldable
-    public DynamicCallSiteDesc withArgs(ConstantDesc<?>... bootstrapArgs) {
+    public DynamicCallSiteDesc withArgs(ConstantDesc... bootstrapArgs) {
         return new DynamicCallSiteDesc(bootstrapMethod, invocationName, invocationType, bootstrapArgs);
     }
 
@@ -230,7 +230,7 @@ public class DynamicCallSiteDesc {
      *
      * @return the bootstrap arguments for the {@code invokedynamic}
      */
-    public ConstantDesc<?>[] bootstrapArgs() { return bootstrapArgs.clone(); }
+    public ConstantDesc[] bootstrapArgs() { return bootstrapArgs.clone(); }
 
     /**
      * Reflectively invokes the bootstrap method with the specified arguments,
@@ -242,7 +242,7 @@ public class DynamicCallSiteDesc {
      */
     public CallSite resolveCallSiteDesc(MethodHandles.Lookup lookup) throws Throwable {
         assert bootstrapMethod.methodType().parameterType(1).equals(CD_String);
-        MethodHandle bsm = bootstrapMethod.resolveConstantDesc(lookup);
+        MethodHandle bsm = (MethodHandle) bootstrapMethod.resolveConstantDesc(lookup);
         Object[] args = new Object[bootstrapArgs.length + 3];
         args[0] = lookup;
         args[1] = invocationName;

@@ -29,6 +29,7 @@ import jdk.internal.lang.annotation.Foldable;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 import static java.lang.constant.ConstantDescs.CD_MethodHandle;
@@ -61,13 +62,18 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     @Override
     public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
-        MethodHandle handle = underlying.resolveConstantDesc(lookup);
-        MethodType methodType = type.resolveConstantDesc(lookup);
+        MethodHandle handle = (MethodHandle) underlying.resolveConstantDesc(lookup);
+        MethodType methodType = (MethodType) type.resolveConstantDesc(lookup);
         return handle.asType(methodType);
     }
 
     @Override
     public String toString() {
         return  String.format("%s.asType%s", underlying.toString(), type.displayDescriptor());
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 }

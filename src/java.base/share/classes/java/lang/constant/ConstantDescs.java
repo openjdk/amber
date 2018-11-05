@@ -302,69 +302,13 @@ public final class ConstantDescs {
 
     /** Nominal descriptor representing the constant {@code null} */
     @Foldable
-    public static final ConstantDesc<?> NULL
+    public static final ConstantDesc NULL
             = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_NULL_CONSTANT,
                                           DEFAULT_NAME, ConstantDescs.CD_Object);
 
-    // Used by XxxDesc classes, but need to be here to avoid bootstrap cycles
-    static final DirectMethodHandleDesc MHD_METHODTYPEDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_MethodTypeDesc, "ofDescriptor",
-                                  CD_MethodTypeDesc, CD_String);
-
-    static final DirectMethodHandleDesc MHD_CLASSDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_ClassDesc, "ofDescriptor",
-                                  CD_ClassDesc, CD_String);
-
-    static final DirectMethodHandleDesc MHD_METHODHANDLEDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_DirectMethodHandleDesc, "ofDescriptor",
-                                  CD_DirectMethodHandleDesc, CD_String, CD_String, CD_String, CD_String);
-
     static final DirectMethodHandleDesc MHD_METHODHANDLE_ASTYPE
             = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CD_MethodHandle, "asType",
-                                  CD_MethodHandle, CD_MethodType);
-
-    static final DirectMethodHandleDesc MHD_METHODHANDLEDESC_ASTYPE
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CD_MethodHandleDesc, "asType",
-                                  CD_MethodHandleDesc, CD_MethodTypeDesc);
-
-    static final DirectMethodHandleDesc MHD_DYNAMICCONSTANTDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_DynamicConstantDesc, "of",
-                                  CD_DynamicConstantDesc, CD_DirectMethodHandleDesc, CD_ConstantDesc.arrayType());
-
-    static final DirectMethodHandleDesc MHD_DYNAMICCONSTANTDESC_NAMED_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_DynamicConstantDesc, "ofNamed",
-                                  CD_DynamicConstantDesc, CD_DirectMethodHandleDesc, CD_String, CD_String, CD_ConstantDesc.arrayType());
-
-    /** {@link MethodHandleDesc} representing {@link EnumDesc#ofDescriptor(String, String)} */
-    public static final DirectMethodHandleDesc MHD_ENUMDESC_FACTORY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_EnumDesc, "ofDescriptor",
-                                  CD_EnumDesc, CD_String, CD_String);
-
-    /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofField(ClassDesc, String, ClassDesc)} */
-    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFFIELD
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofField",
-                                  CD_VarHandleDesc, CD_ClassDesc, CD_String, CD_ClassDesc);
-    /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofStaticField(ClassDesc, String, ClassDesc)} */
-    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFSTATIC
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofStaticField",
-                                  CD_VarHandleDesc, CD_ClassDesc, CD_String, CD_ClassDesc);
-
-    /** {@link MethodHandleDesc} representing {@link VarHandleDesc#ofArray(ClassDesc)} */
-    public static final DirectMethodHandleDesc MHD_VARHANDLEDESC_OFARRAY
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_VarHandleDesc, "ofArray",
-                                  CD_VarHandleDesc, CD_ClassDesc);
-
-    static final DirectMethodHandleDesc BSM_METHODHANDLEDESC
-            = ConstantDescs.ofConstantBootstrap(CD_DirectMethodHandleDesc,
-                                                "constantBootstrap", CD_DirectMethodHandleDesc,
-                                                CD_String, CD_String, CD_String, CD_String);
-
-    static final DirectMethodHandleDesc BSM_DYNAMICCONSTANTDESC
-            = ConstantDescs.ofConstantBootstrap(CD_DynamicConstantDesc,
-                                                "constantBootstrap",
-                                                CD_DynamicConstantDesc,
-                                                CD_DirectMethodHandleDesc, CD_String, CD_String, CD_ConstantDesc.arrayType());
-
+            CD_MethodHandle, CD_MethodType);
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for
      * an {@code invokedynamic} callsite, which is a static method whose leading
