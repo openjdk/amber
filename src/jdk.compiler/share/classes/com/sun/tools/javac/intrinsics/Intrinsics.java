@@ -207,7 +207,7 @@ public class Intrinsics {
                 Pattern.compile(regex);
             } catch (PatternSyntaxException ex) {
                 intrinsicContext.warning("Syntax error in regular expression: " +
-                        ex.getMessage(), arg, ex.getIndex());
+                        ex.getMessage(), arg, ex.getIndex() + 1);
                 return false;
             }
         }

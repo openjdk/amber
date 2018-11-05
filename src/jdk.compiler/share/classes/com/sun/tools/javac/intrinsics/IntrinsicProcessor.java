@@ -131,12 +131,13 @@ public interface IntrinsicProcessor {
 
     /**
      * <p><b>This is NOT part of any supported API.</b>
-     * @param ownerDesc       method owner
-     * @param methodName      method name
-     * @param methodType      method type descriptor
-     * @param isStatic        true if static method call
-     * @param argClassDescs   class descriptors for each argument (includes receiver)
-     * @param constantArgs    constant value for each argument (includes receiver), null means unknown
+     * @param intrinsicContext compiler state
+     * @param ownerDesc        method owner
+     * @param methodName       method name
+     * @param methodType       method type descriptor
+     * @param isStatic         true if static method call
+     * @param argClassDescs    class descriptors for each argument (includes receiver)
+     * @param constantArgs     constant value for each argument (includes receiver), null means unknown
      * @return IntrinsicProcessor.Result value
      */
     public Result tryIntrinsify(IntrinsicContext intrinsicContext,
