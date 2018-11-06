@@ -1081,6 +1081,7 @@ public final class Double extends Number
      * itself.
      *
      * @return an {@link Optional} describing the {@linkplain Double} instance
+     * @since 12
      */
     @Override
     public Optional<Double> describeConstable() {
@@ -1093,6 +1094,7 @@ public final class Double extends Number
      *
      * @param lookup ignored
      * @return the {@linkplain Double} instance
+     * @since 12
      */
     @Override
     public Double resolveConstantDesc(MethodHandles.Lookup lookup) {

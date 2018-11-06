@@ -46,6 +46,7 @@ public interface TypeDescriptor {
      *
      * @param <F> the class implementing {@linkplain TypeDescriptor.OfField}
      * @jvms 4.3.2 Field Descriptors
+     * @since 12
      */
     interface OfField<F extends TypeDescriptor.OfField<F>> extends TypeDescriptor {
         /**
@@ -83,6 +84,7 @@ public interface TypeDescriptor {
      * @param <F> the type representing field type descriptors
      * @param <M> the class implementing {@linkplain TypeDescriptor.OfMethod}
      * @jvms 4.3.3 Method Descriptors
+     * @since 12
      */
     interface OfMethod<F extends TypeDescriptor.OfField<F>, M extends TypeDescriptor.OfMethod<F, M>>
             extends TypeDescriptor {

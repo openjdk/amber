@@ -211,6 +211,14 @@ public abstract class Enum<E extends Enum<E>>
         return (zuper == Enum.class) ? (Class<E>)clazz : (Class<E>)zuper;
     }
 
+    /**
+     * Return an enum descriptor {@code EnumDesc} for this instance, if one can be
+     * constructed, or an empty {@link Optional} if one cannot be.
+     *
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed.
+     * @since 12
+     */
     @Override
     public final Optional<EnumDesc<E>> describeConstable() {
         return getDeclaringClass()
@@ -306,6 +314,7 @@ public abstract class Enum<E extends Enum<E>>
          * @return the nominal descriptor
          * @throws NullPointerException if any argument is null
          * @jvms 4.2.2 Unqualified Names
+         * @since 12
          */
         public static<E extends Enum<E>> EnumDesc<E> of(ClassDesc enumClass,
                                                         String constantName) {

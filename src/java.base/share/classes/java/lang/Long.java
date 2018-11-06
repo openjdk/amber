@@ -1958,6 +1958,7 @@ public final class Long extends Number
      * itself.
      *
      * @return an {@link Optional} describing the {@linkplain Long} instance
+     * @since 12
      */
     @Override
     public Optional<Long> describeConstable() {
@@ -1970,6 +1971,7 @@ public final class Long extends Number
      *
      * @param lookup ignored
      * @return the {@linkplain Long} instance
+     * @since 12
      */
     @Override
     public Long resolveConstantDesc(MethodHandles.Lookup lookup) {

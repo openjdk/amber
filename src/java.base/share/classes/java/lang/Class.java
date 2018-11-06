@@ -4033,6 +4033,7 @@ public final class Class<T> implements java.io.Serializable,
      *
      * @return the type descriptor representation
      * @jvms 4.3.2 Field Descriptors
+     * @since 12
      */
     @Override
     public String descriptorString() {
@@ -4046,16 +4047,39 @@ public final class Class<T> implements java.io.Serializable,
         }
     }
 
+    /**
+     * Returns the component type of this {@code Class}, if it describes
+     * an array type, or {@code null} otherwise.
+     *
+     * @return a {@code Class} describing the component type, or {@code null}
+     * if this descriptor does not describe an array type
+     * @since 12
+     */
     @Override
     public Class<?> componentType() {
         return isArray() ? componentType : null;
     }
 
+    /**
+     * Create a {@code Class} for an array type whose component type
+     * is described by this {@linkplain ClassDesc}.
+     *
+     * @return a {@code ClassDesc} describing the array type
+     * @since 12
+     */
     @Override
     public Class<?> arrayType() {
         return Array.newInstance(this, 0).getClass();
     }
 
+    /**
+     * Return a nominal descriptor for this instance, if one can be
+     * constructed, or an empty {@link Optional} if one cannot be.
+     *
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed.
+     * @since 12
+     */
     @Override
     public Optional<ClassDesc> describeConstable() {
         return Optional.of(ClassDesc.ofDescriptor(descriptorString()));
