@@ -1836,6 +1836,7 @@ public final class Integer extends Number
      * itself.
      *
      * @return an {@link Optional} describing the {@linkplain Integer} instance
+     * @since 12
      */
     @Override
     public Optional<Integer> describeConstable() {
@@ -1848,6 +1849,7 @@ public final class Integer extends Number
      *
      * @param lookup ignored
      * @return the {@linkplain Integer} instance
+     * @since 12
      */
     @Override
     public Integer resolveConstantDesc(MethodHandles.Lookup lookup) {

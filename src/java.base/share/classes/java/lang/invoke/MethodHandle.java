@@ -1520,6 +1520,14 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
         return bindArgumentL(0, x);
     }
 
+    /**
+     * Return a nominal descriptor for this instance, if one can be
+     * constructed, or an empty {@link Optional} if one cannot be.
+     *
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed.
+     * @since 12
+     */
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
         MethodHandleInfo info;
