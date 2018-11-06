@@ -3527,6 +3527,7 @@ public final class String
      * itself.
      *
      * @return an {@link Optional} describing the {@linkplain String} instance
+     * @since 12
      */
     @Override
     public Optional<String> describeConstable() {
@@ -3539,6 +3540,7 @@ public final class String
      *
      * @param lookup ignored
      * @return the {@linkplain String} instance
+     * @since 12
      */
     @Override
     public String resolveConstantDesc(MethodHandles.Lookup lookup) {

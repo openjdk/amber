@@ -993,6 +993,7 @@ public final class Float extends Number
      * itself.
      *
      * @return an {@link Optional} describing the {@linkplain Float} instance
+     * @since 12
      */
     @Override
     public Optional<Float> describeConstable() {
@@ -1005,6 +1006,7 @@ public final class Float extends Number
      *
      * @param lookup ignored
      * @return the {@linkplain Float} instance
+     * @since 12
      */
     @Override
     public Float resolveConstantDesc(MethodHandles.Lookup lookup) {

@@ -1187,6 +1187,13 @@ class MethodType
         return desc;
     }
 
+    /**
+     * Return a field type descriptor string for this type, as per JVMS 4.3.2
+     *
+     * @return the descriptor string
+     * @jvms 4.3.2 Field Descriptors
+     * @since 12
+     */
     @Override
     public String descriptorString() {
         return toMethodDescriptorString();
@@ -1196,6 +1203,14 @@ class MethodType
         return BytecodeDescriptor.unparse(cls);
     }
 
+    /**
+     * Return a nominal descriptor for this instance, if one can be
+     * constructed, or an empty {@link Optional} if one cannot be.
+     *
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed.
+     * @since 12
+     */
     @Override
     public Optional<MethodTypeDesc> describeConstable() {
         try {
