@@ -115,6 +115,8 @@ public class GenManyIndyIncorrectBootstrap extends GenFullCP {
      */
     @Override
     protected void generateCommonData(ClassWriterExt cw) {
+        cw.setCacheInvokeDynamic(false);
+
         cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
                 STATIC_BOOTSTRAP_FIELD_NAME,
                 STATIC_BOOTSTRAP_FIELD_SIGNATURE, null, null);

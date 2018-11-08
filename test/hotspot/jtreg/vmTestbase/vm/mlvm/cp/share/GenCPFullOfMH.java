@@ -40,6 +40,8 @@ public class GenCPFullOfMH extends GenFullCP {
 
     @Override
     protected void generateCommonData(ClassWriterExt cw) {
+        cw.setCacheMHandles(false);
+
         cw.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
                 STATIC_FIELD_NAME,
                 STATIC_FIELD_SIGNATURE, null, false);
