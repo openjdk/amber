@@ -27,10 +27,8 @@ package sun.misc;
 
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.misc.VM;
-import jdk.internal.ref.Cleaner;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
-import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;
 import java.util.Set;
@@ -196,7 +194,7 @@ public final class Unsafe {
      */
     @ForceInline
     public Object getObject(Object o, long offset) {
-        return theInternalUnsafe.getObject(o, offset);
+        return theInternalUnsafe.getReference(o, offset);
     }
 
     /**
@@ -211,7 +209,7 @@ public final class Unsafe {
      */
     @ForceInline
     public void putObject(Object o, long offset, Object x) {
-        theInternalUnsafe.putObject(o, offset, x);
+        theInternalUnsafe.putReference(o, offset, x);
     }
 
     /** @see #getInt(Object, long) */
@@ -860,7 +858,7 @@ public final class Unsafe {
     public final boolean compareAndSwapObject(Object o, long offset,
                                               Object expected,
                                               Object x) {
-        return theInternalUnsafe.compareAndSetObject(o, offset, expected, x);
+        return theInternalUnsafe.compareAndSetReference(o, offset, expected, x);
     }
 
     /**
@@ -901,7 +899,7 @@ public final class Unsafe {
      */
     @ForceInline
     public Object getObjectVolatile(Object o, long offset) {
-        return theInternalUnsafe.getObjectVolatile(o, offset);
+        return theInternalUnsafe.getReferenceVolatile(o, offset);
     }
 
     /**
@@ -910,7 +908,7 @@ public final class Unsafe {
      */
     @ForceInline
     public void putObjectVolatile(Object o, long offset, Object x) {
-        theInternalUnsafe.putObjectVolatile(o, offset, x);
+        theInternalUnsafe.putReferenceVolatile(o, offset, x);
     }
 
     /** Volatile version of {@link #getInt(Object, long)}  */
@@ -1020,7 +1018,7 @@ public final class Unsafe {
      */
     @ForceInline
     public void putOrderedObject(Object o, long offset, Object x) {
-        theInternalUnsafe.putObjectRelease(o, offset, x);
+        theInternalUnsafe.putReferenceRelease(o, offset, x);
     }
 
     /** Ordered/Lazy version of {@link #putIntVolatile(Object, long, int)}  */
@@ -1168,7 +1166,7 @@ public final class Unsafe {
      */
     @ForceInline
     public final Object getAndSetObject(Object o, long offset, Object newValue) {
-        return theInternalUnsafe.getAndSetObject(o, offset, newValue);
+        return theInternalUnsafe.getAndSetReference(o, offset, newValue);
     }
 
 
@@ -1234,13 +1232,6 @@ public final class Unsafe {
         if (!directBuffer.isDirect())
             throw new IllegalArgumentException("buffer is non-direct");
 
-        DirectBuffer db = (DirectBuffer)directBuffer;
-        if (db.attachment() != null)
-            throw new IllegalArgumentException("duplicate or slice");
-
-        Cleaner cleaner = db.cleaner();
-        if (cleaner != null) {
-            cleaner.clean();
-        }
+        theInternalUnsafe.invokeCleaner(directBuffer);
     }
 }
