@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -298,10 +298,6 @@ char* os::non_memory_address_word() {
   // if the CPU splits constants across multiple instructions).
 
   return (char*) -1;
-}
-
-void os::initialize_thread(Thread* thr) {
-// Nothing to do.
 }
 
 address os::Bsd::ucontext_get_pc(const ucontext_t * uc) {
@@ -677,17 +673,6 @@ JVM_handle_bsd_signal(int sig,
       if (addr != (address)-1) {
         stub = addr;
       }
-    }
-
-    // Check to see if we caught the safepoint code in the
-    // process of write protecting the memory serialization page.
-    // It write enables the page immediately after protecting it
-    // so we can just return to retry the write.
-    if ((sig == SIGSEGV || sig == SIGBUS) &&
-        os::is_memory_serialize_page(thread, (address) info->si_addr)) {
-      // Block current thread until the memory serialize page permission restored.
-      os::block_on_serialize_page_trap();
-      return true;
     }
   }
 

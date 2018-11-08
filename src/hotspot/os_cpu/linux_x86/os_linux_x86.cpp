@@ -116,10 +116,6 @@ char* os::non_memory_address_word() {
   return (char*) -1;
 }
 
-void os::initialize_thread(Thread* thr) {
-// Nothing to do.
-}
-
 address os::Linux::ucontext_get_pc(const ucontext_t * uc) {
   return (address)uc->uc_mcontext.gregs[REG_PC];
 }
@@ -501,17 +497,6 @@ JVM_handle_linux_signal(int sig,
       if (addr != (address)-1) {
         stub = addr;
       }
-    }
-
-    // Check to see if we caught the safepoint code in the
-    // process of write protecting the memory serialization page.
-    // It write enables the page immediately after protecting it
-    // so we can just return to retry the write.
-    if ((sig == SIGSEGV) &&
-        os::is_memory_serialize_page(thread, (address) info->si_addr)) {
-      // Block current thread until the memory serialize page permission restored.
-      os::block_on_serialize_page_trap();
-      return true;
     }
   }
 
