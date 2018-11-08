@@ -36,8 +36,9 @@
 #include "interpreter/linkResolver.hpp"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
+#include "memory/heapShared.inline.hpp"
+#include "memory/metaspaceShared.hpp"
 #include "memory/oopFactory.hpp"
-#include "memory/metaspaceShared.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/fieldStreams.hpp"
@@ -49,6 +50,7 @@
 #include "oops/oop.inline.hpp"
 #include "oops/symbol.hpp"
 #include "oops/typeArrayOop.inline.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "prims/resolvedMethodTable.hpp"
 #include "runtime/fieldDescriptor.inline.hpp"
 #include "runtime/frame.inline.hpp"
@@ -124,7 +126,7 @@ static void compute_offset(int &dest_offset,
   if (ik == NULL) {
     ResourceMark rm;
     log_error(class)("Mismatch JDK version for field: %s type: %s", name_symbol->as_C_string(), signature_symbol->as_C_string());
-    vm_exit_during_initialization("Invalid layout of preloaded class");
+    vm_exit_during_initialization("Invalid layout of well-known class");
   }
 
   if (!ik->find_local_field(name_symbol, signature_symbol, &fd) || fd.is_static() != is_static) {
@@ -137,7 +139,7 @@ static void compute_offset(int &dest_offset,
     LogStream ls(lt.error());
     ik->print_on(&ls);
 #endif //PRODUCT
-    vm_exit_during_initialization("Invalid layout of preloaded class: use -Xlog:class+load=info to see the origin of the problem class");
+    vm_exit_during_initialization("Invalid layout of well-known class: use -Xlog:class+load=info to see the origin of the problem class");
   }
   dest_offset = fd.offset();
 }
@@ -150,7 +152,7 @@ static void compute_offset(int& dest_offset, InstanceKlass* ik,
   if (name == NULL) {
     ResourceMark rm;
     log_error(class)("Name %s should be in the SymbolTable since its class is loaded", name_string);
-    vm_exit_during_initialization("Invalid layout of preloaded class", ik->external_name());
+    vm_exit_during_initialization("Invalid layout of well-known class", ik->external_name());
   }
   compute_offset(dest_offset, ik, name, signature_symbol, is_static);
 }
@@ -750,7 +752,7 @@ static void initialize_static_field(fieldDescriptor* fd, Handle mirror, TRAPS) {
         {
           assert(fd->signature() == vmSymbols::string_signature(),
                  "just checking");
-          if (DumpSharedSpaces && MetaspaceShared::is_archive_object(mirror())) {
+          if (DumpSharedSpaces && HeapShared::is_archived_object(mirror())) {
             // Archive the String field and update the pointer.
             oop s = mirror()->obj_field(fd->offset());
             oop archived_s = StringTable::create_archived_string(s, CHECK);
@@ -788,7 +790,7 @@ void java_lang_Class::fixup_mirror(Klass* k, TRAPS) {
   }
 
   if (k->is_shared() && k->has_raw_archived_mirror()) {
-    if (MetaspaceShared::open_archive_heap_region_mapped()) {
+    if (HeapShared::open_archive_heap_region_mapped()) {
       bool present = restore_archived_mirror(k, Handle(), Handle(), Handle(), CHECK);
       assert(present, "Missing archived mirror for %s", k->external_name());
       return;
@@ -1011,14 +1013,14 @@ class ResetMirrorField: public FieldClosure {
 };
 
 void java_lang_Class::archive_basic_type_mirrors(TRAPS) {
-  assert(MetaspaceShared::is_heap_object_archiving_allowed(),
-         "MetaspaceShared::is_heap_object_archiving_allowed() must be true");
+  assert(HeapShared::is_heap_object_archiving_allowed(),
+         "HeapShared::is_heap_object_archiving_allowed() must be true");
 
   for (int t = 0; t <= T_VOID; t++) {
     oop m = Universe::_mirrors[t];
     if (m != NULL) {
       // Update the field at _array_klass_offset to point to the relocated array klass.
-      oop archived_m = MetaspaceShared::archive_heap_object(m, THREAD);
+      oop archived_m = HeapShared::archive_heap_object(m, THREAD);
       assert(archived_m != NULL, "sanity");
       Klass *ak = (Klass*)(archived_m->metadata_field(_array_klass_offset));
       assert(ak != NULL || t == T_VOID, "should not be NULL");
@@ -1071,8 +1073,8 @@ void java_lang_Class::archive_basic_type_mirrors(TRAPS) {
 // be used at runtime, new mirror object is created for the shared
 // class. The _has_archived_raw_mirror is cleared also during the process.
 oop java_lang_Class::archive_mirror(Klass* k, TRAPS) {
-  assert(MetaspaceShared::is_heap_object_archiving_allowed(),
-         "MetaspaceShared::is_heap_object_archiving_allowed() must be true");
+  assert(HeapShared::is_heap_object_archiving_allowed(),
+         "HeapShared::is_heap_object_archiving_allowed() must be true");
 
   // Mirror is already archived
   if (k->has_raw_archived_mirror()) {
@@ -1101,7 +1103,7 @@ oop java_lang_Class::archive_mirror(Klass* k, TRAPS) {
   }
 
   // Now start archiving the mirror object
-  oop archived_mirror = MetaspaceShared::archive_heap_object(mirror, THREAD);
+  oop archived_mirror = HeapShared::archive_heap_object(mirror, THREAD);
   if (archived_mirror == NULL) {
     return NULL;
   }
@@ -1139,7 +1141,7 @@ oop java_lang_Class::process_archived_mirror(Klass* k, oop mirror,
     if (k->is_typeArray_klass()) {
       // The primitive type mirrors are already archived. Get the archived mirror.
       oop comp_mirror = java_lang_Class::component_mirror(mirror);
-      archived_comp_mirror = MetaspaceShared::find_archived_heap_object(comp_mirror);
+      archived_comp_mirror = HeapShared::find_archived_heap_object(comp_mirror);
       assert(archived_comp_mirror != NULL, "Must be");
     } else {
       assert(k->is_objArray_klass(), "Must be");
@@ -1195,14 +1197,14 @@ bool java_lang_Class::restore_archived_mirror(Klass *k,
                                               Handle class_loader, Handle module,
                                               Handle protection_domain, TRAPS) {
   // Postpone restoring archived mirror until java.lang.Class is loaded. Please
-  // see more details in SystemDictionary::resolve_preloaded_classes().
+  // see more details in SystemDictionary::resolve_well_known_classes().
   if (!SystemDictionary::Class_klass_loaded()) {
     assert(fixup_mirror_list() != NULL, "fixup_mirror_list not initialized");
     fixup_mirror_list()->push(k);
     return true;
   }
 
-  oop m = MetaspaceShared::materialize_archived_object(k->archived_java_mirror_raw_narrow());
+  oop m = HeapShared::materialize_archived_object(k->archived_java_mirror_raw_narrow());
 
   if (m == NULL) {
     return false;
@@ -1211,7 +1213,7 @@ bool java_lang_Class::restore_archived_mirror(Klass *k,
   log_debug(cds, mirror)("Archived mirror is: " PTR_FORMAT, p2i(m));
 
   // mirror is archived, restore
-  assert(MetaspaceShared::is_archive_object(m), "must be archived mirror object");
+  assert(HeapShared::is_archived_object(m), "must be archived mirror object");
   Handle mirror(THREAD, m);
 
   if (!k->is_array_klass()) {
@@ -3730,10 +3732,10 @@ void java_lang_invoke_CallSite::serialize_offsets(SerializeClosure* f) {
 }
 #endif
 
-oop java_lang_invoke_CallSite::context(oop call_site) {
+oop java_lang_invoke_CallSite::context_no_keepalive(oop call_site) {
   assert(java_lang_invoke_CallSite::is_instance(call_site), "");
 
-  oop dep_oop = call_site->obj_field(_context_offset);
+  oop dep_oop = call_site->obj_field_access<AS_NO_KEEPALIVE>(_context_offset);
   return dep_oop;
 }
 
@@ -3783,12 +3785,6 @@ void java_security_AccessControlContext::serialize_offsets(SerializeClosure* f) 
   ACCESSCONTROLCONTEXT_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
 }
 #endif
-
-bool java_security_AccessControlContext::is_authorized(Handle context) {
-  assert(context.not_null() && context->klass() == SystemDictionary::AccessControlContext_klass(), "Invalid type");
-  assert(_isAuthorized_offset != -1, "should be set");
-  return context->bool_field(_isAuthorized_offset) != 0;
-}
 
 oop java_security_AccessControlContext::create(objArrayHandle context, bool isPrivileged, Handle privileged_context, TRAPS) {
   assert(_isPrivileged_offset != 0, "offsets should have been initialized");
@@ -3972,13 +3968,6 @@ void java_lang_System::serialize_offsets(SerializeClosure* f) {
 int java_lang_System::in_offset_in_bytes() { return static_in_offset; }
 int java_lang_System::out_offset_in_bytes() { return static_out_offset; }
 int java_lang_System::err_offset_in_bytes() { return static_err_offset; }
-
-
-bool java_lang_System::has_security_manager() {
-  InstanceKlass* ik = SystemDictionary::System_klass();
-  oop base = ik->static_field_base_raw();
-  return base->obj_field(static_security_offset) != NULL;
-}
 
 int java_lang_Class::_klass_offset;
 int java_lang_Class::_array_klass_offset;
@@ -4249,12 +4238,19 @@ void JavaClasses::compute_hard_coded_offsets() {
 // Compute non-hard-coded field offsets of all the classes in this file
 void JavaClasses::compute_offsets() {
   if (UseSharedSpaces) {
-    return; // field offsets are loaded from archive
+    assert(JvmtiExport::is_early_phase() && !(JvmtiExport::should_post_class_file_load_hook() &&
+                                              JvmtiExport::has_early_class_hook_env()),
+           "JavaClasses::compute_offsets() must be called in early JVMTI phase.");
+    // None of the classes used by the rest of this function can be replaced by
+    // JMVTI ClassFileLoadHook.
+    // We are safe to use the archived offsets, which have already been restored
+    // by JavaClasses::serialize_offsets, without computing the offsets again.
+    return;
   }
 
   // We have already called the compute_offsets() of the
   // BASIC_JAVA_CLASSES_DO_PART1 classes (java_lang_String and java_lang_Class)
-  // earlier inside SystemDictionary::resolve_preloaded_classes()
+  // earlier inside SystemDictionary::resolve_well_known_classes()
   BASIC_JAVA_CLASSES_DO_PART2(DO_COMPUTE_OFFSETS);
 
   // generated interpreter code wants to know about the offsets we just computed:
@@ -4355,7 +4351,7 @@ int InjectedField::compute_offset() {
     tty->print_cr("  name: %s, sig: %s, flags: %08x", fs.name()->as_C_string(), fs.signature()->as_C_string(), fs.access_flags().as_int());
   }
 #endif //PRODUCT
-  vm_exit_during_initialization("Invalid layout of preloaded class: use -Xlog:class+load=info to see the origin of the problem class");
+  vm_exit_during_initialization("Invalid layout of well-known class: use -Xlog:class+load=info to see the origin of the problem class");
   return -1;
 }
 

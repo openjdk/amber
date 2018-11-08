@@ -85,11 +85,6 @@ char* os::non_memory_address_word() {
   return (char*) -1;
 }
 
-// OS specific thread initialization
-//
-// Calculate and store the limits of the memory stack.
-void os::initialize_thread(Thread *thread) { }
-
 // Frame information (pc, sp, fp) retrieved via ucontext
 // always looks like a C-frame according to the frame
 // conventions in frame_ppc.hpp.
@@ -473,18 +468,6 @@ JVM_handle_aix_signal(int sig, siginfo_t* info, void* ucVoid, int abort_if_unrec
         os::Aix::ucontext_set_pc(uc, next_pc);
         return 1;
       }
-    }
-
-    // Check to see if we caught the safepoint code in the
-    // process of write protecting the memory serialization page.
-    // It write enables the page immediately after protecting it
-    // so we can just return to retry the write.
-    if ((sig == SIGSEGV) &&
-        os::is_memory_serialize_page(thread, addr)) {
-      // Synchronization problem in the pseudo memory barrier code (bug id 6546278)
-      // Block current thread until the memory serialize page permission restored.
-      os::block_on_serialize_page_trap();
-      return true;
     }
   }
 
