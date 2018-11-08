@@ -883,9 +883,7 @@ static inline Node* isa_java_mirror_load(PhaseGVN* phase, Node* n) {
   //   LoadBarrier?(LoadP(LoadP(AddP(foo:Klass, #java_mirror))))
   //   or NULL if not matching.
   BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-  if (bs->is_gc_barrier_node(n)) {
     n = bs->step_over_gc_barrier(n);
-  }
 
   if (n->Opcode() != Op_LoadP) return NULL;
 
@@ -959,8 +957,14 @@ Node *CmpPNode::Ideal( PhaseGVN *phase, bool can_reshape ) {
     if (k1 && (k2 || conk2)) {
       Node* lhs = k1;
       Node* rhs = (k2 != NULL) ? k2 : conk2;
-      this->set_req(1, lhs);
-      this->set_req(2, rhs);
+      PhaseIterGVN* igvn = phase->is_IterGVN();
+      if (igvn != NULL) {
+        set_req_X(1, lhs, igvn);
+        set_req_X(2, rhs, igvn);
+      } else {
+        set_req(1, lhs);
+        set_req(2, rhs);
+      }
       return this;
     }
   }
@@ -1250,6 +1254,24 @@ const Type *BoolTest::cc2logical( const Type *CC ) const {
 void BoolTest::dump_on(outputStream *st) const {
   const char *msg[] = {"eq","gt","of","lt","ne","le","nof","ge"};
   st->print("%s", msg[_test]);
+}
+
+// Returns the logical AND of two tests (or 'never' if both tests can never be true).
+// For example, a test for 'le' followed by a test for 'lt' is equivalent with 'lt'.
+BoolTest::mask BoolTest::merge(BoolTest other) const {
+  const mask res[illegal+1][illegal+1] = {
+    // eq,      gt,      of,      lt,      ne,      le,      nof,     ge,      never,   illegal
+      {eq,      never,   illegal, never,   never,   eq,      illegal, eq,      never,   illegal},  // eq
+      {never,   gt,      illegal, never,   gt,      never,   illegal, gt,      never,   illegal},  // gt
+      {illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal, never,   illegal},  // of
+      {never,   never,   illegal, lt,      lt,      lt,      illegal, never,   never,   illegal},  // lt
+      {never,   gt,      illegal, lt,      ne,      lt,      illegal, gt,      never,   illegal},  // ne
+      {eq,      never,   illegal, lt,      lt,      le,      illegal, eq,      never,   illegal},  // le
+      {illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal, never,   illegal},  // nof
+      {eq,      gt,      illegal, never,   gt,      eq,      illegal, ge,      never,   illegal},  // ge
+      {never,   never,   never,   never,   never,   never,   never,   never,   never,   illegal},  // never
+      {illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal}}; // illegal
+  return res[_test][other._test];
 }
 
 //=============================================================================

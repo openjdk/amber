@@ -45,7 +45,7 @@ $(eval $(call SetupBuildLauncher, java, \
 ))
 
 $(SUPPORT_OUTPUTDIR)/modules_cmds/java.base/java$(EXE_SUFFIX): $(BUILD_LAUNCHER_java)
-	$(MKDIR) -p $(@D)
+	$(call MakeTargetDir)
 	$(RM) $@
 	$(CP) $(SUPPORT_OUTPUTDIR)/native/$(MODULE)/java_objs/java$(EXE_SUFFIX) $@
 
@@ -84,7 +84,7 @@ endif
 
 ################################################################################
 
-ifneq ($(findstring $(OPENJDK_TARGET_OS), macosx solaris aix), )
+ifneq ($(findstring $(OPENJDK_TARGET_OS), macosx solaris aix linux), )
   $(eval $(call SetupJdkExecutable, BUILD_JSPAWNHELPER, \
       NAME := jspawnhelper, \
       SRC := $(TOPDIR)/src/$(MODULE)/unix/native/jspawnhelper, \

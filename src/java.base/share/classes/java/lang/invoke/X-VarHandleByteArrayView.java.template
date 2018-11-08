@@ -197,10 +197,17 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static boolean compareAndSet(ArrayHandle handle, Object oba, int index, $type$ expected, $type$ value) {
             byte[] ba = (byte[]) oba;
+#if[Object]
+            return UNSAFE.compareAndSetReference(
+                    ba,
+                    address(ba, index(ba, index)),
+                    convEndian(handle.be, expected), convEndian(handle.be, value));
+#else[Object]
             return UNSAFE.compareAndSet$RawType$(
                     ba,
                     address(ba, index(ba, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
+#end[Object]
         }
 
         @ForceInline
@@ -272,11 +279,19 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndSet(ArrayHandle handle, Object oba, int index, $type$ value) {
             byte[] ba = (byte[]) oba;
+#if[Object]
+            return convEndian(handle.be,
+                              UNSAFE.getAndSetReference(
+                                      ba,
+                                      address(ba, index(ba, index)),
+                                      convEndian(handle.be, value)));
+#else[Object]
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$(
                                       ba,
                                       address(ba, index(ba, index)),
                                       convEndian(handle.be, value)));
+#end[Object]
         }
 
         @ForceInline
@@ -548,13 +563,13 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
 #if[floatingPoint]
             $rawType$ rawValue = UNSAFE.get$RawType$Unaligned(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     handle.be);
             return $Type$.$rawType$BitsTo$Type$(rawValue);
 #else[floatingPoint]
             return UNSAFE.get$Type$Unaligned(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) index(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     handle.be);
 #end[floatingPoint]
@@ -565,13 +580,13 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
 #if[floatingPoint]
             UNSAFE.put$RawType$Unaligned(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) indexRO(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     $Type$.$type$ToRaw$RawType$Bits(value),
                     handle.be);
 #else[floatingPoint]
             UNSAFE.put$Type$Unaligned(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     ((long) indexRO(bb, index)) + UNSAFE.getLong(bb, BUFFER_ADDRESS),
                     value,
                     handle.be);
@@ -583,7 +598,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Volatile(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, index(bb, index))));
         }
 
@@ -591,7 +606,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static void setVolatile(ByteBufferHandle handle, Object obb, int index, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Volatile(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, value));
         }
@@ -601,7 +616,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Acquire(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, index(bb, index))));
         }
 
@@ -609,7 +624,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static void setRelease(ByteBufferHandle handle, Object obb, int index, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Release(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, value));
         }
@@ -619,7 +634,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.get$RawType$Opaque(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, index(bb, index))));
         }
 
@@ -627,7 +642,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static void setOpaque(ByteBufferHandle handle, Object obb, int index, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             UNSAFE.put$RawType$Opaque(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, value));
         }
@@ -636,10 +651,17 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static boolean compareAndSet(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
-            return UNSAFE.compareAndSet$RawType$(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+#if[Object]
+            return UNSAFE.compareAndSetReference(
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
+#else[Object]
+            return UNSAFE.compareAndSet$RawType$(
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
+                    address(bb, indexRO(bb, index)),
+                    convEndian(handle.be, expected), convEndian(handle.be, value));
+#end[Object]
         }
 
         @ForceInline
@@ -647,7 +669,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, expected), convEndian(handle.be, value)));
         }
@@ -657,7 +679,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$Acquire(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, expected), convEndian(handle.be, value)));
         }
@@ -667,7 +689,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.compareAndExchange$RawType$Release(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, expected), convEndian(handle.be, value)));
         }
@@ -676,7 +698,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static boolean weakCompareAndSetPlain(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Plain(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
         }
@@ -685,7 +707,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static boolean weakCompareAndSet(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
         }
@@ -694,7 +716,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static boolean weakCompareAndSetAcquire(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Acquire(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
         }
@@ -703,7 +725,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         static boolean weakCompareAndSetRelease(ByteBufferHandle handle, Object obb, int index, $type$ expected, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return UNSAFE.weakCompareAndSet$RawType$Release(
-                    UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                    UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                     address(bb, indexRO(bb, index)),
                     convEndian(handle.be, expected), convEndian(handle.be, value));
         }
@@ -711,11 +733,19 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndSet(ByteBufferHandle handle, Object obb, int index, $type$ value) {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
+#if[Object]
             return convEndian(handle.be,
-                              UNSAFE.getAndSet$RawType$(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                              UNSAFE.getAndSetReference(
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, value)));
+#else[Object]
+            return convEndian(handle.be,
+                              UNSAFE.getAndSet$RawType$(
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
+                                      address(bb, indexRO(bb, index)),
+                                      convEndian(handle.be, value)));
+#end[Object]
         }
 
         @ForceInline
@@ -723,7 +753,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$Acquire(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, value)));
         }
@@ -733,7 +763,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             return convEndian(handle.be,
                               UNSAFE.getAndSet$RawType$Release(
-                                      UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                                      UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                                       address(bb, indexRO(bb, index)),
                                       convEndian(handle.be, value)));
         }
@@ -745,7 +775,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         delta);
             } else {
@@ -758,7 +788,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$Acquire(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         delta);
             } else {
@@ -771,7 +801,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndAdd$RawType$Release(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         delta);
             } else {
@@ -782,7 +812,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndAddConvEndianWithCAS(ByteBuffer bb, int index, $type$ delta) {
             $type$ nativeExpectedValue, expectedValue;
-            Object base = UNSAFE.getObject(bb, BYTE_BUFFER_HB);
+            Object base = UNSAFE.getReference(bb, BYTE_BUFFER_HB);
             long offset = address(bb, indexRO(bb, index));
             do {
                 nativeExpectedValue = UNSAFE.get$RawType$Volatile(base, offset);
@@ -799,7 +829,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -812,7 +842,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$Release(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -825,7 +855,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseOr$RawType$Acquire(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -836,7 +866,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndBitwiseOrConvEndianWithCAS(ByteBuffer bb, int index, $type$ value) {
             $type$ nativeExpectedValue, expectedValue;
-            Object base = UNSAFE.getObject(bb, BYTE_BUFFER_HB);
+            Object base = UNSAFE.getReference(bb, BYTE_BUFFER_HB);
             long offset = address(bb, indexRO(bb, index));
             do {
                 nativeExpectedValue = UNSAFE.get$RawType$Volatile(base, offset);
@@ -851,7 +881,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -864,7 +894,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$Release(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -877,7 +907,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseAnd$RawType$Acquire(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -888,7 +918,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndBitwiseAndConvEndianWithCAS(ByteBuffer bb, int index, $type$ value) {
             $type$ nativeExpectedValue, expectedValue;
-            Object base = UNSAFE.getObject(bb, BYTE_BUFFER_HB);
+            Object base = UNSAFE.getReference(bb, BYTE_BUFFER_HB);
             long offset = address(bb, indexRO(bb, index));
             do {
                 nativeExpectedValue = UNSAFE.get$RawType$Volatile(base, offset);
@@ -904,7 +934,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -917,7 +947,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$Release(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -930,7 +960,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
             ByteBuffer bb = (ByteBuffer) Objects.requireNonNull(obb);
             if (handle.be == BE) {
                 return UNSAFE.getAndBitwiseXor$RawType$Acquire(
-                        UNSAFE.getObject(bb, BYTE_BUFFER_HB),
+                        UNSAFE.getReference(bb, BYTE_BUFFER_HB),
                         address(bb, indexRO(bb, index)),
                         value);
             } else {
@@ -941,7 +971,7 @@ final class VarHandleByteArrayAs$Type$s extends VarHandleByteArrayBase {
         @ForceInline
         static $type$ getAndBitwiseXorConvEndianWithCAS(ByteBuffer bb, int index, $type$ value) {
             $type$ nativeExpectedValue, expectedValue;
-            Object base = UNSAFE.getObject(bb, BYTE_BUFFER_HB);
+            Object base = UNSAFE.getReference(bb, BYTE_BUFFER_HB);
             long offset = address(bb, indexRO(bb, index));
             do {
                 nativeExpectedValue = UNSAFE.get$RawType$Volatile(base, offset);
