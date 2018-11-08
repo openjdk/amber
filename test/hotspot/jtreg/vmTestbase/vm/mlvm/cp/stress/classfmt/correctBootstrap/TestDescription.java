@@ -49,6 +49,7 @@
  * @comment build test class and indify classes
  * @build vm.mlvm.share.ClassfileGeneratorTest
  * @run driver vm.mlvm.share.IndifiedClassesBuilder
+ * @ignore 8194951: some mlvm tests fail w/ ASMv7
  *
  * @run main/othervm
  *      vm.mlvm.share.ClassfileGeneratorTest

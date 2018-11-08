@@ -51,5 +51,6 @@
  * @run driver vm.mlvm.share.IndifiedClassesBuilder
  *
  * @run main/othervm vm.mlvm.share.ClassfileGeneratorTest -generator vm.mlvm.cp.share.GenCPFullOfMT
+ * @ignore 8194951: some mlvm tests fail w/ ASMv7
  */
 
