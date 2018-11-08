@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.ObjectStreamException;
 import java.io.ObjectStreamField;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectInputStream.GetField;
 import java.io.ObjectOutputStream;
@@ -45,8 +46,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jdk.internal.misc.JavaNetInetAddressAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetInetAddressAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.security.action.*;
 import sun.net.InetAddressCachePolicy;
 import sun.net.util.IPAddressUtil;
@@ -1727,10 +1728,13 @@ class InetAddress implements java.io.Serializable {
         }
         GetField gf = s.readFields();
         String host = (String)gf.get("hostName", null);
-        int address= gf.get("address", 0);
-        int family= gf.get("family", 0);
+        int address = gf.get("address", 0);
+        int family = gf.get("family", 0);
+        if (family != IPv4 && family != IPv6) {
+            throw new InvalidObjectException("invalid address family type: " + family);
+        }
         InetAddressHolder h = new InetAddressHolder(host, address, family);
-        UNSAFE.putObject(this, FIELDS_OFFSET, h);
+        UNSAFE.putReference(this, FIELDS_OFFSET, h);
     }
 
     /* needed because the serializable fields no longer exist */
