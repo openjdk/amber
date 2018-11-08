@@ -201,10 +201,15 @@ var getJibProfiles = function (input) {
     data.configuration_make_arg = "CONF_NAME=";
 
     // Exclude list to use when Jib creates a source bundle
-    data.src_bundle_excludes = "./build .build webrev* */webrev* */*/webrev* */*/*/webrev* .hg */.hg */*/.hg */*/*/.hg";
+    data.src_bundle_excludes = [
+        "build", "{,**/}webrev*", "{,**/}.hg", "{,**/}JTwork", "{,**/}JTreport",
+        "{,**/}.git"
+    ];
     // Include list to use when creating a minimal jib source bundle which
     // contains just the jib configuration files.
-    data.conf_bundle_includes = "*/conf/jib-profiles.* make/autoconf/version-numbers"
+    data.conf_bundle_includes = [
+        "make/autoconf/version-numbers",
+    ];
 
     // Define some common values
     var common = getJibProfilesCommon(input, data);
@@ -233,8 +238,7 @@ var getJibProfilesCommon = function (input, data) {
     common.main_profile_names = [
         "linux-x64", "linux-x86", "macosx-x64", "solaris-x64",
         "solaris-sparcv9", "windows-x64", "windows-x86",
-        "linux-aarch64", "linux-arm32", "linux-arm64", "linux-arm-vfp-hflt",
-        "linux-arm-vfp-hflt-dyn"
+        "linux-aarch64", "linux-arm32"
     ];
 
     // These are the base setttings for all the main build profiles.
@@ -440,20 +444,7 @@ var getJibProfilesProfiles = function (input, common, data) {
             dependencies: ["devkit", "build_devkit", "cups"],
             configure_args: [
                 "--openjdk-target=aarch64-linux-gnu", "--with-freetype=bundled",
-                "--disable-warnings-as-errors", "--with-cpu-port=aarch64",
-            ],
-        },
-
-        "linux-arm64": {
-            target_os: "linux",
-            target_cpu: "aarch64",
-            build_cpu: "x64",
-            dependencies: ["devkit", "build_devkit", "cups", "headless_stubs"],
-            configure_args: [
-                "--with-cpu-port=arm64",
-                "--with-jvm-variants=server",
-                "--openjdk-target=aarch64-linux-gnu",
-                "--enable-headless-only"
+                "--disable-warnings-as-errors"
             ],
         },
 
@@ -467,30 +458,7 @@ var getJibProfilesProfiles = function (input, common, data) {
                 "--with-abi-profile=arm-vfp-hflt", "--disable-warnings-as-errors"
             ],
         },
-
-        "linux-arm-vfp-hflt": {
-            target_os: "linux",
-            target_cpu: "arm",
-            build_cpu: "x64",
-            dependencies: ["devkit", "build_devkit", "cups"],
-            configure_args: [
-                "--with-jvm-variants=minimal1,client",
-                "--with-x=" + input.get("devkit", "install_path") + "/arm-linux-gnueabihf/libc/usr/X11R6-PI",
-                "--with-fontconfig=" + input.get("devkit", "install_path") + "/arm-linux-gnueabihf/libc/usr/X11R6-PI",
-                "--openjdk-target=arm-linux-gnueabihf",
-                "--with-abi-profile=arm-vfp-hflt",
-                "--with-freetype=bundled"
-            ],
-        },
-
-        // Special version of the SE profile adjusted to be testable on arm64 hardware.
-        "linux-arm-vfp-hflt-dyn": {
-            configure_args: "--with-stdc++lib=dynamic"
-        }
     };
-    // Let linux-arm-vfp-hflt-dyn inherit everything from linux-arm-vfp-hflt
-    profiles["linux-arm-vfp-hflt-dyn"] = concatObjects(
-        profiles["linux-arm-vfp-hflt-dyn"], profiles["linux-arm-vfp-hflt"]);
 
     // Add the base settings to all the main profiles
     common.main_profile_names.forEach(function (name) {
@@ -522,7 +490,7 @@ var getJibProfilesProfiles = function (input, common, data) {
         .forEach(function (name) {
             var maketestName = name + "-testmake";
             profiles[maketestName] = concatObjects(profiles[name], testmakeBase);
-            profiles[maketestName].default_make_targets = [ "test-make", "test-compile-commands" ];
+            profiles[maketestName].default_make_targets = [ "test-make" ];
         });
 
     // Profiles for building the zero jvm variant. These are used for verification.
@@ -557,6 +525,27 @@ var getJibProfilesProfiles = function (input, common, data) {
         var debugName = name + common.debug_suffix;
         profiles[name] = concatObjects(common.main_profile_base, profiles[name]);
         profiles[debugName] = concatObjects(profiles[name], common.debug_profile_base);
+    });
+
+    // Define a profile with precompiled headers disabled. This is just used for
+    // verfication of this build configuration.
+    var noPchProfiles = {
+        "linux-x64-debug-nopch": {
+            target_os: "linux",
+            target_cpu: "x64",
+            dependencies: ["devkit"],
+            configure_args: concat(common.configure_args_64bit,
+                "--with-zlib=system", "--disable-precompiled-headers"),
+        },
+    };
+    profiles = concatObjects(profiles, noPchProfiles);
+    // Add base settings to noPch profiles
+    Object.keys(noPchProfiles).forEach(function (name) {
+        profiles[name] = concatObjects(common.main_profile_base, profiles[name]);
+        profiles[name] = concatObjects(common.debug_profile_base, profiles[name]);
+        // Override default make target with hotspot as that's the only part of
+        // the build using precompiled headers.
+        profiles[name].default_make_targets = ["hotspot"];
     });
 
     // Bootcycle profiles runs the build with itself as the boot jdk. This can
@@ -617,15 +606,6 @@ var getJibProfilesProfiles = function (input, common, data) {
         },
        "linux-arm32": {
             platform: "linux-arm32",
-        },
-       "linux-arm64": {
-            platform: "linux-arm64-vfp-hflt",
-        },
-        "linux-arm-vfp-hflt": {
-            platform: "linux-arm32-vfp-hflt",
-        },
-        "linux-arm-vfp-hflt-dyn": {
-            platform: "linux-arm32-vfp-hflt-dyn",
         }
     }
     // Generate common artifacts for all main profiles
@@ -755,16 +735,16 @@ var getJibProfilesProfiles = function (input, common, data) {
         "run-test-prebuilt": {
             target_os: input.build_os,
             target_cpu: input.build_cpu,
-            src: "src.conf",
-            dependencies: [ "jtreg", "gnumake", "boot_jdk", "jib", testedProfile + ".jdk",
-                testedProfile + ".test", "src.full"
+            dependencies: [
+                "jtreg", "gnumake", "boot_jdk", "devkit", "jib", testedProfile + ".jdk",
+                testedProfile + ".test"
             ],
-            work_dir: input.get("src.full", "install_path") + "/test",
+            src: "src.conf",
+            make_args: [ "run-test-prebuilt", "LOG_CMDLINES=true", "JTREG_VERBOSE=fail,error,time" ],
             environment: {
-                "JT_JAVA": common.boot_jdk_home,
-                "PRODUCT_HOME": input.get(testedProfile + ".jdk", "home_path"),
-                "TEST_IMAGE_DIR": input.get(testedProfile + ".test", "home_path"),
-                "TEST_OUTPUT_DIR": input.src_top_dir
+                "BOOT_JDK": common.boot_jdk_home,
+                "JDK_IMAGE_DIR": input.get(testedProfile + ".jdk", "home_path"),
+                "TEST_IMAGE_DIR": input.get(testedProfile + ".test", "home_path")
             },
             labels: "test"
         }
@@ -790,7 +770,6 @@ var getJibProfilesProfiles = function (input, common, data) {
     // This gives us a guaranteed working version of lldb for the jtreg failure handler.
     if (input.build_os == "macosx") {
         macosxRunTestExtra = {
-            dependencies: [ "devkit" ],
             environment_path: input.get("devkit", "install_path")
                 + "/Xcode.app/Contents/Developer/usr/bin"
         };
@@ -802,11 +781,32 @@ var getJibProfilesProfiles = function (input, common, data) {
         windowsRunTestPrebuiltExtra = {
             dependencies: [ testedProfile + ".jdk_symbols" ],
             environment: {
-                "PRODUCT_SYMBOLS_HOME": input.get(testedProfile + ".jdk_symbols", "home_path"),
+                "SYMBOLS_IMAGE_DIR": input.get(testedProfile + ".jdk_symbols", "home_path"),
             }
         };
         profiles["run-test-prebuilt"] = concatObjects(profiles["run-test-prebuilt"],
             windowsRunTestPrebuiltExtra);
+    }
+
+    // The profile run-test-prebuilt defines src.conf as the src bundle. When
+    // running in Mach 5, this reduces the time it takes to populate the
+    // considerably. But with just src.conf, we cannot actually run any tests,
+    // so if running from a workspace with just src.conf in it, we need to also
+    // get src.full as a dependency, and define the work_dir (where make gets
+    // run) to be in the src.full install path. By running in the install path,
+    // the same cached installation of the full src can be reused for multiple
+    // test tasks. Care must however be taken not to polute that work dir by
+    // setting the appropriate make variables to control output directories.
+    //
+    // Use the existance of the top level README as indication of if this is
+    // the full source or just src.conf.
+    if (!new java.io.File(__DIR__, "../../README").exists()) {
+        var runTestPrebuiltSrcFullExtra = {
+            dependencies: "src.full",
+            work_dir: input.get("src.full", "install_path"),
+        }
+        profiles["run-test-prebuilt"] = concatObjects(profiles["run-test-prebuilt"],
+            runTestPrebuiltSrcFullExtra);
     }
 
     // Generate the missing platform attributes
@@ -825,21 +825,13 @@ var getJibProfilesProfiles = function (input, common, data) {
 var getJibProfilesDependencies = function (input, common) {
 
     var devkit_platform_revisions = {
-        linux_x64: "gcc7.3.0-OEL6.4+1.0",
+        linux_x64: "gcc7.3.0-OEL6.4+1.1",
         macosx_x64: "Xcode9.4-MacOSX10.13+1.0",
         solaris_x64: "SS12u4-Solaris11u1+1.0",
         solaris_sparcv9: "SS12u6-Solaris11u3+1.0",
         windows_x64: "VS2017-15.5.5+1.0",
-        linux_aarch64: (input.profile != null && input.profile.indexOf("arm64") >= 0
-                    ? "gcc-linaro-aarch64-linux-gnu-4.8-2013.11_linux+1.0"
-                    : "gcc7.3.0-Fedora27+1.0"),
-        linux_arm: (input.profile != null && input.profile.indexOf("hflt") >= 0
-                    ? "gcc-linaro-arm-linux-gnueabihf-raspbian-2012.09-20120921_linux+1.0"
-                    : (input.profile.indexOf("arm32") >= 0
-                       ? "gcc7.3.0-Fedora27+1.0"
-                       : "arm-linaro-4.7+1.0"
-                       )
-                    )
+        linux_aarch64: "gcc7.3.0-Fedora27+1.0",
+        linux_arm: "gcc7.3.0-Fedora27+1.0"
     };
 
     var devkit_platform = (input.target_cpu == "x86"
@@ -870,7 +862,10 @@ var getJibProfilesDependencies = function (input, common) {
             organization: common.organization,
             ext: "tar.gz",
             module: "devkit-" + devkit_platform,
-            revision: devkit_platform_revisions[devkit_platform]
+            revision: devkit_platform_revisions[devkit_platform],
+            environment: {
+                "DEVKIT_HOME": input.get("devkit", "home_path"),
+            }
         },
 
         build_devkit: {
@@ -970,14 +965,6 @@ var getJibProfilesDependencies = function (input, common) {
             environment_name: "GRAALUNIT_LIB"
         },
     };
-
-    // Need to add a value for the Visual Studio tools variable to make
-    // jaot be able to pick up the Visual Studio linker in testing.
-    if (input.target_os == "windows") {
-        dependencies.devkit.environment = {
-            VS120COMNTOOLS: input.get("devkit", "install_path") + "/Common7/Tools"
-        };
-    }
 
     return dependencies;
 };
