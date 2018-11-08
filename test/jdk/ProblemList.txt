@@ -508,6 +508,8 @@ java/beans/XMLEncoder/Test6570354.java 8015593 macosx-all
 # jdk_lang
 
 java/lang/StringCoding/CheckEncodings.sh                        7008363 generic-all
+java/lang/ProcessBuilder/PipelineTest.java                      8211844 aix-ppc64
+java/lang/ProcessHandle/InfoTest.java                           8211847 aix-ppc64
 
 ############################################################################
 
@@ -556,6 +558,8 @@ java/net/MulticastSocket/SetGetNetworkInterfaceTest.java        8207404 aix-all
 
 java/net/DatagramSocket/SendDatagramToBadAddress.java           7143960 macosx-all
 
+java/net/ServerSocket/AcceptInheritHandle.java                  8211854 aix-ppc64
+
 ############################################################################
 
 # jdk_nio
@@ -564,12 +568,16 @@ java/nio/Buffer/EqualsCompareTest.java                          8193917 solaris-
 
 java/nio/channels/DatagramChannel/ChangingAddress.java          7141822 macosx-all
 
+java/nio/channels/AsynchronousSocketChannel/StressLoopback.java 8211851 aix-ppc64
+
 java/nio/channels/Selector/Wakeup.java                          6963118 windows-all
 
 java/nio/file/WatchService/Basic.java                           7158947 solaris-all Solaris 11
 java/nio/file/WatchService/MayFlies.java                        7158947 solaris-all Solaris 11
 java/nio/file/WatchService/LotsOfCancels.java                   8188039 solaris-all Solaris 11
 java/nio/file/WatchService/LotsOfEvents.java                    7158947 solaris-all Solaris 11
+
+sun/nio/cs/OLD/TestIBMDB.java                                   8211841 aix-ppc64
 
 ############################################################################
 
@@ -750,7 +758,6 @@ javax/swing/text/CSSBorder/6796710/bug6796710.java 8196099 windows-all
 javax/swing/text/DefaultCaret/HidingSelection/HidingSelectionTest.java 8194048 windows-all
 javax/swing/text/JTextComponent/5074573/bug5074573.java 8196100 windows-all
 javax/swing/JFileChooser/6798062/bug6798062.java 8146446 windows-all
-javax/swing/plaf/basic/BasicGraphicsUtils/8132119/bug8132119.java 8196434 linux-all,solaris-all
 javax/swing/JComboBox/8032878/bug8032878.java 8196439 linux-all
 javax/swing/JComboBox/8182031/ComboPopupTest.java 8196465 linux-all,macosx-all
 javax/swing/JFileChooser/6738668/bug6738668.java 8194946 generic-all
@@ -800,7 +807,6 @@ javax/swing/UIDefaults/8149879/InternalResourceBundle.java 8199054 windows-all
 javax/swing/text/html/parser/Parser/8078268/bug8078268.java 8199092 generic-all
 javax/swing/PopupFactory/8048506/bug8048506.java 8202660 windows-all
 javax/swing/JTextArea/TextViewOOM/TextViewOOM.java 8167355 generic-all
-javax/swing/JEditorPane/8195095/ImageViewTest.java 8202656 windows-all
 javax/swing/text/Utilities/8142966/SwingFontMetricsTest.java 8199529 windows-all
 javax/swing/JPopupMenu/8075063/ContextMenuScrollTest.java 202880 linux-all
 javax/swing/dnd/8139050/NativeErrorsInTableDnD.java 8202765  macosx-all,linux-all
@@ -827,8 +833,6 @@ tools/pack200/CommandLineTests.java                             8059906 generic-
 
 # jdk_jdi
 
-com/sun/jdi/BasicJDWPConnectionTest.java                        8195703 generic-all
-
 com/sun/jdi/RepStep.java                                        8043571 generic-all
 
 com/sun/jdi/sde/SourceDebugExtensionTest.java                   8158066 windows-all
@@ -852,7 +856,7 @@ com/sun/jdi/NashornPopFrameTest.java                            8187143 generic-
 # svc_tools
 
 sun/tools/jstat/jstatClassloadOutput1.sh                        8173942 generic-all
-sun/tools/jhsdb/BasicLauncherTest.java                          8193639 solaris-all
+sun/tools/jhsdb/BasicLauncherTest.java                          8193639,8211767 solaris-all,linux-ppc64,linux-ppc64le
 sun/tools/jhsdb/HeapDumpTest.java                               8193639 solaris-all
 
 
@@ -864,17 +868,9 @@ com/sun/jndi/ldap/DeadSSLLdapTimeoutTest.java                   8169942 linux-i5
 
 com/sun/jndi/ldap/LdapTimeoutTest.java                          8151678 linux-all
 
+com/sun/jndi/dns/ConfigTests/PortUnreachable.java               7164518 macosx-all
+
 javax/rmi/ssl/SSLSocketParametersTest.sh                        8162906 generic-all
-
-javax/naming/module/RunBasic.java                               8211850 generic-all
-
-############################################################################
-
-###########################################################################
-#
-# Java EE Module Removal
-#
-com/sun/jdi/RedefineCrossEvent.java                             8194308    generic-all  Java EE Module Removal
 
 ############################################################################
 

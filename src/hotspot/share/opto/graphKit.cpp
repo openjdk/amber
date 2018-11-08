@@ -1566,7 +1566,7 @@ Node* GraphKit::access_store_at(Node* obj,
 
   C2AccessValuePtr addr(adr, adr_type);
   C2AccessValue value(val, val_type);
-  C2Access access(this, decorators | C2_WRITE_ACCESS, bt, obj, addr);
+  C2ParseAccess access(this, decorators | C2_WRITE_ACCESS, bt, obj, addr);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::store_at(access, value);
   } else {
@@ -1585,7 +1585,7 @@ Node* GraphKit::access_load_at(Node* obj,   // containing obj
   }
 
   C2AccessValuePtr addr(adr, adr_type);
-  C2Access access(this, decorators | C2_READ_ACCESS, bt, obj, addr);
+  C2ParseAccess access(this, decorators | C2_READ_ACCESS, bt, obj, addr);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::load_at(access, val_type);
   } else {
@@ -1602,7 +1602,7 @@ Node* GraphKit::access_load(Node* adr,   // actual adress to load val at
   }
 
   C2AccessValuePtr addr(adr, NULL);
-  C2Access access(this, decorators | C2_READ_ACCESS, bt, NULL, addr);
+  C2ParseAccess access(this, decorators | C2_READ_ACCESS, bt, NULL, addr);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::load_at(access, val_type);
   } else {
@@ -1620,7 +1620,7 @@ Node* GraphKit::access_atomic_cmpxchg_val_at(Node* obj,
                                              BasicType bt,
                                              DecoratorSet decorators) {
   C2AccessValuePtr addr(adr, adr_type);
-  C2AtomicAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
+  C2AtomicParseAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
                         bt, obj, addr, alias_idx);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::atomic_cmpxchg_val_at(access, expected_val, new_val, value_type);
@@ -1639,7 +1639,7 @@ Node* GraphKit::access_atomic_cmpxchg_bool_at(Node* obj,
                                               BasicType bt,
                                               DecoratorSet decorators) {
   C2AccessValuePtr addr(adr, adr_type);
-  C2AtomicAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
+  C2AtomicParseAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
                         bt, obj, addr, alias_idx);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::atomic_cmpxchg_bool_at(access, expected_val, new_val, value_type);
@@ -1657,7 +1657,7 @@ Node* GraphKit::access_atomic_xchg_at(Node* obj,
                                       BasicType bt,
                                       DecoratorSet decorators) {
   C2AccessValuePtr addr(adr, adr_type);
-  C2AtomicAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
+  C2AtomicParseAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS,
                         bt, obj, addr, alias_idx);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::atomic_xchg_at(access, new_val, value_type);
@@ -1675,7 +1675,7 @@ Node* GraphKit::access_atomic_add_at(Node* obj,
                                      BasicType bt,
                                      DecoratorSet decorators) {
   C2AccessValuePtr addr(adr, adr_type);
-  C2AtomicAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS, bt, obj, addr, alias_idx);
+  C2AtomicParseAccess access(this, decorators | C2_READ_ACCESS | C2_WRITE_ACCESS, bt, obj, addr, alias_idx);
   if (access.is_raw()) {
     return _barrier_set->BarrierSetC2::atomic_add_at(access, new_val, value_type);
   } else {
@@ -1804,12 +1804,13 @@ Node* GraphKit::set_results_for_java_call(CallJavaNode* call, bool separate_io_p
 // A better answer would be to separate out card marks from other memory.
 // For now, return the input memory state, so that it can be reused
 // after the call, if this call has restricted memory effects.
-Node* GraphKit::set_predefined_input_for_runtime_call(SafePointNode* call) {
+Node* GraphKit::set_predefined_input_for_runtime_call(SafePointNode* call, Node* narrow_mem) {
   // Set fixed predefined input arguments
   Node* memory = reset_memory();
+  Node* m = narrow_mem == NULL ? memory : narrow_mem;
   call->init_req( TypeFunc::Control,   control()  );
   call->init_req( TypeFunc::I_O,       top()      ); // does no i/o
-  call->init_req( TypeFunc::Memory,    memory     ); // may gc ptrs
+  call->init_req( TypeFunc::Memory,    m          ); // may gc ptrs
   call->init_req( TypeFunc::FramePtr,  frameptr() );
   call->init_req( TypeFunc::ReturnAdr, top()      );
   return memory;
@@ -2115,8 +2116,17 @@ void GraphKit::uncommon_trap(int trap_request,
 // We use this to determine if an object is so "fresh" that
 // it does not require card marks.
 Node* GraphKit::just_allocated_object(Node* current_control) {
-  if (C->recent_alloc_ctl() == current_control)
-    return C->recent_alloc_obj();
+  Node* ctrl = current_control;
+  // Object::<init> is invoked after allocation, most of invoke nodes
+  // will be reduced, but a region node is kept in parse time, we check
+  // the pattern and skip the region node if it degraded to a copy.
+  if (ctrl != NULL && ctrl->is_Region() && ctrl->req() == 2 &&
+      ctrl->as_Region()->is_copy()) {
+    ctrl = ctrl->as_Region()->is_copy();
+  }
+  if (C->recent_alloc_ctl() == ctrl) {
+   return C->recent_alloc_obj();
+  }
   return NULL;
 }
 
@@ -2465,9 +2475,7 @@ Node* GraphKit::make_runtime_call(int flags,
   } else {
     assert(!wide_out, "narrow in => narrow out");
     Node* narrow_mem = memory(adr_type);
-    prev_mem = reset_memory();
-    map()->set_memory(narrow_mem);
-    set_predefined_input_for_runtime_call(call);
+    prev_mem = set_predefined_input_for_runtime_call(call, narrow_mem);
   }
 
   // Hook each parm in order.  Stop looking at the first NULL.
@@ -3727,6 +3735,10 @@ AllocateNode* AllocateNode::Ideal_allocation(Node* ptr, PhaseTransform* phase) {
   if (ptr == NULL) {     // reduce dumb test in callers
     return NULL;
   }
+
+  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+  ptr = bs->step_over_gc_barrier(ptr);
+
   if (ptr->is_CheckCastPP()) { // strip only one raw-to-oop cast
     ptr = ptr->in(1);
     if (ptr == NULL) return NULL;
