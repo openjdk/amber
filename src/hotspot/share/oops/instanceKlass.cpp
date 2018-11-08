@@ -165,25 +165,35 @@ bool InstanceKlass::has_nest_member(InstanceKlass* k, TRAPS) const {
                                 k->external_name(), this->external_name());
   }
 
-  // Check names first and if they match then check actual klass. This avoids
-  // resolving anything unnecessarily.
+  // Check for a resolved cp entry , else fall back to a name check.
+  // We don't want to resolve any class other than the one being checked.
   for (int i = 0; i < _nest_members->length(); i++) {
     int cp_index = _nest_members->at(i);
-    Symbol* name = _constants->klass_name_at(cp_index);
-    if (name == k->name()) {
-      log_trace(class, nestmates)("- Found it at nest_members[%d] => cp[%d]", i, cp_index);
-
-      // names match so check actual klass - this may trigger class loading if
-      // it doesn't match (but that should be impossible)
+    if (_constants->tag_at(cp_index).is_klass()) {
       Klass* k2 = _constants->klass_at(cp_index, CHECK_false);
       if (k2 == k) {
-        log_trace(class, nestmates)("- class is listed as a nest member");
+        log_trace(class, nestmates)("- class is listed at nest_members[%d] => cp[%d]", i, cp_index);
         return true;
-      } else {
-        // same name but different klass!
-        log_trace(class, nestmates)(" - klass comparison failed!");
-        // can't have different classes for the same name, so we're done
-        return false;
+      }
+    }
+    else {
+      Symbol* name = _constants->klass_name_at(cp_index);
+      if (name == k->name()) {
+        log_trace(class, nestmates)("- Found it at nest_members[%d] => cp[%d]", i, cp_index);
+
+        // names match so check actual klass - this may trigger class loading if
+        // it doesn't match (but that should be impossible)
+        Klass* k2 = _constants->klass_at(cp_index, CHECK_false);
+        if (k2 == k) {
+          log_trace(class, nestmates)("- class is listed as a nest member");
+          return true;
+        }
+        else {
+          // same name but different klass!
+          log_trace(class, nestmates)(" - klass comparison failed!");
+          // can't have two names the same, so we're done
+          return false;
+        }
       }
     }
   }
@@ -2736,48 +2746,6 @@ void InstanceKlass::check_prohibited_package(Symbol* class_name,
     }
   }
   return;
-}
-
-// tell if two classes have the same enclosing class (at package level)
-bool InstanceKlass::is_same_package_member(const Klass* class2, TRAPS) const {
-  if (class2 == this) return true;
-  if (!class2->is_instance_klass())  return false;
-
-  // must be in same package before we try anything else
-  if (!is_same_class_package(class2))
-    return false;
-
-  // As long as there is an outer_this.getEnclosingClass,
-  // shift the search outward.
-  const InstanceKlass* outer_this = this;
-  for (;;) {
-    // As we walk along, look for equalities between outer_this and class2.
-    // Eventually, the walks will terminate as outer_this stops
-    // at the top-level class around the original class.
-    bool ignore_inner_is_member;
-    const Klass* next = outer_this->compute_enclosing_class(&ignore_inner_is_member,
-                                                            CHECK_false);
-    if (next == NULL)  break;
-    if (next == class2)  return true;
-    outer_this = InstanceKlass::cast(next);
-  }
-
-  // Now do the same for class2.
-  const InstanceKlass* outer2 = InstanceKlass::cast(class2);
-  for (;;) {
-    bool ignore_inner_is_member;
-    Klass* next = outer2->compute_enclosing_class(&ignore_inner_is_member,
-                                                    CHECK_false);
-    if (next == NULL)  break;
-    // Might as well check the new outer against all available values.
-    if (next == this)  return true;
-    if (next == outer_this)  return true;
-    outer2 = InstanceKlass::cast(next);
-  }
-
-  // If by this point we have not found an equality between the
-  // two classes, we know they are in separate package members.
-  return false;
 }
 
 bool InstanceKlass::find_inner_classes_attr(int* ooff, int* noff, TRAPS) const {

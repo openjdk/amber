@@ -36,7 +36,6 @@
 #include "memory/allocation.inline.hpp"
 #include "memory/filemap.hpp"
 #include "memory/heapShared.inline.hpp"
-#include "memory/metaspaceShared.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
@@ -79,7 +78,6 @@ static CompactHashtable<
 
 // --------------------------------------------------------------------------
 StringTable* StringTable::_the_table = NULL;
-volatile bool StringTable::_shared_string_mapped = false;
 volatile bool StringTable::_alt_hash = false;
 
 static juint murmur_seed = 0;
@@ -798,18 +796,17 @@ oop StringTable::lookup_shared(const jchar* name, int len, unsigned int hash) {
 oop StringTable::create_archived_string(oop s, Thread* THREAD) {
   assert(DumpSharedSpaces, "this function is only used with -Xshare:dump");
 
-  if (MetaspaceShared::is_archive_object(s)) {
+  if (HeapShared::is_archived_object(s)) {
     return s;
   }
 
   oop new_s = NULL;
   typeArrayOop v = java_lang_String::value_no_keepalive(s);
-  typeArrayOop new_v =
-    (typeArrayOop)MetaspaceShared::archive_heap_object(v, THREAD);
+  typeArrayOop new_v = (typeArrayOop)HeapShared::archive_heap_object(v, THREAD);
   if (new_v == NULL) {
     return NULL;
   }
-  new_s = MetaspaceShared::archive_heap_object(s, THREAD);
+  new_s = HeapShared::archive_heap_object(s, THREAD);
   if (new_s == NULL) {
     return NULL;
   }
@@ -819,18 +816,9 @@ oop StringTable::create_archived_string(oop s, Thread* THREAD) {
   return new_s;
 }
 
-class CompactStringTableWriter: public CompactHashtableWriter {
-public:
-  CompactStringTableWriter(int num_entries, CompactHashtableStats* stats) :
-    CompactHashtableWriter(num_entries, stats) {}
-  void add(unsigned int hash, oop string) {
-    CompactHashtableWriter::add(hash, CompressedOops::encode(string));
-  }
-};
-
 struct CopyToArchive : StackObj {
-  CompactStringTableWriter* _writer;
-  CopyToArchive(CompactStringTableWriter* writer) : _writer(writer) {}
+  CompactHashtableWriter* _writer;
+  CopyToArchive(CompactHashtableWriter* writer) : _writer(writer) {}
   bool operator()(WeakHandle<vm_string_table_data>* val) {
     oop s = val->peek();
     if (s == NULL) {
@@ -838,6 +826,7 @@ struct CopyToArchive : StackObj {
     }
     unsigned int hash = java_lang_String::hash_code(s);
     if (hash == 0) {
+      // We do not archive Strings with a 0 hashcode because ......
       return true;
     }
 
@@ -849,39 +838,39 @@ struct CopyToArchive : StackObj {
 
     val->replace(new_s);
     // add to the compact table
-    _writer->add(hash, new_s);
+    _writer->add(hash, CompressedOops::encode(new_s));
     return true;
   }
 };
 
-void StringTable::copy_shared_string_table(CompactStringTableWriter* writer) {
-  assert(MetaspaceShared::is_heap_object_archiving_allowed(), "must be");
+void StringTable::copy_shared_string_table(CompactHashtableWriter* writer) {
+  assert(HeapShared::is_heap_object_archiving_allowed(), "must be");
 
   CopyToArchive copy(writer);
   StringTable::the_table()->_local_table->do_scan(Thread::current(), copy);
 }
 
 void StringTable::write_to_archive() {
-  assert(MetaspaceShared::is_heap_object_archiving_allowed(), "must be");
+  assert(HeapShared::is_heap_object_archiving_allowed(), "must be");
 
   _shared_table.reset();
-  int num_buckets = the_table()->_items_count / SharedSymbolTableBucketSize;
-  // calculation of num_buckets can result in zero buckets, we need at least one
-  CompactStringTableWriter writer(num_buckets > 1 ? num_buckets : 1,
-                                  &MetaspaceShared::stats()->string);
+  int num_buckets = CompactHashtableWriter::default_num_buckets(
+      StringTable::the_table()->_items_count);
+  CompactHashtableWriter writer(num_buckets,
+                                &MetaspaceShared::stats()->string);
 
   // Copy the interned strings into the "string space" within the java heap
   copy_shared_string_table(&writer);
   writer.dump(&_shared_table, "string");
 }
 
-void StringTable::serialize(SerializeClosure* soc) {
-  _shared_table.serialize(soc);
+void StringTable::serialize_shared_table_header(SerializeClosure* soc) {
+  _shared_table.serialize_header(soc);
 
   if (soc->writing()) {
     // Sanity. Make sure we don't use the shared table at dump time
     _shared_table.reset();
-  } else if (!_shared_string_mapped) {
+  } else if (!HeapShared::closed_archive_heap_region_mapped()) {
     _shared_table.reset();
   }
 }

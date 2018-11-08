@@ -1792,6 +1792,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return NEWCLASS;
         }
+
+        public boolean classDeclRemoved() {
+            return false;
+        }
     }
 
     /**
