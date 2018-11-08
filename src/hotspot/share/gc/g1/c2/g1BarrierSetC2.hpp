@@ -76,7 +76,7 @@ protected:
 
   // Helper for unsafe accesses, that may or may not be on the referent field.
   // Generates the guards that check whether the result of
-  // Unsafe.getObject should be recorded in an SATB log buffer.
+  // Unsafe.getReference should be recorded in an SATB log buffer.
   void insert_pre_barrier(GraphKit* kit, Node* base_oop, Node* offset, Node* pre_val, bool need_mem_bar) const;
 
   static const TypeFunc* write_ref_field_pre_entry_Type();
@@ -88,6 +88,10 @@ protected:
   virtual bool is_gc_barrier_node(Node* node) const;
   virtual void eliminate_gc_barrier(PhaseMacroExpand* macro, Node* node) const;
   virtual Node* step_over_gc_barrier(Node* c) const;
+
+#ifdef ASSERT
+  virtual void verify_gc_barriers(Compile* compile, CompilePhase phase) const;
+#endif
 };
 
 #endif // SHARE_GC_SHARED_C2_G1BARRIERSETC2_HPP

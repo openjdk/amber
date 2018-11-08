@@ -32,6 +32,7 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "logging/log.hpp"
 #include "memory/heapInspection.hpp"
+#include "memory/heapShared.hpp"
 #include "memory/metadataFactory.hpp"
 #include "memory/metaspaceClosure.hpp"
 #include "memory/metaspaceShared.hpp"
@@ -542,7 +543,7 @@ void Klass::restore_unshareable_info(ClassLoaderData* loader_data, Handle protec
   if (this->has_raw_archived_mirror()) {
     ResourceMark rm;
     log_debug(cds, mirror)("%s has raw archived mirror", external_name());
-    if (MetaspaceShared::open_archive_heap_region_mapped()) {
+    if (HeapShared::open_archive_heap_region_mapped()) {
       bool present = java_lang_Class::restore_archived_mirror(this, loader, module_handle,
                                                               protection_domain,
                                                               CHECK);
@@ -893,9 +894,18 @@ const char* Klass::class_in_module_of_loader(bool use_are, bool include_parent_l
   if (include_parent_loader &&
       !cld->is_builtin_class_loader_data()) {
     oop parent_loader = java_lang_ClassLoader::parent(class_loader());
-    ClassLoaderData *parent_cld = ClassLoaderData::class_loader_data(parent_loader);
-    assert(parent_cld != NULL, "parent's class loader data should not be null");
-    parent_loader_name_and_id = parent_cld->loader_name_and_id();
+    ClassLoaderData *parent_cld = ClassLoaderData::class_loader_data_or_null(parent_loader);
+    // The parent loader's ClassLoaderData could be null if it is
+    // a delegating class loader that has never defined a class.
+    // In this case the loader's name must be obtained via the parent loader's oop.
+    if (parent_cld == NULL) {
+      oop cl_name_and_id = java_lang_ClassLoader::nameAndId(parent_loader);
+      if (cl_name_and_id != NULL) {
+        parent_loader_name_and_id = java_lang_String::as_utf8_string(cl_name_and_id);
+      }
+    } else {
+      parent_loader_name_and_id = parent_cld->loader_name_and_id();
+    }
     parent_loader_phrase = ", parent loader ";
     len += strlen(parent_loader_phrase) + strlen(parent_loader_name_and_id);
   }

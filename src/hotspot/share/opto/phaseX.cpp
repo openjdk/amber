@@ -769,6 +769,22 @@ ConNode* PhaseTransform::zerocon(BasicType bt) {
 
 
 //=============================================================================
+Node* PhaseGVN::apply_ideal(Node* k, bool can_reshape) {
+  Node* i = BarrierSet::barrier_set()->barrier_set_c2()->ideal_node(this, k, can_reshape);
+  if (i == NULL) {
+    i = k->Ideal(this, can_reshape);
+  }
+  return i;
+}
+
+Node* PhaseGVN::apply_identity(Node* k) {
+  Node* i = BarrierSet::barrier_set()->barrier_set_c2()->identity_node(this, k);
+  if (i == k) {
+    i = k->Identity(this);
+  }
+  return i;
+}
+
 //------------------------------transform--------------------------------------
 // Return a node which computes the same function as this node, but in a
 // faster or cheaper fashion.
@@ -786,7 +802,7 @@ Node *PhaseGVN::transform_no_reclaim( Node *n ) {
   Node *k = n;
   NOT_PRODUCT( uint loop_count = 0; )
   while( 1 ) {
-    Node *i = k->Ideal(this, /*can_reshape=*/false);
+    Node *i = apply_ideal(k, /*can_reshape=*/false);
     if( !i ) break;
     assert( i->_idx >= k->_idx, "Idealize should return new nodes, use Identity to return old nodes" );
     k = i;
@@ -823,7 +839,7 @@ Node *PhaseGVN::transform_no_reclaim( Node *n ) {
   }
 
   // Now check for Identities
-  Node *i = k->Identity(this);  // Look for a nearby replacement
+  Node *i = apply_identity(k);  // Look for a nearby replacement
   if( i != k ) {                // Found? Return replacement!
     NOT_PRODUCT( set_progress(); )
     return i;
@@ -1213,7 +1229,7 @@ Node *PhaseIterGVN::transform_old(Node* n) {
   DEBUG_ONLY(dead_loop_check(k);)
   DEBUG_ONLY(bool is_new = (k->outcnt() == 0);)
   C->remove_modified_node(k);
-  Node* i = k->Ideal(this, /*can_reshape=*/true);
+  Node* i = apply_ideal(k, /*can_reshape=*/true);
   assert(i != k || is_new || i->outcnt() > 0, "don't return dead nodes");
 #ifndef PRODUCT
   verify_step(k);
@@ -1255,7 +1271,7 @@ Node *PhaseIterGVN::transform_old(Node* n) {
     // Try idealizing again
     DEBUG_ONLY(is_new = (k->outcnt() == 0);)
     C->remove_modified_node(k);
-    i = k->Ideal(this, /*can_reshape=*/true);
+    i = apply_ideal(k, /*can_reshape=*/true);
     assert(i != k || is_new || (i->outcnt() > 0), "don't return dead nodes");
 #ifndef PRODUCT
     verify_step(k);
@@ -1297,7 +1313,7 @@ Node *PhaseIterGVN::transform_old(Node* n) {
   }
 
   // Now check for Identities
-  i = k->Identity(this);      // Look for a nearby replacement
+  i = apply_identity(k);      // Look for a nearby replacement
   if (i != k) {                // Found? Return replacement!
     NOT_PRODUCT(set_progress();)
     add_users_to_worklist(k);
@@ -1375,7 +1391,7 @@ void PhaseIterGVN::remove_globally_dead_node( Node *dead ) {
                 assert(!(i < imax), "sanity");
               }
             } else {
-              BarrierSet::barrier_set()->barrier_set_c2()->enqueue_useful_gc_barrier(_worklist, in);
+              BarrierSet::barrier_set()->barrier_set_c2()->enqueue_useful_gc_barrier(this, in);
             }
             if (ReduceFieldZeroing && dead->is_Load() && i == MemNode::Memory &&
                 in->is_Proj() && in->in(0) != NULL && in->in(0)->is_Initialize()) {
@@ -2089,6 +2105,8 @@ void Node::set_req_X( uint i, Node *n, PhaseIterGVN *igvn ) {
     default:
       break;
     }
+
+    BarrierSet::barrier_set()->barrier_set_c2()->enqueue_useful_gc_barrier(igvn, old);
   }
 
 }
