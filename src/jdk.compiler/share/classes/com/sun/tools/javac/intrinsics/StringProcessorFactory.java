@@ -99,18 +99,27 @@ public class StringProcessorFactory implements IntrinsicProcessorFactory {
                         break;
                 }
 
-                // Fold when all arguments are constant
-                if (Intrinsics.isAllConstants(constantArgs)) {
-                    try {
-                        ConstantDesc value =
-                                Intrinsics.invoke(String.class, methodName, isStatic,
-                                        methodType.returnType(), argClassDescs, constantArgs);
-                        return new Result.Ldc(value);
-                    } catch (Exception ex) {
-                        return new Result.None();
-                    }
+                switch (methodName) {
+                    case "align":
+                    case "indent":
+                    case "length":
+                    case "repeat":
+                    case "strip":
+                    case "stripLeading":
+                    case "stripTrailing":
+                        // Fold when all arguments are constant
+                        if (Intrinsics.isAllConstants(constantArgs)) {
+                            try {
+                                ConstantDesc value =
+                                        Intrinsics.invoke(String.class, methodName, isStatic,
+                                                methodType.returnType(), argClassDescs, constantArgs);
+                                return new Result.Ldc(value);
+                            } catch (Exception ex) {
+                                return new Result.None();
+                            }
+                        }
                 }
-            }
+             }
 
             return new Result.None();
         }
