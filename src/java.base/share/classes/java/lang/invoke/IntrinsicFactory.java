@@ -321,4 +321,23 @@ public final class IntrinsicFactory {
         return ObjectsBootstraps.hashBootstrap(lookup, name, methodType);
     }
 
+    /**
+     * stringMatchesBootstrap bootstrap.
+     * @param lookup      MethodHandles lookup
+     * @param name        Name of method
+     * @param methodType  Method signature
+     * @param pattern     Pattern string
+     * @throws NoSuchMethodException no such method
+     * @throws IllegalAccessException illegal access
+     * @throws StringConcatException string concat error
+     * @return Callsite for intrinsic method
+     */
+    public static CallSite stringMatchesBootstrap(MethodHandles.Lookup lookup,
+                                                  String name,
+                                                  MethodType methodType,
+                                                  String pattern)
+            throws NoSuchMethodException, IllegalAccessException {
+        return StringBootstraps.patternMatchBootstrap(lookup, name, methodType, pattern);
+    }
+
 }

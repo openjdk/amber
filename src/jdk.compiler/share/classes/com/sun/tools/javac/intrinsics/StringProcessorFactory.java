@@ -27,6 +27,8 @@ package com.sun.tools.javac.intrinsics;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DynamicCallSiteDesc;
 import java.lang.constant.MethodTypeDesc;
 
 /**
@@ -119,7 +121,31 @@ public class StringProcessorFactory implements IntrinsicProcessorFactory {
                             }
                         }
                 }
-             }
+
+                switch (methodName) {
+                    case "matches":
+                        ConstantDesc constantPattern = constantArgs[1];
+
+                        if (constantPattern == null) {
+                            return new Result.None();
+                        }
+
+                        MethodTypeDesc methodTypeLessPattern = methodType.dropParameterTypes(0, 1);
+
+                        return new Result.Indy(
+                                DynamicCallSiteDesc.of(
+                                        ConstantDescs.ofCallsiteBootstrap(
+                                                ClassDesc.of("java.lang.invoke.IntrinsicFactory"),
+                                                "stringMatchesBootstrap",
+                                                ClassDesc.of("java.lang.invoke.CallSite")
+                                        ),
+                                        methodName,
+                                        methodTypeLessPattern,
+                                        new ConstantDesc[]{ constantPattern }),
+                                Intrinsics.dropArg(argClassDescs.length, 1)
+                        );
+                }
+            }
 
             return new Result.None();
         }
