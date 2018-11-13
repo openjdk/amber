@@ -41,12 +41,16 @@ import static java.util.stream.Collectors.joining;
  * {@link Class} constant.
  *
  * <p>For common system types, including all the primitive types, there are
- * predefined {@linkplain ClassDesc} constants in {@link ConstantDescs}.  To create
- * a {@linkplain ClassDesc} for a class or interface type, use {@link #of} or
+ * predefined {@linkplain ClassDesc} constants in {@link ConstantDescs}.
+ * (The {@code java.lang.constant} APIs consider {@code void} to be a primitive type.)
+ * To create a {@linkplain ClassDesc} for a class or interface type, use {@link #of} or
  * {@link #ofDescriptor(String)}; to create a {@linkplain ClassDesc} for an array
  * type, use {@link #ofDescriptor(String)}, or first obtain a
  * {@linkplain ClassDesc} for the component type and then call the {@link #arrayType()}
  * or {@link #arrayType(int)} methods.
+ *
+ * <p>Two {@linkplain ClassDesc} objects are considered {@link Object#equals(Object)}
+ * if they describe exactly the same type.
  *
  * @apiNote In the future, if the Java language permits, {@linkplain ClassDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except
@@ -62,9 +66,9 @@ public interface ClassDesc
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**
-     * Create a {@linkplain ClassDesc} given the name of a class or interface
-     * type, such as {@code "java.lang.String"}.  (To create a descriptor for an
-     * array type, either use {@link #ofDescriptor(String)}
+     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * given the name of the class or interface, such as {@code "java.lang.String"}.
+     * (To create a descriptor for an array type, either use {@link #ofDescriptor(String)}
      * or {@link #arrayType()}; to create a descriptor for a primitive type, use
      * {@link #ofDescriptor(String)} or use the predefined constants in
      * {@link ConstantDescs}).
@@ -81,11 +85,14 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} given a package name and an unqualified
-     * class name.
+     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * given a package name and the unqualified (simple) name for the
+     * class or interface.
      *
-     * @param packageName the package name (dot-separated)
-     * @param className the unqualified class name
+     * @param packageName the package name (dot-separated); if the package
+     *                    name is the empty string, the class is considered to
+     *                    be in the unnamed package
+     * @param className the unqualified (simple) class name
      * @return a {@linkplain ClassDesc} describing the desired class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the package name or class name are
@@ -101,7 +108,20 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} given a descriptor string.
+     * Create a {@linkplain ClassDesc} given a descriptor string for a class,
+     * interface, array, or primitive type.
+     *
+     * @apiNote
+     *
+     * A field type descriptor string for a non-array type is either
+     * a one-letter code corresponding to a primitive type
+     * ({@code J,I,C,S,B,D,F,Z,V}), or the letter {@code L}, followed
+     * by the fully qualified binary name of a class, followed by {@code ;}.
+     * A field type descriptor for an array type is the character {@code [}
+     * followed by the field descriptor for the component type.  Examples of
+     * valid type descriptor strings include {@code Ljava/lang/String;}, {@code I},
+     * {@code [I}, {@code V}, {@code [Ljava/lang/String;}, etc.  See JVMS 4.3.2
+     * for more detail.
      *
      * @param descriptor a field descriptor string, as per JVMS 4.3.2
      * @return a {@linkplain ClassDesc} describing the desired class
@@ -221,13 +241,11 @@ public interface ClassDesc
      * a class or interface type.
      *
      * @return the package name, or the empty string if the class is in the
-     * default package
-     * @throws IllegalStateException if this {@linkplain ClassDesc} does not
-     * describe a class or interface type
+     * default package, or this {@linkplain ClassDesc} does not describe a class or interface type
      */
     default String packageName() {
         if (!isClassOrInterface())
-            throw new IllegalStateException("not a class or interface");
+            return "";
         String className = internalToBinary(ConstantUtils.dropFirstAndLastChar(descriptorString()));
         int index = className.lastIndexOf('.');
         return (index == -1) ? "" : className.substring(0, index);
