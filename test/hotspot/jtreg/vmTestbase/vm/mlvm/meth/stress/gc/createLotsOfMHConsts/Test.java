@@ -49,7 +49,7 @@
  * @comment build test class and indify classes
  * @build vm.mlvm.meth.stress.gc.createLotsOfMHConsts.Test
  * @run driver vm.mlvm.share.IndifiedClassesBuilder
- * @ignore 8194951: some mlvm tests fail w/ ASMv7
+ * @ignore 8194951
  *
  * @run main/othervm
  *      vm.mlvm.meth.stress.gc.createLotsOfMHConsts.Test
