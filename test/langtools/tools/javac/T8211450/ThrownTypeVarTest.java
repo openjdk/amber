@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,23 +22,28 @@
  */
 
 /*
- * This class tests to see if the system property java.version is properly
- * reinitialized after setting System.setProperties(null).
- *
  * @test
- * @bug 4244670 8030781
- * @summary Test for System.setProperties(null).
+ * @bug 8211450
+ * @summary UndetVar::dup is not copying the kind field to the duplicated instance
+ * @compile ThrownTypeVarTest.java
  */
 
-public class SetPropertiesNull {
+import java.io.*;
 
-    public static void main(String args[]) {
-        final String version = System.getProperty("java.version");
-        System.setProperties(null);
-        final String newVersion = System.getProperty("java.version");
-        if (!version.equals(newVersion)) {
-            throw new RuntimeException("java.version differs: '" + version + "'  '"
-                               + newVersion + "'");
-        }
+public class ThrownTypeVarTest {
+    void repro() throws IOException {
+        when(f(any()));
     }
+
+    interface MyInt<T1, E1 extends Exception> {}
+
+    <T2, E2 extends Exception> T2 f(MyInt<T2, E2> g) throws IOException, E2 {
+        return null;
+    }
+
+    static <T3> T3 any() {
+        return null;
+    }
+
+    static <T4> void when(T4 methodCall) {}
 }
