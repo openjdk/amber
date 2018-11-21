@@ -120,10 +120,10 @@ public interface ClassDesc
      * A field type descriptor for an array type is the character {@code [}
      * followed by the field descriptor for the component type.  Examples of
      * valid type descriptor strings include {@code Ljava/lang/String;}, {@code I},
-     * {@code [I}, {@code V}, {@code [Ljava/lang/String;}, etc.  See JVMS 4.3.2
+     * {@code [I}, {@code V}, {@code [Ljava/lang/String;}, etc.
      * for more detail.
      *
-     * @param descriptor a field descriptor string, as per JVMS 4.3.2
+     * @param descriptor a field descriptor string
      * @return a {@linkplain ClassDesc} describing the desired class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the name string is not in the
@@ -141,6 +141,10 @@ public interface ClassDesc
      * Create a {@linkplain ClassDesc} for an array type whose component type
      * is described by this {@linkplain ClassDesc}.
      *
+     * @implSpec
+     * The default implementation returns the result of calling {@link #arrayType(int)},
+     * with rank equals to 1
+     *
      * @return a {@linkplain ClassDesc} describing the array type
      */
     default ClassDesc arrayType() {
@@ -150,6 +154,14 @@ public interface ClassDesc
     /**
      * Create a {@linkplain ClassDesc} for an array type of the specified rank,
      * whose component type is described by this {@linkplain ClassDesc}.
+     *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     if (rank <= 0)
+     *         throw new IllegalArgumentException("rank: " + rank);
+     *     return ClassDesc.ofDescriptor("[".repeat(rank) + descriptorString());
+     * }</pre>
      *
      * @param rank the rank of the array
      * @return a {@linkplain ClassDesc} describing the array type
@@ -164,6 +176,15 @@ public interface ClassDesc
     /**
      * Create a {@linkplain ClassDesc} for an inner class of the class or
      * interface type described by this {@linkplain ClassDesc}.
+     *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     validateMemberName(innerName);
+     *     if (!isClassOrInterface())
+     *         throw new IllegalStateException("Outer class is not a class or interface type");
+     *     return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), innerName));
+     * }</pre>
      *
      * @param innerName the unqualified name of the inner class
      * @return a {@linkplain ClassDesc} describing the inner class
@@ -181,6 +202,16 @@ public interface ClassDesc
     /**
      * Create a {@linkplain ClassDesc} for an inner class of the class or
      * interface type described by this {@linkplain ClassDesc}.
+     *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     if (!isClassOrInterface())
+     *         throw new IllegalStateException("Outer class is not a class or interface type");
+     *     return moreInnerNames.length == 0
+     *            ? inner(firstInnerName)
+     *            : inner(firstInnerName + Stream.of(moreInnerNames).collect(joining("$", "$", "")));
+     * }</pre>
      *
      * @param firstInnerName the unqualified name of the first level of inner class
      * @param moreInnerNames the unqualified name(s) of the remaining levels of
@@ -201,6 +232,10 @@ public interface ClassDesc
     /**
      * Returns whether this {@linkplain ClassDesc} describes an array type.
      *
+     * @implSpec
+     * The default implementation returns {@code true} if the descriptor
+     * starts with: {@code '['}
+     *
      * @return whether this {@linkplain ClassDesc} describes an array type
      */
     default boolean isArray() {
@@ -210,6 +245,10 @@ public interface ClassDesc
     /**
      * Returns whether this {@linkplain ClassDesc} describes a primitive type.
      *
+     * @implSpec
+     * The default implementation returns {@code true} if the length of the
+     * descriptor is equal to 1
+     *
      * @return whether this {@linkplain ClassDesc} describes a primitive type
      */
     default boolean isPrimitive() {
@@ -218,6 +257,10 @@ public interface ClassDesc
 
     /**
      * Returns whether this {@linkplain ClassDesc} describes a class or interface type.
+     *
+     * @implSpec
+     * The default implementation returns {@code true} if the descriptor starts with:
+     * {@code 'L'}
      *
      * @return whether this {@linkplain ClassDesc} describes a class or interface type
      */
@@ -229,6 +272,12 @@ public interface ClassDesc
      * Returns the component type of this {@linkplain ClassDesc}, if it describes
      * an array type, or {@code null} otherwise.
      *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     return isArray() ? ClassDesc.ofDescriptor(descriptorString().substring(1)) : null;
+     * }</pre>
+     *
      * @return a {@linkplain ClassDesc} describing the component type, or {@code null}
      * if this descriptor does not describe an array type
      */
@@ -239,6 +288,16 @@ public interface ClassDesc
     /**
      * Returns the package name of this {@linkplain ClassDesc}, if it describes
      * a class or interface type.
+     *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     if (!isClassOrInterface())
+     *         return "";
+     *     String className = internalToBinary(ConstantUtils.dropFirstAndLastChar(descriptorString()));
+     *     int index = className.lastIndexOf('.');
+     *     return (index == -1) ? "" : className.substring(0, index);
+     * }</pre>
      *
      * @return the package name, or the empty string if the class is in the
      * default package, or this {@linkplain ClassDesc} does not describe a class or interface type
@@ -253,6 +312,26 @@ public interface ClassDesc
 
     /**
      * Returns a human-readable name for the type described by this descriptor.
+     *
+     * @implSpec
+     * <p>The default implementation is equivalent to:
+     * <pre>{@code
+     *     if (isPrimitive())
+     *         return Wrapper.forBasicType(descriptorString().charAt(0)).primitiveSimpleName();
+     *     else if (isClassOrInterface()) {
+     *         return descriptorString().substring(Math.max(1, descriptorString().lastIndexOf('/') + 1),
+     *                                             descriptorString().length() - 1);
+     *     }
+     *     else if (isArray()) {
+     *         int depth = ConstantUtils.arrayDepth(descriptorString());
+     *         ClassDesc c = this;
+     *         for (int i=0; i<depth; i++)
+     *             c = c.componentType();
+     *         return c.displayName() + "[]".repeat(depth);
+     *     }
+     *     else
+     *         throw new IllegalStateException(descriptorString());
+     * }</pre>
      *
      * @return the human-readable name
      */
@@ -275,7 +354,7 @@ public interface ClassDesc
     }
 
     /**
-     * Return a field type descriptor string for this type, as per JVMS 4.3.2
+     * Return a field type descriptor string for this type
      *
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors

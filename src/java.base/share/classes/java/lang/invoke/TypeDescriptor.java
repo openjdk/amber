@@ -27,7 +27,7 @@ package java.lang.invoke;
 import java.util.List;
 
 /**
- * An entity that has a field or method type descriptor, as per JVMS 4.3.2 or 4.3.3.
+ * An entity that has a field or method type descriptor
  * @jvms 4.3.2 Field Descriptors
  * @jvms 4.3.3 Method Descriptors
  *
@@ -42,7 +42,7 @@ public interface TypeDescriptor {
 
 
     /**
-     * Represents a field type descriptor, as per JVMS 4.3.2.
+     * Represents a field type descriptor
      *
      * @param <F> the class implementing {@linkplain TypeDescriptor.OfField}
      * @jvms 4.3.2 Field Descriptors
@@ -79,7 +79,7 @@ public interface TypeDescriptor {
 
 
     /**
-     * Represents a method type descriptor, as per JVMS 4.3.3
+     * Represents a method type descriptor
      *
      * @param <F> the type representing field type descriptors
      * @param <M> the class implementing {@linkplain TypeDescriptor.OfMethod}

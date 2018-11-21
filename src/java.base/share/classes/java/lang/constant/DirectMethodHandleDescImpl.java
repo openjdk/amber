@@ -52,8 +52,7 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
      *
      * @param kind the kind of the method handle
      * @param owner the declaring class or interface for the method
-     * @param name the name of the method (ignored if {@code kind} is
-     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
+     * @param name the unqualified name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param type the type of the method
      * @throws NullPointerException if any non-ignored argument is null
      * @throws IllegalArgumentException if {@code kind} describes a field accessor,
@@ -156,6 +155,14 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
         }
     }
 
+    /**
+     * Returns {@code true} if the two direct method handle descriptors are equal.
+     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * @param o the {@code DirectMethodHandleDescImpl} to compare to this
+     *       {@code DirectMethodHandleDescImpl}
+     * @return {@code true} if the specified {@code DirectMethodHandleDescImpl} is
+     *      equals to this {@code DirectMethodHandleDescImpl}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -167,6 +174,11 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
                Objects.equals(type, desc.type);
     }
 
+    /**
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
+     *
+     * @see #equals
+     */
     @Override
     public int hashCode() {
         return Objects.hash(kind, owner, name, type);

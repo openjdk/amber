@@ -59,7 +59,7 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     /**
      * Create a {@linkplain MethodTypeDescImpl} given a method descriptor string.
      *
-     * @param descriptor the method descriptor string, as per JVMS 4.3.3
+     * @param descriptor the method descriptor string
      * @return a {@linkplain MethodTypeDescImpl} describing the desired method type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * method descriptor
@@ -137,6 +137,14 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
         return MethodType.fromMethodDescriptorString(descriptorString(), lookup.lookupClass().getClassLoader());
     }
 
+    /**
+     * Returns {@code true} if the two method type descriptors are equal.
+     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * @param o the {@code MethodTypeDescImpl} to compare to this
+     *       {@code MethodTypeDescImpl}
+     * @return {@code true} if the specified {@code MethodTypeDescImpl} is
+     *      equals to this {@code MethodTypeDescImpl}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -148,6 +156,11 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
                && Arrays.equals(argTypes, constant.argTypes);
     }
 
+    /**
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
+     *
+     * @see #equals
+     */
     @Override
     public int hashCode() {
         int result = returnType.hashCode();

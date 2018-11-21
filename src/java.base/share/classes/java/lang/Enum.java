@@ -297,7 +297,7 @@ public abstract class Enum<E extends Enum<E>>
          * Construct a nominal descriptor for the specified {@code enum} class and name.
          *
          * @param constantType a {@link ClassDesc} describing the {@code enum} class
-         * @param constantName the name of the enum constant, as per JVMS 4.2.2
+         * @param constantName the unqualified name of the enum constant
          * @throws NullPointerException if any argument is null
          * @jvms 4.2.2 Unqualified Names
          */
@@ -310,7 +310,7 @@ public abstract class Enum<E extends Enum<E>>
          *
          * @param <E> the type of the enum constant
          * @param enumClass a {@link ClassDesc} describing the {@code enum} class
-         * @param constantName the name of the enum constant, as per JVMS 4.2.2
+         * @param constantName the unqualified name of the enum constant
          * @return the nominal descriptor
          * @throws NullPointerException if any argument is null
          * @jvms 4.2.2 Unqualified Names

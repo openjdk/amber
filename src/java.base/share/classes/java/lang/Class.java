@@ -4036,7 +4036,7 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Produce the type descriptor string for this class as per JVMS 4.3.2.
+     * Produce the type descriptor string for this class.
      * <p>
      * Note that this is not a strict inverse of {@link #forName};
      * distinct classes which share a common name but have different class loaders
