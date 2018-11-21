@@ -122,7 +122,7 @@ public abstract class DynamicConstantDesc<T>
      * callers.
      *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
      * @param constantName The name that would appear in the {@code NameAndType}
      *                     operand of the {@code LDC} for this constant, as per
@@ -216,7 +216,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns The name that would appear in the {@code NameAndType} operand
+     * Returns the name that would appear in the {@code NameAndType} operand
      *             of the {@code LDC} for this constant
      *
      * @return the constant name
@@ -247,6 +247,7 @@ public abstract class DynamicConstantDesc<T>
 
     /**
      * Returns the bootstrap arguments for this constant
+     *
      * @return the bootstrap arguments
      */
     public ConstantDesc[] bootstrapArgs() {
@@ -254,9 +255,9 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns the bootstrap arguments for this constant as a {@link List}
+     * Returns the bootstrap arguments for this constant as an immutable {@link List}
      *
-     * @return a {@link List} of the bootstrap arguments, described as {@link ConstantDesc}
+     * @return a {@link List} of the bootstrap arguments
      */
     public List<ConstantDesc> bootstrapArgsList() {
         return List.of(bootstrapArgs);

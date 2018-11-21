@@ -101,7 +101,7 @@ public interface MethodTypeDesc
     ClassDesc parameterType(int index);
 
     /**
-     * Get the parameter types as a {@link List}.
+     * Get the parameter types as an immutable {@link List}.
      *
      * @return a {@link List} of {@link ClassDesc} describing the parameter types
      */
