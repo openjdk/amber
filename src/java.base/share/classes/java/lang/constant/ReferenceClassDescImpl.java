@@ -42,8 +42,7 @@ final class ReferenceClassDescImpl implements ClassDesc {
      * Create a {@linkplain ClassDesc} from a descriptor string for a class or
      * interface type
      *
-     * @param descriptor a field descriptor string for a class or interface type,
-     *                   as per JVMS 4.3.2
+     * @param descriptor a field descriptor string for a class or interface type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * field descriptor string, or does not describe a class or interface type
      * @jvms 4.3.2 Field Descriptors
@@ -80,6 +79,14 @@ final class ReferenceClassDescImpl implements ClassDesc {
         }
     }
 
+    /**
+     * Returns {@code true} if the two class descriptors are equal.
+     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * @param o the {@code ClassDesc} to compare to this
+     *       {@code ClassDesc}
+     * @return {@code true} if the specified {@code ClassDesc} is
+     *      equals to this {@code ClassDesc}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -89,6 +96,11 @@ final class ReferenceClassDescImpl implements ClassDesc {
         return descriptor.equals(constant.descriptorString());
     }
 
+    /**
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
+     *
+     * @see #equals
+     */
     @Override
     public int hashCode() {
         return descriptor.hashCode();

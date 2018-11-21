@@ -78,9 +78,8 @@ public abstract class DynamicConstantDesc<T>
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -124,9 +123,8 @@ public abstract class DynamicConstantDesc<T>
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -153,9 +151,8 @@ public abstract class DynamicConstantDesc<T>
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link ClassDesc} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -349,6 +346,15 @@ public abstract class DynamicConstantDesc<T>
 
     // @@@ To eventually support in canonicalization: DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
 
+    /**
+     * Returns {@code true} if the two dynamic constant descriptors are equal.
+     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * @param o the {@code DynamicConstantDesc} to compare to this
+     *       {@code DynamicConstantDesc}
+     * @return {@code true} if the specified {@code DynamicConstantDesc} is
+     *      equals to this {@code DynamicConstantDesc}.
+     *
+     */
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
@@ -360,6 +366,11 @@ public abstract class DynamicConstantDesc<T>
                Objects.equals(constantType, desc.constantType);
     }
 
+    /**
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
+     *
+     * @see #equals
+     */
     @Override
     public final int hashCode() {
         int result = Objects.hash(bootstrapMethod, constantName, constantType);

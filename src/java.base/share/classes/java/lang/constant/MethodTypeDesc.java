@@ -51,7 +51,7 @@ public interface MethodTypeDesc
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string
      *
-     * @param descriptor a method descriptor string, as per JVMS 4.3.3
+     * @param descriptor a method descriptor string
      * @return a {@linkplain MethodTypeDesc} describing the desired method type
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the descriptor string is not a valid
@@ -165,7 +165,7 @@ public interface MethodTypeDesc
     MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes);
 
     /**
-     * Return the method type descriptor string, as per JVMS 4.3.3.
+     * Return the method type descriptor string
      *
      * @return the method type descriptor string
      * @jvms 4.3.3 Method Descriptors

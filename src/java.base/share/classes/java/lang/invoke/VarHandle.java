@@ -2174,8 +2174,7 @@ public abstract class VarHandle implements Constable {
          * class.
          *
          * @param kind the kind of of the var handle
-         * @param name the name of the field, , as per JVMS 4.2.2, for field var
-         *             handles; otherwise ignored
+         * @param name the unqualified name of the field, for field var handles; otherwise ignored
          * @param declaringClass a {@link ClassDesc} describing the declaring class,
          *                       for field var handles
          * @param varType a {@link ClassDesc} describing the type of the variable
@@ -2195,7 +2194,7 @@ public abstract class VarHandle implements Constable {
          * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
          * for an instance field.
          *
-         * @param name the name of the field, as per JVMS 4.2.2
+         * @param name the unqualifed name of the field
          * @param declaringClass a {@link ClassDesc} describing the declaring class,
          *                       for field var handles
          * @param fieldType a {@link ClassDesc} describing the type of the field
@@ -2214,7 +2213,7 @@ public abstract class VarHandle implements Constable {
          * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
          * for a static field.
          *
-         * @param name the name of the field, as per JVMS 4.2.2
+         * @param name the unqualified name of the field
          * @param declaringClass a {@link ClassDesc} describing the declaring class,
          *                       for field var handles
          * @param fieldType a {@link ClassDesc} describing the type of the field

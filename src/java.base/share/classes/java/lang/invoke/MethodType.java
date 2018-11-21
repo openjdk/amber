@@ -1188,7 +1188,7 @@ class MethodType
     }
 
     /**
-     * Return a field type descriptor string for this type, as per JVMS 4.3.2
+     * Return a field type descriptor string for this type
      *
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors

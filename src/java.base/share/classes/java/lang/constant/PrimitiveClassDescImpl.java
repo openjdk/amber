@@ -44,7 +44,7 @@ final class PrimitiveClassDescImpl
      * type.
      *
      * @param descriptor the descriptor string, which must be a one-character
-     * string corresponding to one of the nine base types as per JVMS 4.3
+     * string corresponding to one of the nine base types
      * @throws IllegalArgumentException if the descriptor string does not
      * describe a valid primitive type
      * @jvms 4.3 Descriptors
