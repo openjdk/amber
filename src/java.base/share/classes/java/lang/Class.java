@@ -4060,10 +4060,11 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Returns the component type of this {@code Class}, if it describes
-     * an array type, or {@code null} otherwise.
+     * an array type, or {@code null} otherwise.  Equivalent to
+     * {@link Class#getComponentType()}.
      *
      * @return a {@code Class} describing the component type, or {@code null}
-     * if this descriptor does not describe an array type
+     * if this {@code Class} does not describe an array type
      * @since 12
      */
     @Override
@@ -4073,9 +4074,9 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Create a {@code Class} for an array type whose component type
-     * is described by this {@linkplain ClassDesc}.
+     * is described by this {@linkplain Class}.
      *
-     * @return a {@code ClassDesc} describing the array type
+     * @return a {@code Class} describing the array type
      * @since 12
      */
     @Override

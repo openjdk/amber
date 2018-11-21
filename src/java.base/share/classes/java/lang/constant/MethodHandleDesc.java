@@ -156,6 +156,8 @@ public interface MethodHandleDesc
      * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
+     * @throws IllegalArgumentException if the {@code kind} is not one of the
+     * valid values
      * @jvms 4.2.2 Unqualified Names
      */
     static DirectMethodHandleDesc ofField(DirectMethodHandleDesc.Kind kind,

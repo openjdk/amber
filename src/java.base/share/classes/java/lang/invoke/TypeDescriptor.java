@@ -120,7 +120,7 @@ public interface TypeDescriptor {
         F[] parameterArray();
 
         /**
-         * Return a list of field descriptors for the parameter types of the method type
+         * Return an immutable list of field descriptors for the parameter types of the method type
          * described by this descriptor
          * @return field descriptors for the parameter types
          */
@@ -156,9 +156,10 @@ public interface TypeDescriptor {
          * @param start the index of the first parameter to remove
          * @param end the index after the last parameter to remove
          * @return the new method descriptor
+         *
          * @throws IndexOutOfBoundsException if {@code start} is outside the half-open
-         * range {[0, parameterCount)}, or {@code end} is outside the closed range
-         * {@code [0, parameterCount]}
+         * range {@code [0, parameterCount)}, or {@code end} is outside the closed range
+         * {@code [0, parameterCount]}, or if {@code start > end}
          */
         M dropParameterTypes(int start, int end);
 
