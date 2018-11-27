@@ -156,9 +156,11 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     }
 
     /**
-     * Returns {@code true} if the two direct method handle descriptors are equal.
-     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
-     * @param o the {@code DirectMethodHandleDescImpl} to compare to this
+     * Returns {@code true} if this {@linkplain DirectMethodHandleDescImpl} is
+     * equal to another {@linkplain DirectMethodHandleDescImpl}.  Equality is
+     * determined by the two descriptors having equal kind, owner, name, and type
+     * descriptor.
+     * @param o a {@code DirectMethodHandleDescImpl} to compare to this
      *       {@code DirectMethodHandleDescImpl}
      * @return {@code true} if the specified {@code DirectMethodHandleDescImpl} is
      *      equals to this {@code DirectMethodHandleDescImpl}.
@@ -174,11 +176,6 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
                Objects.equals(type, desc.type);
     }
 
-    /**
-     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
-     *
-     * @see #equals
-     */
     @Override
     public int hashCode() {
         return Objects.hash(kind, owner, name, type);

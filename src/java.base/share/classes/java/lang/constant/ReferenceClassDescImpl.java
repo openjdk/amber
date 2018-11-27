@@ -80,8 +80,11 @@ final class ReferenceClassDescImpl implements ClassDesc {
     }
 
     /**
-     * Returns {@code true} if the two class descriptors are equal.
-     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * Returns {@code true} if this {@linkplain ReferenceClassDescImpl} is
+     * equal to another {@linkplain ReferenceClassDescImpl}.  Equality is
+     * determined by the two class descriptors having equal class descriptor
+     * strings.
+     *
      * @param o the {@code ClassDesc} to compare to this
      *       {@code ClassDesc}
      * @return {@code true} if the specified {@code ClassDesc} is
@@ -96,11 +99,6 @@ final class ReferenceClassDescImpl implements ClassDesc {
         return descriptor.equals(constant.descriptorString());
     }
 
-    /**
-     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
-     *
-     * @see #equals
-     */
     @Override
     public int hashCode() {
         return descriptor.hashCode();
