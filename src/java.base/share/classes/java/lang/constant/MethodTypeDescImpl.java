@@ -138,8 +138,11 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     }
 
     /**
-     * Returns {@code true} if the two method type descriptors are equal.
-     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * Returns {@code true} if this {@linkplain MethodTypeDescImpl} is
+     * equal to another {@linkplain MethodTypeDescImpl}.  Equality is
+     * determined by the two descriptors having equal return types and argument
+     * types.
+     *
      * @param o the {@code MethodTypeDescImpl} to compare to this
      *       {@code MethodTypeDescImpl}
      * @return {@code true} if the specified {@code MethodTypeDescImpl} is
@@ -156,11 +159,6 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
                && Arrays.equals(argTypes, constant.argTypes);
     }
 
-    /**
-     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
-     *
-     * @see #equals
-     */
     @Override
     public int hashCode() {
         int result = returnType.hashCode();

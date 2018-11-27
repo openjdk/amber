@@ -214,7 +214,7 @@ public abstract class DynamicConstantDesc<T>
 
     /**
      * Returns the name that would appear in the {@code NameAndType} operand
-     *             of the {@code LDC} for this constant
+     * of the {@code LDC} for this constant
      *
      * @return the constant name
      */
@@ -347,8 +347,12 @@ public abstract class DynamicConstantDesc<T>
     // @@@ To eventually support in canonicalization: DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
 
     /**
-     * Returns {@code true} if the two dynamic constant descriptors are equal.
-     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * Compares the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain DynamicConstantDesc}, and both descriptors have equal
+     * bootstrap methods, bootstrap argument lists, constant name, and
+     * constant type.
+     *
      * @param o the {@code DynamicConstantDesc} to compare to this
      *       {@code DynamicConstantDesc}
      * @return {@code true} if the specified {@code DynamicConstantDesc} is
@@ -366,11 +370,6 @@ public abstract class DynamicConstantDesc<T>
                Objects.equals(constantType, desc.constantType);
     }
 
-    /**
-     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
-     *
-     * @see #equals
-     */
     @Override
     public final int hashCode() {
         int result = Objects.hash(bootstrapMethod, constantName, constantType);

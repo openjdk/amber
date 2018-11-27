@@ -239,8 +239,12 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Returns {@code true} if the two dynamic call site descriptors are equal.
-     * Obeys the general contract of {@link java.lang.Object equals(Object)}.
+     * Compares the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain DynamicCallSiteDesc}, and both descriptors have equal
+     * bootstrap methods, bootstrap argument lists, invocation name, and
+     * invocation type.
+     *
      * @param o the {@code DynamicCallSiteDesc} to compare to this
      *       {@code DynamicCallSiteDesc}
      * @return {@code true} if the specified {@code DynamicCallSiteDesc} is
@@ -257,11 +261,6 @@ public class DynamicCallSiteDesc {
                Objects.equals(invocationType, specifier.invocationType);
     }
 
-    /**
-     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
-     *
-     * @see #equals
-     */
     @Override
     public int hashCode() {
         int result = Objects.hash(bootstrapMethod, invocationName, invocationType);

@@ -28,6 +28,7 @@ import java.util.List;
 
 /**
  * An entity that has a field or method type descriptor
+ *
  * @jvms 4.3.2 Field Descriptors
  * @jvms 4.3.3 Method Descriptors
  *
@@ -35,14 +36,18 @@ import java.util.List;
  */
 public interface TypeDescriptor {
     /**
-     * Return the type descriptor for this instance, which may be a field or method type descriptor.
+     * Return the type descriptor string for this instance, which must be either
+     * a field type descriptor (JVMS 4.3.2) or method type descriptor (JVMS 4.3.3).
+     *
      * @return the type descriptor
+     * @jvms 4.3.2 Field Descriptors
+     * @jvms 4.3.3 Method Descriptors
      */
     String descriptorString();
 
 
     /**
-     * Represents a field type descriptor
+     * An entity that has a field type descriptor
      *
      * @param <F> the class implementing {@linkplain TypeDescriptor.OfField}
      * @jvms 4.3.2 Field Descriptors
@@ -79,10 +84,11 @@ public interface TypeDescriptor {
 
 
     /**
-     * Represents a method type descriptor
+     * An entity that has a method type descriptor
      *
      * @param <F> the type representing field type descriptors
      * @param <M> the class implementing {@linkplain TypeDescriptor.OfMethod}
+     * @jvms 4.3.2 Field Descriptors
      * @jvms 4.3.3 Method Descriptors
      * @since 12
      */
