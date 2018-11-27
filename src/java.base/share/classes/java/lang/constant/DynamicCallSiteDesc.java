@@ -60,9 +60,8 @@ public class DynamicCallSiteDesc {
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the {@code invokedynamic}
-     * @param invocationName The name that would appear in the {@code NameAndType}
-     *                       operand of the {@code invokedynamic}, as per
-     *                       JVMS 4.2.2
+     * @param invocationName The unqualified name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
@@ -91,9 +90,8 @@ public class DynamicCallSiteDesc {
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the {@code invokedynamic}
-     * @param invocationName The name that would appear in the {@code NameAndType}
-     *                       operand of the {@code invokedynamic}, as per
-     *                       JVMS 4.2.2
+     * @param invocationName The unqualified name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
@@ -175,9 +173,8 @@ public class DynamicCallSiteDesc {
      * bootstrap and bootstrap arguments are the same as this one, but with the
      * specified invocationName and invocation invocationType
      *
-     * @param invocationName The name that would appear in the {@code NameAndType}
-     *                       operand of the {@code invokedynamic}, as per
-     *                       JVMS 4.2.2
+     * @param invocationName The unqualified name that would appear in the {@code NameAndType}
+     *                       operand of the {@code invokedynamic}
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
@@ -251,6 +248,18 @@ public class DynamicCallSiteDesc {
         return (CallSite) bsm.invokeWithArguments(args);
     }
 
+    /**
+     * Compares the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain DynamicCallSiteDesc}, and both descriptors have equal
+     * bootstrap methods, bootstrap argument lists, invocation name, and
+     * invocation type.
+     *
+     * @param o the {@code DynamicCallSiteDesc} to compare to this
+     *       {@code DynamicCallSiteDesc}
+     * @return {@code true} if the specified {@code DynamicCallSiteDesc} is
+     *      equals to this {@code DynamicCallSiteDesc}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -155,25 +155,16 @@ public class ClassDescTest extends SymbolicDescTest {
         testClassDesc(thisClassDesc, ClassDescTest.class);
     }
 
-    private void testBadPackageName(ClassDesc cr) {
-        try {
-            cr.packageName();
-            fail("");
-        } catch (IllegalStateException e) {
-            // good
-        }
-    }
-
     public void testPackageName() {
         assertEquals("com.foo", ClassDesc.of("com.foo.Bar").packageName());
         assertEquals("com.foo", ClassDesc.of("com.foo.Bar").inner("Baz").packageName());
         assertEquals("", ClassDesc.of("Bar").packageName());
         assertEquals("", ClassDesc.of("Bar").inner("Baz").packageName());
 
-        testBadPackageName(ConstantDescs.CD_int);
-        testBadPackageName(ConstantDescs.CD_int.arrayType());
-        testBadPackageName(ConstantDescs.CD_String.arrayType());
-        testBadPackageName(ClassDesc.of("Bar").arrayType());
+        assertEquals("", ConstantDescs.CD_int.packageName());
+        assertEquals("", ConstantDescs.CD_int.arrayType().packageName());
+        assertEquals("", ConstantDescs.CD_String.arrayType().packageName());
+        assertEquals("", ClassDesc.of("Bar").arrayType().packageName());
     }
 
     private void testBadArrayRank(ClassDesc cr) {

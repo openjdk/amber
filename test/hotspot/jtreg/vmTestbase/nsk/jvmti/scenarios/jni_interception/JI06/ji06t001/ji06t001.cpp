@@ -81,14 +81,12 @@ static jniNativeInterface *redir_jni_functions = NULL;
 static volatile int monent_calls = 0;
 
 static void lock() {
-    if (!NSK_JVMTI_VERIFY(NSK_CPP_STUB2(RawMonitorEnter,
-            jvmti, countLock)))
+    if (!NSK_JVMTI_VERIFY(jvmti->RawMonitorEnter(countLock)))
         exit(STATUS_FAILED);
 }
 
 static void unlock() {
-    if (!NSK_JVMTI_VERIFY(NSK_CPP_STUB2(RawMonitorExit,
-            jvmti, countLock)))
+    if (!NSK_JVMTI_VERIFY(jvmti->RawMonitorExit(countLock)))
         exit(STATUS_FAILED);
 }
 
@@ -254,7 +252,7 @@ static int ownerThread(void *context) {
                 TRIES);
             env->FatalError("ownerThread: time exceed");
         }
-    } while(releaseMon != 1);
+    } while (releaseMon != 1);
 
     if (exitMonitor(env, "ownerThread") == STATUS_FAILED)
         THREAD_return(STATUS_FAILED);
@@ -346,7 +344,7 @@ Java_nsk_jvmti_scenarios_jni_1interception_JI06_ji06t001_check(JNIEnv *env, jobj
                 TRIES);
             env->FatalError(" the monitor is still not entered by the owner thread");
         }
-    } while(monEntered != 1);
+    } while (monEntered != 1);
 
     for (i=0; i<MAX_THREADS-1; i++) {
         NSK_DISPLAY1("starting waiting thread #%d ...\n",
@@ -370,7 +368,7 @@ Java_nsk_jvmti_scenarios_jni_1interception_JI06_ji06t001_check(JNIEnv *env, jobj
                     i+1);
                 exit(STATUS_FAILED);
             }
-        } while(thrStarted[i] != 1);
+        } while (thrStarted[i] != 1);
         NSK_DISPLAY1("the waiting thread #%d started\n",
             i+1);
     }
@@ -482,8 +480,7 @@ jint Agent_Initialize(JavaVM *jvm, char *options, void *reserved) {
 
     vm = jvm;
 
-    if (!NSK_JVMTI_VERIFY(NSK_CPP_STUB3(CreateRawMonitor,
-            jvmti, "_counter_lock", &countLock)))
+    if (!NSK_JVMTI_VERIFY(jvmti->CreateRawMonitor("_counter_lock", &countLock)))
         return JNI_ERR;
 
     return JNI_OK;

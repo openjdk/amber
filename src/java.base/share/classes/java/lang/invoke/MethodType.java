@@ -1188,7 +1188,7 @@ class MethodType
     }
 
     /**
-     * Return a field type descriptor string for this type, as per JVMS 4.3.2
+     * Return a field type descriptor string for this type
      *
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors
@@ -1290,8 +1290,8 @@ s.writeObject(this.parameterArray());
         // store them into the implementation-specific final fields.
         checkRtype(rtype);
         checkPtypes(ptypes);
-        UNSAFE.putObject(this, OffsetHolder.rtypeOffset, rtype);
-        UNSAFE.putObject(this, OffsetHolder.ptypesOffset, ptypes);
+        UNSAFE.putReference(this, OffsetHolder.rtypeOffset, rtype);
+        UNSAFE.putReference(this, OffsetHolder.ptypesOffset, ptypes);
     }
 
     // Support for resetting final fields while deserializing. Implement Holder

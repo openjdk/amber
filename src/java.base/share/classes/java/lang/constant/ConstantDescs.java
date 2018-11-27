@@ -315,7 +315,7 @@ public final class ConstantDescs {
      * parameter types are {@code Lookup}, {@code String}, and {@code MethodType}.
      *
      * @param clazz the class declaring the method
-     * @param name the name of the method, as per JVMS 4.2.2
+     * @param name the unqualified name of the method
      * @param returnType the return type of the method
      * @param paramTypes the types of the static bootstrap arguments, if any
      * @return the {@link MethodHandleDesc}
@@ -337,7 +337,7 @@ public final class ConstantDescs {
      * {@code Lookup}, {@code String}, and {@code Class}.
      *
      * @param clazz the class declaring the method
-     * @param name the name of the method, as per JVMS 4.2.2
+     * @param name the unqualified name of the method
      * @param returnType the return type of the method
      * @param paramTypes the types of the static bootstrap arguments, if any
      * @return the {@link MethodHandleDesc}

@@ -27,7 +27,8 @@ package java.lang.invoke;
 import java.util.List;
 
 /**
- * An entity that has a field or method type descriptor, as per JVMS 4.3.2 or 4.3.3.
+ * An entity that has a field or method type descriptor
+ *
  * @jvms 4.3.2 Field Descriptors
  * @jvms 4.3.3 Method Descriptors
  *
@@ -35,14 +36,18 @@ import java.util.List;
  */
 public interface TypeDescriptor {
     /**
-     * Return the type descriptor for this instance, which may be a field or method type descriptor.
+     * Return the type descriptor string for this instance, which must be either
+     * a field type descriptor (JVMS 4.3.2) or method type descriptor (JVMS 4.3.3).
+     *
      * @return the type descriptor
+     * @jvms 4.3.2 Field Descriptors
+     * @jvms 4.3.3 Method Descriptors
      */
     String descriptorString();
 
 
     /**
-     * Represents a field type descriptor, as per JVMS 4.3.2.
+     * An entity that has a field type descriptor
      *
      * @param <F> the class implementing {@linkplain TypeDescriptor.OfField}
      * @jvms 4.3.2 Field Descriptors
@@ -79,10 +84,11 @@ public interface TypeDescriptor {
 
 
     /**
-     * Represents a method type descriptor, as per JVMS 4.3.3
+     * An entity that has a method type descriptor
      *
      * @param <F> the type representing field type descriptors
      * @param <M> the class implementing {@linkplain TypeDescriptor.OfMethod}
+     * @jvms 4.3.2 Field Descriptors
      * @jvms 4.3.3 Method Descriptors
      * @since 12
      */
@@ -120,7 +126,7 @@ public interface TypeDescriptor {
         F[] parameterArray();
 
         /**
-         * Return a list of field descriptors for the parameter types of the method type
+         * Return an immutable list of field descriptors for the parameter types of the method type
          * described by this descriptor
          * @return field descriptors for the parameter types
          */
@@ -156,9 +162,10 @@ public interface TypeDescriptor {
          * @param start the index of the first parameter to remove
          * @param end the index after the last parameter to remove
          * @return the new method descriptor
+         *
          * @throws IndexOutOfBoundsException if {@code start} is outside the half-open
-         * range {[0, parameterCount)}, or {@code end} is outside the closed range
-         * {@code [0, parameterCount]}
+         * range {@code [0, parameterCount)}, or {@code end} is outside the closed range
+         * {@code [0, parameterCount]}, or if {@code start > end}
          */
         M dropParameterTypes(int start, int end);
 

@@ -63,8 +63,7 @@ public interface MethodHandleDesc
      * @param kind The kind of method handle to be described
      * @param clazz a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
-     * @param name the name of the method or field (ignored if {@code kind} is
-     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
+     * @param name the unqualified name of the method or field (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param type a {@link MethodTypeDesc} describing the invocation type of
      *             the method handle
      * @return the {@linkplain MethodHandleDesc}
@@ -97,10 +96,9 @@ public interface MethodHandleDesc
      * @param kind The kind of method handle to be described
      * @param clazz a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
-     * @param name the name of the method or field (ignored if {@code kind} is
-     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
+     * @param name the unqualified name of the method or field (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param descriptorString a method descriptor string for the invocation type
-     * of the method handle, as per JVMS 4.3.3
+     * of the method handle
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
      * @jvms 4.2.2 Unqualified Names
@@ -130,8 +128,8 @@ public interface MethodHandleDesc
      * @param kind The kind of method handle to be described
      * @param clazz a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
-     * @param name the name of the method or field (ignored if {@code kind} is
-     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
+     * @param name the unqualified name of the method or field (ignored if {@code kind} is
+     * {@code CONSTRUCTOR})
      * @param returnType a {@link ClassDesc} describing the return type of the
      *                   method handle
      * @param paramTypes {@link ClassDesc}s describing the parameter types of
@@ -157,10 +155,12 @@ public interface MethodHandleDesc
      *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
      * @param clazz a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
-     * @param fieldName the name of the field, as per JVMS 4.2.2
+     * @param fieldName the unqualified name of the field
      * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
+     * @throws IllegalArgumentException if the {@code kind} is not one of the
+     * valid values
      * @jvms 4.2.2 Unqualified Names
      */
     @Foldable

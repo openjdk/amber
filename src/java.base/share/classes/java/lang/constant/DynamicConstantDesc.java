@@ -81,9 +81,8 @@ public abstract class DynamicConstantDesc<T>
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -125,11 +124,10 @@ public abstract class DynamicConstantDesc<T>
      * callers.
      *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -157,9 +155,8 @@ public abstract class DynamicConstantDesc<T>
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
      *                        bootstrap method for the constant
-     * @param constantName The name that would appear in the {@code NameAndType}
-     *                     operand of the {@code LDC} for this constant, as per
-     *                     JVMS 4.2.2
+     * @param constantName The unqualified name that would appear in the {@code NameAndType}
+     *                     operand of the {@code LDC} for this constant
      * @param constantType a {@link ClassDesc} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
@@ -222,8 +219,8 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns The name that would appear in the {@code NameAndType} operand
-     *             of the {@code LDC} for this constant
+     * Returns the name that would appear in the {@code NameAndType} operand
+     * of the {@code LDC} for this constant
      *
      * @return the constant name
      */
@@ -256,6 +253,7 @@ public abstract class DynamicConstantDesc<T>
 
     /**
      * Returns the bootstrap arguments for this constant
+     *
      * @return the bootstrap arguments
      */
     public ConstantDesc[] bootstrapArgs() {
@@ -263,9 +261,9 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns the bootstrap arguments for this constant as a {@link List}
+     * Returns the bootstrap arguments for this constant as an immutable {@link List}
      *
-     * @return a {@link List} of the bootstrap arguments, described as {@link ConstantDesc}
+     * @return a {@link List} of the bootstrap arguments
      */
     public List<ConstantDesc> bootstrapArgsList() {
         return List.of(bootstrapArgs);
@@ -357,6 +355,19 @@ public abstract class DynamicConstantDesc<T>
 
     // @@@ To eventually support in canonicalization: DCR with BSM=MHD_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
 
+    /**
+     * Compares the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain DynamicConstantDesc}, and both descriptors have equal
+     * bootstrap methods, bootstrap argument lists, constant name, and
+     * constant type.
+     *
+     * @param o the {@code DynamicConstantDesc} to compare to this
+     *       {@code DynamicConstantDesc}
+     * @return {@code true} if the specified {@code DynamicConstantDesc} is
+     *      equals to this {@code DynamicConstantDesc}.
+     *
+     */
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;

@@ -46,8 +46,7 @@ final class ReferenceClassDescImpl implements ClassDesc {
      * Create a {@linkplain ClassDesc} from a descriptor string for a class or
      * interface type
      *
-     * @param descriptor a field descriptor string for a class or interface type,
-     *                   as per JVMS 4.3.2
+     * @param descriptor a field descriptor string for a class or interface type
      * @throws IllegalArgumentException if the descriptor string is not a valid
      * field descriptor string, or does not describe a class or interface type
      * @jvms 4.3.2 Field Descriptors
@@ -84,6 +83,17 @@ final class ReferenceClassDescImpl implements ClassDesc {
         }
     }
 
+    /**
+     * Returns {@code true} if this {@linkplain ReferenceClassDescImpl} is
+     * equal to another {@linkplain ReferenceClassDescImpl}.  Equality is
+     * determined by the two class descriptors having equal class descriptor
+     * strings.
+     *
+     * @param o the {@code ClassDesc} to compare to this
+     *       {@code ClassDesc}
+     * @return {@code true} if the specified {@code ClassDesc} is
+     *      equals to this {@code ClassDesc}.
+     */
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
         return Optional.empty();

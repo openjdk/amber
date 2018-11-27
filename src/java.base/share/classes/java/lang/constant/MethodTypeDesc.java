@@ -39,6 +39,10 @@ import static java.util.Objects.requireNonNull;
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
  * {@linkplain MethodType} constant.
  *
+ * <p>Two {@linkplain MethodTypeDesc} objects are considered {@link Object#equals(Object)}
+ * if they have the same arity, their return types are equal, and each pair of corresponding
+ * parameter types are equal.
+ *
  * @apiNote In the future, if the Java language permits, {@linkplain MethodTypeDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
@@ -53,7 +57,7 @@ public interface MethodTypeDesc
     /**
      * Create a {@linkplain MethodTypeDesc} given a method descriptor string
      *
-     * @param descriptor a method descriptor string, as per JVMS 4.3.3
+     * @param descriptor a method descriptor string
      * @return a {@linkplain MethodTypeDesc} describing the desired method type
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalArgumentException if the descriptor string is not a valid
@@ -108,7 +112,7 @@ public interface MethodTypeDesc
     ClassDesc parameterType(int index);
 
     /**
-     * Get the parameter types as a {@link List}.
+     * Get the parameter types as an immutable {@link List}.
      *
      * @return a {@link List} of {@link ClassDesc} describing the parameter types
      */
@@ -176,7 +180,7 @@ public interface MethodTypeDesc
     MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes);
 
     /**
-     * Return the method type descriptor string, as per JVMS 4.3.3.
+     * Return the method type descriptor string
      *
      * @return the method type descriptor string
      * @jvms 4.3.3 Method Descriptors

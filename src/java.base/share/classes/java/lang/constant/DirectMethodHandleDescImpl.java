@@ -53,8 +53,7 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
      *
      * @param kind the kind of the method handle
      * @param owner the declaring class or interface for the method
-     * @param name the name of the method (ignored if {@code kind} is
-     * {@code CONSTRUCTOR}), as per JVMS 4.2.2
+     * @param name the unqualified name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
      * @param type the type of the method
      * @throws NullPointerException if any non-ignored argument is null
      * @throws IllegalArgumentException if {@code kind} describes a field accessor,
@@ -157,6 +156,16 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
         }
     }
 
+    /**
+     * Returns {@code true} if this {@linkplain DirectMethodHandleDescImpl} is
+     * equal to another {@linkplain DirectMethodHandleDescImpl}.  Equality is
+     * determined by the two descriptors having equal kind, owner, name, and type
+     * descriptor.
+     * @param o a {@code DirectMethodHandleDescImpl} to compare to this
+     *       {@code DirectMethodHandleDescImpl}
+     * @return {@code true} if the specified {@code DirectMethodHandleDescImpl} is
+     *      equals to this {@code DirectMethodHandleDescImpl}.
+     */
     @Override
     public Optional<? extends ConstantDesc> describeConstable() {
         return null;
