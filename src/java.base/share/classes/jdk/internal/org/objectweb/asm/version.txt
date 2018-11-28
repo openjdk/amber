@@ -1,2 +1,2 @@
-ASM_6_1_BETA2-58-g84c9bb8
-origin	https://gitlab.ow2.org/asm/asm (fetch)
+ASM_7_0
+origin	http://gitlab.ow2.org/asm/asm.git (fetch)

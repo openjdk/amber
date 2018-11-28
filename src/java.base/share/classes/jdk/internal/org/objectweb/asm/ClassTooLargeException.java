@@ -56,61 +56,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package jdk.internal.org.objectweb.asm.tree;
-
-import jdk.internal.org.objectweb.asm.ClassVisitor;
+package jdk.internal.org.objectweb.asm;
 
 /**
- * A node that represents an inner class.
+ * Exception thrown when the constant pool of a class produced by a {@link ClassWriter} is too
+ * large.
  *
- * @author Eric Bruneton
+ * @author Jason Zaugg
  */
-public class InnerClassNode {
+public final class ClassTooLargeException extends IndexOutOfBoundsException {
+    private static final long serialVersionUID = 160715609518896765L;
 
-    /** The internal name of an inner class (see {@link jdk.internal.org.objectweb.asm.Type#getInternalName()}). */
-    public String name;
-
-    /**
-      * The internal name of the class to which the inner class belongs (see {@link
-      * jdk.internal.org.objectweb.asm.Type#getInternalName()}). May be {@literal null}.
-      */
-    public String outerName;
+    private final String className;
+    private final int constantPoolCount;
 
     /**
-      * The (simple) name of the inner class inside its enclosing class. May be {@literal null} for
-      * anonymous inner classes.
-      */
-    public String innerName;
-
-    /** The access flags of the inner class as originally declared in the enclosing class. */
-    public int access;
-
-    /**
-      * Constructs a new {@link InnerClassNode}.
+      * Constructs a new {@link ClassTooLargeException}.
       *
-      * @param name the internal name of an inner class (see {@link
-      *     jdk.internal.org.objectweb.asm.Type#getInternalName()}).
-      * @param outerName the internal name of the class to which the inner class belongs (see {@link
-      *     jdk.internal.org.objectweb.asm.Type#getInternalName()}). May be {@literal null}.
-      * @param innerName the (simple) name of the inner class inside its enclosing class. May be
-      *     {@literal null} for anonymous inner classes.
-      * @param access the access flags of the inner class as originally declared in the enclosing
-      *     class.
+      * @param className the internal name of the class.
+      * @param constantPoolCount the number of constant pool items of the class.
       */
-    public InnerClassNode(
-            final String name, final String outerName, final String innerName, final int access) {
-        this.name = name;
-        this.outerName = outerName;
-        this.innerName = innerName;
-        this.access = access;
+    public ClassTooLargeException(final String className, final int constantPoolCount) {
+        super("Class too large: " + className);
+        this.className = className;
+        this.constantPoolCount = constantPoolCount;
     }
 
     /**
-      * Makes the given class visitor visit this inner class.
+      * Returns the internal name of the class.
       *
-      * @param classVisitor a class visitor.
+      * @return the internal name of the class.
       */
-    public void accept(final ClassVisitor classVisitor) {
-        classVisitor.visitInnerClass(name, outerName, innerName, access);
+    public String getClassName() {
+        return className;
+    }
+
+    /**
+      * Returns the number of constant pool items of the class.
+      *
+      * @return the number of constant pool items of the class.
+      */
+    public int getConstantPoolCount() {
+        return constantPoolCount;
     }
 }
