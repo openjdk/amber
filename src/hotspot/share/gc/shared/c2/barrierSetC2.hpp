@@ -28,6 +28,7 @@
 #include "memory/allocation.hpp"
 #include "oops/accessDecorators.hpp"
 #include "opto/loopnode.hpp"
+#include "opto/matcher.hpp"
 #include "opto/memnode.hpp"
 #include "utilities/globalDefinitions.hpp"
 
@@ -55,12 +56,16 @@ const DecoratorSet C2_TIGHLY_COUPLED_ALLOC   = DECORATOR_LAST << 9;
 const DecoratorSet C2_ARRAY_COPY             = DECORATOR_LAST << 10;
 
 class Compile;
+class ConnectionGraph;
 class GraphKit;
 class IdealKit;
 class Node;
+class PhaseGVN;
+class PhaseIdealLoop;
+class PhaseMacroExpand;
 class Type;
 class TypePtr;
-class PhaseMacroExpand;
+class Unique_Node_List;
 
 // This class wraps a node and a type.
 class C2AccessValue: public StackObj {
@@ -273,9 +278,14 @@ public:
   // Allow barrier sets to have shared state that is preserved across a compilation unit.
   // This could for example comprise macro nodes to be expanded during macro expansion.
   virtual void* create_barrier_state(Arena* comp_arena) const { return NULL; }
-  // If the BarrierSetC2 state has kept macro nodes in its compilation unit state to be
-  // expanded later, then now is the time to do so.
-  virtual bool expand_macro_nodes(PhaseMacroExpand* macro) const { return false; }
+  // If the BarrierSetC2 state has barrier nodes in its compilation
+  // unit state to be expanded later, then now is the time to do so.
+  virtual bool expand_barriers(Compile* C, PhaseIterGVN& igvn) const { return false; }
+  virtual bool optimize_loops(PhaseIdealLoop* phase, LoopOptsMode mode, VectorSet& visited, Node_Stack& nstack, Node_List& worklist) const { return false; }
+  virtual bool strip_mined_loops_expanded(LoopOptsMode mode) const { return false; }
+  virtual bool is_gc_specific_loop_opts_pass(LoopOptsMode mode) const { return false; }
+
+  virtual bool has_special_unique_user(const Node* node) const { return false; }
 
   enum CompilePhase {
     BeforeOptimize, /* post_parse = true */
@@ -291,6 +301,19 @@ public:
 
   virtual bool final_graph_reshaping(Compile* compile, Node* n, uint opcode) const { return false; }
 
+  virtual bool escape_add_to_con_graph(ConnectionGraph* conn_graph, PhaseGVN* gvn, Unique_Node_List* delayed_worklist, Node* n, uint opcode) const { return false; }
+  virtual bool escape_add_final_edges(ConnectionGraph* conn_graph, PhaseGVN* gvn, Node* n, uint opcode) const { return false; }
+  virtual bool escape_has_out_with_unsafe_object(Node* n) const { return false; }
+  virtual bool escape_is_barrier_node(Node* n) const { return false; }
+
+  virtual bool matcher_find_shared_visit(Matcher* matcher, Matcher::MStack& mstack, Node* n, uint opcode, bool& mem_op, int& mem_addr_idx) const { return false; };
+  virtual bool matcher_find_shared_post_visit(Matcher* matcher, Node* n, uint opcode) const { return false; };
+  virtual bool matcher_is_store_load_barrier(Node* x, uint xop) const { return false; }
+
+  virtual void igvn_add_users_to_worklist(PhaseIterGVN* igvn, Node* use) const {}
+  virtual void ccp_analyze(PhaseCCP* ccp, Unique_Node_List& worklist, Node* use) const {}
+
+  virtual Node* split_if_pre(PhaseIdealLoop* phase, Node* n) const { return NULL; }
 };
 
 #endif // SHARE_GC_SHARED_C2_BARRIERSETC2_HPP

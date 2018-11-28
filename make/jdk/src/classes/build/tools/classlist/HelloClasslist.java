@@ -38,8 +38,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 import java.util.logging.*;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -61,9 +59,12 @@ public class HelloClasslist {
         List<String> strings = Arrays.asList("Hello", "World!", "From: ",
               InetAddress.getLoopbackAddress().toString());
 
-        String helloWorld = strings.parallelStream()
+        String helloWorld = "";
+        /*
+        strings.parallelStream()
               .map(s -> s.toLowerCase(Locale.ROOT))
               .collect(joining(","));
+        */
 
         Stream.of(helloWorld.split(","))
               .forEach(System.out::println);

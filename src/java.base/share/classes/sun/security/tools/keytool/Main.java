@@ -1123,12 +1123,16 @@ public final class Main {
         } else if (command == GENKEYPAIR) {
             if (keyAlgName == null) {
                 keyAlgName = "DSA";
+                weakWarnings.add(String.format(rb.getString(
+                        "keyalg.option.1.missing.warning"), keyAlgName));
             }
             doGenKeyPair(alias, dname, keyAlgName, keysize, groupName, sigAlgName);
             kssave = true;
         } else if (command == GENSECKEY) {
             if (keyAlgName == null) {
                 keyAlgName = "DES";
+                weakWarnings.add(String.format(rb.getString(
+                        "keyalg.option.1.missing.warning"), keyAlgName));
             }
             doGenSecretKey(alias, keyAlgName, keysize);
             kssave = true;
@@ -1324,28 +1328,39 @@ public final class Main {
             if (f.exists()) {
                 // Probe for real type. A JKS can be loaded as PKCS12 because
                 // DualFormat support, vice versa.
-                keyStore = KeyStore.getInstance(f, pass);
-                String realType = keyStore.getType();
-                if (realType.equalsIgnoreCase("JKS")
-                        || realType.equalsIgnoreCase("JCEKS")) {
-                    boolean allCerts = true;
-                    for (String a : Collections.list(keyStore.aliases())) {
-                        if (!keyStore.entryInstanceOf(
-                                a, TrustedCertificateEntry.class)) {
-                            allCerts = false;
-                            break;
+                String realType = storetype;
+                try {
+                    keyStore = KeyStore.getInstance(f, pass);
+                    realType = keyStore.getType();
+                    if (realType.equalsIgnoreCase("JKS")
+                            || realType.equalsIgnoreCase("JCEKS")) {
+                        boolean allCerts = true;
+                        for (String a : Collections.list(keyStore.aliases())) {
+                            if (!keyStore.entryInstanceOf(
+                                    a, TrustedCertificateEntry.class)) {
+                                allCerts = false;
+                                break;
+                            }
+                        }
+                        // Don't warn for "cacerts" style keystore.
+                        if (!allCerts) {
+                            weakWarnings.add(String.format(
+                                    rb.getString("jks.storetype.warning"),
+                                    realType, ksfname));
                         }
                     }
-                    // Don't warn for "cacerts" style keystore.
-                    if (!allCerts) {
-                        weakWarnings.add(String.format(
-                                rb.getString("jks.storetype.warning"),
-                                realType, ksfname));
-                    }
+                } catch (KeyStoreException e) {
+                    // Probing not supported, therefore cannot be JKS or JCEKS.
+                    // Skip the legacy type warning at all.
                 }
                 if (inplaceImport) {
-                    String realSourceStoreType = KeyStore.getInstance(
-                            new File(inplaceBackupName), srcstorePass).getType();
+                    String realSourceStoreType = srcstoretype;
+                    try {
+                        realSourceStoreType = KeyStore.getInstance(
+                                new File(inplaceBackupName), srcstorePass).getType();
+                    } catch (KeyStoreException e) {
+                        // Probing not supported. Assuming srcstoretype.
+                    }
                     String format =
                             realType.equalsIgnoreCase(realSourceStoreType) ?
                             rb.getString("backup.keystore.warning") :
@@ -1758,13 +1773,11 @@ public final class Main {
             keygen.init(keysize);
             secKey = keygen.generateKey();
 
-            if (verbose) {
-                MessageFormat form = new MessageFormat(rb.getString
-                    ("Generated.keysize.bit.keyAlgName.secret.key"));
-                Object[] source = {keysize,
-                                    secKey.getAlgorithm()};
-                System.err.println(form.format(source));
-            }
+            MessageFormat form = new MessageFormat(rb.getString
+                ("Generated.keysize.bit.keyAlgName.secret.key"));
+            Object[] source = {keysize,
+                                secKey.getAlgorithm()};
+            System.err.println(form.format(source));
         }
 
         if (keyPass == null) {
@@ -1841,6 +1854,7 @@ public final class Main {
         // If DN is provided, parse it. Otherwise, prompt the user for it.
         X500Name x500Name;
         if (dname == null) {
+            printWeakWarnings(true);
             x500Name = getX500Name();
         } else {
             x500Name = new X500Name(dname);
@@ -1866,16 +1880,14 @@ public final class Main {
         chain[0] = keypair.getSelfCertificate(
                 x500Name, getStartDate(startDate), validity*24L*60L*60L, ext);
 
-        if (verbose) {
-            MessageFormat form = new MessageFormat(rb.getString
-                ("Generating.keysize.bit.keyAlgName.key.pair.and.self.signed.certificate.sigAlgName.with.a.validity.of.validality.days.for"));
-            Object[] source = {keysize,
-                                privKey.getAlgorithm(),
-                                chain[0].getSigAlgName(),
-                                validity,
-                                x500Name};
-            System.err.println(form.format(source));
-        }
+        MessageFormat form = new MessageFormat(rb.getString
+            ("Generating.keysize.bit.keyAlgName.key.pair.and.self.signed.certificate.sigAlgName.with.a.validity.of.validality.days.for"));
+        Object[] source = {keysize,
+                            privKey.getAlgorithm(),
+                            chain[0].getSigAlgName(),
+                            validity,
+                            x500Name};
+        System.err.println(form.format(source));
 
         if (keyPass == null) {
             keyPass = promptForKeyPass(alias, null, storePass);

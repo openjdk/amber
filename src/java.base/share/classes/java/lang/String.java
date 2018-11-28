@@ -41,6 +41,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -1787,7 +1789,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgtStr      the characters being searched for.
+     * @param   tgt         the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,
@@ -2974,6 +2976,25 @@ public final class String
         // overflow-conscious code
         int indent = n - outdent;
         return indent(indent > n ? Integer.MIN_VALUE : indent, true);
+    }
+
+    /**
+     * This method allows the application of a function to {@code this}
+     * string. The function should expect a single String argument
+     * and produce an {@code R} result.
+     *
+     * @param f    functional interface to a apply
+     *
+     * @param <R>  class of the result
+     *
+     * @return     the result of applying the function to this string
+     *
+     * @see java.util.function.Function
+     *
+     * @since 12
+     */
+    public <R> R transform(Function<? super String, ? extends R> f) {
+        return f.apply(this);
     }
 
     /**
