@@ -876,8 +876,8 @@ inline VALUE* ConcurrentHashTable<VALUE, CONFIG, F>::
 template <typename VALUE, typename CONFIG, MEMFLAGS F>
 template <typename LOOKUP_FUNC, typename VALUE_FUNC, typename CALLBACK_FUNC>
 inline bool ConcurrentHashTable<VALUE, CONFIG, F>::
-  internal_insert(Thread* thread, LOOKUP_FUNC& lookup_f, VALUE_FUNC& value_f,
-                  CALLBACK_FUNC& callback, bool* grow_hint, bool* clean_hint)
+  internal_get_insert(Thread* thread, LOOKUP_FUNC& lookup_f, VALUE_FUNC& value_f,
+                      CALLBACK_FUNC& callback_f, bool* grow_hint, bool* clean_hint)
 {
   bool ret = false;
   bool clean = false;
@@ -901,7 +901,7 @@ inline bool ConcurrentHashTable<VALUE, CONFIG, F>::
           new_node->set_next(first_at_start);
         }
         if (bucket->cas_first(new_node, first_at_start)) {
-          callback(true, new_node->value());
+          callback_f(true, new_node->value());
           new_node = NULL;
           ret = true;
           break; /* leave critical section */
@@ -910,7 +910,7 @@ inline bool ConcurrentHashTable<VALUE, CONFIG, F>::
         locked = bucket->is_locked();
       } else {
         // There is a duplicate.
-        callback(false, old->value());
+        callback_f(false, old->value());
         break; /* leave critical section */
       }
     } /* leave critical section */
@@ -931,6 +931,70 @@ inline bool ConcurrentHashTable<VALUE, CONFIG, F>::
     delete_in_bucket(thread, bucket, lookup_f);
     bucket->unlock();
 
+    clean = false;
+  }
+
+  if (grow_hint != NULL) {
+    *grow_hint = loops > _grow_hint;
+  }
+
+  if (clean_hint != NULL) {
+    *clean_hint = clean;
+  }
+
+  return ret;
+}
+
+template <typename VALUE, typename CONFIG, MEMFLAGS F>
+template <typename LOOKUP_FUNC>
+inline bool ConcurrentHashTable<VALUE, CONFIG, F>::
+  internal_insert(Thread* thread, LOOKUP_FUNC& lookup_f, const VALUE& value,
+                  bool* grow_hint, bool* clean_hint)
+{
+  bool ret = false;
+  bool clean = false;
+  bool locked;
+  size_t loops = 0;
+  size_t i = 0;
+  uintx hash = lookup_f.get_hash();
+  Node* new_node = Node::create_node(value, NULL);
+
+  while (true) {
+    {
+      ScopedCS cs(thread, this); /* protected the table/bucket */
+      Bucket* bucket = get_bucket(hash);
+      Node* first_at_start = bucket->first();
+      Node* old = get_node(bucket, lookup_f, &clean, &loops);
+      if (old == NULL) {
+        new_node->set_next(first_at_start);
+        if (bucket->cas_first(new_node, first_at_start)) {
+          new_node = NULL;
+          ret = true;
+          break; /* leave critical section */
+        }
+        // CAS failed we must leave critical section and retry.
+        locked = bucket->is_locked();
+      } else {
+        // There is a duplicate.
+        break; /* leave critical section */
+      }
+    } /* leave critical section */
+    i++;
+    if (locked) {
+      os::naked_yield();
+    } else {
+      SpinPause();
+    }
+  }
+
+  if (new_node != NULL) {
+    // CAS failed and a duplicate was inserted, we must free this node.
+    Node::destroy_node(new_node);
+  } else if (i == 0 && clean) {
+    // We only do cleaning on fast inserts.
+    Bucket* bucket = get_bucket_locked(thread, lookup_f.get_hash());
+    delete_in_bucket(thread, bucket, lookup_f);
+    bucket->unlock();
     clean = false;
   }
 
@@ -1116,11 +1180,56 @@ template <typename SCAN_FUNC>
 inline void ConcurrentHashTable<VALUE, CONFIG, F>::
   do_scan(Thread* thread, SCAN_FUNC& scan_f)
 {
+  assert(!SafepointSynchronize::is_at_safepoint(),
+         "must be outside a safepoint");
   assert(_resize_lock_owner != thread, "Re-size lock held");
   lock_resize_lock(thread);
   do_scan_locked(thread, scan_f);
   unlock_resize_lock(thread);
   assert(_resize_lock_owner != thread, "Re-size lock held");
+}
+
+template <typename VALUE, typename CONFIG, MEMFLAGS F>
+template <typename SCAN_FUNC>
+inline void ConcurrentHashTable<VALUE, CONFIG, F>::
+  do_safepoint_scan(SCAN_FUNC& scan_f)
+{
+  // We only allow this method to be used during a safepoint.
+  assert(SafepointSynchronize::is_at_safepoint(),
+         "must only be called in a safepoint");
+  assert(Thread::current()->is_VM_thread(),
+         "should be in vm thread");
+
+  // Here we skip protection,
+  // thus no other thread may use this table at the same time.
+  InternalTable* table = get_table();
+  for (size_t bucket_it = 0; bucket_it < table->_size; bucket_it++) {
+    Bucket* bucket = table->get_bucket(bucket_it);
+    // If bucket have a redirect the items will be in the new table.
+    // We must visit them there since the new table will contain any
+    // concurrent inserts done after this bucket was resized.
+    // If the bucket don't have redirect flag all items is in this table.
+    if (!bucket->have_redirect()) {
+      if(!visit_nodes(bucket, scan_f)) {
+        return;
+      }
+    } else {
+      assert(bucket->is_locked(), "Bucket must be locked.");
+    }
+  }
+  // If there is a paused resize we also need to visit the already resized items.
+  table = get_new_table();
+  if (table == NULL) {
+    return;
+  }
+  DEBUG_ONLY(if (table == POISON_PTR) { return; })
+  for (size_t bucket_it = 0; bucket_it < table->_size; bucket_it++) {
+    Bucket* bucket = table->get_bucket(bucket_it);
+    assert(!bucket->is_locked(), "Bucket must be unlocked.");
+    if (!visit_nodes(bucket, scan_f)) {
+      return;
+    }
+  }
 }
 
 template <typename VALUE, typename CONFIG, MEMFLAGS F>
@@ -1142,6 +1251,8 @@ template <typename EVALUATE_FUNC, typename DELETE_FUNC>
 inline void ConcurrentHashTable<VALUE, CONFIG, F>::
   bulk_delete(Thread* thread, EVALUATE_FUNC& eval_f, DELETE_FUNC& del_f)
 {
+  assert(!SafepointSynchronize::is_at_safepoint(),
+         "must be outside a safepoint");
   lock_resize_lock(thread);
   do_bulk_delete_locked(thread, eval_f, del_f);
   unlock_resize_lock(thread);
