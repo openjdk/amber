@@ -753,7 +753,7 @@ inline HeapWord* G1CollectedHeap::attempt_allocation(size_t min_word_size,
   return result;
 }
 
-void G1CollectedHeap::dealloc_archive_regions(MemRegion* ranges, size_t count) {
+void G1CollectedHeap::dealloc_archive_regions(MemRegion* ranges, size_t count, bool is_open) {
   assert(!is_init_completed(), "Expect to be called at JVM init time");
   assert(ranges != NULL, "MemRegion array NULL");
   assert(count != 0, "No MemRegions provided");
@@ -815,7 +815,7 @@ void G1CollectedHeap::dealloc_archive_regions(MemRegion* ranges, size_t count) {
     }
 
     // Notify mark-sweep that this is no longer an archive range.
-    G1ArchiveAllocator::set_range_archive(ranges[i], false);
+    G1ArchiveAllocator::clear_range_archive(ranges[i], is_open);
   }
 
   if (uncommitted_regions != 0) {
@@ -1016,7 +1016,6 @@ void G1CollectedHeap::prepare_heap_for_full_collection() {
   // Make sure we'll choose a new allocation region afterwards.
   _allocator->release_mutator_alloc_region();
   _allocator->abandon_gc_alloc_regions();
-  g1_rem_set()->cleanupHRRS();
 
   // We may have added regions to the current incremental collection
   // set between the last GC or pause and now. We need to clear the
@@ -1653,6 +1652,28 @@ jint G1CollectedHeap::initialize() {
   BarrierSet::set_barrier_set(bs);
   _card_table = ct;
 
+  G1BarrierSet::satb_mark_queue_set().initialize(this,
+                                                 SATB_Q_CBL_mon,
+                                                 &bs->satb_mark_queue_buffer_allocator(),
+                                                 G1SATBProcessCompletedThreshold,
+                                                 G1SATBBufferEnqueueingThresholdPercent,
+                                                 Shared_SATB_Q_lock);
+
+  // process_completed_threshold and max_completed_queue are updated
+  // later, based on the concurrent refinement object.
+  G1BarrierSet::dirty_card_queue_set().initialize(DirtyCardQ_CBL_mon,
+                                                  &bs->dirty_card_queue_buffer_allocator(),
+                                                  -1, // temp. never trigger
+                                                  -1, // temp. no limit
+                                                  Shared_DirtyCardQ_lock,
+                                                  true); // init_free_ids
+
+  dirty_card_queue_set().initialize(DirtyCardQ_CBL_mon,
+                                    &bs->dirty_card_queue_buffer_allocator(),
+                                    -1, // never trigger processing
+                                    -1, // no limit on length
+                                    Shared_DirtyCardQ_lock);
+
   // Create the hot card cache.
   _hot_card_cache = new G1HotCardCache(this);
 
@@ -1749,13 +1770,6 @@ jint G1CollectedHeap::initialize() {
   // Perform any initialization actions delegated to the policy.
   g1_policy()->init(this, &_collection_set);
 
-  G1BarrierSet::satb_mark_queue_set().initialize(this,
-                                                 SATB_Q_CBL_mon,
-                                                 SATB_Q_FL_lock,
-                                                 G1SATBProcessCompletedThreshold,
-                                                 G1SATBBufferEnqueueingThresholdPercent,
-                                                 Shared_SATB_Q_lock);
-
   jint ecode = initialize_concurrent_refinement();
   if (ecode != JNI_OK) {
     return ecode;
@@ -1766,20 +1780,11 @@ jint G1CollectedHeap::initialize() {
     return ecode;
   }
 
-  G1BarrierSet::dirty_card_queue_set().initialize(DirtyCardQ_CBL_mon,
-                                                  DirtyCardQ_FL_lock,
-                                                  (int)concurrent_refine()->yellow_zone(),
-                                                  (int)concurrent_refine()->red_zone(),
-                                                  Shared_DirtyCardQ_lock,
-                                                  NULL,  // fl_owner
-                                                  true); // init_free_ids
-
-  dirty_card_queue_set().initialize(DirtyCardQ_CBL_mon,
-                                    DirtyCardQ_FL_lock,
-                                    -1, // never trigger processing
-                                    -1, // no limit on length
-                                    Shared_DirtyCardQ_lock,
-                                    &G1BarrierSet::dirty_card_queue_set());
+  {
+    DirtyCardQueueSet& dcqs = G1BarrierSet::dirty_card_queue_set();
+    dcqs.set_process_completed_threshold((int)concurrent_refine()->yellow_zone());
+    dcqs.set_max_completed_queue((int)concurrent_refine()->red_zone());
+  }
 
   // Here we allocate the dummy HeapRegion that is required by the
   // G1AllocRegion class.
@@ -2967,13 +2972,6 @@ G1CollectedHeap::do_collection_pause_at_safepoint(double target_pause_time_ms) {
         g1_policy()->finalize_collection_set(target_pause_time_ms, &_survivor);
 
         evacuation_info.set_collectionset_regions(collection_set()->region_length());
-
-        // Make sure the remembered sets are up to date. This needs to be
-        // done before register_humongous_regions_with_cset(), because the
-        // remembered sets are used there to choose eager reclaim candidates.
-        // If the remembered sets are not up to date we might miss some
-        // entries that need to be handled.
-        g1_rem_set()->cleanupHRRS();
 
         register_humongous_regions_with_cset();
 
