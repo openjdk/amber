@@ -577,7 +577,7 @@ public class TreeDiffer extends TreeScanner {
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
         JCInstanceOf that = (JCInstanceOf) parameter;
-        result = scan(tree.expr, that.expr) && scan(tree.clazz, that.clazz);
+        result = scan(tree.expr, that.expr) && scan(tree.pattern, that.pattern);
     }
 
     @Override

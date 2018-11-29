@@ -574,7 +574,7 @@ public class TreeInfo {
             case TYPECAST:
                 return getEndPos(((JCTypeCast) tree).expr, endPosTable);
             case TYPETEST:
-                return getEndPos(((JCInstanceOf) tree).clazz, endPosTable);
+                return getEndPos(((JCInstanceOf) tree).pattern, endPosTable);
             case WHILELOOP:
                 return getEndPos(((JCWhileLoop) tree).body, endPosTable);
             case ANNOTATED_TYPE:
@@ -847,6 +847,8 @@ public class TreeInfo {
             if (node.type != null)
                 return node.type.tsym;
             return null;
+        case BINDINGPATTERN:
+            return ((JCBindingPattern) node).symbol;
         default:
             return null;
         }
@@ -1225,4 +1227,5 @@ public class TreeInfo {
     public static boolean isPackageInfo(JCCompilationUnit tree) {
         return tree.sourcefile.isNameCompatible("package-info", JavaFileObject.Kind.SOURCE);
     }
+
 }

@@ -1,0 +1,2 @@
+DuplicateBindingTest.java:15:36: compiler.err.already.defined: kindname.variable, s, kindname.method, main(java.lang.String[])
+1 error

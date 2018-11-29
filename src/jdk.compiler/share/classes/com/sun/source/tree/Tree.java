@@ -220,6 +220,11 @@ public interface Tree {
         PARENTHESIZED(ParenthesizedTree.class),
 
         /**
+         * Used for instances of {@link BindingPatternTree}.
+         */
+        BINDING_PATTERN(BindingPatternTree.class),
+
+        /**
          * Used for instances of {@link PrimitiveTypeTree}.
          */
         PRIMITIVE_TYPE(PrimitiveTypeTree.class),

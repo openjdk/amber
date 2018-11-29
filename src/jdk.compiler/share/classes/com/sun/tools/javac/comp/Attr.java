@@ -49,6 +49,7 @@ import com.sun.tools.javac.code.Types.FunctionDescriptorLookupError;
 import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
 import com.sun.tools.javac.comp.Check.CheckContext;
 import com.sun.tools.javac.comp.DeferredAttr.AttrMode;
+import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
 import com.sun.tools.javac.jvm.*;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.Diamond;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.DiamondInvalidArg;
@@ -75,6 +76,8 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
+import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
@@ -293,6 +296,8 @@ public class Attr extends JCTree.Visitor {
                isAssignableAsBlankFinal(v, env)))) {
             if (v.isResourceVariable()) { //TWR resource
                 log.error(pos, Errors.TryResourceMayNotBeAssigned(v));
+            } else if ((v.flags() & MATCH_BINDING) != 0) {
+                log.error(pos, Errors.PatternBindingMayNotBeAssigned(v));
             } else {
                 log.error(pos, Errors.CantAssignValToFinalVar(v));
             }
@@ -1315,13 +1320,45 @@ public class Attr extends JCTree.Visitor {
     public void visitDoLoop(JCDoWhileLoop tree) {
         attribStat(tree.body, env.dup(tree));
         attribExpr(tree.cond, env, syms.booleanType);
+        if (!breaksOutOf(tree, tree.body)) {
+            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+            bindings.forEach(env.info.scope::enter);
+            bindings.forEach(BindingSymbol::preserveBinding);
+        }
         result = null;
     }
 
     public void visitWhileLoop(JCWhileLoop tree) {
         attribExpr(tree.cond, env, syms.booleanType);
-        attribStat(tree.body, env.dup(tree));
+        // include x.T in while's body
+        Env<AttrContext> whileEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        try {
+            attribStat(tree.body, whileEnv.dup(tree));
+        } finally {
+            whileEnv.info.scope.leave();
+        }
+        if (!breaksOutOf(tree, tree.body)) {
+            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+            bindings.forEach(env.info.scope::enter);
+            bindings.forEach(BindingSymbol::preserveBinding);
+        }
         result = null;
+    }
+
+    private boolean breaksOutOf(JCTree loop, JCTree body) {
+        //TODO: should correctly reflect liveness:
+        boolean[] breaksOut = new boolean[1];
+        new TreeScanner() {
+            @Override
+            public void visitBreak(JCBreak tree) {
+                breaksOut[0] |= tree.target == loop;
+                super.visitBreak(tree);
+            }
+        }.scan(body);
+
+        return breaksOut[0];
     }
 
     public void visitForLoop(JCForLoop tree) {
@@ -1329,14 +1366,30 @@ public class Attr extends JCTree.Visitor {
             env.dup(env.tree, env.info.dup(env.info.scope.dup()));
         try {
             attribStats(tree.init, loopEnv);
-            if (tree.cond != null) attribExpr(tree.cond, loopEnv, syms.booleanType);
-            loopEnv.tree = tree; // before, we were not in loop!
-            attribStats(tree.step, loopEnv);
-            attribStat(tree.body, loopEnv);
+            List<BindingSymbol> matchBindings = List.nil();
+            if (tree.cond != null) {
+                attribExpr(tree.cond, loopEnv, syms.booleanType);
+                // include x.T in the evaluation scopes of body & step.
+                matchBindings = getMatchBindings(types, log, tree.cond, true);
+            }
+            Env<AttrContext> bodyEnv = bindingEnv(loopEnv, matchBindings);
+            try {
+                bodyEnv.tree = tree; // before, we were not in loop!
+                attribStats(tree.step, bodyEnv);
+                attribStat(tree.body, bodyEnv);
+            } finally {
+                bodyEnv.info.scope.leave();
+            }
+            if (!breaksOutOf(tree, tree.body)) {
+                List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+                bindings.forEach(env.info.scope::enter);
+                bindings.forEach(BindingSymbol::preserveBinding);
+            }
             result = null;
         }
         finally {
-            loopEnv.info.scope.leave();
+            loopEnv.info.scope.leave(); // all injected match bindings vanish here.
         }
     }
 
@@ -1688,8 +1741,26 @@ public class Attr extends JCTree.Visitor {
                 unknownExprInfo :
                 resultInfo.dup(conditionalContext(resultInfo.checkContext));
 
-        Type truetype = attribTree(tree.truepart, env, condInfo);
-        Type falsetype = attribTree(tree.falsepart, env, condInfo);
+        /*  if e = "x ? y : z", then:
+                include x.T in y
+                include x.F in z
+        */
+
+        Type truetype;
+        Env<AttrContext> trueEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        try {
+            truetype = attribTree(tree.truepart, trueEnv, condInfo);
+        } finally {
+            trueEnv.info.scope.leave();
+        }
+
+        Type falsetype;
+        Env<AttrContext> falseEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, false));
+        try {
+            falsetype = attribTree(tree.falsepart, falseEnv, condInfo);
+        } finally {
+            falseEnv.info.scope.leave();
+        }
 
         Type owntype = (tree.polyKind == PolyKind.STANDALONE) ?
                 condType(List.of(tree.truepart.pos(), tree.falsepart.pos()),
@@ -1844,14 +1915,76 @@ public class Attr extends JCTree.Visitor {
         BOOLEAN,
     };
 
+    Env<AttrContext> bindingEnv(Env<AttrContext> env, List<BindingSymbol> bindings) {
+        Env<AttrContext> env1 = env.dup(env.tree, env.info.dup(env.info.scope.dup()));
+        bindings.forEach(env1.info.scope::enter);
+        return env1;
+    }
+
     public void visitIf(JCIf tree) {
         attribExpr(tree.cond, env, syms.booleanType);
-        attribStat(tree.thenpart, env);
-        if (tree.elsepart != null)
-            attribStat(tree.elsepart, env);
+
+        // if (x) { y } [ else z ] include x.T in y; include x.F in z
+
+        List<BindingSymbol> thenBindings = getMatchBindings(types, log, tree.cond, true);
+        Env<AttrContext> thenEnv = bindingEnv(env, thenBindings);
+
+        try {
+            attribStat(tree.thenpart, thenEnv);
+        } finally {
+            thenEnv.info.scope.leave();
+        }
+
+        preFlow(tree.thenpart);
+        boolean aliveAfterThen = flow.aliveAfter(env, tree.thenpart, make);
+        boolean aliveAfterElse;
+        List<BindingSymbol> elseBindings = List.nil();
+
+        if (tree.elsepart != null) {
+            elseBindings = getMatchBindings(types, log, tree.cond, false);
+
+            Env<AttrContext> elseEnv = bindingEnv(env, elseBindings);
+            try {
+                attribStat(tree.elsepart, elseEnv);
+            } finally {
+                elseEnv.info.scope.leave();
+            }
+            preFlow(tree.elsepart);
+            aliveAfterElse = flow.aliveAfter(env, tree.elsepart, make);
+        } else {
+            aliveAfterElse = true;
+        }
+
         chk.checkEmptyIf(tree);
+
+        List<BindingSymbol> afterIfBindings = List.nil();
+
+        if (aliveAfterThen && !aliveAfterElse) {
+            afterIfBindings = thenBindings;
+        } else if (aliveAfterElse && !aliveAfterThen) {
+            afterIfBindings = elseBindings;
+        }
+
+        afterIfBindings.forEach(env.info.scope::enter);
+        afterIfBindings.forEach(BindingSymbol::preserveBinding);
+
         result = null;
     }
+
+        void preFlow(JCTree tree) {
+            new PostAttrAnalyzer() {
+                @Override
+                public void scan(JCTree tree) {
+                    if (tree == null ||
+                            (tree.type != null &&
+                            tree.type == Type.stuckType)) {
+                        //don't touch stuck expressions!
+                        return;
+                    }
+                    super.scan(tree);
+                }
+            }.scan(tree);
+        }
 
     public void visitExec(JCExpressionStatement tree) {
         //a fresh environment is required for 292 inference to work properly ---
@@ -3582,7 +3715,27 @@ public class Attr extends JCTree.Visitor {
     public void visitBinary(JCBinary tree) {
         // Attribute arguments.
         Type left = chk.checkNonVoid(tree.lhs.pos(), attribExpr(tree.lhs, env));
-        Type right = chk.checkNonVoid(tree.rhs.pos(), attribExpr(tree.rhs, env));
+        // If e = "x && y", then, include x.T in y;  If e = "x || y", then, include x.F in y
+        List<BindingSymbol> matchBindings;
+        switch (tree.getTag()) {
+            case AND:
+                matchBindings = getMatchBindings(types, log, tree.lhs, true);
+                break;
+            case OR:
+                matchBindings = getMatchBindings(types, log, tree.lhs, false);
+                break;
+            default:
+                matchBindings = List.nil();
+                break;
+        }
+        Env<AttrContext> rhsEnv = bindingEnv(env, matchBindings);
+        Type right;
+        try {
+            right = chk.checkNonVoid(tree.rhs.pos(), attribExpr(tree.rhs, rhsEnv));
+        } finally {
+            rhsEnv.info.scope.leave();
+        }
+
         // Find operator.
         Symbol operator = tree.operator = operators.resolveBinary(tree, tree.getTag(), left, right);
         Type owntype = types.createErrorType(tree.type);
@@ -3648,17 +3801,41 @@ public class Attr extends JCTree.Visitor {
     public void visitTypeTest(JCInstanceOf tree) {
         Type exprtype = chk.checkNullOrRefType(
                 tree.expr.pos(), attribExpr(tree.expr, env));
-        Type clazztype = attribType(tree.clazz, env);
-        if (!clazztype.hasTag(TYPEVAR)) {
-            clazztype = chk.checkClassOrArrayType(tree.clazz.pos(), clazztype);
+        Type clazztype;
+        if (tree.pattern.getTag() == BINDINGPATTERN) {
+            attribTree(tree.pattern, env, unknownExprInfo);
+            clazztype = tree.pattern.type;
+            if (!clazztype.hasTag(TYPEVAR)) {
+                clazztype = chk.checkClassOrArrayType(tree.pattern.pos(), clazztype);
+            }
+        } else {
+            clazztype = attribType(tree.pattern, env);
+            if (!clazztype.hasTag(TYPEVAR)) {
+                clazztype = chk.checkClassOrArrayType(tree.pattern.pos(), clazztype);
+            }
+            if (!clazztype.isErroneous() && !types.isReifiable(clazztype)) {
+                log.error(tree.pattern.pos(), Errors.IllegalGenericTypeForInstof);
+                clazztype = types.createErrorType(clazztype);
+            }
+            chk.validate(tree.pattern, env, false);
         }
-        if (!clazztype.isErroneous() && !types.isReifiable(clazztype)) {
-            log.error(tree.clazz.pos(), Errors.IllegalGenericTypeForInstof);
-            clazztype = types.createErrorType(clazztype);
-        }
-        chk.validate(tree.clazz, env, false);
         chk.checkCastable(tree.expr.pos(), exprtype, clazztype);
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
+    }
+
+    public void visitBindingPattern(JCBindingPattern tree) {
+        if (tree.vartype != null) {
+            ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
+            tree.type = attribTree(tree.vartype, env, varInfo);
+        } else {
+            tree.type = resultInfo.pt;
+        }
+        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype != null ? tree.vartype.type : (tree.type.hasTag(BOT) ? syms.objectType : tree.type), env.info.scope.owner);
+        if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
+            chk.checkTransparentVar(tree.pos(), v, env.info.scope);
+            // env.info.scope.enter(v); // we inject into scopes expressly at various points.
+        }
+        result = tree.type;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -5051,8 +5228,8 @@ public class Attr extends JCTree.Visitor {
             super.visitTypeCast(tree);
         }
         public void visitTypeTest(JCInstanceOf tree) {
-            if (tree.clazz != null && tree.clazz.type != null)
-                validateAnnotatedType(tree.clazz, tree.clazz.type);
+            if (tree.pattern != null && !(tree.pattern instanceof JCPattern) && tree.pattern.type != null)
+                validateAnnotatedType(tree.pattern, tree.pattern.type);
             super.visitTypeTest(tree);
         }
         public void visitNewClass(JCNewClass tree) {
@@ -5313,6 +5490,16 @@ public class Attr extends JCTree.Visitor {
         }
 
         @Override
+        public void visitBindingPattern(JCBindingPattern that) {
+            //initTypeIfNeeded(that);
+            if (that.symbol == null) {
+                that.symbol = new BindingSymbol(that.name, that.type, syms.noSymbol);
+                that.symbol.adr = 0;
+            }
+            super.visitBindingPattern(that);
+        }
+
+        @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {
                 that.constructor = new MethodSymbol(0, names.init,
@@ -5379,4 +5566,12 @@ public class Attr extends JCTree.Visitor {
         }.scan(pid);
     }
 
+
+    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue) {
+        return getMatchBindings(types, log, expression, whenTrue, null);
+    }
+
+    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue, List<BindingSymbol> intersectWith) {
+        return new MatchBindingsComputer(types, log, expression, whenTrue).getBindings(intersectWith);
+    }
 }

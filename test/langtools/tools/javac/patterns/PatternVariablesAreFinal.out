@@ -1,0 +1,2 @@
+PatternVariablesAreFinal.java:10:13: compiler.err.pattern.binding.may.not.be.assigned: s
+1 error

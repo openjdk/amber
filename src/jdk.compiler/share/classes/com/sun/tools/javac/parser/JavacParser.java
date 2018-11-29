@@ -886,6 +886,7 @@ public class JavacParser implements Parser {
 
     /*  Expression2Rest = {infixop Expression3}
      *                  | Expression3 instanceof Type
+     *                  | Expression3 instanceof Pattern
      *  infixop         = "||"
      *                  | "&&"
      *                  | "|"
@@ -908,13 +909,24 @@ public class JavacParser implements Parser {
         Token topOp = Tokens.DUMMY;
         while (prec(token.kind) >= minprec) {
             opStack[top] = topOp;
-            top++;
-            topOp = token;
-            nextToken();
-            odStack[top] = (topOp.kind == INSTANCEOF) ? parseType() : term3();
+
+            if (token.kind == INSTANCEOF) {
+                int pos = token.pos;
+                nextToken();
+                int patternPos = token.pos;
+                JCTree pattern = parseType();
+                if (token.kind == IDENTIFIER) {
+                    pattern = toP(F.at(patternPos).BindingPattern(ident(), pattern));
+                }
+                odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
+            } else {
+                topOp = token;
+                nextToken();
+                top++;
+                odStack[top] = term3();
+            }
             while (top > 0 && prec(topOp.kind) >= prec(token.kind)) {
-                odStack[top-1] = makeOp(topOp.pos, topOp.kind, odStack[top-1],
-                                        odStack[top]);
+                odStack[top - 1] = F.at(topOp.pos).Binary(optag(topOp.kind), odStack[top - 1], odStack[top]);
                 top--;
                 topOp = opStack[top];
             }
@@ -931,19 +943,6 @@ public class JavacParser implements Parser {
         return t;
     }
     //where
-        /** Construct a binary or type test node.
-         */
-        private JCExpression makeOp(int pos,
-                                    TokenKind topOp,
-                                    JCExpression od1,
-                                    JCExpression od2)
-        {
-            if (topOp == INSTANCEOF) {
-                return F.at(pos).TypeTest(od1, od2);
-            } else {
-                return F.at(pos).Binary(optag(topOp), od1, od2);
-            }
-        }
         /** If tree is a concatenation of string literals, replace it
          *  by a single literal representing the concatenated string.
          */
@@ -2542,25 +2541,25 @@ public class JavacParser implements Parser {
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
-        default:
-            Token prevToken = token;
-            JCExpression t = term(EXPR | TYPE);
-            if (token.kind == COLON && t.hasTag(IDENT)) {
-                nextToken();
-                JCStatement stat = parseStatementAsBlock();
-                return List.of(F.at(pos).Labelled(prevToken.name(), stat));
-            } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
-                pos = token.pos;
-                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-                F.at(pos);
-                return localVariableDeclarations(mods, t);
-            } else {
-                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-                t = checkExprStat(t);
-                accept(SEMI);
-                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-                return List.of(expr);
-            }
+        }
+        //otherwise
+        Token prevToken = token;
+        JCExpression t = term(EXPR | TYPE);
+        if (token.kind == COLON && t.hasTag(IDENT)) {
+            nextToken();
+            JCStatement stat = parseStatementAsBlock();
+            return List.of(F.at(pos).Labelled(prevToken.name(), stat));
+        } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
+            pos = token.pos;
+            JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+            F.at(pos);
+            return localVariableDeclarations(mods, t);
+        } else {
+            // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+            t = checkExprStat(t);
+            accept(SEMI);
+            JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+            return List.of(expr);
         }
     }
     //where

@@ -258,6 +258,14 @@ public interface TreeVisitor<R,P> {
     R visitLiteral(LiteralTree node, P p);
 
     /**
+     * Visits an BindingPattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitBindingPattern(BindingPatternTree node, P p);
+
+    /**
      * Visits a MethodTree node.
      * @param node the node being visited
      * @param p a parameter value
