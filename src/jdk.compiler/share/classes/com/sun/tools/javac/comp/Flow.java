@@ -1459,7 +1459,7 @@ public class Flow {
             //skip
         }
         public boolean isAlive() {
-            return super.alive;
+            return super.alive != Liveness.DEAD;
         }
     }
 
