@@ -287,7 +287,7 @@ public class TagletWriterImpl extends TagletWriter {
             String key = kind == Kind.GETTER ?
                     "doclet.getter" : "doclet.setter";
             result.addContent(HtmlTree.DT(HtmlTree.SPAN(HtmlStyle.seeLabel,
-                    new StringContent(configuration.getText(key)))));
+                    new StringContent(resources.getText(key)))));
             result.addContent(HtmlTree.DD(body));
             return result;
         } else {
