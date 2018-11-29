@@ -138,8 +138,8 @@ public abstract class DynamicConstantDesc<T>
      * @jvms 4.2.2 Unqualified Names
      */
     public static<T> ConstantDesc ofCanonical(DirectMethodHandleDesc bootstrapMethod,
-                                                 String constantName,
-                                                 ClassDesc constantType,
+                                              String constantName,
+                                              ClassDesc constantType,
                                               ConstantDesc[] bootstrapArgs) {
         return DynamicConstantDesc.<T>ofNamed(bootstrapMethod, constantName, constantType, bootstrapArgs)
                 .tryCanonicalize();
@@ -186,8 +186,6 @@ public abstract class DynamicConstantDesc<T>
      *                      {@code BootstrapMethods} attribute
      * @return the nominal descriptor
      * @throws NullPointerException if any argument is null
-     * @throws IllegalArgumentException if the {@code name} has the incorrect
-     * format
      * @jvms 4.2.2 Unqualified Names
      */
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
@@ -205,8 +203,6 @@ public abstract class DynamicConstantDesc<T>
      *                        bootstrap method for the constant
      * @return the nominal descriptor
      * @throws NullPointerException if any argument is null
-     * @throws IllegalArgumentException if the {@code name} has the incorrect
-     * format
      */
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod) {
         return of(bootstrapMethod, EMPTY_CONSTANTDESC);
