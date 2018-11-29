@@ -359,6 +359,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
         return (flags_field & DEPRECATED) != 0;
     }
 
+    public boolean isRecord() {
+        return (flags_field & RECORD) != 0;
+    }
+
     public boolean hasDeprecatedAnnotation() {
         return (flags_field & DEPRECATED_ANNOTATION) != 0;
     }
@@ -389,6 +393,10 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
     public boolean isInterface() {
         return (flags() & INTERFACE) != 0;
+    }
+
+    public boolean isAbstract() {
+        return (flags() & ABSTRACT) != 0;
     }
 
     public boolean isPrivate() {
@@ -1522,6 +1530,8 @@ public abstract class Symbol extends AnnoConstruct implements Element {
          */
         public int adr = -1;
 
+        public List<Pair<Accessors.Kind, MethodSymbol>> accessors = List.nil();
+
         /** Construct a variable symbol, given its flags, name, type and owner.
          */
         public VarSymbol(long flags, Name name, Type type, Symbol owner) {
@@ -1550,6 +1560,23 @@ public abstract class Symbol extends AnnoConstruct implements Element {
 
         public Symbol asMemberOf(Type site, Types types) {
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
+        }
+
+        @Override
+        public Type erasure(Types types) {
+            if (erasure_field == null) {
+                erasure_field = types.erasure(type);
+                if (!accessors.isEmpty()) {
+                    for (Pair<Accessors.Kind, MethodSymbol> accessorPair : accessors) {
+                        if (accessorPair.fst == Accessors.Kind.GET) {
+                            ((MethodType)accessorPair.snd.type).restype = erasure_field;
+                        } else {
+                            // set accessors are not yet generated
+                        }
+                    }
+                }
+            }
+            return erasure_field;
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)

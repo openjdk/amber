@@ -51,6 +51,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/recordParamStreams.hpp"
 #include "prims/jvm_misc.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
@@ -1642,6 +1643,63 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
     }
   }
   assert(out_idx == num_fields, "just checking");
+  return (jobjectArray) JNIHandles::make_local(env, result());
+}
+JVM_END
+
+JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
+{
+  // current is not a primitive or array class
+  JVMWrapper("JVM_GetRecordParametersCount");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  // Ensure class is linked
+  k->link_class(CHECK_0);
+
+  return k->record_params_count();
+}
+JVM_END
+
+JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
+{
+  // current is not a primitive or array class
+  JVMWrapper("JVM_GetRecordParameters");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  constantPoolHandle cp(THREAD, k->constants());
+
+  // Ensure class is linked
+  k->link_class(CHECK_NULL);
+
+  // Allocate result
+  int num_record_params = k->record_params_count();
+  Array<u2>* record_parameters = k->record_params();
+  // DEBUG
+  //tty->print_cr("num_record_params == %d", num_record_params);
+
+  if (num_record_params == 0) {
+    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
+    return (jobjectArray) JNIHandles::make_local(env, res);
+  }
+
+  objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
+  objArrayHandle result (THREAD, r);
+
+  int out_idx = 0;
+  fieldDescriptor fd;
+  for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
+    for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
+      if (fileStream.name() == recordParamsStream.name()) {
+        fd.reinitialize(k, fileStream.index());
+        oop field = Reflection::new_field(&fd, CHECK_NULL);
+        result->obj_at_put(out_idx, field);
+        ++out_idx;
+      }
+    }
+  }
+  assert(out_idx == num_record_params, "just checking");
   return (jobjectArray) JNIHandles::make_local(env, result());
 }
 JVM_END

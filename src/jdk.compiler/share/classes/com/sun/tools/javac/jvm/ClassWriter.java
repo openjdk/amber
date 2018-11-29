@@ -649,6 +649,7 @@ public class ClassWriter extends ClassFile {
 
     private void writeParamAnnotations(List<VarSymbol> params,
                                        RetentionPolicy retention) {
+        databuf.appendByte(params.length());
         for (VarSymbol s : params) {
             ListBuffer<Attribute.Compound> buf = new ListBuffer<>();
             for (Attribute.Compound a : s.getRawAttributes())
@@ -661,20 +662,14 @@ public class ClassWriter extends ClassFile {
 
     }
 
-    private void writeParamAnnotations(MethodSymbol m,
-                                       RetentionPolicy retention) {
-        databuf.appendByte(m.params.length());
-        writeParamAnnotations(m.params, retention);
-    }
-
     /** Write method parameter annotations;
      *  return number of attributes written.
      */
-    int writeParameterAttrs(MethodSymbol m) {
+    int writeParameterAttrs(List<VarSymbol> vars) {
         boolean hasVisible = false;
         boolean hasInvisible = false;
-        if (m.params != null) {
-            for (VarSymbol s : m.params) {
+        if (vars != null) {
+            for (VarSymbol s : vars) {
                 for (Attribute.Compound a : s.getRawAttributes()) {
                     switch (types.getRetention(a)) {
                     case SOURCE: break;
@@ -689,13 +684,13 @@ public class ClassWriter extends ClassFile {
         int attrCount = 0;
         if (hasVisible) {
             int attrIndex = writeAttr(names.RuntimeVisibleParameterAnnotations);
-            writeParamAnnotations(m, RetentionPolicy.RUNTIME);
+            writeParamAnnotations(vars, RetentionPolicy.RUNTIME);
             endAttr(attrIndex);
             attrCount++;
         }
         if (hasInvisible) {
             int attrIndex = writeAttr(names.RuntimeInvisibleParameterAnnotations);
-            writeParamAnnotations(m, RetentionPolicy.CLASS);
+            writeParamAnnotations(vars, RetentionPolicy.CLASS);
             endAttr(attrIndex);
             attrCount++;
         }
@@ -1107,6 +1102,34 @@ public class ClassWriter extends ClassFile {
         endAttr(alenIdx);
     }
 
+    int writeRecordAttribute(ClassSymbol csym) {
+        int alenIdx = writeAttr(names.Record);
+        Scope s = csym.members();
+        List<VarSymbol> vars = List.nil();
+        int numParams = 0;
+        for (Symbol sym : s.getSymbols(NON_RECURSIVE)) {
+            if (sym.kind == VAR && sym.isRecord()) {
+                vars = vars.prepend((VarSymbol)sym);
+                numParams++;
+            }
+        }
+        databuf.appendChar(numParams);
+        for (VarSymbol v: vars) {
+            databuf.appendChar(pool.put(v.name));
+            databuf.appendChar(adjustFlags(v.flags()));
+            // descriptor
+            databuf.appendChar(pool.put(typeSig(v.erasure(types))));
+            // signature
+            databuf.appendChar(pool.put(typeSig(v.type)));
+        }
+        int acountIdx = beginAttrs();
+        int acount = 0;
+        acount += writeParameterAttrs(vars);
+        endAttrs(acountIdx, acount);
+        endAttr(alenIdx);
+        return 1;
+    }
+
     /**
      * Write NestMembers attribute (if needed)
      */
@@ -1243,7 +1266,7 @@ public class ClassWriter extends ClassFile {
         }
         acount += writeMemberAttrs(m);
         if (!m.isLambdaMethod())
-            acount += writeParameterAttrs(m);
+            acount += writeParameterAttrs(m.params);
         endAttrs(acountIdx, acount);
     }
 
@@ -1891,6 +1914,10 @@ public class ClassWriter extends ClassFile {
                 acount += writeNestMembersIfNeeded(c);
                 acount += writeNestHostIfNeeded(c);
             }
+        }
+
+        if (c.isRecord()) {
+            acount += writeRecordAttribute(c);
         }
 
         writePool(c.pool);

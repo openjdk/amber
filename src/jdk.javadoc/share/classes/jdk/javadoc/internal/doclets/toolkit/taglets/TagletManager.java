@@ -609,6 +609,8 @@ public class TagletManager {
         addStandardTaglet(new CodeTaglet());
         addStandardTaglet(new IndexTaglet());
         addStandardTaglet(new SummaryTaglet());
+        addStandardTaglet(new AccessorTaglet(GETTER));
+        addStandardTaglet(new AccessorTaglet(SETTER));
         addStandardTaglet(new SystemPropertyTaglet());
 
         // Keep track of the names of standard tags for error checking purposes.

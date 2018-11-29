@@ -78,7 +78,7 @@ public class GetTask_DiagListenerTest extends APITest {
                 }
                 List<String> expect = Arrays.asList(
                         "javadoc.note.msg",         // Loading source file
-                        "compiler.err.expected3",   // class, interface, or enum expected
+                        "compiler.err.expected4",   // class, interface, enum, or __datum expected
                         "javadoc.note.msg");        // 1 error
                 if (!diagCodes.equals(expect))
                     throw new Exception("unexpected diagnostics occurred");

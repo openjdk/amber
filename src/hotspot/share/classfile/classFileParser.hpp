@@ -99,6 +99,7 @@ class ClassFileParser {
   Array<u2>* _inner_classes;
   Array<u2>* _nest_members;
   u2 _nest_host;
+  Array<u2>* _record_params;
   Array<InstanceKlass*>* _local_interfaces;
   Array<InstanceKlass*>* _transitive_interfaces;
   Annotations* _combined_annotations;
@@ -153,6 +154,7 @@ class ClassFileParser {
   u2 _super_class_index;
   u2 _itfs_len;
   u2 _java_fields_count;
+  u2 _record_params_count;
 
   bool _need_verify;
   bool _relax_verify;
@@ -188,7 +190,7 @@ class ClassFileParser {
 
   void create_combined_annotations(TRAPS);
   void apply_parsed_class_attributes(InstanceKlass* k);  // update k
-  void apply_parsed_class_metadata(InstanceKlass* k, int fields_count, TRAPS);
+  void apply_parsed_class_metadata(InstanceKlass* k, int fields_count, int record_params_count, TRAPS);
   void clear_class_metadata();
 
   // Constant pool parsing
@@ -295,6 +297,12 @@ class ClassFileParser {
   u2 parse_classfile_nest_members_attribute(const ClassFileStream* const cfs,
                                             const u1* const nest_members_attribute_start,
                                             TRAPS);
+
+  void parse_classfile_record_attribute(const ClassFileStream* const cfs,
+                                        const u1* const record_attribute_start,
+                                        ConstantPool* cp,
+                                        u2* const record_params_count_ptr,
+                                        TRAPS);
 
   void parse_classfile_attributes(const ClassFileStream* const cfs,
                                   ConstantPool* cp,
