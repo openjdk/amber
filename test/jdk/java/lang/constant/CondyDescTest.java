@@ -121,8 +121,8 @@ public class CondyDescTest extends SymbolicDescTest {
     }
 
     static class MyClass {
-        static int sf;
-        int f;
+        static int sf = 1;
+        int f = 2;
     }
 
     public void testVarHandles() throws ReflectiveOperationException {
@@ -201,16 +201,49 @@ public class CondyDescTest extends SymbolicDescTest {
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS),
                      DynamicConstantDesc.<MyEnum>ofCanonical(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS));
 
+
         ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
+
         assertLifted(VarHandleDesc.ofStaticField(testClass, "sf", CD_int),
-                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, "sf", CD_int }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, "sf", CD_int }));
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, CD_int }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, CD_int }));
         assertLifted(VarHandleDesc.ofField(testClass, "f", CD_int),
-                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, "f", CD_int }),
-                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, "f", CD_int }));
+                     DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, CD_int }),
+                     DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, CD_int }));
+
         assertLifted(VarHandleDesc.ofArray(CD_int.arrayType()),
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() }),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() }));
+    }
+
+    public void testResolvingVarHandle() throws ReflectiveOperationException {
+        ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
+        MyClass myClass = new MyClass();
+
+        DynamicConstantDesc<VarHandle> dcd = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, CD_int });
+        VarHandle vh = dcd.resolveConstantDesc(LOOKUP);
+        assertEquals(1, vh.get());
+
+        VarHandleDesc vhd = (VarHandleDesc) DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, CD_int });
+        vh = vhd.resolveConstantDesc(LOOKUP);
+        assertEquals(1, vh.get());
+
+        dcd = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, CD_int });
+        vh = dcd.resolveConstantDesc(LOOKUP);
+        assertEquals(2, vh.get(myClass));
+
+        vhd = (VarHandleDesc) DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_FIELD, "f", CD_VarHandle, new ConstantDesc[] {testClass, CD_int });
+        vh = vhd.resolveConstantDesc(LOOKUP);
+        assertEquals(2, vh.get(myClass));
+
+        int[] intArr = new int[] {100};
+        dcd = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() });
+        vh = dcd.resolveConstantDesc(LOOKUP);
+        assertEquals(100, vh.get(intArr, 0));
+
+        vhd = (VarHandleDesc)DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() });
+        vh = vhd.resolveConstantDesc(LOOKUP);
+        assertEquals(100, vh.get(intArr, 0));
     }
 
 }

@@ -2152,11 +2152,11 @@ public abstract class VarHandle implements Constable {
                 this.bootstrapMethod = bootstrapMethod;
             }
 
-            ConstantDesc[] toBSMArgs(ClassDesc declaringClass, String name, ClassDesc varType) {
+            ConstantDesc[] toBSMArgs(ClassDesc declaringClass, ClassDesc varType) {
                 switch (this) {
                     case FIELD:
                     case STATIC_FIELD:
-                        return new ConstantDesc[] {declaringClass, name, varType };
+                        return new ConstantDesc[] {declaringClass, varType };
                     case ARRAY:
                         return new ConstantDesc[] {declaringClass };
                     default:
@@ -2184,7 +2184,7 @@ public abstract class VarHandle implements Constable {
         private VarHandleDesc(Kind kind, String name, ClassDesc declaringClass, ClassDesc varType) {
             super(kind.bootstrapMethod, name,
                   ConstantDescs.CD_VarHandle,
-                  kind.toBSMArgs(declaringClass, name, varType));
+                  kind.toBSMArgs(declaringClass, varType));
             this.kind = kind;
             this.declaringClass = declaringClass;
             this.varType = varType;
