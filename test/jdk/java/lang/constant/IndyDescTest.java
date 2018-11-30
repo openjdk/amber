@@ -57,7 +57,7 @@ public class IndyDescTest {
     public void testIndyDesc() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
-        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
         DynamicCallSiteDesc csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
         CallSite cs = csd.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target = cs.getTarget();
@@ -92,7 +92,7 @@ public class IndyDescTest {
     public void testEqualsHashToString() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
-        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
 
         DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
         DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
@@ -109,7 +109,7 @@ public class IndyDescTest {
     public void testEmptyInvocationName() throws Throwable {
         ClassDesc c = ClassDesc.of("IndyDescTest");
         MethodTypeDesc mt = MethodTypeDesc.of(CD_CallSite, CD_MethodHandles_Lookup, CD_String, CD_MethodType, CD_Object.arrayType());
-        DirectMethodHandleDesc mh = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
+        DirectMethodHandleDesc mh = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, c, "bootstrap", mt);
         DynamicCallSiteDesc csd1 = DynamicCallSiteDesc.of(mh, "", MethodTypeDesc.of(CD_String));
     }
 }

@@ -39,6 +39,8 @@ import java.util.function.Supplier;
 
 import org.testng.annotations.Test;
 
+import static java.lang.constant.ConstantDescs.CD_Void;
+import static java.lang.constant.ConstantDescs.CD_boolean;
 import static java.lang.constant.DirectMethodHandleDesc.*;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.GETTER;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.SETTER;
@@ -53,6 +55,7 @@ import static java.lang.constant.ConstantDescs.CD_int;
 import static java.lang.constant.ConstantDescs.CD_void;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -84,10 +87,25 @@ public class MethodHandleDescTest extends SymbolicDescTest {
             testSymbolicDesc(r);
 
             DirectMethodHandleDesc rr = (DirectMethodHandleDesc) r;
-            assertEquals(r, MethodHandleDesc.of(rr.kind(), rr.owner(), rr.methodName(), r.methodType()));
+            assertEquals(r, MethodHandleDesc.of(rr.kind(), rr.owner(), rr.methodName(), rr.lookupDescriptor()));
+            assertEquals(r.invocationType().resolveConstantDesc(LOOKUP), ((MethodHandle) r.resolveConstantDesc(LOOKUP)).type());
         }
         else {
             testSymbolicDescForwardOnly(r);
+        }
+    }
+
+    private String lookupDescriptor(DirectMethodHandleDesc rr) {
+        switch (rr.kind()) {
+            case VIRTUAL:
+            case SPECIAL:
+            case INTERFACE_VIRTUAL:
+            case INTERFACE_SPECIAL:
+                return rr.invocationType().dropParameterTypes(0, 1).descriptorString();
+            case CONSTRUCTOR:
+                return rr.invocationType().changeReturnType(CD_void).descriptorString();
+            default:
+                return rr.invocationType().descriptorString();
         }
     }
 
@@ -103,23 +121,33 @@ public class MethodHandleDescTest extends SymbolicDescTest {
         assertEquals(mhi.getDeclaringClass().descriptorString(), rr.owner().descriptorString());
         assertEquals(mhi.getName(), rr.methodName());
         assertEquals(mhi.getReferenceKind(), rr.kind().refKind);
-        assertEquals(mhi.getMethodType().toMethodDescriptorString(), r.methodType().descriptorString());
+        MethodType type = mhi.getMethodType();
+        assertEquals(type.toMethodDescriptorString(), lookupDescriptor(rr));
     }
 
     public void testSimpleMHs() throws ReflectiveOperationException {
-        testMethodHandleDesc(MethodHandleDesc.of(Kind.VIRTUAL, CD_String, "isEmpty", "()Z"),
-                            LOOKUP.findVirtual(String.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
-        testMethodHandleDesc(MethodHandleDesc.of(Kind.STATIC, CD_String, "format", CD_String, CD_String, CD_Object.arrayType()),
-                            LOOKUP.findStatic(String.class, "format", MethodType.methodType(String.class, String.class, Object[].class)));
-        testMethodHandleDesc(MethodHandleDesc.of(Kind.INTERFACE_VIRTUAL, CD_List, "isEmpty", "()Z"),
-                            LOOKUP.findVirtual(List.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null)));
-        testMethodHandleDesc(MethodHandleDesc.of(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CD_void),
-                            LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
-        testMethodHandleDesc(MethodHandleDesc.ofConstructor(ClassDesc.of("java.util.ArrayList")),
-                            LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class)));
+        MethodHandle MH_String_isEmpty = LOOKUP.findVirtual(String.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null));
+        testMethodHandleDesc(MethodHandleDesc.of(Kind.VIRTUAL, CD_String, "isEmpty", "()Z"), MH_String_isEmpty);
+        testMethodHandleDesc(MethodHandleDesc.ofMethod(Kind.VIRTUAL, CD_String, "isEmpty", MethodTypeDesc.of(CD_boolean)), MH_String_isEmpty);
+
+        MethodHandle MH_List_isEmpty = LOOKUP.findVirtual(List.class, "isEmpty", MethodType.fromMethodDescriptorString("()Z", null));
+        testMethodHandleDesc(MethodHandleDesc.of(Kind.INTERFACE_VIRTUAL, CD_List, "isEmpty", "()Z"), MH_List_isEmpty);
+        testMethodHandleDesc(MethodHandleDesc.ofMethod(Kind.INTERFACE_VIRTUAL, CD_List, "isEmpty", MethodTypeDesc.of(CD_boolean)), MH_List_isEmpty);
+
+        MethodHandle MH_String_format = LOOKUP.findStatic(String.class, "format", MethodType.methodType(String.class, String.class, Object[].class));
+        testMethodHandleDesc(MethodHandleDesc.of(Kind.STATIC, CD_String, "format", MethodType.methodType(String.class, String.class, Object[].class).descriptorString()),
+                             MH_String_format);
+        testMethodHandleDesc(MethodHandleDesc.ofMethod(Kind.STATIC, CD_String, "format", MethodTypeDesc.of(CD_String, CD_String, CD_Object.arrayType())),
+                             MH_String_format);
+
+        MethodHandle MH_ArrayList_new = LOOKUP.findConstructor(ArrayList.class, MethodType.methodType(void.class));
+        testMethodHandleDesc(MethodHandleDesc.ofMethod(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", MethodTypeDesc.of(CD_void)),
+                             MH_ArrayList_new);
+        testMethodHandleDesc(MethodHandleDesc.ofConstructor(ClassDesc.of("java.util.ArrayList")), MH_ArrayList_new);
+
         // bad constructor non void return type
         try {
-            MethodHandleDesc.of(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", CD_int);
+            MethodHandleDesc.of(Kind.CONSTRUCTOR, ClassDesc.of("java.util.ArrayList"), "<init>", "()I");
             fail("should have failed: non void return type for constructor");
         } catch (IllegalArgumentException ex) {
             // good
@@ -127,8 +155,8 @@ public class MethodHandleDescTest extends SymbolicDescTest {
     }
 
     public void testAsType() throws Throwable {
-        MethodHandleDesc mhr = MethodHandleDesc.of(Kind.STATIC, ClassDesc.of("java.lang.Integer"), "valueOf",
-                                                   MethodTypeDesc.of(CD_Integer, CD_int));
+        MethodHandleDesc mhr = MethodHandleDesc.ofMethod(Kind.STATIC, ClassDesc.of("java.lang.Integer"), "valueOf",
+                                                         MethodTypeDesc.of(CD_Integer, CD_int));
         MethodHandleDesc takesInteger = mhr.asType(MethodTypeDesc.of(CD_Integer, CD_Integer));
         testMethodHandleDesc(takesInteger);
         MethodHandle mh1 = (MethodHandle) takesInteger.resolveConstantDesc(LOOKUP);
@@ -152,14 +180,17 @@ public class MethodHandleDescTest extends SymbolicDescTest {
         }
         catch (WrongMethodTypeException ignored) { }
 
-        // @@@ Test short-circuit optimization
+        // Short circuit optimization
+        MethodHandleDesc same = mhr.asType(mhr.invocationType());
+        assertSame(mhr, same);
+
         // @@@ Test varargs adaptation
         // @@@ Test bad adaptations and assert runtime error on resolution
         // @@@ Test intrinsification of adapted MH
     }
 
     public void testMethodHandleDesc() throws Throwable {
-        MethodHandleDesc ctorDesc = MethodHandleDesc.of(Kind.CONSTRUCTOR, testClass, "<ignored!>", CD_void);
+        MethodHandleDesc ctorDesc = MethodHandleDesc.of(Kind.CONSTRUCTOR, testClass, "<ignored!>", "()V");
         MethodHandleDesc staticMethodDesc = MethodHandleDesc.of(Kind.STATIC, testClass, "sm", "(I)I");
         MethodHandleDesc staticIMethodDesc = MethodHandleDesc.of(Kind.INTERFACE_STATIC, testInterface, "sm", "(I)I");
         MethodHandleDesc instanceMethodDesc = MethodHandleDesc.of(Kind.VIRTUAL, testClass, "m", "(I)I");
@@ -170,6 +201,15 @@ public class MethodHandleDescTest extends SymbolicDescTest {
         MethodHandleDesc privateIMethodDesc = MethodHandleDesc.of(Kind.INTERFACE_SPECIAL, testInterface, "pm", "(I)I");
         MethodHandleDesc privateStaticMethodDesc = MethodHandleDesc.of(Kind.STATIC, testClass, "psm", "(I)I");
         MethodHandleDesc privateStaticIMethodDesc = MethodHandleDesc.of(Kind.INTERFACE_STATIC, testInterface, "psm", "(I)I");
+
+        assertEquals(ctorDesc.invocationType(), MethodTypeDesc.of(testClass));
+        assertEquals(((DirectMethodHandleDesc) ctorDesc).lookupDescriptor(), "()V");
+
+        assertEquals(staticMethodDesc.invocationType().descriptorString(), "(I)I");
+        assertEquals(((DirectMethodHandleDesc) staticMethodDesc).lookupDescriptor(), "(I)I");
+
+        assertEquals(instanceMethodDesc.invocationType().descriptorString(), "(" + testClass.descriptorString() + "I)I");
+        assertEquals(((DirectMethodHandleDesc) instanceMethodDesc).lookupDescriptor(), "(I)I");
 
         for (MethodHandleDesc r : List.of(ctorDesc, staticMethodDesc, staticIMethodDesc, instanceMethodDesc, instanceIMethodDesc))
             testMethodHandleDesc(r);
@@ -267,7 +307,7 @@ public class MethodHandleDescTest extends SymbolicDescTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadOwners() {
-        MethodHandleDesc.of(VIRTUAL, ClassDesc.ofDescriptor("I"), "x", MethodTypeDesc.ofDescriptor("()I"));
+        MethodHandleDesc.ofMethod(VIRTUAL, ClassDesc.ofDescriptor("I"), "x", MethodTypeDesc.ofDescriptor("()I"));
     }
 
     public void testSymbolicDescsConstants() throws ReflectiveOperationException {

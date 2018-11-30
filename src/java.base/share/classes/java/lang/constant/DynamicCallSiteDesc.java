@@ -228,7 +228,7 @@ public class DynamicCallSiteDesc {
      * @throws Throwable if any exception is thrown by the bootstrap method
      */
     public CallSite resolveCallSiteDesc(MethodHandles.Lookup lookup) throws Throwable {
-        assert bootstrapMethod.methodType().parameterType(1).equals(CD_String);
+        assert bootstrapMethod.invocationType().parameterType(1).equals(CD_String);
         MethodHandle bsm = (MethodHandle) bootstrapMethod.resolveConstantDesc(lookup);
         Object[] args = new Object[bootstrapArgs.length + 3];
         args[0] = lookup;
