@@ -325,21 +325,21 @@ public abstract class DynamicConstantDesc<T>
     }
 
     private static ConstantDesc canonicalizeStaticFieldVarHandle(DynamicConstantDesc<?> desc) {
-        if (desc.bootstrapArgs.length != 3
-            || !desc.constantType().equals(CD_VarHandle))
+        if (desc.bootstrapArgs.length != 2
+                || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofStaticField((ClassDesc) desc.bootstrapArgs[0],
-                                           (String) desc.bootstrapArgs[1],
-                                           (ClassDesc) desc.bootstrapArgs[2]);
+                                     desc.constantName,
+                                     (ClassDesc) desc.bootstrapArgs[1]);
     }
 
     private static ConstantDesc canonicalizeFieldVarHandle(DynamicConstantDesc<?> desc) {
-        if (desc.bootstrapArgs.length != 3
+        if (desc.bootstrapArgs.length != 2
             || !desc.constantType().equals(CD_VarHandle))
             return desc;
         return VarHandleDesc.ofField((ClassDesc) desc.bootstrapArgs[0],
-                                     (String) desc.bootstrapArgs[1],
-                                     (ClassDesc) desc.bootstrapArgs[2]);
+                                     desc.constantName,
+                                     (ClassDesc) desc.bootstrapArgs[1]);
     }
 
     private static ConstantDesc canonicalizeArrayVarHandle(DynamicConstantDesc<?> desc) {
