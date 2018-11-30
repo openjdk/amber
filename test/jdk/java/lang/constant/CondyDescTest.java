@@ -22,6 +22,7 @@
  */
 
 import java.lang.Enum.EnumDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -96,7 +97,8 @@ public class CondyDescTest extends SymbolicDescTest {
 
     public void testNested() throws Throwable {
         DirectMethodHandleDesc invoker = ConstantDescs.ofConstantBootstrap(CD_ConstantBootstraps, "invoke", CD_Object, CD_MethodHandle, CD_Object.arrayType());
-        DirectMethodHandleDesc format = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, CD_String, "format", CD_String, CD_String, CD_Object.arrayType());
+        DirectMethodHandleDesc format = MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, CD_String, "format",
+                                                                  MethodTypeDesc.of(CD_String, CD_String, CD_Object.arrayType()));
 
         String s = (String) ((MethodHandle) invoker.resolveConstantDesc(LOOKUP))
                                    .invoke(LOOKUP, "", String.class,

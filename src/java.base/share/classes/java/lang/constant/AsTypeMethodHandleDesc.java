@@ -51,7 +51,7 @@ final class AsTypeMethodHandleDesc extends DynamicConstantDesc<MethodHandle>
     }
 
     @Override
-    public MethodTypeDesc methodType() {
+    public MethodTypeDesc invocationType() {
         return type;
     }
 
