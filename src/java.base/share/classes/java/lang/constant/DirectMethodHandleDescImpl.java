@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Objects;
 
+import static java.lang.constant.ConstantDescs.CD_void;
 import static java.lang.constant.ConstantUtils.validateClassOrInterface;
 import static java.lang.constant.ConstantUtils.validateMemberName;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.CONSTRUCTOR;
@@ -44,7 +45,7 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     private final Kind kind;
     private final ClassDesc owner;
     private final String name;
-    private final MethodTypeDesc type;
+    private final MethodTypeDesc invocationType;
 
     /**
      * Construct a {@linkplain DirectMethodHandleDescImpl} for a method or field
@@ -53,7 +54,7 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
      * @param kind the kind of the method handle
      * @param owner the declaring class or interface for the method
      * @param name the unqualified name of the method (ignored if {@code kind} is {@code CONSTRUCTOR})
-     * @param type the type of the method
+     * @param type the lookup type of the method
      * @throws NullPointerException if any non-ignored argument is null
      * @throws IllegalArgumentException if {@code kind} describes a field accessor,
      * and {@code type} is not consistent with that kind of field accessor, or if
@@ -81,7 +82,12 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
         this.kind = kind;
         this.owner = owner;
         this.name = name;
-        this.type = type;
+        if (kind.isVirtualMethod())
+            this.invocationType = type.insertParameterTypes(0, owner);
+        else if (kind == CONSTRUCTOR)
+            this.invocationType = type.changeReturnType(owner);
+        else
+            this.invocationType = type;
     }
 
     private static void validateFieldType(MethodTypeDesc type, boolean isSetter, boolean isVirtual) {
@@ -122,34 +128,60 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     }
 
     @Override
-    public MethodTypeDesc methodType() {
-        return type;
+    public MethodTypeDesc invocationType() {
+        return invocationType;
+    }
+
+    @Override
+    public String lookupDescriptor() {
+        switch (kind) {
+            case VIRTUAL:
+            case SPECIAL:
+            case INTERFACE_VIRTUAL:
+            case INTERFACE_SPECIAL:
+                return invocationType.dropParameterTypes(0, 1).descriptorString();
+            case STATIC:
+            case INTERFACE_STATIC:
+                return invocationType.descriptorString();
+            case CONSTRUCTOR:
+                return invocationType.changeReturnType(CD_void).descriptorString();
+            case GETTER:
+            case STATIC_GETTER:
+                return invocationType.returnType().descriptorString();
+            case SETTER:
+                return invocationType.parameterType(1).descriptorString();
+            case STATIC_SETTER:
+                return invocationType.parameterType(0).descriptorString();
+            default:
+                throw new IllegalStateException(kind.toString());
+        }
     }
 
     public MethodHandle resolveConstantDesc(MethodHandles.Lookup lookup)
             throws ReflectiveOperationException {
         Class<?> resolvedOwner = (Class<?>) owner.resolveConstantDesc(lookup);
-        MethodType resolvedType = (MethodType) this.type.resolveConstantDesc(lookup);
+        MethodType invocationType = (MethodType) this.invocationType().resolveConstantDesc(lookup);
         switch (kind) {
             case STATIC:
             case INTERFACE_STATIC:
-                return lookup.findStatic(resolvedOwner, name, resolvedType);
+                return lookup.findStatic(resolvedOwner, name, invocationType);
             case INTERFACE_VIRTUAL:
             case VIRTUAL:
-                return lookup.findVirtual(resolvedOwner, name, resolvedType);
+                return lookup.findVirtual(resolvedOwner, name, invocationType.dropParameterTypes(0, 1));
             case SPECIAL:
             case INTERFACE_SPECIAL:
-                return lookup.findSpecial(resolvedOwner, name, resolvedType, lookup.lookupClass());
+                return lookup.findSpecial(resolvedOwner, name, invocationType.dropParameterTypes(0, 1),
+                                          lookup.lookupClass());
             case CONSTRUCTOR:
-                return lookup.findConstructor(resolvedOwner, resolvedType);
+                return lookup.findConstructor(resolvedOwner, invocationType.changeReturnType(void.class));
             case GETTER:
-                return lookup.findGetter(resolvedOwner, name, resolvedType.returnType());
+                return lookup.findGetter(resolvedOwner, name, invocationType.returnType());
             case STATIC_GETTER:
-                return lookup.findStaticGetter(resolvedOwner, name, resolvedType.returnType());
+                return lookup.findStaticGetter(resolvedOwner, name, invocationType.returnType());
             case SETTER:
-                return lookup.findSetter(resolvedOwner, name, resolvedType.parameterType(1));
+                return lookup.findSetter(resolvedOwner, name, invocationType.parameterType(1));
             case STATIC_SETTER:
-                return lookup.findStaticSetter(resolvedOwner, name, resolvedType.parameterType(0));
+                return lookup.findStaticSetter(resolvedOwner, name, invocationType.parameterType(0));
             default:
                 throw new IllegalStateException(kind.name());
         }
@@ -173,16 +205,16 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
         return kind == desc.kind &&
                Objects.equals(owner, desc.owner) &&
                Objects.equals(name, desc.name) &&
-               Objects.equals(type, desc.type);
+               Objects.equals(invocationType, desc.invocationType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(kind, owner, name, type);
+        return Objects.hash(kind, owner, name, invocationType);
     }
 
     @Override
     public String toString() {
-        return String.format("MethodHandleDesc[%s/%s::%s%s]", kind, owner.displayName(), name, type.displayDescriptor());
+        return String.format("MethodHandleDesc[%s/%s::%s%s]", kind, owner.displayName(), name, invocationType.displayDescriptor());
     }
 }

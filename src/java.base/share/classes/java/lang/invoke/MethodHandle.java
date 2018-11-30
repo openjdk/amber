@@ -1556,19 +1556,19 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
             case REF_putStatic:
                 return Optional.of(MethodHandleDesc.ofField(DirectMethodHandleDesc.Kind.STATIC_SETTER, owner, name, type.parameterType(0)));
             case REF_invokeVirtual:
-                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.VIRTUAL, owner, name, type));
             case REF_invokeStatic:
                 return isInterface ?
-                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_STATIC, owner, name, type)) :
-                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.STATIC, owner, name, type));
+                        Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.INTERFACE_STATIC, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC, owner, name, type));
             case REF_invokeSpecial:
                 return isInterface ?
-                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_SPECIAL, owner, name, type)) :
-                        Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.SPECIAL, owner, name, type));
+                        Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.INTERFACE_SPECIAL, owner, name, type)) :
+                        Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.SPECIAL, owner, name, type));
             case REF_invokeInterface:
-                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
+                return Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.INTERFACE_VIRTUAL, owner, name, type));
             case REF_newInvokeSpecial:
-                return Optional.of(MethodHandleDesc.of(DirectMethodHandleDesc.Kind.CONSTRUCTOR, owner, name, type));
+                return Optional.of(MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.CONSTRUCTOR, owner, name, type));
             default:
                 return Optional.empty();
         }
