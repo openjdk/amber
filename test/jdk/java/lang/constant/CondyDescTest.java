@@ -216,7 +216,7 @@ public class CondyDescTest extends SymbolicDescTest {
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() }));
     }
 
-    public void testResolvingVarHandle() throws ReflectiveOperationException {
+    public void testConstantResolution() throws ReflectiveOperationException {
         ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
         MyClass myClass = new MyClass();
 
@@ -244,6 +244,13 @@ public class CondyDescTest extends SymbolicDescTest {
         vhd = (VarHandleDesc)DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_VARHANDLE_ARRAY, "_", CD_VarHandle, new ConstantDesc[] {CD_int.arrayType() });
         vh = vhd.resolveConstantDesc(LOOKUP);
         assertEquals(100, vh.get(intArr, 0));
+
+        ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
+        DynamicConstantDesc<MyEnum> denum = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS);
+        assertEquals(MyEnum.A, denum.resolveConstantDesc(LOOKUP));
+
+        EnumDesc<MyEnum> enumDesc = (EnumDesc<MyEnum>)DynamicConstantDesc.<MyEnum>ofCanonical(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS);
+        assertEquals(MyEnum.A, enumDesc.resolveConstantDesc(LOOKUP));
     }
 
 }
