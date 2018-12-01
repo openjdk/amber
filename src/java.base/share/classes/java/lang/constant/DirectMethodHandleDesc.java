@@ -190,6 +190,23 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
                 }
             }
         }
+
+        /**
+         * Does this {@code Kind} correspond to a virtual method invocation?
+         *
+         * @return if this {@code Kind} corresponds to a virtual method invocation
+         */
+        boolean isVirtualMethod() {
+            switch (this) {
+                case VIRTUAL:
+                case SPECIAL:
+                case INTERFACE_VIRTUAL:
+                case INTERFACE_SPECIAL:
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 
     /**
@@ -235,11 +252,14 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     String methodName();
 
     /**
-     * Return a {@link MethodTypeDesc} describing the invocation type of the
-     * method handle described by this nominal descriptor
+     * Return the lookup descriptor of the method handle described by this descriptor,
+     * after adjusting for the invocation mode.  This will correspond to either
+     * a method type descriptor string (for methods and constructors), or a field
+     * descriptor string (for field access method handles).  The lookup descriptor
+     * string is in the same format as accepted by {@link MethodHandleDesc#of(Kind, ClassDesc, String, String)}.
      *
-     * @return the method type
+     * @return the lookup descriptor string
      */
     @Foldable
-    MethodTypeDesc methodType();
+    String lookupDescriptor();
 }

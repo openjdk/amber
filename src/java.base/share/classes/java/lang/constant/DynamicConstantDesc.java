@@ -195,7 +195,7 @@ public abstract class DynamicConstantDesc<T>
     @Foldable
     public static<T> DynamicConstantDesc<T> of(DirectMethodHandleDesc bootstrapMethod,
                                                ConstantDesc... bootstrapArgs) {
-        return ofNamed(bootstrapMethod, DEFAULT_NAME, bootstrapMethod.methodType().returnType(), bootstrapArgs);
+        return ofNamed(bootstrapMethod, DEFAULT_NAME, bootstrapMethod.invocationType().returnType(), bootstrapArgs);
     }
 
     /**

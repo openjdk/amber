@@ -25,6 +25,7 @@
 package java.lang.constant;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import jdk.internal.lang.annotation.Foldable;
@@ -50,101 +51,95 @@ public interface MethodHandleDesc
      * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
-     * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
-     * type of the invocation type must be {@code void}.  If {@code kind} corresponds
-     * to a field access, the invocation type must be consistent with that kind
-     * of field access and the type of the field; instance field accessors must
-     * take a leading receiver parameter, getters must return the type of the
-     * field, setters must take a new value for the field and return {@code void}.
-     *
-     * <p>For constructor and field access, the methods {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)}
-     * and {@link #ofConstructor(ClassDesc, ClassDesc...)} may be more convenient.
-     *
-     * @param kind The kind of method handle to be described
-     * @param clazz a {@link ClassDesc} describing the class containing the
-     *              method, constructor, or field
-     * @param name the unqualified name of the method or field (ignored if {@code kind} is {@code CONSTRUCTOR})
-     * @param type a {@link MethodTypeDesc} describing the invocation type of
-     *             the method handle
-     * @return the {@linkplain MethodHandleDesc}
-     * @throws NullPointerException if any non-ignored arguments are null
-     * @throws IllegalArgumentException if the {@code name} has the incorrect
-     * format
-     * @jvms 4.2.2 Unqualified Names
-     */
-    @Foldable
-    static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
-                                     ClassDesc clazz,
-                                     String name,
-                                     MethodTypeDesc type) {
-        return new DirectMethodHandleDescImpl(kind, clazz, name, type);
-    }
-
-    /**
-     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
-     * declared method, invocation of a constructor, or access to a field.
-     *
-     * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
-     * type of the invocation type must be {@code void}.  If {@code kind} corresponds
-     * to a field access, the invocation type must be consistent with that kind
-     * of field access and the type of the field; instance field accessors must
-     * take a leading receiver parameter, getters must return the type of the
-     * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)} will construct
-     * the appropriate invocation given the type of the field.
+     * <p>The lookup descriptor string has the same format as for the various
+     * variants of {@code CONSTANT_MethodHandle_info} and for the lookup
+     * methods on {@link MethodHandles.Lookup}.  For a method or constructor
+     * invocation, it is interpreted as a method type descriptor; for field
+     * access, it is interpreted as a field descriptor.  If {@code kind} is
+     * {@code CONSTRUCTOR}, the {@code name} parameter is ignored and the return
+     * type of the lookup descriptor must be {@code void}.  If {@code kind}
+     * corresponds to a virtual method invocation, the lookup type includes the
+     * method parameters but not the receiver type.
      *
      * @param kind The kind of method handle to be described
      * @param clazz a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
-     * @param name the unqualified name of the method or field (ignored if {@code kind} is {@code CONSTRUCTOR})
-     * @param descriptorString a method descriptor string for the invocation type
-     * of the method handle
+     * @param name the unqualified name of the method or field (ignored if
+     *             {@code kind} is {@code CONSTRUCTOR})
+     * @param lookupDescriptor a method descriptor string the lookup type,
+     *                         if the request is for a method invocation, or
+     *                         describing the invocation type, if the request is
+     *                         for a field or constructor
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the non-ignored arguments are null
+     * @jvms 4.4.8 The CONSTANT_MethodHandle_info Structure
      * @jvms 4.2.2 Unqualified Names
+     * @jvms 4.3.2 Field Descriptors
      * @jvms 4.3.3 Method Descriptors
      */
     @Foldable
     static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
                                      ClassDesc clazz,
                                      String name,
-                                     String descriptorString) {
-        return of(kind, clazz, name, MethodTypeDesc.ofDescriptor(descriptorString));
+                                     String lookupDescriptor) {
+        switch (kind) {
+            case GETTER:
+            case SETTER:
+            case STATIC_GETTER:
+            case STATIC_SETTER:
+                return ofField(kind, clazz, name, ClassDesc.ofDescriptor(lookupDescriptor));
+            default:
+                return new DirectMethodHandleDescImpl(kind, clazz, name, MethodTypeDesc.ofDescriptor(lookupDescriptor));
+        }
     }
 
     /**
      * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
-     * declared method, invocation of a constructor, or access to a field.
+     * declared method or constructor.
      *
-     * <p>If {@code kind} is {@code CONSTRUCTOR}, the name is ignored and the return
-     * type of the invocation type must be {@code void}.  If {@code kind} corresponds
-     * to a field access, the invocation type must be consistent with that kind
-     * of field access and the type of the field; instance field accessors must
-     * take a leading receiver parameter, getters must return the type of the
-     * field, setters must take a new value for the field and return {@code void}.
-     * The method {@link #ofField(DirectMethodHandleDesc.Kind, ClassDesc, String, ClassDesc)} will construct
-     * the appropriate invocation given the type of the field.
+     * <p>The lookup descriptor string has the same format as for the lookup
+     * methods on {@link MethodHandles.Lookup}.  If {@code kind} is
+     * {@code CONSTRUCTOR}, the name is ignored and the return type of the lookup
+     * type must be {@code void}.  If {@code kind} corresponds to a virtual method
+     * invocation, the lookup type includes the method parameters but not the
+     * receiver type.
      *
-     * @param kind The kind of method handle to be described
+     * @param kind The kind of method handle to be described; must be one of
+     *             {@code SPECIAL, VIRTUAL, STATIC, INTERFACE_SPECIAL,
+     *             INTERFACE_VIRTUAL, INTERFACE_STATIC, CONSTRUCTOR}
      * @param clazz a {@link ClassDesc} describing the class containing the
-     *              method, constructor, or field
-     * @param name the unqualified name of the method or field (ignored if {@code kind} is
-     * {@code CONSTRUCTOR})
-     * @param returnType a {@link ClassDesc} describing the return type of the
-     *                   method handle
-     * @param paramTypes {@link ClassDesc}s describing the parameter types of
-     *                                    the method handle
+     *              method or constructor
+     * @param name the unqualified name of the method (ignored if {@code kind}
+     *             is {@code CONSTRUCTOR})
+     * @param lookupMethodType a {@link MethodTypeDesc} describing the lookup type
      * @return the {@linkplain MethodHandleDesc}
-     * @throws NullPointerException if any of the non-ignored arguments are null
+     * @throws NullPointerException if any non-ignored arguments are null
+     * @throws IllegalArgumentException if the {@code name} has the incorrect
+     * format, or the kind is invalid
      * @jvms 4.2.2 Unqualified Names
      */
     @Foldable
-    static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
-                                     ClassDesc clazz,
-                                     String name,
-                                     ClassDesc returnType,
-                                     ClassDesc... paramTypes) {
-        return of(kind, clazz, name, MethodTypeDesc.of(returnType, paramTypes));
+    static DirectMethodHandleDesc ofMethod(DirectMethodHandleDesc.Kind kind,
+                                           ClassDesc clazz,
+                                           String name,
+                                           MethodTypeDesc lookupMethodType) {
+        switch (kind) {
+            case GETTER:
+            case SETTER:
+            case STATIC_GETTER:
+            case STATIC_SETTER:
+                throw new IllegalArgumentException(kind.toString());
+            case VIRTUAL:
+            case SPECIAL:
+            case INTERFACE_VIRTUAL:
+            case INTERFACE_SPECIAL:
+            case INTERFACE_STATIC:
+            case STATIC:
+            case CONSTRUCTOR:
+                return new DirectMethodHandleDescImpl(kind, clazz, name, lookupMethodType);
+            default:
+                throw new IllegalArgumentException(kind.toString());
+        }
     }
 
     /**
@@ -153,8 +148,7 @@ public interface MethodHandleDesc
      *
      * @param kind the kind of the method handle to be described; must be one of {@code GETTER},
      *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
-     * @param clazz a {@link ClassDesc} describing the class containing the
-     *              method, constructor, or field
+     * @param clazz a {@link ClassDesc} describing the class containing the field
      * @param fieldName the unqualified name of the field
      * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
@@ -177,14 +171,14 @@ public interface MethodHandleDesc
             default:
                 throw new IllegalArgumentException(kind.toString());
         }
-        return MethodHandleDesc.of(kind, clazz, fieldName, mtr);
+        return new DirectMethodHandleDescImpl(kind, clazz, fieldName, mtr);
     }
 
     /**
      * Return a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
      *
      * @param clazz a {@link ClassDesc} describing the class containing the
-     *              method, constructor, or field
+     *              constructor
      * @param paramTypes {@link ClassDesc}s describing the parameter types of
      *                   the constructor
      * @return the {@linkplain MethodHandleDesc}
@@ -193,8 +187,8 @@ public interface MethodHandleDesc
     @Foldable
     static DirectMethodHandleDesc ofConstructor(ClassDesc clazz,
                                                 ClassDesc... paramTypes) {
-        return MethodHandleDesc.of(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
-                                   MethodTypeDesc.of(CD_void, paramTypes));
+        return MethodHandleDesc.ofMethod(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
+                                         MethodTypeDesc.of(CD_void, paramTypes));
     }
 
     /**
@@ -206,15 +200,17 @@ public interface MethodHandleDesc
      */
     @Foldable
     default MethodHandleDesc asType(MethodTypeDesc type) {
-        return (methodType().equals(type)) ? this : new AsTypeMethodHandleDesc(this, type);
+        return (invocationType().equals(type)) ? this : new AsTypeMethodHandleDesc(this, type);
     }
 
     /**
-     * Return a {@link MethodTypeDesc} describing the type of the method handle
-     * described by this nominal descriptor
+     * Return a {@link MethodTypeDesc} describing the invocation type of the
+     * method handle described by this nominal descriptor.  The invocation type
+     * describes the full set of stack values that are consumed by the invocation
+     * (including the receiver, if any).
      *
      * @return a {@linkplain MethodHandleDesc} describing the method handle type
      */
     @Foldable
-    MethodTypeDesc methodType();
+    MethodTypeDesc invocationType();
 }

@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.constant.DirectMethodHandleDesc.*;
 import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
 
 /**
@@ -307,8 +308,8 @@ public final class ConstantDescs {
                                           DEFAULT_NAME, ConstantDescs.CD_Object);
 
     static final DirectMethodHandleDesc MHD_METHODHANDLE_ASTYPE
-            = MethodHandleDesc.of(DirectMethodHandleDesc.Kind.VIRTUAL, CD_MethodHandle, "asType",
-            CD_MethodHandle, CD_MethodType);
+            = MethodHandleDesc.ofMethod(Kind.VIRTUAL, CD_MethodHandle, "asType",
+                                        MethodTypeDesc.of(CD_MethodHandle, CD_MethodType));
     /**
      * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for
      * an {@code invokedynamic} callsite, which is a static method whose leading
@@ -327,8 +328,8 @@ public final class ConstantDescs {
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
-                                                                      .insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
+        return MethodHandleDesc.ofMethod(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+                                                                            .insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
     }
 
     /**
@@ -349,7 +350,7 @@ public final class ConstantDescs {
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.of(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
-                                                                      .insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
+        return MethodHandleDesc.ofMethod(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+                                                                            .insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
     }
 }
