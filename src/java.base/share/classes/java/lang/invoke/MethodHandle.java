@@ -1529,7 +1529,7 @@ assertEquals("[three, thee, tee]", asListFix.invoke((Object)argv).toString());
      * @since 12
      */
     @Override
-    public Optional<? extends ConstantDesc> describeConstable() {
+    public Optional<MethodHandleDesc> describeConstable() {
         MethodHandleInfo info;
         ClassDesc owner;
         String name;
