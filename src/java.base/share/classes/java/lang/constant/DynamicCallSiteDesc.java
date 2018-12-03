@@ -193,7 +193,7 @@ public class DynamicCallSiteDesc {
     /**
      * Returns the invocation name that would appear in the {@code NameAndType}
      * operand of the {@code invokedynamic}.
-     * \
+     *
      * @return the invocation name
      */
     @Foldable

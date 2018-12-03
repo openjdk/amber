@@ -267,7 +267,6 @@ public abstract class DynamicConstantDesc<T>
 
     @SuppressWarnings("unchecked")
     public T resolveConstantDesc(MethodHandles.Lookup lookup) throws ReflectiveOperationException {
-        // TODO replace with public supported method
         try {
             MethodHandle bsm = (MethodHandle) bootstrapMethod.resolveConstantDesc(lookup);
             if (bsm.type().parameterCount() < 2 ||
