@@ -552,7 +552,7 @@ class ConstantPool {
                 if (Utils.SORT_MEMBERS_DESCR_MAJOR)
                     // descRef is transmitted as UDELTA5; sort it first?
                     x = this.descRef.compareTo(that.descRef);
-                // Primary key is classDesc.
+                // Primary key is classRef.
                 if (x == 0)
                     x = this.classRef.compareTo(that.classRef);
                 if (x == 0)
