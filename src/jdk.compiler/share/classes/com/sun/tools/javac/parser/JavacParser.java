@@ -2544,15 +2544,6 @@ public class JavacParser implements Parser {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         }
-        if (token.kind == TokenKind.STATIC) {
-            // we have to check if this is a record declaration
-            Token t1 = S.token(1);
-            Token t2 = S.token(2);
-            Token t3 = S.token(3);
-            if (t1.kind == IDENTIFIER && t1.name() == names.record && t2.kind == IDENTIFIER && t3.kind == LPAREN) {
-                nextToken();
-            }
-        }
         if (isRecordDeclaration()) {
             JCModifiers mods = modifiersOpt();
             dc = token.comment(CommentStyle.JAVADOC);
