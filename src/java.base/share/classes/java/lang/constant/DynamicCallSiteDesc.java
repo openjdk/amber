@@ -56,7 +56,7 @@ public class DynamicCallSiteDesc {
     /**
      * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationName The unqualified name that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
@@ -86,7 +86,7 @@ public class DynamicCallSiteDesc {
     /**
      * Create a nominal descriptor for an {@code invokedynamic} call site.
      *
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationName The unqualified name that would appear in the {@code NameAndType}
      *                       operand of the {@code invokedynamic}
@@ -132,7 +132,7 @@ public class DynamicCallSiteDesc {
      * bootstrap method has no static arguments and for which the name parameter
      * is {@link ConstantDescs#DEFAULT_NAME}.
      *
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the {@code invokedynamic}
      * @param invocationType a {@link MethodTypeDesc} describing the invocation
      *                       type that would appear in the {@code NameAndType}
@@ -204,7 +204,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Returns a {@link MethodHandleDesc} descripbing the bootstrap method for
+     * Returns a {@link MethodHandleDesc} describing the bootstrap method for
      * the {@code invokedynamic}.
      *
      * @return the bootstrap method for the {@code invokedynamic}
@@ -251,7 +251,7 @@ public class DynamicCallSiteDesc {
      *      equals to this {@code DynamicCallSiteDesc}.
      */
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DynamicCallSiteDesc specifier = (DynamicCallSiteDesc) o;
@@ -262,12 +262,19 @@ public class DynamicCallSiteDesc {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         int result = Objects.hash(bootstrapMethod, invocationName, invocationType);
         result = 31 * result + Arrays.hashCode(bootstrapArgs);
         return result;
     }
 
+    /**
+     * Returns a compact textual description of this call site description,
+     * including the bootstrap method, the invocation name and type, and
+     * the static bootstrap arguments.
+     *
+     * @return A compact textual description of this call site descriptor
+     */
     @Override
     public String toString() {
         return String.format("DynamicCallSiteDesc[%s::%s(%s%s):%s]",

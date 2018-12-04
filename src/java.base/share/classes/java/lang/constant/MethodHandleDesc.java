@@ -60,7 +60,7 @@ public interface MethodHandleDesc
      * method parameters but not the receiver type.
      *
      * @param kind The kind of method handle to be described
-     * @param clazz a {@link ClassDesc} describing the class containing the
+     * @param owner a {@link ClassDesc} describing the class containing the
      *              method, constructor, or field
      * @param name the unqualified name of the method or field (ignored if
      *             {@code kind} is {@code CONSTRUCTOR})
@@ -76,7 +76,7 @@ public interface MethodHandleDesc
      * @jvms 4.3.3 Method Descriptors
      */
     static DirectMethodHandleDesc of(DirectMethodHandleDesc.Kind kind,
-                                     ClassDesc clazz,
+                                     ClassDesc owner,
                                      String name,
                                      String lookupDescriptor) {
         switch (kind) {
@@ -84,9 +84,9 @@ public interface MethodHandleDesc
             case SETTER:
             case STATIC_GETTER:
             case STATIC_SETTER:
-                return ofField(kind, clazz, name, ClassDesc.ofDescriptor(lookupDescriptor));
+                return ofField(kind, owner, name, ClassDesc.ofDescriptor(lookupDescriptor));
             default:
-                return new DirectMethodHandleDescImpl(kind, clazz, name, MethodTypeDesc.ofDescriptor(lookupDescriptor));
+                return new DirectMethodHandleDescImpl(kind, owner, name, MethodTypeDesc.ofDescriptor(lookupDescriptor));
         }
     }
 
@@ -104,7 +104,7 @@ public interface MethodHandleDesc
      * @param kind The kind of method handle to be described; must be one of
      *             {@code SPECIAL, VIRTUAL, STATIC, INTERFACE_SPECIAL,
      *             INTERFACE_VIRTUAL, INTERFACE_STATIC, CONSTRUCTOR}
-     * @param clazz a {@link ClassDesc} describing the class containing the
+     * @param owner a {@link ClassDesc} describing the class containing the
      *              method or constructor
      * @param name the unqualified name of the method (ignored if {@code kind}
      *             is {@code CONSTRUCTOR})
@@ -116,7 +116,7 @@ public interface MethodHandleDesc
      * @jvms 4.2.2 Unqualified Names
      */
     static DirectMethodHandleDesc ofMethod(DirectMethodHandleDesc.Kind kind,
-                                           ClassDesc clazz,
+                                           ClassDesc owner,
                                            String name,
                                            MethodTypeDesc lookupMethodType) {
         switch (kind) {
@@ -132,7 +132,7 @@ public interface MethodHandleDesc
             case INTERFACE_STATIC:
             case STATIC:
             case CONSTRUCTOR:
-                return new DirectMethodHandleDescImpl(kind, clazz, name, lookupMethodType);
+                return new DirectMethodHandleDescImpl(kind, owner, name, lookupMethodType);
             default:
                 throw new IllegalArgumentException(kind.toString());
         }
@@ -144,7 +144,7 @@ public interface MethodHandleDesc
      *
      * @param kind the kind of the method handle to be described; must be one of {@code GETTER},
      *             {@code SETTER}, {@code STATIC_GETTER}, or {@code STATIC_SETTER}
-     * @param clazz a {@link ClassDesc} describing the class containing the field
+     * @param owner a {@link ClassDesc} describing the class containing the field
      * @param fieldName the unqualified name of the field
      * @param fieldType a {@link ClassDesc} describing the type of the field
      * @return the {@linkplain MethodHandleDesc}
@@ -154,34 +154,34 @@ public interface MethodHandleDesc
      * @jvms 4.2.2 Unqualified Names
      */
     static DirectMethodHandleDesc ofField(DirectMethodHandleDesc.Kind kind,
-                                          ClassDesc clazz,
+                                          ClassDesc owner,
                                           String fieldName,
                                           ClassDesc fieldType) {
         MethodTypeDesc mtr;
         switch (kind) {
-            case GETTER: mtr = MethodTypeDesc.of(fieldType, clazz); break;
-            case SETTER: mtr = MethodTypeDesc.of(CD_void, clazz, fieldType); break;
+            case GETTER: mtr = MethodTypeDesc.of(fieldType, owner); break;
+            case SETTER: mtr = MethodTypeDesc.of(CD_void, owner, fieldType); break;
             case STATIC_GETTER: mtr = MethodTypeDesc.of(fieldType); break;
             case STATIC_SETTER: mtr = MethodTypeDesc.of(CD_void, fieldType); break;
             default:
                 throw new IllegalArgumentException(kind.toString());
         }
-        return new DirectMethodHandleDescImpl(kind, clazz, fieldName, mtr);
+        return new DirectMethodHandleDescImpl(kind, owner, fieldName, mtr);
     }
 
     /**
      * Return a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
      *
-     * @param clazz a {@link ClassDesc} describing the class containing the
+     * @param owner a {@link ClassDesc} describing the class containing the
      *              constructor
      * @param paramTypes {@link ClassDesc}s describing the parameter types of
      *                   the constructor
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      */
-    static DirectMethodHandleDesc ofConstructor(ClassDesc clazz,
+    static DirectMethodHandleDesc ofConstructor(ClassDesc owner,
                                                 ClassDesc... paramTypes) {
-        return MethodHandleDesc.ofMethod(CONSTRUCTOR, clazz, ConstantDescs.DEFAULT_NAME,
+        return MethodHandleDesc.ofMethod(CONSTRUCTOR, owner, ConstantDescs.DEFAULT_NAME,
                                          MethodTypeDesc.of(CD_void, paramTypes));
     }
 
@@ -205,4 +205,15 @@ public interface MethodHandleDesc
      * @return a {@linkplain MethodHandleDesc} describing the method handle type
      */
     MethodTypeDesc invocationType();
+
+    /**
+     * Compare the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain MethodHandleDesc}, and both encode the same nominal description
+     * of a method handle.
+     *
+     * @param o the other object
+     * @return whether this descriptor is equal to the other object
+     */
+    boolean equals(Object o);
 }

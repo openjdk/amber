@@ -58,7 +58,7 @@
  * of constant values.  For each type of loadable constant pool entry defined in JVMS 4.4,
  * there is a corresponding subtype of {@link java.lang.constant.ConstantDesc}:
  * {@link java.lang.constant.ClassDesc}, {@link java.lang.constant.MethodTypeDesc},
- * {@link java.lang.constant.DirectMethodHandleDescImpl}, {@link java.lang.String},
+ * {@link java.lang.constant.DirectMethodHandleDesc}, {@link java.lang.String},
  * {@link java.lang.Integer}, {@link java.lang.Long}, {@link java.lang.Float},
  * {@link java.lang.Double}, and {@link java.lang.constant.DynamicConstantDesc}.  These classes
  * provides type-specific accessor methods to extract the nominal information for

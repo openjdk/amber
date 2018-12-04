@@ -76,11 +76,11 @@ public abstract class DynamicConstantDesc<T>
     /**
      * Create a nominal descriptor for a dynamic constant.
      *
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
      * @param constantName The unqualified name that would appear in the {@code NameAndType}
      *                     operand of the {@code LDC} for this constant
-     * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
+     * @param constantType a {@link ClassDesc} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
      * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
@@ -125,7 +125,7 @@ public abstract class DynamicConstantDesc<T>
      *                        bootstrap method for the constant
      * @param constantName The unqualified name that would appear in the {@code NameAndType}
      *                     operand of the {@code LDC} for this constant
-     * @param constantType a {@link DirectMethodHandleDescImpl} describing the type
+     * @param constantType a {@link ClassDesc} describing the type
      *                     that would appear in the {@code NameAndType} operand
      *                     of the {@code LDC} for this constant
      * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
@@ -149,7 +149,7 @@ public abstract class DynamicConstantDesc<T>
      * Return a nominal descriptor for a dynamic constant.
      *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
      * @param constantName The unqualified name that would appear in the {@code NameAndType}
      *                     operand of the {@code LDC} for this constant
@@ -179,7 +179,7 @@ public abstract class DynamicConstantDesc<T>
      * the same as the bootstrap method return type.
      *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
      * @param bootstrapArgs {@link ConstantDesc}s describing the static arguments
      *                      to the bootstrap, that would appear in the
@@ -199,7 +199,7 @@ public abstract class DynamicConstantDesc<T>
      * and whose type parameter is always the same as the bootstrap method return type.
      *
      * @param <T> the type of the dynamic constant
-     * @param bootstrapMethod a {@link DirectMethodHandleDescImpl} describing the
+     * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
      * @return the nominal descriptor
      * @throws NullPointerException if any argument is null
@@ -372,6 +372,13 @@ public abstract class DynamicConstantDesc<T>
         return result;
     }
 
+    /**
+     * Returns a compact textual description of this constant description,
+     * including the bootstrap method, the constant name and type, and
+     * the static bootstrap arguments.
+     *
+     * @return A compact textual description of this call site descriptor
+     */
     @Override
     public String toString() {
         return String.format("DynamicConstantDesc[%s::%s(%s%s)%s]",

@@ -156,7 +156,7 @@ public final class ConstantDescs {
     /** {@link ClassDesc} representing {@link MethodHandleDesc} */
     public static final ClassDesc CD_MethodHandleDesc = ClassDesc.of("java.lang.constant.MethodHandleDesc");
 
-    /** {@link ClassDesc} representing {@link DirectMethodHandleDescImpl} */
+    /** {@link ClassDesc} representing {@link DirectMethodHandleDesc} */
     public static final ClassDesc CD_DirectMethodHandleDesc = ClassDesc.of("java.lang.constant.DirectMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
@@ -184,37 +184,37 @@ public final class ConstantDescs {
             ConstantDescs.CD_String,
             ConstantDescs.CD_Class};
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#primitiveClass(Lookup, String, Class) ConstantBootstraps.primitiveClass} */
     public static final DirectMethodHandleDesc BSM_PRIMITIVE_CLASS
             = ofConstantBootstrap(CD_ConstantBootstraps, "primitiveClass",
             CD_Class);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#enumConstant(Lookup, String, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#enumConstant(Lookup, String, Class) ConstantBootstraps.enumConstant} */
     public static final DirectMethodHandleDesc BSM_ENUM_CONSTANT
             = ofConstantBootstrap(CD_ConstantBootstraps, "enumConstant",
             CD_Enum);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#nullConstant(Lookup, String, Class) ConstantBootstraps.nullConstant} */
     public static final DirectMethodHandleDesc BSM_NULL_CONSTANT
             = ofConstantBootstrap(CD_ConstantBootstraps, "nullConstant",
                                   ConstantDescs.CD_Object);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#fieldVarHandle(Lookup, String, Class, Class, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#fieldVarHandle(Lookup, String, Class, Class, Class) ConstantBootstraps.fieldVarHandle} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_FIELD
             = ofConstantBootstrap(CD_ConstantBootstraps, "fieldVarHandle",
             CD_VarHandle, CD_Class, CD_Class);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#staticFieldVarHandle(Lookup, String, Class, Class, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#staticFieldVarHandle(Lookup, String, Class, Class, Class) ConstantBootstraps.staticVarHandle} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_STATIC_FIELD
             = ofConstantBootstrap(CD_ConstantBootstraps, "staticFieldVarHandle",
             CD_VarHandle, CD_Class, CD_Class);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#arrayVarHandle(Lookup, String, Class, Class)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#arrayVarHandle(Lookup, String, Class, Class) ConstantBootstraps.arrayVarHandle} */
     public static final DirectMethodHandleDesc BSM_VARHANDLE_ARRAY
             = ofConstantBootstrap(CD_ConstantBootstraps, "arrayVarHandle",
             CD_VarHandle, CD_Class);
 
-    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#invoke(Lookup, String, Class, MethodHandle, Object...)} */
+    /** {@link MethodHandleDesc} representing {@link ConstantBootstraps#invoke(Lookup, String, Class, MethodHandle, Object...) ConstantBootstraps.invoke} */
     public static final DirectMethodHandleDesc BSM_INVOKE
             = ofConstantBootstrap(CD_ConstantBootstraps, "invoke",
             CD_Object, CD_MethodHandle, CD_Object.arrayType());
@@ -259,7 +259,7 @@ public final class ConstantDescs {
      * an {@code invokedynamic} callsite, which is a static method whose leading
      * parameter types are {@code Lookup}, {@code String}, and {@code MethodType}.
      *
-     * @param clazz the class declaring the method
+     * @param owner the class declaring the method
      * @param name the unqualified name of the method
      * @param returnType the return type of the method
      * @param paramTypes the types of the static bootstrap arguments, if any
@@ -267,11 +267,11 @@ public final class ConstantDescs {
      * @throws NullPointerException if any of the arguments are null
      * @jvms 4.2.2 Unqualified Names
      */
-    public static DirectMethodHandleDesc ofCallsiteBootstrap(ClassDesc clazz,
+    public static DirectMethodHandleDesc ofCallsiteBootstrap(ClassDesc owner,
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.ofMethod(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+        return MethodHandleDesc.ofMethod(STATIC, owner, name, MethodTypeDesc.of(returnType, paramTypes)
                                                                             .insertParameterTypes(0, INDY_BOOTSTRAP_ARGS));
     }
 
@@ -280,7 +280,7 @@ public final class ConstantDescs {
      * dynamic constant, which is a static method whose leading arguments are
      * {@code Lookup}, {@code String}, and {@code Class}.
      *
-     * @param clazz the class declaring the method
+     * @param owner the class declaring the method
      * @param name the unqualified name of the method
      * @param returnType the return type of the method
      * @param paramTypes the types of the static bootstrap arguments, if any
@@ -288,11 +288,11 @@ public final class ConstantDescs {
      * @throws NullPointerException if any of the arguments are null
      * @jvms 4.2.2 Unqualified Names
      */
-    public static DirectMethodHandleDesc ofConstantBootstrap(ClassDesc clazz,
+    public static DirectMethodHandleDesc ofConstantBootstrap(ClassDesc owner,
                                                              String name,
                                                              ClassDesc returnType,
                                                              ClassDesc... paramTypes) {
-        return MethodHandleDesc.ofMethod(STATIC, clazz, name, MethodTypeDesc.of(returnType, paramTypes)
+        return MethodHandleDesc.ofMethod(STATIC, owner, name, MethodTypeDesc.of(returnType, paramTypes)
                                                                             .insertParameterTypes(0, CONDY_BOOTSTRAP_ARGS));
     }
 }

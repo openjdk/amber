@@ -43,7 +43,7 @@ import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a direct
- * {@link MethodHandle}.  A {@linkplain DirectMethodHandleDescImpl} corresponds to
+ * {@link MethodHandle}.  A {@linkplain DirectMethodHandleDesc} corresponds to
  * a {@code Constant_MethodHandle_info} entry in the constant pool of a classfile.
  *
  * @apiNote In the future, if the Java language permits, {@linkplain DirectMethodHandleDesc}
@@ -240,6 +240,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
 
     /**
      * Return the name of the method or field described by this nominal descriptor.
+     * For constructors, returns the reserved name {@code "<init>"}.
      *
      * @return the name of the method or field
      */

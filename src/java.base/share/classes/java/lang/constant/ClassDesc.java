@@ -49,9 +49,6 @@ import static java.util.stream.Collectors.joining;
  * {@linkplain ClassDesc} for the component type and then call the {@link #arrayType()}
  * or {@link #arrayType(int)} methods.
  *
- * <p>Two {@linkplain ClassDesc} objects are considered {@link Object#equals(Object)}
- * if they describe exactly the same type.
- *
  * @apiNote In the future, if the Java language permits, {@linkplain ClassDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
@@ -287,4 +284,14 @@ public interface ClassDesc
      * @jvms 4.3.2 Field Descriptors
      */
     String descriptorString();
+
+    /**
+     * Compare the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain ClassDesc} and both describe the same type.
+     *
+     * @param o the other object
+     * @return whether this descriptor is equal to the other object
+     */
+    boolean equals(Object o);
 }

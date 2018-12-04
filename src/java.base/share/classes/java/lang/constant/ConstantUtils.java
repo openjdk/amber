@@ -70,9 +70,9 @@ class ConstantUtils {
         return name;
     }
 
-    static void validateClassOrInterface(ClassDesc clazz) {
-        if (!clazz.isClassOrInterface())
-            throw new IllegalArgumentException("not a class or interface type: " + clazz);
+    static void validateClassOrInterface(ClassDesc classDesc) {
+        if (!classDesc.isClassOrInterface())
+            throw new IllegalArgumentException("not a class or interface type: " + classDesc);
     }
 
     static int arrayDepth(String descriptorString) {
