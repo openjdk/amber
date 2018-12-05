@@ -4303,7 +4303,7 @@ public class Attr extends JCTree.Visitor {
             Type s = types.asOuterSuper(site, sym.owner);
             if (s != null && s.isRaw() &&
                 !types.isSameTypes(sym.type.getParameterTypes(),
-                                   sym.erasure(types).getParameterTypes())) {
+                                   types.memberType(s, sym).getParameterTypes())) {
                 chk.warnUnchecked(env.tree.pos(), Warnings.UncheckedCallMbrOfRawType(sym, s));
             }
         }

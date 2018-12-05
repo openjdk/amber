@@ -1476,6 +1476,7 @@ public class Check {
             tree.type.hasTag(CLASS) &&
             !TreeInfo.isDiamond(tree) &&
             !withinAnonConstr(env) &&
+            !tree.type.tsym.isEnum() &&
             tree.type.isRaw()) {
             log.warning(LintCategory.RAW,
                     tree.pos(), Warnings.RawClassUse(tree.type, tree.type.tsym.type));
