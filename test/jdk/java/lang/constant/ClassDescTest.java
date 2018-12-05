@@ -160,6 +160,7 @@ public class ClassDescTest extends SymbolicDescTest {
         assertEquals("com.foo", ClassDesc.of("com.foo.Bar").inner("Baz").packageName());
         assertEquals("", ClassDesc.of("Bar").packageName());
         assertEquals("", ClassDesc.of("Bar").inner("Baz").packageName());
+        assertEquals("", ClassDesc.of("Bar").inner("Baz", "Foo").packageName());
 
         assertEquals("", ConstantDescs.CD_int.packageName());
         assertEquals("", ConstantDescs.CD_int.arrayType().packageName());
