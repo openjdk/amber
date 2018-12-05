@@ -254,4 +254,26 @@ public class ClassDescTest extends SymbolicDescTest {
             // good
         }
     }
+
+    public void testLangClasses() {
+        Double d = 1.0;
+        assertEquals(d.resolveConstantDesc(LOOKUP), d);
+        assertEquals(d.describeConstable().get(), d);
+
+        Integer i = 1;
+        assertEquals(i.resolveConstantDesc(LOOKUP), i);
+        assertEquals(i.describeConstable().get(), i);
+
+        Float f = 1.0f;
+        assertEquals(f.resolveConstantDesc(LOOKUP), f);
+        assertEquals(f.describeConstable().get(), f);
+
+        Long l = 1L;
+        assertEquals(l.resolveConstantDesc(LOOKUP), l);
+        assertEquals(l.describeConstable().get(), l);
+
+        String s = "";
+        assertEquals(s.resolveConstantDesc(LOOKUP), s);
+        assertEquals(s.describeConstable().get(), s);
+    }
 }
