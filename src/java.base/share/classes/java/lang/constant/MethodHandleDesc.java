@@ -46,7 +46,7 @@ public interface MethodHandleDesc
         extends ConstantDesc {
 
     /**
-     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
+     * Creates a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method, invocation of a constructor, or access to a field.
      *
      * <p>The lookup descriptor string has the same format as for the various
@@ -91,7 +91,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Create a {@linkplain MethodHandleDesc} corresponding to an invocation of a
+     * Creates a {@linkplain MethodHandleDesc} corresponding to an invocation of a
      * declared method or constructor.
      *
      * <p>The lookup descriptor string has the same format as for the lookup
@@ -139,7 +139,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Create a {@linkplain MethodHandleDesc} corresponding to a method handle
+     * Creates a {@linkplain MethodHandleDesc} corresponding to a method handle
      * that accesses a field.
      *
      * @param kind the kind of the method handle to be described; must be one of {@code GETTER},
@@ -150,7 +150,7 @@ public interface MethodHandleDesc
      * @return the {@linkplain MethodHandleDesc}
      * @throws NullPointerException if any of the arguments are null
      * @throws IllegalArgumentException if the {@code kind} is not one of the
-     * valid values
+     * valid values or if the field name is not valid
      * @jvms 4.2.2 Unqualified Names
      */
     static DirectMethodHandleDesc ofField(DirectMethodHandleDesc.Kind kind,
@@ -170,7 +170,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
+     * Returns a {@linkplain MethodHandleDesc} corresponding to invocation of a constructor
      *
      * @param owner a {@link ClassDesc} describing the class containing the
      *              constructor
@@ -186,7 +186,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@linkplain MethodHandleDesc} that describes this method handle
+     * Returns a {@linkplain MethodHandleDesc} that describes this method handle
      * adapted to a different type, as if by {@link MethodHandle#asType(MethodType)}.
      *
      * @param type a {@link MethodHandleDesc} describing the new method type
@@ -197,7 +197,7 @@ public interface MethodHandleDesc
     }
 
     /**
-     * Return a {@link MethodTypeDesc} describing the invocation type of the
+     * Returns a {@link MethodTypeDesc} describing the invocation type of the
      * method handle described by this nominal descriptor.  The invocation type
      * describes the full set of stack values that are consumed by the invocation
      * (including the receiver, if any).
@@ -207,7 +207,7 @@ public interface MethodHandleDesc
     MethodTypeDesc invocationType();
 
     /**
-     * Compare the specified object with this descriptor for equality.  Returns
+     * Compares the specified object with this descriptor for equality.  Returns
      * {@code true} if and only if the specified object is also a
      * {@linkplain MethodHandleDesc}, and both encode the same nominal description
      * of a method handle.

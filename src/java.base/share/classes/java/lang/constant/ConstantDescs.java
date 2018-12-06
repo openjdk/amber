@@ -255,7 +255,7 @@ public final class ConstantDescs {
             = MethodHandleDesc.ofMethod(Kind.VIRTUAL, CD_MethodHandle, "asType",
                                         MethodTypeDesc.of(CD_MethodHandle, CD_MethodType));
     /**
-     * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for
+     * Returns a {@link MethodHandleDesc} corresponding to a bootstrap method for
      * an {@code invokedynamic} callsite, which is a static method whose leading
      * parameter types are {@code Lookup}, {@code String}, and {@code MethodType}.
      *
@@ -276,7 +276,7 @@ public final class ConstantDescs {
     }
 
     /**
-     * Return a {@link MethodHandleDesc} corresponding to a bootstrap method for a
+     * Returns a {@link MethodHandleDesc} corresponding to a bootstrap method for a
      * dynamic constant, which is a static method whose leading arguments are
      * {@code Lookup}, {@code String}, and {@code Class}.
      *

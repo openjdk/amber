@@ -74,7 +74,7 @@ public abstract class DynamicConstantDesc<T>
     );
 
     /**
-     * Create a nominal descriptor for a dynamic constant.
+     * Creates a nominal descriptor for a dynamic constant.
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the constant
@@ -105,11 +105,11 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant, transforming it into
+     * Returns a nominal descriptor for a dynamic constant, transforming it into
      * a more specific type if the constant bootstrap is a well-known one and a
      * more specific nominal descriptor type (e.g., ClassDesc) is available.
      *
-     * <p>Classes whose {@link Constable#describeConstable()} method produces
+     * <p>Classes whose {@link Constable#describeConstable()} method produce
      * a {@linkplain DynamicConstantDesc} with a well-known bootstrap including
      * {@link Class} (for instances describing primitive types), {@link Enum},
      * and {@link VarHandle}.
@@ -146,7 +146,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant.
+     * Returns a nominal descriptor for a dynamic constant.
      *
      * @param <T> the type of the dynamic constant
      * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
@@ -174,7 +174,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant whose name parameter
+     * Returns a nominal descriptor for a dynamic constant whose name parameter
      * is {@link ConstantDescs#DEFAULT_NAME}, and whose type parameter is always
      * the same as the bootstrap method return type.
      *
@@ -194,7 +194,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Return a nominal descriptor for a dynamic constant whose bootstrap has
+     * Returns a nominal descriptor for a dynamic constant whose bootstrap has
      * no static arguments, whose name parameter is {@link ConstantDescs#DEFAULT_NAME},
      * and whose type parameter is always the same as the bootstrap method return type.
      *
@@ -210,7 +210,7 @@ public abstract class DynamicConstantDesc<T>
 
     /**
      * Returns the name that would appear in the {@code NameAndType} operand
-     * of the {@code LDC} for this constant
+     * of the {@code LDC} for this constant.
      *
      * @return the constant name
      */
@@ -230,7 +230,7 @@ public abstract class DynamicConstantDesc<T>
 
     /**
      * Returns a {@link MethodHandleDesc} describing the bootstrap method for
-     * this constant
+     * this constant.
      *
      * @return the bootstrap method
      */
@@ -239,7 +239,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns the bootstrap arguments for this constant
+     * Returns the bootstrap arguments for this constant.
      *
      * @return the bootstrap arguments
      */
@@ -248,7 +248,7 @@ public abstract class DynamicConstantDesc<T>
     }
 
     /**
-     * Returns the bootstrap arguments for this constant as an immutable {@link List}
+     * Returns the bootstrap arguments for this constant as an immutable {@link List}.
      *
      * @return a {@link List} of the bootstrap arguments
      */

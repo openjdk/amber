@@ -56,6 +56,8 @@ import static java.lang.invoke.MethodHandleInfo.REF_putStatic;
 public interface DirectMethodHandleDesc extends MethodHandleDesc {
     /**
      * Kinds of method handles that can be described with {@linkplain DirectMethodHandleDesc}.
+     *
+     * @since 12
      */
     enum Kind {
         /** A method handle for a method invoked as with {@code invokestatic} */
@@ -96,7 +98,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
         Kind(int refKind, boolean isInterface) { this.refKind = refKind; this.isInterface = isInterface; }
 
         /**
-         * Find the enumeration member with the given {@code refKind} field.
+         * Returns the enumeration member with the given {@code refKind} field.
          * Behaves as if {@code valueOf(refKind, false)}.  As a special case,
          * if {@code refKind} is {@code REF_invokeInterface} (9) then the
          * {@code isInterface} field will be true.
@@ -110,7 +112,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
         }
 
         /**
-         * Find the enumeration member with the given the {@code refKind} and
+         * Returns the enumeration member with the given the {@code refKind} and
          * {@code isInterface} arguments.
          * For most values of {@code refKind} there is an exact match regardless of the value of {@code isInterface}.
          * These are:
@@ -208,7 +210,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     }
 
     /**
-     * Return the {@code kind} of the method handle described by this nominal
+     * Returns the {@code kind} of the method handle described by this nominal
      * descriptor.
      *
      * @return the {@link Kind}
@@ -216,7 +218,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     Kind kind();
 
     /**
-     * Return the {@code refKind} of the method handle described by this nominal
+     * Returns the {@code refKind} of the method handle described by this nominal
      * reference, as defined by {@link MethodHandleInfo}.
      *
      * @return the reference kind
@@ -231,7 +233,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     boolean isOwnerInterface();
 
     /**
-     * Return a {@link ClassDesc} describing the class declaring the
+     * Returns a {@link ClassDesc} describing the class declaring the
      * method or field described by this nominal descriptor.
      *
      * @return the class declaring the method or field
@@ -239,7 +241,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     ClassDesc owner();
 
     /**
-     * Return the name of the method or field described by this nominal descriptor.
+     * Returns the name of the method or field described by this nominal descriptor.
      * For constructors, returns the reserved name {@code "<init>"}.
      *
      * @return the name of the method or field
@@ -247,7 +249,7 @@ public interface DirectMethodHandleDesc extends MethodHandleDesc {
     String methodName();
 
     /**
-     * Return the lookup descriptor of the method handle described by this descriptor,
+     * Returns the lookup descriptor of the method handle described by this descriptor,
      * after adjusting for the invocation mode.  This will correspond to either
      * a method type descriptor string (for methods and constructors), or a field
      * descriptor string (for field access method handles).  The lookup descriptor

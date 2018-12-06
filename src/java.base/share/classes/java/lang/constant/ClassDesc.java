@@ -63,7 +63,7 @@ public interface ClassDesc
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**
-     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a class or interface type,
      * given the name of the class or interface, such as {@code "java.lang.String"}.
      * (To create a descriptor for an array type, either use {@link #ofDescriptor(String)}
      * or {@link #arrayType()}; to create a descriptor for a primitive type, use
@@ -82,7 +82,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a class or interface type,
      * given a package name and the unqualified (simple) name for the
      * class or interface.
      *
@@ -105,7 +105,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} given a descriptor string for a class,
+     * Returns a {@linkplain ClassDesc} given a descriptor string for a class,
      * interface, array, or primitive type.
      *
      * @apiNote
@@ -135,7 +135,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an array type whose component type
+     * Returns a {@linkplain ClassDesc} for an array type whose component type
      * is described by this {@linkplain ClassDesc}.
      *
      * @return a {@linkplain ClassDesc} describing the array type
@@ -145,7 +145,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an array type of the specified rank,
+     * Returns a {@linkplain ClassDesc} for an array type of the specified rank,
      * whose component type is described by this {@linkplain ClassDesc}.
      *
      * @param rank the rank of the array
@@ -159,7 +159,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for an inner class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
      * @param innerName the unqualified name of the inner class
@@ -167,6 +167,7 @@ public interface ClassDesc
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
+     * @throws IllegalArgumentException if the inner class name is invalid
      */
     default ClassDesc inner(String innerName) {
         validateMemberName(innerName);
@@ -176,7 +177,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for an inner class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
      * @param firstInnerName the unqualified name of the first level of inner class
@@ -186,6 +187,7 @@ public interface ClassDesc
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
+     * @throws IllegalArgumentException if the inner class name is invalid
      */
     default ClassDesc inner(String firstInnerName, String... moreInnerNames) {
         if (!isClassOrInterface())
@@ -278,7 +280,7 @@ public interface ClassDesc
     }
 
     /**
-     * Return a field type descriptor string for this type
+     * Returns a field type descriptor string for this type
      *
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors

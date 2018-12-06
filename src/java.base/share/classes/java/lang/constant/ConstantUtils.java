@@ -99,7 +99,7 @@ class ConstantUtils {
     }
 
     /**
-     * Parse a method descriptor string, and return a list of field descriptor
+     * Parses a method descriptor string, and return a list of field descriptor
      * strings, return type first, then parameter types
      *
      * @param descriptor the descriptor string
@@ -133,7 +133,7 @@ class ConstantUtils {
     }
 
     /**
-     * Validate that the characters at [start, end) within the provided string
+     * Validates that the characters at [start, end) within the provided string
      * describe a valid field type descriptor.
      *
      * @param str the descriptor string

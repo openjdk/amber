@@ -54,7 +54,7 @@ public class DynamicCallSiteDesc {
     private final MethodTypeDesc invocationType;
 
     /**
-     * Create a nominal descriptor for an {@code invokedynamic} call site.
+     * Creates a nominal descriptor for an {@code invokedynamic} call site.
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the {@code invokedynamic}
@@ -84,7 +84,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Create a nominal descriptor for an {@code invokedynamic} call site.
+     * Creates a nominal descriptor for an {@code invokedynamic} call site.
      *
      * @param bootstrapMethod a {@link DirectMethodHandleDesc} describing the
      *                        bootstrap method for the {@code invokedynamic}
@@ -110,7 +110,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Create a nominal descriptor for an {@code invokedynamic} call site whose
+     * Creates a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments.
      *
      * @param bootstrapMethod The bootstrap method for the {@code invokedynamic}
@@ -120,6 +120,8 @@ public class DynamicCallSiteDesc {
      * in the {@code NameAndType} operand of the {@code invokedynamic}
      * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
+     * @throws IllegalArgumentException if the invocation name has the incorrect
+     * format
      */
     public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          String invocationName,
@@ -128,7 +130,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Create a nominal descriptor for an {@code invokedynamic} call site whose
+     * Creates a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method has no static arguments and for which the name parameter
      * is {@link ConstantDescs#DEFAULT_NAME}.
      *
@@ -139,8 +141,6 @@ public class DynamicCallSiteDesc {
      *                       operand of the {@code invokedynamic}
      * @return the nominal descriptor
      * @throws NullPointerException if any parameter is null
-     * @throws IllegalArgumentException if the invocation name has the incorrect
-     * format
      */
     public static DynamicCallSiteDesc of(DirectMethodHandleDesc bootstrapMethod,
                                          MethodTypeDesc invocationType) {
@@ -148,7 +148,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site whose
+     * Returns a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap method, name, and invocation type are the same as this one, but
      * with the specified bootstrap arguments.
      *
@@ -163,7 +163,7 @@ public class DynamicCallSiteDesc {
     }
 
     /**
-     * Return a nominal descriptor for an {@code invokedynamic} call site whose
+     * Returns a nominal descriptor for an {@code invokedynamic} call site whose
      * bootstrap and bootstrap arguments are the same as this one, but with the
      * specified invocationName and invocation invocationType
      *
