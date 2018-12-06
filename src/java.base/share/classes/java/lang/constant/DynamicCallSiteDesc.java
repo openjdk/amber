@@ -213,7 +213,9 @@ public class DynamicCallSiteDesc {
 
     /**
      * Returns {@link ConstantDesc}s describing the bootstrap arguments for the
-     * {@code invokedynamic}.
+     * {@code invokedynamic}. The returned array is always non-null. A zero
+     * length array is returned if this {@linkplain DynamicCallSiteDesc} has no
+     * bootstrap arguments.
      *
      * @return the bootstrap arguments for the {@code invokedynamic}
      */
