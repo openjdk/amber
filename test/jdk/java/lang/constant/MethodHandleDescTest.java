@@ -68,9 +68,9 @@ import static org.testng.Assert.fail;
 @Test
 public class MethodHandleDescTest extends SymbolicDescTest {
     private static ClassDesc helperHolderClass = ClassDesc.of("TestHelpers");
-    private static ClassDesc testClass = helperHolderClass.inner("TestClass");
-    private static ClassDesc testInterface = helperHolderClass.inner("TestInterface");
-    private static ClassDesc testSuperclass = helperHolderClass.inner("TestSuperclass");
+    private static ClassDesc testClass = helperHolderClass.nested("TestClass");
+    private static ClassDesc testInterface = helperHolderClass.nested("TestInterface");
+    private static ClassDesc testSuperclass = helperHolderClass.nested("TestSuperclass");
 
 
     private static void assertMHEquals(MethodHandle a, MethodHandle b) {

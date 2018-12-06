@@ -159,42 +159,42 @@ public interface ClassDesc
     }
 
     /**
-     * Returns a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for a nested class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
-     * @param innerName the unqualified name of the inner class
-     * @return a {@linkplain ClassDesc} describing the inner class
+     * @param nestedName the unqualified name of the nested class
+     * @return a {@linkplain ClassDesc} describing the nested class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
-     * @throws IllegalArgumentException if the inner class name is invalid
+     * @throws IllegalArgumentException if the nested class name is invalid
      */
-    default ClassDesc inner(String innerName) {
-        validateMemberName(innerName);
+    default ClassDesc nested(String nestedName) {
+        validateMemberName(nestedName);
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), innerName));
+        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), nestedName));
     }
 
     /**
-     * Returns a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for a nested class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
-     * @param firstInnerName the unqualified name of the first level of inner class
-     * @param moreInnerNames the unqualified name(s) of the remaining levels of
-     *                       inner class
-     * @return a {@linkplain ClassDesc} describing the inner class
+     * @param firstNestedName the unqualified name of the first level of nested class
+     * @param moreNestedNames the unqualified name(s) of the remaining levels of
+     *                       nested class
+     * @return a {@linkplain ClassDesc} describing the nested class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
-     * @throws IllegalArgumentException if the inner class name is invalid
+     * @throws IllegalArgumentException if the nested class name is invalid
      */
-    default ClassDesc inner(String firstInnerName, String... moreInnerNames) {
+    default ClassDesc nested(String firstNestedName, String... moreNestedNames) {
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return moreInnerNames.length == 0
-               ? inner(firstInnerName)
-               : inner(firstInnerName + Stream.of(moreInnerNames).collect(joining("$", "$", "")));
+        return moreNestedNames.length == 0
+               ? nested(firstNestedName)
+               : nested(firstNestedName + Stream.of(moreNestedNames).collect(joining("$", "$", "")));
     }
 
     /**

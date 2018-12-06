@@ -118,7 +118,7 @@ public final class ConstantDescs {
     public static final ClassDesc CD_MethodHandles = ClassDesc.of("java.lang.invoke.MethodHandles");
 
     /** {@link ClassDesc} representing {@link MethodHandles.Lookup} */
-    public static final ClassDesc CD_MethodHandles_Lookup = CD_MethodHandles.inner("Lookup");
+    public static final ClassDesc CD_MethodHandles_Lookup = CD_MethodHandles.nested("Lookup");
 
     /** {@link ClassDesc} representing {@link MethodHandle} */
     public static final ClassDesc CD_MethodHandle = ClassDesc.of("java.lang.invoke.MethodHandle");
@@ -148,7 +148,7 @@ public final class ConstantDescs {
     public static final ClassDesc CD_ClassDesc = ClassDesc.of("java.lang.constant.ClassDesc");
 
     /** {@link ClassDesc} representing {@link EnumDesc} */
-    public static final ClassDesc CD_EnumDesc = CD_Enum.inner("EnumDesc");
+    public static final ClassDesc CD_EnumDesc = CD_Enum.nested("EnumDesc");
 
     /** {@link ClassDesc} representing {@link MethodTypeDesc} */
     public static final ClassDesc CD_MethodTypeDesc = ClassDesc.of("java.lang.constant.MethodTypeDesc");
@@ -160,10 +160,10 @@ public final class ConstantDescs {
     public static final ClassDesc CD_DirectMethodHandleDesc = ClassDesc.of("java.lang.constant.DirectMethodHandleDesc");
 
     /** {@link ClassDesc} representing {@link VarHandleDesc} */
-    public static final ClassDesc CD_VarHandleDesc = CD_VarHandle.inner("VarHandleDesc");
+    public static final ClassDesc CD_VarHandleDesc = CD_VarHandle.nested("VarHandleDesc");
 
     /** {@link ClassDesc} representing {@link DirectMethodHandleDesc.Kind} */
-    public static final ClassDesc CD_MethodHandleDesc_Kind = CD_DirectMethodHandleDesc.inner("Kind");
+    public static final ClassDesc CD_MethodHandleDesc_Kind = CD_DirectMethodHandleDesc.nested("Kind");
 
     /** {@link ClassDesc} representing {@link DynamicConstantDesc} */
     public static final ClassDesc CD_DynamicConstantDesc = ClassDesc.of("java.lang.constant.DynamicConstantDesc");
