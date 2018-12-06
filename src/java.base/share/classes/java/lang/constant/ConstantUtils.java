@@ -40,6 +40,14 @@ class ConstantUtils {
 
     private static final Set<String> pointyNames = Set.of("<init>", "<clinit>");
 
+    /**
+     * Validates the correctness of a binary class name. In particular checks for the presence of
+     * invalid characters in the name.
+     *
+     * @param name the class name
+     * @return the class name passed if valid
+     * @throws IllegalArgumentException if the class name is invalid
+     */
     static String validateBinaryClassName(String name) {
         for (int i=0; i<name.length(); i++) {
             char ch = name.charAt(i);
@@ -50,9 +58,11 @@ class ConstantUtils {
     }
 
     /**
-     * validates a member name
+     * Validates a member name
+     *
      * @param name the name of the member
      * @return the name passed if valid
+     * @throws IllegalArgumentException if the member name is invalid
      */
     public static String validateMemberName(String name) {
         requireNonNull(name);
