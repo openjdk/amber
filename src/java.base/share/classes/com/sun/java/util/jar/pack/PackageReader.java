@@ -2194,7 +2194,7 @@ class PackageReader extends BandStructure {
                         }
                         buf[pc++] = (byte) origBC;
                         int coding = bc_initref.getInt();
-                        // Find the nth overloading of <init> in classDesc.
+                        // Find the nth overloading of <init> in classRef.
                         MemberEntry ref = pkg.cp.getOverloadingForIndex(CONSTANT_Methodref, classRef, "<init>", coding);
                         fixupBuf.addU2(pc, ref);
                         buf[pc+0] = buf[pc+1] = 0;

@@ -49,9 +49,6 @@ import static java.util.stream.Collectors.joining;
  * {@linkplain ClassDesc} for the component type and then call the {@link #arrayType()}
  * or {@link #arrayType(int)} methods.
  *
- * <p>Two {@linkplain ClassDesc} objects are considered {@link Object#equals(Object)}
- * if they describe exactly the same type.
- *
  * @apiNote In the future, if the Java language permits, {@linkplain ClassDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
@@ -66,7 +63,7 @@ public interface ClassDesc
                 TypeDescriptor.OfField<ClassDesc> {
 
     /**
-     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a class or interface type,
      * given the name of the class or interface, such as {@code "java.lang.String"}.
      * (To create a descriptor for an array type, either use {@link #ofDescriptor(String)}
      * or {@link #arrayType()}; to create a descriptor for a primitive type, use
@@ -85,7 +82,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for a class or interface type,
+     * Returns a {@linkplain ClassDesc} for a class or interface type,
      * given a package name and the unqualified (simple) name for the
      * class or interface.
      *
@@ -108,7 +105,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} given a descriptor string for a class,
+     * Returns a {@linkplain ClassDesc} given a descriptor string for a class,
      * interface, array, or primitive type.
      *
      * @apiNote
@@ -138,7 +135,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an array type whose component type
+     * Returns a {@linkplain ClassDesc} for an array type whose component type
      * is described by this {@linkplain ClassDesc}.
      *
      * @return a {@linkplain ClassDesc} describing the array type
@@ -148,7 +145,7 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an array type of the specified rank,
+     * Returns a {@linkplain ClassDesc} for an array type of the specified rank,
      * whose component type is described by this {@linkplain ClassDesc}.
      *
      * @param rank the rank of the array
@@ -162,40 +159,42 @@ public interface ClassDesc
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for a nested class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
-     * @param innerName the unqualified name of the inner class
-     * @return a {@linkplain ClassDesc} describing the inner class
+     * @param nestedName the unqualified name of the nested class
+     * @return a {@linkplain ClassDesc} describing the nested class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
+     * @throws IllegalArgumentException if the nested class name is invalid
      */
-    default ClassDesc inner(String innerName) {
-        validateMemberName(innerName);
+    default ClassDesc nested(String nestedName) {
+        validateMemberName(nestedName);
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), innerName));
+        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), nestedName));
     }
 
     /**
-     * Create a {@linkplain ClassDesc} for an inner class of the class or
+     * Returns a {@linkplain ClassDesc} for a nested class of the class or
      * interface type described by this {@linkplain ClassDesc}.
      *
-     * @param firstInnerName the unqualified name of the first level of inner class
-     * @param moreInnerNames the unqualified name(s) of the remaining levels of
-     *                       inner class
-     * @return a {@linkplain ClassDesc} describing the inner class
+     * @param firstNestedName the unqualified name of the first level of nested class
+     * @param moreNestedNames the unqualified name(s) of the remaining levels of
+     *                       nested class
+     * @return a {@linkplain ClassDesc} describing the nested class
      * @throws NullPointerException if any argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
+     * @throws IllegalArgumentException if the nested class name is invalid
      */
-    default ClassDesc inner(String firstInnerName, String... moreInnerNames) {
+    default ClassDesc nested(String firstNestedName, String... moreNestedNames) {
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return moreInnerNames.length == 0
-               ? inner(firstInnerName)
-               : inner(firstInnerName + Stream.of(moreInnerNames).collect(joining("$", "$", "")));
+        return moreNestedNames.length == 0
+               ? nested(firstNestedName)
+               : nested(firstNestedName + Stream.of(moreNestedNames).collect(joining("$", "$", "")));
     }
 
     /**
@@ -281,10 +280,20 @@ public interface ClassDesc
     }
 
     /**
-     * Return a field type descriptor string for this type
+     * Returns a field type descriptor string for this type
      *
      * @return the descriptor string
      * @jvms 4.3.2 Field Descriptors
      */
     String descriptorString();
+
+    /**
+     * Compare the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain ClassDesc} and both describe the same type.
+     *
+     * @param o the other object
+     * @return whether this descriptor is equal to the other object
+     */
+    boolean equals(Object o);
 }

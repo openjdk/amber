@@ -3655,7 +3655,7 @@ public final class String
     }
 
     /**
-     * Resolve this instance as a {@link ConstantDesc}, the result of which is
+     * Resolves this instance as a {@link ConstantDesc}, the result of which is
      * the instance itself.
      *
      * @param lookup ignored

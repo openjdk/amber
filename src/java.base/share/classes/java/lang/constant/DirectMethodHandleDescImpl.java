@@ -48,7 +48,7 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     private final MethodTypeDesc invocationType;
 
     /**
-     * Construct a {@linkplain DirectMethodHandleDescImpl} for a method or field
+     * Constructs a {@linkplain DirectMethodHandleDescImpl} for a method or field
      * from a kind, owner, name, and type
      *
      * @param kind the kind of the method handle

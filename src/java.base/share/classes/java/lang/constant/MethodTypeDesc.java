@@ -34,10 +34,6 @@ import java.util.stream.Stream;
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
  * {@linkplain MethodType} constant.
  *
- * <p>Two {@linkplain MethodTypeDesc} objects are considered {@link Object#equals(Object)}
- * if they have the same arity, their return types are equal, and each pair of corresponding
- * parameter types are equal.
- *
  * @apiNote In the future, if the Java language permits, {@linkplain MethodTypeDesc}
  * may become a {@code sealed} interface, which would prohibit subclassing except
  * by explicitly permitted types.  Non-platform classes should not implement
@@ -49,7 +45,7 @@ public interface MethodTypeDesc
         extends ConstantDesc,
                 TypeDescriptor.OfMethod<ClassDesc, MethodTypeDesc> {
     /**
-     * Create a {@linkplain MethodTypeDesc} given a method descriptor string
+     * Creates a {@linkplain MethodTypeDesc} given a method descriptor string.
      *
      * @param descriptor a method descriptor string
      * @return a {@linkplain MethodTypeDesc} describing the desired method type
@@ -76,22 +72,22 @@ public interface MethodTypeDesc
     }
 
     /**
-     * Get the return type of the method type described by this {@linkplain MethodTypeDesc}
+     * Gets the return type of the method type described by this {@linkplain MethodTypeDesc}.
      *
      * @return a {@link ClassDesc} describing the return type of the method type
      */
     ClassDesc returnType();
 
     /**
-     * Get the number of parameters of the method type described by
-     * this {@linkplain MethodTypeDesc}
+     * Returns the number of parameters of the method type described by
+     * this {@linkplain MethodTypeDesc}.
      * @return the number of parameters
      */
     int parameterCount();
 
     /**
-     * Get the parameter type of the {@code index}'th parameter of the method type
-     * described by this {@linkplain MethodTypeDesc}
+     * Returns the parameter type of the {@code index}'th parameter of the method type
+     * described by this {@linkplain MethodTypeDesc}.
      *
      * @param index the index of the parameter to retrieve
      * @return a {@link ClassDesc} describing the desired parameter type
@@ -101,21 +97,21 @@ public interface MethodTypeDesc
     ClassDesc parameterType(int index);
 
     /**
-     * Get the parameter types as an immutable {@link List}.
+     * Returns the parameter types as an immutable {@link List}.
      *
      * @return a {@link List} of {@link ClassDesc} describing the parameter types
      */
     List<ClassDesc> parameterList();
 
     /**
-     * Get the parameter types as an array.
+     * Returns the parameter types as an array.
      *
      * @return an array of {@link ClassDesc} describing the parameter types
      */
     ClassDesc[] parameterArray();
 
     /**
-     * Return a {@linkplain MethodTypeDesc} that is identical to
+     * Returns a {@linkplain MethodTypeDesc} that is identical to
      * this one, except with the specified return type.
      *
      * @param returnType a {@link ClassDesc} describing the new return type
@@ -125,7 +121,7 @@ public interface MethodTypeDesc
     MethodTypeDesc changeReturnType(ClassDesc returnType);
 
     /**
-     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
+     * Returns a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a single parameter type has been changed to the specified type.
      *
      * @param index the index of the parameter to change
@@ -138,7 +134,7 @@ public interface MethodTypeDesc
     MethodTypeDesc changeParameterType(int index, ClassDesc paramType);
 
     /**
-     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
+     * Returns a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a range of parameter types have been removed.
      *
      * @param start the index of the first parameter to remove
@@ -151,7 +147,7 @@ public interface MethodTypeDesc
     MethodTypeDesc dropParameterTypes(int start, int end);
 
     /**
-     * Return a {@linkplain MethodTypeDesc} that is identical to this one,
+     * Returns a {@linkplain MethodTypeDesc} that is identical to this one,
      * except that a range of additional parameter types have been inserted.
      *
      * @param pos the index at which to insert the first inserted parameter
@@ -165,7 +161,7 @@ public interface MethodTypeDesc
     MethodTypeDesc insertParameterTypes(int pos, ClassDesc... paramTypes);
 
     /**
-     * Return the method type descriptor string
+     * Returns the method type descriptor string.
      *
      * @return the method type descriptor string
      * @jvms 4.3.3 Method Descriptors
@@ -179,8 +175,8 @@ public interface MethodTypeDesc
     }
 
     /**
-     * Return a human-readable descriptor for this method type, using the
-     * canonical names for parameter and return types
+     * Returns a human-readable descriptor for this method type, using the
+     * canonical names for parameter and return types.
      *
      * @return the human-readable descriptor for this method type
      */
@@ -191,4 +187,15 @@ public interface MethodTypeDesc
                                    .collect(Collectors.joining(",")),
                              returnType().displayName());
     }
+
+    /**
+     * Compares the specified object with this descriptor for equality.  Returns
+     * {@code true} if and only if the specified object is also a
+     * {@linkplain MethodTypeDesc} both have the same arity, their return types
+     * are equal, and each pair of corresponding parameter types are equal.
+     *
+     * @param o the other object
+     * @return whether this descriptor is equal to the other object
+     */
+    boolean equals(Object o);
 }

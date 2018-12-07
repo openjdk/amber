@@ -64,6 +64,13 @@ public class IndyDescTest {
         assertEquals("Foo", target.invoke());
         assertEquals("wooga", csd.invocationName());
 
+        mh = ofCallsiteBootstrap(c, "bootstrap", CD_CallSite, CD_Object.arrayType());
+        csd = DynamicCallSiteDesc.of(mh, "wooga", MethodTypeDesc.of(CD_String));
+        cs = csd.resolveCallSiteDesc(MethodHandles.lookup());
+        target = cs.getTarget();
+        assertEquals("Foo", target.invoke());
+        assertEquals("wooga", csd.invocationName());
+
         DynamicCallSiteDesc csd2 = DynamicCallSiteDesc.of(mh, "foo", MethodTypeDesc.of(CD_String), "Bar");
         CallSite cs2 = csd2.resolveCallSiteDesc(MethodHandles.lookup());
         MethodHandle target2 = cs2.getTarget();

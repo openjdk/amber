@@ -212,7 +212,7 @@ public abstract class Enum<E extends Enum<E>>
     }
 
     /**
-     * Return an enum descriptor {@code EnumDesc} for this instance, if one can be
+     * Returns an enum descriptor {@code EnumDesc} for this instance, if one can be
      * constructed, or an empty {@link Optional} if one cannot be.
      *
      * @return An {@link Optional} containing the resulting nominal descriptor,
@@ -294,7 +294,7 @@ public abstract class Enum<E extends Enum<E>>
             extends DynamicConstantDesc<E> {
 
         /**
-         * Construct a nominal descriptor for the specified {@code enum} class and name.
+         * Constructs a nominal descriptor for the specified {@code enum} class and name.
          *
          * @param constantType a {@link ClassDesc} describing the {@code enum} class
          * @param constantName the unqualified name of the enum constant
@@ -306,7 +306,7 @@ public abstract class Enum<E extends Enum<E>>
         }
 
         /**
-         * Return a nominal descriptor for the specified {@code enum} class and name
+         * Returns a nominal descriptor for the specified {@code enum} class and name
          *
          * @param <E> the type of the enum constant
          * @param enumClass a {@link ClassDesc} describing the {@code enum} class

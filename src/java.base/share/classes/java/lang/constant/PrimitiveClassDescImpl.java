@@ -40,7 +40,7 @@ final class PrimitiveClassDescImpl
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassDesc} given a descriptor string for a primitive
+     * Creates a {@linkplain ClassDesc} given a descriptor string for a primitive
      * type.
      *
      * @param descriptor the descriptor string, which must be a one-character

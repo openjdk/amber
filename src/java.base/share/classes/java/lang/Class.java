@@ -160,7 +160,7 @@ public final class Class<T> implements java.io.Serializable,
                               GenericDeclaration,
                               Type,
                               AnnotatedElement,
-                                       TypeDescriptor.OfField<Class<?>>,
+                              TypeDescriptor.OfField<Class<?>>,
                               Constable {
     private static final int ANNOTATION= 0x00002000;
     private static final int ENUM      = 0x00004000;
@@ -4036,7 +4036,7 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Produce the type descriptor string for this class.
+     * Returns the type descriptor string for this class.
      * <p>
      * Note that this is not a strict inverse of {@link #forName};
      * distinct classes which share a common name but have different class loaders
@@ -4073,7 +4073,7 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Create a {@code Class} for an array type whose component type
+     * Returns a {@code Class} for an array type whose component type
      * is described by this {@linkplain Class}.
      *
      * @return a {@code Class} describing the array type
@@ -4085,7 +4085,7 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Return a nominal descriptor for this instance, if one can be
+     * Returns a nominal descriptor for this instance, if one can be
      * constructed, or an empty {@link Optional} if one cannot be.
      *
      * @return An {@link Optional} containing the resulting nominal descriptor,
