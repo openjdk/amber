@@ -44,7 +44,7 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     private final ClassDesc[] argTypes;
 
     /**
-     * Construct a {@linkplain MethodTypeDesc} with the specified return type
+     * Constructs a {@linkplain MethodTypeDesc} with the specified return type
      * and parameter types
      *
      * @param returnType a {@link ClassDesc} describing the return type
@@ -60,7 +60,7 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     }
 
     /**
-     * Create a {@linkplain MethodTypeDescImpl} given a method descriptor string.
+     * Creates a {@linkplain MethodTypeDescImpl} given a method descriptor string.
      *
      * @param descriptor the method descriptor string
      * @return a {@linkplain MethodTypeDescImpl} describing the desired method type

@@ -115,7 +115,7 @@ public class CondyDescTest extends SymbolicDescTest {
     enum MyEnum { A, B, C }
 
     public void testEnumDesc() throws ReflectiveOperationException {
-        ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
+        ClassDesc enumClass = ClassDesc.of("CondyDescTest").nested("MyEnum");
 
         testEnumDesc(EnumDesc.of(enumClass, "A"), MyEnum.A);
         testEnumDesc(EnumDesc.of(enumClass, "B"), MyEnum.B);
@@ -134,7 +134,7 @@ public class CondyDescTest extends SymbolicDescTest {
     }
 
     public void testVarHandles() throws ReflectiveOperationException {
-        ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
+        ClassDesc testClass = ClassDesc.of("CondyDescTest").nested("MyClass");
         MyClass instance = new MyClass();
 
         // static varHandle
@@ -229,13 +229,13 @@ public class CondyDescTest extends SymbolicDescTest {
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CD_Class, EMPTY_ARGS),
                      DynamicConstantDesc.ofCanonical(ConstantDescs.BSM_PRIMITIVE_CLASS, "I", ConstantDescs.CD_Class, EMPTY_ARGS));
 
-        ClassDesc enumClass = ClassDesc.of("CondyDescTest").inner("MyEnum");
+        ClassDesc enumClass = ClassDesc.of("CondyDescTest").nested("MyEnum");
         assertLifted(EnumDesc.of(enumClass, "A"),
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS),
                      DynamicConstantDesc.<MyEnum>ofCanonical(ConstantDescs.BSM_ENUM_CONSTANT, "A", enumClass, EMPTY_ARGS));
 
 
-        ClassDesc testClass = ClassDesc.of("CondyDescTest").inner("MyClass");
+        ClassDesc testClass = ClassDesc.of("CondyDescTest").nested("MyClass");
 
         assertLifted(VarHandleDesc.ofStaticField(testClass, "sf", CD_int),
                      DynamicConstantDesc.ofNamed(ConstantDescs.BSM_VARHANDLE_STATIC_FIELD, "sf", CD_VarHandle, new ConstantDesc[] {testClass, CD_int }),

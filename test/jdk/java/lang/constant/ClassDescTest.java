@@ -146,7 +146,7 @@ public class ClassDescTest extends SymbolicDescTest {
         }
 
         testClassDesc(ClassDesc.of("java.lang.String").arrayType(), String[].class);
-        testClassDesc(ClassDesc.of("java.util.Map").inner("Entry"), Map.Entry.class);
+        testClassDesc(ClassDesc.of("java.util.Map").nested("Entry"), Map.Entry.class);
 
         ClassDesc thisClassDesc = ClassDesc.ofDescriptor("LClassDescTest;");
         assertEquals(thisClassDesc, ClassDesc.of("", "ClassDescTest"));
@@ -157,9 +157,10 @@ public class ClassDescTest extends SymbolicDescTest {
 
     public void testPackageName() {
         assertEquals("com.foo", ClassDesc.of("com.foo.Bar").packageName());
-        assertEquals("com.foo", ClassDesc.of("com.foo.Bar").inner("Baz").packageName());
+        assertEquals("com.foo", ClassDesc.of("com.foo.Bar").nested("Baz").packageName());
         assertEquals("", ClassDesc.of("Bar").packageName());
-        assertEquals("", ClassDesc.of("Bar").inner("Baz").packageName());
+        assertEquals("", ClassDesc.of("Bar").nested("Baz").packageName());
+        assertEquals("", ClassDesc.of("Bar").nested("Baz", "Foo").packageName());
 
         assertEquals("", ConstantDescs.CD_int.packageName());
         assertEquals("", ConstantDescs.CD_int.arrayType().packageName());
@@ -240,17 +241,39 @@ public class ClassDescTest extends SymbolicDescTest {
         }
 
         for (Primitives p : Primitives.values()) {
-            testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any");
-            testBadInnerClasses(ClassDesc.ofDescriptor(p.descriptor), "any", "other");
+            testBadNestedClasses(ClassDesc.ofDescriptor(p.descriptor), "any");
+            testBadNestedClasses(ClassDesc.ofDescriptor(p.descriptor), "any", "other");
         }
     }
 
-    private void testBadInnerClasses(ClassDesc cr, String firstInnerName, String... moreInnerNames) {
+    private void testBadNestedClasses(ClassDesc cr, String firstNestedName, String... moreNestedNames) {
         try {
-            cr.inner(firstInnerName, moreInnerNames);
+            cr.nested(firstNestedName, moreNestedNames);
             fail("");
         } catch (IllegalStateException e) {
             // good
         }
+    }
+
+    public void testLangClasses() {
+        Double d = 1.0;
+        assertEquals(d.resolveConstantDesc(LOOKUP), d);
+        assertEquals(d.describeConstable().get(), d);
+
+        Integer i = 1;
+        assertEquals(i.resolveConstantDesc(LOOKUP), i);
+        assertEquals(i.describeConstable().get(), i);
+
+        Float f = 1.0f;
+        assertEquals(f.resolveConstantDesc(LOOKUP), f);
+        assertEquals(f.describeConstable().get(), f);
+
+        Long l = 1L;
+        assertEquals(l.resolveConstantDesc(LOOKUP), l);
+        assertEquals(l.describeConstable().get(), l);
+
+        String s = "";
+        assertEquals(s.resolveConstantDesc(LOOKUP), s);
+        assertEquals(s.describeConstable().get(), s);
     }
 }

@@ -40,6 +40,14 @@ class ConstantUtils {
 
     private static final Set<String> pointyNames = Set.of("<init>", "<clinit>");
 
+    /**
+     * Validates the correctness of a binary class name. In particular checks for the presence of
+     * invalid characters in the name.
+     *
+     * @param name the class name
+     * @return the class name passed if valid
+     * @throws IllegalArgumentException if the class name is invalid
+     */
     static String validateBinaryClassName(String name) {
         for (int i=0; i<name.length(); i++) {
             char ch = name.charAt(i);
@@ -50,9 +58,11 @@ class ConstantUtils {
     }
 
     /**
-     * validates a member name
+     * Validates a member name
+     *
      * @param name the name of the member
      * @return the name passed if valid
+     * @throws IllegalArgumentException if the member name is invalid
      */
     public static String validateMemberName(String name) {
         requireNonNull(name);
@@ -70,9 +80,9 @@ class ConstantUtils {
         return name;
     }
 
-    static void validateClassOrInterface(ClassDesc clazz) {
-        if (!clazz.isClassOrInterface())
-            throw new IllegalArgumentException("not a class or interface type: " + clazz);
+    static void validateClassOrInterface(ClassDesc classDesc) {
+        if (!classDesc.isClassOrInterface())
+            throw new IllegalArgumentException("not a class or interface type: " + classDesc);
     }
 
     static int arrayDepth(String descriptorString) {
@@ -99,7 +109,7 @@ class ConstantUtils {
     }
 
     /**
-     * Parse a method descriptor string, and return a list of field descriptor
+     * Parses a method descriptor string, and return a list of field descriptor
      * strings, return type first, then parameter types
      *
      * @param descriptor the descriptor string
@@ -133,7 +143,7 @@ class ConstantUtils {
     }
 
     /**
-     * Validate that the characters at [start, end) within the provided string
+     * Validates that the characters at [start, end) within the provided string
      * describe a valid field type descriptor.
      *
      * @param str the descriptor string

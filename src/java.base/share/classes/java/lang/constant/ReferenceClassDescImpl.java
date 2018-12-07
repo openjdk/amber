@@ -43,7 +43,7 @@ final class ReferenceClassDescImpl implements ClassDesc {
     private final String descriptor;
 
     /**
-     * Create a {@linkplain ClassDesc} from a descriptor string for a class or
+     * Creates a {@linkplain ClassDesc} from a descriptor string for a class or
      * interface type
      *
      * @param descriptor a field descriptor string for a class or interface type

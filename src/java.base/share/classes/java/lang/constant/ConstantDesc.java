@@ -38,7 +38,7 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
  * constant value itself.
  *
  * <p>Class names in a nominal descriptor, like class names in the constant pool
- * of a classfile, must be interpreted with respect to a particular to a class
+ * of a classfile, must be interpreted with respect to a particular class
  * loader, which is not part of the nominal descriptor.
  *
  * <p>Static constants that are expressible natively in the constant pool ({@link String},
@@ -91,7 +91,7 @@ import java.lang.invoke.VarHandle.VarHandleDesc;
  */
 public interface ConstantDesc {
     /**
-     * Resolve this descriptor reflectively, emulating the resolution behavior
+     * Resolves this descriptor reflectively, emulating the resolution behavior
      * of JVMS 5.4.3 and the access control behavior of JVMS 5.4.4.  The resolution
      * and access control context is provided by the {@link MethodHandles.Lookup}
      * parameter.  No caching of the resulting value is performed.
