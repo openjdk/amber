@@ -4820,6 +4820,35 @@ public class Attr extends JCTree.Visitor {
             chk.validate(tree.implementing, env);
         }
 
+        Type st = types.supertype(c.type);
+        boolean anyParentIsSealed = false;
+        ListBuffer<Pair<Type, JCTree>> sealedParents = new ListBuffer<>();
+        if (st != Type.noType && st.tsym.isSealed()) {
+            sealedParents.add(new Pair<>(st, tree.extending));
+            anyParentIsSealed = true;
+        }
+
+        if (tree.implementing != null) {
+            for (JCExpression expr : tree.implementing) {
+                if (expr.type.tsym.isSealed()) {
+                    sealedParents.add(new Pair<>(expr.type, expr));
+                    anyParentIsSealed = true;
+                }
+            }
+        }
+
+        for (Pair<Type, JCTree> pair: sealedParents) {
+            ClassType parentType = (ClassType)pair.fst;
+            if (!parentType.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                log.error(pair.snd, Errors.CantInheritFromSealed(TreeInfo.symbol(pair.snd)));
+            }
+        }
+
+        if (anyParentIsSealed) {
+            // once we have the non-final keyword this will change
+            c.flags_field |= (c.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
+        }
+
         c.markAbstractIfNeeded(types);
 
         // If this is a non-abstract class, check that it has no abstract

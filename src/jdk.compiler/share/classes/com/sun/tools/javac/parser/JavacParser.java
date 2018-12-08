@@ -2988,6 +2988,19 @@ public class JavacParser implements Parser {
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
+            case IDENTIFIER  : {
+                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.FINAL)) {
+                    Token tokenSub = S.token(1);
+                    Token tokenFinal = S.token(2);
+                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenFinal.pos) {
+                        flag = Flags.NON_FINAL;
+                        nextToken();
+                        nextToken();
+                        break;
+                    }
+                }
+                break loop;
+            }
             default: break loop;
             }
             if ((flags & flag) != 0) log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.RepeatedModifier);
@@ -3603,9 +3616,20 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
+        List<JCExpression> permitting = List.nil();
+        if (token.kind == IDENTIFIER && token.name() == names.permits) {
+            if ((mods.flags & Flags.FINAL) == 0) {
+                log.error(token.pos, Errors.PermitsInNoSealedClass);
+            } else {
+                mods.flags |= Flags.SEALED;
+                mods.flags = mods.flags & ~Flags.FINAL;
+            }
+            nextToken();
+            permitting = typeList();
+        }
         List<JCTree> defs = classOrInterfaceBody(name, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
-            mods, name, typarams, extending, implementing, defs));
+            mods, name, typarams, extending, implementing, permitting, defs));
         attach(result, dc);
         return result;
     }
@@ -3637,9 +3661,22 @@ public class JavacParser implements Parser {
             nextToken();
             extending = typeList();
         }
+
+        List<JCExpression> permitting = List.nil();
+        if (token.kind == IDENTIFIER && token.name() == names.permits) {
+            if ((mods.flags & Flags.FINAL) == 0) {
+                log.error(token.pos, Errors.PermitsInNoSealedClass);
+            } else {
+                mods.flags |= Flags.SEALED;
+                mods.flags = mods.flags & ~Flags.FINAL;
+            }
+            nextToken();
+            permitting = typeList();
+        }
+
         List<JCTree> defs = classOrInterfaceBody(name, true);
         JCClassDecl result = toP(F.at(pos).ClassDef(
-            mods, name, typarams, null, extending, defs));
+            mods, name, typarams, null, extending, permitting, defs));
         attach(result, dc);
         return result;
     }

@@ -961,6 +961,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
          */
         public List<Type> all_interfaces_field;
 
+        /** The classes, or interfaces, permitted to extend this class, or interface
+         */
+        public List<Type> permitted;
+
         public ClassType(Type outer, List<Type> typarams, TypeSymbol tsym) {
             this(outer, typarams, tsym, TypeMetadata.EMPTY);
         }
@@ -973,6 +977,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
             this.allparams_field = null;
             this.supertype_field = null;
             this.interfaces_field = null;
+            this.permitted = null;
         }
 
         @Override
