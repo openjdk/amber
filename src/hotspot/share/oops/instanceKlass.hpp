@@ -180,6 +180,10 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
+  // The PermittedSubtypes attribute. An array of shorts, where each is a
+  // class info index for the class that is a permitted subtype.
+  Array<jushort>* _permitted_subtypes;
+
   // the source debug extension for this klass, NULL if not specified.
   // Specified as UTF-8 string without terminating zero byte in the classfile,
   // it is stored in the instanceklass as a NULL-terminated UTF-8 string
@@ -457,6 +461,10 @@ class InstanceKlass: public Klass {
   // nest-host index
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
+
+  // permitted subtypes
+  Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
+  void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
 
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host

@@ -99,6 +99,7 @@ class ClassFileParser {
   Array<u2>* _inner_classes;
   Array<u2>* _nest_members;
   u2 _nest_host;
+  Array<u2>* _permitted_subtypes;
   Array<InstanceKlass*>* _local_interfaces;
   Array<InstanceKlass*>* _transitive_interfaces;
   Annotations* _combined_annotations;
@@ -294,6 +295,10 @@ class ClassFileParser {
 
   u2 parse_classfile_nest_members_attribute(const ClassFileStream* const cfs,
                                             const u1* const nest_members_attribute_start,
+                                            TRAPS);
+
+  u2 parse_classfile_permitted_subtypes_attribute(const ClassFileStream* const cfs,
+                                            const u1* const permitted_subtypes_attribute_start,
                                             TRAPS);
 
   void parse_classfile_attributes(const ClassFileStream* const cfs,

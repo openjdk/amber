@@ -1847,6 +1847,44 @@ JVM_ENTRY(jobjectArray, JVM_GetNestMembers(JNIEnv* env, jclass current))
 }
 JVM_END
 
+JVM_ENTRY(jobjectArray, JVM_GetPermittedSubtypes(JNIEnv* env, jclass current))
+{
+  JVMWrapper("JVM_GetPermittedSubtypes");
+  Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
+  assert(c->is_instance_klass(), "must be");
+  InstanceKlass* ck = InstanceKlass::cast(c);
+  Symbol* icce = vmSymbols::java_lang_IncompatibleClassChangeError();
+  {
+    JvmtiVMObjectAllocEventCollector oam;
+    Array<u2>* subtypes = ck->permitted_subtypes();
+    int length = subtypes == NULL ? 0 : subtypes->length();
+    if (length == 0) {
+        return NULL;
+    }
+    objArrayOop r = oopFactory::new_objArray(SystemDictionary::Class_klass(), length, CHECK_NULL);
+    objArrayHandle result (THREAD, r);
+    int i;
+    for (i = 0; i < length; i++) {
+      int cp_index = subtypes->at(i);
+      Klass* k = ck->constants()->klass_at(cp_index, CHECK_NULL);
+      if (k->is_instance_klass()) {
+        result->obj_at_put(i, k->java_mirror());
+      } else {
+        ResourceMark rm(THREAD);
+        Exceptions::fthrow(THREAD_AND_LOCATION,
+                           icce,
+                           "Class %s can not be a permitted subtype of %s",
+                           k->external_name(),
+                           ck->external_name()
+                           );
+        return NULL;
+      }
+    }
+    return (jobjectArray)JNIHandles::make_local(THREAD, result());
+  }
+}
+JVM_END
+
 // Constant pool access //////////////////////////////////////////////////////////
 
 JVM_ENTRY(jobject, JVM_GetClassConstantPool(JNIEnv *env, jclass cls))

@@ -4027,4 +4027,28 @@ public final class Class<T> implements java.io.Serializable,
         }
         return members;
     }
+
+    /**
+     * Returns an array containing {@code Class} objects representing all the permitted subtypes of this class
+     * if it is sealed. Returns an empty array if this class is not sealed.
+     * @return an array of all the permitted subtypes of this class
+     * @since 12
+     */
+    public Class<?>[] getPermittedSubtypes() {
+        Class<?>[] result = getPermittedSubtypes0();
+        return (result == null) ?
+            new Class<?>[0] :
+            result;
+    }
+
+    /**
+     * Returns true if this class or interface is sealed.
+     * @return returns true if the class or interface is sealed
+     * @since 12
+     */
+    public boolean isSealed() {
+        return Modifier.isFinal(getModifiers()) && getPermittedSubtypes().length != 0;
+    }
+
+    private native Class<?>[] getPermittedSubtypes0();
 }

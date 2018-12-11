@@ -425,6 +425,7 @@ InstanceKlass::InstanceKlass(const ClassFileParser& parser, unsigned kind, Klass
   _nest_members(NULL),
   _nest_host_index(0),
   _nest_host(NULL),
+  _permitted_subtypes(NULL),
   _static_field_size(parser.static_field_size()),
   _nonstatic_oop_map_size(nonstatic_oop_map_size(parser.total_oop_map_count())),
   _itable_len(parser.itable_size()),
@@ -584,6 +585,13 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
     MetadataFactory::free_array<jushort>(loader_data, nest_members());
   }
   set_nest_members(NULL);
+
+  if (permitted_subtypes() != NULL &&
+      permitted_subtypes() != Universe::the_empty_short_array() &&
+      !permitted_subtypes()->is_shared()) {
+    MetadataFactory::free_array<jushort>(loader_data, permitted_subtypes());
+  }
+  set_permitted_subtypes(NULL);
 
   // We should deallocate the Annotations instance if it's not in shared spaces.
   if (annotations() != NULL && !annotations()->is_shared()) {
@@ -2294,6 +2302,7 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   }
 
   it->push(&_nest_members);
+  it->push(&_permitted_subtypes);
 }
 
 void InstanceKlass::remove_unshareable_info() {
@@ -3179,6 +3188,7 @@ void InstanceKlass::print_on(outputStream* st) const {
   }
   st->print(BULLET"inner classes:     "); inner_classes()->print_value_on(st);     st->cr();
   st->print(BULLET"nest members:     "); nest_members()->print_value_on(st);     st->cr();
+  st->print(BULLET"permitted subtypes:     "); permitted_subtypes()->print_value_on(st);     st->cr();
   if (java_mirror() != NULL) {
     st->print(BULLET"java mirror:       ");
     java_mirror()->print_value_on(st);

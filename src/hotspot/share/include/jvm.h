@@ -535,6 +535,9 @@ JVM_GetNestHost(JNIEnv *env, jclass current);
 JNIEXPORT jobjectArray JNICALL
 JVM_GetNestMembers(JNIEnv *env, jclass current);
 
+JNIEXPORT jobjectArray JNICALL
+JVM_GetPermittedSubtypes(JNIEnv *env, jclass current);
+
 /* The following two reflection routines are still needed due to startup time issues */
 /*
  * java.lang.reflect.Method
