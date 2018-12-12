@@ -5830,6 +5830,8 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   // it's official
   set_klass(ik);
 
+  check_subtyping(CHECK);
+
   debug_only(ik->verify();)
 }
 
@@ -6391,10 +6393,6 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
       );
       return;
     }
-    // Make sure super class is not final
-    if (_super_klass->is_final()) {
-      THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
-    }
   }
 
   // Compute the transitive list of all unique interfaces implemented by this class
@@ -6437,6 +6435,18 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   // Compute reference typ
   _rt = (NULL ==_super_klass) ? REF_NONE : _super_klass->reference_type();
 
+}
+
+void ClassFileParser::check_subtyping(TRAPS) {
+  assert(NULL != _klass, "_klass should have been resolved before calling this method");
+  if (_super_klass != NULL) {
+    if (_super_klass->is_final()) {
+      bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
+      if (!isPermittedSubtype) {
+        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
+      }
+    }
+  }
 }
 
 void ClassFileParser::set_klass(InstanceKlass* klass) {
