@@ -4853,12 +4853,13 @@ void ClassFileParser::verify_legal_class_modifiers(jint flags, TRAPS) const {
   const bool is_super      = (flags & JVM_ACC_SUPER)      != 0;
   const bool is_enum       = (flags & JVM_ACC_ENUM)       != 0;
   const bool is_annotation = (flags & JVM_ACC_ANNOTATION) != 0;
-  const bool major_gte_15  = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_12  = _major_version >= JAVA_12_VERSION;
 
-  if ((is_abstract && is_final) ||
-      (is_interface && !is_abstract) ||
-      (is_interface && major_gte_15 && (is_super || is_enum)) ||
-      (!is_interface && major_gte_15 && is_annotation)) {
+  if ((is_abstract && is_final && !major_gte_12) ||
+      (is_interface && !is_abstract && !major_gte_12) ||
+      (is_interface && major_gte_1_5 && (is_super || is_enum)) ||
+      (!is_interface && major_gte_1_5 && is_annotation)) {
     ResourceMark rm(THREAD);
     Exceptions::fthrow(
       THREAD_AND_LOCATION,
@@ -6444,6 +6445,18 @@ void ClassFileParser::check_subtyping(TRAPS) {
       bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
       if (!isPermittedSubtype) {
         THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
+      }
+    }
+  }
+  Array<InstanceKlass*>* local_interfaces = _klass->local_interfaces();
+  if (local_interfaces != NULL && local_interfaces != Universe::the_empty_instance_klass_array()) {
+    for (int i = 0; i < local_interfaces->length(); i++) {
+      InstanceKlass* intf = local_interfaces->at(i);
+      if (intf->is_final()) {
+        bool isPermittedSubtype = intf->has_as_permitted_subtype(_klass, CHECK);
+        if (!isPermittedSubtype) {
+          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
+        }
       }
     }
   }
