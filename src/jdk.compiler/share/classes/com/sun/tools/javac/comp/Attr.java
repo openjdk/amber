@@ -164,6 +164,7 @@ public class Attr extends JCTree.Visitor {
         allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
+        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -199,6 +200,13 @@ public class Attr extends JCTree.Visitor {
      * RFE: 6425594
      */
     boolean useBeforeDeclarationWarning;
+
+    /**
+     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
+     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
+     * gets integrated
+     */
+    boolean dontErrorIfSealedExtended;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -4840,7 +4848,9 @@ public class Attr extends JCTree.Visitor {
         for (Pair<Type, JCTree> pair: sealedParents) {
             ClassType parentType = (ClassType)pair.fst;
             if (!parentType.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                log.error(pair.snd, Errors.CantInheritFromSealed(TreeInfo.symbol(pair.snd)));
+                if (!dontErrorIfSealedExtended) {
+                    log.error(pair.snd, Errors.CantInheritFromSealed(TreeInfo.symbol(pair.snd)));
+                }
             }
         }
 
