@@ -52,7 +52,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @since 1.0
  */
 public final class Double extends Number
-        implements Comparable<Double>, ConstantDesc, Constable {
+        implements Comparable<Double>, Constable, ConstantDesc {
     /**
      * A constant holding the positive infinity of type
      * {@code double}. It is equal to the value returned by
@@ -1077,8 +1077,8 @@ public final class Double extends Number
     }
 
     /**
-     * Returns a nominal descriptor for this instance, which is the instance
-     * itself.
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance, which is the instance itself.
      *
      * @return an {@link Optional} describing the {@linkplain Double} instance
      * @since 12
