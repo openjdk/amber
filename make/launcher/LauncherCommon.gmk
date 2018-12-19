@@ -33,7 +33,7 @@ include ToolsJdk.gmk
 # On Mac, we have always exported all symbols, probably due to oversight
 # and/or misunderstanding. To emulate this, don't hide any symbols
 # by default.
-# On AIX/xlc we need at least xlc 13.1 for the symbol hiding
+# On AIX/xlc we need at least xlc 13.1 for the symbol hiding (see JDK-8214063)
 # Also provide an override for non-conformant libraries.
 ifeq ($(TOOLCHAIN_TYPE), gcc)
   LAUNCHER_CFLAGS += -fvisibility=hidden
@@ -42,10 +42,6 @@ else ifeq ($(TOOLCHAIN_TYPE), clang)
   LAUNCHER_CFLAGS += -fvisibility=hidden
 else ifeq ($(TOOLCHAIN_TYPE), solstudio)
   LAUNCHER_CFLAGS += -xldscope=hidden
-else ifeq ($(TOOLCHAIN_TYPE), xlc)
-  ifneq ($(CC_VERSION_NUMBER), 12.1)
-    CXXFLAGS_JDKEXE += -qvisibility=hidden
-  endif
 endif
 
 LAUNCHER_SRC := $(TOPDIR)/src/java.base/share/native/launcher
@@ -211,11 +207,12 @@ ifeq ($(OPENJDK_TARGET_OS_TYPE), unix)
       $(info Warning: pandoc not found. Not generating man pages)
     else
       # Create dynamic man pages from markdown using pandoc. We need
-      # PANDOC_FILTER, a wrapper around PANDOC_FILTER_JAVASCRIPT. This is
-      # created by buildtools-jdk.
+      # PANDOC_TROFF_MANPAGE_FILTER, a wrapper around
+      # PANDOC_TROFF_MANPAGE_FILTER_JAVASCRIPT. This is created by buildtools-jdk.
 
       # We should also depend on the source javascript filter
-      PANDOC_FILTER_JAVASCRIPT := $(TOPDIR)/make/scripts/pandoc-manpage-filter.js
+      PANDOC_TROFF_MANPAGE_FILTER_JAVASCRIPT := \
+          $(TOPDIR)/make/scripts/pandoc-troff-manpage-filter.js
 
       # The norm in man pages is to display code literals as bold, but pandoc
       # "correctly" converts these constructs (encoded in markdown using `...`
@@ -238,10 +235,11 @@ ifeq ($(OPENJDK_TARGET_OS_TYPE), unix)
           DEST := $(SUPPORT_OUTPUTDIR)/modules_man/$(MODULE)/man1, \
           FILES := $(MAN_FILES_MD), \
           FORMAT := man, \
-          FILTER := $(PANDOC_FILTER), \
+          FILTER := $(PANDOC_TROFF_MANPAGE_FILTER), \
           POST_PROCESS := $(MAN_POST_PROCESS), \
           REPLACEMENTS := @@VERSION_SHORT@@ => $(VERSION_SHORT), \
-          EXTRA_DEPS := $(PANDOC_FILTER) $(PANDOC_FILTER_JAVASCRIPT), \
+          EXTRA_DEPS := $(PANDOC_TROFF_MANPAGE_FILTER) \
+              $(PANDOC_TROFF_MANPAGE_FILTER_JAVASCRIPT), \
       ))
 
       TARGETS += $(BUILD_MAN_PAGES)
