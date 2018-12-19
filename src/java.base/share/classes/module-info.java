@@ -80,6 +80,7 @@ module java.base {
     exports java.lang;
     exports java.lang.annotation;
     exports java.lang.compiler;
+    exports java.lang.constant;
     exports java.lang.invoke;
     exports java.lang.module;
     exports java.lang.ref;
