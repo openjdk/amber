@@ -128,8 +128,12 @@
 // for timer info max values which include all bits
 #define ALL_64_BITS CONST64(0xFFFFFFFFFFFFFFFF)
 
-#define LARGEPAGES_BIT (1 << 6)
-#define DAX_SHARED_BIT (1 << 8)
+enum CoredumpFilterBit {
+  FILE_BACKED_PVT_BIT = 1 << 2,
+  LARGEPAGES_BIT = 1 << 6,
+  DAX_SHARED_BIT = 1 << 8
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // global variables
 julong os::Linux::_physical_memory = 0;
@@ -323,10 +327,14 @@ void os::init_system_properties_values() {
   //        1: ...
   //        ...
   //        7: The default directories, normally /lib and /usr/lib.
-#if defined(AMD64) || (defined(_LP64) && defined(SPARC)) || defined(PPC64) || defined(S390)
-  #define DEFAULT_LIBPATH "/usr/lib64:/lib64:/lib:/usr/lib"
+#ifndef OVERRIDE_LIBPATH
+  #if defined(AMD64) || (defined(_LP64) && defined(SPARC)) || defined(PPC64) || defined(S390)
+    #define DEFAULT_LIBPATH "/usr/lib64:/lib64:/lib:/usr/lib"
+  #else
+    #define DEFAULT_LIBPATH "/lib:/usr/lib"
+  #endif
 #else
-  #define DEFAULT_LIBPATH "/lib:/usr/lib"
+  #define DEFAULT_LIBPATH OVERRIDE_LIBPATH
 #endif
 
 // Base path of extensions installed on the system.
@@ -696,6 +704,8 @@ static void *thread_native_entry(Thread *thread) {
       sync->wait(Mutex::_no_safepoint_check_flag);
     }
   }
+
+  assert(osthread->pthread_id() != 0, "pthread_id was not set as expected");
 
   // call one more level start routine
   thread->call_run();
@@ -1346,6 +1356,11 @@ void os::shutdown() {
 void os::abort(bool dump_core, void* siginfo, const void* context) {
   os::shutdown();
   if (dump_core) {
+#if INCLUDE_CDS
+    if (UseSharedSpaces && DumpPrivateMappingsInCore) {
+      ClassLoader::close_jrt_image();
+    }
+#endif
 #ifndef PRODUCT
     fdStream out(defaultStream::output_fd());
     out.print_raw("Current thread is ");
@@ -3397,10 +3412,9 @@ bool os::Linux::hugetlbfs_sanity_check(bool warn, size_t page_size) {
 // - (bit 7) dax private memory
 // - (bit 8) dax shared memory
 //
-static void set_coredump_filter(bool largepages, bool dax_shared) {
+static void set_coredump_filter(CoredumpFilterBit bit) {
   FILE *f;
   long cdm;
-  bool filter_changed = false;
 
   if ((f = fopen("/proc/self/coredump_filter", "r+")) == NULL) {
     return;
@@ -3411,17 +3425,11 @@ static void set_coredump_filter(bool largepages, bool dax_shared) {
     return;
   }
 
+  long saved_cdm = cdm;
   rewind(f);
+  cdm |= bit;
 
-  if (largepages && (cdm & LARGEPAGES_BIT) == 0) {
-    cdm |= LARGEPAGES_BIT;
-    filter_changed = true;
-  }
-  if (dax_shared && (cdm & DAX_SHARED_BIT) == 0) {
-    cdm |= DAX_SHARED_BIT;
-    filter_changed = true;
-  }
-  if (filter_changed) {
+  if (cdm != saved_cdm) {
     fprintf(f, "%#lx", cdm);
   }
 
@@ -3560,7 +3568,7 @@ void os::large_page_init() {
   size_t large_page_size = Linux::setup_large_page_size();
   UseLargePages          = Linux::setup_large_page_type(large_page_size);
 
-  set_coredump_filter(true /*largepages*/, false /*dax_shared*/);
+  set_coredump_filter(LARGEPAGES_BIT);
 }
 
 #ifndef SHM_HUGETLB
@@ -4027,33 +4035,6 @@ size_t os::read_at(int fd, void *buf, unsigned int nBytes, jlong offset) {
   return ::pread(fd, buf, nBytes, offset);
 }
 
-// Short sleep, direct OS call.
-//
-// Note: certain versions of Linux CFS scheduler (since 2.6.23) do not guarantee
-// sched_yield(2) will actually give up the CPU:
-//
-//   * Alone on this pariticular CPU, keeps running.
-//   * Before the introduction of "skip_buddy" with "compat_yield" disabled
-//     (pre 2.6.39).
-//
-// So calling this with 0 is an alternative.
-//
-void os::naked_short_sleep(jlong ms) {
-  struct timespec req;
-
-  assert(ms < 1000, "Un-interruptable sleep, short time use only");
-  req.tv_sec = 0;
-  if (ms > 0) {
-    req.tv_nsec = (ms % 1000) * 1000000;
-  } else {
-    req.tv_nsec = 1;
-  }
-
-  nanosleep(&req, NULL);
-
-  return;
-}
-
 // Sleep forever; naked call to OS-specific sleep; use with CAUTION
 void os::infinite_sleep() {
   while (true) {    // sleep forever ...
@@ -4066,6 +4047,16 @@ bool os::dont_yield() {
   return DontYieldALot;
 }
 
+// Linux CFS scheduler (since 2.6.23) does not guarantee sched_yield(2) will
+// actually give up the CPU. Since skip buddy (v2.6.28):
+//
+// * Sets the yielding task as skip buddy for current CPU's run queue.
+// * Picks next from run queue, if empty, picks a skip buddy (can be the yielding task).
+// * Clears skip buddies for this run queue (yielding task no longer a skip buddy).
+//
+// An alternative is calling os::naked_short_nanosleep with a small number to avoid
+// getting re-scheduled immediately.
+//
 void os::naked_yield() {
   sched_yield();
 }
@@ -5067,9 +5058,16 @@ jint os::init_2(void) {
   // initialize thread priority policy
   prio_init();
 
-  if (!FLAG_IS_DEFAULT(AllocateHeapAt)) {
-    set_coredump_filter(false /*largepages*/, true /*dax_shared*/);
+  if (!FLAG_IS_DEFAULT(AllocateHeapAt) || !FLAG_IS_DEFAULT(AllocateOldGenAt)) {
+    set_coredump_filter(DAX_SHARED_BIT);
   }
+
+#if INCLUDE_CDS
+  if (UseSharedSpaces && DumpPrivateMappingsInCore) {
+    set_coredump_filter(FILE_BACKED_PVT_BIT);
+  }
+#endif
+
   return JNI_OK;
 }
 
@@ -5942,7 +5940,7 @@ size_t os::current_stack_size() {
 static inline struct timespec get_mtime(const char* filename) {
   struct stat st;
   int ret = os::stat(filename, &st);
-  assert(ret == 0, "failed to stat() file '%s': %s", filename, strerror(errno));
+  assert(ret == 0, "failed to stat() file '%s': %s", filename, os::strerror(errno));
   return st.st_mtim;
 }
 
