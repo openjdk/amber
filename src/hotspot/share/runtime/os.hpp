@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,9 +51,6 @@ typedef void (*dll_func)(...);
 
 class Thread;
 class JavaThread;
-class Event;
-class DLL;
-class FileHandle;
 class NativeCallStack;
 class methodHandle;
 
@@ -474,6 +471,7 @@ class os: AllStatic {
   // Ignores Thread.interrupt() (so keep it short).
   // ms = 0, will sleep for the least amount of time allowed by the OS.
   static void naked_short_sleep(jlong ms);
+  static void naked_short_nanosleep(jlong ns);
   static void infinite_sleep(); // never returns, use with CAUTION
   static void naked_yield () ;
   static OSReturn set_priority(Thread* thread, ThreadPriority priority);

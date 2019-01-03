@@ -41,7 +41,6 @@
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "runtime/arguments.hpp"
-#include "runtime/arguments_ext.hpp"
 #include "runtime/flags/jvmFlag.hpp"
 #include "runtime/flags/jvmFlagConstraintList.hpp"
 #include "runtime/flags/jvmFlagWriteableList.hpp"
@@ -2062,6 +2061,9 @@ bool Arguments::check_vm_args_consistency() {
       log_warning(arguments) ("NUMA support for Heap depends on the file system when AllocateHeapAt option is used.\n");
     }
   }
+
+  status = status && GCArguments::check_args_consistency();
+
   return status;
 }
 
@@ -2953,6 +2955,7 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
   }
 #endif // LINUX
   fix_appclasspath();
+
   return JNI_OK;
 }
 
@@ -3544,9 +3547,6 @@ jint Arguments::match_special_option_and_act(const JavaVMInitArgs* args,
 
   for (int index = 0; index < args->nOptions; index++) {
     const JavaVMOption* option = args->options + index;
-    if (ArgumentsExt::process_options(option)) {
-      continue;
-    }
     if (match_option(option, "-XX:Flags=", &tail)) {
       Arguments::set_jvm_flags_file(tail);
       continue;
@@ -3812,8 +3812,6 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
 #if defined(AIX)
   UNSUPPORTED_OPTION(AllocateHeapAt);
 #endif
-
-  ArgumentsExt::report_unsupported_options();
 
 #ifndef PRODUCT
   if (TraceBytecodesAt != 0) {
