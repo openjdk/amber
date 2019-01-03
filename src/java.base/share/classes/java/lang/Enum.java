@@ -27,12 +27,16 @@ package java.lang;
 
 import jdk.internal.lang.annotation.Foldable;
 
-import java.io.Serializable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamException;
-import java.lang.constant.*;
+import java.io.Serializable;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DynamicConstantDesc;
 import java.lang.invoke.MethodHandles;
 import java.util.Optional;
 

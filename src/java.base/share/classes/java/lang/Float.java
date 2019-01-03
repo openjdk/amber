@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,7 +51,7 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @since 1.0
  */
 public final class Float extends Number
-        implements Comparable<Float>, ConstantDesc, Constable {
+        implements Comparable<Float>, Constable, ConstantDesc {
     /**
      * A constant holding the positive infinity of type
      * {@code float}. It is equal to the value returned by
@@ -989,8 +989,8 @@ public final class Float extends Number
     }
 
     /**
-     * Returns a nominal descriptor for this instance, which is the instance
-     * itself.
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance, which is the instance itself.
      *
      * @return an {@link Optional} describing the {@linkplain Float} instance
      * @since 12

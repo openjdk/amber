@@ -1222,7 +1222,7 @@ public class Code {
     }
 
     public boolean isStatementStart() {
-        return state.stacksize == letExprStackPos;
+        return !alive || state.stacksize == letExprStackPos;
     }
 
 /**************************************************************************

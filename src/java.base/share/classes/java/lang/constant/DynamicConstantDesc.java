@@ -348,7 +348,7 @@ public abstract class DynamicConstantDesc<T>
         return VarHandleDesc.ofArray((ClassDesc) desc.bootstrapArgs[0]);
     }
 
-    // @@@ To eventually support in canonicalization: DCR with BSM=MHD_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
+    // @@@ To eventually support in canonicalization: DCR with BSM=MHR_METHODHANDLEDESC_ASTYPE becomes AsTypeMHDesc
 
     /**
      * Compares the specified object with this descriptor for equality.  Returns

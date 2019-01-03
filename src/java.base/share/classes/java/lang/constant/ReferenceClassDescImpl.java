@@ -95,11 +95,6 @@ final class ReferenceClassDescImpl implements ClassDesc {
      *      equals to this {@code ClassDesc}.
      */
     @Override
-    public Optional<? extends ConstantDesc> describeConstable() {
-        return Optional.empty();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -116,5 +111,10 @@ final class ReferenceClassDescImpl implements ClassDesc {
     @Override
     public String toString() {
         return String.format("ClassDesc[%s]", displayName());
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 }

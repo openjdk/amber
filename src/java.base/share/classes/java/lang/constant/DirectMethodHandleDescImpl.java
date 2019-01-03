@@ -199,11 +199,6 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
      *      equals to this {@code DirectMethodHandleDescImpl}.
      */
     @Override
-    public Optional<? extends ConstantDesc> describeConstable() {
-        return null;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -222,5 +217,10 @@ final class DirectMethodHandleDescImpl implements DirectMethodHandleDesc {
     @Override
     public String toString() {
         return String.format("MethodHandleDesc[%s/%s::%s%s]", kind, owner.displayName(), name, invocationType.displayDescriptor());
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return null;
     }
 }

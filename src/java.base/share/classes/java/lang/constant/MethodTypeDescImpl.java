@@ -160,11 +160,6 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
      *      equals to this {@code MethodTypeDescImpl}.
      */
     @Override
-    public Optional<? extends ConstantDesc> describeConstable() {
-        return Optional.empty();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -185,5 +180,10 @@ final class MethodTypeDescImpl implements MethodTypeDesc {
     @Override
     public String toString() {
         return String.format("MethodTypeDesc[%s]", displayDescriptor());
+    }
+
+    @Override
+    public Optional<? extends ConstantDesc> describeConstable() {
+        return Optional.empty();
     }
 }
