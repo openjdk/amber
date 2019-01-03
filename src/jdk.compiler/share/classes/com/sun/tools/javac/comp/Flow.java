@@ -535,7 +535,7 @@ public class Flow {
                 while (exits.nonEmpty()) {
                     PendingExit exit = exits.head;
                     exits = exits.tail;
-                    Assert.check(exit.tree.hasTag(RETURN), () -> exit.tree.toString());
+                    Assert.check(exit.tree.hasTag(RETURN));
                 }
             } finally {
                 lint = lintPrev;
