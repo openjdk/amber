@@ -121,6 +121,7 @@ JVM_GetNanoTimeAdjustment
 JVM_GetNestHost
 JVM_GetNestMembers
 JVM_GetPrimitiveArrayElement
+JVM_GetProperties
 JVM_GetProtectionDomain
 JVM_GetRecordParameters
 JVM_GetRecordParametersCount
@@ -134,7 +135,6 @@ JVM_Halt
 JVM_HasReferencePendingList
 JVM_HoldsLock
 JVM_IHashCode
-JVM_InitProperties
 JVM_InitStackTraceElement
 JVM_InitStackTraceElementArray
 JVM_InitializeFromArchive
