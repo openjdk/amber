@@ -3283,7 +3283,7 @@ u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFile
     const u2 class_info_index = cfs->get_u2_fast();
     check_property(
       valid_klass_reference_at(class_info_index),
-      "Nest member class_info_index %u has bad constant type in class file %s",
+      "Permitted subtype class_info_index %u has bad constant type in class file %s",
       class_info_index, CHECK_0);
     permitted_subtypes->at_put(index++, class_info_index);
   }
@@ -3619,6 +3619,9 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
           _nest_host = class_info_index;
         } else if (tag == vmSymbols::tag_permitted_subtypes()) {
             // Check for PermittedSubtypes tag
+            if (!_access_flags.is_final()) {
+                classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+            }
             if (parsed_permitted_subtypes_attribute) {
               classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
             } else {
