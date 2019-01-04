@@ -225,6 +225,14 @@ bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
                                 k->external_name(), this->external_name());
   }
 
+  oop classloader1 = this->class_loader();
+  oop classloader2 = k->class_loader();
+  if (!oopDesc::equals(classloader1, classloader2)) {
+      log_trace(class, sealed)("Checked for same class loader of permitted subtype of %s and sealed class %s",
+                                        k->external_name(), this->external_name());
+      return false;
+  }
+
   // Check for a resolved cp entry, else fall back to a name check.
   // We don't want to resolve any class other than the one being checked.
   for (int i = 0; i < _permitted_subtypes->length(); i++) {
@@ -235,8 +243,7 @@ bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
         log_trace(class, sealed)("- class is listed at permitted_subtypes[%d] => cp[%d]", i, cp_index);
         return true;
       }
-    }
-    else {
+    } else {
       Symbol* name = _constants->klass_name_at(cp_index);
       if (name == k->name()) {
         log_trace(class, sealed)("- Found it at permitted_subtypes[%d] => cp[%d]", i, cp_index);

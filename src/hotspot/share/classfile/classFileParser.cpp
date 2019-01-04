@@ -3618,7 +3618,7 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          class_info_index, CHECK);
           _nest_host = class_info_index;
         } else if (tag == vmSymbols::tag_permitted_subtypes()) {
-            // Check for NestMembers tag
+            // Check for PermittedSubtypes tag
             if (parsed_permitted_subtypes_attribute) {
               classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
             } else {
