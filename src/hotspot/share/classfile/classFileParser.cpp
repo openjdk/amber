@@ -6417,12 +6417,17 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
+  bool is_sealed = _access_flags.is_final() &&
+                         _permitted_subtypes != NULL &&
+                         _permitted_subtypes != Universe::the_empty_short_array() &&
+                         _permitted_subtypes->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,
                                                     _super_klass,
                                                     _methods,
                                                     _access_flags,
+                                                    is_sealed,
                                                     _major_version,
                                                     loader,
                                                     _class_name,

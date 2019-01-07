@@ -556,16 +556,16 @@ bool Method::compute_has_loops_flag() {
   return _access_flags.has_loops();
 }
 
-bool Method::is_final_method(AccessFlags class_access_flags) const {
+bool Method::is_final_method(AccessFlags class_access_flags, bool has_sealed_holder) const {
   // or "does_not_require_vtable_entry"
   // default method or overpass can occur, is not final (reuses vtable entry)
   // private methods in classes get vtable entries for backward class compatibility.
   if (is_overpass() || is_default_method())  return false;
-  return is_final() || class_access_flags.is_final();
+  return is_final() || (class_access_flags.is_final() && !has_sealed_holder);
 }
 
 bool Method::is_final_method() const {
-  return is_final_method(method_holder()->access_flags());
+  return is_final_method(method_holder()->access_flags(), method_holder()->is_sealed());
 }
 
 bool Method::is_default_method() const {
@@ -579,7 +579,7 @@ bool Method::is_default_method() const {
 }
 
 bool Method::can_be_statically_bound(AccessFlags class_access_flags) const {
-  if (is_final_method(class_access_flags))  return true;
+  if (is_final_method(class_access_flags, method_holder()->is_sealed()))  return true;
 #ifdef ASSERT
   ResourceMark rm;
   bool is_nonv = (vtable_index() == nonvirtual_vtable_index);
