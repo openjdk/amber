@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_OPTO_LOOPNODE_HPP
-#define SHARE_VM_OPTO_LOOPNODE_HPP
+#ifndef SHARE_OPTO_LOOPNODE_HPP
+#define SHARE_OPTO_LOOPNODE_HPP
 
 #include "opto/cfgnode.hpp"
 #include "opto/multnode.hpp"
@@ -1190,7 +1190,7 @@ public:
   // loop.  Scale_con, offset and limit are all loop invariant.
   void add_constraint( int stride_con, int scale_con, Node *offset, Node *low_limit, Node *upper_limit, Node *pre_ctrl, Node **pre_limit, Node **main_limit );
   // Helper function for add_constraint().
-  Node* adjust_limit( int stride_con, Node * scale, Node *offset, Node *rc_limit, Node *loop_limit, Node *pre_ctrl );
+  Node* adjust_limit(int stride_con, Node * scale, Node *offset, Node *rc_limit, Node *loop_limit, Node *pre_ctrl, bool round_up);
 
   // Partially peel loop up through last_peel node.
   bool partial_peel( IdealLoopTree *loop, Node_List &old_new );
@@ -1428,4 +1428,4 @@ public:
   IdealLoopTree* current() { return _curnt; }  // Return current value of iterator.
 };
 
-#endif // SHARE_VM_OPTO_LOOPNODE_HPP
+#endif // SHARE_OPTO_LOOPNODE_HPP

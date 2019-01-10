@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_RUNTIME_GLOBALS_HPP
-#define SHARE_VM_RUNTIME_GLOBALS_HPP
+#ifndef SHARE_RUNTIME_GLOBALS_HPP
+#define SHARE_RUNTIME_GLOBALS_HPP
 
 #include "gc/shared/gc_globals.hpp"
 #include "utilities/align.hpp"
@@ -1061,9 +1061,6 @@ define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
   manageable(bool, PrintClassHistogram, false,                              \
           "Print a histogram of class instances")                           \
                                                                             \
-  develop(bool, IgnoreLibthreadGPFault, false,                              \
-          "Suppress workaround for libthread GP fault")                     \
-                                                                            \
   experimental(double, ObjectCountCutOffPercent, 0.5,                       \
           "The percentage of the used heap that the instances of a class "  \
           "must occupy for the class to generate a trace event")            \
@@ -1330,13 +1327,6 @@ define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
   develop(bool, TypeProfileCasts,  true,                                    \
           "treat casts like calls for purposes of type profiling")          \
                                                                             \
-  develop(bool, DelayCompilationDuringStartup, true,                        \
-          "Delay invoking the compiler until main application class is "    \
-          "loaded")                                                         \
-                                                                            \
-  develop(bool, FillDelaySlots, true,                                       \
-          "Fill delay slots (on SPARC only)")                               \
-                                                                            \
   develop(bool, TimeLivenessAnalysis, false,                                \
           "Time computation of bytecode liveness analysis")                 \
                                                                             \
@@ -1499,12 +1489,6 @@ define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
   /* compilation */                                                         \
   product(bool, UseCompiler, true,                                          \
           "Use Just-In-Time compilation")                                   \
-                                                                            \
-  develop(bool, TraceCompilationPolicy, false,                              \
-          "Trace compilation policy")                                       \
-                                                                            \
-  develop(bool, TimeCompilationPolicy, false,                               \
-          "Time the compilation policy")                                    \
                                                                             \
   product(bool, UseCounterDecay, true,                                      \
           "Adjust recompilation counters")                                  \
@@ -2049,7 +2033,8 @@ define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
           "    to higher native thread priorities. This policy should be   "\
           "    used with care, as sometimes it can cause performance       "\
           "    degradation in the application and/or the entire system. On "\
-          "    Linux this policy requires root privilege.")                 \
+          "    Linux/BSD/macOS this policy requires root privilege or an   "\
+          "    extended capability.")                                       \
           range(0, 1)                                                       \
                                                                             \
   product(bool, ThreadPriorityVerbose, false,                               \
@@ -2316,11 +2301,6 @@ define_pd_global(uint64_t,MaxRAM,                    1ULL*G);
   develop(intx, HugeMethodLimit,  8000,                                     \
           "Don't compile methods larger than this if "                      \
           "+DontCompileHugeMethods")                                        \
-                                                                            \
-  /* New JDK 1.4 reflection implementation */                               \
-                                                                            \
-  develop(intx, FastSuperclassLimit, 8,                                     \
-          "Depth of hardwired instanceof accelerator array")                \
                                                                             \
   /* Properties for Java libraries  */                                      \
                                                                             \
@@ -2753,4 +2733,4 @@ ARCH_FLAGS(DECLARE_DEVELOPER_FLAG, \
 
 #include "runtime/globals_ext.hpp"
 
-#endif // SHARE_VM_RUNTIME_GLOBALS_HPP
+#endif // SHARE_RUNTIME_GLOBALS_HPP
