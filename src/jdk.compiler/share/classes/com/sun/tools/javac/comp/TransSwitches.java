@@ -31,6 +31,8 @@ import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
@@ -94,90 +96,53 @@ public class TransSwitches extends TreeTranslator {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        //expand multiple label cases:
-        ListBuffer<JCCase> cases = new ListBuffer<>();
-
-        for (JCCase c : tree.cases) {
-            switch (c.pats.size()) {
-                case 0: //default
-                case 1: //single label
-                    cases.append(c);
-                    break;
-                default: //multiple labels, expand:
-                    //case C1, C2, C3: ...
-                    //=>
-                    //case C1:
-                    //case C2:
-                    //case C3: ...
-                    List<JCPattern> patterns = c.pats;
-                    while (patterns.tail.nonEmpty()) {
-                        JCCase cse = make_at(c.pos()).Case(JCCase.STATEMENT,
-                                                           List.of(patterns.head),
-                                                           List.nil(),
-                                                           null);
-                        cse.completesNormally = true;
-                        cases.append(cse);
-                        patterns = patterns.tail;
-                    }
-                    c.pats = patterns;
-                    cases.append(c);
-                    break;
-            }
-        }
-
-        for (JCCase c : cases) {
-            if (c.caseKind == JCCase.RULE && c.completesNormally) {
-                JCBreak b = make_at(c.pos()).Break(null);
-                b.target = tree;
-                c.stats = c.stats.append(b);
-            }
-        }
-
-        tree.selector = translate(tree.selector);
-        tree.cases = translateCases(cases.toList());
-
-        result = tree;
+        handleSwitch(tree, tree.selector, tree.cases);
     }
 
     @Override
     public void visitSwitchExpression(JCSwitchExpression tree) {
-        //translates switch expression to statement switch:
-        //switch (selector) {
-        //    case C: break value;
-        //    ...
-        //}
-        //=>
-        //(letexpr T exprswitch$;
-        //         switch (selector) {
-        //             case C: { exprswitch$ = value; break; }
-        //         }
-        //         exprswitch$
-        //)
-        VarSymbol dollar_switchexpr = new VarSymbol(Flags.FINAL|Flags.SYNTHETIC,
-                           names.fromString("exprswitch" + tree.pos + target.syntheticNameChar()),
-                           tree.type,
-                           currentMethodSym);
+        if (tree.kind == SwitchKind.MATCHING) {
+            //XXX: this breaks matching switch used as condition!
+            //translates switch expression to statement switch:
+            //switch (selector) {
+            //    case C: break value;
+            //    ...
+            //}
+            //=>
+            //(letexpr T exprswitch$;
+            //         switch (selector) {
+            //             case C: { exprswitch$ = value; break; }
+            //         }
+            //         exprswitch$
+            //)
+            VarSymbol dollar_switchexpr = new VarSymbol(Flags.FINAL|Flags.SYNTHETIC,
+                               names.fromString("exprswitch" + tree.pos + target.syntheticNameChar()),
+                               tree.type,
+                               currentMethodSym);
 
-        ListBuffer<JCStatement> stmtList = new ListBuffer<>();
+            ListBuffer<JCStatement> stmtList = new ListBuffer<>();
 
-        stmtList.append(make.at(tree.pos()).VarDef(dollar_switchexpr, null).setType(dollar_switchexpr.type));
-        JCSwitch switchStatement = make.Switch(tree.selector, null);
-        switchStatement.kind = tree.kind;
-        switchStatement.cases =
-                tree.cases.stream()
-                          .map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c))
-                          .collect(List.collector());
-        if (tree.cases.stream().noneMatch(c -> c.pats.isEmpty())) {
-            JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType,
-                                                  List.nil()));
-            JCCase c = make.Case(JCCase.STATEMENT, List.nil(), List.of(thr), null);
-            switchStatement.cases = switchStatement.cases.append(c);
+            stmtList.append(make.at(tree.pos()).VarDef(dollar_switchexpr, null).setType(dollar_switchexpr.type));
+            JCSwitch switchStatement = make.Switch(tree.selector, null);
+            switchStatement.kind = tree.kind;
+            switchStatement.cases =
+                    tree.cases.stream()
+                              .map(c -> convertCase(dollar_switchexpr, switchStatement, tree, c))
+                              .collect(List.collector());
+            if (tree.cases.stream().noneMatch(c -> c.pats.isEmpty())) {
+                JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType,
+                                                      List.nil()));
+                JCCase c = make.Case(JCCase.STATEMENT, List.nil(), List.of(thr), null);
+                switchStatement.cases = switchStatement.cases.append(c);
+            }
+
+            stmtList.append(translate(switchStatement));
+
+            result = make.LetExpr(stmtList.toList(), make.Ident(dollar_switchexpr))
+                         .setType(dollar_switchexpr.type);
+        } else {
+            handleSwitch(tree, tree.selector, tree.cases);
         }
-
-        stmtList.append(translate(switchStatement));
-
-        result = make.LetExpr(stmtList.toList(), make.Ident(dollar_switchexpr))
-                     .setType(dollar_switchexpr.type);
     }
         //where:
         private JCCase convertCase(VarSymbol dollar_switchexpr, JCSwitch switchStatement,
@@ -211,6 +176,52 @@ public class TransSwitches extends TreeTranslator {
             res.completesNormally = c.completesNormally;
             return res;
         }
+
+    public <T extends JCTree&GenericSwitch> void handleSwitch(T tree, JCExpression selector, List<JCCase> cases) {
+        //expand multiple label cases:
+        ListBuffer<JCCase> newCases = new ListBuffer<>();
+
+        for (JCCase c : cases) {
+            switch (c.pats.size()) {
+                case 0: //default
+                case 1: //single label
+                    newCases.append(c);
+                    break;
+                default: //multiple labels, expand:
+                    //case C1, C2, C3: ...
+                    //=>
+                    //case C1:
+                    //case C2:
+                    //case C3: ...
+                    List<JCPattern> patterns = c.pats;
+                    while (patterns.tail.nonEmpty()) {
+                        JCCase cse = make_at(c.pos()).Case(JCCase.STATEMENT,
+                                                           List.of(patterns.head),
+                                                           List.nil(),
+                                                           null);
+                        cse.completesNormally = true;
+                        newCases.append(cse);
+                        patterns = patterns.tail;
+                    }
+                    c.pats = patterns;
+                    newCases.append(c);
+                    break;
+            }
+        }
+
+        for (JCCase c : newCases) {
+            if (c.caseKind == JCCase.RULE && c.completesNormally) {
+                JCBreak b = make_at(c.pos()).Break(null);
+                b.target = tree;
+                c.stats = c.stats.append(b);
+            }
+        }
+
+        tree.setSelector(translate(selector));
+        tree.setCases(translateCases(newCases.toList()));
+
+        result = tree;
+    }
 
     public void visitClassDef(JCClassDecl tree) {
         MethodSymbol currentMethodSymPrev = currentMethodSym;

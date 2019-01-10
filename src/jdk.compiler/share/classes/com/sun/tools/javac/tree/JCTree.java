@@ -1226,6 +1226,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             MATCHING;
         }
         public SwitchKind getSwitchKind();
+        public void setSelector(JCExpression selector);
+        public void setCases(List<JCCase> cases);
     }
     /**
      * A "switch ( ) { }" construction.
@@ -1258,6 +1260,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public SwitchKind getSwitchKind() {
             return kind;
+        }
+        @Override
+        public void setSelector(JCExpression selector) {
+            this.selector = selector;
+        }
+        @Override
+        public void setCases(List<JCCase> cases) {
+            this.cases = cases;
         }
     }
 
@@ -1361,6 +1371,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public SwitchKind getSwitchKind() {
             return kind;
+        }
+        @Override
+        public void setSelector(JCExpression selector) {
+            this.selector = selector;
+        }
+        @Override
+        public void setCases(List<JCCase> cases) {
+            this.cases = cases;
         }
     }
 

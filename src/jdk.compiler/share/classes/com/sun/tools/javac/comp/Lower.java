@@ -3390,15 +3390,8 @@ public class Lower extends TreeTranslator {
         }
         selector = translate(selector, target);
         cases = translateCases(cases);
-        if (tree.hasTag(SWITCH)) {
-            ((JCSwitch) tree).selector = selector;
-            ((JCSwitch) tree).cases = cases;
-        } else if (tree.hasTag(SWITCH_EXPRESSION)) {
-            ((JCSwitchExpression) tree).selector = selector;
-            ((JCSwitchExpression) tree).cases = cases;
-        } else {
-            Assert.error();
-        }
+        tree.setSelector(selector);
+        tree.setCases(cases);
         switch (tree.getSwitchKind()) {
             case ENUM: result = visitEnumSwitch(tree, selector, cases); break;
             case STRING: result = visitStringSwitch(tree, selector, cases); break;
