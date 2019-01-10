@@ -1225,6 +1225,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             ENUM,
             MATCHING;
         }
+        public SwitchKind getSwitchKind();
     }
     /**
      * A "switch ( ) { }" construction.
@@ -1253,6 +1254,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return SWITCH;
+        }
+        @Override
+        public SwitchKind getSwitchKind() {
+            return kind;
         }
     }
 
@@ -1352,6 +1357,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return SWITCH_EXPRESSION;
+        }
+        @Override
+        public SwitchKind getSwitchKind() {
+            return kind;
         }
     }
 
@@ -3149,6 +3158,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     public static class LetExpr extends JCExpression {
         public List<JCStatement> defs;
         public JCExpression expr;
+        /**true if a expr should be run through Gen.genCond:*/
+        public boolean needsCond;
         protected LetExpr(List<JCStatement> defs, JCExpression expr) {
             this.defs = defs;
             this.expr = expr;

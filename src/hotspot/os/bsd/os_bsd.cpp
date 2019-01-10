@@ -316,7 +316,11 @@ void os::init_system_properties_values() {
   //        ...
   //        7: The default directories, normally /lib and /usr/lib.
 #ifndef DEFAULT_LIBPATH
-  #define DEFAULT_LIBPATH "/lib:/usr/lib"
+  #ifndef OVERRIDE_LIBPATH
+    #define DEFAULT_LIBPATH "/lib:/usr/lib"
+  #else
+    #define DEFAULT_LIBPATH OVERRIDE_LIBPATH
+  #endif
 #endif
 
 // Base path of extensions installed on the system.
@@ -2221,22 +2225,6 @@ size_t os::read_at(int fd, void *buf, unsigned int nBytes, jlong offset) {
   RESTARTABLE_RETURN_INT(::pread(fd, buf, nBytes, offset));
 }
 
-void os::naked_short_sleep(jlong ms) {
-  struct timespec req;
-
-  assert(ms < 1000, "Un-interruptable sleep, short time use only");
-  req.tv_sec = 0;
-  if (ms > 0) {
-    req.tv_nsec = (ms % 1000) * 1000000;
-  } else {
-    req.tv_nsec = 1;
-  }
-
-  nanosleep(&req, NULL);
-
-  return;
-}
-
 // Sleep forever; naked call to OS-specific sleep; use with CAUTION
 void os::infinite_sleep() {
   while (true) {    // sleep forever ...
@@ -2342,14 +2330,13 @@ OSReturn os::set_native_priority(Thread* thread, int newpri) {
 #elif defined(__APPLE__) || defined(__NetBSD__)
   struct sched_param sp;
   int policy;
-  pthread_t self = pthread_self();
 
-  if (pthread_getschedparam(self, &policy, &sp) != 0) {
+  if (pthread_getschedparam(thread->osthread()->pthread_id(), &policy, &sp) != 0) {
     return OS_ERR;
   }
 
   sp.sched_priority = newpri;
-  if (pthread_setschedparam(self, policy, &sp) != 0) {
+  if (pthread_setschedparam(thread->osthread()->pthread_id(), policy, &sp) != 0) {
     return OS_ERR;
   }
 
@@ -2373,8 +2360,14 @@ OSReturn os::get_native_priority(const Thread* const thread, int *priority_ptr) 
   int policy;
   struct sched_param sp;
 
-  pthread_getschedparam(pthread_self(), &policy, &sp);
-  *priority_ptr = sp.sched_priority;
+  int res = pthread_getschedparam(thread->osthread()->pthread_id(), &policy, &sp);
+  if (res != 0) {
+    *priority_ptr = -1;
+    return OS_ERR;
+  } else {
+    *priority_ptr = sp.sched_priority;
+    return OS_OK;
+  }
 #else
   *priority_ptr = getpriority(PRIO_PROCESS, thread->osthread()->thread_id());
 #endif
@@ -3384,7 +3377,7 @@ bool os::message_box(const char* title, const char* message) {
 static inline struct timespec get_mtime(const char* filename) {
   struct stat st;
   int ret = os::stat(filename, &st);
-  assert(ret == 0, "failed to stat() file '%s': %s", filename, strerror(errno));
+  assert(ret == 0, "failed to stat() file '%s': %s", filename, os::strerror(errno));
 #ifdef __APPLE__
   return st.st_mtimespec;
 #else

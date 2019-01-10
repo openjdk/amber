@@ -62,6 +62,7 @@ import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch;
 import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
@@ -3363,60 +3364,93 @@ public class Lower extends TreeTranslator {
     }
 
     public void visitSwitch(JCSwitch tree) {
+        handleSwitch(tree, tree.selector, tree.cases);
+    }
+
+    @Override
+    public void visitSwitchExpression(JCSwitchExpression tree) {
+        if (tree.cases.stream().noneMatch(c -> c.pats.isEmpty())) {
+            JCThrow thr = make.Throw(makeNewClass(syms.incompatibleClassChangeErrorType,
+                                                  List.nil()));
+            JCCase c = make.Case(JCCase.STATEMENT, List.nil(), List.of(thr), null);
+            tree.cases = tree.cases.append(c);
+        }
+        handleSwitch(tree, tree.selector, tree.cases);
+    }
+
+    private <T extends JCTree & GenericSwitch> void handleSwitch(T tree, JCExpression selector, List<JCCase> cases) {
         Type target;
-        switch (tree.kind) {
-            case ENUM: target = tree.selector.type; break;
+        switch (tree.getSwitchKind()) {
+            case ENUM: target = selector.type; break;
             case STRING: target = syms.stringType; break;
             case ORDINARY: target = syms.intType; break;
             default:
-                Assert.error("Should not get here, kind: " + tree.kind);
+                Assert.error("Should not get here, kind: " + tree.getSwitchKind());
                 throw new InternalError();
         }
-        tree.selector = translate(tree.selector, target);
-        tree.cases = translateCases(tree.cases);
-        switch (tree.kind) {
-            case ENUM: result = visitEnumSwitch(tree); break;
-            case STRING: result = visitStringSwitch(tree); break;
+        selector = translate(selector, target);
+        cases = translateCases(cases);
+        if (tree.hasTag(SWITCH)) {
+            ((JCSwitch) tree).selector = selector;
+            ((JCSwitch) tree).cases = cases;
+        } else if (tree.hasTag(SWITCH_EXPRESSION)) {
+            ((JCSwitchExpression) tree).selector = selector;
+            ((JCSwitchExpression) tree).cases = cases;
+        } else {
+            Assert.error();
+        }
+        switch (tree.getSwitchKind()) {
+            case ENUM: result = visitEnumSwitch(tree, selector, cases); break;
+            case STRING: result = visitStringSwitch(tree, selector, cases); break;
             case ORDINARY: result = tree; break;
             default:
-                Assert.error("Should not get here, kind: " + tree.kind);
+                Assert.error("Should not get here, kind: " + tree.getSwitchKind());
         }
     }
 
-    public JCTree visitEnumSwitch(JCSwitch tree) {
-        TypeSymbol enumSym = tree.selector.type.tsym;
+    public JCTree visitEnumSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
+        TypeSymbol enumSym = selector.type.tsym;
         EnumMapping map = mapForEnum(tree.pos(), enumSym);
         make_at(tree.pos());
         Symbol ordinalMethod = lookupMethod(tree.pos(),
                                             names.ordinal,
-                                            tree.selector.type,
+                                            selector.type,
                                             List.nil());
-        JCArrayAccess selector = make.Indexed(map.mapVar,
-                                        make.App(make.Select(tree.selector,
+        JCArrayAccess newSelector = make.Indexed(map.mapVar,
+                                        make.App(make.Select(selector,
                                                              ordinalMethod)));
-        ListBuffer<JCCase> cases = new ListBuffer<>();
-        for (JCCase c : tree.cases) {
+        ListBuffer<JCCase> newCases = new ListBuffer<>();
+        for (JCCase c : cases) {
             if (c.pats.nonEmpty()) {
                 VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pats.head.constExpression());
                 JCLiteral value = map.forConstant(label);
                 JCPattern pat = make.LiteralPattern(value);
-                cases.append(make.Case(JCCase.STATEMENT, List.of(pat), c.stats, null));
+                newCases.append(make.Case(JCCase.STATEMENT, List.of(pat), c.stats, null));
             } else {
-                cases.append(c);
+                newCases.append(c);
             }
         }
-        JCSwitch enumSwitch = make.Switch(selector, cases.toList());
-        enumSwitch.kind = SwitchKind.ORDINARY;
+        JCTree enumSwitch;
+        if (tree.hasTag(SWITCH)) {
+            enumSwitch = make.Switch(newSelector, newCases.toList());
+            ((JCSwitch) enumSwitch).kind = SwitchKind.ORDINARY;
+        } else if (tree.hasTag(SWITCH_EXPRESSION)) {
+            enumSwitch = make.SwitchExpression(newSelector, newCases.toList());
+            enumSwitch.setType(tree.type);
+            ((JCSwitchExpression) enumSwitch).kind = SwitchKind.ORDINARY;
+        } else {
+            Assert.error();
+            throw new AssertionError();
+        }
         patchTargets(enumSwitch, tree, enumSwitch);
         return enumSwitch;
     }
 
-    public JCTree visitStringSwitch(JCSwitch tree) {
-        List<JCCase> caseList = tree.getCases();
+    public JCTree visitStringSwitch(JCTree tree, JCExpression selector, List<JCCase> caseList) {
         int alternatives = caseList.size();
 
-        if (alternatives == 0) { // Strange but legal possibility
-            return make.at(tree.pos()).Exec(attr.makeNullCheck(tree.getExpression()));
+        if (alternatives == 0) { // Strange but legal possibility (only legal for switch statement)
+            return make.at(tree.pos()).Exec(attr.makeNullCheck(selector));
         } else {
             /*
              * The general approach used is to translate a single
@@ -3517,7 +3551,7 @@ public class Lower extends TreeTranslator {
                                                names.fromString("s" + tree.pos + target.syntheticNameChar()),
                                                syms.stringType,
                                                currentMethodSym);
-            stmtList.append(make.at(tree.pos()).VarDef(dollar_s, tree.getExpression()).setType(dollar_s.type));
+            stmtList.append(make.at(tree.pos()).VarDef(dollar_s, selector).setType(dollar_s.type));
 
             VarSymbol dollar_tmp = new VarSymbol(SYNTHETIC,
                                                  names.fromString("tmp" + tree.pos + target.syntheticNameChar()),
@@ -3568,13 +3602,7 @@ public class Lower extends TreeTranslator {
             // position map.
 
             ListBuffer<JCCase> lb = new ListBuffer<>();
-            JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
-            switch2.kind = SwitchKind.ORDINARY;
             for(JCCase oneCase : caseList ) {
-                // Rewire up old unlabeled break statements to the
-                // replacement switch being created.
-                patchTargets(oneCase, tree, switch2);
-
                 boolean isDefault = (oneCase.pats.isEmpty());
                 JCExpression caseExpr;
                 if (isDefault)
@@ -3585,19 +3613,48 @@ public class Lower extends TreeTranslator {
                 }
 
                 lb.append(make.Case(JCCase.STATEMENT, caseExpr == null ? List.nil() : List.of(make.LiteralPattern(caseExpr)),
-                                    oneCase.getStatements(), null));
+                                    oneCase.stats, null));
             }
 
-            switch2.cases = lb.toList();
-            stmtList.append(switch2);
+            if (tree.hasTag(SWITCH)) {
+                JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
 
-            return make.Block(0L, stmtList.toList());
+                switch2.kind = SwitchKind.ORDINARY;
+
+                // Rewire up old unlabeled break statements to the
+                // replacement switch being created.
+                patchTargets(switch2, tree, switch2);
+
+                stmtList.append(switch2);
+
+                return make.Block(0L, stmtList.toList());
+            } else {
+                JCSwitchExpression switch2 = make.SwitchExpression(make.Ident(dollar_tmp), lb.toList());
+
+                switch2.kind = SwitchKind.ORDINARY;
+
+                // Rewire up old unlabeled break statements to the
+                // replacement switch being created.
+                patchTargets(switch2, tree, switch2);
+
+                switch2.setType(tree.type);
+
+                LetExpr res = make.LetExpr(stmtList.toList(), switch2);
+
+                res.needsCond = true;
+                res.setType(tree.type);
+
+                return res;
+            }
         }
     }
 
     @Override
-    public void visitSwitchExpression(JCSwitchExpression tree) {
-        Assert.error("Shuld not get here!");
+    public void visitBreak(JCBreak tree) {
+        if (tree.isValueBreak()) {
+            tree.value = translate(tree.value, tree.target.type);
+        }
+        result = tree;
     }
 
     public void visitNewArray(JCNewArray tree) {
