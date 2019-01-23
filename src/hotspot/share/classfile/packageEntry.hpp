@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef SHARE_VM_CLASSFILE_PACKAGEENTRY_HPP
-#define SHARE_VM_CLASSFILE_PACKAGEENTRY_HPP
+#ifndef SHARE_CLASSFILE_PACKAGEENTRY_HPP
+#define SHARE_CLASSFILE_PACKAGEENTRY_HPP
 
 #include "classfile/moduleEntry.hpp"
 #include "oops/symbol.hpp"
@@ -250,11 +250,17 @@ public:
   // If entry already exists, return null.  Assume Module lock was taken by caller.
   PackageEntry* locked_create_entry_or_null(Symbol* name, ModuleEntry* module);
 
-  // lookup Package with loader's package entry table, if not found add
+  // Lookup Package with loader's package entry table, add it if not found.
+  // This will acquire the Module lock.
   PackageEntry* lookup(Symbol* name, ModuleEntry* module);
 
   // Only lookup Package within loader's package entry table.
+  // This will acquire the Module lock.
   PackageEntry* lookup_only(Symbol* Package);
+
+  // Only lookup Package within loader's package entry table.  Assume Module lock
+  // was taken by caller.
+  PackageEntry* locked_lookup_only(Symbol* Package);
 
   void verify_javabase_packages(GrowableArray<Symbol*> *pkg_list);
 
@@ -265,4 +271,4 @@ public:
   void verify();
 };
 
-#endif // SHARE_VM_CLASSFILE_PACKAGEENTRY_HPP
+#endif // SHARE_CLASSFILE_PACKAGEENTRY_HPP
