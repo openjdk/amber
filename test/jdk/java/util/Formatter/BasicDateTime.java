@@ -52,6 +52,9 @@ public class BasicDateTime extends Basic {
         f = new Formatter(new StringBuilder(), Locale.US);
         f.format("foo " + fs + " bar", args);
         ck(fs, "foo " + exp + " bar", f.toString());
+
+        JavacIntrinsicsSupport.formatAndCheck(fs, exp, Locale.US, args);
+        JavacIntrinsicsSupport.formatAndCheck("foo " + fs + " bar", "foo " + exp + " bar", Locale.US, args);
     }
 
     private static void test(Locale l, String fs, String exp, Object ... args)
@@ -63,6 +66,9 @@ public class BasicDateTime extends Basic {
         f = new Formatter(new StringBuilder(), l);
         f.format("foo " + fs + " bar", args);
         ck(fs, "foo " + exp + " bar", f.toString());
+
+        JavacIntrinsicsSupport.formatAndCheck(fs, exp, l, args);
+        JavacIntrinsicsSupport.formatAndCheck("foo " + fs + " bar", "foo " + exp + " bar", l, args);
     }
 
     private static void test(String fs, Object ... args) {
@@ -110,6 +116,42 @@ public class BasicDateTime extends Basic {
                 fail(fs, ex.getClass());
             }
         }
+        testSysOutIntrinsic(fs, exp, args);
+    }
+
+    private static void testSysOutIntrinsic(String fs, String exp, Object ... args) {
+        FileOutputStream fos = null;
+        FileInputStream fis = null;
+        try {
+            PrintStream saveOut = System.out;
+            fos = new FileOutputStream("testSysOut");
+            System.setOut(new PrintStream(fos));
+            JavacIntrinsicsSupport.printStreamFormat(System.out, Locale.US, fs, args);
+            fos.close();
+
+            fis = new FileInputStream("testSysOut");
+            byte [] ba = new byte[exp.length()];
+            int len = fis.read(ba);
+            String got = new String(ba);
+            if (len != ba.length)
+                fail(fs, exp, got);
+            ck(fs, exp, got);
+
+            System.setOut(saveOut);
+        } catch (FileNotFoundException ex) {
+            fail(fs, ex.getClass());
+        } catch (IOException ex) {
+            fail(fs, ex.getClass());
+        } finally {
+            try {
+                if (fos != null)
+                    fos.close();
+                if (fis != null)
+                    fis.close();
+            } catch (IOException ex) {
+                fail(fs, ex.getClass());
+            }
+        }
     }
 
     private static void tryCatch(String fs, Class<?> ex) {
@@ -124,12 +166,44 @@ public class BasicDateTime extends Basic {
             fail(fs, ex);
         else
             pass();
+
+        tryCatchIntrinsic(fs, ex);
     }
 
     private static void tryCatch(String fs, Class<?> ex, Object ... args) {
         boolean caught = false;
         try {
             test(fs, args);
+        } catch (Throwable x) {
+            if (ex.isAssignableFrom(x.getClass()))
+                caught = true;
+        }
+        if (!caught)
+            fail(fs, ex);
+        else
+            pass();
+
+        tryCatchIntrinsic(fs, ex, args);
+    }
+
+    private static void tryCatchIntrinsic(String fs, Class<?> ex) {
+        boolean caught = false;
+        try {
+            JavacIntrinsicsSupport.formatAndCheck(fs, "fail", Locale.US, "fail");
+        } catch (Throwable x) {
+            if (ex.isAssignableFrom(x.getClass()))
+                caught = true;
+        }
+        if (!caught)
+            fail(fs, ex);
+        else
+            pass();
+    }
+
+    private static void tryCatchIntrinsic(String fs, Class<?> ex, Object ... args) {
+        boolean caught = false;
+        try {
+            JavacIntrinsicsSupport.formatAndCheck(fs, "fail", Locale.US, args);
         } catch (Throwable x) {
             if (ex.isAssignableFrom(x.getClass()))
                 caught = true;

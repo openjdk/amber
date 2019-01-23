@@ -91,10 +91,38 @@ public class EncodingTest {
                 Files.readAllLines(Paths.get(file2.getPath()), charset));
     }
 
+
+    /**
+     * Verifies that the overloading constructor behaves the same as the existing
+     * one.
+     * @param type the type of the constructor
+     * @param file1 file1 written with the name of a charset
+     * @param file2 file2 written with a charset
+     * @param csn the charset name
+     * @param charset the charset
+     * @throws IOException
+     */
+    @Test(dataProvider = "parameters")
+    public void testConstructorIntrinsic(ConstructorType type, File file1, File file2,
+                                String csn, Charset charset) throws Exception {
+        formatIntrinsic(getFormatter(type, file1.getPath(), csn, null));
+        formatIntrinsic(getFormatter(type, file2.getPath(), null, charset));
+        Assert.assertEquals(Files.readAllLines(Paths.get(file1.getPath()), charset),
+                Files.readAllLines(Paths.get(file2.getPath()), charset));
+    }
+
     void format(Formatter formatter)
             throws IOException {
         formatter.format("abcde \u00FA\u00FB\u00FC\u00FD");
         formatter.format("Java \uff08\u8ba1\u7b97\u673a\u7f16\u7a0b\u8bed\u8a00\uff09");
+        formatter.flush();
+        formatter.close();
+    }
+
+    void formatIntrinsic(Formatter formatter)
+            throws IOException {
+        JavacIntrinsicsSupport.format(formatter, "abcde \u00FA\u00FB\u00FC\u00FD");
+        JavacIntrinsicsSupport.format(formatter, "Java \uff08\u8ba1\u7b97\u673a\u7f16\u7a0b\u8bed\u8a00\uff09");
         formatter.flush();
         formatter.close();
     }
