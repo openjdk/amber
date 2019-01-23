@@ -107,19 +107,6 @@ public class FormatLocale {
                                 "'. Expected: " + expectedWithDefaultLocale.get(i) +
                                 " Returned: " + sb.toString());
             }
-
-            sb.setLength(0);
-            JavacIntrinsicsSupport.format(new Formatter(sb), conversions.get(i), src.get(i));
-            if (!sb.toString().equals(expectedWithDefaultLocale.get(i))) {
-                throw new RuntimeException(
-                        "Wrong uppercasing while using Formatter.format(" +
-                                "\"" + conversions.get(i) + "\"" +
-                                ") with the default locale: '"
-                                + defaultLocale.get(i) +
-                                "'. Expected: " + expectedWithDefaultLocale.get(i) +
-                                " Returned: " + sb.toString());
-            }
-
         });
 
         // checks whether upper casing uses the locale set during creation of
@@ -129,18 +116,6 @@ public class FormatLocale {
             Locale.setDefault(Locale.Category.FORMAT, defaultLocale.get(i));
             new Formatter(sb, formatLocale.get(i)).format(conversions.get(i),
                     src.get(i));
-            if (!sb.toString().equals(expectedWithFormatLocale.get(i))) {
-                throw new RuntimeException(
-                        "Wrong uppercasing while using Formatter.format(" +
-                                "\"" + conversions.get(i) + "\"" +
-                                ") with the locale specified during instance" +
-                                " creation: '" + formatLocale.get(i) +
-                                "'. Expected: " + expectedWithFormatLocale.get(i) +
-                                " Returned: " + sb.toString());
-            }
-
-            sb.setLength(0);
-            JavacIntrinsicsSupport.format(new Formatter(sb, formatLocale.get(i)), conversions.get(i), src.get(i));
             if (!sb.toString().equals(expectedWithFormatLocale.get(i))) {
                 throw new RuntimeException(
                         "Wrong uppercasing while using Formatter.format(" +

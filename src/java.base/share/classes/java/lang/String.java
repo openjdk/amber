@@ -29,7 +29,6 @@ import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
 import java.lang.invoke.MethodHandles;
-import java.lang.compiler.IntrinsicCandidate;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.nio.charset.Charset;
@@ -664,7 +663,6 @@ public final class String
      * @return  the length of the sequence of characters represented by this
      *          object.
      */
-    @IntrinsicCandidate
     public int length() {
         return value.length >> coder();
     }
@@ -2031,7 +2029,6 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
-    @IntrinsicCandidate
     public boolean matches(String regex) {
         return Pattern.matches(regex, this);
     }
@@ -2089,7 +2086,6 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
-    @IntrinsicCandidate
     public String replaceFirst(String regex, String replacement) {
         return Pattern.compile(regex).matcher(this).replaceFirst(replacement);
     }
@@ -2135,7 +2131,6 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
-    @IntrinsicCandidate
     public String replaceAll(String regex, String replacement) {
         return Pattern.compile(regex).matcher(this).replaceAll(replacement);
     }
@@ -2276,7 +2271,6 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
-    @IntrinsicCandidate
     public String[] split(String regex, int limit) {
         /* fastpath if the regex is a
          (1)one-char String and this character is not one of the
@@ -2375,7 +2369,6 @@ public final class String
      * @since 1.4
      * @spec JSR-51
      */
-    @IntrinsicCandidate
     public String[] split(String regex) {
         return split(regex, 0);
     }
@@ -2688,7 +2681,6 @@ public final class String
      *
      * @since 11
      */
-    @IntrinsicCandidate
     public String strip() {
         String ret = isLatin1() ? StringLatin1.strip(value)
                                 : StringUTF16.strip(value);
@@ -2719,7 +2711,6 @@ public final class String
      *
      * @since 11
      */
-    @IntrinsicCandidate
     public String stripLeading() {
         String ret = isLatin1() ? StringLatin1.stripLeading(value)
                                 : StringUTF16.stripLeading(value);
@@ -2750,7 +2741,6 @@ public final class String
      *
      * @since 11
      */
-    @IntrinsicCandidate
     public String stripTrailing() {
         String ret = isLatin1() ? StringLatin1.stripTrailing(value)
                                 : StringUTF16.stripTrailing(value);
@@ -2823,8 +2813,7 @@ public final class String
      * lines are then concatenated and returned.
      * <p>
      * If {@code n > 0} then {@code n} spaces (U+0020) are inserted at the
-     * beginning of each line. {@link String#isBlank() Blank lines} are
-     * unaffected.
+     * beginning of each line.
      * <p>
      * If {@code n < 0} then up to {@code n}
      * {@link Character#isWhitespace(int) white space characters} are removed
@@ -2850,7 +2839,6 @@ public final class String
      *
      * @since 12
      */
-    @IntrinsicCandidate
     public String indent(int n) {
         return isEmpty() ? "" :  indent(n, false);
     }
@@ -2860,7 +2848,7 @@ public final class String
                                              : lines();
         if (n > 0) {
             final String spaces = " ".repeat(n);
-            stream = stream.map(s -> s.isBlank() ? s : spaces + s);
+            stream = stream.map(s -> spaces + s);
         } else if (n == Integer.MIN_VALUE) {
             stream = stream.map(s -> s.stripLeading());
         } else if (n < 0) {
@@ -2880,121 +2868,12 @@ public final class String
     }
 
     /**
-     * Removes vertical and horizontal white space margins from around the
-     * essential body of a multi-line string, while preserving relative
-     * indentation.
-     * <p>
-     * This string is first conceptually separated into lines as if by
-     * {@link String#lines()}.
-     * <p>
-     * Then, the <i>minimum indentation</i> (min) is determined as follows. For
-     * each non-blank line (as defined by {@link String#isBlank()}), the
-     * leading {@link Character#isWhitespace(int) white space} characters are
-     * counted. The <i>min</i> value is the smallest of these counts.
-     * <p>
-     * For each non-blank line, <i>min</i> leading white space characters are
-     * removed. Each white space character is treated as a single character. In
-     * particular, the tab character {@code "\t"} (U+0009) is considered a
-     * single character; it is not expanded.
-     * <p>
-     * Leading and trailing blank lines, if any, are removed. Trailing spaces are
-     * preserved.
-     * <p>
-     * Each line is suffixed with a line feed character {@code "\n"} (U+000A).
-     * <p>
-     * Finally, the lines are concatenated into a single string and returned.
-     *
-     * @apiNote
-     * This method's primary purpose is to shift a block of lines as far as
-     * possible to the left, while preserving relative indentation. Lines
-     * that were indented the least will thus have no leading white space.
-     *
-     * Example:
-     * <blockquote><pre>
-     * `
-     *      This is the first line
-     *          This is the second line
-     * `.align();
-     *
-     * returns
-     * This is the first line
-     *     This is the second line
-     * </pre></blockquote>
-     *
-     * @return string with margins removed and line terminators normalized
-     *
-     * @see String#lines()
-     * @see String#isBlank()
-     * @see String#indent(int)
-     * @see Character#isWhitespace(int)
-     *
-     * @since 12
-     */
-    @IntrinsicCandidate
-    public String align() {
-        return align(0);
-    }
-
-    /**
-     * Removes vertical and horizontal white space margins from around the
-     * essential body of a multi-line string, while preserving relative
-     * indentation and with optional indentation adjustment.
-     * <p>
-     * Invoking this method is equivalent to:
-     * <blockquote>
-     *  {@code this.align().indent(n)}
-     * </blockquote>
-     *
-     * @apiNote
-     * Examples:
-     * <blockquote><pre>
-     * `
-     *      This is the first line
-     *          This is the second line
-     * `.align(0);
-     *
-     * returns
-     * This is the first line
-     *     This is the second line
-     *
-     *
-     * `
-     *    This is the first line
-     *       This is the second line
-     * `.align(4);
-     * returns
-     *     This is the first line
-     *         This is the second line
-     * </pre></blockquote>
-     *
-     * @param n  number of leading white space characters
-     *           to add or remove
-     *
-     * @return string with margins removed, indentation adjusted and
-     *         line terminators normalized
-     *
-     * @see String#align()
-     *
-     * @since 12
-     */
-    @IntrinsicCandidate
-    public String align(int n) {
-        if (isEmpty()) {
-            return "";
-        }
-        int outdent = lines().filter(not(String::isBlank))
-                             .mapToInt(String::indexOfNonWhitespace)
-                             .min()
-                             .orElse(0);
-        // overflow-conscious code
-        int indent = n - outdent;
-        return indent(indent > n ? Integer.MIN_VALUE : indent, true);
-    }
-
-    /**
      * This method allows the application of a function to {@code this}
      * string. The function should expect a single String argument
      * and produce an {@code R} result.
+     * <p>
+     * Any exception thrown by {@code f()} will be propagated to the
+     * caller.
      *
      * @param f    functional interface to a apply
      *
@@ -3105,7 +2984,6 @@ public final class String
      * @see  java.util.Formatter
      * @since  1.5
      */
-    @IntrinsicCandidate
     public static String format(String format, Object... args) {
         return new Formatter().format(format, args).toString();
     }
@@ -3147,91 +3025,8 @@ public final class String
      * @see  java.util.Formatter
      * @since  1.5
      */
-    @IntrinsicCandidate
     public static String format(Locale l, String format, Object... args) {
         return new Formatter(l).format(format, args).toString();
-    }
-
-    /**
-     * Returns a formatted string using this string, as the specified
-     * <a href="../util/Formatter.html#syntax">format</a>, and
-     * arguments.
-     *
-     * <p> The locale always used is the one returned by {@link
-     * java.util.Locale#getDefault(java.util.Locale.Category)
-     * Locale.getDefault(Locale.Category)} with
-     * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
-     *
-     * @param  args
-     *         Arguments referenced by the format specifiers in the format
-     *         string.  If there are more arguments than format specifiers, the
-     *         extra arguments are ignored.  The number of arguments is
-     *         variable and may be zero.  The maximum number of arguments is
-     *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
-     *         The behaviour on a
-     *         {@code null} argument depends on the <a
-     *         href="../util/Formatter.html#syntax">conversion</a>.
-     *
-     * @throws  java.util.IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a
-     *          href="../util/Formatter.html#detail">Details</a> section of the
-     *          formatter class specification.
-     *
-     * @return  A formatted string
-     *
-     * @see  java.util.Formatter
-     *
-     * @since  12
-     */
-    @IntrinsicCandidate
-    public String format(Object... args) {
-        return new Formatter().format(this, args).toString();
-    }
-
-    /**
-     * Returns a formatted string using this string, as the specified
-     * <a href="../util/Formatter.html#syntax">format</a>, the specified locale,
-     * and  arguments.
-     *
-     * @param  l
-     *         The {@linkplain java.util.Locale locale} to apply during
-     *         formatting.  If {@code l} is {@code null} then no localization
-     *         is applied.
-     *
-     * @param  args
-     *         Arguments referenced by the format specifiers in the format
-     *         string.  If there are more arguments than format specifiers, the
-     *         extra arguments are ignored.  The number of arguments is
-     *         variable and may be zero.  The maximum number of arguments is
-     *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
-     *         The behaviour on a
-     *         {@code null} argument depends on the
-     *         <a href="../util/Formatter.html#syntax">conversion</a>.
-     *
-     * @throws  java.util.IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a
-     *          href="../util/Formatter.html#detail">Details</a> section of the
-     *          formatter class specification
-     *
-     * @return  A formatted string
-     *
-     * @see  java.util.Formatter
-     *
-     * @since  12
-     */
-    @IntrinsicCandidate
-    public String format(Locale l, Object... args) {
-        return new Formatter(l).format(this, args).toString();
     }
 
     /**
@@ -3440,7 +3235,6 @@ public final class String
      *
      * @since 11
      */
-    @IntrinsicCandidate
     public String repeat(int count) {
         if (count < 0) {
             throw new IllegalArgumentException("count is negative: " + count);

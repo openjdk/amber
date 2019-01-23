@@ -25,13 +25,12 @@
 
 package java.io;
 
-import java.lang.compiler.IntrinsicCandidate;
-import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.Objects;
 import java.util.Formatter;
 import java.util.Locale;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 
 /**
  * Prints formatted representations of objects to a text-output stream.  This
@@ -886,7 +885,6 @@ public class PrintWriter extends Writer {
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintWriter printf(String format, Object ... args) {
         return format(format, args);
     }
@@ -924,7 +922,6 @@ public class PrintWriter extends Writer {
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
      *
-     *
      * @throws  java.util.IllegalFormatException
      *          If a format string contains an illegal syntax, a format
      *          specifier that is incompatible with the given arguments,
@@ -941,7 +938,6 @@ public class PrintWriter extends Writer {
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintWriter printf(Locale l, String format, Object ... args) {
         return format(l, format, args);
     }
@@ -986,7 +982,6 @@ public class PrintWriter extends Writer {
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintWriter format(String format, Object ... args) {
         try {
             synchronized (lock) {
@@ -1047,7 +1042,6 @@ public class PrintWriter extends Writer {
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintWriter format(Locale l, String format, Object ... args) {
         try {
             synchronized (lock) {
