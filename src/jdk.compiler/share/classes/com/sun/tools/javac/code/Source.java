@@ -189,7 +189,6 @@ public enum Source {
         SWITCH_MULTIPLE_CASE_LABELS(JDK13, Fragments.FeatureMultipleCaseLabels, DiagKind.PLURAL),
         SWITCH_RULE(JDK13, Fragments.FeatureSwitchRules, DiagKind.PLURAL),
         SWITCH_EXPRESSION(JDK13, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
-        RAW_STRING_LITERALS(JDK13, Fragments.FeatureRawStringLiterals, DiagKind.PLURAL),
         CONDY_FOR_LAMBDA(JDK13),
         CONSTABLES(JDK13);
 
