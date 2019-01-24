@@ -38,7 +38,7 @@ $(eval $(call IncludeCustomExtension, CompileJavaModules.gmk))
 ################################################################################
 # Module specific build settings
 
-java.base_ADD_JAVAC_FLAGS += -Xdoclint:all/protected,-reference '-Xdoclint/package:java.*,javax.*' -XDstringConcat=inline
+java.base_ADD_JAVAC_FLAGS += -Xdoclint:all/protected,-reference '-Xdoclint/package:java.*,javax.*' -XDstringConcat=inline -XDforNonCapturingLambda=generateIndy
 java.base_COPY += .icu .dat .spp content-types.properties hijrah-config-islamic-umalqura.properties
 java.base_CLEAN += intrinsic.properties
 
@@ -260,7 +260,7 @@ java.sql.rowset_CLEAN_FILES += $(wildcard \
 
 ################################################################################
 
-java.rmi_ADD_JAVAC_FLAGS += -Xdoclint:all/protected '-Xdoclint/package:java.*,javax.*'
+java.rmi_ADD_JAVAC_FLAGS += -Xdoclint:all/protected '-Xdoclint/package:java.*,javax.*' -XDforNonCapturingLambda=generateIndy
 java.rmi_CLEAN_FILES += $(wildcard \
     $(TOPDIR)/src/java.rmi/share/classes/sun/rmi/registry/resources/*.properties \
     $(TOPDIR)/src/java.rmi/share/classes/sun/rmi/server/resources/*.properties)

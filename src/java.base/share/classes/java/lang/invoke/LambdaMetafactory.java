@@ -330,6 +330,71 @@ public final class LambdaMetafactory {
     }
 
     /**
+     * Special-case case version of {@link LambdaMetafactory#metafactory(MethodHandles.Lookup, String, Class, MethodType, MethodHandle, MethodType)}
+     * that is restricted to non-capturing lambdas.  Rather than returning a
+     * {@link CallSite}, the function object itself is returned.
+     * Typically used as a <em>bootstrap method</em> for {@code Dynamic}
+     * constants, to support the <em>lambda expression</em> and <em>method
+     * reference expression</em> features of the Java Programming Language.
+     *
+     * <p>The function object returned is an instance of a class which
+     * implements the interface named by {@code functionalInterface},
+     * declares a method with the name given by {@code invokedName} and the
+     * signature given by {@code samMethodType}.  It may also override additional
+     * methods from {@code Object}.
+     *
+     * @param caller Represents a lookup context with the accessibility
+     *               privileges of the caller.  When used with {@code invokedynamic},
+     *               this is stacked automatically by the VM.
+     * @param invokedName The name of the method to implement.  When used with
+     *                    {@code Dynamic} constants, this is provided by the
+     *                    {@code NameAndType} of the {@code InvokeDynamic}
+     *                    structure and is stacked automatically by the VM.
+     * @param functionalInterface The functional interface the function object
+     *                            should implement.  When used with {@code invokedynamic},
+     *                            this is provided by the {@code NameAndType} of
+     *                            the {@code InvokeDynamic} structure and is
+     *                            stacked automatically by the VM. In the event
+     *                            that the implementation method is an instance
+     *                            method and this signature has any parameters,
+     *                            the first parameter in the invocation signature
+     *                            must correspond to the receiver.
+     * @param samMethodType Signature and return type of method to be implemented
+     *                      by the function object.
+     * @param implMethod A direct method handle describing the implementation
+     *                   method which should be called (with suitable adaptation
+     *                   of argument types, return types, and with captured
+     *                   arguments prepended to the invocation arguments) at
+     *                   invocation time.
+     * @param instantiatedMethodType The signature and return type that should
+     *                               be enforced dynamically at invocation time.
+     *                               This may be the same as {@code samMethodType},
+     *                               or may be a specialization of it.
+     * @return a CallSite whose target can be used to perform capture, generating
+     *         instances of the interface named by {@code invokedType}
+     * @throws LambdaConversionException If any of the linkage invariants
+     *                                   described {@link LambdaMetafactory above}
+     *                                   are violated
+     */
+    public static Object metafactory(MethodHandles.Lookup caller,
+                                     String invokedName,
+                                     Class<?> functionalInterface,
+                                     MethodType samMethodType,
+                                     MethodHandle implMethod,
+                                     MethodType instantiatedMethodType)
+            throws LambdaConversionException {
+        AbstractValidatingLambdaMetafactory mf;
+        mf = new InnerClassLambdaMetafactory(caller, MethodType.methodType(functionalInterface),
+                                             invokedName, samMethodType,
+                                             implMethod, instantiatedMethodType,
+                                             false, EMPTY_CLASS_ARRAY, EMPTY_MT_ARRAY);
+        mf.validateMetafactoryArgs();
+        return mf.buildFunctionalInterfaceInstance();
+    }
+
+    // @@@ Special case version of altMetafactory, supporting FLAG_METHODREF
+
+    /**
      * Facilitates the creation of simple "function objects" that implement one
      * or more interfaces by delegation to a provided {@link MethodHandle},
      * after appropriate type adaptation and partial evaluation of arguments.
@@ -502,5 +567,62 @@ public final class LambdaMetafactory {
                                                   markerInterfaces, bridges);
         mf.validateMetafactoryArgs();
         return mf.buildCallSite();
+    }
+
+    /**
+     * Special-case case version of {@link LambdaMetafactory#altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}.
+     * Rather than returning a {@link CallSite}, the function object itself is returned.
+     * Typically used as a <em>bootstrap method</em> for {@code Dynamic}
+     * constants, to support the <em>lambda expression</em> and <em>method
+     * reference expression</em> features of the Java Programming Language.
+     *
+     * <p>The function object returned is an instance of a class which
+     * implements the interface named by {@code functionalInterface},
+     * declares a method with the name given by {@code invokedName} and the
+     * signature given by {@code samMethodType}.  It may also override additional
+     * methods from {@code Object}.
+     *
+     * @param caller              Represents a lookup context with the accessibility
+     *                            privileges of the caller.  When used with {@code invokedynamic},
+     *                            this is stacked automatically by the VM.
+     * @param invokedName         The name of the method to implement.  When used with
+     *                            {@code Dynamic} constants, this is provided by the
+     *                            {@code NameAndType} of the {@code InvokeDynamic}
+     *                            structure and is stacked automatically by the VM.
+     * @param functionalInterface The functional interface the function object
+     *                            should implement.  When used with {@code invokedynamic},
+     *                            this is provided by the {@code NameAndType} of
+     *                            the {@code InvokeDynamic} structure and is
+     *                            stacked automatically by the VM. In the event
+     *                            that the implementation method is an instance
+     *                            method and this signature has any parameters,
+     *                            the first parameter in the invocation signature
+     *                            must correspond to the receiver.
+     * @param args                An {@code Object[]} array containing the required
+     *                            arguments {@code samMethodType}, {@code implMethod},
+     *                            {@code instantiatedMethodType}, {@code flags}, and any
+     *                            optional arguments, as described
+     *                            {@link #altMetafactory(MethodHandles.Lookup, String, functionalInterface, Object...)} above}
+     * @return a function object which is an instance of a class which implements the interface named
+     *         by {@code functionalInterface}
+     * @throws LambdaConversionException If any of the linkage invariants
+     *                                   described {@link LambdaMetafactory above}
+     *                                   are violated
+     */
+    public static Object altMetafactory(MethodHandles.Lookup caller,
+                                          String invokedName,
+                                          Class<?> functionalInterface,
+                                          Object... args)
+            throws LambdaConversionException {
+        try {
+            return altMetafactory(caller, invokedName,
+                    MethodType.methodType(functionalInterface), args).getTarget().invoke();
+        }
+        catch (LambdaConversionException | LinkageError e) {
+            throw e;
+        }
+        catch (Throwable e) {
+            throw new LambdaConversionException("Exception invoking lambda metafactory", e);
+        }
     }
 }

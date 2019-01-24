@@ -168,5 +168,4 @@ public enum Target {
     public boolean hasVirtualPrivateInvoke() {
         return compareTo(JDK1_11) >= 0;
     }
-
 }

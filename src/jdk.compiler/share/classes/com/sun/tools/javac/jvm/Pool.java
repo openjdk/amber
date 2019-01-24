@@ -27,6 +27,7 @@ package com.sun.tools.javac.jvm;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.*;
+import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.TypeTag;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
@@ -128,6 +129,8 @@ public class Pool {
     Object makePoolValue(Object o) {
         if (o instanceof DynamicMethodSymbol) {
             return new DynamicMethod((DynamicMethodSymbol)o, types);
+        } else if (o instanceof DynamicVarSymbol) {
+            return new Pool.DynamicVariable((DynamicVarSymbol) o, types);
         } else if (o instanceof MethodSymbol) {
             return new Method((MethodSymbol)o, types);
         } else if (o instanceof VarSymbol) {
@@ -182,10 +185,12 @@ public class Pool {
 
     public static class DynamicMethod extends Method {
         public Object[] uniqueStaticArgs;
+        Method internalBSM;
 
         public DynamicMethod(DynamicMethodSymbol m, Types types) {
             super(m, types);
             uniqueStaticArgs = getUniqueTypeArray(m.staticArgs, types);
+            internalBSM = new Method(m.bsm, types);
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
@@ -198,7 +203,7 @@ public class Pool {
             if (!(any instanceof DynamicMethod)) return false;
             DynamicMethodSymbol dm1 = (DynamicMethodSymbol)other;
             DynamicMethodSymbol dm2 = (DynamicMethodSymbol)((DynamicMethod)any).other;
-            return dm1.bsm == dm2.bsm &&
+            return internalBSM.equals(((DynamicMethod)any).internalBSM) &&
                         dm1.bsmKind == dm2.bsmKind &&
                         Arrays.equals(uniqueStaticArgs,
                             ((DynamicMethod)any).uniqueStaticArgs);
@@ -213,7 +218,7 @@ public class Pool {
             int hash = includeDynamicArgs ? super.hashCode() : 0;
             DynamicMethodSymbol dm = (DynamicMethodSymbol)other;
             hash += dm.bsmKind * 7 +
-                    dm.bsm.hashCode() * 11;
+                    internalBSM.hashCode() * 11;
             for (int i = 0; i < dm.staticArgs.length; i++) {
                 hash += (uniqueStaticArgs[i].hashCode() * 23);
             }
@@ -286,6 +291,80 @@ public class Pool {
                 v.name.hashCode() * 33 +
                 v.owner.hashCode() * 9 +
                 uniqueType.hashCode();
+        }
+    }
+
+    /**
+     * Pool entry associated with dynamic constants.
+     */
+    public static class DynamicVariable extends Variable {
+        public MethodHandle bsm;
+        private Object[] uniqueStaticArgs;
+        Types types;
+
+        public DynamicVariable(Name name, MethodHandle bsm, Object[] args, Types types, Symtab syms) {
+            this(name, bsm, bsm.refSym.type.asMethodType().restype, args, types, syms);
+        }
+
+        public DynamicVariable(Name name, MethodHandle bsm, Type type, Object[] args, Types types, Symtab syms) {
+            this(new DynamicVarSymbol(name,
+                    syms.noSymbol,
+                    bsm.refKind,
+                    (MethodSymbol)bsm.refSym,
+                    type,
+                    args), types, bsm);
+        }
+
+        public DynamicVariable(DynamicVarSymbol dynField, Types types) {
+            this(dynField, types, null);
+        }
+
+        private DynamicVariable(DynamicVarSymbol dynField, Types types, MethodHandle bsm) {
+            super(dynField, types);
+            this.bsm = bsm != null ?
+                    bsm :
+                    new MethodHandle(dynField.bsmKind, dynField.bsm, types);
+            this.types = types;
+            uniqueStaticArgs = getUniqueTypeArray(staticArgs(), types);
+        }
+
+        private Object[] getUniqueTypeArray(Object[] objects, Types types) {
+            Object[] result = new Object[objects.length];
+            for (int i = 0; i < objects.length; i++) {
+                if (objects[i] instanceof Type) {
+                    result[i] = new UniqueType((Type)objects[i], types);
+                } else {
+                    result[i] = objects[i];
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = bsm.hashCode() * 67 + other.name.hashCode() + type.hashCode() * 13 + uniqueType.hashCode();
+            for (Object uniqueStaticArg : uniqueStaticArgs) {
+                hash += (uniqueStaticArg.hashCode() * 23);
+            }
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof DynamicVariable) {
+                DynamicVariable that = (DynamicVariable)obj;
+                return that.bsm.equals(bsm) &&
+                        types.isSameType(that.type, type) &&
+                        that.other.name.equals(other.name) &&
+                        Arrays.equals(uniqueStaticArgs, that.uniqueStaticArgs) &&
+                        that.uniqueType.equals(uniqueType);
+            } else {
+                return false;
+            }
+        }
+
+        public Object[] staticArgs() {
+            return ((DynamicVarSymbol)other).staticArgs;
         }
     }
 

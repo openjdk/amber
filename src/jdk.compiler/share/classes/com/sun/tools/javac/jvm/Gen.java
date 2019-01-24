@@ -847,7 +847,12 @@ public class Gen extends JCTree.Visitor {
                 // Short circuit any expressions which are constants
                 tree.accept(classReferenceVisitor);
                 checkStringConstant(tree.pos(), tree.type.constValue());
-                result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                Symbol sym = TreeInfo.symbol(tree);
+                if (sym != null && isConstantDynamic(sym)) {
+                    result = items.makeDynamicItem(sym);
+                } else {
+                    result = items.makeImmediateItem(tree.type, tree.type.constValue());
+                }
             } else {
                 this.pt = pt;
                 tree.accept(this);
@@ -2195,10 +2200,13 @@ public class Gen extends JCTree.Visitor {
                 res = items.makeMemberItem(sym, true);
             }
             result = res;
+        } else if (isInvokeDynamic(sym) || isConstantDynamic(sym)) {
+            if (isConstantDynamic(sym)) {
+                setTypeAnnotationPositions(tree.pos);
+            }
+            result = items.makeDynamicItem(sym);
         } else if (sym.kind == VAR && (sym.owner.kind == MTH || sym.owner.kind == VAR)) {
             result = items.makeLocalItem((VarSymbol)sym);
-        } else if (isInvokeDynamic(sym)) {
-            result = items.makeDynamicItem(sym);
         } else if ((sym.flags() & STATIC) != 0) {
             if (!isAccessSuper(env.enclMethod))
                 sym = binaryQualifier(sym, env.enclClass.type);
@@ -2215,6 +2223,12 @@ public class Gen extends JCTree.Visitor {
         boolean useVirtual = target.hasVirtualPrivateInvoke() &&
                              !disableVirtualizedPrivateInvoke;
         return !useVirtual && ((sym.flags() & PRIVATE) != 0);
+    }
+
+    public boolean isConstantDynamic(Symbol sym) {
+        return sym.kind == VAR &&
+                sym instanceof DynamicVarSymbol &&
+                ((DynamicVarSymbol)sym).isDynamic();
     }
 
     public void visitSelect(JCFieldAccess tree) {

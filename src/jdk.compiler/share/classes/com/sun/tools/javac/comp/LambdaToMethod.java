@@ -35,9 +35,12 @@ import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
 import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.code.Source;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.DynamicMethodSymbol;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
@@ -170,6 +173,12 @@ public class LambdaToMethod extends TreeTranslator {
                 || options.isSet(Option.G_CUSTOM, "vars");
         verboseDeduplication = options.isSet("debug.dumpLambdaToMethodDeduplication");
         deduplicateLambdas = options.getBoolean("deduplicateLambdas", true);
+        Source source = Source.instance(context);
+        // format: -XDforNonCapturingLambda=generateCondy, which is the default, or -XDforNonCapturingLambda=generateIndy
+        String condyOp = options.get("forNonCapturingLambda");
+        condyForLambda = (condyOp != null ?
+                condyOp.equals("generateCondy") :
+                Feature.CONDY_FOR_LAMBDA.allowedInSource(source));
     }
     // </editor-fold>
 
@@ -791,11 +800,11 @@ public class LambdaToMethod extends TreeTranslator {
                     "getFunctionalInterfaceMethodSignature", functionalInterfaceMethodSignature),
                     "getImplClass", implClass),
                     "getImplMethodSignature", implMethodSignature),
-                make.Return(makeIndyCall(
+                make.Return(makeDynamicCall(
                     pos,
                     syms.lambdaMetafactory,
                     names.altMetafactory,
-                    staticArgs, indyType, serArgs.toList(), samSym.name)),
+                    staticArgs, targetType, indyType, serArgs.toList(), samSym.name)),
                 null);
         ListBuffer<JCStatement> stmts = kInfo.deserializeCases.get(implMethodName);
         if (stmts == null) {
@@ -1177,8 +1186,7 @@ public class LambdaToMethod extends TreeTranslator {
                 }
             }
         }
-
-        return makeIndyCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, indyType, indy_args, samSym.name);
+        return makeDynamicCall(tree, syms.lambdaMetafactory, metafactoryName, staticArgs, tree.type, indyType, indy_args, samSym.name);
     }
 
     /**
@@ -1220,6 +1228,52 @@ public class LambdaToMethod extends TreeTranslator {
             make.at(prevPos);
         }
     }
+
+    private JCExpression makeDynamicCall(DiagnosticPosition pos, Type site, Name bsmName,
+                                         List<Object> staticArgs, Type interfaceType, MethodType indyType, List<JCExpression> indyArgs,
+                                         Name methName) {
+        return condyForLambda &&
+                !context.needsAltMetafactory() &&
+                indyArgs.isEmpty() ?
+                makeCondy(pos, site, bsmName, staticArgs, interfaceType, methName) :
+                makeIndyCall(pos, site, bsmName, staticArgs, indyType, indyArgs, methName);
+    }
+
+    /* this extra flag should be temporary and used as long as it's not possible to do the build
+     * due to the lack of support for condy in the current version of ASM present in the build
+     */
+    private final boolean condyForLambda;
+
+    private JCExpression makeCondy(DiagnosticPosition pos, Type site, Name bsmName,
+                                   List<Object> staticArgs, Type interfaceType, Name methName) {
+        int prevPos = make.pos;
+        try {
+            make.at(pos);
+            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                    syms.stringType,
+                    syms.classType).appendList(bsmStaticArgToTypes(staticArgs));
+
+            Symbol bsm = rs.resolveInternalMethod(pos, attrEnv, site,
+                    bsmName, bsm_staticArgs, List.nil());
+
+            Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(methName,
+                    syms.noSymbol,
+                    bsm.isStatic() ?
+                            ClassFile.REF_invokeStatic :
+                            ClassFile.REF_invokeVirtual,
+                    (MethodSymbol)bsm,
+                    interfaceType,
+                    staticArgs.toArray());
+
+            JCIdent ident = make.Ident(dynSym);
+            ident.type = interfaceType;
+
+            return ident;
+        } finally {
+            make.at(prevPos);
+        }
+    }
+
     //where
     private List<Type> bsmStaticArgToTypes(List<Object> args) {
         ListBuffer<Type> argtypes = new ListBuffer<>();

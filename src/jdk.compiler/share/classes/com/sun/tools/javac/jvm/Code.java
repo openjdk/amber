@@ -922,6 +922,7 @@ public class Code {
         if (o instanceof ClassSymbol) return syms.classType;
         if (o instanceof Pool.MethodHandle) return syms.methodHandleType;
         if (o instanceof UniqueType) return typeForPool(((UniqueType)o).type);
+        if (o instanceof Pool.DynamicVariable) return ((Pool.DynamicVariable)o).type;
         if (o instanceof Type) {
             Type ty = (Type) o;
 
