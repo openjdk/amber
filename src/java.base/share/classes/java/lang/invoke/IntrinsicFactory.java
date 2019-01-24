@@ -309,7 +309,6 @@ public final class IntrinsicFactory {
      * @param lookup      MethodHandles lookup
      * @param name        Name of method
      * @param methodType  Method signature
-     * @param format      Formatter format string
      * @throws NoSuchMethodException no such method
      * @throws IllegalAccessException illegal access
      * @throws StringConcatException string concat error
