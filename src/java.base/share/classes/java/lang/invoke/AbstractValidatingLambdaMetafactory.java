@@ -200,14 +200,13 @@ import static sun.invoke.util.Wrapper.isWrapperType;
             throws LambdaConversionException;
 
     /**
-     * Builds an instance of the functional interface directly.
+     * Build a single instance of the functional interface.  The lambda must be a
+     * non-capturing lambda.
      *
      * @return an instance of the functional interface
      * @throws ReflectiveOperationException
-     * @throws LambdaConversionException If properly formed functional interface
-     * is not found or if creating the functional interface requires parameters
      */
-    abstract Object buildFunctionalInterfaceInstance()
+    abstract Object buildInstance()
             throws LambdaConversionException;
 
     /**

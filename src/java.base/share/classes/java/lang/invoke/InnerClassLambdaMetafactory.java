@@ -25,22 +25,47 @@
 
 package java.lang.invoke;
 
-import jdk.internal.org.objectweb.asm.*;
-import sun.invoke.util.BytecodeDescriptor;
-import jdk.internal.misc.Unsafe;
-import sun.security.action.GetPropertyAction;
-
 import java.io.FilePermission;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.LinkedHashSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.PropertyPermission;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static jdk.internal.org.objectweb.asm.Opcodes.*;
+import jdk.internal.misc.Unsafe;
+import jdk.internal.org.objectweb.asm.ClassWriter;
+import jdk.internal.org.objectweb.asm.FieldVisitor;
+import jdk.internal.org.objectweb.asm.MethodVisitor;
+import jdk.internal.org.objectweb.asm.Opcodes;
+import jdk.internal.org.objectweb.asm.Type;
+import sun.invoke.util.BytecodeDescriptor;
+import sun.security.action.GetPropertyAction;
+
+import static jdk.internal.org.objectweb.asm.Opcodes.AASTORE;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_BRIDGE;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_FINAL;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_STATIC;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_SUPER;
+import static jdk.internal.org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static jdk.internal.org.objectweb.asm.Opcodes.ALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.ANEWARRAY;
+import static jdk.internal.org.objectweb.asm.Opcodes.ARETURN;
+import static jdk.internal.org.objectweb.asm.Opcodes.ATHROW;
+import static jdk.internal.org.objectweb.asm.Opcodes.DUP;
+import static jdk.internal.org.objectweb.asm.Opcodes.GETFIELD;
+import static jdk.internal.org.objectweb.asm.Opcodes.ILOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.INVOKEINTERFACE;
+import static jdk.internal.org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static jdk.internal.org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static jdk.internal.org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static jdk.internal.org.objectweb.asm.Opcodes.IRETURN;
+import static jdk.internal.org.objectweb.asm.Opcodes.NEW;
+import static jdk.internal.org.objectweb.asm.Opcodes.PUTFIELD;
+import static jdk.internal.org.objectweb.asm.Opcodes.RETURN;
 
 /**
  * Lambda metafactory implementation which dynamically creates an
@@ -173,6 +198,26 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
     /**
+     * Build a single instance of a non-capturing lambda.
+     * @return the lambda object
+     * @throws LambdaConversionException
+     */
+    Object buildInstance() throws LambdaConversionException {
+        if (invokedType.parameterCount() != 0)
+            throw new LambdaConversionException("Lambda is not a non-capturing lambda: " + invokedType);
+
+        try {
+            Class<?> clazz = spinInnerClass();
+            return MethodHandles.Lookup.IMPL_LOOKUP
+                    .findStatic(clazz, NAME_FACTORY, invokedType)
+                    .invoke();
+        }
+        catch (Throwable e) {
+            throw new LambdaConversionException("Exception instantiating lambda object", e);
+        }
+    }
+
+    /**
      * Build the CallSite. Generate a class file which implements the functional
      * interface, define the class, if there are no parameters create an instance
      * of the class which the CallSite will return, otherwise, generate handles
@@ -186,75 +231,18 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      */
     @Override
     CallSite buildCallSite() throws LambdaConversionException {
-        final Class<?> innerClass = spinInnerClass();
         if (invokedType.parameterCount() == 0) {
-            try {
-                Object inst = getConstructor(innerClass).newInstance();
-                return new ConstantCallSite(MethodHandles.constant(samBase, inst));
-            }
-            catch (ReflectiveOperationException e) {
-                throw new LambdaConversionException("Exception instantiating lambda object", e);
-            }
+            return new ConstantCallSite(MethodHandles.constant(samBase, buildInstance()));
         } else {
             try {
-                UNSAFE.ensureClassInitialized(innerClass);
-                return new ConstantCallSite(
-                        MethodHandles.Lookup.IMPL_LOOKUP
-                             .findStatic(innerClass, NAME_FACTORY, invokedType));
+                Class<?> clazz = spinInnerClass();
+                return new ConstantCallSite(MethodHandles.Lookup.IMPL_LOOKUP
+                                                    .findStatic(clazz, NAME_FACTORY, invokedType));
             }
             catch (ReflectiveOperationException e) {
                 throw new LambdaConversionException("Exception finding constructor", e);
             }
         }
-    }
-
-    /**
-     * Builds an instance of the functional interface directly.
-     *
-     * Generate a class file which implements the functional interface, define
-     * the class, create an instance of the class.
-     *
-     * @return an instance of the functional interface
-     * @throws ReflectiveOperationException
-     * @throws LambdaConversionException If properly formed functional interface
-     * is not found or if the functional interface expects parameters
-     */
-    @Override
-    Object buildFunctionalInterfaceInstance() throws LambdaConversionException {
-        if (invokedType.parameterCount() == 0) {
-            final Class<?> innerClass = spinInnerClass();
-            try {
-                return getConstructor(innerClass).newInstance();
-            }
-            catch (ReflectiveOperationException e) {
-                throw new LambdaConversionException("Exception instantiating lambda object", e);
-            }
-        } else {
-            throw new LambdaConversionException("Building functional interface instances directly " +
-                    "only supported when there are no parameters");
-        }
-    }
-
-    private Constructor<?> getConstructor(Class<?> innerClass) throws LambdaConversionException {
-        final Constructor<?>[] ctrs = AccessController.doPrivileged(
-                new PrivilegedAction<>() {
-                    @Override
-                    public Constructor<?>[] run() {
-                        Constructor<?>[] ctrs1 = innerClass.getDeclaredConstructors();
-                        if (ctrs1.length == 1) {
-                            // The lambda implementing inner class constructor is private, set
-                            // it accessible (by us) before creating the constant sole instance
-                            ctrs1[0].setAccessible(true);
-                        }
-                        return ctrs1;
-                    }
-                });
-
-        if (ctrs.length != 1) {
-            throw new LambdaConversionException("Expected one lambda constructor for "
-                    + innerClass.getCanonicalName() + ", got " + ctrs.length);
-        }
-        return ctrs[0];
     }
 
     /**
@@ -269,10 +257,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * objects.
      *
      * @return a Class which implements the functional interface
-     * @throws LambdaConversionException If properly formed functional interface
-     * is not found
      */
-    private Class<?> spinInnerClass() throws LambdaConversionException {
+    private Class<?> spinInnerClass() {
         String[] interfaces;
         String samIntf = samBase.getName().replace('.', '/');
         boolean accidentallySerializable = !isSerializable && Serializable.class.isAssignableFrom(samBase);
@@ -302,11 +288,9 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
             fv.visitEnd();
         }
 
+        // @@@ The factory can go away when we get to replacing defineAnonymousClass
         generateConstructor();
-
-        if (invokedType.parameterCount() != 0) {
-            generateFactory();
-        }
+        generateFactory();
 
         // Forward the SAM method
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, samMethodName,
@@ -349,7 +333,9 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
             new PropertyPermission("user.dir", "read"));
         }
 
-        return UNSAFE.defineAnonymousClass(targetClass, classBytes, null);
+        Class<?> theClass = UNSAFE.defineAnonymousClass(targetClass, classBytes, null);
+        UNSAFE.ensureClassInitialized(theClass);
+        return theClass;
     }
 
     /**

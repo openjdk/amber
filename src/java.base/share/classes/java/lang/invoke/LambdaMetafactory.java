@@ -40,19 +40,20 @@ import java.util.Arrays;
  * proceeds in order through three phases:
  * <ul>
  *     <li><em>Linkage</em> occurs when the methods in this class are invoked.
- *     They take as arguments an interface to be implemented (typically a
- *     <em>functional interface</em>, one with a single abstract method), a
- *     name and signature of a method from that interface to be implemented, a
- *     method handle describing the desired implementation behavior
- *     for that method, and possibly other additional metadata, and produce a
- *     {@link CallSite} whose target can be used to create suitable function
- *     objects.  Linkage may involve dynamically loading a new class that
+ *     They take as arguments a <em>functional interface</em> to be implemented
+ *     (one with a single abstract method), a
+ *     name and descriptor of a method from that interface to be implemented, a
+ *     method handle for the desired implementation behavior
+ *     for that method, and possibly other additional metadata, and produce either
+ *     a {@link CallSite} suitable for linking {@code invokedynamic} sites, or
+ *     a lambda object suitable for linking dynamic constants.
+ *     Linkage may involve dynamically loading a new class that
  *     implements the target interface. The {@code CallSite} can be considered a
  *     "factory" for function objects and so these linkage methods are referred
  *     to as "metafactories".</li>
  *
- *     <li><em>Capture</em> occurs when the {@code CallSite}'s target is
- *     invoked, typically through an {@code invokedynamic} call site,
+ *     <li>For <em>capturing lambdas</em>, capture occurs when the {@code CallSite}'s target is
+ *     invoked, typically through {@code invokedynamic},
  *     producing a function object.  This may occur many times for
  *     a single factory {@code CallSite}.  Capture may involve allocation of a
  *     new function object, or may return an existing function object.  The
@@ -61,9 +62,10 @@ import java.util.Arrays;
  *     parameters</em>, which must be provided as arguments to the
  *     {@code CallSite} target, and which may be early-bound to the behavior
  *     {@code MethodHandle}.  The number of captured parameters and their types
- *     are determined during linkage.
- *     The identity of a function object produced by invoking the
- *     {@code CallSite}'s target is unpredictable, and therefore
+ *     are determined during linkage.</li>
+ *
+ *     <li>The identity of the lambda object ultimately produced
+ *     is unpredictable, and therefore
  *     identity-sensitive operations (such as reference equality, object
  *     locking, and {@code System.identityHashCode()} may produce different
  *     results in different implementations, or even upon different invocations
@@ -84,14 +86,17 @@ import java.util.Arrays;
  * "instantiated" method type; on invocation, the arguments and eventual result
  * are checked against this {@code MethodType}.
  *
- * <p>This class provides two forms of linkage methods: a standard version
+ * <p>Linkage follows a flexible, extensible protocol that allows call sites
+ * to specify various forms of optional metadata, which provide additional
+ * control over the behavior of the generated function objects.  Several legacy
+ * entry points are also present:
  * ({@link #metafactory(MethodHandles.Lookup, String, MethodType, MethodType, MethodHandle, MethodType)})
- * using an optimized protocol, and an alternate version
- * {@link #altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}).
- * The alternate version is a generalization of the standard version, providing
- * additional control over the behavior of the generated function objects via
- * flags and additional arguments.  The alternate version adds the ability to
- * manage the following attributes of function objects:
+ * and
+ * {@link #altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}),
+ * but both delegate to {@link #metafactory(MethodHandles.Lookup, String, Object, Object...)}
+ * and are retained only for binary compatibility with existing classfiles.
+ *
+ * Optional linkage metadata may control:
  *
  * <ul>
  *     <li><em>Bridging.</em>  It is sometimes useful to implement multiple
@@ -110,7 +115,8 @@ import java.util.Arrays;
  *     which should be implemented by the resulting function object.</li>
  *
  *     <li><em>Serializability.</em>  The generated function objects do not
- *     generally support serialization.  If desired, {@code FLAG_SERIALIZABLE}
+ *     by default support serialization, unless the functional interface itself
+ *     is {@code Serializable}.  If desired, {@code FLAG_SERIALIZABLE}
  *     can be used to indicate that the function objects should be serializable.
  *     Serializable function objects will use, as their serialized form,
  *     instances of the class {@code SerializedLambda}, which requires additional
@@ -199,7 +205,9 @@ import java.util.Arrays;
  * sole method of the functional interface and the desugared implementation
  * method, and returns an object (the lambda object) that implements the target
  * type. (For method references, the implementation method is simply the
- * referenced method; no desugaring is needed.)
+ * referenced method; no desugaring is needed.)  For method references and
+ * non-capturing lambdas, the {@linkplain Object}-bearing metafactory can be
+ * used to link dynamic constants which evaluate to the lambda object.
  *
  * <p>The argument list of the implementation method and the argument list of
  * the interface method(s) may differ in several ways.  The implementation
@@ -228,22 +236,24 @@ public final class LambdaMetafactory {
 
     private LambdaMetafactory() {}
 
-    /** Flag for alternate metafactories indicating the lambda object
-     * must be serializable */
+    /** Flag indicating the lambda object must be serializable */
     public static final int FLAG_SERIALIZABLE = 1 << 0;
 
     /**
-     * Flag for alternate metafactories indicating the lambda object implements
-     * other marker interfaces
+     * Flag indicating the lambda object implements other marker interfaces
      * besides Serializable
      */
     public static final int FLAG_MARKERS = 1 << 1;
 
     /**
-     * Flag for alternate metafactories indicating the lambda object requires
-     * additional bridge methods
+     * Flag indicating the lambda object requires additional bridge methods
      */
     public static final int FLAG_BRIDGES = 1 << 2;
+
+    /**
+     * Flag indicating that the lambda object originated as a method reference
+     */
+    public static final int FLAG_METHOD_REF = 1 << 3;
 
     private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[0];
     private static final MethodType[] EMPTY_MT_ARRAY = new MethodType[0];
@@ -255,17 +265,13 @@ public final class LambdaMetafactory {
     // reflected there as appropriate.
 
     /**
-     * Facilitates the creation of simple "function objects" that implement one
-     * or more interfaces by delegation to a provided {@link MethodHandle},
+     * Legacy metafactory for facilitating the the creation of simple
+     * "function objects" that implement one or more interfaces by delegation
+     * to a provided {@link MethodHandle},
      * after appropriate type adaptation and partial evaluation of arguments.
      * Typically used as a <em>bootstrap method</em> for {@code invokedynamic}
      * call sites, to support the <em>lambda expression</em> and <em>method
      * reference expression</em> features of the Java Programming Language.
-     *
-     * <p>This is the standard, streamlined metafactory; additional flexibility
-     * is provided by {@link #altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}.
-     * A general description of the behavior of this method is provided
-     * {@link LambdaMetafactory above}.
      *
      * <p>When the target of the {@code CallSite} returned from this method is
      * invoked, the resulting function objects are instances of a class which
@@ -273,6 +279,13 @@ public final class LambdaMetafactory {
      * declares a method with the name given by {@code invokedName} and the
      * signature given by {@code samMethodType}.  It may also override additional
      * methods from {@code Object}.
+     *
+     * <p>This version can only be used to link {@code invokedynamic} sites,
+     * and is restricted to linkage sites that do not make use of bridging,
+     * marker interfaces, serializability, or other optional linkage behavior.
+     * Code generators should prefer {@link #metafactory(MethodHandles.Lookup, String, Object, Object...)}
+     * which supports all these options, and also supports linkage of dynamic
+     * constants.
      *
      * @param caller Represents a lookup context with the accessibility
      *               privileges of the caller.  Specifically, the lookup context
@@ -313,6 +326,7 @@ public final class LambdaMetafactory {
      *                                   are violated, or the lookup context
      *                                   does not have private access privileges.
      */
+    @Deprecated(since = "13")
     public static CallSite metafactory(MethodHandles.Lookup caller,
                                        String invokedName,
                                        MethodType invokedType,
@@ -320,99 +334,29 @@ public final class LambdaMetafactory {
                                        MethodHandle implMethod,
                                        MethodType instantiatedMethodType)
             throws LambdaConversionException {
-        AbstractValidatingLambdaMetafactory mf;
-        mf = new InnerClassLambdaMetafactory(caller, invokedType,
-                                             invokedName, samMethodType,
-                                             implMethod, instantiatedMethodType,
-                                             false, EMPTY_CLASS_ARRAY, EMPTY_MT_ARRAY);
-        mf.validateMetafactoryArgs();
-        return mf.buildCallSite();
+        return (CallSite) metafactory(caller, invokedName, invokedType,
+                                      new Object[] { samMethodType, implMethod, instantiatedMethodType });
     }
 
     /**
-     * Special-case case version of {@link LambdaMetafactory#metafactory(MethodHandles.Lookup, String, Class, MethodType, MethodHandle, MethodType)}
-     * that is restricted to non-capturing lambdas.  Rather than returning a
-     * {@link CallSite}, the function object itself is returned.
-     * Typically used as a <em>bootstrap method</em> for {@code Dynamic}
-     * constants, to support the <em>lambda expression</em> and <em>method
-     * reference expression</em> features of the Java Programming Language.
-     *
-     * <p>The function object returned is an instance of a class which
-     * implements the interface named by {@code functionalInterface},
-     * declares a method with the name given by {@code invokedName} and the
-     * signature given by {@code samMethodType}.  It may also override additional
-     * methods from {@code Object}.
-     *
-     * @param caller Represents a lookup context with the accessibility
-     *               privileges of the caller.  When used with {@code invokedynamic},
-     *               this is stacked automatically by the VM.
-     * @param invokedName The name of the method to implement.  When used with
-     *                    {@code Dynamic} constants, this is provided by the
-     *                    {@code NameAndType} of the {@code InvokeDynamic}
-     *                    structure and is stacked automatically by the VM.
-     * @param functionalInterface The functional interface the function object
-     *                            should implement.  When used with {@code invokedynamic},
-     *                            this is provided by the {@code NameAndType} of
-     *                            the {@code InvokeDynamic} structure and is
-     *                            stacked automatically by the VM. In the event
-     *                            that the implementation method is an instance
-     *                            method and this signature has any parameters,
-     *                            the first parameter in the invocation signature
-     *                            must correspond to the receiver.
-     * @param samMethodType Signature and return type of method to be implemented
-     *                      by the function object.
-     * @param implMethod A direct method handle describing the implementation
-     *                   method which should be called (with suitable adaptation
-     *                   of argument types, return types, and with captured
-     *                   arguments prepended to the invocation arguments) at
-     *                   invocation time.
-     * @param instantiatedMethodType The signature and return type that should
-     *                               be enforced dynamically at invocation time.
-     *                               This may be the same as {@code samMethodType},
-     *                               or may be a specialization of it.
-     * @return a CallSite whose target can be used to perform capture, generating
-     *         instances of the interface named by {@code invokedType}
-     * @throws LambdaConversionException If any of the linkage invariants
-     *                                   described {@link LambdaMetafactory above}
-     *                                   are violated
-     */
-    public static Object metafactory(MethodHandles.Lookup caller,
-                                     String invokedName,
-                                     Class<?> functionalInterface,
-                                     MethodType samMethodType,
-                                     MethodHandle implMethod,
-                                     MethodType instantiatedMethodType)
-            throws LambdaConversionException {
-        AbstractValidatingLambdaMetafactory mf;
-        mf = new InnerClassLambdaMetafactory(caller, MethodType.methodType(functionalInterface),
-                                             invokedName, samMethodType,
-                                             implMethod, instantiatedMethodType,
-                                             false, EMPTY_CLASS_ARRAY, EMPTY_MT_ARRAY);
-        mf.validateMetafactoryArgs();
-        return mf.buildFunctionalInterfaceInstance();
-    }
-
-    // @@@ Special case version of altMetafactory, supporting FLAG_METHODREF
-
-    /**
-     * Facilitates the creation of simple "function objects" that implement one
+     * Legacy metafactory for facilitating the the creation of simple
+     * "function objects" that implement one
      * or more interfaces by delegation to a provided {@link MethodHandle},
      * after appropriate type adaptation and partial evaluation of arguments.
      * Typically used as a <em>bootstrap method</em> for {@code invokedynamic}
      * call sites, to support the <em>lambda expression</em> and <em>method
      * reference expression</em> features of the Java Programming Language.
      *
-     * <p>This is the general, more flexible metafactory; a streamlined version
-     * is provided by {@link #metafactory(java.lang.invoke.MethodHandles.Lookup,
-     * String, MethodType, MethodType, MethodHandle, MethodType)}.
-     * A general description of the behavior of this method is provided
-     * {@link LambdaMetafactory above}.
-     *
      * <p>The argument list for this method includes three fixed parameters,
      * corresponding to the parameters automatically stacked by the VM for the
      * bootstrap method in an {@code invokedynamic} invocation, and an {@code Object[]}
      * parameter that contains additional parameters.  The declared argument
      * list for this method is:
+     *
+     * <p>This version can only be used to link {@code invokedynamic} sites.
+     * Code generators should prefer {@link #metafactory(MethodHandles.Lookup, String, Object, Object...)}
+     * which supports all these options, and also supports linkage of dynamic
+     * constants.
      *
      * <pre>{@code
      *  CallSite altMetafactory(MethodHandles.Lookup caller,
@@ -518,15 +462,196 @@ public final class LambdaMetafactory {
      *                                   are violated, or the lookup context
      *                                   does not have private access privileges.
      */
+    @Deprecated(since = "13")
     public static CallSite altMetafactory(MethodHandles.Lookup caller,
                                           String invokedName,
                                           MethodType invokedType,
                                           Object... args)
             throws LambdaConversionException {
-        MethodType samMethodType = (MethodType)args[0];
-        MethodHandle implMethod = (MethodHandle)args[1];
-        MethodType instantiatedMethodType = (MethodType)args[2];
-        int flags = (Integer) args[3];
+        return (CallSite) metafactory(caller, invokedName, invokedType, args);
+    }
+
+    /**
+     * Facilitates the creation of simple "function objects" that implement one
+     * or more interfaces by delegation to a provided {@link MethodHandle},
+     * after appropriate type adaptation and partial evaluation of arguments.
+     * Typically used as a <em>bootstrap method</em> for {@code invokedynamic}
+     * call sites or dynamic classfile constants, to support the
+     * <em>lambda expression</em> and <em>method reference expression</em>
+     * features of the Java Programming Language.
+     *
+     * <p>This is the general, more flexible metafactory, which subsumes
+     * {@link #metafactory(java.lang.invoke.MethodHandles.Lookup,
+     * String, MethodType, MethodType, MethodHandle, MethodType)} and
+     * {@link #altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}.
+     * A general description of the behavior of this method is provided in
+     * {@link LambdaMetafactory above}.
+     *
+     * <p>The argument list for this method includes three fixed parameters,
+     * corresponding to the parameters automatically stacked by the VM for the
+     * bootstrap method in an {@code invokedynamic} invocation, and an {@code Object[]}
+     * parameter that contains additional parameters.  The declared argument
+     * list for this method is:
+     *
+     * <pre>{@code
+     *  Object metafactory(MethodHandles.Lookup caller,
+     *                     String invokedName,
+     *                     MethodType invokedType,
+     *                     Object... args)
+     * }</pre>
+     *
+     * <p>but it behaves as if the argument list is as follows:
+     *
+     * <pre>{@code
+     *  Object metafactory(MethodHandles.Lookup caller,
+     *                     String invokedName,
+     *                     MethodType invokedType,
+     *                     (MethodType|Class) samMethodType,
+     *                     MethodHandle implMethod,
+     *                     MethodType instantiatedMethodType, // optional
+     *                     int flags,                         // optional
+     *                     int markerInterfaceCount,  // IF flags has MARKERS set
+     *                     Class... markerInterfaces, // IF flags has MARKERS set
+     *                     int bridgeCount,           // IF flags has BRIDGES set
+     *                     MethodType... bridges      // IF flags has BRIDGES set
+     *                     )
+     * }</pre>
+     *
+     * <p>Arguments that appear in the argument list for
+     * {@link #metafactory(MethodHandles.Lookup, String, MethodType, MethodType, MethodHandle, MethodType)}
+     * have the same specification as in that method.  {@code invokedTypeOrLambdaType}
+     * is either a {@link MethodType} describing the lambda factory, in which case
+     * the result is a {@link CallSite}, or a {@link Class} describing the type
+     * of the desired function object, in which case the result is the function
+     * object itself.  {@code instantiatedMethodType} is
+     * optional if it is the same as {@code samMethodType} and none of the later
+     * arguments are specified.  The additional arguments are interpreted as follows:
+     * <ul>
+     *     <li>{@code flags} indicates additional options; this is a bitwise
+     *     OR of desired flags.  Defined flags are {@link #FLAG_BRIDGES},
+     *     {@link #FLAG_MARKERS}, and {@link #FLAG_SERIALIZABLE}.</li>
+     *     <li>{@code markerInterfaceCount} is the number of additional interfaces
+     *     the function object should implement, and is present if and only if the
+     *     {@code FLAG_MARKERS} flag is set.</li>
+     *     <li>{@code markerInterfaces} is a variable-length list of additional
+     *     interfaces to implement, whose length equals {@code markerInterfaceCount},
+     *     and is present if and only if the {@code FLAG_MARKERS} flag is set.</li>
+     *     <li>{@code bridgeCount} is the number of additional method signatures
+     *     the function object should implement, and is present if and only if
+     *     the {@code FLAG_BRIDGES} flag is set.</li>
+     *     <li>{@code bridges} is a variable-length list of additional
+     *     methods signatures to implement, whose length equals {@code bridgeCount},
+     *     and is present if and only if the {@code FLAG_BRIDGES} flag is set.</li>
+     * </ul>
+     *
+     * <p>Each class named by {@code markerInterfaces} is subject to the same
+     * restrictions as {@code Rd}, the return type of {@code invokedType},
+     * as described {@link LambdaMetafactory above}.  Each {@code MethodType}
+     * named by {@code bridges} is subject to the same restrictions as
+     * {@code samMethodType}, as described {@link LambdaMetafactory above}.
+     *
+     * <p>When FLAG_SERIALIZABLE is set in {@code flags}, the function objects
+     * will implement {@code Serializable}, and will have a {@code writeReplace}
+     * method that returns an appropriate {@link SerializedLambda}.  The
+     * {@code caller} class must have an appropriate {@code $deserializeLambda$}
+     * method, as described in {@link SerializedLambda}.
+     *
+     * <p>When a {@code CallSite} is returned from this method and subsequently
+     * invoked, the resulting function objects are instances of a class with
+     * the following properties:
+     * <ul>
+     *     <li>The class implements the interface named by the return type
+     *     of {@code invokedTypeOrLambdaType} and any interfaces named by
+     *     {@code markerInterfaces}</li>
+     *     <li>The class declares methods with the name given by {@code invokedName},
+     *     and the signature given by {@code samMethodType} and additional signatures
+     *     given by {@code bridges}</li>
+     *     <li>The class may override methods from {@code Object}, and may
+     *     implement methods related to serialization.</li>
+     * </ul>
+     *
+     * <p>When a lambda object is returned from this method it will be an
+     * instance of a class with the following properties:
+     * <ul>
+     *     <li>The class implements the interface named by the
+     *     of {@code invokedTypeOrLambdaType} and any interfaces named by
+     *     {@code markerInterfaces}</li>
+     *     <li>The class declares methods with the name given by {@code invokedName},
+     *     and the signature given by {@code samMethodType} and additional signatures
+     *     given by {@code bridges}</li>
+     *     <li>The class may override methods from {@code Object}, and may
+     *     implement methods related to serialization.</li>
+     * </ul>
+     *
+     * @param caller Represents a lookup context with the accessibility
+     *               privileges of the caller.  Specifically, the lookup context
+     *               must have
+     *               <a href="MethodHandles.Lookup.html#privacc">private access</a>
+     *               privileges.
+     *               When used with {@code invokedynamic}, this is stacked
+     *               automatically by the VM.
+     * @param invokedName The name of the method to implement.  When used with
+     *                    {@code invokedynamic}, this is provided by the
+     *                    {@code NameAndType} of the {@code InvokeDynamic}
+     *                    structure and is stacked automatically by the VM.
+     * @param invokedTypeOrLambdaType A {@link MethodType} describing the invocation
+     *                    type of an {@code invokedynamic} call site, or a {@link Class}
+     *                    describing the type of a dynamic constant.  If it is a
+     *                    {@linkplain MethodType}, this method returns a {@link CallSite}
+     *                    whose signature is this {@linkplain MethodType}, whose
+     *                    parameter types represent the types of capture variables
+     *                    and whose the return type is the interface to implement.
+     *                    If it is a {@linkplain Class}, this method returns an
+     *                    instance of that {@linkplain Class}.
+     *                    When used with {@code invokedynamic}, this parameter
+     *                    is provided by the {@code NameAndType} of the
+     *                    {@code InvokeDynamic} structure and is stacked automatically
+     *                    by the VM; when used with dynamic classfile constants,
+     *                    this parameter is provided by the {@code NameAndType}
+     *                    of the {@code Constant_Dynamic_info}.
+     *                    In the event that the implementation method is an
+     *                    instance method and this signature has any parameters,
+     *                    the first parameter in the invocation signature must
+     *                    correspond to the receiver.
+     * @param  args       An {@code Object[]} array containing the required
+     *                    arguments {@code samMethodType}, {@code implMethod},
+     *                    and the optional arguments ({@code instantiatedMethodType},
+     *                    {@code flags}, and any additional optional arguments,
+     *                    as described)
+     * @return a CallSite whose target can be used to perform capture, generating
+     *         instances of the interface named by {@code invokedType}, or an
+     *         instance of the interface itself, depending on the {@code invokedTypeOrLambdaType}
+     *         parameter
+     * @throws LambdaConversionException If any of the linkage invariants
+     *                                   described {@link LambdaMetafactory above}
+     *                                   are violated, or the lookup context
+     *                                   does not have private access privileges.
+     */
+    public static Object metafactory(MethodHandles.Lookup caller,
+                                     String invokedName,
+                                     Object invokedTypeOrLambdaType,
+                                     Object... args)
+            throws LambdaConversionException {
+        boolean isIndy = invokedTypeOrLambdaType instanceof MethodType;
+        final Class<?> lambdaType;
+        final MethodType invokedType;
+        if (isIndy) {
+            invokedType = (MethodType) invokedTypeOrLambdaType;
+            lambdaType = invokedType.returnType();
+        }
+        else {
+            lambdaType = (Class<?>) invokedTypeOrLambdaType;
+            invokedType = MethodType.methodType(lambdaType);
+        }
+        MethodType samMethodType = (MethodType) args[0];
+        MethodHandle implMethod = (MethodHandle) args[1];
+        MethodType instantiatedMethodType = args.length > 2
+                                            ? (MethodType) args[2]
+                                            : samMethodType;
+        int flags = args.length > 3
+                    ? ((int) (Integer) args[3])
+                    : 0;
+
         Class<?>[] markerInterfaces;
         MethodType[] bridges;
         int argIndex = 4;
@@ -549,7 +674,7 @@ public final class LambdaMetafactory {
 
         boolean isSerializable = ((flags & FLAG_SERIALIZABLE) != 0);
         if (isSerializable) {
-            boolean foundSerializableSupertype = Serializable.class.isAssignableFrom(invokedType.returnType());
+            boolean foundSerializableSupertype = Serializable.class.isAssignableFrom(lambdaType);
             for (Class<?> c : markerInterfaces)
                 foundSerializableSupertype |= Serializable.class.isAssignableFrom(c);
             if (!foundSerializableSupertype) {
@@ -566,63 +691,15 @@ public final class LambdaMetafactory {
                                                   isSerializable,
                                                   markerInterfaces, bridges);
         mf.validateMetafactoryArgs();
-        return mf.buildCallSite();
-    }
-
-    /**
-     * Special-case case version of {@link LambdaMetafactory#altMetafactory(MethodHandles.Lookup, String, MethodType, Object...)}.
-     * Rather than returning a {@link CallSite}, the function object itself is returned.
-     * Typically used as a <em>bootstrap method</em> for {@code Dynamic}
-     * constants, to support the <em>lambda expression</em> and <em>method
-     * reference expression</em> features of the Java Programming Language.
-     *
-     * <p>The function object returned is an instance of a class which
-     * implements the interface named by {@code functionalInterface},
-     * declares a method with the name given by {@code invokedName} and the
-     * signature given by {@code samMethodType}.  It may also override additional
-     * methods from {@code Object}.
-     *
-     * @param caller              Represents a lookup context with the accessibility
-     *                            privileges of the caller.  When used with {@code invokedynamic},
-     *                            this is stacked automatically by the VM.
-     * @param invokedName         The name of the method to implement.  When used with
-     *                            {@code Dynamic} constants, this is provided by the
-     *                            {@code NameAndType} of the {@code InvokeDynamic}
-     *                            structure and is stacked automatically by the VM.
-     * @param functionalInterface The functional interface the function object
-     *                            should implement.  When used with {@code invokedynamic},
-     *                            this is provided by the {@code NameAndType} of
-     *                            the {@code InvokeDynamic} structure and is
-     *                            stacked automatically by the VM. In the event
-     *                            that the implementation method is an instance
-     *                            method and this signature has any parameters,
-     *                            the first parameter in the invocation signature
-     *                            must correspond to the receiver.
-     * @param args                An {@code Object[]} array containing the required
-     *                            arguments {@code samMethodType}, {@code implMethod},
-     *                            {@code instantiatedMethodType}, {@code flags}, and any
-     *                            optional arguments, as described
-     *                            {@link #altMetafactory(MethodHandles.Lookup, String, functionalInterface, Object...)} above}
-     * @return a function object which is an instance of a class which implements the interface named
-     *         by {@code functionalInterface}
-     * @throws LambdaConversionException If any of the linkage invariants
-     *                                   described {@link LambdaMetafactory above}
-     *                                   are violated
-     */
-    public static Object altMetafactory(MethodHandles.Lookup caller,
-                                          String invokedName,
-                                          Class<?> functionalInterface,
-                                          Object... args)
-            throws LambdaConversionException {
         try {
-            return altMetafactory(caller, invokedName,
-                    MethodType.methodType(functionalInterface), args).getTarget().invoke();
+            return isIndy ? mf.buildCallSite() : mf.buildInstance();
         }
         catch (LambdaConversionException | LinkageError e) {
             throw e;
         }
         catch (Throwable e) {
-            throw new LambdaConversionException("Exception invoking lambda metafactory", e);
+            throw new LambdaConversionException("Exception invoking metafactory", e);
         }
     }
+
 }
