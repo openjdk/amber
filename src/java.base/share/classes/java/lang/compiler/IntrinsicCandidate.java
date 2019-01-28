@@ -28,6 +28,11 @@ import java.lang.annotation.*;
 
 /**
  * Annotated method is a candidate for compile time optimization.
+ *
+ * @apiNote
+ * This type's retention policy ensures that annotations of this type are not available through the reflection API.
+ * This prevents clients from identifying intrinsic candidates and thus prevents assumptions about the treatment of
+ * intrinsic candidates by a Java compiler. Being an intrinsic candidate is never part of a method's specification.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.METHOD })
