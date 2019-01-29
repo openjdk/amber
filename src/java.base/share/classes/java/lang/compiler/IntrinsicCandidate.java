@@ -27,7 +27,17 @@ package java.lang.compiler;
 import java.lang.annotation.*;
 
 /**
- * Annotated method is a candidate for compile time optimization.
+ * Indicates an <i>intrinsic candidate</i>: a method whose invocation may be <i>intrinsified</i> by the compiler in a
+ * behaviorally-compatible way. Intrinsification generally involves the compiler recognizing when constant arguments
+ * are passed to a passed to a variable-arity method, where the overhead of boxing is significant. In some cases,
+ * the compiler can fold the entire invocation into a constant at compile time. In other cases, the compiler can generate
+ * bytecode that invokes a specialized method (based on the constant arguments) at run time.
+ * <p>
+ * The compiler is free to optimize a given invocation in source code differently in each
+ * compilation, and to optimize adjacent invocations of the same intrinsic candidate in source code in different ways.
+ * <p>
+ * This annotation may only be applied to {@code public} methods in classes of the {@code java.base} module.
+ * Applying it to other methods is not an error, but has no effect.
  *
  * @apiNote
  * This type's retention policy ensures that annotations of this type are not available through the reflection API.
