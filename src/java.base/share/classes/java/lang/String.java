@@ -2957,6 +2957,11 @@ public final class String
      * Locale.getDefault(Locale.Category)} with
      * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
      *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
+     *
      * @param  format
      *         A <a href="../util/Formatter.html#syntax">format string</a>
      *
@@ -2993,6 +2998,11 @@ public final class String
     /**
      * Returns a formatted string using the specified locale, format string,
      * and arguments.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -3042,6 +3052,11 @@ public final class String
      * Locale.getDefault(Locale.Category)} with
      * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
      *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
+     *
      * @param  args
      *         Arguments referenced by the format specifiers in the format
      *         string.  If there are more arguments than format specifiers, the
@@ -3077,6 +3092,11 @@ public final class String
      * Returns a formatted string using this string, as the specified
      * <a href="../util/Formatter.html#syntax">format</a>, the specified locale,
      * and  arguments.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during

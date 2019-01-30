@@ -1001,6 +1001,11 @@ public class PrintStream extends FilterOutputStream
      *     out.format(format, args)
      * }</pre>
      *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
+     *
      * @param  format
      *         A format string as described in <a
      *         href="../util/Formatter.html#syntax">Format string syntax</a>
@@ -1048,6 +1053,11 @@ public class PrintStream extends FilterOutputStream
      * <pre>{@code
      *     out.format(l, format, args)
      * }</pre>
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -1099,6 +1109,11 @@ public class PrintStream extends FilterOutputStream
      * {@link java.util.Locale.Category#FORMAT FORMAT} category specified,
      * regardless of any previous invocations of other formatting methods on
      * this object.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  format
      *         A format string as described in <a
@@ -1154,6 +1169,11 @@ public class PrintStream extends FilterOutputStream
     /**
      * Writes a formatted string to this output stream using the specified
      * format string and arguments.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during

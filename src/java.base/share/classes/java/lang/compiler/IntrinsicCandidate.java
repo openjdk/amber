@@ -31,7 +31,8 @@ import java.lang.annotation.*;
  * behaviorally-compatible way. Intrinsification generally involves the compiler recognizing when constant arguments
  * are passed to a passed to a variable-arity method, where the overhead of boxing is significant. In some cases,
  * the compiler can fold the entire invocation into a constant at compile time. In other cases, the compiler can generate
- * bytecode that invokes a specialized method (based on the constant arguments) at run time.
+ * bytecode that invokes a specialized method (based on the constant arguments or based on the types of all arguments)
+ * at run time.
  * <p>
  * The compiler is free to optimize a given invocation in source code differently in each
  * compilation, and to optimize adjacent invocations of the same intrinsic candidate in source code in different ways.

@@ -138,6 +138,19 @@ public final class Objects {
     * value does not equal the hash code of that object reference.</b> This
     * value can be computed by calling {@link #hashCode(Object)}.
     *
+    * @implNote
+    * An invocation of this method may be intrinsified see {@link java.lang.compiler.IntrinsicCandidate}.
+    * <p>
+    * If all the arguments are constant expressions, then the compiler generates a hash code directly. It evaluates all
+    * the arguments, passes them to a helper method, and uses the integer result as the run-time value of the method invocation.
+    * Typically, the compiler uses {@code Arrays.hashCode} as the helper method, and emits an {@code ldc}
+    * instruction to load the (constant) integer result from the constant pool. If the integer result is small enough,
+    * then the compiler may encode it directly in an {@code sipush} instruction, avoiding the need for a constant pool entry.
+    * <p>
+    * If some arguments are not constant expressions, then the compiler may generate bytecode that generates a hash code for each
+    * argument in a type-specific way, and combines the results. No boxing of arguments into a varargs array is required,
+    * nor boxing of primitive arguments into numeric wrappers.
+    *
     * @param values the values to be hashed
     * @return a hash value of the sequence of input values
     * @see Arrays#hashCode(Object[])

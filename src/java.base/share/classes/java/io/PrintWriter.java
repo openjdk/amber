@@ -855,6 +855,11 @@ public class PrintWriter extends Writer {
      *     out.format(format, args)
      * }</pre>
      *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
+     *
      * @param  format
      *         A format string as described in <a
      *         href="../util/Formatter.html#syntax">Format string syntax</a>.
@@ -903,6 +908,11 @@ public class PrintWriter extends Writer {
      * <pre>{@code
      *     out.format(l, format, args)
      * }</pre>
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -954,6 +964,11 @@ public class PrintWriter extends Writer {
      * <p> The locale always used is the one returned by {@link
      * java.util.Locale#getDefault() Locale.getDefault()}, regardless of any
      * previous invocations of other formatting methods on this object.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  format
      *         A format string as described in <a
@@ -1010,6 +1025,11 @@ public class PrintWriter extends Writer {
      * Writes a formatted string to this writer using the specified format
      * string and arguments.  If automatic flushing is enabled, calls to this
      * method will flush the output buffer.
+     *
+     * @implNote
+     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
+     * if the {@code format} string is a constant expression. Note that the locale used depends on the
+     * default locale in effect <i>at compile time</i>.
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
