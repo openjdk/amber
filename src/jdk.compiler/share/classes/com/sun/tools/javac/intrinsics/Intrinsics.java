@@ -111,24 +111,6 @@ public class Intrinsics {
 
     }
 
-    static Class<?> getClass(ClassDesc classDesc) {
-        try {
-            return (Class<?>)classDesc.resolveConstantDesc(LOOKUP);
-        } catch (ReflectiveOperationException ex) {
-            // Fall thru
-        }
-        return null;
-    }
-
-    static Object getConstant(ConstantDesc constantDesc) {
-        try {
-            return constantDesc.resolveConstantDesc(LOOKUP);
-        } catch (ReflectiveOperationException ex) {
-            // Fall thru
-        }
-        return null;
-    }
-
     static Object getConstant(ClassDesc classDesc, ConstantDesc constantDesc) {
         try {
             Object constant = constantDesc.resolveConstantDesc(LOOKUP);
@@ -160,19 +142,12 @@ public class Intrinsics {
                                  ConstantDesc[] constantDescs,
                                  boolean skipReceiver) {
         int length = constantDescs.length;
-        if (skipReceiver) {
-            Object[] constants = new Object[length - 1];
-            for (int i = 1; i < length; i++) {
-                constants[i - 1] = getConstant(classDescs[i], constantDescs[i]);
-            }
-            return constants;
-        } else {
-            Object[] constants = new Object[length];
-            for (int i = 0; i < length; i++) {
-                constants[i] = getConstant(classDescs[i], constantDescs[i]);
-            }
-            return constants;
+        Object[] constants = skipReceiver ? new Object[length - 1] : new Object[length];
+        int offset = skipReceiver ? 1 : 0;
+        for (int i = offset; i < length; i++) {
+            constants[i - offset] = getConstant(classDescs[i], constantDescs[i]);
         }
+        return constants;
     }
 
     static boolean isAllConstants(ConstantDesc[] constantDescs, boolean skipReceiver) {
@@ -196,7 +171,6 @@ public class Intrinsics {
     }
 
     /**
-     * <p><b>This is NOT part of any supported API.</b>
      * @param ownerDesc       method owner
      * @param methodName      method name
      * @param methodType      method type descriptor

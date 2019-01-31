@@ -37,60 +37,42 @@ import java.lang.constant.MethodTypeDesc;
  *  deletion without notice.</b>
  */
 public interface IntrinsicProcessor {
-    /**
-     *  <p><b>This is NOT part of any supported API.
-     *  If you write code that depends on this, you do so at your own risk.
-     *  This code and its internal interfaces are subject to change or
-     *  deletion without notice.</b>
-     */
     public interface Result {
-        /**
-         *  <p><b>This is NOT part of any supported API.
-         *  If you write code that depends on this, you do so at your own risk.
-         *  This code and its internal interfaces are subject to change or
-         *  deletion without notice.</b>
-         */
-        public class None implements Result {
+        public enum ResultKind {
+            NONE, LDC, INDY
         }
 
-        /**
-         *  <p><b>This is NOT part of any supported API.
-         *  If you write code that depends on this, you do so at your own risk.
-         *  This code and its internal interfaces are subject to change or
-         *  deletion without notice.</b>
-         */
+        public abstract ResultKind getKind();
+
+        public class None implements Result {
+            @Override
+            public ResultKind getKind() {
+                return ResultKind.NONE;
+            }
+        }
+
         public class Ldc implements Result {
             private final ConstantDesc constant;
 
-            /**
-             * <p><b>This is NOT part of any supported API.</b>
-             * @param constant  constant value result
-             */
             public Ldc(ConstantDesc constant) {
                 this.constant = constant;
             }
 
-            /**
-             * <p><b>This is NOT part of any supported API.</b>
-             * @return constant result descriptor
-             */
             public ConstantDesc constant() {
                 return constant;
             }
+
+            @Override
+            public ResultKind getKind() {
+                return ResultKind.LDC;
+            }
         }
 
-        /**
-         *  <p><b>This is NOT part of any supported API.
-         *  If you write code that depends on this, you do so at your own risk.
-         *  This code and its internal interfaces are subject to change or
-         *  deletion without notice.</b>
-         */
         public class Indy implements Result {
             private final DynamicCallSiteDesc indy;
             private final int[] args;
 
             /**
-             * <p><b>This is NOT part of any supported API.</b>
              * @param indy call site descriptor
              * @param args indices of call arguments
              */
@@ -100,7 +82,6 @@ public interface IntrinsicProcessor {
             }
 
             /**
-             * <p><b>This is NOT part of any supported API.</b>
              * @param indy  call site descriptor
              * @param nArgs argument range, 0..nArgs
              */
@@ -112,7 +93,6 @@ public interface IntrinsicProcessor {
             }
 
             /**
-             * <p><b>This is NOT part of any supported API.</b>
              * @return DynamicCallSiteDesc value
              */
             public DynamicCallSiteDesc indy() {
@@ -120,11 +100,15 @@ public interface IntrinsicProcessor {
             }
 
             /**
-             * <p><b>This is NOT part of any supported API.</b>
              * @return indices of call arguments
              */
             public int[] args() {
                 return args.clone();
+            }
+
+            @Override
+            public ResultKind getKind() {
+                return ResultKind.INDY;
             }
         }
    }
@@ -132,7 +116,6 @@ public interface IntrinsicProcessor {
     public void register();
 
     /**
-     * <p><b>This is NOT part of any supported API.</b>
      * @param ownerDesc       method owner
      * @param methodName      method name
      * @param methodType      method type descriptor
@@ -148,4 +131,3 @@ public interface IntrinsicProcessor {
                                 ClassDesc[] argClassDescs,
                                 ConstantDesc[] constantArgs);
 }
-

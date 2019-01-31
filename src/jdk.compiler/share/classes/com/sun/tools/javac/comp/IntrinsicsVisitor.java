@@ -66,6 +66,7 @@ import java.lang.invoke.MethodHandles;
 
 import static com.sun.tools.javac.code.Flags.STATIC;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 
 /**
  *  <p><b>This is NOT part of any supported API.
@@ -82,7 +83,6 @@ public class IntrinsicsVisitor {
     private final Symtab syms;
     private final Resolve rs;
     private final Types types;
-    private final Log log;
     private final TreeMaker make;
     private final MethodHandles.Lookup lookup;
 
@@ -105,7 +105,6 @@ public class IntrinsicsVisitor {
         syms = Symtab.instance(context);
         rs = Resolve.instance(context);
         types = Types.instance(context);
-        log = Log.instance(context);
         make = TreeMaker.instance(context);
         lookup = MethodHandles.lookup();
 
@@ -117,9 +116,7 @@ public class IntrinsicsVisitor {
                 tree.type.tsym.packge().modle == syms.java_base) {
             return tree;
         }
-
         this.attrEnv = attrEnv;
-
         return translator.translate(tree);
     }
 
@@ -146,7 +143,7 @@ public class IntrinsicsVisitor {
             try {
                 return constantDesc.resolveConstantDesc(lookup);
             } catch (ReflectiveOperationException ex) {
-                // Fall thru
+                // do nothing
             }
             return null;
         }
@@ -159,13 +156,8 @@ public class IntrinsicsVisitor {
             return names.fromString(cd.packageName() + "." + cd.displayName());
         }
 
-        public JCTree translate(JCMethodInvocation tree) {
-            if (!(tree.meth instanceof JCFieldAccess)) {
-                return tree;
-            }
-
-            JCFieldAccess meth = (JCFieldAccess)tree.meth;
-            ClassDesc owner = ClassDesc.of(meth.sym.owner.toString());
+        public JCTree translate(JCMethodInvocation tree, JCTree.JCClassDecl currentClass) {
+            ClassDesc owner = ClassDesc.of(msym.owner.toString());
             String methodName = msym.name.toString();
             MethodTypeDesc methodTypeDesc = MethodTypeDesc.ofDescriptor(signature(msym.type));
             boolean isStatic = (msym.flags() & STATIC) != 0;
@@ -179,10 +171,12 @@ public class IntrinsicsVisitor {
             ConstantDesc[] constantArgs = new ConstantDesc[allArgsSize];
 
             if (!isStatic) {
-                JCExpression selected = meth.selected;
-                allArgs[0] = selected;
-                argClassDescs[0] = ClassDesc.ofDescriptor(signature(selected.type));
-                constantArgs[0] = makeConstantDesc(selected.type);
+                JCExpression qualifierExpr = tree.meth.hasTag(SELECT) ?
+                        ((JCFieldAccess)tree.meth).selected :
+                        make.at(tree).This(currentClass.sym.erasure(types));
+                allArgs[0] = qualifierExpr;
+                argClassDescs[0] = ClassDesc.ofDescriptor(signature(qualifierExpr.type));
+                constantArgs[0] = makeConstantDesc(qualifierExpr.type);
             }
 
             for (int i = 0; i < argSize; i++) {
@@ -208,66 +202,66 @@ public class IntrinsicsVisitor {
                     constantArgs
             );
 
-            if (result instanceof Result.None) {
-                return tree;
-            } else if (result instanceof Result.Ldc) {
-                Result.Ldc ldc = (Result.Ldc)result;
-                Object constant = resolveConstantDesc(ldc.constant());
+            switch (result.getKind()) {
+                case NONE: return tree;
+                case LDC:
+                    Result.Ldc ldc = (Result.Ldc)result;
+                    Object constant = resolveConstantDesc(ldc.constant());
 
-                return constant == null ? make.Literal(BOT, null).setType(syms.botType) :
-                        make.Literal(constant);
-            } else if (result instanceof Result.Indy) {
-                Result.Indy indy = (Result.Indy)result;
-                DynamicCallSiteDesc callSite = indy.indy();
-                String invocationName = callSite.invocationName();
-                DirectMethodHandleDesc bootstrapMethod = (DirectMethodHandleDesc)callSite.bootstrapMethod();
-                ClassDesc ownerClass = bootstrapMethod.owner();
-                String bootstrapName = bootstrapMethod.methodName();
-                List<Object> staticArgs = List.nil();
+                    return constant == null ? make.Literal(BOT, null).setType(syms.botType) :
+                            make.Literal(constant);
+                case INDY:
+                    Result.Indy indy = (Result.Indy)result;
+                    DynamicCallSiteDesc callSite = indy.indy();
+                    String invocationName = callSite.invocationName();
+                    DirectMethodHandleDesc bootstrapMethod = (DirectMethodHandleDesc)callSite.bootstrapMethod();
+                    ClassDesc ownerClass = bootstrapMethod.owner();
+                    String bootstrapName = bootstrapMethod.methodName();
+                    List<Object> staticArgs = List.nil();
 
-                for (ConstantDesc constantDesc : callSite.bootstrapArgs()) {
-                    staticArgs = staticArgs.append(resolveConstantDesc(constantDesc));
-                }
-
-                List<JCExpression> indyArgs = List.nil();
-
-                for (int i : indy.args()) {
-                    indyArgs = indyArgs.append(allArgs[i]);
-                }
-
-                List<Type> argTypes = List.nil();
-
-                for (JCExpression arg : indyArgs) {
-                    if (arg.type == syms.botType) {
-                        argTypes = argTypes.append(syms.objectType);
-                    } else {
-                        argTypes = argTypes.append(arg.type);
+                    for (ConstantDesc constantDesc : callSite.bootstrapArgs()) {
+                        staticArgs = staticArgs.append(resolveConstantDesc(constantDesc));
                     }
-                }
 
-                Type returnType = msym.type.getReturnType();
-                MethodType indyType = new MethodType(argTypes, returnType,  List.nil(), syms.methodClass);
-                ClassSymbol classSymbol = syms.enterClass(msym.packge().modle, fullName(ownerClass));
+                    List<JCExpression> indyArgs = List.nil();
 
-                return makeDynamicCall(
-                        new SimpleDiagnosticPosition(tree.pos),
-                        classSymbol.type,
-                        names.fromString(bootstrapName),
-                        staticArgs,
-                        indyType,
-                        indyArgs,
-                        names.fromString(invocationName)
-                );
-            } else {
-                assert false : "tryIntrinsifyMethod result unknown";
+                    for (int i : indy.args()) {
+                        indyArgs = indyArgs.append(allArgs[i]);
+                    }
+
+                    List<Type> argTypes = List.nil();
+
+                    for (JCExpression arg : indyArgs) {
+                        if (arg.type == syms.botType) {
+                            argTypes = argTypes.append(syms.objectType);
+                        } else {
+                            argTypes = argTypes.append(arg.type);
+                        }
+                    }
+
+                    Type returnType = msym.type.getReturnType();
+                    MethodType indyType = new MethodType(argTypes, returnType,  List.nil(), syms.methodClass);
+                    ClassSymbol classSymbol = syms.enterClass(msym.packge().modle, fullName(ownerClass));
+
+                    return makeDynamicCall(
+                            new SimpleDiagnosticPosition(tree.pos),
+                            classSymbol.type,
+                            names.fromString(bootstrapName),
+                            staticArgs,
+                            indyType,
+                            indyArgs,
+                            names.fromString(invocationName)
+                    );
+                    default:
+                        throw new AssertionError("tryIntrinsifyMethod result unknown");
             }
-
-            return tree;
         }
     }
 
     Translator translator = new Translator();
     class Translator extends TreeTranslator {
+        JCTree.JCClassDecl currentClass;
+
         @Override
         public void visitApply(JCMethodInvocation tree) {
             super.visitApply(tree);
@@ -282,7 +276,18 @@ public class IntrinsicsVisitor {
 
             if (attr != null) {
                 TransformIntrinsic transform = new TransformIntrinsic(msym);
-                result = transform.translate(tree);
+                result = transform.translate(tree, currentClass);
+            }
+        }
+
+        @Override
+        public void visitClassDef(JCTree.JCClassDecl tree) {
+            JCTree.JCClassDecl previousClass = currentClass;
+            try {
+                currentClass = tree;
+                super.visitClassDef(tree);
+            } finally {
+                currentClass = previousClass;
             }
         }
     }
