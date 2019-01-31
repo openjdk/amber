@@ -2959,8 +2959,16 @@ public final class String
      *
      * @implNote
      * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Note that the locale used depends on the
-     * default locale in effect <i>at compile time</i>.
+     * if the {@code format} string is a constant expression. Intrinsification replaces the method
+     * invocation with a string concatenation operation. No checks are made during intrinsification
+     * on the content of the {@code format} string, so an IllegalFormatException is possible at
+     * run time.
+     * <p>
+     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
+     * are constant expressions are evaluated at compile time, and arguments that are not constant
+     * expressions are evaluated at run time. (An argument that is a nested invocation of an
+     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
+     * usual discretion on when and how to intrinsify.)
      *
      * @param  format
      *         A <a href="../util/Formatter.html#syntax">format string</a>
@@ -3001,8 +3009,16 @@ public final class String
      *
      * @implNote
      * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Note that the locale used depends on the
-     * default locale in effect <i>at compile time</i>.
+     * if the {@code format} string is a constant expression. Intrinsification replaces the method
+     * invocation with a string concatenation operation. No checks are made during intrinsification
+     * on the content of the {@code format} string, so an IllegalFormatException is possible at
+     * run time.
+     * <p>
+     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
+     * are constant expressions are evaluated at compile time, and arguments that are not constant
+     * expressions are evaluated at run time. (An argument that is a nested invocation of an
+     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
+     * usual discretion on when and how to intrinsify.)
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -3054,8 +3070,16 @@ public final class String
      *
      * @implNote
      * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Note that the locale used depends on the
-     * default locale in effect <i>at compile time</i>.
+     * if the {@code format} string is a constant expression. Intrinsification replaces the method
+     * invocation with a string concatenation operation. No checks are made during intrinsification
+     * on the content of the {@code format} string, so an IllegalFormatException is possible at
+     * run time.
+     * <p>
+     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
+     * are constant expressions are evaluated at compile time, and arguments that are not constant
+     * expressions are evaluated at run time. (An argument that is a nested invocation of an
+     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
+     * usual discretion on when and how to intrinsify.)
      *
      * @param  args
      *         Arguments referenced by the format specifiers in the format
@@ -3095,8 +3119,16 @@ public final class String
      *
      * @implNote
      * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Note that the locale used depends on the
-     * default locale in effect <i>at compile time</i>.
+     * if the {@code format} string is a constant expression. Intrinsification replaces the method
+     * invocation with a string concatenation operation. No checks are made during intrinsification
+     * on the content of the {@code format} string, so an IllegalFormatException is possible at
+     * run time.
+     * <p>
+     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
+     * are constant expressions are evaluated at compile time, and arguments that are not constant
+     * expressions are evaluated at run time. (An argument that is a nested invocation of an
+     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
+     * usual discretion on when and how to intrinsify.)
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
