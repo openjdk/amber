@@ -96,7 +96,8 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>In addition , the {@code formatter.specialize} and {@code formatter.directconcat} system properties can be set to
  * {@code "false"} to disable specific optimizations that are enabled by default.</p>
  */
-public final class FormatterBootstraps {
+/*non-public*/
+final class FormatterBootstraps {
 
     /**
      * Generate method handles that directly correspond to the invoked method.
@@ -844,7 +845,7 @@ public final class FormatterBootstraps {
 
     private static boolean canUseDirectConcat(FormatSpecifier spec, Class<?> argType) {
         if (spec.flags() == FormatString.Flags.NONE
-                && spec.width() == -1 
+                && spec.width() == -1
                 && isSafeArgumentType(spec.conversion(), argType)) {
             switch (spec.conversion()) {
                 case STRING:
