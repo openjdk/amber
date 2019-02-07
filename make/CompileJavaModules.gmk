@@ -38,7 +38,7 @@ $(eval $(call IncludeCustomExtension, CompileJavaModules.gmk))
 ################################################################################
 # Module specific build settings
 
-java.base_ADD_JAVAC_FLAGS += -Xdoclint:all/protected,-reference '-Xdoclint/package:java.*,javax.*' -XDstringConcat=inline
+java.base_ADD_JAVAC_FLAGS += -Xdoclint:all/protected,-reference '-Xdoclint/package:java.*,javax.*' -XDstringConcat=inline -XDdisableIntrinsics
 java.base_COPY += .icu .dat .spp content-types.properties hijrah-config-islamic-umalqura.properties
 java.base_CLEAN += intrinsic.properties
 
@@ -297,7 +297,7 @@ jdk.charsets_COPY += .dat
 
 jdk.compiler_ADD_JAVAC_FLAGS += -Xdoclint:all/protected \
     '-Xdoclint/package:-com.sun.tools.*,-jdk.internal.*,sun.tools.serialver.resources.*' \
-    -XDstringConcat=inline
+    -XDstringConcat=inline -XDdisableIntrinsics
 jdk.compiler_CLEAN_FILES += $(wildcard \
     $(patsubst %, $(TOPDIR)/src/jdk.compiler/share/classes/%/*.properties, \
         sun/tools/serialver/resources))
@@ -337,7 +337,7 @@ jdk.javadoc_COPY += .xml .css .js .png
 
 ################################################################################
 
-jdk.jartool_ADD_JAVAC_FLAGS += -XDstringConcat=inline
+jdk.jartool_ADD_JAVAC_FLAGS += -XDstringConcat=inline -XDdisableIntrinsics
 
 ################################################################################
 
@@ -424,11 +424,11 @@ jdk.internal.jvmstat_COPY += aliasmap
 # The exports are needed since JVMCI is dynamically exported (see
 # jdk.vm.ci.services.internal.ReflectionAccessJDK::openJVMCITo).
 
-jdk.internal.vm.ci_ADD_JAVAC_FLAGS += -parameters -Xlint:-exports -XDstringConcat=inline
+jdk.internal.vm.ci_ADD_JAVAC_FLAGS += -parameters -Xlint:-exports -XDstringConcat=inline -XDdisableIntrinsics
 
 ################################################################################
 
-jdk.internal.vm.compiler_ADD_JAVAC_FLAGS += -parameters -XDstringConcat=inline \
+jdk.internal.vm.compiler_ADD_JAVAC_FLAGS += -parameters -XDstringConcat=inline -XDdisableIntrinsics \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.aarch64=jdk.internal.vm.compiler \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.amd64=jdk.internal.vm.compiler \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.code=jdk.internal.vm.compiler \
@@ -494,7 +494,7 @@ jdk.internal.vm.compiler_EXCLUDES += \
 # The exports are needed since JVMCI is dynamically exported (see
 # jdk.vm.ci.services.internal.ReflectionAccessJDK::openJVMCITo).
 
-jdk.aot_ADD_JAVAC_FLAGS += -parameters -XDstringConcat=inline \
+jdk.aot_ADD_JAVAC_FLAGS += -parameters -XDstringConcat=inline -XDdisableIntrinsics \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.aarch64=jdk.internal.vm.compiler,jdk.aot \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.amd64=jdk.internal.vm.compiler,jdk.aot \
     --add-exports jdk.internal.vm.ci/jdk.vm.ci.code=jdk.internal.vm.compiler,jdk.aot \
@@ -533,7 +533,7 @@ ifeq ($(ENABLE_SJAVAC), yes)
   jdk.jfr_SETUP := GENERATE_JDKBYTECODE_NOWARNINGS
 endif
 jdk.jfr_COPY := .xsd .xml .dtd
-jdk.jfr_ADD_JAVAC_FLAGS := -XDstringConcat=inline -Xlint:-exports
+jdk.jfr_ADD_JAVAC_FLAGS := -XDstringConcat=inline -Xlint:-exports -XDdisableIntrinsics
 
 ################################################################################
 # If this is an imported module that has prebuilt classes, only compile

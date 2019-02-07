@@ -25,15 +25,15 @@
 
 package com.sun.tools.javac.intrinsics;
 
+import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.Options;
+
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -43,20 +43,34 @@ import java.util.stream.IntStream;
  *  deletion without notice.</b>
  */
 public class Intrinsics {
-     /** Registry map of available Intrinsic Processors */
-    static final Map<EntryKey, IntrinsicProcessor> REGISTRY = new HashMap<>();
-    /** Lookup for resolving ConstantDesc */
-    static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final Context.Key<Intrinsics> intrinsicsKey = new Context.Key<>();
 
-    static {
-        ServiceLoader<IntrinsicProcessor> serviceLoader =
-                ServiceLoader.load(IntrinsicProcessor.class);
-        for (IntrinsicProcessor ip : serviceLoader) {
-            ip.register();
+     /** Registry map of available Intrinsic Processors */
+    final Map<EntryKey, IntrinsicProcessor> registry = new HashMap<>();
+    /** Lookup for resolving ConstantDesc */
+    final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+    public static Intrinsics instance(Context context) {
+        Intrinsics instance = context.get(intrinsicsKey);
+        if (instance == null)
+            instance = new Intrinsics(context);
+        return instance;
+    }
+
+    protected Intrinsics(Context context) {
+        context.put(intrinsicsKey, this);
+        Options options = Options.instance(context);
+        boolean disableIntrinsics = options.isSet("disableIntrinsics");
+        if (!disableIntrinsics) {
+            ServiceLoader<IntrinsicProcessor> serviceLoader =
+                    ServiceLoader.load(IntrinsicProcessor.class);
+            for (IntrinsicProcessor ip : serviceLoader) {
+                ip.register(this);
+            }
         }
     }
 
-    static ClassDesc[] describeConstables(Class<?>[] types) {
+    ClassDesc[] describeConstables(Class<?>[] types) {
         int length = types.length;
         ClassDesc[] classDescs = new ClassDesc[length];
         for (int i = 0; i < length; i++) {
@@ -65,7 +79,7 @@ public class Intrinsics {
         return classDescs;
     }
 
-    static class EntryKey {
+    class EntryKey {
         final ClassDesc owner;
         final String methodName;
         final MethodTypeDesc methodType;
@@ -98,7 +112,7 @@ public class Intrinsics {
         }
     }
 
-    static void register(IntrinsicProcessor processor,
+    void register(IntrinsicProcessor processor,
                          Class<?> owner,
                          String methodName,
                          Class<?> returnType,
@@ -107,13 +121,13 @@ public class Intrinsics {
                                     methodName,
                                     MethodTypeDesc.of(returnType.describeConstable().get(),
                                                       describeConstables(argTypes)));
-        REGISTRY.put(key, processor);
+        registry.put(key, processor);
 
     }
 
-    static Object getConstant(ClassDesc classDesc, ConstantDesc constantDesc) {
+    Object getConstant(ClassDesc classDesc, ConstantDesc constantDesc) {
         try {
-            Object constant = constantDesc.resolveConstantDesc(LOOKUP);
+            Object constant = constantDesc.resolveConstantDesc(lookup);
             if (ConstantDescs.CD_boolean.equals(classDesc) ||
                     ConstantDescs.CD_Boolean.equals(classDesc)) {
                 int value = ((Number)constant).intValue();
@@ -138,7 +152,7 @@ public class Intrinsics {
         return null;
     }
 
-    static Object[] getConstants(ClassDesc[] classDescs,
+    Object[] getConstants(ClassDesc[] classDescs,
                                  ConstantDesc[] constantDescs,
                                  boolean skipReceiver) {
         int length = constantDescs.length;
@@ -150,7 +164,7 @@ public class Intrinsics {
         return constants;
     }
 
-    static boolean isAllConstants(ConstantDesc[] constantDescs, boolean skipReceiver) {
+    boolean isAllConstants(ConstantDesc[] constantDescs, boolean skipReceiver) {
         int length = constantDescs.length;
         for (int i = 0; i < length; i++) {
             if (constantDescs[i] == null && !(skipReceiver && i == 0)) {
@@ -160,11 +174,11 @@ public class Intrinsics {
         return true;
     }
 
-    static boolean isArrayVarArg(ClassDesc[] argClassDescs, int i) {
+    boolean isArrayVarArg(ClassDesc[] argClassDescs, int i) {
         return i + 1 == argClassDescs.length && argClassDescs[i].isArray();
     }
 
-    static int[] dropArg(int n, int k) {
+    int[] dropArg(int n, int k) {
         return IntStream.range(0, n)
                         .filter(i -> i != k)
                         .toArray();
@@ -178,14 +192,14 @@ public class Intrinsics {
      * @param constantArgs    constant value for each argument (includes receiver), null means unknown
      * @return IntrinsicProcessor.Result value
      */
-    static public IntrinsicProcessor.Result tryIntrinsify(ClassDesc ownerDesc,
+    public IntrinsicProcessor.Result tryIntrinsify(ClassDesc ownerDesc,
                                                           String methodName,
                                                           MethodTypeDesc methodType,
                                                           boolean isStatic,
                                                           ClassDesc[] argClassDescs,
                                                           ConstantDesc[] constantArgs) {
         EntryKey key = new EntryKey(ownerDesc, methodName, methodType);
-        IntrinsicProcessor processor = REGISTRY.get(key);
+        IntrinsicProcessor processor = registry.get(key);
         if (processor != null) {
             return processor.tryIntrinsify(
                     ownerDesc,

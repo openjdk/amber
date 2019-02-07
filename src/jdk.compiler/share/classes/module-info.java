@@ -140,6 +140,4 @@ module jdk.compiler {
     provides com.sun.tools.javac.intrinsics.IntrinsicProcessor with
         com.sun.tools.javac.intrinsics.FormatterProcessor,
         com.sun.tools.javac.intrinsics.HashProcessor;
-
 }
-

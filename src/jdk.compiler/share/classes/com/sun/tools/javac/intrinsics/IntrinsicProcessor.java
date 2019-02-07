@@ -113,7 +113,7 @@ public interface IntrinsicProcessor {
         }
    }
 
-    public void register();
+    public void register(Intrinsics intrinsics);
 
     /**
      * @param ownerDesc       method owner

@@ -41,10 +41,13 @@ import java.util.Objects;
  */
 public class HashProcessor implements IntrinsicProcessor {
     @Override
-    public void register() {
-        Intrinsics.register(this,
+    public void register(Intrinsics intrinsics) {
+        this.intrinsics = intrinsics;
+        intrinsics.register(this,
                 Objects.class, "hash", int.class, Object[].class);
     }
+
+    Intrinsics intrinsics;
 
     @Override
     public Result tryIntrinsify(ClassDesc ownerDesc,
@@ -56,12 +59,12 @@ public class HashProcessor implements IntrinsicProcessor {
         if (ClassDesc.of("java.util.Objects").equals(ownerDesc)) {
             switch (methodName) {
                 case "hash":
-                    if (Intrinsics.isAllConstants(constantArgs, false)) {
+                    if (intrinsics.isAllConstants(constantArgs, false)) {
                         Object[] constants =
-                                Intrinsics.getConstants(argClassDescs, constantArgs, false);
+                                intrinsics.getConstants(argClassDescs, constantArgs, false);
                         return new Result.Ldc(Arrays.hashCode(constants));
                     } else {
-                        if (Intrinsics.isArrayVarArg(argClassDescs, 0)) {
+                        if (intrinsics.isArrayVarArg(argClassDescs, 0)) {
                             return new Result.None();
                         }
                         return new Result.Indy(

@@ -42,32 +42,35 @@ import java.util.Locale;
  */
 public class FormatterProcessor implements IntrinsicProcessor {
     @Override
-    public void register() {
-        Intrinsics.register(this,
+    public void register(Intrinsics intrinsics) {
+        this.intrinsics = intrinsics;
+        intrinsics.register(this,
                 PrintStream.class, "printf", PrintStream.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintStream.class, "printf", PrintStream.class, Locale.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintStream.class, "format", PrintStream.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintStream.class, "format", PrintStream.class, Locale.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintWriter.class, "printf", PrintWriter.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintWriter.class, "printf", PrintWriter.class, Locale.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintWriter.class, "format", PrintWriter.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 PrintWriter.class, "format", PrintWriter.class, Locale.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 String.class, "format", String.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 String.class, "format", String.class, Locale.class, String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 String.class, "format", String.class, Object[].class);
-        Intrinsics.register(this,
+        intrinsics.register(this,
                 String.class, "format", String.class, Locale.class, Object[].class);
     }
+
+    Intrinsics intrinsics;
 
     static String lowerFirst(String string) {
         return string.substring(0, 1).toLowerCase() + string.substring(1);
@@ -102,7 +105,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
                                 boolean isStatic,
                                 ClassDesc[] argClassDescs,
                                 ConstantDesc[] constantArgs) {
-        if (Intrinsics.isArrayVarArg(argClassDescs, methodType.parameterCount())) {
+        if (intrinsics.isArrayVarArg(argClassDescs, methodType.parameterCount())) {
             return new Result.None();
         }
 
@@ -133,7 +136,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
                         methodName,
                         methodTypeLessFormat,
                         new ConstantDesc[] { constantFormat }),
-                        Intrinsics.dropArg(argClassDescs.length, formatArg)
+                        intrinsics.dropArg(argClassDescs.length, formatArg)
         );
     }
 

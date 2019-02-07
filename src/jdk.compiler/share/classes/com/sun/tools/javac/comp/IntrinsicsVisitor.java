@@ -84,6 +84,7 @@ public class IntrinsicsVisitor {
     private final Resolve rs;
     private final Types types;
     private final TreeMaker make;
+    private final Intrinsics intrinsics;
     private final MethodHandles.Lookup lookup;
 
     private Env<AttrContext> attrEnv;
@@ -107,7 +108,7 @@ public class IntrinsicsVisitor {
         types = Types.instance(context);
         make = TreeMaker.instance(context);
         lookup = MethodHandles.lookup();
-
+        intrinsics = Intrinsics.instance(context);
     }
 
     public JCTree analyzeTree(JCTree tree, Env<AttrContext> attrEnv) {
@@ -193,7 +194,7 @@ public class IntrinsicsVisitor {
             }
 
             // Compiler env object
-            Result result = Intrinsics.tryIntrinsify(
+            Result result = intrinsics.tryIntrinsify(
                     owner,
                     methodName,
                     methodTypeDesc,
