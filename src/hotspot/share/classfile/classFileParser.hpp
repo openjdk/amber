@@ -501,8 +501,10 @@ class ClassFileParser {
                      FieldLayoutInfo* info,
                      TRAPS);
 
-  // check that the current class is not extending a final class or interface
-  void check_subtyping(TRAPS);
+   // check that the current class is not extending a final class or interface
+   void check_subtyping(TRAPS);
+
+   void update_class_name(Symbol* new_name);
 
  public:
   ClassFileParser(ClassFileStream* stream,
