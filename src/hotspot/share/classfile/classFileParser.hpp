@@ -504,6 +504,8 @@ class ClassFileParser {
                      FieldLayoutInfo* info,
                      TRAPS);
 
+   void update_class_name(Symbol* new_name);
+
  public:
   ClassFileParser(ClassFileStream* stream,
                   Symbol* name,
