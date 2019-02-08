@@ -26,38 +26,38 @@
  * @summary intrinsics: check that javac is generating the expected bytecode
  * @modules jdk.jdeps/com.sun.tools.classfile
  *          jdk.compiler/com.sun.tools.javac.util
- * @run main CheckIndyGeneratedTest
+ * @run main CheckIndyGeneratedTest2
  */
 
-import com.sun.tools.javac.util.Assert;
+import java.io.*;
+import java.util.*;
 
+import com.sun.tools.javac.util.Assert;
 import com.sun.tools.classfile.*;
 import com.sun.tools.classfile.BootstrapMethods_attribute.*;
 import com.sun.tools.classfile.ConstantPool.*;
-import java.io.*;
 
-public class CheckIndyGeneratedTest {
-    static class CheckIndyGeneratedTestsub {
-        void test() {
-            String s = String.format("%s", "Bob");
-            System.out.println(s);
+public class CheckIndyGeneratedTest2 {
+    static class CheckIndyGeneratedTest2sub {
+        int test() {
+            return Objects.hash(1, 2);
         }
     }
 
-    static final String SUBTEST_NAME = CheckIndyGeneratedTestsub.class.getName() + ".class";
+    static final String SUBTEST_NAME = CheckIndyGeneratedTest2sub.class.getName() + ".class";
     static final String TEST_METHOD_NAME = "test";
 
     public static void main(String... args) throws Exception {
-        new CheckIndyGeneratedTest().run();
+        new CheckIndyGeneratedTest2().run();
     }
 
     public void run() throws Exception {
         String workDir = System.getProperty("test.classes");
         File compiledTest = new File(workDir, SUBTEST_NAME);
-        verifyIndyGenerated(compiledTest);
+        verifysipushGeneated(compiledTest);
     }
 
-    void verifyIndyGenerated(File f) {
+    void verifysipushGeneated(File f) {
         try {
             int count = 0;
             ClassFile cf = ClassFile.read(f);
@@ -75,28 +75,21 @@ public class CheckIndyGeneratedTest {
             if (testMethod == null) {
                 throw new Error("Code attribute for test() method not found");
             }
+            boolean sipushFound = false;
             for (Instruction inst : ea.getInstructions()) {
-                if (inst.getMnemonic().equals("invokedynamic")) {
-                    int index1 = inst.getUnsignedByte(1);
-                    int index2 = inst.getUnsignedByte(2);
-                    int cpIndex = index1 << 8 | index2;
-                    CONSTANT_InvokeDynamic_info indyCP = (CONSTANT_InvokeDynamic_info)cf.constant_pool.get(cpIndex);
-                    System.out.println(indyCP.bootstrap_method_attr_index);
-                    BootstrapMethods_attribute bsmAttr = (BootstrapMethods_attribute)cf.getAttribute(Attribute.BootstrapMethods);
-                    BootstrapMethodSpecifier bsms = bsmAttr.bootstrap_method_specifiers[indyCP.bootstrap_method_attr_index];
-                    CONSTANT_MethodHandle_info mhi = (CONSTANT_MethodHandle_info)cf.constant_pool.get(bsms.bootstrap_method_ref);
-                    CONSTANT_Methodref_info mri = (CONSTANT_Methodref_info)cf.constant_pool.get(mhi.reference_index);
-                    Assert.check(mri.getClassName().equals("java/lang/invoke/IntrinsicFactory"));
-                    CONSTANT_NameAndType_info nti = mri.getNameAndTypeInfo();
-                    Assert.check(nti.getName().equals("staticStringFormatBootstrap"));
-                    Assert.check(nti.getType().equals("(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;"));
-                    return;
+                if (inst.getMnemonic().equals("invokestatic")) {
+                    throw new AssertionError("unexpected invoke static instruction");
                 }
+                if (inst.getMnemonic().equals("sipush")) {
+                    sipushFound = true;
+                }
+            }
+            if (!sipushFound) {
+                throw new AssertionError("sipush instruction not found");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw new Error("error reading " + f +": " + e);
+            throw new Error(e.getMessage());
         }
-        throw new AssertionError("no invokedynamic instruction found");
     }
 }
