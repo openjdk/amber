@@ -977,7 +977,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
             this.allparams_field = null;
             this.supertype_field = null;
             this.interfaces_field = null;
-            this.permitted = null;
+            this.permitted = List.nil();
         }
 
         @Override

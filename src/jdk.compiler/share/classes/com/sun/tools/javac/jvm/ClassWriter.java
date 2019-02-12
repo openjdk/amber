@@ -1161,7 +1161,7 @@ public class ClassWriter extends ClassFile {
      */
     int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
         ClassType ct = (ClassType)csym.type;
-        if (csym.isSealed() && ct.permitted.nonEmpty()) {
+        if (ct.permitted.nonEmpty()) {
             int alenIdx = writeAttr(names.PermittedSubtypes);
             databuf.appendChar(ct.permitted.size());
             for (Type t : ct.permitted) {
@@ -1909,7 +1909,7 @@ public class ClassWriter extends ClassFile {
             }
         }
 
-        if (c.isSealed() && target.hasSealedTypes()) {
+        if (target.hasSealedTypes()) {
             acount += writePermittedSubtypesIfNeeded(c);
         }
 

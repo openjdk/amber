@@ -878,6 +878,7 @@ public class Attr extends JCTree.Visitor {
      *  @param interfaceExpected true if only an interface is expected here.
      */
     Type attribBase(JCTree tree,
+                    ClassSymbol subType,
                     Env<AttrContext> env,
                     boolean classExpected,
                     boolean interfaceExpected,
@@ -885,9 +886,10 @@ public class Attr extends JCTree.Visitor {
         Type t = tree.type != null ?
             tree.type :
             attribType(tree, env);
-        return checkBase(t, tree, env, classExpected, interfaceExpected, checkExtensible);
+        return checkBase(t, subType, tree, env, classExpected, interfaceExpected, checkExtensible);
     }
     Type checkBase(Type t,
+                   ClassSymbol subType,
                    JCTree tree,
                    Env<AttrContext> env,
                    boolean classExpected,
@@ -921,8 +923,10 @@ public class Attr extends JCTree.Visitor {
             log.error(pos, Errors.NoIntfExpectedHere);
             return types.createErrorType(t);
         }
+        boolean areNestMembers = subType != syms.unknownSymbol && t.tsym.outermostClass() == subType.outermostClass();
         if (checkExtensible &&
-            ((t.tsym.flags() & FINAL) != 0)) {
+            ((t.tsym.flags() & FINAL) != 0) &&
+            !areNestMembers) {
             log.error(pos,
                       Errors.CantInheritFromFinal(t.tsym));
         }
@@ -4538,7 +4542,7 @@ public class Attr extends JCTree.Visitor {
         Set<Type> boundSet = new HashSet<>();
         if (bounds.nonEmpty()) {
             // accept class or interface or typevar as first bound.
-            bounds.head.type = checkBase(bounds.head.type, bounds.head, env, false, false, false);
+            bounds.head.type = checkBase(bounds.head.type, syms.unknownSymbol, bounds.head, env, false, false, false);
             boundSet.add(types.erasure(bounds.head.type));
             if (bounds.head.type.isErroneous()) {
                 return bounds.head.type;
@@ -4554,7 +4558,7 @@ public class Attr extends JCTree.Visitor {
                 // if first bound was a class or interface, accept only interfaces
                 // as further bounds.
                 for (JCExpression bound : bounds.tail) {
-                    bound.type = checkBase(bound.type, bound, env, false, true, false);
+                    bound.type = checkBase(bound.type, syms.unknownSymbol, bound, env, false, true, false);
                     if (bound.type.isErroneous()) {
                         bounds = List.of(bound);
                     }
@@ -4832,26 +4836,29 @@ public class Attr extends JCTree.Visitor {
 
         Type st = types.supertype(c.type);
         boolean anyParentIsSealed = false;
-        ListBuffer<Pair<Type, JCTree>> sealedParents = new ListBuffer<>();
-        if (st != Type.noType && st.tsym.isSealed()) {
-            sealedParents.add(new Pair<>(st, tree.extending));
+        ListBuffer<ClassType> sealedParents = new ListBuffer<>();
+        if (st != Type.noType && (st.tsym.isSealed() || st.tsym.isFinal())) {
+            sealedParents.add((ClassType)st);
             anyParentIsSealed = true;
         }
 
         if (tree.implementing != null) {
             for (JCExpression expr : tree.implementing) {
-                if (expr.type.tsym.isSealed()) {
-                    sealedParents.add(new Pair<>(expr.type, expr));
+                if (expr.type.tsym.isSealed() || expr.type.tsym.isFinal()) {
+                    sealedParents.add((ClassType)expr.type);
                     anyParentIsSealed = true;
                 }
             }
         }
 
-        for (Pair<Type, JCTree> pair: sealedParents) {
-            ClassType parentType = (ClassType)pair.fst;
-            if (!parentType.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                if (!dontErrorIfSealedExtended) {
-                    log.error(pair.snd, Errors.CantInheritFromSealed(TreeInfo.symbol(pair.snd)));
+        for (ClassType sealedParent: sealedParents) {
+            if (!sealedParent.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                boolean areNestmates = sealedParent.tsym.outermostClass() == tree.sym.outermostClass();
+                boolean isSealed = sealedParent.tsym.isSealed();
+                if (areNestmates && !sealedParent.tsym.isSealed()) {
+                    sealedParent.permitted = sealedParent.permitted.prepend(tree.sym.type);
+                } else if (!dontErrorIfSealedExtended) {
+                    log.error(tree, Errors.CantInheritFromSealed(sealedParent.tsym));
                 }
             }
         }

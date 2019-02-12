@@ -225,7 +225,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Test.java:4:24: compiler.err.cant.inherit.from.sealed: Test.Sealed",
+                "Test.java:4:5: compiler.err.cant.inherit.from.sealed: Test.Sealed",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
@@ -264,7 +264,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sub2.java:3:20: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
+                "Sub2.java:3:1: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
