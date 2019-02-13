@@ -121,8 +121,8 @@ public class EncodingTest {
 
     void formatIntrinsic(Formatter formatter)
             throws IOException {
-        JavacIntrinsicsSupport.format(formatter, "abcde \u00FA\u00FB\u00FC\u00FD");
-        JavacIntrinsicsSupport.format(formatter, "Java \uff08\u8ba1\u7b97\u673a\u7f16\u7a0b\u8bed\u8a00\uff09");
+        JavacIntrinsicsSupport.formatterFormat(formatter, "abcde \u00FA\u00FB\u00FC\u00FD");
+        JavacIntrinsicsSupport.formatterFormat(formatter, "Java \uff08\u8ba1\u7b97\u673a\u7f16\u7a0b\u8bed\u8a00\uff09");
         formatter.flush();
         formatter.close();
     }

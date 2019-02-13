@@ -25,9 +25,8 @@
 
 package java.lang.invoke;
 
-import sun.security.action.GetPropertyAction;
-
 import java.io.IOException;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Formatter;
@@ -35,7 +34,6 @@ import java.util.IllegalFormatConversionException;
 import java.util.List;
 import java.util.Locale;
 import java.util.MissingFormatArgumentException;
-import java.util.Properties;
 import java.util.UnknownFormatConversionException;
 import java.util.stream.IntStream;
 import jdk.internal.util.FormatString;
@@ -73,56 +71,9 @@ import static java.lang.invoke.MethodType.methodType;
  *     <li>{@link String#format(String, Object...)}</li>
  *     <li>{@link String#format(Locale, String, Object...)}</li>
  * </ul>
- *
- * <p>This currently provides three implementations which can be selected via system properties:</p>
- *
- * <dl>
- *     <dt>fallback mode</dt>
- *     <dd>Generates a method handle that invokes the exact method specified in the Java source code.
- *     This implementation is activated by setting the {@code formatter.fallback} system property to {@code "true"}.
- *     </dd>
- *
- *     <dt>Formatter/StringBuilder based</dt>
- *     <dd>Generates a method handle composed mostly from methods in {@link Formatter} and {@link StringBuilder}.
- *     This implementation is activated by setting the {@code formatter.stringconcat} system property to {@code "false"}.
- *     </dd>
- *
- *     <dt>StringConcatFactory based</dt>
- *     <dd>Generates a method handle based on {@link StringConcatFactory}.
- *     This implementation is activated by default.
- *     </dd>
- * </dl>
- *
- * <p>In addition , the {@code formatter.specialize} and {@code formatter.directconcat} system properties can be set to
- * {@code "false"} to disable specific optimizations that are enabled by default.</p>
  */
 /*non-public*/
 final class FormatterBootstraps {
-
-    /**
-     * Generate method handles that directly correspond to the invoked method.
-     */
-    private static final boolean USE_FALLBACK_HANDLE;
-    /**
-     * Use java.lang.invoke.StringConcatFactory to build the target handle
-     */
-    private static final boolean USE_STRING_CONCAT_FACTORY;
-    /**
-     * Use specialized method handles for specific conversion/argument type combinations.
-     */
-    private static final boolean USE_SPECIALIZED_CONVERSION;
-    /**
-     * Try to avoid conversions where it isn't needed, such as for strings or ints under certain circumstances.
-     */
-    private static final boolean USE_DIRECT_CONCAT;
-
-    static {
-        Properties props = GetPropertyAction.privilegedGetProperties();
-        USE_FALLBACK_HANDLE = Boolean.parseBoolean(props.getProperty("formatter.fallback", "false"));
-        USE_STRING_CONCAT_FACTORY = Boolean.parseBoolean(props.getProperty("formatter.stringconcat", "true"));
-        USE_SPECIALIZED_CONVERSION = Boolean.parseBoolean(props.getProperty("formatter.specialize", "true"));
-        USE_DIRECT_CONCAT = Boolean.parseBoolean(props.getProperty("formatter.directconcat", "true"));
-    }
 
     private static final MethodHandle STRINGBUILDER_APPEND_BOOLEAN =
             findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, boolean.class));
@@ -134,11 +85,6 @@ final class FormatterBootstraps {
             findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, long.class));
     private static final MethodHandle STRINGBUILDER_APPEND_STRING =
             findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, String.class));
-    private static final MethodHandle STRINGBUILDER_TOSTRING =
-            findVirtualMethodHandle(StringBuilder.class, "toString", methodType(String.class));
-
-    private static final MethodHandle APPENDABLE_APPEND =
-            findVirtualMethodHandle(Appendable.class, "append", methodType(Appendable.class, CharSequence.class));
 
     private static final MethodHandle SPECIFIER_PRINT =
             findVirtualMethodHandle(Formatter.class, "print",
@@ -172,28 +118,18 @@ final class FormatterBootstraps {
                     methodType(Formatter.class, Formatter.class));
 
     private static final MethodHandle CONSTRUCT_FORMATTER =
-            findConstructorMethodHandle(Formatter.class, methodType(void.class, Appendable.class))
-                    .asType(methodType(Formatter.class, Appendable.class));
-    private static final MethodHandle CONSTRUCT_FORMATTER_EMPTY =
             findConstructorMethodHandle(Formatter.class, methodType(void.class))
                     .asType(methodType(Formatter.class));
-    private static final MethodHandle CONSTRUCT_FORMATTER_LOCALE =
-            findConstructorMethodHandle(Formatter.class, methodType(void.class, Locale.class))
-                    .asType(methodType(Formatter.class, Locale.class));
-    private static final MethodHandle CONSTRUCT_STRINGBUILDER =
-            findConstructorMethodHandle(StringBuilder.class, methodType(void.class))
-                    .asType(methodType(StringBuilder.class));
+    private static final MethodHandle CONSTRUCT_FORMATTER_APPENDABLE =
+            findConstructorMethodHandle(Formatter.class, methodType(void.class, Appendable.class))
+                    .asType(methodType(Formatter.class, Appendable.class));
 
     private static final MethodHandle CONSTRUCT_MISSING_FORMAT_ARGUMENT_EXCEPTION =
             findConstructorMethodHandle(MissingFormatArgumentException.class, methodType(void.class, String.class));
-    private static final MethodHandle CONSTRUCT_ILLEGAL_FORMAT_CONVERSION_EXCEPTION =
-            findConstructorMethodHandle(IllegalFormatConversionException.class, methodType(void.class, char.class, Class.class));
     private static final MethodHandle CONSTRUCT_UNKNOWN_FORMAT_CONVERSION_EXCEPTION =
             findConstructorMethodHandle(UnknownFormatConversionException.class, methodType(void.class, String.class));
-    private static final MethodHandle OBJECT_TO_STRING =
-            findVirtualMethodHandle(Object.class, "toString", methodType(String.class));
     private static final MethodHandle APPENDABLE_TO_STRING =
-            OBJECT_TO_STRING.asType(methodType(String.class, Appendable.class));
+            findVirtualMethodHandle(Appendable.class, "toString", methodType(String.class));
     private static final MethodHandle FORMATTER_OUT =
             findVirtualMethodHandle(Formatter.class, "out", methodType(Appendable.class));
     private static final MethodHandle LOCALE_GETDEFAULT =
@@ -221,8 +157,6 @@ final class FormatterBootstraps {
     private static final MethodHandle STRING_TO_UPPER_CASE =
             findVirtualMethodHandle(String.class, "toUpperCase", methodType(String.class));
 
-    private static final MethodHandle TOSTRING_RESET = findStaticMethodHandle(FormatterBootstraps.class, "toStringReset",
-            methodType(String.class, Formatter.class));
     private static final MethodHandle LOCALE_GUARD = findStaticMethodHandle(FormatterBootstraps.class, "localeGuard",
             methodType(boolean.class, Locale.class, Locale.class));
     private static final MethodHandle BOOLEAN_OBJECT_FILTER = findStaticMethodHandle(FormatterBootstraps.class, "booleanObjectFilter",
@@ -245,14 +179,14 @@ final class FormatterBootstraps {
      * @param hasLocaleArg   Has a Locale argument
      * @return Callsite for intrinsic method
      */
-    public static CallSite formatterBootstrap(MethodHandles.Lookup lookup,
+    static CallSite formatterBootstrap(MethodHandles.Lookup lookup,
                                               String name,
                                               MethodType methodType,
                                               String format,
                                               boolean isStringMethod,
                                               boolean hasLocaleArg) {
         boolean isVarArgs = isVarArgsType(methodType, isStringMethod, hasLocaleArg);
-        if (USE_FALLBACK_HANDLE || isVarArgs) {
+        if (isVarArgs) {
             return new ConstantCallSite(fallbackMethodHandle(
                     lookup, name, methodType, format,
                     isStringMethod, hasLocaleArg, isVarArgs));
@@ -272,13 +206,6 @@ final class FormatterBootstraps {
                     identity(methodType.parameterType(0)).asType(methodType));
         }
 
-        return makeFormatterCallSite(lookup, methodType, specs, hasLocaleArg, isStringMethod);
-    }
-
-
-    private static CallSite makeFormatterCallSite(MethodHandles.Lookup lookup, MethodType methodType, List<FormatToken> specs,
-                                                  boolean hasLocaleArg, boolean isStringMethod) {
-
         boolean isFormatterMethod = methodType.parameterCount() > 0 && methodType.parameterType(0) == Formatter.class;
         // Array of formatter args excluding target and locale
         Class<?>[] argTypes = methodType.dropParameterTypes(0, firstFormatterArg(isStringMethod, hasLocaleArg)).parameterArray();
@@ -287,13 +214,13 @@ final class FormatterBootstraps {
 
         FormatHandleBuilder builder;
 
-        if (USE_STRING_CONCAT_FACTORY) {
-            builder = new StringConcatHandleBuilder(specs, argTypes, argIndexes, true);
+        if (isStringMethod && mayNotNeedFormatter(specs, argTypes, argIndexes)) {
+            builder = new StringConcatHandleBuilder(specs, argTypes, argIndexes, hasLocaleArg);
         } else {
-            builder = new FormatterFormatHandleBuilder(specs, argTypes, argIndexes, isStringMethod, hasLocaleArg);
+            builder = new FormatterFormatHandleBuilder(specs, argTypes, argIndexes, hasLocaleArg, isFormatterMethod, isStringMethod);
         }
 
-        return new ConstantCallSite(builder.getHandle(lookup, methodType, hasLocaleArg, isStringMethod, isFormatterMethod));
+        return new ConstantCallSite(builder.getHandle(lookup, methodType));
     }
 
     private static int[] calculateArgumentIndexes(List<FormatToken> specs, int argCount) {
@@ -328,6 +255,18 @@ final class FormatterBootstraps {
         return argIndexes;
     }
 
+    private static boolean mayNotNeedFormatter(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes) {
+        for (int i = 0; i < specs.size(); i++) {
+            if (argIndexes[i] >= 0
+                    && !canUseDirectConcat((FormatSpecifier) specs.get(i), argTypes[argIndexes[i]])
+                    && !canUseSpecialConverter((FormatSpecifier) specs.get(i), argTypes[argIndexes[i]])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static int firstFormatterArg(boolean isStringMethod, boolean hasLocaleArg) {
         int index = isStringMethod ? 0 : 1;
         return hasLocaleArg ? index + 1 : index;
@@ -359,14 +298,16 @@ final class FormatterBootstraps {
 
 
     static abstract class FormatHandleBuilder {
-        List<FormatToken> specs;
-        Class<?>[] argTypes;
-        int[] argIndexes;
+        final List<FormatToken> specs;
+        final Class<?>[] argTypes;
+        final int[] argIndexes;
+        final boolean hasLocaleArg;
 
-        FormatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes) {
+        FormatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes, boolean hasLocaleArg) {
             this.specs = specs;
             this.argTypes = argTypes;
             this.argIndexes = argIndexes;
+            this.hasLocaleArg = hasLocaleArg;
         }
 
         void buildHandles() {
@@ -384,46 +325,31 @@ final class FormatterBootstraps {
         abstract void addArgumentMethodHandle(Class<?>[] argTypes, FormatSpecifier spec, int argIndex);
         abstract void addConstantMethodHandle(Class<?>[] argTypes, FormatToken spec);
         abstract void addMissingArgumentMethodHandle(Class<?>[] argTypes, FormatSpecifier spec);
-        abstract MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType, boolean hasLocaleArg,
-                                        boolean isStringMethod, boolean isFormatterMethod);
+        abstract MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType);
     }
 
 
     static class FormatterFormatHandleBuilder extends FormatHandleBuilder {
 
         private MethodHandle handle = null;
-        private boolean useDirectConcat;
+        boolean isFormatterMethod;
+        boolean isStringMethod;
 
         FormatterFormatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes,
-                                     boolean isStringMethod, boolean hasLocaleArg) {
-            super(specs, argTypes, argIndexes);
-            this.useDirectConcat = USE_DIRECT_CONCAT && isStringMethod && !hasLocaleArg && useDirectConcat(specs, argTypes, argIndexes);
-        }
-
-        private boolean useDirectConcat(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes) {
-            for (int i = 0; i < specs.size(); i++) {
-                if (argIndexes[i] >= 0
-                        && !canUseDirectConcat((FormatSpecifier) specs.get(i), argTypes[argIndexes[i]])
-                        && !canUseSpecialConverter((FormatSpecifier) specs.get(i), argTypes[argIndexes[i]])) {
-                    return false;
-                }
-            }
-
-            return true;
+                                     boolean hasLocaleArg, boolean isFormatterMethod, boolean isStringMethod) {
+            super(specs, argTypes, argIndexes, hasLocaleArg);
+            this.isFormatterMethod = isFormatterMethod;
+            this.isStringMethod = isStringMethod;
         }
 
         @Override
         public void addArgumentMethodHandle(Class<?>[] argTypes, FormatSpecifier spec, int argIndex) {
             MethodHandle appender;
 
-            if (useDirectConcat) {
-                appender = canUseDirectConcat(spec, argTypes[argIndex]) ?
-                        getAppenderHandle(argTypes[argIndex]) :
-                        filterArguments(STRINGBUILDER_APPEND_STRING, 1, getSpecializedConverter(spec, argTypes[argIndex]));
-            } else if (USE_SPECIALIZED_CONVERSION && canUseSpecialConverter(spec, argTypes[argIndex])) {
+            if (canUseSpecialConverter(spec, argTypes[argIndex])) {
                 MethodHandle conversionFilter = getSpecializedConverter(spec, argTypes[argIndex]);
                 appender = filterArguments(SPECIFIER_PRINT_STRING, 2, conversionFilter);
-                appender = insertArguments(appender, 0, spec);
+                appender = insertArguments(appender, 1, spec);
             } else {
                 appender = getPrintHandle(argTypes[argIndex], spec);
                 appender = insertArguments(appender, 1, spec);
@@ -448,9 +374,7 @@ final class FormatterBootstraps {
         @Override
         public void addConstantMethodHandle(Class<?>[] argTypes, FormatToken spec) {
             MethodHandle appender;
-            if (useDirectConcat) {
-                appender = insertArguments(STRINGBUILDER_APPEND_STRING, 1, getConstantSpecValue(spec));
-            } else if (spec instanceof FormatString.FixedString) {
+            if (spec instanceof FormatString.FixedString) {
                 appender = dropArguments(insertArguments(FIXED_STRING_PRINT, 0, spec), 1, Locale.class);
             } else {
                 appender = insertArguments(SPECIFIER_PRINT, 1, spec);
@@ -467,16 +391,10 @@ final class FormatterBootstraps {
 
         @Override
         public void addMissingArgumentMethodHandle(Class<?>[] argTypes, FormatSpecifier spec) {
-            MethodHandle thrower;
-            if (useDirectConcat) {
-                thrower = missingFormatArgumentThrower(spec.toString(), StringBuilder.class);
-                thrower = dropArguments(thrower, 0, StringBuilder.class);
-            } else {
-                thrower = missingFormatArgumentThrower(spec.toString(), Formatter.class);
-                thrower = dropArguments(thrower, 0, Formatter.class);
-                thrower = dropArguments(thrower, 1, argTypes);
-                thrower = dropArguments(thrower, thrower.type().parameterCount(), Locale.class);
-            }
+            MethodHandle thrower = missingFormatArgumentThrower(spec.toString(), Formatter.class);
+            thrower = dropArguments(thrower, 0, Formatter.class);
+            thrower = dropArguments(thrower, 1, argTypes);
+            thrower = dropArguments(thrower, thrower.type().parameterCount(), Locale.class);
 
             if (handle == null) {
                 handle = thrower;
@@ -486,22 +404,19 @@ final class FormatterBootstraps {
         }
 
         @Override
-        public MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType, boolean hasLocaleArg,
-                                      boolean isStringMethod, boolean isFormatterMethod) {
+        public MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType) {
 
             buildHandles();
 
             MethodHandle wrapper;
 
-            if (useDirectConcat) {
-                wrapper = foldArguments(handle, 0, CONSTRUCT_STRINGBUILDER);
-            } else if (isFormatterMethod) {
+            if (isFormatterMethod) {
                 wrapper = handle;
             } else {
                 if (isStringMethod) {
-                    wrapper = foldArguments(handle, 0, CONSTRUCT_FORMATTER_EMPTY);
+                    wrapper = foldArguments(handle, 0, CONSTRUCT_FORMATTER);
                 } else {
-                    wrapper = filterArguments(handle, 0, CONSTRUCT_FORMATTER);
+                    wrapper = filterArguments(handle, 0, CONSTRUCT_FORMATTER_APPENDABLE);
                 }
                 wrapper = filterReturnValue(wrapper, FORMATTER_OUT);
             }
@@ -528,12 +443,12 @@ final class FormatterBootstraps {
             } else {
                 if (isFormatterMethod) {
                     wrapper = foldLocaleFromFormatter(wrapper, methodType.parameterCount());
-                } else if (!useDirectConcat) {
+                } else {
                     wrapper = foldArguments(wrapper, methodType.parameterCount(), LOCALE_GETDEFAULT);
                 }
             }
             if (isStringMethod) {
-                wrapper = filterReturnValue(wrapper, useDirectConcat ? STRINGBUILDER_TOSTRING : APPENDABLE_TO_STRING);
+                wrapper = filterReturnValue(wrapper, APPENDABLE_TO_STRING);
             }
             return wrapper.asType(methodType);
         }
@@ -548,21 +463,10 @@ final class FormatterBootstraps {
         List<Integer> reorder = new ArrayList<>();
         List<MethodHandle> argumentFormatters = new ArrayList<>();
 
-        boolean isPrimaryHandle;;
-        boolean needsFormatter = false;
         boolean needsLocaleGuard = false;
-        boolean useFastConcat = false;
 
-        StringConcatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes, boolean isPrimaryHandle) {
-            super(specs, argTypes, argIndexes);
-            this.isPrimaryHandle = isPrimaryHandle;
-            if (USE_DIRECT_CONCAT && isPrimaryHandle) {
-                for (int i = 0; i < specs.size(); i++) {
-                    if (argIndexes[i] >= 0) {
-                        useFastConcat = useFastConcat || canUseDirectConcat((FormatSpecifier) specs.get(i), argTypes[argIndexes[i]]);
-                    }
-                }
-            }
+        StringConcatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes, boolean hasLocaleArg) {
+            super(specs, argTypes, argIndexes, hasLocaleArg);
         }
 
         @Override
@@ -572,33 +476,22 @@ final class FormatterBootstraps {
             recipe.append('\1');
 
             Class<?> argType = argTypes[argIndex];
-            boolean isConcat = useFastConcat && canUseDirectConcat(spec, argType);
-            concatType = concatType.appendParameterTypes(isConcat ? argType : String.class);
+            boolean useDirectConcat = canUseDirectConcat(spec, argType);
+            concatType = concatType.appendParameterTypes(useDirectConcat ? argType : String.class);
             reorder.add(argIndex);
 
-            if (!useFastConcat || !canUseDirectConcat(spec, argType)) {
-
-                if (USE_SPECIALIZED_CONVERSION && canUseSpecialConverter(spec, argType)) {
-                    // Direct handle requiring no formatter or localization
-                    MethodHandle conversionFilter = getSpecializedConverter(spec, argType);
-                    argumentFormatters.add(conversionFilter);
-
-                } else {
-                    // Use handle from java.util.Formatter with full localization support
-                    MethodHandle combiner = getPrintHandle(argType, spec);
-                    combiner = combiner.asType(combiner.type().changeParameterType(2, argType));
-                    combiner = insertArguments(combiner, 1, spec);
-                    combiner = filterReturnValue(combiner, TOSTRING_RESET);
-                    argumentFormatters.add(combiner);
-                    needsFormatter = true;
-                }
-
-            } else {
+            if (useDirectConcat) {
                 if (spec.conversion() == FormatString.Conversion.DECIMAL_INTEGER) {
-                    // Direct string concat, but we need to guard against locales requiring Unicode symbols
+                    // Direct string concat, but we need to guard against locales requiring Unicode decimal symbols
                     needsLocaleGuard = true;
                 }
                 argumentFormatters.add(null);
+            } else {
+                // Direct handle requiring no formatter or localization
+                assert canUseSpecialConverter(spec, argType);
+                MethodHandle conversionFilter = getSpecializedConverter(spec, argType);
+                argumentFormatters.add(conversionFilter);
+
             }
         }
 
@@ -622,8 +515,7 @@ final class FormatterBootstraps {
         }
 
         @Override
-        public MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType, boolean hasLocaleArg,
-                                      boolean isStringMethod, boolean isFormatterMethod) {
+        public MethodHandle getHandle(MethodHandles.Lookup lookup, MethodType methodType) {
 
             buildHandles();
 
@@ -635,7 +527,7 @@ final class FormatterBootstraps {
                 throw new RuntimeException(sce);
             }
 
-            MethodHandle handle = dropArguments(cs.getTarget(), concatType.parameterCount(), Formatter.class, Locale.class);
+            MethodHandle handle = dropArguments(cs.getTarget(), concatType.parameterCount(), Locale.class);
 
             int paramIndex = 0;
 
@@ -645,81 +537,49 @@ final class FormatterBootstraps {
                     int paramCount = formatter.type().parameterCount();
                     if (paramCount == 0) {
                         handle = foldArguments(handle, 0, formatter);
-                    } else if (paramCount == 1) {
-                        handle = filterArguments(handle, paramIndex, formatter);
                     } else {
-                        Class<?> argType = formatter.type().parameterType(1);
-                        MethodType newType = methodType(String.class, argType, Arrays.copyOfRange(handle.type().parameterArray(), paramIndex + 1, handle.type().parameterCount()));
-
-                        formatter = permuteArguments(formatter, newType, newType.parameterCount() - 2, 0, newType.parameterCount() -1);
-                        handle = dropArguments(handle, paramIndex + 1, argType);
-                        handle = foldArguments(handle, paramIndex, formatter);
+                        assert paramCount == 1;
+                        handle = filterArguments(handle, paramIndex, formatter);
                     }
                 }
 
                 paramIndex++;
             }
 
-            if (needsFormatter) {
-                handle = foldArguments(handle, handle.type().parameterCount() - 2, CONSTRUCT_FORMATTER_LOCALE);
-            } else {
-                handle = insertArguments(handle, handle.type().parameterCount() - 2, (Object) null);
-            }
-
             // move Locale argument from last to first position
             handle = moveArgToFront(handle, handle.type().parameterCount() - 1);
 
-            if (!isPrimaryHandle) {
-                return handle;
-            }
-
-            /* if (needsLocaleGuard) {
+            if (needsLocaleGuard) {
                 // We have a decimal int without formatter - this doesn't work for
                 // locales using unicode decimal symbols, so add a guard and fallback handle for that case
-                Locale defaultLocale = Locale.getDefault(Locale.Category.FORMAT);
-                if (defaultLocale == null || DecimalFormatSymbols.getInstance(defaultLocale).getZeroDigit() != '0') {
-                    defaultLocale = Locale.US;
-                }
+                Locale safeDefaultLocale = getSafeDefaultLocale();
+                MethodType mt = hasLocaleArg ? methodType : methodType.insertParameterTypes(0, Locale.class);
                 handle = MethodHandles.guardWithTest(
-                        insertArguments(LOCALE_GUARD, 0, defaultLocale),
+                        insertArguments(LOCALE_GUARD, 0, safeDefaultLocale),
                         handle,
-                        new StringConcatHandleBuilder(specs, argTypes, argIndexes, false)
-                                .getHandle(methodType, hasLocaleArg, isStringMethod, isFormatterMethod));
-            } */
+                        new FormatterFormatHandleBuilder(specs, argTypes, argIndexes, true, false, true)
+                                .getHandle(lookup, mt));
+            }
 
-            if (!hasLocaleArg && !isFormatterMethod) {
+            if (!hasLocaleArg) {
                 handle = foldArguments(handle, 0, LOCALE_GETDEFAULT);
             }
 
-            int[] reorderArray = hasLocaleArg || isFormatterMethod ?
+            int[] reorderArray = hasLocaleArg ?
                     // Leading Locale arg - add initial element to keep it in place and increase other values by 1
                     IntStream.concat(IntStream.of(0), reorder.stream().mapToInt(i -> i + 1)).toArray() :
                     reorder.stream().mapToInt(i -> i).toArray();
 
-            MethodType mt = isStringMethod ? methodType : methodType.dropParameterTypes(0, 1).changeReturnType(String.class);
-            if (!hasLocaleArg && isFormatterMethod) {
-                mt = mt.insertParameterTypes(0, Locale.class);
-            }
-            handle =  MethodHandles.permuteArguments(handle, mt, reorderArray);
-
-            if (!isStringMethod) {
-                Class<?> type = methodType.returnType();
-
-                MethodHandle identityHandle = dropArguments(identity(type), 1, handle.type().parameterArray());
-                MethodHandle appenderHandle = isFormatterMethod ?
-                        filterArguments(APPENDABLE_APPEND, 0, FORMATTER_OUT) : APPENDABLE_APPEND;
-                appenderHandle = dropArguments(appenderHandle
-                        .asType(methodType(void.class, type, String.class)), 2, handle.type().parameterArray());
-
-                appenderHandle = foldArguments(appenderHandle, 1, handle);
-                handle = foldArguments(identityHandle, 0, appenderHandle);
-                if (isFormatterMethod && !hasLocaleArg) {
-                    handle = foldLocaleFromFormatter(handle, 1);
-                }
-            }
-
-            return handle;
+            return MethodHandles.permuteArguments(handle, methodType, reorderArray);
         }
+    }
+
+    private static Locale getSafeDefaultLocale() {
+        Locale defaultLocale = Locale.getDefault(Locale.Category.FORMAT);
+        if (defaultLocale == null || DecimalFormatSymbols.getInstance(defaultLocale).getZeroDigit() != '0') {
+            defaultLocale = Locale.US;
+        }
+        return defaultLocale;
     }
 
     private static MethodHandle moveArgToFront(MethodHandle handle, int argIndex) {
@@ -764,23 +624,6 @@ final class FormatterBootstraps {
         MethodHandle thrower = throwException(methodType.returnType(), UnknownFormatConversionException.class);
         thrower = foldArguments(thrower, insertArguments(CONSTRUCT_UNKNOWN_FORMAT_CONVERSION_EXCEPTION, 0, unknownFormat.getConversion()));
         return dropArguments(thrower, 0, methodType.parameterArray());
-    }
-
-    private static MethodHandle illegalFormatConversionThrower(char conversion, Class<?> type, MethodType methodType) {
-        MethodHandle thrower = throwException(methodType.returnType(), IllegalFormatConversionException.class);
-        thrower = foldArguments(thrower, insertArguments(CONSTRUCT_ILLEGAL_FORMAT_CONVERSION_EXCEPTION, 0, conversion, type));
-        thrower = dropArguments(thrower, 0, methodType.parameterArray());
-        return thrower;
-    }
-
-    private static Appendable append(Appendable appendable, CharSequence cs) throws IOException {
-        return appendable.append(cs);
-    }
-
-    private static String toStringReset(Formatter formatter) {
-        String str = formatter.out().toString();
-        ((StringBuilder) formatter.out()).setLength(0);
-        return str;
     }
 
     private static boolean localeGuard(Locale locale1, Locale locale2) {

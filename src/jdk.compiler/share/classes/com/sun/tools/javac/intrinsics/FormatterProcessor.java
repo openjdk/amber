@@ -32,6 +32,7 @@ import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DynamicCallSiteDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.util.Formatter;
 import java.util.Locale;
 
 /**
@@ -68,6 +69,10 @@ public class FormatterProcessor implements IntrinsicProcessor {
                 String.class, "format", String.class, Object[].class);
         intrinsics.register(this,
                 String.class, "format", String.class, Locale.class, Object[].class);
+        intrinsics.register(this,
+                Formatter.class, "format", Formatter.class, String.class, Object[].class);
+        intrinsics.register(this,
+                Formatter.class, "format", Formatter.class, Locale.class, String.class, Object[].class);
     }
 
     Intrinsics intrinsics;
@@ -109,7 +114,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.None();
         }
 
-        boolean hasLocale = ClassDesc.of("java.util.Locale").equals(methodType.parameterType(1));
+        boolean hasLocale = ClassDesc.of("java.util.Locale").equals(methodType.parameterType(0));
         int formatArg = hasLocale ? 2 : 1;
 
         if (ClassDesc.of("java.lang.String").equals(ownerDesc)) {

@@ -23,7 +23,7 @@
 
 import java.io.PrintStream;
 import java.lang.invoke.CallSite;
-import java.lang.invoke.FormatterBootstraps;
+import java.lang.invoke.IntrinsicFactory;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -37,10 +37,28 @@ public class JavacIntrinsicsSupport extends Basic {
 
     static void formatAndCheck(String fs, String exp, Locale l, Object... args) {
         try {
-
-            CallSite cs = FormatterBootstraps.formatterBootstrap(MethodHandles.lookup(), "format",
-                    getFormatterFormatMethodType(args), fs, false, false);
+            // Invoke via formatterFormatBootstrap intrinsic
             Formatter f = new Formatter(new StringBuilder(), l);
+            formatterFormat(f, fs, args);
+            ck(fs, exp, f.toString());
+            // Invoke via formatterLocaleFormatBootstrap intrinsic
+            f = new Formatter(new StringBuilder());
+            formatterLocaleFormat(f, l, fs, args);
+            ck(fs, exp, f.toString());
+            // Invoke again via stringLocaleFormatBootstrap instrinsic
+            ck(fs, exp, stringLocaleFormat(fs, l, args));
+        } catch (RuntimeException rt) {
+            throw rt;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    static void formatterFormat(Formatter f, String fs, Object... args) {
+        try {
+
+            CallSite cs = IntrinsicFactory.formatterFormatBootstrap(MethodHandles.lookup(), "format",
+                    getFormatterFormatMethodType(false, args), fs);
             List<Object> invokeArgs = new ArrayList<>();
             invokeArgs.add(f);
             if (args != null) {
@@ -49,7 +67,6 @@ public class JavacIntrinsicsSupport extends Basic {
                 invokeArgs.add(null);
             }
             cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-            ck(fs, exp, f.toString());
 
         } catch (RuntimeException rt) {
             throw rt;
@@ -58,13 +75,14 @@ public class JavacIntrinsicsSupport extends Basic {
         }
     }
 
-    static void format(Formatter f, String fs, Object... args) {
+    static void formatterLocaleFormat(Formatter f, Locale l, String fs, Object... args) {
         try {
 
-            CallSite cs = FormatterBootstraps.formatterBootstrap(MethodHandles.lookup(), "format",
-                    getFormatterFormatMethodType(args), fs, false, false);
+            CallSite cs = IntrinsicFactory.formatterLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+                    getFormatterFormatMethodType(true, args), fs);
             List<Object> invokeArgs = new ArrayList<>();
             invokeArgs.add(f);
+            invokeArgs.add(l);
             if (args != null) {
                 Collections.addAll(invokeArgs, args);
             } else {
@@ -82,9 +100,30 @@ public class JavacIntrinsicsSupport extends Basic {
     static String stringFormat(String fs, Object... args) {
         try {
 
-            CallSite cs = FormatterBootstraps.formatterBootstrap(MethodHandles.lookup(), "format",
-                    getStringFormatMethodType(args), fs, true, false);
+            CallSite cs = IntrinsicFactory.staticStringFormatBootstrap(MethodHandles.lookup(), "format",
+                    getStringFormatMethodType(false, args), fs);
             List<Object> invokeArgs = new ArrayList<>();
+            if (args != null) {
+                Collections.addAll(invokeArgs, args);
+            } else {
+                invokeArgs.add(null);
+            }
+            return (String) cs.dynamicInvoker().invokeWithArguments(invokeArgs);
+
+        } catch (RuntimeException rt) {
+            throw rt;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    static String stringLocaleFormat(String fs, Locale l, Object... args) {
+        try {
+
+            CallSite cs = IntrinsicFactory.staticStringLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+                    getStringFormatMethodType(true, args), fs);
+            List<Object> invokeArgs = new ArrayList<>();
+            invokeArgs.add(l);
             if (args != null) {
                 Collections.addAll(invokeArgs, args);
             } else {
@@ -102,8 +141,8 @@ public class JavacIntrinsicsSupport extends Basic {
     static PrintStream printStreamFormat(PrintStream ps, Locale l, String fs, Object... args) {
         try {
 
-            CallSite cs = FormatterBootstraps.formatterBootstrap(MethodHandles.lookup(), "format",
-                    getPrintStreamFormatMethodType(args), fs, false, true);
+            CallSite cs = IntrinsicFactory.printStreamLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+                    getPrintStreamFormatMethodType(args), fs);
             List<Object> invokeArgs = new ArrayList<>();
             invokeArgs.add(ps);
             invokeArgs.add(l);
@@ -121,8 +160,11 @@ public class JavacIntrinsicsSupport extends Basic {
         }
     }
 
-    private static MethodType getFormatterFormatMethodType(Object... args) {
+    private static MethodType getFormatterFormatMethodType(boolean hasLocale, Object... args) {
         MethodType mt = MethodType.methodType(Formatter.class, Formatter.class);
+        if (hasLocale) {
+            mt = mt.appendParameterTypes(Locale.class);
+        }
         if (args != null) {
             for (Object arg : args) {
                 mt = mt.appendParameterTypes(arg == null ? Object.class : arg.getClass());
@@ -133,8 +175,11 @@ public class JavacIntrinsicsSupport extends Basic {
         return mt;
     }
 
-    private static MethodType getStringFormatMethodType(Object... args) {
+    private static MethodType getStringFormatMethodType(boolean hasLocale, Object... args) {
         MethodType mt = MethodType.methodType(String.class);
+        if (hasLocale) {
+            mt = mt.appendParameterTypes(Locale.class);
+        }
         if (args != null) {
             for (Object arg : args) {
                 mt = mt.appendParameterTypes(arg == null ? Object.class : arg.getClass());
