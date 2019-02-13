@@ -101,6 +101,33 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed");
     }
 
+    @Test
+    public void testSameCompilationUnitPos2(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path test = src.resolve("Test");
+
+        tb.writeJavaFiles(test,
+                "class Test {\n" +
+                        "    final class Sealed {}\n" +
+                        "    class Sub1 extends Sealed {}\n" +
+                        "    class Sub2 extends Sealed {}\n" +
+                        "}");
+
+        Path out = base.resolve("out");
+
+        Files.createDirectories(out);
+
+        new JavacTask(tb)
+                .outdir(out)
+                .files(findJavaFiles(test))
+                .run()
+                .writeAll();
+
+        checkSealedClassFile(out, "Test$Sealed.class", List.of("Test$Sub1", "Test$Sub2"));
+        checkSubtypeClassFile(out, "Test$Sub1.class", "Test$Sealed");
+        checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed");
+    }
+
     private void checkSealedClassFile(Path out, String cfName, List<String> expectedSubTypeNames) throws ConstantPoolException, Exception {
         ClassFile sealedCF = ClassFile.read(out.resolve(cfName));
         Assert.check((sealedCF.access_flags.flags & Flags.FINAL) != 0, String.format("class at file %s must be final", cfName));
@@ -225,7 +252,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Test.java:4:5: compiler.err.cant.inherit.from.sealed: Test.Sealed",
+                "Test.java:4:24: compiler.err.cant.inherit.from.sealed: Test.Sealed",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
@@ -264,7 +291,40 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sub2.java:3:1: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
+                "Sub2.java:3:20: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
+                "1 error");
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
+
+    @Test
+    public void testSamePackageNeg2(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path pkg = src.resolve("pkg");
+        Path sealed = pkg.resolve("Sealed");
+        Path sub1 = pkg.resolve("Sub1");
+
+        tb.writeJavaFiles(sealed,
+                "package pkg;\n" +
+                        "\n" +
+                        "final class Sealed {\n" +
+                        "}");
+        tb.writeJavaFiles(sub1,
+                "package pkg;\n" +
+                        "\n" +
+                        "class Sub1 extends Sealed {\n" +
+                        "}");
+
+        List<String> error = new JavacTask(tb)
+                .options("-XDrawDiagnostics")
+                .files(findJavaFiles(pkg))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+                "Sub1.java:3:20: compiler.err.cant.inherit.from.final: pkg.Sealed",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);

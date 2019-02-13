@@ -4836,29 +4836,33 @@ public class Attr extends JCTree.Visitor {
 
         Type st = types.supertype(c.type);
         boolean anyParentIsSealed = false;
-        ListBuffer<ClassType> sealedParents = new ListBuffer<>();
+        ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
         if (st != Type.noType && (st.tsym.isSealed() || st.tsym.isFinal())) {
-            sealedParents.add((ClassType)st);
+            potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
             anyParentIsSealed = true;
         }
 
         if (tree.implementing != null) {
             for (JCExpression expr : tree.implementing) {
                 if (expr.type.tsym.isSealed() || expr.type.tsym.isFinal()) {
-                    sealedParents.add((ClassType)expr.type);
+                    potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
                     anyParentIsSealed = true;
                 }
             }
         }
 
-        for (ClassType sealedParent: sealedParents) {
-            if (!sealedParent.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                boolean areNestmates = sealedParent.tsym.outermostClass() == tree.sym.outermostClass();
-                boolean isSealed = sealedParent.tsym.isSealed();
-                if (areNestmates && !sealedParent.tsym.isSealed()) {
-                    sealedParent.permitted = sealedParent.permitted.prepend(tree.sym.type);
+        for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
+            if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                boolean areNestmates = sealedParentPair.fst.tsym.outermostClass() == tree.sym.outermostClass();
+                boolean isSealed = sealedParentPair.fst.tsym.isSealed();
+                if (areNestmates) {
+                    if (!sealedParentPair.fst.tsym.isSealed()) {
+                        sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                    } else if (!dontErrorIfSealedExtended) {
+                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                    }
                 } else if (!dontErrorIfSealedExtended) {
-                    log.error(tree, Errors.CantInheritFromSealed(sealedParent.tsym));
+                    log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
                 }
             }
         }
