@@ -35,6 +35,9 @@ import java.lang.constant.MethodTypeDesc;
 import java.util.Formatter;
 import java.util.Locale;
 
+import static java.lang.constant.ConstantDescs.CD_CallSite;
+import static java.lang.constant.ConstantDescs.CD_String;
+
 /**
  *  <p><b>This is NOT part of any supported API.
  *  If you write code that depends on this, you do so at your own risk.
@@ -103,6 +106,9 @@ public class FormatterProcessor implements IntrinsicProcessor {
         return sb.toString();
     }
 
+    private static final ClassDesc CD_Locale = ClassDesc.of("java.util.Locale");
+    private static final ClassDesc CD_IntrinsicFactory = ClassDesc.of("java.lang.invoke.IntrinsicFactory");
+
     @Override
     public Result tryIntrinsify(ClassDesc ownerDesc,
                                 String methodName,
@@ -114,10 +120,10 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.None();
         }
 
-        boolean hasLocale = ClassDesc.of("java.util.Locale").equals(methodType.parameterType(0));
+        boolean hasLocale = CD_Locale.equals(methodType.parameterType(0));
         int formatArg = hasLocale ? 2 : 1;
 
-        if (ClassDesc.of("java.lang.String").equals(ownerDesc)) {
+        if (CD_String.equals(ownerDesc)) {
             formatArg = isStatic && hasLocale ? 1 : 0;
         }
 
@@ -129,14 +135,13 @@ public class FormatterProcessor implements IntrinsicProcessor {
 
         String bsmName = getBSMName(ownerDesc, methodName, isStatic, hasLocale);
 
-        MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArg,
-                                                                            formatArg + 1);
+        MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArg, formatArg + 1);
         return new Result.Indy(
                 DynamicCallSiteDesc.of(
                         ConstantDescs.ofCallsiteBootstrap(
-                                ClassDesc.of("java.lang.invoke.IntrinsicFactory"),
+                                CD_IntrinsicFactory,
                                 bsmName,
-                                ClassDesc.of("java.lang.invoke.CallSite")
+                                CD_CallSite
                         ),
                         methodName,
                         methodTypeLessFormat,
@@ -144,6 +149,4 @@ public class FormatterProcessor implements IntrinsicProcessor {
                         intrinsics.dropArg(argClassDescs.length, formatArg)
         );
     }
-
  }
-

@@ -49,6 +49,9 @@ public class HashProcessor implements IntrinsicProcessor {
 
     Intrinsics intrinsics;
 
+    private static final ClassDesc CD_Objects = ClassDesc.of("java.util.Objects");
+    private static final ClassDesc CD_IntrinsicFactory = ClassDesc.of("java.lang.invoke.IntrinsicFactory");
+
     @Override
     public Result tryIntrinsify(ClassDesc ownerDesc,
                                 String methodName,
@@ -56,7 +59,7 @@ public class HashProcessor implements IntrinsicProcessor {
                                 boolean isStatic,
                                 ClassDesc[] argClassDescs,
                                 ConstantDesc[] constantArgs) {
-        if (ClassDesc.of("java.util.Objects").equals(ownerDesc)) {
+        if (CD_Objects.equals(ownerDesc)) {
             switch (methodName) {
                 case "hash":
                     if (intrinsics.isAllConstants(constantArgs, false)) {
@@ -70,9 +73,9 @@ public class HashProcessor implements IntrinsicProcessor {
                         return new Result.Indy(
                                 DynamicCallSiteDesc.of(
                                         ConstantDescs.ofCallsiteBootstrap(
-                                                ClassDesc.of("java.lang.invoke.IntrinsicFactory"),
+                                                CD_IntrinsicFactory,
                                                 "objectsHashBootstrap",
-                                                ClassDesc.of("java.lang.invoke.CallSite")
+                                                ConstantDescs.CD_CallSite
                                         ),
                                         methodName,
                                         methodType,
