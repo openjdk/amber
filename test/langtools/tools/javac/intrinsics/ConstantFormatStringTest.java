@@ -24,11 +24,16 @@
 /*
  * @test
  * @summary check that no error occurs at execution time if the format string is empty
- * @run main EmptyFormatStringTest
+ * @modules jdk.compiler/com.sun.tools.javac.util
+ * @run main ConstantFormatStringTest
  */
 
-public class EmptyFormatStringTest {
+import com.sun.tools.javac.util.Assert;
+
+public class ConstantFormatStringTest {
     public static void main(String... args) {
+        // no error
         System.out.println(String.format("", "Bob", 1));
+        Assert.check(String.format("%%").equals("%"));
     }
 }
