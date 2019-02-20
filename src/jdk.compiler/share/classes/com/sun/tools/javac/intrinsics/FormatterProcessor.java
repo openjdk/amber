@@ -133,9 +133,18 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.None();
         }
 
+        String strFormat = (String)constantFormat;
+        strFormat = strFormat.replaceAll("%%", "");
+        int numberOfConversionChars = strFormat.length() - strFormat.replaceAll("%", "").length();
+        if (numberOfConversionChars == 0) {
+            // just LDC the format str
+            return new Result.Ldc(constantFormat);
+        }
+
         String bsmName = getBSMName(ownerDesc, methodName, isStatic, hasLocale);
 
         MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArg, formatArg + 1);
+
         return new Result.Indy(
                 DynamicCallSiteDesc.of(
                         ConstantDescs.ofCallsiteBootstrap(
