@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.intrinsics;
 
+import com.sun.tools.javac.tree.JCTree;
+
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DynamicCallSiteDesc;
@@ -116,6 +118,7 @@ public interface IntrinsicProcessor {
     public void register(Intrinsics intrinsics);
 
     /**
+     * @param invocation      the invocation to be intrinsified
      * @param ownerDesc       method owner
      * @param methodName      method name
      * @param methodType      method type descriptor
@@ -124,7 +127,8 @@ public interface IntrinsicProcessor {
      * @param constantArgs    constant value for each argument (includes receiver), null means unknown
      * @return IntrinsicProcessor.Result value
      */
-    public Result tryIntrinsify(ClassDesc ownerDesc,
+    public Result tryIntrinsify(JCTree.JCMethodInvocation invocation,
+                                ClassDesc ownerDesc,
                                 String methodName,
                                 MethodTypeDesc methodType,
                                 boolean isStatic,

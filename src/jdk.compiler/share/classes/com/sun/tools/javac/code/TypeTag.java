@@ -42,36 +42,36 @@ import static com.sun.tools.javac.code.TypeTag.NumericClasses.*;
 public enum TypeTag {
     /** The tag of the basic type `byte'.
      */
-    BYTE(BYTE_CLASS, BYTE_SUPERCLASSES, true),
+    BYTE(BYTE_CLASS, BYTE_SUPERCLASSES, true, byte.class),
 
     /** The tag of the basic type `char'.
      */
-    CHAR(CHAR_CLASS, CHAR_SUPERCLASSES, true),
+    CHAR(CHAR_CLASS, CHAR_SUPERCLASSES, true, char.class),
 
     /** The tag of the basic type `short'.
      */
-    SHORT(SHORT_CLASS, SHORT_SUPERCLASSES, true),
+    SHORT(SHORT_CLASS, SHORT_SUPERCLASSES, true, short.class),
 
     /** The tag of the basic type `long'.
      */
-    LONG(LONG_CLASS, LONG_SUPERCLASSES, true),
+    LONG(LONG_CLASS, LONG_SUPERCLASSES, true, long.class),
 
     /** The tag of the basic type `float'.
      */
-    FLOAT(FLOAT_CLASS, FLOAT_SUPERCLASSES, true),
+    FLOAT(FLOAT_CLASS, FLOAT_SUPERCLASSES, true, float.class),
     /** The tag of the basic type `int'.
      */
-    INT(INT_CLASS, INT_SUPERCLASSES, true),
+    INT(INT_CLASS, INT_SUPERCLASSES, true, int.class),
     /** The tag of the basic type `double'.
      */
-    DOUBLE(DOUBLE_CLASS, DOUBLE_CLASS, true),
+    DOUBLE(DOUBLE_CLASS, DOUBLE_CLASS, true, double.class),
     /** The tag of the basic type `boolean'.
      */
-    BOOLEAN(0, 0, true),
+    BOOLEAN(0, 0, true, boolean.class),
 
     /** The tag of the type `void'.
      */
-    VOID,
+    VOID(0, 0, false, void.class),
 
     /** The tag of all class and interface types.
      */
@@ -138,15 +138,17 @@ public enum TypeTag {
     final int superClasses;
     final int numericClass;
     final boolean isPrimitive;
+    public final Class<?> theClass;
 
     private TypeTag() {
-        this(0, 0, false);
+        this(0, 0, false, null);
     }
 
-    private TypeTag(int numericClass, int superClasses, boolean isPrimitive) {
+    private TypeTag(int numericClass, int superClasses, boolean isPrimitive, Class<?> theClass) {
         this.superClasses = superClasses;
         this.numericClass = numericClass;
         this.isPrimitive = isPrimitive;
+        this.theClass = theClass;
     }
 
     public static class NumericClasses {
