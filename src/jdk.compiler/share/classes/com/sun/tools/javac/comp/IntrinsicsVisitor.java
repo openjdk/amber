@@ -195,7 +195,6 @@ public class IntrinsicsVisitor {
 
             // Compiler env object
             Result result = intrinsics.tryIntrinsify(
-                    tree,
                     owner,
                     methodName,
                     methodTypeDesc,

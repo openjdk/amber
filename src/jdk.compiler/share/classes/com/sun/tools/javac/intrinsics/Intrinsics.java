@@ -25,7 +25,6 @@
 
 package com.sun.tools.javac.intrinsics;
 
-import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Options;
 
@@ -186,7 +185,6 @@ public class Intrinsics {
     }
 
     /**
-     * @param invocation      the invocation to be intrinsified
      * @param ownerDesc       method owner
      * @param methodName      method name
      * @param methodType      method type descriptor
@@ -194,18 +192,16 @@ public class Intrinsics {
      * @param constantArgs    constant value for each argument (includes receiver), null means unknown
      * @return IntrinsicProcessor.Result value
      */
-    public IntrinsicProcessor.Result tryIntrinsify(JCTree.JCMethodInvocation invocation,
-                                                   ClassDesc ownerDesc,
-                                                   String methodName,
-                                                   MethodTypeDesc methodType,
-                                                   boolean isStatic,
-                                                   ClassDesc[] argClassDescs,
-                                                   ConstantDesc[] constantArgs) {
+    public IntrinsicProcessor.Result tryIntrinsify(ClassDesc ownerDesc,
+                                                          String methodName,
+                                                          MethodTypeDesc methodType,
+                                                          boolean isStatic,
+                                                          ClassDesc[] argClassDescs,
+                                                          ConstantDesc[] constantArgs) {
         EntryKey key = new EntryKey(ownerDesc, methodName, methodType);
         IntrinsicProcessor processor = registry.get(key);
         if (processor != null) {
             return processor.tryIntrinsify(
-                    invocation,
                     ownerDesc,
                     methodName,
                     methodType,

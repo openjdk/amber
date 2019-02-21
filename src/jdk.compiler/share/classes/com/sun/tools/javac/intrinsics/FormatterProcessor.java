@@ -25,13 +25,6 @@
 
 package com.sun.tools.javac.intrinsics;
 
-import com.sun.tools.javac.code.Symbol;
-import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.TreeInfo;
-import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Name;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.constant.ClassDesc;
@@ -39,15 +32,9 @@ import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DynamicCallSiteDesc;
 import java.lang.constant.MethodTypeDesc;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Formatter;
 import java.util.Locale;
 
-import static com.sun.tools.javac.code.TypeTag.ARRAY;
-import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 import static java.lang.constant.ConstantDescs.CD_CallSite;
 import static java.lang.constant.ConstantDescs.CD_String;
 
@@ -123,8 +110,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
     private static final ClassDesc CD_IntrinsicFactory = ClassDesc.of("java.lang.invoke.IntrinsicFactory");
 
     @Override
-    public Result tryIntrinsify(JCTree.JCMethodInvocation invocation,
-                                ClassDesc ownerDesc,
+    public Result tryIntrinsify(ClassDesc ownerDesc,
                                 String methodName,
                                 MethodTypeDesc methodType,
                                 boolean isStatic,
@@ -135,13 +121,13 @@ public class FormatterProcessor implements IntrinsicProcessor {
         }
 
         boolean hasLocale = CD_Locale.equals(methodType.parameterType(0));
-        int formatArgPos = hasLocale ? 2 : 1;
+        int formatArg = hasLocale ? 2 : 1;
 
         if (CD_String.equals(ownerDesc)) {
-            formatArgPos = isStatic && hasLocale ? 1 : 0;
+            formatArg = isStatic && hasLocale ? 1 : 0;
         }
 
-        ConstantDesc constantFormat = constantArgs[formatArgPos];
+        ConstantDesc constantFormat = constantArgs[formatArg];
 
         if (constantFormat == null) {
             return new Result.None();
@@ -155,17 +141,9 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.Ldc(((String)constantFormat).replaceAll("%%", "%"));
         }
 
-        boolean allConstants = Arrays.stream(constantArgs).allMatch(c -> c != null);
-        if (allConstants && isStatic && !hasLocale) {
-            String formatted = (String)invokeMethodReflectively(invocation, Arrays.stream(constantArgs).collect(List.collector()));
-            if (formatted != null) {
-                return new Result.Ldc(formatted);
-            }
-        }
-
         String bsmName = getBSMName(ownerDesc, methodName, isStatic, hasLocale);
 
-        MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArgPos, formatArgPos + 1);
+        MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArg, formatArg + 1);
 
         return new Result.Indy(
                 DynamicCallSiteDesc.of(
@@ -177,96 +155,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
                         methodName,
                         methodTypeLessFormat,
                         new ConstantDesc[] { constantFormat }),
-                        intrinsics.dropArg(argClassDescs.length, formatArgPos)
+                        intrinsics.dropArg(argClassDescs.length, formatArg)
         );
     }
-
-    Object invokeMethodReflectively(
-            final JCTree.JCMethodInvocation tree,
-            List<Object> constantArgumentValues) {
-        try {
-            Symbol msym = TreeInfo.symbol(tree.meth);
-            JCTree qualifierTree = (tree.meth.hasTag(SELECT))
-                    ? ((JCTree.JCFieldAccess) tree.meth).selected
-                    : null;
-            String className = msym.owner.type.tsym.flatName().toString();
-            Name methodName = msym.name;
-            Class<?> ownerClass = Class.forName(className, false, null);
-            Type.MethodType mt = msym.type.asMethodType();
-            java.util.List<Class<?>> argumentTypes =
-                    mt.argtypes.stream().map(t -> getClassForType(t)).collect(List.collector());
-            Method theMethod = ownerClass.getDeclaredMethod(methodName.toString(),
-                    argumentTypes.toArray(new Class<?>[argumentTypes.size()]));
-            int modifiers = theMethod.getModifiers();
-            Object[] args = boxArgs(
-                    mt.argtypes,
-                    constantArgumentValues,
-                    tree.varargsElement);
-            return theMethod.invoke(null, args);
-        } catch (ClassNotFoundException |
-                SecurityException |
-                NoSuchMethodException |
-                IllegalAccessException |
-                IllegalArgumentException |
-                InvocationTargetException ex) {
-            return null;
-        }
-    }
-
-    Class<?> getClassForType(Type t) {
-        try {
-            if (t.isPrimitiveOrVoid()) {
-                return t.getTag().theClass;
-            } else {
-                return Class.forName(getFlatName(t), false, null);
-            }
-        } catch (ClassNotFoundException ex) {
-            return null;
-        }
-    }
-
-    String getFlatName(Type t) {
-        String flatName = t.tsym.flatName().toString();
-        if (t.hasTag(ARRAY)) {
-            flatName = "";
-            while (t.hasTag(ARRAY)) {
-                Type.ArrayType at = (Type.ArrayType)t;
-                flatName += "[";
-                t = at.elemtype;
-            }
-            flatName += "L" + t.tsym.flatName().toString() + ';';
-        }
-        return flatName;
-    }
-
-    Object[] boxArgs(List<Type> parameters, List<Object> _args, Type varargsElement) {
-        java.util.List<Object> result = new java.util.ArrayList<>();
-        List<Object> args = _args;
-        if (parameters.isEmpty()) return new Object[0];
-        while (parameters.tail.nonEmpty()) {
-            result.add(args.head);
-            args = args.tail;
-            parameters = parameters.tail;
-        }
-        if (varargsElement != null) {
-            java.util.List<Object> elems = new java.util.ArrayList<>();
-            while (args.nonEmpty()) {
-                elems.add(args.head);
-                args = args.tail;
-            }
-            Class<?> arrayClass = null;
-            try {
-                arrayClass = Class.forName(getFlatName(varargsElement), false, null);
-            } catch (ClassNotFoundException ex) {}
-            Object arr = Array.newInstance(arrayClass, elems.size());
-            for (int i = 0; i < elems.size(); i++) {
-                Array.set(arr, i, elems.get(i));
-            }
-            result.add(arr);
-        } else {
-            if (args.length() != 1) throw new AssertionError(args);
-            result.add(args.head);
-        }
-        return result.toArray();
-    }
-}
+ }

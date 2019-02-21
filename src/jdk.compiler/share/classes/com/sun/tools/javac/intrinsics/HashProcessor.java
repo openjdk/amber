@@ -25,8 +25,6 @@
 
 package com.sun.tools.javac.intrinsics;
 
-import com.sun.tools.javac.tree.JCTree;
-
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
@@ -55,8 +53,7 @@ public class HashProcessor implements IntrinsicProcessor {
     private static final ClassDesc CD_IntrinsicFactory = ClassDesc.of("java.lang.invoke.IntrinsicFactory");
 
     @Override
-    public Result tryIntrinsify(JCTree.JCMethodInvocation invocation,
-                                ClassDesc ownerDesc,
+    public Result tryIntrinsify(ClassDesc ownerDesc,
                                 String methodName,
                                 MethodTypeDesc methodType,
                                 boolean isStatic,
