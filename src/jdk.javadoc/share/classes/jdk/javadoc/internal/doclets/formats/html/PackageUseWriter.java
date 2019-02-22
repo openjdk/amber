@@ -34,7 +34,6 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
@@ -143,7 +142,6 @@ public class PackageUseWriter extends SubWriterHolderWriter {
         body.addContent(footer);
         printHtmlDocument(null,
                 getDescription("use", packageElement),
-                true,
                 body);
     }
 
@@ -252,7 +250,7 @@ public class PackageUseWriter extends SubWriterHolderWriter {
         headContent.addContent(contents.getContent("doclet.ClassUse_Title", packageText));
         headContent.addContent(new HtmlTree(HtmlTag.BR));
         headContent.addContent(name);
-        Content heading = HtmlTree.HEADING(HtmlConstants.TITLE_HEADING, true,
+        Content heading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING, true,
                 HtmlStyle.title, headContent);
         Content div = HtmlTree.DIV(HtmlStyle.header, heading);
         mainTree.addContent(div);
