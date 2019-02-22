@@ -29,7 +29,6 @@ package jdk.javadoc.internal.doclets.formats.html;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlConstants;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
@@ -112,7 +111,7 @@ public class AllClassesFrameWriter extends HtmlDocletWriter {
         String label = resources.getText("doclet.All_Classes");
         Content body = getBody(false, getWindowTitle(label));
         Content htmlTree = HtmlTree.MAIN();
-        Content heading = HtmlTree.HEADING(HtmlConstants.TITLE_HEADING,
+        Content heading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING,
                 HtmlStyle.bar, contents.allClassesLabel);
         htmlTree.addContent(heading);
         Content ul = new HtmlTree(HtmlTag.UL);
@@ -121,7 +120,7 @@ public class AllClassesFrameWriter extends HtmlDocletWriter {
         HtmlTree div = HtmlTree.DIV(HtmlStyle.indexContainer, ul);
         htmlTree.addContent(div);
         body.addContent(htmlTree);
-        printHtmlDocument(null, "all classes (frame)", false, body);
+        printHtmlDocument(null, "all classes (frame)", body);
     }
 
     /**
