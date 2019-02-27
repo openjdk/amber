@@ -55,6 +55,7 @@ public final class ObjectsBootstraps {
 
     static Map<Class<?>, MethodHandle> HASH_METHODS;
     static MethodHandle HASH_OBJECT;
+    static MethodHandle ALL_HASHES_MH;
 
     static void initialize() {
         if (HASH_METHODS == null) {
@@ -68,74 +69,88 @@ public final class ObjectsBootstraps {
             HASH_METHODS.put(double.class, findHashMethod(double.class));
 
             HASH_OBJECT = findHashMethod(Object.class);
+            try {
+                ALL_HASHES_MH = IMPL_LOOKUP.findStatic(ObjectsBootstraps.class, "combineHashes", MethodType.methodType(int.class, int[].class));
+            } catch (NoSuchMethodException | IllegalAccessException ex) {
+
+            }
         }
     }
 
     static MethodHandle createHashMethodHandle(Class<?>... argTypes) {
-        MethodHandle hashMH = MethodHandles.constant(int.class, 1);
-
-        if (argTypes.length != 0) {
-            MethodType methodType = MethodType.methodType(int.class, argTypes);
-            hashMH = MethodHandles.permuteArguments(hashMH, methodType, new int[]{});
-            methodType = methodType.insertParameterTypes(0, int.class);
-
-            for (int i = 0; i < argTypes.length; i++) {
-                MethodHandle argMH = getHashMethod(argTypes[i]);
-                argMH = MethodHandles.permuteArguments(argMH, methodType, new int[]{0, i + 1});
-                hashMH = MethodHandles.foldArguments(argMH, hashMH);
-            }
+        Class<?>[] intArgs = new Class<?>[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            intArgs[i] = int.class;
         }
+        MethodType methodType = MethodType.methodType(int.class, intArgs);
+        MethodHandle mhHash = ALL_HASHES_MH.asType(methodType);
+        MethodHandle[] filters = new MethodHandle[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            filters[i] = getHashMethod(argTypes[i]);
+        }
+        mhHash = MethodHandles.filterArguments(mhHash, 0, filters);
+        return mhHash;
+    }
 
-        return hashMH;
+    static int combineHashes(int... hashes) {
+        int numberOfHashes = hashes.length;
+        int multiplier = 1;
+        int result = 0;
+        for (int i = numberOfHashes - 1; i >= 0; i--) {
+            result += multiplier * hashes[i];
+            multiplier *= 31;
+        }
+        result += multiplier;
+        return result;
     }
 
     static MethodHandle getHashMethod(Class<?> type) {
         MethodHandle hashMH = HASH_METHODS.get(type);
         if (hashMH == null) {
             hashMH = HASH_OBJECT;
-            hashMH = hashMH.asType(MethodType.methodType(int.class, int.class, type));
+            hashMH = hashMH.asType(MethodType.methodType(int.class, type));
         }
         return hashMH;
     }
 
     static MethodHandle findHashMethod(Class<?> cls) {
         try {
-            MethodType mt = MethodType.methodType(int.class, int.class, cls);
+            MethodType mt = MethodType.methodType(int.class, cls);
             return IMPL_LOOKUP.findStatic(ObjectsBootstraps.class, "hash", mt);
         } catch (NoSuchMethodException | IllegalAccessException ex) {
             return null;
         }
      }
 
-    static int hash(int result, boolean value) {
-        return 31 * result + Boolean.hashCode(value);
+    static int hash(boolean value) {
+        return Boolean.hashCode(value);
     }
 
-    static int hash(int result, char value) {
-        return 31 * result + Character.hashCode(value);
+    static int hash(char value) {
+        return value;
     }
 
-    static int hash(int result, byte value) {
-        return 31 * result + Byte.hashCode(value);
+    static int hash(byte value) {
+        return value;
     }
 
-    static int hash(int result, short value) {
-        return 31 * result + Short.hashCode(value);
+    static int hash(short value) {
+        return value;
     }
 
-    static int hash(int result, int value) {
-        return 31 * result + Integer.hashCode(value);
+    static int hash(int value) {
+        return value;
     }
 
-    static int hash(int result, float value) {
-        return 31 * result + Float.hashCode(value);
+    static int hash(float value) {
+        return Float.hashCode(value);
     }
 
-    static int hash(int result, double value) {
-        return 31 * result + Double.hashCode(value);
+    static int hash(double value) {
+        return Double.hashCode(value);
     }
 
-    static int hash(int result, Object value) {
-        return 31 * result + (value == null ? 0 : value.hashCode());
+    static int hash(Object value) {
+        return (value == null ? 0 : value.hashCode());
     }
 }
