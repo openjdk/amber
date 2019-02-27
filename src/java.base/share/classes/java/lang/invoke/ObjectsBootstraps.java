@@ -93,14 +93,13 @@ public final class ObjectsBootstraps {
     }
 
     static int combineHashes(int... hashes) {
-        int numberOfHashes = hashes.length;
-        int multiplier = 1;
-        int result = 0;
-        for (int i = numberOfHashes - 1; i >= 0; i--) {
-            result += multiplier * hashes[i];
-            multiplier *= 31;
+        if (hashes == null) {
+            return 0;
         }
-        result += multiplier;
+        int result = 1;
+        for (int hash : hashes) {
+            result = 31 * result + hash;
+        }
         return result;
     }
 
