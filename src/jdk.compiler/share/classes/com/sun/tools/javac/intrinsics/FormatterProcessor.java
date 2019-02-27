@@ -133,12 +133,14 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.None();
         }
 
-        String strFormat = (String)constantFormat;
-        strFormat = strFormat.replaceAll("%%", "");
-        int numberOfConversionChars = strFormat.length() - strFormat.replaceAll("%", "").length();
-        if (numberOfConversionChars == 0) {
-            // just LDC the format str
-            return new Result.Ldc(((String)constantFormat).replaceAll("%%", "%"));
+        if (ownerDesc == CD_String) {
+            String strFormat = (String)constantFormat;
+            strFormat = strFormat.replaceAll("%%", "");
+            int numberOfConversionChars = strFormat.length() - strFormat.replaceAll("%", "").length();
+            if (numberOfConversionChars == 0) {
+                // just LDC the format str
+                return new Result.Ldc(((String)constantFormat).replaceAll("%%", "%"));
+            }
         }
 
         String bsmName = getBSMName(ownerDesc, methodName, isStatic, hasLocale);
