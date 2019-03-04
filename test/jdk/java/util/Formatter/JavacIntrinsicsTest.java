@@ -26,9 +26,14 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.FormatFlagsConversionMismatchException;
 import java.util.Formattable;
 import java.util.Formatter;
+import java.util.IllegalFormatCodePointException;
+import java.util.IllegalFormatConversionException;
+import java.util.IllegalFormatPrecisionException;
 import java.util.Locale;
+import java.util.UnknownFormatConversionException;
 
 /**
  * @test
@@ -49,29 +54,193 @@ public class JavacIntrinsicsTest {
 
     private static final Locale[] locales = { Locale.US, new Locale("ar","SA"), Locale.forLanguageTag("th-TH-u-nu-thai") };
 
-    String format(Formatter formatter, String fmt, Object... args) throws IOException {
+    String format(Formatter formatter, String fmt, Object... args) {
         formatter.format(fmt, args);
         return formatter.toString();
     }
 
 
-    String formatIntrinsic(Formatter formatter, String fmt, Object... args) throws IOException {
+    String formatIntrinsic(Formatter formatter, String fmt, Object... args) {
         JavacIntrinsicsSupport.formatterFormat(formatter, fmt, args);
         return formatter.toString();
     }
 
-    String stringFormat(String fmt, Object... args) throws IOException {
+    String stringFormat(String fmt, Object... args) {
         return String.format(fmt, args);
     }
 
 
-    String stringFormatIntrinsic(String fmt, Object... args) throws IOException {
+    String stringFormatIntrinsic(String fmt, Object... args) {
         return JavacIntrinsicsSupport.stringFormat(fmt, args);
+    }
+
+    @Test
+    public void illegalFormatStringTest() {
+        try {
+            formatIntrinsic(new Formatter(), "%c", Integer.MAX_VALUE);
+            Assert.fail("expected IllegalFormatCodePointException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), IllegalFormatCodePointException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%c", Boolean.TRUE);
+            Assert.fail("expected IllegalFormatConversionException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), IllegalFormatConversionException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%#c");
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%,c");
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%(c");
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%$c");
+            Assert.fail("expected UnknownFormatConversionException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), UnknownFormatConversionException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%.2c");
+            Assert.fail("expected IllegalFormatPrecisionException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), IllegalFormatPrecisionException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%#s", -3);
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%#d", -3);
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%#s", (byte) -3);
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+        try {
+            formatIntrinsic(new Formatter(), "%#d", (byte) -3);
+            Assert.fail("expected FormatFlagsConversionMismatchException");
+        } catch (Exception x) {
+            Assert.assertEquals(x.getClass(), FormatFlagsConversionMismatchException.class);
+        }
+    }
+
+    @Test
+    public void paramTypesTest() {
+
+        Assert.assertEquals(format(new Formatter(), "%s", -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%s", -3), "-3");
+        Assert.assertEquals(stringFormat("%s", -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%s", -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%s", (byte) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%s", (byte) -3), "-3");
+        Assert.assertEquals(stringFormat("%s", (byte) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%s", (byte) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%s", (short) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%s", (short) -3), "-3");
+        Assert.assertEquals(stringFormat("%s", (short) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%s", (short) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%S", -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%S", -3), "-3");
+        Assert.assertEquals(stringFormat("%S", -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%S", -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%S", (byte) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%S", (byte) -3), "-3");
+        Assert.assertEquals(stringFormat("%S", (byte) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%S", (byte) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%S", (short) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%S", (short) -3), "-3");
+        Assert.assertEquals(stringFormat("%S", (short) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%S", (short) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%d", -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%d", -3), "-3");
+        Assert.assertEquals(stringFormat("%d", -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%d", -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%d", (byte) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%d", (byte) -3), "-3");
+        Assert.assertEquals(stringFormat("%d", (byte) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%d", (byte) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%d", (short) -3), "-3");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%d", (short) -3), "-3");
+        Assert.assertEquals(stringFormat("%d", (short) -3), "-3");
+        Assert.assertEquals(stringFormatIntrinsic("%d", (short) -3), "-3");
+
+        Assert.assertEquals(format(new Formatter(), "%x", -3), "fffffffd");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%x", -3), "fffffffd");
+        Assert.assertEquals(stringFormat("%x", -3), "fffffffd");
+        Assert.assertEquals(stringFormatIntrinsic("%x", -3), "fffffffd");
+
+        Assert.assertEquals(format(new Formatter(), "%x", (byte) -3), "fd");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%x", (byte) -3), "fd");
+        Assert.assertEquals(stringFormat("%x", (byte) -3), "fd");
+        Assert.assertEquals(stringFormatIntrinsic("%x", (byte) -3), "fd");
+
+        Assert.assertEquals(format(new Formatter(), "%x", (short) -3), "fffd");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%x", (short) -3), "fffd");
+        Assert.assertEquals(stringFormat("%x", (short) -3), "fffd");
+        Assert.assertEquals(stringFormatIntrinsic("%x", (short) -3), "fffd");
+
+        Assert.assertEquals(format(new Formatter(), "%X", -3), "FFFFFFFD");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%X", -3), "FFFFFFFD");
+        Assert.assertEquals(stringFormat("%X", -3), "FFFFFFFD");
+        Assert.assertEquals(stringFormatIntrinsic("%X", -3), "FFFFFFFD");
+
+        Assert.assertEquals(format(new Formatter(), "%X", (byte) -3), "FD");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%X", (byte) -3), "FD");
+        Assert.assertEquals(stringFormat("%X", (byte) -3), "FD");
+        Assert.assertEquals(stringFormatIntrinsic("%X", (byte) -3), "FD");
+
+        Assert.assertEquals(format(new Formatter(), "%X", (short) -3), "FFFD");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%X", (short) -3), "FFFD");
+        Assert.assertEquals(stringFormat("%X", (short) -3), "FFFD");
+        Assert.assertEquals(stringFormatIntrinsic("%X", (short) -3), "FFFD");
+
+        Assert.assertEquals(format(new Formatter(), "%o", -3), "37777777775");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%o", -3), "37777777775");
+        Assert.assertEquals(stringFormat("%o", -3), "37777777775");
+        Assert.assertEquals(stringFormatIntrinsic("%o", -3), "37777777775");
+
+        Assert.assertEquals(format(new Formatter(), "%o", (byte) -3), "375");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%o", (byte) -3), "375");
+        Assert.assertEquals(stringFormat("%o", (byte) -3), "375");
+        Assert.assertEquals(stringFormatIntrinsic("%o", (byte) -3), "375");
+
+        Assert.assertEquals(format(new Formatter(), "%o", (short) -3), "177775");
+        Assert.assertEquals(formatIntrinsic(new Formatter(), "%o", (short) -3), "177775");
+        Assert.assertEquals(stringFormat("%o", (short) -3), "177775");
+        Assert.assertEquals(stringFormatIntrinsic("%o", (short) -3), "177775");
     }
 
     // Empty specs test
     @Test
-    public void emptySpecsTest() throws IOException {
+    public void emptySpecsTest() {
         Assert.assertEquals(format(new Formatter(), ""), "");
         Assert.assertEquals(formatIntrinsic(new Formatter(), ""), "");
         Assert.assertEquals(stringFormat(""), "");
@@ -88,8 +257,6 @@ public class JavacIntrinsicsTest {
             Assert.assertEquals(formatIntrinsic(new Formatter(), "%d", 123), expected);
             Assert.assertEquals(stringFormat("%d", 123), expected);
             Assert.assertEquals(stringFormatIntrinsic("%d", 123), expected);
-        } catch (IOException x) {
-            throw new RuntimeException(x);
         } finally {
             Locale.setDefault(defLocale);
         }

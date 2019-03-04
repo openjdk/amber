@@ -33,10 +33,17 @@ package java.util;
  *
  * @since 1.5
  */
-public class IllegalFormatException extends IllegalArgumentException {
+public class IllegalFormatException extends IllegalArgumentException implements Cloneable {
 
     private static final long serialVersionUID = 18830826L;
 
     // package-private to prevent explicit instantiation
     IllegalFormatException() { }
+
+    @Override
+    protected IllegalFormatException clone() throws CloneNotSupportedException {
+        IllegalFormatException ife = (IllegalFormatException) super.clone();
+        ife.fillInStackTrace();
+        return ife;
+    }
 }

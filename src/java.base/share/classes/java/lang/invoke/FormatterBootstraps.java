@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,18 +25,17 @@
 
 package java.lang.invoke;
 
-import java.io.IOException;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Formatter;
-import java.util.IllegalFormatConversionException;
+import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.Locale;
 import java.util.MissingFormatArgumentException;
-import java.util.UnknownFormatConversionException;
 import java.util.stream.IntStream;
 import jdk.internal.util.FormatString;
+import jdk.internal.util.FormatString.Conversion;
 import jdk.internal.util.FormatString.FormatSpecifier;
 import jdk.internal.util.FormatString.FormatToken;
 
@@ -126,8 +125,6 @@ final class FormatterBootstraps {
 
     private static final MethodHandle CONSTRUCT_MISSING_FORMAT_ARGUMENT_EXCEPTION =
             findConstructorMethodHandle(MissingFormatArgumentException.class, methodType(void.class, String.class));
-    private static final MethodHandle CONSTRUCT_UNKNOWN_FORMAT_CONVERSION_EXCEPTION =
-            findConstructorMethodHandle(UnknownFormatConversionException.class, methodType(void.class, String.class));
     private static final MethodHandle APPENDABLE_TO_STRING =
             findVirtualMethodHandle(Appendable.class, "toString", methodType(String.class));
     private static final MethodHandle FORMATTER_OUT =
@@ -137,6 +134,8 @@ final class FormatterBootstraps {
                     methodType(Locale.class, Locale.Category.class)),0, Locale.Category.FORMAT);
     private static final MethodHandle FORMATTER_LOCALE =
             findVirtualMethodHandle(Formatter.class, "locale", methodType(Locale.class));
+    private static final MethodHandle ILLEGAL_FORMAT_EXCEPTION_CLONE =
+            findVirtualMethodHandle(IllegalFormatException.class, "clone", methodType(IllegalFormatException.class));
 
     private static final MethodHandle INT_TO_STRING =
             findStaticMethodHandle(Integer.class, "toString", methodType(String.class, int.class));
@@ -196,8 +195,8 @@ final class FormatterBootstraps {
 
         try {
             specs = FormatString.parse(format);
-        } catch (UnknownFormatConversionException unknownConversion) {
-            return new ConstantCallSite(unknownFormatConversionThrower(unknownConversion, methodType));
+        } catch (IllegalFormatException illegalFormatException) {
+            return new ConstantCallSite(illegalFormatThrower(illegalFormatException, methodType));
         }
 
         if (specs.isEmpty()) {
@@ -332,8 +331,8 @@ final class FormatterBootstraps {
     static class FormatterFormatHandleBuilder extends FormatHandleBuilder {
 
         private MethodHandle handle = null;
-        boolean isFormatterMethod;
-        boolean isStringMethod;
+        final boolean isFormatterMethod;
+        final boolean isStringMethod;
 
         FormatterFormatHandleBuilder(List<FormatToken> specs, Class<?>[] argTypes, int[] argIndexes,
                                      boolean hasLocaleArg, boolean isFormatterMethod, boolean isStringMethod) {
@@ -481,7 +480,7 @@ final class FormatterBootstraps {
             reorder.add(argIndex);
 
             if (useDirectConcat) {
-                if (spec.conversion() == FormatString.Conversion.DECIMAL_INTEGER) {
+                if (spec.conversion() == Conversion.DECIMAL_INTEGER) {
                     // Direct string concat, but we need to guard against locales requiring Unicode decimal symbols
                     needsLocaleGuard = true;
                 }
@@ -606,9 +605,9 @@ final class FormatterBootstraps {
         if (o instanceof FormatSpecifier) {
             FormatSpecifier spec = (FormatSpecifier) o;
             assert spec.index() == -2;
-            if (spec.conversion() == FormatString.Conversion.LINE_SEPARATOR) {
+            if (spec.conversion() == Conversion.LINE_SEPARATOR) {
                 return System.lineSeparator();
-            } else if (spec.conversion() == FormatString.Conversion.PERCENT_SIGN) {
+            } else if (spec.conversion() == Conversion.PERCENT_SIGN) {
                 return String.format(spec.toString());
             }
         }
@@ -620,9 +619,9 @@ final class FormatterBootstraps {
         return foldArguments(thrower, insertArguments(CONSTRUCT_MISSING_FORMAT_ARGUMENT_EXCEPTION, 0, message));
     }
 
-    private static MethodHandle unknownFormatConversionThrower(UnknownFormatConversionException unknownFormat, MethodType methodType) {
-        MethodHandle thrower = throwException(methodType.returnType(), UnknownFormatConversionException.class);
-        thrower = foldArguments(thrower, insertArguments(CONSTRUCT_UNKNOWN_FORMAT_CONVERSION_EXCEPTION, 0, unknownFormat.getConversion()));
+    private static MethodHandle illegalFormatThrower(IllegalFormatException illegalFormat, MethodType methodType) {
+        MethodHandle thrower = throwException(methodType.returnType(), IllegalFormatException.class);
+        thrower = foldArguments(thrower, 0, insertArguments(ILLEGAL_FORMAT_EXCEPTION_CLONE, 0, illegalFormat));
         return dropArguments(thrower, 0, methodType.parameterArray());
     }
 
@@ -663,7 +662,7 @@ final class FormatterBootstraps {
         }
 
         if (conversionFilter.type().parameterType(0) != argType) {
-            if (spec.conversion() == FormatString.Conversion.BOOLEAN)
+            if (spec.conversion() == Conversion.BOOLEAN)
                 conversionFilter = filterArguments(conversionFilter, 0, BOOLEAN_OBJECT_FILTER);
             else if (! argType.isPrimitive())
                 conversionFilter = guardWithTest(NOT_NULL_TEST,
@@ -703,23 +702,23 @@ final class FormatterBootstraps {
         return false;
     }
 
-    private static boolean isSafeArgumentType(FormatString.Conversion conversion, Class<?> type) {
-        if (conversion == FormatString.Conversion.BOOLEAN) {
+    private static boolean isSafeArgumentType(Conversion conversion, Class<?> type) {
+        if (conversion == Conversion.BOOLEAN) {
             return type == boolean.class || type == Boolean.class;
         }
-        if (conversion == FormatString.Conversion.CHARACTER) {
+        if (conversion == Conversion.CHARACTER) {
             return type == char.class || type == Character.class;
         }
-        if (conversion == FormatString.Conversion.DECIMAL_INTEGER
-                || conversion == FormatString.Conversion.HEXADECIMAL_INTEGER
-                || conversion == FormatString.Conversion.OCTAL_INTEGER) {
+        if (conversion == Conversion.DECIMAL_INTEGER
+                || conversion == Conversion.HEXADECIMAL_INTEGER
+                || conversion == Conversion.OCTAL_INTEGER) {
             return type == int.class || type == long.class || type == Integer.class;
         }
-        if (conversion == FormatString.Conversion.HASHCODE) {
+        if (conversion == Conversion.HASHCODE) {
             return true;
         }
         // Limit to String to prevent us from doing toString() on a java.util.Formattable
-        return conversion == FormatString.Conversion.STRING && type == String.class;
+        return conversion == Conversion.STRING && type == String.class;
     }
 
     private static MethodHandle getAppenderHandle(Class<?> type) {
@@ -752,19 +751,19 @@ final class FormatterBootstraps {
     }
 
     private static MethodHandle getPrintHandle(Class<?> argType, FormatSpecifier spec) {
-        if (spec.conversion() == FormatString.Conversion.HASHCODE) {
+        if (spec.conversion() == Conversion.HASHCODE) {
             return SPECIFIER_PRINT_HASHCODE;
-        } else if (argType == int.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_INTEGER && argType == int.class) {
             return SPECIFIER_PRINT_INT;
-        } else if (argType == long.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_INTEGER && argType == long.class) {
             return SPECIFIER_PRINT_LONG;
-        } else if (argType == byte.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_INTEGER && argType == byte.class) {
             return SPECIFIER_PRINT_BYTE;
-        } else if (argType == short.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_INTEGER && argType == short.class) {
             return SPECIFIER_PRINT_SHORT;
-        } else if (argType == float.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_FLOAT && argType == float.class) {
             return SPECIFIER_PRINT_FLOAT;
-        } else if (argType == double.class) {
+        } else if (spec.conversion() == Conversion.DECIMAL_FLOAT && argType == double.class) {
             return SPECIFIER_PRINT_DOUBLE;
         } else {
             return SPECIFIER_PRINT;

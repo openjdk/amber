@@ -36,51 +36,51 @@ public class JavacIntrinsicsSupport extends Basic {
 
 
     static void formatAndCheck(String fs, String exp, Locale l, Object... args) {
-        try {
-            // Invoke via formatterFormatBootstrap intrinsic
-            Formatter f = new Formatter(new StringBuilder(), l);
-            formatterFormat(f, fs, args);
-            ck(fs, exp, f.toString());
-            // Invoke via formatterLocaleFormatBootstrap intrinsic
-            f = new Formatter(new StringBuilder());
-            formatterLocaleFormat(f, l, fs, args);
-            ck(fs, exp, f.toString());
-            // Invoke again via stringLocaleFormatBootstrap instrinsic
-            ck(fs, exp, stringLocaleFormat(fs, l, args));
-        } catch (RuntimeException rt) {
-            throw rt;
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
+        // Invoke via formatterFormatBootstrap intrinsic
+        Formatter f = new Formatter(new StringBuilder(), l);
+        formatterFormat(f, fs, args);
+        ck(fs, exp, f.toString());
+        // Invoke via formatterLocaleFormatBootstrap intrinsic
+        f = new Formatter(new StringBuilder());
+        formatterLocaleFormat(f, l, fs, args);
+        ck(fs, exp, f.toString());
+        // Invoke again via stringLocaleFormatBootstrap instrinsic
+        ck(fs, exp, stringLocaleFormat(fs, l, args));
     }
 
     static void formatterFormat(Formatter f, String fs, Object... args) {
+        CallSite cs;
+        List<Object> invokeArgs;
         try {
-
-            CallSite cs = IntrinsicFactory.formatterFormatBootstrap(MethodHandles.lookup(), "format",
+            cs = IntrinsicFactory.formatterFormatBootstrap(MethodHandles.lookup(), "format",
                     getFormatterFormatMethodType(false, args), fs);
-            List<Object> invokeArgs = new ArrayList<>();
+
+            invokeArgs = new ArrayList<>();
             invokeArgs.add(f);
             if (args != null) {
                 Collections.addAll(invokeArgs, args);
             } else {
                 invokeArgs.add(null);
             }
+        } catch (Throwable t) {
+            throw new BootstrapMethodError(t);
+        }
+        try {
             cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-
-        } catch (RuntimeException rt) {
-            throw rt;
+        } catch (RuntimeException r) {
+            throw r;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
 
     static void formatterLocaleFormat(Formatter f, Locale l, String fs, Object... args) {
+        CallSite cs;
+        List<Object> invokeArgs;
         try {
-
-            CallSite cs = IntrinsicFactory.formatterLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+            cs = IntrinsicFactory.formatterLocaleFormatBootstrap(MethodHandles.lookup(), "format",
                     getFormatterFormatMethodType(true, args), fs);
-            List<Object> invokeArgs = new ArrayList<>();
+            invokeArgs = new ArrayList<>();
             invokeArgs.add(f);
             invokeArgs.add(l);
             if (args != null) {
@@ -88,62 +88,74 @@ public class JavacIntrinsicsSupport extends Basic {
             } else {
                 invokeArgs.add(null);
             }
+        } catch (Throwable t) {
+            throw new BootstrapMethodError(t);
+        }
+        try {
             cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-
-        } catch (RuntimeException rt) {
-            throw rt;
+        } catch (RuntimeException r) {
+            throw r;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
 
     static String stringFormat(String fs, Object... args) {
+        CallSite cs;
+        List<Object> invokeArgs;
         try {
-
-            CallSite cs = IntrinsicFactory.staticStringFormatBootstrap(MethodHandles.lookup(), "format",
+            cs = IntrinsicFactory.staticStringFormatBootstrap(MethodHandles.lookup(), "format",
                     getStringFormatMethodType(false, args), fs);
-            List<Object> invokeArgs = new ArrayList<>();
+            invokeArgs = new ArrayList<>();
             if (args != null) {
                 Collections.addAll(invokeArgs, args);
             } else {
                 invokeArgs.add(null);
             }
+        } catch (Throwable t) {
+            throw new BootstrapMethodError(t);
+        }
+        try {
             return (String) cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-
-        } catch (RuntimeException rt) {
-            throw rt;
+        } catch (RuntimeException r) {
+            throw r;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
 
     static String stringLocaleFormat(String fs, Locale l, Object... args) {
+        CallSite cs;
+        List<Object> invokeArgs;
         try {
-
-            CallSite cs = IntrinsicFactory.staticStringLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+            cs = IntrinsicFactory.staticStringLocaleFormatBootstrap(MethodHandles.lookup(), "format",
                     getStringFormatMethodType(true, args), fs);
-            List<Object> invokeArgs = new ArrayList<>();
+            invokeArgs = new ArrayList<>();
             invokeArgs.add(l);
             if (args != null) {
                 Collections.addAll(invokeArgs, args);
             } else {
                 invokeArgs.add(null);
             }
+        } catch (Throwable t) {
+            throw new BootstrapMethodError(t);
+        }
+        try {
             return (String) cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-
-        } catch (RuntimeException rt) {
-            throw rt;
+        } catch (RuntimeException r) {
+            throw r;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
 
     static PrintStream printStreamFormat(PrintStream ps, Locale l, String fs, Object... args) {
+        CallSite cs;
+        List<Object> invokeArgs;
         try {
-
-            CallSite cs = IntrinsicFactory.printStreamLocaleFormatBootstrap(MethodHandles.lookup(), "format",
+            cs = IntrinsicFactory.printStreamLocaleFormatBootstrap(MethodHandles.lookup(), "format",
                     getPrintStreamFormatMethodType(args), fs);
-            List<Object> invokeArgs = new ArrayList<>();
+            invokeArgs = new ArrayList<>();
             invokeArgs.add(ps);
             invokeArgs.add(l);
             if (args != null) {
@@ -151,10 +163,13 @@ public class JavacIntrinsicsSupport extends Basic {
             } else {
                 invokeArgs.add(null);
             }
+        } catch (Throwable t) {
+            throw new BootstrapMethodError(t);
+        }
+        try {
             return (PrintStream) cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-
-        } catch (RuntimeException rt) {
-            throw rt;
+        } catch (RuntimeException r) {
+            throw r;
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
