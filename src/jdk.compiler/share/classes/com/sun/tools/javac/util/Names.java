@@ -74,6 +74,8 @@ public class Names {
     public final Name uses;
     public final Name open;
     public final Name with;
+    public final Name get;
+    public final Name set;
 
     // field and method names
     public final Name _name;
@@ -87,6 +89,7 @@ public class Names {
     public final Name deserializeLambda;
     public final Name desiredAssertionStatus;
     public final Name equals;
+    public final Name oldEquals;
     public final Name error;
     public final Name family;
     public final Name finalize;
@@ -111,6 +114,8 @@ public class Names {
     public final Name value;
     public final Name valueOf;
     public final Name values;
+    public final Name readResolve;
+    public final Name readObject;
 
     // class names
     public final Name java_io_Serializable;
@@ -154,6 +159,7 @@ public class Names {
     public final Name ModuleResolution;
     public final Name NestHost;
     public final Name NestMembers;
+    public final Name Record;
     public final Name RuntimeInvisibleAnnotations;
     public final Name RuntimeInvisibleParameterAnnotations;
     public final Name RuntimeInvisibleTypeAnnotations;
@@ -206,9 +212,19 @@ public class Names {
     public final Name makeConcat;
     public final Name makeConcatWithConstants;
 
+    // members of java.lang.invoke.ObjectMethodBuilders
+    public final Name makeEquals;
+    public final Name makeHashCode;
+    public final Name makeToString;
+
+    // record related
+    public final Name record;
+    public final Name where;
+    public final Name non;
+    public final Name makeLazyExtractor;
+
     // sealed types
     public final Name permits;
-    public final Name non;
 
     public final Name.Table table;
 
@@ -243,6 +259,8 @@ public class Names {
         uses = fromString("uses");
         open = fromString("open");
         with = fromString("with");
+        get = fromString("get");
+        set = fromString("set");
 
         // field and method names
         _name = fromString("name");
@@ -256,6 +274,7 @@ public class Names {
         deserializeLambda = fromString("$deserializeLambda$");
         desiredAssertionStatus = fromString("desiredAssertionStatus");
         equals = fromString("equals");
+        oldEquals = fromString("oldEquals");
         error = fromString("<error>");
         family = fromString("family");
         finalize = fromString("finalize");
@@ -280,6 +299,8 @@ public class Names {
         value = fromString("value");
         valueOf = fromString("valueOf");
         values = fromString("values");
+        readResolve = fromString("readResolve");
+        readObject = fromString("readObject");
         dollarThis = fromString("$this");
 
         // class names
@@ -324,6 +345,7 @@ public class Names {
         ModuleResolution = fromString("ModuleResolution");
         NestHost = fromString("NestHost");
         NestMembers = fromString("NestMembers");
+        Record = fromString("Record");
         RuntimeInvisibleAnnotations = fromString("RuntimeInvisibleAnnotations");
         RuntimeInvisibleParameterAnnotations = fromString("RuntimeInvisibleParameterAnnotations");
         RuntimeInvisibleTypeAnnotations = fromString("RuntimeInvisibleTypeAnnotations");
@@ -375,9 +397,16 @@ public class Names {
         makeConcat = fromString("makeConcat");
         makeConcatWithConstants = fromString("makeConcatWithConstants");
 
+        makeEquals = fromString("makeEquals");
+        makeHashCode = fromString("makeHashCode");
+        makeToString = fromString("makeToString");
+        record = fromString("record");
+        where = fromString("where");
+        non = fromString("non");
+        makeLazyExtractor = fromString("makeLazyExtractor");
+
         // sealed types
         permits = fromString("permits");
-        non = fromString("non");
     }
 
     protected Name.Table createTable(Options options) {

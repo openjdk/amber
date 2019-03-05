@@ -98,6 +98,25 @@ public class TreeInfo {
         return false;
     }
 
+    /** Is there a constructor invocation in the given list of trees?
+     */
+    public static Name getConstructorInvocationName(List<? extends JCTree> trees, Names names, boolean isRecord) {
+        for (JCTree tree : trees) {
+            if (tree.hasTag(EXEC)) {
+                JCExpressionStatement stat = (JCExpressionStatement)tree;
+                if (stat.expr.hasTag(APPLY)) {
+                    JCMethodInvocation apply = (JCMethodInvocation)stat.expr;
+                    Name methName = TreeInfo.name(apply.meth);
+                    if (methName == names._this ||
+                        methName == names._super) {
+                        return methName;
+                    }
+                }
+            }
+        }
+        return names.empty;
+    }
+
     public static boolean isMultiCatch(JCCatch catchClause) {
         return catchClause.param.vartype.hasTag(TYPEUNION);
     }
@@ -188,6 +207,23 @@ public class TreeInfo {
         } else {
             return false;
         }
+    }
+
+    public static List<JCVariableDecl> recordFields(JCClassDecl tree) {
+        return tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
+                .collect(List.collector());
+    }
+
+    public static List<Type> recordFieldTypes(JCClassDecl tree) {
+        return tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
+                .map(vd -> vd.type)
+                .collect(List.collector());
     }
 
     /** Is this a constructor whose first (non-synthetic) statement is not

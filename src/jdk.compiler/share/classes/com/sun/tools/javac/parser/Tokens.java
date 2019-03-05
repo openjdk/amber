@@ -226,6 +226,8 @@ public class Tokens {
         GTGTEQ(">>="),
         GTGTGTEQ(">>>="),
         MONKEYS_AT("@"),
+        VAR("var", Tag.RESERVED),
+        RECORD("record", Tag.RESERVED),
         PERMITS("permits", Tag.RESERVED),
         CUSTOM;
 
@@ -321,7 +323,7 @@ public class Tokens {
             NAMED,
             STRING,
             NUMERIC,
-            RESERVED
+            RESERVED;
         }
 
         /** The token kind */

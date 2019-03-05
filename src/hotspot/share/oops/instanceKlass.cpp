@@ -648,6 +648,12 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
   }
   set_nest_members(NULL);
 
+  if (record_params() != NULL &&
+      record_params() != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<jushort>(loader_data, record_params());
+  }
+  set_record_params(NULL, 0);
+
   if (permitted_subtypes() != NULL &&
       permitted_subtypes() != Universe::the_empty_short_array() &&
       !permitted_subtypes()->is_shared()) {
@@ -2369,6 +2375,7 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   }
 
   it->push(&_nest_members);
+  it->push(&_record_params);
   it->push(&_permitted_subtypes);
 }
 

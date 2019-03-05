@@ -52,6 +52,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.sun.tools.javac.util.Names;
+
 /**
  * Low level scanner to determine completeness of input.
  * @author Robert Field
@@ -60,6 +62,7 @@ class CompletenessAnalyzer {
 
     private final ScannerFactory scannerFactory;
     private final JShell proc;
+    private final Names names;
 
     private static Completeness error() {
         return Completeness.UNKNOWN;  // For breakpointing
@@ -81,6 +84,7 @@ class CompletenessAnalyzer {
         Log log = CaLog.createLog(context);
         context.put(Log.class, log);
         context.put(Source.class, Source.JDK9);
+        names = Names.instance(context);
         scannerFactory = ScannerFactory.instance(context);
     }
 
@@ -88,6 +92,7 @@ class CompletenessAnalyzer {
         try {
             Parser parser = new Parser(
                     () -> new Matched(scannerFactory.newScanner(s, false)),
+                    names,
                     worker -> proc.taskFactory.parse(s, worker));
             Completeness stat = parser.parseUnit();
             int endPos = stat == Completeness.UNKNOWN
@@ -161,6 +166,7 @@ class CompletenessAnalyzer {
     private static final int XSTART        = 0b1000000000;              // Boundary, must be XTERM before
     private static final int XERRO         = 0b10000000000;             // Is an error
     private static final int XBRACESNEEDED = 0b100000000000;            // Expect {ANY} LBRACE
+    private static final int XMODIFIER     = 0b1000000000000;           // Modifier
 
     /**
      * An extension of the compiler's TokenKind which adds our combined/processed
@@ -186,6 +192,7 @@ class CompletenessAnalyzer {
         IDENTIFIER(TokenKind.IDENTIFIER, XEXPR1|XDECL1|XTERM),  //
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
+        RECORD(TokenKind.RECORD, XEXPR|XDECL1),  //  record decl (MAPPED: DOTCLASS)
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
@@ -212,18 +219,19 @@ class CompletenessAnalyzer {
         LONG(TokenKind.LONG, XEXPR1|XDECL1),  //  long
         SHORT(TokenKind.SHORT, XEXPR1|XDECL1),  //  short
         VOID(TokenKind.VOID, XEXPR1|XDECL1),  //  void
+        VAR(TokenKind.VAR, XEXPR1|XDECL1|XTERM),  //  var
 
         // Modifiers keywords
-        ABSTRACT(TokenKind.ABSTRACT, XDECL1),  //  abstract
-        FINAL(TokenKind.FINAL, XDECL1),  //  final
-        NATIVE(TokenKind.NATIVE, XDECL1),  //  native
-        STATIC(TokenKind.STATIC, XDECL1),  //  static
-        STRICTFP(TokenKind.STRICTFP, XDECL1),  //  strictfp
-        PRIVATE(TokenKind.PRIVATE, XDECL1),  //  private
-        PROTECTED(TokenKind.PROTECTED, XDECL1),  //  protected
-        PUBLIC(TokenKind.PUBLIC, XDECL1),  //  public
-        TRANSIENT(TokenKind.TRANSIENT, XDECL1),  //  transient
-        VOLATILE(TokenKind.VOLATILE, XDECL1),  //  volatile
+        ABSTRACT(TokenKind.ABSTRACT, XDECL1 | XMODIFIER),  //  abstract
+        FINAL(TokenKind.FINAL, XDECL1 | XMODIFIER),  //  final
+        NATIVE(TokenKind.NATIVE, XDECL1 | XMODIFIER),  //  native
+        STATIC(TokenKind.STATIC, XDECL1 | XMODIFIER),  //  static
+        STRICTFP(TokenKind.STRICTFP, XDECL1 | XMODIFIER),  //  strictfp
+        PRIVATE(TokenKind.PRIVATE, XDECL1 | XMODIFIER),  //  private
+        PROTECTED(TokenKind.PROTECTED, XDECL1 | XMODIFIER),  //  protected
+        PUBLIC(TokenKind.PUBLIC, XDECL1 | XMODIFIER),  //  public
+        TRANSIENT(TokenKind.TRANSIENT, XDECL1 | XMODIFIER),  //  transient
+        VOLATILE(TokenKind.VOLATILE, XDECL1 | XMODIFIER),  //  volatile
 
         // Declarations and type parameters (thus expressions)
         EXTENDS(TokenKind.EXTENDS, XEXPR|XDECL),  //  extends
@@ -386,6 +394,10 @@ class CompletenessAnalyzer {
             return (belongs & XBRACESNEEDED) != 0;
         }
 
+        boolean isModifier() {
+            return (belongs & XMODIFIER) != 0;
+        }
+
         /**
          * After construction, check that all compiler TokenKind values have
          * corresponding TK values.
@@ -420,10 +432,13 @@ class CompletenessAnalyzer {
         /** The error message **/
         public final String message;
 
+        public final Token tok;
+
         private CT(TK tk, Token tok, String msg) {
             this.kind = tk;
             this.endPos = tok.endPos;
             this.message = msg;
+            this.tok = tok;
             //throw new InternalError(msg); /* for debugging */
         }
 
@@ -431,12 +446,14 @@ class CompletenessAnalyzer {
             this.kind = tk;
             this.endPos = tok.endPos;
             this.message = null;
+            this.tok = tok;
         }
 
         private CT(TK tk, int endPos) {
             this.kind = tk;
             this.endPos = endPos;
             this.message = null;
+            this.tok = null;
         }
     }
 
@@ -565,11 +582,14 @@ class CompletenessAnalyzer {
         private Matched in;
         private CT token;
         private Completeness checkResult;
+        private final Names names;
 
         Parser(Supplier<Matched> matchedFactory,
+               Names names,
                Function<Worker<ParseTask, Completeness>, Completeness> parseFactory) {
             this.matchedFactory = matchedFactory;
             this.parseFactory = parseFactory;
+            this.names = names;
             resetInput();
         }
 
@@ -652,9 +672,13 @@ class CompletenessAnalyzer {
 
         public Completeness parseDeclaration() {
             boolean isImport = token.kind == IMPORT;
+            boolean isDatum = false;
+            boolean afterModifiers = false;
             boolean isBracesNeeded = false;
             while (token.kind.isDeclaration()) {
                 isBracesNeeded |= token.kind.isBracesNeeded();
+                isDatum |= !afterModifiers && token.kind == TK.IDENTIFIER && token.tok.name() == names.record;
+                afterModifiers |= !token.kind.isModifier();
                 nextToken();
             }
             switch (token.kind) {
@@ -673,12 +697,19 @@ class CompletenessAnalyzer {
                         case BRACES:
                         case SEMI:
                             return Completeness.COMPLETE;
+                        case VAR:
                         case IDENTIFIER:
                             return isBracesNeeded
                                     ? Completeness.DEFINITELY_INCOMPLETE
                                     : Completeness.COMPLETE_WITH_SEMI;
                         case BRACKETS:
                             return Completeness.COMPLETE_WITH_SEMI;
+                        case PARENS:
+                            if (isDatum) {
+                                return Completeness.COMPLETE_WITH_SEMI;
+                            } else {
+                                return Completeness.DEFINITELY_INCOMPLETE;
+                            }
                         case DOTSTAR:
                             if (isImport) {
                                 return Completeness.COMPLETE_WITH_SEMI;

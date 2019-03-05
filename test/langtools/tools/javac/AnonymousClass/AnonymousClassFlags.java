@@ -26,7 +26,7 @@
  * @bug 8161013
  * @summary Verify that anonymous class binaries have the correct flags set
  * @modules jdk.jdeps/com.sun.tools.classfile
- * @run main AnonymousClassFlags
+ * @compile AnonymousClassFlags.java
  */
 
 import java.util.*;

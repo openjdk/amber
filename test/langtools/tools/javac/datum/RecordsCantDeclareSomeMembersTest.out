@@ -1,0 +1,3 @@
+RecordsCantDeclareSomeMembersTest.java:9:16: compiler.err.cant.provide.explicit.version: hashCode
+RecordsCantDeclareSomeMembersTest.java:11:20: compiler.err.cant.provide.explicit.version: equals
+2 errors

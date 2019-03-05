@@ -79,6 +79,7 @@ module java.base {
     exports java.io;
     exports java.lang;
     exports java.lang.annotation;
+    exports java.lang.compiler;
     exports java.lang.constant;
     exports java.lang.invoke;
     exports java.lang.module;
@@ -129,10 +130,11 @@ module java.base {
     exports javax.security.auth.x500;
     exports javax.security.cert;
 
-
     // additional qualified exports may be inserted at build time
     // see make/gensrc/GenModuleInfo.gmk
 
+    exports sun.invoke.util to
+        jdk.compiler;
     exports com.sun.security.ntlm to
         java.security.sasl;
     exports jdk.internal to

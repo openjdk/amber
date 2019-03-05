@@ -1,0 +1,5 @@
+Neg01.java:10:37: compiler.err.expected: ';'
+Neg01.java:10:46: compiler.err.invalid.meth.decl.ret.type.req
+Neg01.java:10:52: compiler.err.expected: token.identifier
+Neg01.java:10:55: compiler.err.expected: token.identifier
+4 errors
