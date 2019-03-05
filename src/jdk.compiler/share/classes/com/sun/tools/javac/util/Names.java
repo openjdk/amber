@@ -168,6 +168,7 @@ public class Names {
     public final Name Synthetic;
     public final Name Value;
     public final Name Varargs;
+    public final Name PermittedSubtypes;
 
     // members of java.lang.annotation.ElementType
     public final Name ANNOTATION_TYPE;
@@ -204,6 +205,10 @@ public class Names {
     // string concat
     public final Name makeConcat;
     public final Name makeConcatWithConstants;
+
+    // sealed types
+    public final Name permits;
+    public final Name non;
 
     public final Name.Table table;
 
@@ -333,6 +338,7 @@ public class Names {
         Synthetic = fromString("Synthetic");
         Value = fromString("Value");
         Varargs = fromString("Varargs");
+        PermittedSubtypes = fromString("PermittedSubtypes");
 
         // members of java.lang.annotation.ElementType
         ANNOTATION_TYPE = fromString("ANNOTATION_TYPE");
@@ -368,6 +374,10 @@ public class Names {
         // string concat
         makeConcat = fromString("makeConcat");
         makeConcatWithConstants = fromString("makeConcatWithConstants");
+
+        // sealed types
+        permits = fromString("permits");
+        non = fromString("non");
     }
 
     protected Name.Table createTable(Options options) {

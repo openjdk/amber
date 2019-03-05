@@ -319,6 +319,16 @@ public class Flags {
      */
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
+    /**
+     * Flag to indicate sealed class/interface declaration.
+     */
+    public static final long SEALED = 1L<<58;
+
+    /**
+     * Flag to indicate that the class/interface has explicitly being annotated as not sealed.
+     */
+    public static final long NON_FINAL = 1L<<59;
+
     /** Modifier masks.
      */
     public static final int
