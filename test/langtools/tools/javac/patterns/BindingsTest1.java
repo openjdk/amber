@@ -138,6 +138,13 @@ public class BindingsTest1 {
             s.length();
         }
 
+        L4: {
+            if (!(o1 instanceof String s)) {
+                break L4;
+            }
+            s.length();
+        }
+
         System.out.println("BindingsTest1 complete");
     }
 }
