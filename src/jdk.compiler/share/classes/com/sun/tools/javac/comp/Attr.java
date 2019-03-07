@@ -1948,11 +1948,9 @@ public class Attr extends JCTree.Visitor {
         preFlow(tree.thenpart);
         boolean aliveAfterThen = flow.aliveAfter(env, tree.thenpart, make);
         boolean aliveAfterElse;
-        List<BindingSymbol> elseBindings = List.nil();
+        List<BindingSymbol> elseBindings = getMatchBindings(types, log, tree.cond, false);
 
         if (tree.elsepart != null) {
-            elseBindings = getMatchBindings(types, log, tree.cond, false);
-
             Env<AttrContext> elseEnv = bindingEnv(env, elseBindings);
             try {
                 attribStat(tree.elsepart, elseEnv);
