@@ -730,6 +730,7 @@ public class TypeEnter implements Completer {
             }
 
             ct.permitted = permittedSubtypes.toList();
+            ct.isPermittedExplicit = !permittedSubtypes.isEmpty();
         }
             //where:
             protected JCExpression clearTypeParams(JCExpression superType) {

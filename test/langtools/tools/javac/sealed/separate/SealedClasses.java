@@ -24,7 +24,7 @@
  */
 
 public class SealedClasses {
-    public static final class SC permits TestSeparate01.C_SC { }
-    public static final abstract class SAC permits TestSeparate01.C_SAC { }
-    public static final interface SI permits TestSeparate01.C_SI, TestSeparate01.I_SI { }
+    public static sealed class SC permits TestSeparate01.C_SC { }
+    public static sealed abstract class SAC permits TestSeparate01.C_SAC { }
+    public static sealed interface SI permits TestSeparate01.C_SI, TestSeparate01.I_SI { }
 }

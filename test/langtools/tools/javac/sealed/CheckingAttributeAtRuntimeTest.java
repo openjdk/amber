@@ -32,11 +32,11 @@
 import com.sun.tools.javac.util.Assert;
 
 public class CheckingAttributeAtRuntimeTest {
-    final class Sealed permits Sub {}
+    sealed class Sealed permits Sub {}
 
     class Sub extends Sealed {}
 
-    final interface SealedI permits Sub2 {}
+    sealed interface SealedI permits Sub2 {}
 
     class Sub2 implements SealedI {}
 

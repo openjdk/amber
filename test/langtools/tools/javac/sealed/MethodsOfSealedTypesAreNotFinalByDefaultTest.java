@@ -33,7 +33,7 @@ import java.lang.reflect.*;
 import com.sun.tools.javac.util.Assert;
 
 public class MethodsOfSealedTypesAreNotFinalByDefaultTest {
-    final class Sealed permits Sub {
+    sealed class Sealed permits Sub {
         void foo() {}
         final void bar() {}
     }

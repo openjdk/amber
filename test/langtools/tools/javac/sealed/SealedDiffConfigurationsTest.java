@@ -81,7 +81,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         tb.writeJavaFiles(test,
                           "class Test {\n" +
-                           "    final class Sealed permits Sub1, Sub2 {}\n" +
+                           "    sealed class Sealed permits Sub1, Sub2 {}\n" +
                            "    class Sub1 extends Sealed {}\n" +
                            "    class Sub2 extends Sealed {}\n" +
                            "}");
@@ -108,7 +108,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         tb.writeJavaFiles(test,
                 "class Test {\n" +
-                        "    final class Sealed {}\n" +
+                        "    sealed class Sealed {}\n" +
                         "    class Sub1 extends Sealed {}\n" +
                         "    class Sub2 extends Sealed {}\n" +
                         "}");
@@ -164,7 +164,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sealed,
                           "package pkg;\n" +
                           "\n" +
-                          "final class Sealed permits Sub1, Sub2 {\n" +
+                          "sealed class Sealed permits Sub1, Sub2 {\n" +
                           "}");
         tb.writeJavaFiles(sub1,
                           "package pkg;\n" +
@@ -204,7 +204,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sealed,
                           "package pkg1;\n" +
                           "import pkg2.*;\n" +
-                          "public final class Sealed permits pkg2.Sub1, pkg2.Sub2 {\n" +
+                          "public sealed class Sealed permits pkg2.Sub1, pkg2.Sub2 {\n" +
                           "}");
         tb.writeJavaFiles(sub1,
                           "package pkg2;\n" +
@@ -239,7 +239,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         tb.writeJavaFiles(test,
                           "class Test {\n" +
-                           "    final class Sealed permits Sub1 {}\n" +
+                           "    sealed class Sealed permits Sub1 {}\n" +
                            "    class Sub1 extends Sealed {}\n" +
                            "    class Sub2 extends Sealed {}\n" +
                            "}");
@@ -270,7 +270,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sealed,
                           "package pkg;\n" +
                           "\n" +
-                          "final class Sealed permits Sub1 {\n" +
+                          "sealed class Sealed permits Sub1 {\n" +
                           "}");
         tb.writeJavaFiles(sub1,
                           "package pkg;\n" +

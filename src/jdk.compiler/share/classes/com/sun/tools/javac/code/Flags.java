@@ -454,6 +454,7 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
+        SEALED(Flags.SEALED),
         RECORD(Flags.RECORD);
 
         Flag(long flag) {

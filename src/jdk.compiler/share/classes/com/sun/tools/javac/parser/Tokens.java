@@ -228,6 +228,7 @@ public class Tokens {
         MONKEYS_AT("@"),
         VAR("var", Tag.RESERVED),
         RECORD("record", Tag.RESERVED),
+        SEALED("sealed", Tag.RESERVED),
         PERMITS("permits", Tag.RESERVED),
         CUSTOM;
 

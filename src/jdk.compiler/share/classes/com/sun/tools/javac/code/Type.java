@@ -965,6 +965,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror {
          */
         public List<Type> permitted;
 
+        public boolean isPermittedExplicit = false;
+
         public ClassType(Type outer, List<Type> typarams, TypeSymbol tsym) {
             this(outer, typarams, tsym, TypeMetadata.EMPTY);
         }

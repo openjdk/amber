@@ -5,9 +5,9 @@
  */
 
 class SealedTest01 {
-    static final class SC permits C_SC { }
-    static final abstract class SAC permits C_SAC { }
-    static final interface SI permits C_SI, I_SI { }
+    static sealed class SC permits C_SC { }
+    static sealed abstract class SAC permits C_SAC { }
+    static sealed interface SI permits C_SI, I_SI { }
 
     static class C_SC extends SC { }
     static class C_SAC extends SAC { }

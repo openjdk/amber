@@ -29,12 +29,12 @@
  */
 
 public class SealedExtensionNegTest {
-    final interface SealedI permits SubI1 {}
+    sealed interface SealedI permits SubI1 {}
     class SubI1 implements SealedI {}
     class SubI2 implements SealedI {}
     interface I1 extends SealedI {}
 
-    final class Sealed permits Sub1 {}
+    sealed class Sealed permits Sub1 {}
     class Sub1 extends Sealed {}
     class Sub2 extends Sealed {}
 

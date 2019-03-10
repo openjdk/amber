@@ -3005,6 +3005,10 @@ public class JavacParser implements Parser {
                         break;
                     }
                 }
+                if (isSealedClassDeclaration()) {
+                    flag = Flags.SEALED;
+                    break;
+                }
                 break loop;
             }
             default: break loop;
@@ -3630,11 +3634,8 @@ public class JavacParser implements Parser {
         }
         List<JCExpression> permitting = List.nil();
         if (token.kind == IDENTIFIER && token.name() == names.permits) {
-            if ((mods.flags & Flags.FINAL) == 0) {
+            if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
-            } else {
-                mods.flags |= Flags.SEALED;
-                mods.flags = mods.flags & ~Flags.FINAL;
             }
             nextToken();
             permitting = typeList();
@@ -3754,11 +3755,8 @@ public class JavacParser implements Parser {
         }
         List<JCExpression> permitting = List.nil();
         if (token.kind == IDENTIFIER && token.name() == names.permits) {
-            if ((mods.flags & Flags.FINAL) == 0) {
+            if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
-            } else {
-                mods.flags |= Flags.SEALED;
-                mods.flags = mods.flags & ~Flags.FINAL;
             }
             nextToken();
             permitting = typeList();
@@ -4033,6 +4031,11 @@ public class JavacParser implements Parser {
         return token.kind == IDENTIFIER && token.name() == names.record &&
                 (peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN) ||
                 peekToken(TokenKind.IDENTIFIER, TokenKind.LT));
+    }
+
+    boolean isSealedClassDeclaration() {
+        return token.kind == IDENTIFIER && token.name() == names.sealed &&
+                (peekToken(TokenKind.CLASS) || peekToken(TokenKind.INTERFACE) || peekToken(TokenKind.ABSTRACT));
     }
 
     protected List<JCTree> recordBodyDeclaration(Name className) {

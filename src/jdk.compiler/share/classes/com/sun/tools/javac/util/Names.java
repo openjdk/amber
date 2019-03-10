@@ -225,6 +225,7 @@ public class Names {
 
     // sealed types
     public final Name permits;
+    public final Name sealed;
 
     public final Name.Table table;
 
@@ -407,6 +408,7 @@ public class Names {
 
         // sealed types
         permits = fromString("permits");
+        sealed = fromString("sealed");
     }
 
     protected Name.Table createTable(Options options) {

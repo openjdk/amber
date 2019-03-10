@@ -923,10 +923,8 @@ public class Attr extends JCTree.Visitor {
             log.error(pos, Errors.NoIntfExpectedHere);
             return types.createErrorType(t);
         }
-        boolean areNestMembers = subType != syms.unknownSymbol && t.tsym.outermostClass() == subType.outermostClass();
         if (checkExtensible &&
-            ((t.tsym.flags() & FINAL) != 0) &&
-            !areNestMembers) {
+            ((t.tsym.flags() & FINAL) != 0)) {
             log.error(pos,
                       Errors.CantInheritFromFinal(t.tsym));
         }
@@ -4844,14 +4842,14 @@ public class Attr extends JCTree.Visitor {
         Type st = types.supertype(c.type);
         boolean anyParentIsSealed = false;
         ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
-        if (st != Type.noType && (st.tsym.isSealed() || st.tsym.isFinal())) {
+        if (st != Type.noType && (st.tsym.isSealed())) {
             potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
             anyParentIsSealed = true;
         }
 
         if (tree.implementing != null) {
             for (JCExpression expr : tree.implementing) {
-                if (expr.type.tsym.isSealed() || expr.type.tsym.isFinal()) {
+                if (expr.type.tsym.isSealed()) {
                     potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
                     anyParentIsSealed = true;
                 }
@@ -4863,7 +4861,7 @@ public class Attr extends JCTree.Visitor {
                 boolean areNestmates = sealedParentPair.fst.tsym.outermostClass() == tree.sym.outermostClass();
                 boolean isSealed = sealedParentPair.fst.tsym.isSealed();
                 if (areNestmates) {
-                    if (!sealedParentPair.fst.tsym.isSealed()) {
+                    if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
                         sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
                     } else if (!dontErrorIfSealedExtended) {
                         log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
