@@ -9,11 +9,19 @@ public class NoAddFieldsCanBeDeclaredInDatumTest {
         int y;
     }
 
-    record Bad2(int i) {
+    record Good1(int i) {
         interface I {}
     }
 
-    record Bad3(int i) {
+    record Good2(int i) {
         static {}
+    }
+
+    record Good3(int i) {
+        enum E {A, B}
+    }
+
+    record Good4(int i) {
+        {}
     }
 }

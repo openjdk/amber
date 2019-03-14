@@ -3822,8 +3822,8 @@ public class JavacParser implements Parser {
         if (token.kind == SEMI) {
             nextToken();
             while (token.kind != RBRACE && token.kind != EOF) {
-                defs.appendList(classOrInterfaceBodyDeclaration(enumName,
-                                                                false));
+                defs.appendList(classOrInterfaceOrRecordBodyDeclaration(enumName,
+                                                                false, false));
                 if (token.pos <= endPosTable.errorEndPos) {
                     // error recovery
                    skip(false, true, true, false);
@@ -3894,11 +3894,7 @@ public class JavacParser implements Parser {
         }
         ListBuffer<JCTree> defs = new ListBuffer<>();
         while (token.kind != RBRACE && token.kind != EOF) {
-            if (!isRecord) {
-                defs.appendList(classOrInterfaceBodyDeclaration(className, isInterface));
-            } else {
-                defs.appendList(recordBodyDeclaration(className));
-            }
+            defs.appendList(classOrInterfaceOrRecordBodyDeclaration(className, isInterface, isRecord));
             if (token.pos <= endPosTable.errorEndPos) {
                // error recovery
                skip(false, true, true, false);
@@ -3937,7 +3933,7 @@ public class JavacParser implements Parser {
      *      )
      *
      */
-    protected List<JCTree> classOrInterfaceBodyDeclaration(Name className, boolean isInterface) {
+    protected List<JCTree> classOrInterfaceOrRecordBodyDeclaration(Name className, boolean isInterface, boolean isRecord) {
         if (token.kind == SEMI) {
             nextToken();
             return List.nil();
@@ -3986,14 +3982,15 @@ public class JavacParser implements Parser {
                     // method returns types are un-annotated types
                     type = unannotatedType(false);
                 }
-                if (token.kind == LPAREN && !isInterface && type.hasTag(IDENT)) {
+                if ((token.kind == LPAREN && !isInterface ||
+                        isRecord && token.kind == LBRACE) && type.hasTag(IDENT)) {
                     if (isInterface || tk.name() != className)
                         log.error(DiagnosticFlag.SYNTAX, pos, Errors.InvalidMethDeclRetTypeReq);
                     else if (annosAfterParams.nonEmpty())
                         illegal(annosAfterParams.head.pos);
                     return List.of(methodDeclaratorRest(
                         pos, mods, null, names.init, typarams,
-                        isInterface, true, false, dc));
+                        isInterface, true, isRecord, dc));
                 } else {
                     pos = token.pos;
                     Name name = ident();
@@ -4002,12 +3999,17 @@ public class JavacParser implements Parser {
                             pos, mods, type, name, typarams,
                             isInterface, isVoid, false, dc));
                     } else if (!isVoid && typarams.isEmpty()) {
-                        List<JCTree> defs =
-                            variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
-                                                    new ListBuffer<JCTree>(), false).toList();
-                        accept(SEMI);
-                        storeEnd(defs.last(), S.prevToken().endPos);
-                        return defs;
+                        if (!isRecord || (isRecord && (mods.flags & Flags.STATIC) != 0)) {
+                            List<JCTree> defs =
+                                    variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
+                                            new ListBuffer<JCTree>(), false).toList();
+                            accept(SEMI);
+                            storeEnd(defs.last(), S.prevToken().endPos);
+                            return defs;
+                        } else {
+                            nextToken();
+                            return List.of(syntaxError(pos, null, Errors.RecordFieldsMustBeInHeader));
+                        }
                     } else {
                         pos = token.pos;
                         List<JCTree> err;
@@ -4038,81 +4040,6 @@ public class JavacParser implements Parser {
                 (peekToken(TokenKind.CLASS) || peekToken(TokenKind.INTERFACE) || peekToken(TokenKind.ABSTRACT));
     }
 
-    protected List<JCTree> recordBodyDeclaration(Name className) {
-        Comment dc = token.comment(CommentStyle.JAVADOC);
-        JCModifiers mods = modifiersOpt();
-        return methodOrFieldMemberDecl(className, mods, false, dc);
-    }
-
-    private List<JCTree> methodOrFieldMemberDecl(Name className, JCModifiers mods, boolean isInterface, Comment dc) {
-        int pos = token.pos;
-        List<JCTypeParameter> typarams = typeParametersOpt();
-        // if there are type parameters but no modifiers, save the start
-        // position of the method in the modifiers.
-        if (typarams.nonEmpty() && mods.pos == Position.NOPOS) {
-            mods.pos = pos;
-            storeEnd(mods, pos);
-        }
-        List<JCAnnotation> annosAfterParams = annotationsOpt(Tag.ANNOTATION);
-
-        if (annosAfterParams.nonEmpty()) {
-            checkSourceLevel(annosAfterParams.head.pos, Feature.ANNOTATIONS_AFTER_TYPE_PARAMS);
-            mods.annotations = mods.annotations.appendList(annosAfterParams);
-            if (mods.pos == Position.NOPOS)
-                mods.pos = mods.annotations.head.pos;
-        }
-
-        Token tk = token;
-        pos = token.pos;
-        JCExpression type;
-        boolean isVoid = token.kind == VOID;
-        if (isVoid) {
-            type = to(F.at(pos).TypeIdent(TypeTag.VOID));
-            nextToken();
-        } else {
-            // method returns types are un-annotated types
-            type = unannotatedType(false);
-        }
-        if ((token.kind == LPAREN && !isInterface ||
-                token.kind == LBRACE) && type.hasTag(IDENT)) {
-            if (isInterface || tk.name() != className)
-                log.error(pos, Errors.InvalidMethDeclRetTypeReq);
-            else if (annosAfterParams.nonEmpty())
-                illegal(annosAfterParams.head.pos);
-            return List.of(methodDeclaratorRest(
-                pos, mods, null, names.init, typarams,
-                isInterface, true, true, dc));
-        } else {
-            pos = token.pos;
-            Name name = ident();
-            if (token.kind == LPAREN) {
-                return List.of(methodDeclaratorRest(
-                    pos, mods, type, name, typarams,
-                    isInterface, isVoid, true, dc));
-            } else if (!isVoid && typarams.isEmpty()) {
-                if ((mods.flags & Flags.STATIC) != 0) {
-                    List<JCTree> defs =
-                        variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
-                                                new ListBuffer<JCTree>(), false).toList();
-                    accept(SEMI);
-                    storeEnd(defs.last(), S.prevToken().endPos);
-                    return defs;
-                } else {
-                    log.error(pos, Errors.RecordFieldsMustBeInHeader);
-                    int tmpPos = token.pos;
-                    nextToken();
-                    return List.of(syntaxError(tmpPos, null, Errors.Expected(LPAREN)));
-                }
-            } else {
-                pos = token.pos;
-                List<JCTree> err = isVoid
-                    ? List.of(toP(F.at(pos).MethodDef(mods, name, type, typarams,
-                        List.nil(), List.nil(), null, null)))
-                    : null;
-                return List.of(syntaxError(token.pos, err, Errors.Expected(LPAREN)));
-            }
-        }
-    }
     /** MethodDeclaratorRest =
      *      FormalParameters BracketsOpt [THROWS TypeList] ( MethodBody | [DEFAULT AnnotationValue] ";")
      *  VoidMethodDeclaratorRest =
