@@ -212,12 +212,10 @@ public class Names {
     public final Name makeConcat;
     public final Name makeConcatWithConstants;
 
-    // members of java.lang.invoke.ObjectMethodBuilders
-    public final Name makeEquals;
-    public final Name makeHashCode;
-    public final Name makeToString;
-
     // record related
+    // members of java.lang.invoke.ObjectMethodBuilders
+    public final Name bootstrap;
+
     public final Name record;
     public final Name where;
     public final Name non;
@@ -398,9 +396,7 @@ public class Names {
         makeConcat = fromString("makeConcat");
         makeConcatWithConstants = fromString("makeConcatWithConstants");
 
-        makeEquals = fromString("makeEquals");
-        makeHashCode = fromString("makeHashCode");
-        makeToString = fromString("makeToString");
+        bootstrap = fromString("bootstrap");
         record = fromString("record");
         where = fromString("where");
         non = fromString("non");
