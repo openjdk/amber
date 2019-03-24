@@ -2470,12 +2470,20 @@ public class Lower extends TreeTranslator {
         make_at(tree.pos());
         List<VarSymbol> vars = types.recordVars(tree.type);
         Pool.MethodHandle[] getterMethHandles = new Pool.MethodHandle[vars.size()];
+        // for the extractor we use the user provided getter, for the rest we access the field directly
+        Pool.MethodHandle[] getterMethHandlesForExtractor = new Pool.MethodHandle[vars.size()];
         int index = 0;
         for (VarSymbol var : vars) {
             if (var.owner != tree.sym) {
                 var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
             }
             getterMethHandles[index] = new Pool.MethodHandle(ClassFile.REF_getField, var, types);
+            if (!var.accessors.isEmpty()) {
+                getterMethHandlesForExtractor[index] = new Pool.MethodHandle(ClassFile.REF_getField, var, types);
+            } else {
+                Symbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());
+                getterMethHandlesForExtractor[index] = new Pool.MethodHandle(ClassFile.REF_invokeVirtual, msym, types);
+            }
             index++;
         }
 
@@ -2484,7 +2492,7 @@ public class Lower extends TreeTranslator {
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
                 generateRecordMethod(tree, names.equals, vars, getterMethHandles),
-                recordExtractor(tree, getterMethHandles),
+                recordExtractor(tree, getterMethHandlesForExtractor),
                 recordReadResolve(tree)
         ));
     }
