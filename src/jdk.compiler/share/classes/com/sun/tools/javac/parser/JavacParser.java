@@ -4039,8 +4039,12 @@ public class JavacParser implements Parser {
     }
 
     boolean isSealedClassDeclaration() {
+        Token next = S.token(1);
         return token.kind == IDENTIFIER && token.name() == names.sealed &&
-                (peekToken(TokenKind.CLASS) || peekToken(TokenKind.INTERFACE) || peekToken(TokenKind.ABSTRACT));
+                (peekToken(TokenKind.CLASS) ||
+                        peekToken(TokenKind.INTERFACE) ||
+                        peekToken(TokenKind.ABSTRACT) ||
+                        next.kind == IDENTIFIER && next.name() == names.record);
     }
 
     /** MethodDeclaratorRest =
