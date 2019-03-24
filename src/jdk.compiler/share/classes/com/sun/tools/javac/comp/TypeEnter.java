@@ -1088,6 +1088,8 @@ public class TypeEnter implements Completer {
                               null);
                     memberEnter.memberEnter(getter, env);
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
+                } else if (implSym != null && (implSym.flags() & Flags.PUBLIC) == 0) {
+                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
                 }
             }
         }

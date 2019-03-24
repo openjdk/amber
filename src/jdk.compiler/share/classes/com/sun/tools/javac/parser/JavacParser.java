@@ -3679,6 +3679,9 @@ public class JavacParser implements Parser {
             if (def.hasTag(METHODDEF)) {
                 JCMethodDecl methDef = (JCMethodDecl) def;
                 if (methDef.name == names.init && methDef.params.isEmpty()) {
+                    if ((methDef.mods.flags & Flags.PUBLIC) == 0) {
+                        log.error(methDef, Errors.MethodMustBePublic(names.init));
+                    }
                     ListBuffer<JCVariableDecl> tmpParams = new ListBuffer<>();
                     for (JCVariableDecl param : fields) {
                         tmpParams.add(F.at(param).VarDef(F.Modifiers(Flags.PARAMETER), param.name, param.vartype, null));

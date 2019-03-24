@@ -32,7 +32,7 @@
 import java.util.*;
 
 public record ParameterLessConstructorsTest(String s, String k) {
-    ParameterLessConstructorsTest {
+    public ParameterLessConstructorsTest {
         Objects.requireNonNull(s);
         Objects.requireNonNull(k);
     }
