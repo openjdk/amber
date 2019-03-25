@@ -193,6 +193,8 @@ class CompletenessAnalyzer {
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
         RECORD(TokenKind.RECORD, XEXPR|XDECL1),  //  record decl (MAPPED: DOTCLASS)
+        SEALED(TokenKind.SEALED, XEXPR|XDECL1),  //  sealed class decl (MAPPED: DOTCLASS)
+        PERMITS(TokenKind.PERMITS, XEXPR|XDECL),  // permits classlist
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
