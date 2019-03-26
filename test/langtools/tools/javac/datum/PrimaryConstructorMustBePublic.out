@@ -1,0 +1,2 @@
+PrimaryConstructorMustBePublic.java:8:5: compiler.err.method.must.be.public: <init>
+1 error

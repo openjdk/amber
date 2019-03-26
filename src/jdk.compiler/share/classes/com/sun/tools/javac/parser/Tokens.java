@@ -85,7 +85,7 @@ public class Tokens {
         for (int i = 0; i <= maxKey; i++) key[i] = TokenKind.IDENTIFIER;
         for (TokenKind t : TokenKind.values()) {
             if (t.name != null && !t.reserved())
-            key[tokenName[t.ordinal()].getIndex()] = t;
+                key[tokenName[t.ordinal()].getIndex()] = t;
         }
     }
 
@@ -228,6 +228,8 @@ public class Tokens {
         MONKEYS_AT("@"),
         VAR("var", Tag.RESERVED),
         RECORD("record", Tag.RESERVED),
+        SEALED("sealed", Tag.RESERVED),
+        PERMITS("permits", Tag.RESERVED),
         CUSTOM;
 
         public final String name;

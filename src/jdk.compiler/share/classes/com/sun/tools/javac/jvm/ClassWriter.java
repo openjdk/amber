@@ -662,6 +662,12 @@ public class ClassWriter extends ClassFile {
 
     }
 
+    private void writeParamAnnotations(MethodSymbol m,
+                                       RetentionPolicy retention) {
+        databuf.appendByte(m.params.length());
+        writeParamAnnotations(m.params, retention);
+    }
+
     /** Write method parameter annotations;
      *  return number of attributes written.
      */
@@ -1178,6 +1184,22 @@ public class ClassWriter extends ClassFile {
                 listNested(s, seen);
             }
         }
+    }
+
+    /** Write "PermittedSubtypes" attribute.
+     */
+    int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
+        ClassType ct = (ClassType)csym.type;
+        if (ct.permitted.nonEmpty()) {
+            int alenIdx = writeAttr(names.PermittedSubtypes);
+            databuf.appendChar(ct.permitted.size());
+            for (Type t : ct.permitted) {
+                databuf.appendChar(pool.put(t.tsym));
+            }
+            endAttr(alenIdx);
+            return 1;
+        }
+        return 0;
     }
 
     /** Write "bootstrapMethods" attribute.
@@ -1920,6 +1942,10 @@ public class ClassWriter extends ClassFile {
             acount += writeRecordAttribute(c);
         }
 
+        if (target.hasSealedTypes()) {
+            acount += writePermittedSubtypesIfNeeded(c);
+        }
+
         writePool(c.pool);
 
         if (innerClasses != null) {
@@ -1957,6 +1983,8 @@ public class ClassWriter extends ClassFile {
             result |= ACC_VARARGS;
         if ((flags & DEFAULT) != 0)
             result &= ~ABSTRACT;
+        if ((flags & SEALED) != 0)
+            result |= FINAL;
         return result;
     }
 

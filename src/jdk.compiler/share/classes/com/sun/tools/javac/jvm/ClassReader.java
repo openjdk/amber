@@ -109,6 +109,10 @@ public class ClassReader {
      */
     boolean allowModules;
 
+    /** Switch: allow sealed
+     */
+    boolean allowSealedTypes;
+
    /** Lint option: warn about classfile issues
      */
     boolean lintClassfile;
@@ -273,6 +277,7 @@ public class ClassReader {
         Source source = Source.instance(context);
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
+        allowSealedTypes = Feature.SEALED.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -1174,7 +1179,7 @@ public class ClassReader {
                 protected void read(Symbol sym, int attrLen) {
                     ClassSymbol c = (ClassSymbol) sym;
                     Name n = readName(nextChar());
-                    c.sourcefile = new SourceFileObject(n, c.flatname);
+                    c.sourcefile = new SourceFileObject(n);
                     // If the class is a toplevel class, originating from a Java source file,
                     // but the class name does not match the file name, then it is
                     // an auxiliary class.
@@ -1449,6 +1454,26 @@ public class ClassReader {
                     if (sym.kind == TYP && sym.owner.kind == MDL) {
                         ModuleSymbol msym = (ModuleSymbol) sym.owner;
                         msym.resolutionFlags.addAll(readModuleResolutionFlags(nextChar()));
+                    }
+                }
+            },
+
+            new AttributeReader(names.PermittedSubtypes, V56, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowSealedTypes;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        ClassType sealed = (ClassType)sym.type;
+                        ListBuffer<Type> subtypes = new ListBuffer<>();
+                        int numberOfPermittedSubtypes = nextChar();
+                        for (int i = 0; i < numberOfPermittedSubtypes; i++) {
+                            int subtype = nextChar();
+                            Type ct = readClassSymbol(subtype).erasure(types);
+                            subtypes.add(ct);
+                        }
+                        sealed.permitted = subtypes.toList();
                     }
                 }
             },
@@ -2704,6 +2729,11 @@ public class ClassReader {
         for (int i = 0; i < methodCount; i++) skipMember();
         readClassAttrs(c);
 
+        if (ct.permitted != null && !ct.permitted.isEmpty()) {
+            c.flags_field |= SEALED;
+            c.flags_field &= ~FINAL;
+        }
+
         if (readAllOfClassFile) {
             for (int i = 1; i < poolObj.length; i++) readPool(i);
             c.pool = new Pool(poolObj.length, poolObj, types);
@@ -2952,11 +2982,9 @@ public class ClassReader {
         /** The file's name.
          */
         private final Name name;
-        private final Name flatname;
 
-        public SourceFileObject(Name name, Name flatname) {
+        public SourceFileObject(Name name) {
             this.name = name;
-            this.flatname = flatname;
         }
 
         @Override @DefinedBy(Api.COMPILER)

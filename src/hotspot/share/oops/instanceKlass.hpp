@@ -184,6 +184,10 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
+  // The PermittedSubtypes attribute. An array of shorts, where each is a
+  // class info index for the class that is a permitted subtype.
+  Array<jushort>* _permitted_subtypes;
+
   // the source debug extension for this klass, NULL if not specified.
   // Specified as UTF-8 string without terminating zero byte in the classfile,
   // it is stored in the instanceklass as a NULL-terminated UTF-8 string
@@ -483,9 +487,16 @@ class InstanceKlass: public Klass {
     _record_params_count = record_params_count;
   }
 
+// permitted subtypes
+  Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
+  void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
+
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
   bool has_nest_member(InstanceKlass* k, TRAPS) const;
+
+  // Called to verify that k is a permitted subtype of this class
+  bool has_as_permitted_subtype(InstanceKlass* k, TRAPS) const;
 public:
   // Returns nest-host class, resolving and validating it if needed
   // Returns NULL if an exception occurs during loading, or validation fails
@@ -542,6 +553,13 @@ public:
   bool is_reentrant_initialization(Thread *thread)  { return thread == _init_thread; }
   ClassState  init_state()                 { return (ClassState)_init_state; }
   bool is_rewritten() const                { return (_misc_flags & _misc_rewritten) != 0; }
+
+  bool is_sealed() const {
+    return is_final() &&
+      _permitted_subtypes != NULL &&
+      _permitted_subtypes != Universe::the_empty_short_array() &&
+      _permitted_subtypes->length() > 0;
+  }
 
   // defineClass specified verification
   bool should_verify_class() const         {

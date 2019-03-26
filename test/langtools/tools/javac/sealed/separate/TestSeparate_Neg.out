@@ -1,0 +1,5 @@
+TestSeparate_Neg.java:8:45: compiler.err.cant.inherit.from.sealed: SealedClasses.SC
+TestSeparate_Neg.java:9:46: compiler.err.cant.inherit.from.sealed: SealedClasses.SAC
+TestSeparate_Neg.java:10:48: compiler.err.cant.inherit.from.sealed: SealedClasses.SI
+TestSeparate_Neg.java:11:49: compiler.err.cant.inherit.from.sealed: SealedClasses.SI
+4 errors

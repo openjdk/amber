@@ -235,48 +235,43 @@ public class ObjectMethodBuilders {
     }
 
     /**
-     * Bootstrap method to generate the {@code equals} method for a given data class
-     * @param lookup    the lookup
-     * @param invName   the name
-     * @param invType   the method type
-     * @param dataClass the data class
-     * @param getters   the list of getters
-     * @return a call site
+     * Bootstrap method to generate the {@code equals}, {@code hashCode}, and {@code toString} methods for a given data class
+     * @param lookup       the lookup
+     * @param methodName   the method name
+     * @param type         the method type
+     * @param theClass     the data class
+     * @param names        the list of field names joined into a string, separated by ";"
+     * @param getters      the list of getters
+     * @return a call site if invoked by and indy or a method handle if invoked by a condy
      * @throws Throwable if any exception is thrown during call site construction
      */
-    public static CallSite makeEquals(MethodHandles.Lookup lookup, String invName, MethodType invType,
-                                      Class<?> dataClass, MethodHandle... getters) throws Throwable {
-        return new ConstantCallSite(makeEquals(dataClass, List.of(getters)));
-    }
-
-    /**
-     * Bootstrap method to generate the {@code hashCode} method for a given data class
-     * @param lookup    the lookup
-     * @param invName   the name
-     * @param invType   the method type
-     * @param dataClass the data class
-     * @param getters   the list of getters
-     * @return a call site
-     * @throws Throwable if any exception is thrown during call site construction
-     */
-    public static CallSite makeHashCode(MethodHandles.Lookup lookup, String invName, MethodType invType,
-                                        Class<?> dataClass, MethodHandle... getters) throws Throwable {
-        return new ConstantCallSite(makeHashCode(dataClass, List.of(getters)));
-    }
-
-    /**
-     * Bootstrap method to generate the {@code toString} method for a given data class
-     * @param lookup    the lookup
-     * @param invName   the name
-     * @param invType   the method type
-     * @param dataClass the data class
-     * @param names     the list of field names joined into a string, separated by ";"
-     * @param getters   the list of getters
-     * @return a call site
-     * @throws Throwable if any exception is thrown during call site construction
-     */
-    public static CallSite makeToString(MethodHandles.Lookup lookup, String invName, MethodType invType,
-                                        Class<?> dataClass, String names, MethodHandle... getters) throws Throwable {
-        return new ConstantCallSite(makeToString(dataClass, List.of(getters), List.of(names.split(";"))));
+    public static Object bootstrap(MethodHandles.Lookup lookup, String methodName, TypeDescriptor type,
+                                   Class<?> theClass, String names, MethodHandle... getters) throws Throwable {
+        MethodType methodType;
+        if (type instanceof MethodType)
+            methodType = (MethodType) type;
+        else {
+            methodType = null;
+            if (!MethodHandle.class.equals(type))
+                throw new IllegalArgumentException(type.toString());
+        }
+        List<MethodHandle> getterList = List.of(getters);
+        MethodHandle handle;
+        switch (methodName) {
+            case "equals":
+                // validate method type
+                handle = makeEquals(theClass, getterList);
+                return methodType != null ? new ConstantCallSite(handle) : handle;
+            case "hashCode":
+                // validate method type
+                handle = makeHashCode(theClass, getterList);
+                return methodType != null ? new ConstantCallSite(handle) : handle;
+            case "toString":
+                // validate method type
+                handle = makeToString(theClass, getterList, List.of(names.split(";")));
+                return methodType != null ? new ConstantCallSite(handle) : handle;
+            default:
+                throw new IllegalArgumentException(methodName);
+        }
     }
 }

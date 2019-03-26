@@ -209,6 +209,60 @@ bool InstanceKlass::has_nest_member(InstanceKlass* k, TRAPS) const {
   return false;
 }
 
+// Called to verify that k is a permitted subtype of this class
+bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
+  if (k == NULL) {
+    if (log_is_enabled(Trace, class, sealed)) {
+      ResourceMark rm(THREAD);
+      log_trace(class, sealed)("Checked for permitted subtype of %s with a NULL instance class", this->external_name());
+    }
+    return false;
+  }
+  if (_permitted_subtypes == NULL || _permitted_subtypes == Universe::the_empty_short_array()) {
+    if (log_is_enabled(Trace, class, sealed)) {
+      ResourceMark rm(THREAD);
+      log_trace(class, sealed)("Checked for permitted subtype of %s in non-sealed class %s",
+                                  k->external_name(), this->external_name());
+    }
+    return false;
+  }
+
+  if (log_is_enabled(Trace, class, sealed)) {
+    ResourceMark rm(THREAD);
+    log_trace(class, sealed)("Checking for permitted subtype of %s in %s",
+                                k->external_name(), this->external_name());
+  }
+
+  oop classloader1 = this->class_loader();
+  oop classloader2 = k->class_loader();
+  if (!oopDesc::equals(classloader1, classloader2)) {
+      log_trace(class, sealed)("Checked for same class loader of permitted subtype of %s and sealed class %s",
+                                        k->external_name(), this->external_name());
+      return false;
+  }
+
+  // Check for a resolved cp entry, else fall back to a name check.
+  // We don't want to resolve any class other than the one being checked.
+  for (int i = 0; i < _permitted_subtypes->length(); i++) {
+    int cp_index = _permitted_subtypes->at(i);
+    if (_constants->tag_at(cp_index).is_klass()) {
+      Klass* k2 = _constants->klass_at(cp_index, CHECK_false);
+      if (k2 == k) {
+        log_trace(class, sealed)("- class is listed at permitted_subtypes[%d] => cp[%d]", i, cp_index);
+        return true;
+      }
+    } else {
+      Symbol* name = _constants->klass_name_at(cp_index);
+      if (name == k->name()) {
+        log_trace(class, sealed)("- Found it at permitted_subtypes[%d] => cp[%d]", i, cp_index);
+        return true;
+      }
+    }
+  }
+  log_trace(class, sealed)("- class is NOT a permitted subtype!");
+  return false;
+}
+
 // Return nest-host class, resolving, validating and saving it if needed.
 // In cases where this is called from a thread that can not do classloading
 // (such as a native JIT thread) then we simply return NULL, which in turn
@@ -433,6 +487,7 @@ InstanceKlass::InstanceKlass(const ClassFileParser& parser, unsigned kind, Klass
   _nest_members(NULL),
   _nest_host_index(0),
   _nest_host(NULL),
+  _permitted_subtypes(NULL),
   _static_field_size(parser.static_field_size()),
   _nonstatic_oop_map_size(nonstatic_oop_map_size(parser.total_oop_map_count())),
   _itable_len(parser.itable_size()),
@@ -598,6 +653,13 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
     MetadataFactory::free_array<jushort>(loader_data, record_params());
   }
   set_record_params(NULL, 0);
+
+  if (permitted_subtypes() != NULL &&
+      permitted_subtypes() != Universe::the_empty_short_array() &&
+      !permitted_subtypes()->is_shared()) {
+    MetadataFactory::free_array<jushort>(loader_data, permitted_subtypes());
+  }
+  set_permitted_subtypes(NULL);
 
   // We should deallocate the Annotations instance if it's not in shared spaces.
   if (annotations() != NULL && !annotations()->is_shared()) {
@@ -2314,6 +2376,7 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
 
   it->push(&_nest_members);
   it->push(&_record_params);
+  it->push(&_permitted_subtypes);
 }
 
 void InstanceKlass::remove_unshareable_info() {
@@ -3201,6 +3264,7 @@ void InstanceKlass::print_on(outputStream* st) const {
   }
   st->print(BULLET"inner classes:     "); inner_classes()->print_value_on(st);     st->cr();
   st->print(BULLET"nest members:     "); nest_members()->print_value_on(st);     st->cr();
+  st->print(BULLET"permitted subtypes:     "); permitted_subtypes()->print_value_on(st);     st->cr();
   if (java_mirror() != NULL) {
     st->print(BULLET"java mirror:       ");
     java_mirror()->print_value_on(st);

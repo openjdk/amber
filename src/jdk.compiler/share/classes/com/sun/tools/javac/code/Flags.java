@@ -330,10 +330,20 @@ public class Flags {
     public static final long MATCH_BINDING_TO_OUTER = 1L<<59;
 
     /**
+     * Flag to indicate sealed class/interface declaration.
+     */
+    public static final long SEALED = 1L<<60;
+
+    /**
+     * Flag to indicate that the class/interface has explicitly being annotated as not sealed.
+     */
+    public static final long NON_FINAL = 1L<<61;
+
+    /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
      * part of the state vector of a record.
      */
-    public static final long RECORD = 1L<<60;
+    public static final long RECORD = 1L<<62;
 
     /** Modifier masks.
      */
@@ -454,6 +464,7 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
+        SEALED(Flags.SEALED),
         RECORD(Flags.RECORD);
 
         Flag(long flag) {

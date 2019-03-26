@@ -680,11 +680,11 @@ public class TypeEnter implements Completer {
 
             if (tree.extending != null) {
                 extending = clearTypeParams(tree.extending);
-                supertype = attr.attribBase(extending, baseEnv, true, false, true);
+                supertype = attr.attribBase(extending, sym, baseEnv, true, false, true);
             } else {
                 extending = null;
                 supertype = ((tree.mods.flags & Flags.ENUM) != 0)
-                ? attr.attribBase(enumBase(tree.pos, sym), baseEnv,
+                ? attr.attribBase(enumBase(tree.pos, sym), sym, baseEnv,
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
@@ -700,7 +700,7 @@ public class TypeEnter implements Completer {
             List<JCExpression> interfaceTrees = tree.implementing;
             for (JCExpression iface : interfaceTrees) {
                 iface = clearTypeParams(iface);
-                Type it = attr.attribBase(iface, baseEnv, false, true, true);
+                Type it = attr.attribBase(iface, sym, baseEnv, false, true, true);
                 if (it.hasTag(CLASS)) {
                     interfaces.append(it);
                     if (all_interfaces != null) all_interfaces.append(it);
@@ -711,6 +711,15 @@ public class TypeEnter implements Completer {
                 }
             }
 
+            // Determine permits.
+            ListBuffer<Type> permittedSubtypes = new ListBuffer<>();
+            List<JCExpression> permittedTrees = tree.permitting;
+            for (JCExpression permitted : permittedTrees) {
+                permitted = clearTypeParams(permitted);
+                Type pt = attr.attribBase(permitted, sym, baseEnv, false, false, false);
+                permittedSubtypes.append(pt);
+            }
+
             if ((sym.flags_field & ANNOTATION) != 0) {
                 ct.interfaces_field = List.of(syms.annotationType);
                 ct.all_interfaces_field = ct.interfaces_field;
@@ -719,6 +728,9 @@ public class TypeEnter implements Completer {
                 ct.all_interfaces_field = (all_interfaces == null)
                         ? ct.interfaces_field : all_interfaces.toList();
             }
+
+            ct.permitted = permittedSubtypes.toList();
+            ct.isPermittedExplicit = !permittedSubtypes.isEmpty();
         }
             //where:
             protected JCExpression clearTypeParams(JCExpression superType) {
@@ -1076,6 +1088,8 @@ public class TypeEnter implements Completer {
                               null);
                     memberEnter.memberEnter(getter, env);
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
+                } else if (implSym != null && (implSym.flags() & Flags.PUBLIC) == 0) {
+                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
                 }
             }
         }

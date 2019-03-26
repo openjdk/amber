@@ -1,0 +1,2 @@
+UserDefinedAccessorsMustBePublic.java:8:9: compiler.err.method.must.be.public: i
+1 error

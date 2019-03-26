@@ -52,9 +52,8 @@
 #include "oops/klass.inline.hpp"
 #include "oops/klassVtable.hpp"
 #include "oops/metadata.hpp"
-#include "oops/method.hpp"
+#include "oops/method.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "oops/recordParamInfo.hpp"
 #include "oops/symbol.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
@@ -1976,46 +1975,6 @@ const ClassFileParser::unsafe_u2* ClassFileParser::parse_localvariable_table(con
   return localvariable_table_start;
 }
 
-
-void ClassFileParser::parse_type_array(u2 array_length,
-                                       u4 code_length,
-                                       u4* const u1_index,
-                                       u4* const u2_index,
-                                       u1* const u1_array,
-                                       u2* const u2_array,
-                                       TRAPS) {
-  const ClassFileStream* const cfs = _stream;
-  u2 index = 0; // index in the array with long/double occupying two slots
-  u4 i1 = *u1_index;
-  u4 i2 = *u2_index + 1;
-  for(int i = 0; i < array_length; i++) {
-    const u1 tag = u1_array[i1++] = cfs->get_u1(CHECK);
-    index++;
-    if (tag == ITEM_Long || tag == ITEM_Double) {
-      index++;
-    } else if (tag == ITEM_Object) {
-      const u2 class_index = u2_array[i2++] = cfs->get_u2(CHECK);
-      guarantee_property(valid_klass_reference_at(class_index),
-                         "Bad class index %u in StackMap in class file %s",
-                         class_index, CHECK);
-    } else if (tag == ITEM_Uninitialized) {
-      const u2 offset = u2_array[i2++] = cfs->get_u2(CHECK);
-      guarantee_property(
-        offset < code_length,
-        "Bad uninitialized type offset %u in StackMap in class file %s",
-        offset, CHECK);
-    } else {
-      guarantee_property(
-        tag <= (u1)ITEM_Uninitialized,
-        "Unknown variable type %u in StackMap in class file %s",
-        tag, CHECK);
-    }
-  }
-  u2_array[*u2_index] = index;
-  *u1_index = i1;
-  *u2_index = i2;
-}
-
 static const u1* parse_stackmap_table(const ClassFileStream* const cfs,
                                       u4 code_attribute_length,
                                       bool need_verify,
@@ -3261,6 +3220,38 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
   return length;
 }
 
+u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFileStream* const cfs,
+                                                           const u1* const permitted_subtypes_attribute_start,
+                                                           TRAPS) {
+  const u1* const current_mark = cfs->current();
+  u2 length = 0;
+  if (permitted_subtypes_attribute_start != NULL) {
+    cfs->set_current(permitted_subtypes_attribute_start);
+    cfs->guarantee_more(2, CHECK_0);  // length
+    length = cfs->get_u2_fast();
+  }
+  const int size = length;
+  Array<u2>* const permitted_subtypes = MetadataFactory::new_array<u2>(_loader_data, size, CHECK_0);
+  _permitted_subtypes = permitted_subtypes;
+
+  int index = 0;
+  cfs->guarantee_more(2 * length, CHECK_0);
+  for (int n = 0; n < length; n++) {
+    const u2 class_info_index = cfs->get_u2_fast();
+    check_property(
+      valid_klass_reference_at(class_info_index),
+      "Permitted subtype class_info_index %u has bad constant type in class file %s",
+      class_info_index, CHECK_0);
+    permitted_subtypes->at_put(index++, class_info_index);
+  }
+  assert(index == size, "wrong size");
+
+  // Restore buffer's current position.
+  cfs->set_current(current_mark);
+
+  return length;
+}
+
 void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* const cfs,
                                                            const u1* const record_attribute_start,
                                                            ConstantPool* cp,
@@ -3454,6 +3445,8 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   _inner_classes = Universe::the_empty_short_array();
   // Set nest members attribute to default sentinel
   _nest_members = Universe::the_empty_short_array();
+  // Set _permitted_subtypes attribute to default sentinel
+  _permitted_subtypes = Universe::the_empty_short_array();
   // Set record params to default sentinel
   _record_params = Universe::the_empty_short_array();
   cfs->guarantee_more(2, CHECK);  // attributes_count
@@ -3461,6 +3454,7 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   bool parsed_sourcefile_attribute = false;
   bool parsed_innerclasses_attribute = false;
   bool parsed_nest_members_attribute = false;
+  bool parsed_permitted_subtypes_attribute = false;
   bool parsed_nest_host_attribute = false;
   bool parsed_record_attribute = false;
   bool parsed_enclosingmethod_attribute = false;
@@ -3484,6 +3478,8 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   u4  nest_members_attribute_length = 0;
   const u1* record_attribute_start = NULL;
   u4  record_attribute_length = 0;
+  const u1* permitted_subtypes_attribute_start = NULL;
+  u4  permitted_subtypes_attribute_length = 0;
 
   // Iterate over attributes
   while (attributes_count--) {
@@ -3666,6 +3662,19 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          "Nest-host class_info_index %u has bad constant type in class file %s",
                          class_info_index, CHECK);
           _nest_host = class_info_index;
+        } else if (tag == vmSymbols::tag_permitted_subtypes()) {
+            // Check for PermittedSubtypes tag
+            if (!_access_flags.is_final()) {
+                classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+            }
+            if (parsed_permitted_subtypes_attribute) {
+              classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
+            } else {
+              parsed_permitted_subtypes_attribute = true;
+            }
+            permitted_subtypes_attribute_start = cfs->current();
+            permitted_subtypes_attribute_length = attribute_length;
+            cfs->skip_u1(permitted_subtypes_attribute_length, CHECK);
         } else if (tag == vmSymbols::tag_record()) {
           if (parsed_record_attribute) {
             classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
@@ -3733,6 +3742,18 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                             cp,
                             &_record_params_count,
                             CHECK);
+  }
+
+  if (parsed_permitted_subtypes_attribute) {
+    const u2 num_of_subtypes = parse_classfile_permitted_subtypes_attribute(
+                            cfs,
+                            permitted_subtypes_attribute_start,
+                            CHECK);
+    if (_need_verify) {
+      guarantee_property(
+        permitted_subtypes_attribute_length == sizeof(num_of_subtypes) + sizeof(u2) * num_of_subtypes,
+        "Wrong PermittedSubtypes attribute length in class file %s", CHECK);
+    }
   }
 
   if (_max_bootstrap_specifier_index >= 0) {
@@ -3803,6 +3824,7 @@ void ClassFileParser::apply_parsed_class_metadata(
   this_klass->set_local_interfaces(_local_interfaces);
   this_klass->set_annotations(_combined_annotations);
   this_klass->set_record_params(_record_params, record_params_count);
+  this_klass->set_permitted_subtypes(_permitted_subtypes);
   // Delay the setting of _transitive_interfaces until after initialize_supers() in
   // fill_instance_klass(). It is because the _transitive_interfaces may be shared with
   // its _super. If an OOM occurs while loading the current klass, its _super field
@@ -4874,12 +4896,13 @@ void ClassFileParser::verify_legal_class_modifiers(jint flags, TRAPS) const {
   const bool is_super      = (flags & JVM_ACC_SUPER)      != 0;
   const bool is_enum       = (flags & JVM_ACC_ENUM)       != 0;
   const bool is_annotation = (flags & JVM_ACC_ANNOTATION) != 0;
-  const bool major_gte_15  = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_12  = _major_version >= JAVA_12_VERSION;
 
-  if ((is_abstract && is_final) ||
-      (is_interface && !is_abstract) ||
-      (is_interface && major_gte_15 && (is_super || is_enum)) ||
-      (!is_interface && major_gte_15 && is_annotation)) {
+  if ((is_abstract && is_final && !major_gte_12) ||
+      (is_interface && !is_abstract && !major_gte_12) ||
+      (is_interface && major_gte_1_5 && (is_super || is_enum)) ||
+      (!is_interface && major_gte_1_5 && is_annotation)) {
     ResourceMark rm(THREAD);
     Exceptions::fthrow(
       THREAD_AND_LOCATION,
@@ -5651,6 +5674,7 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   assert(NULL == _local_interfaces, "invariant");
   assert(NULL == _combined_annotations, "invariant");
   assert(NULL == _record_params, "invariant");
+  assert(NULL == _permitted_subtypes, "invariant");
 
   if (_has_final_method) {
     ik->set_has_final_method();
@@ -5830,6 +5854,8 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   // it's official
   set_klass(ik);
 
+  check_subtyping(CHECK);
+
   debug_only(ik->verify();)
 }
 
@@ -5933,6 +5959,7 @@ ClassFileParser::ClassFileParser(ClassFileStream* stream,
   _nest_members(NULL),
   _nest_host(0),
   _record_params(NULL),
+  _permitted_subtypes(NULL),
   _local_interfaces(NULL),
   _transitive_interfaces(NULL),
   _combined_annotations(NULL),
@@ -6040,6 +6067,7 @@ void ClassFileParser::clear_class_metadata() {
   _methods = NULL;
   _inner_classes = NULL;
   _nest_members = NULL;
+  _permitted_subtypes = NULL;
   _local_interfaces = NULL;
   _combined_annotations = NULL;
   _annotations = _type_annotations = NULL;
@@ -6074,6 +6102,10 @@ ClassFileParser::~ClassFileParser() {
 
   if (_record_params != NULL && _record_params != Universe::the_empty_short_array()) {
     MetadataFactory::free_array<u2>(_loader_data, _record_params);
+  }
+  
+  if (_permitted_subtypes != NULL && _permitted_subtypes != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<u2>(_loader_data, _permitted_subtypes);
   }
 
   // Free interfaces
@@ -6408,10 +6440,6 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
       );
       return;
     }
-    // Make sure super class is not final
-    if (_super_klass->is_final()) {
-      THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
-    }
   }
 
   // Compute the transitive list of all unique interfaces implemented by this class
@@ -6429,12 +6457,17 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
+  bool is_sealed = _access_flags.is_final() &&
+                         _permitted_subtypes != NULL &&
+                         _permitted_subtypes != Universe::the_empty_short_array() &&
+                         _permitted_subtypes->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,
                                                     _super_klass,
                                                     _methods,
                                                     _access_flags,
+                                                    is_sealed,
                                                     _major_version,
                                                     loader,
                                                     _class_name,
@@ -6454,6 +6487,30 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   // Compute reference typ
   _rt = (NULL ==_super_klass) ? REF_NONE : _super_klass->reference_type();
 
+}
+
+void ClassFileParser::check_subtyping(TRAPS) {
+  assert(NULL != _klass, "_klass should have been resolved before calling this method");
+  if (_super_klass != NULL) {
+    if (_super_klass->is_final()) {
+      bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
+      if (!isPermittedSubtype) {
+        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
+      }
+    }
+  }
+  Array<InstanceKlass*>* local_interfaces = _klass->local_interfaces();
+  if (local_interfaces != NULL && local_interfaces != Universe::the_empty_instance_klass_array()) {
+    for (int i = 0; i < local_interfaces->length(); i++) {
+      InstanceKlass* intf = local_interfaces->at(i);
+      if (intf->is_final()) {
+        bool isPermittedSubtype = intf->has_as_permitted_subtype(_klass, CHECK);
+        if (!isPermittedSubtype) {
+          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
+        }
+      }
+    }
+  }
 }
 
 void ClassFileParser::set_klass(InstanceKlass* klass) {
