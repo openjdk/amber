@@ -238,7 +238,7 @@ public class ObjectMethodBuilders {
      * Bootstrap method to generate the {@code equals}, {@code hashCode}, and {@code toString} methods for a given data class
      * @param lookup       the lookup
      * @param methodName   the method name
-     * @param type         the method type
+     * @param type         the descriptor type
      * @param theClass     the data class
      * @param names        the list of field names joined into a string, separated by ";"
      * @param getters      the list of getters
