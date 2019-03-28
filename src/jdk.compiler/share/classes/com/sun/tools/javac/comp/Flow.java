@@ -2231,7 +2231,11 @@ public class Flow {
                 // Warn about fall-through if lint switch fallthrough enabled.
             }
             if (!hasDefault) {
-                inits.andSet(initsSwitch);
+                if (tree.hasTag(SWITCH_EXPRESSION)) {
+                    markDead();
+                } else {
+                    inits.andSet(initsSwitch);
+                }
             }
             resolveBreaks(tree, prevPendingExits);
             nextadr = nextadrPrev;

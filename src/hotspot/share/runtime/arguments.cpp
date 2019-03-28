@@ -530,6 +530,7 @@ static SpecialFlag const special_jvm_flags[] = {
   { "UseMembar",                    JDK_Version::jdk(10), JDK_Version::jdk(12), JDK_Version::undefined() },
   { "CompilationPolicyChoice",      JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::undefined() },
   { "FailOverToOldVerifier",        JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::undefined() },
+  { "AllowJNIEnvProxy",             JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::jdk(15) },
   { "ThreadLocalHandshakes",        JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::jdk(15) },
 
   // --- Deprecated alias flags (see also aliased_jvm_flags) - sorted by obsolete_in then expired_in:
@@ -2872,6 +2873,20 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
         return JNI_EINVAL;
       }
       if (FLAG_SET_CMDLINE(bool, DisplayVMOutputToStdout, true) != JVMFlag::SUCCESS) {
+        return JNI_EINVAL;
+      }
+    } else if (match_option(option, "-XX:+ErrorFileToStderr")) {
+      if (FLAG_SET_CMDLINE(bool, ErrorFileToStdout, false) != JVMFlag::SUCCESS) {
+        return JNI_EINVAL;
+      }
+      if (FLAG_SET_CMDLINE(bool, ErrorFileToStderr, true) != JVMFlag::SUCCESS) {
+        return JNI_EINVAL;
+      }
+    } else if (match_option(option, "-XX:+ErrorFileToStdout")) {
+      if (FLAG_SET_CMDLINE(bool, ErrorFileToStderr, false) != JVMFlag::SUCCESS) {
+        return JNI_EINVAL;
+      }
+      if (FLAG_SET_CMDLINE(bool, ErrorFileToStdout, true) != JVMFlag::SUCCESS) {
         return JNI_EINVAL;
       }
     } else if (match_option(option, "-XX:+ExtendedDTraceProbes")) {

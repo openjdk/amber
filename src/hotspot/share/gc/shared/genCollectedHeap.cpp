@@ -723,10 +723,10 @@ void GenCollectedHeap::verify_nmethod(nmethod* nm) {
 }
 
 void GenCollectedHeap::flush_nmethod(nmethod* nm) {
-  ScavengableNMethods::flush_nmethod(nm);
+  // Do nothing.
 }
 
-void GenCollectedHeap::prune_nmethods() {
+void GenCollectedHeap::prune_scavengable_nmethods() {
   ScavengableNMethods::prune_nmethods();
 }
 
@@ -871,7 +871,7 @@ void GenCollectedHeap::process_roots(StrongRootsScope* scope,
       assert(code_roots != NULL, "must supply closure for code cache");
 
       // We only visit parts of the CodeCache when scavenging.
-      ScavengableNMethods::scavengable_nmethods_do(code_roots);
+      ScavengableNMethods::nmethods_do(code_roots);
     }
     if (so & SO_AllCodeCache) {
       assert(code_roots != NULL, "must supply closure for code cache");
