@@ -204,22 +204,13 @@ final class FormatterBootstraps {
                     constant(String.class, "").asType(methodType) :
                     identity(methodType.parameterType(0)).asType(methodType));
         }
-
-        boolean isFormatterMethod = methodType.parameterCount() > 0 && methodType.parameterType(0) == Formatter.class;
         // Array of formatter args excluding target and locale
         Class<?>[] argTypes = methodType.dropParameterTypes(0, firstFormatterArg(isStringMethod, hasLocaleArg)).parameterArray();
         // index array is needed for argument analysis
         int[] argIndexes = calculateArgumentIndexes(specs, argTypes.length);
-
-        FormatHandleBuilder builder;
-
-        if (isStringMethod && mayNotNeedFormatter(specs, argTypes, argIndexes)) {
-            builder = new StringConcatHandleBuilder(specs, argTypes, argIndexes, hasLocaleArg);
-        } else {
-            builder = new FormatterFormatHandleBuilder(specs, argTypes, argIndexes, hasLocaleArg, isFormatterMethod, isStringMethod);
-        }
-
-        return new ConstantCallSite(builder.getHandle(lookup, methodType));
+        return isStringMethod && mayNotNeedFormatter(specs, argTypes, argIndexes) ?
+            new ConstantCallSite(new StringConcatHandleBuilder(specs, argTypes, argIndexes, hasLocaleArg).getHandle(lookup, methodType)) :
+            new ConstantCallSite(fallbackMethodHandle(lookup, name, methodType, format, isStringMethod, hasLocaleArg, isVarArgs));
     }
 
     private static int[] calculateArgumentIndexes(List<FormatToken> specs, int argCount) {
