@@ -303,22 +303,4 @@ public final class IntrinsicFactory {
             throws NoSuchMethodException, IllegalAccessException, StringConcatException {
         return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, true, true);
     }
-
-    /**
-     * objectsHashBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite objectsHashBootstrap(MethodHandles.Lookup lookup,
-                                                String name,
-                                                MethodType methodType)
-            throws NoSuchMethodException, IllegalAccessException {
-        return ObjectsBootstraps.hashBootstrap(lookup, name, methodType);
-    }
-
 }

@@ -28,7 +28,6 @@ package java.util;
 import jdk.internal.util.Preconditions;
 import jdk.internal.vm.annotation.ForceInline;
 
-import java.lang.compiler.IntrinsicCandidate;
 import java.util.function.Supplier;
 
 /**
@@ -138,21 +137,11 @@ public final class Objects {
     * value does not equal the hash code of that object reference.</b> This
     * value can be computed by calling {@link #hashCode(Object)}.
     *
-    * @implNote
-    * An invocation of this method may be intrinsified see {@link java.lang.compiler.IntrinsicCandidate}.
-    * If all the arguments are constant expressions, then intrinsification generates a hash code directly
-    * from the arguments, and uses it as the run-time value of the method invocation. If some arguments
-    * are not constant expressions, then intrinsification replaces the method invocation with code that
-    * will generate a hash code for each argument in a type-specific way at run time, then combine the
-    * results. Intrinsification is advantageous because it avoids both the boxing of primitive arguments
-    * into objects, and the boxing of all arguments into a varargs array.
-    *
     * @param values the values to be hashed
     * @return a hash value of the sequence of input values
     * @see Arrays#hashCode(Object[])
     * @see List#hashCode
     */
-    @IntrinsicCandidate
     public static int hash(Object... values) {
         return Arrays.hashCode(values);
     }
