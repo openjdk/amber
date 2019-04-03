@@ -268,7 +268,7 @@ class bufferedStream : public outputStream {
   char* as_string();
 };
 
-#define O_BUFLEN 2000   // max size of output of individual print() methods
+#define O_BUFLEN 20000   // max size of output of individual print() methods
 
 #ifndef PRODUCT
 
