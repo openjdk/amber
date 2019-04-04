@@ -25,8 +25,6 @@
 
 package com.sun.tools.javac.intrinsics;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.ConstantDescs;
@@ -48,22 +46,6 @@ public class FormatterProcessor implements IntrinsicProcessor {
     @Override
     public void register(Intrinsics intrinsics) {
         this.intrinsics = intrinsics;
-        intrinsics.register(this,
-                PrintStream.class, "printf", PrintStream.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintStream.class, "printf", PrintStream.class, Locale.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintStream.class, "format", PrintStream.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintStream.class, "format", PrintStream.class, Locale.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintWriter.class, "printf", PrintWriter.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintWriter.class, "printf", PrintWriter.class, Locale.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintWriter.class, "format", PrintWriter.class, String.class, Object[].class);
-        intrinsics.register(this,
-                PrintWriter.class, "format", PrintWriter.class, Locale.class, String.class, Object[].class);
         intrinsics.register(this,
                 String.class, "format", String.class, String.class, Object[].class);
         intrinsics.register(this,

@@ -149,32 +149,6 @@ public class JavacIntrinsicsSupport extends Basic {
         }
     }
 
-    static PrintStream printStreamFormat(PrintStream ps, Locale l, String fs, Object... args) {
-        CallSite cs;
-        List<Object> invokeArgs;
-        try {
-            cs = IntrinsicFactory.printStreamLocaleFormatBootstrap(MethodHandles.lookup(), "format",
-                    getPrintStreamFormatMethodType(args), fs);
-            invokeArgs = new ArrayList<>();
-            invokeArgs.add(ps);
-            invokeArgs.add(l);
-            if (args != null) {
-                Collections.addAll(invokeArgs, args);
-            } else {
-                invokeArgs.add(null);
-            }
-        } catch (Throwable t) {
-            throw new BootstrapMethodError(t);
-        }
-        try {
-            return (PrintStream) cs.dynamicInvoker().invokeWithArguments(invokeArgs);
-        } catch (RuntimeException r) {
-            throw r;
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-    }
-
     private static MethodType getFormatterFormatMethodType(boolean hasLocale, Object... args) {
         MethodType mt = MethodType.methodType(Formatter.class, Formatter.class);
         if (hasLocale) {

@@ -59,14 +59,6 @@ import static java.lang.invoke.MethodType.methodType;
  * <ul>
  *     <li>{@link Formatter#format(String, Object...)}</li>
  *     <li>{@link Formatter#format(Locale, String, Object...)}</li>
- *     <li>{@link java.io.PrintStream#format(String, Object...)}</li>
- *     <li>{@link java.io.PrintStream#format(Locale, String, Object...)}</li>
- *     <li>{@link java.io.PrintStream#printf(String, Object...)}</li>
- *     <li>{@link java.io.PrintStream#printf(Locale, String, Object...)}</li>
- *     <li>{@link java.io.PrintWriter#format(String, Object...)}</li>
- *     <li>{@link java.io.PrintWriter#format(Locale, String, Object...)}</li>
- *     <li>{@link java.io.PrintWriter#printf(String, Object...)}</li>
- *     <li>{@link java.io.PrintWriter#printf(Locale, String, Object...)}</li>
  *     <li>{@link String#format(String, Object...)}</li>
  *     <li>{@link String#format(Locale, String, Object...)}</li>
  * </ul>

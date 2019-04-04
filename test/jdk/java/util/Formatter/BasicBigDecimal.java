@@ -116,42 +116,6 @@ public class BasicBigDecimal extends Basic {
                 fail(fs, ex.getClass());
             }
         }
-        testSysOutIntrinsic(fs, exp, args);
-    }
-
-    private static void testSysOutIntrinsic(String fs, String exp, Object ... args) {
-        FileOutputStream fos = null;
-        FileInputStream fis = null;
-        try {
-            PrintStream saveOut = System.out;
-            fos = new FileOutputStream("testSysOut");
-            System.setOut(new PrintStream(fos));
-            JavacIntrinsicsSupport.printStreamFormat(System.out, Locale.US, fs, args);
-            fos.close();
-
-            fis = new FileInputStream("testSysOut");
-            byte [] ba = new byte[exp.length()];
-            int len = fis.read(ba);
-            String got = new String(ba);
-            if (len != ba.length)
-                fail(fs, exp, got);
-            ck(fs, exp, got);
-
-            System.setOut(saveOut);
-        } catch (FileNotFoundException ex) {
-            fail(fs, ex.getClass());
-        } catch (IOException ex) {
-            fail(fs, ex.getClass());
-        } finally {
-            try {
-                if (fos != null)
-                    fos.close();
-                if (fis != null)
-                    fis.close();
-            } catch (IOException ex) {
-                fail(fs, ex.getClass());
-            }
-        }
     }
 
     private static void tryCatch(String fs, Class<?> ex) {
