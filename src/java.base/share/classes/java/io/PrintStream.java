@@ -25,7 +25,6 @@
 
 package java.io;
 
-import java.lang.compiler.IntrinsicCandidate;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
@@ -1001,19 +1000,6 @@ public class PrintStream extends FilterOutputStream
      *     out.format(format, args)
      * }</pre>
      *
-     * @implNote
-     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Intrinsification replaces the method
-     * invocation with a string concatenation operation. No checks are made during intrinsification
-     * on the content of the {@code format} string, so an IllegalFormatException is possible at
-     * run time.
-     * <p>
-     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
-     * are constant expressions are evaluated at compile time, and arguments that are not constant
-     * expressions are evaluated at run time. (An argument that is a nested invocation of an
-     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
-     * usual discretion on when and how to intrinsify.)
-     *
      * @param  format
      *         A format string as described in <a
      *         href="../util/Formatter.html#syntax">Format string syntax</a>
@@ -1045,7 +1031,6 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintStream printf(String format, Object ... args) {
         return format(format, args);
     }
@@ -1061,19 +1046,6 @@ public class PrintStream extends FilterOutputStream
      * <pre>{@code
      *     out.format(l, format, args)
      * }</pre>
-     *
-     * @implNote
-     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Intrinsification replaces the method
-     * invocation with a string concatenation operation. No checks are made during intrinsification
-     * on the content of the {@code format} string, so an IllegalFormatException is possible at
-     * run time.
-     * <p>
-     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
-     * are constant expressions are evaluated at compile time, and arguments that are not constant
-     * expressions are evaluated at run time. (An argument that is a nested invocation of an
-     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
-     * usual discretion on when and how to intrinsify.)
      *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
@@ -1111,7 +1083,6 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintStream printf(Locale l, String format, Object ... args) {
         return format(l, format, args);
     }
@@ -1125,19 +1096,6 @@ public class PrintStream extends FilterOutputStream
      * {@link java.util.Locale.Category#FORMAT FORMAT} category specified,
      * regardless of any previous invocations of other formatting methods on
      * this object.
-     *
-     * @implNote
-     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Intrinsification replaces the method
-     * invocation with a string concatenation operation. No checks are made during intrinsification
-     * on the content of the {@code format} string, so an IllegalFormatException is possible at
-     * run time.
-     * <p>
-     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
-     * are constant expressions are evaluated at compile time, and arguments that are not constant
-     * expressions are evaluated at run time. (An argument that is a nested invocation of an
-     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
-     * usual discretion on when and how to intrinsify.)
      *
      * @param  format
      *         A format string as described in <a
@@ -1170,7 +1128,6 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintStream format(String format, Object ... args) {
         try {
             synchronized (this) {
@@ -1194,19 +1151,6 @@ public class PrintStream extends FilterOutputStream
      * Writes a formatted string to this output stream using the specified
      * format string and arguments.
      *
-     * @implNote
-     * An invocation of this method may be intrinsified {@link java.lang.compiler.IntrinsicCandidate}
-     * if the {@code format} string is a constant expression. Intrinsification replaces the method
-     * invocation with a string concatenation operation. No checks are made during intrinsification
-     * on the content of the {@code format} string, so an IllegalFormatException is possible at
-     * run time.
-     * <p>
-     * The treatment of subsequent arguments is the same as without intrinsification: arguments that
-     * are constant expressions are evaluated at compile time, and arguments that are not constant
-     * expressions are evaluated at run time. (An argument that is a nested invocation of an
-     * intrinsifiable method may be evaluated at compile time and/or run time, per the compiler's
-     * usual discretion on when and how to intrinsify.)
-     *
      * @param  l
      *         The {@linkplain java.util.Locale locale} to apply during
      *         formatting.  If {@code l} is {@code null} then no localization
@@ -1243,7 +1187,6 @@ public class PrintStream extends FilterOutputStream
      *
      * @since  1.5
      */
-    @IntrinsicCandidate
     public PrintStream format(Locale l, String format, Object ... args) {
         try {
             synchronized (this) {
