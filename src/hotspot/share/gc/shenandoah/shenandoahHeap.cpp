@@ -389,10 +389,6 @@ void ShenandoahHeap::initialize_heuristics() {
               err_msg("Heuristics \"%s\" is experimental, and must be enabled via -XX:+UnlockExperimentalVMOptions.",
                       _heuristics->name()));
     }
-
-    if (ShenandoahStoreValEnqueueBarrier && ShenandoahStoreValReadBarrier) {
-      vm_exit_during_initialization("Cannot use both ShenandoahStoreValEnqueueBarrier and ShenandoahStoreValReadBarrier");
-    }
     log_info(gc, init)("Shenandoah heuristics: %s",
                        _heuristics->name());
   } else {
@@ -436,6 +432,7 @@ ShenandoahHeap::ShenandoahHeap(ShenandoahCollectorPolicy* policy) :
   _cycle_memory_manager("Shenandoah Cycles", "end of GC cycle"),
   _gc_timer(new (ResourceObj::C_HEAP, mtGC) ConcurrentGCTimer()),
   _soft_ref_policy(),
+  _log_min_obj_alignment_in_bytes(LogMinObjAlignmentInBytes),
   _ref_processor(NULL),
   _marking_context(NULL),
   _bitmap_size(0),
@@ -790,7 +787,7 @@ HeapWord* ShenandoahHeap::allocate_memory(ShenandoahAllocRequest& req) {
     assert(req.is_gc_alloc(), "Can only accept GC allocs here");
     result = allocate_memory_under_lock(req, in_new_region);
     // Do not call handle_alloc_failure() here, because we cannot block.
-    // The allocation failure would be handled by the WB slowpath with handle_alloc_failure_evac().
+    // The allocation failure would be handled by the LRB slowpath with handle_alloc_failure_evac().
   }
 
   if (in_new_region) {
@@ -1104,7 +1101,6 @@ public:
     ShenandoahParallelWorkerSession worker_session(worker_id);
     ShenandoahEvacOOMScope oom_evac_scope;
     ShenandoahEvacuateUpdateRootsClosure cl;
-
     MarkingCodeBlobClosure blobsCl(&cl, CodeBlobToOopClosure::FixRelocations);
     _rp->process_evacuate_roots(&cl, &blobsCl, worker_id);
   }
@@ -1125,16 +1121,6 @@ void ShenandoahHeap::evacuate_and_update_roots() {
 #if defined(COMPILER2) || INCLUDE_JVMCI
   DerivedPointerTable::update_pointers();
 #endif
-}
-
-void ShenandoahHeap::roots_iterate(OopClosure* cl) {
-  assert(ShenandoahSafepoint::is_at_shenandoah_safepoint(), "Only iterate roots while world is stopped");
-
-  CodeBlobToOopClosure blobsCl(cl, false);
-  CLDToOopClosure cldCl(cl, ClassLoaderData::_claim_strong);
-
-  ShenandoahRootProcessor rp(this, 1, ShenandoahPhaseTimings::_num_phases);
-  rp.process_all_roots(cl, NULL, &cldCl, &blobsCl, NULL, 0);
 }
 
 // Returns size in bytes
@@ -1337,7 +1323,7 @@ void ShenandoahHeap::object_iterate(ObjectClosure* cl) {
   ObjectIterateScanRootClosure oops(&_aux_bit_map, &oop_stack);
   CLDToOopClosure clds(&oops, ClassLoaderData::_claim_none);
   CodeBlobToOopClosure blobs(&oops, false);
-  rp.process_all_roots(&oops, &oops, &clds, &blobs, NULL, 0);
+  rp.process_all_roots(&oops, &clds, &blobs, NULL, 0);
 
   // Work through the oop stack to traverse heap.
   while (! oop_stack.is_empty()) {
@@ -1809,13 +1795,13 @@ void ShenandoahHeap::op_degenerated_futile() {
 
 void ShenandoahHeap::stop_concurrent_marking() {
   assert(is_concurrent_mark_in_progress(), "How else could we get here?");
+  set_concurrent_mark_in_progress(false);
   if (!cancelled_gc()) {
     // If we needed to update refs, and concurrent marking has been cancelled,
     // we need to finish updating references.
     set_has_forwarded_objects(false);
     mark_complete_marking_context();
   }
-  set_concurrent_mark_in_progress(false);
 }
 
 void ShenandoahHeap::force_satb_flush_all_threads() {
@@ -1845,12 +1831,16 @@ void ShenandoahHeap::set_gc_state_mask(uint mask, bool value) {
 }
 
 void ShenandoahHeap::set_concurrent_mark_in_progress(bool in_progress) {
-  set_gc_state_mask(MARKING, in_progress);
+  if (has_forwarded_objects()) {
+    set_gc_state_mask(MARKING | UPDATEREFS, in_progress);
+  } else {
+    set_gc_state_mask(MARKING, in_progress);
+  }
   ShenandoahBarrierSet::satb_mark_queue_set().set_active_all_threads(in_progress, !in_progress);
 }
 
 void ShenandoahHeap::set_concurrent_traversal_in_progress(bool in_progress) {
-   set_gc_state_mask(TRAVERSAL | HAS_FORWARDED, in_progress);
+   set_gc_state_mask(TRAVERSAL | HAS_FORWARDED | UPDATEREFS, in_progress);
    ShenandoahBarrierSet::satb_mark_queue_set().set_active_all_threads(in_progress, !in_progress);
 }
 
@@ -2071,14 +2061,12 @@ void ShenandoahHeap::unregister_nmethod(nmethod* nm) {
 }
 
 oop ShenandoahHeap::pin_object(JavaThread* thr, oop o) {
-  o = ShenandoahBarrierSet::barrier_set()->write_barrier(o);
   ShenandoahHeapLocker locker(lock());
   heap_region_containing(o)->make_pinned();
   return o;
 }
 
 void ShenandoahHeap::unpin_object(JavaThread* thr, oop o) {
-  o = ShenandoahBarrierSet::barrier_set()->read_barrier(o);
   ShenandoahHeapLocker locker(lock());
   heap_region_containing(o)->make_unpinned();
 }
