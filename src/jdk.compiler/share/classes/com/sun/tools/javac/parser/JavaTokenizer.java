@@ -459,6 +459,59 @@ public class JavaTokenizer {
         }
     }
 
+    /** Scan a string literal.
+     */
+    private void scanStringLiteral(int pos) {
+        int firstEOLN = -1;
+        int rescan = reader.bp;
+        int openCount = countChar('\"', 3);
+        if (openCount == 2) {
+            reader.reset(rescan);
+            openCount = countChar('\"', 1);
+        }
+        while (reader.bp < reader.buflen) {
+            if (reader.ch == '\"') {
+                int closeCount = countChar('\"', openCount);
+                rescan = reader.bp;
+                if (openCount == closeCount) {
+                    tk = Tokens.TokenKind.STRINGLITERAL;
+                    return;
+                }
+                reader.repeat('\"', closeCount);
+                reader.reset(rescan);
+            } else if (reader.ch == LF || reader.ch == CR) {
+                if (openCount == 1) {
+                    break;
+                }
+                int start = reader.bp;
+                if (firstEOLN == -1) {
+                    firstEOLN = start;
+                }
+                if (reader.ch == CR && reader.peekChar() == LF) {
+                    reader.scanChar();
+                }
+                reader.putChar('\n', true);
+                processLineTerminator(start, reader.bp);
+            } else {
+                scanLitChar(pos);
+            }
+        }
+        if (firstEOLN  != -1) {
+            reader.reset(firstEOLN);
+        }
+        lexError(pos, Errors.UnclosedStrLit);
+    }
+
+    /** Count and skip repeated occurances of the specified character.
+     */
+    private int countChar(char ch, int max) {
+        int count = 0;
+        for ( ; count < max && reader.bp < reader.buflen && reader.ch == ch; count++) {
+            reader.scanChar();
+        }
+        return count;
+    }
+
     /** Read token.
      */
     public Token readToken() {
@@ -636,17 +689,9 @@ public class JavaTokenizer {
                     }
                     break loop;
                 case '\"':
-                    reader.scanChar();
-                    while (reader.ch != '\"' && reader.ch != CR && reader.ch != LF && reader.bp < reader.buflen)
-                        scanLitChar(pos);
-                    if (reader.ch == '\"') {
-                        tk = TokenKind.STRINGLITERAL;
-                        reader.scanChar();
-                    } else {
-                        lexError(pos, Errors.UnclosedStrLit);
-                    }
+                    scanStringLiteral(pos);
                     break loop;
-               default:
+                default:
                     if (isSpecial(reader.ch)) {
                         scanOperator();
                     } else {
@@ -715,6 +760,7 @@ public class JavaTokenizer {
                     List.of(comment) :
                     comments.prepend(comment);
         }
+
 
     /** Return the position where a lexical error occurred;
      */
