@@ -50,7 +50,6 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.JCDiagnostic.SimpleDiagnosticPosition;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
-import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
@@ -77,7 +76,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.SELECT;
 public class IntrinsicsVisitor {
     protected static final Context.Key<IntrinsicsVisitor> intrinsicsVisitorKey = new Context.Key<>();
 
-    private boolean disableIntrinsics;
+    private boolean enableIntrinsics;
 
     private final Names names;
     private final Symtab syms;
@@ -101,7 +100,8 @@ public class IntrinsicsVisitor {
     IntrinsicsVisitor(Context context) {
         context.put(intrinsicsVisitorKey, this);
         Options options = Options.instance(context);
-        disableIntrinsics = options.isSet("disableIntrinsics");
+        String opt = Options.instance(context).get("intrinsify");
+        enableIntrinsics = opt != null && opt.equals("all");
         names = Names.instance(context);
         syms = Symtab.instance(context);
         rs = Resolve.instance(context);
@@ -112,7 +112,7 @@ public class IntrinsicsVisitor {
     }
 
     public JCTree analyzeTree(JCTree tree, Env<AttrContext> attrEnv) {
-        if (disableIntrinsics ||
+        if (!enableIntrinsics ||
                 !(tree instanceof JCTree.JCClassDecl) ||
                 tree.type.tsym.packge().modle == syms.java_base) {
             return tree;

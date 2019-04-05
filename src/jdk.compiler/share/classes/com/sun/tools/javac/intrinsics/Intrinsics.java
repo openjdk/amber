@@ -59,9 +59,9 @@ public class Intrinsics {
 
     protected Intrinsics(Context context) {
         context.put(intrinsicsKey, this);
-        Options options = Options.instance(context);
-        boolean disableIntrinsics = options.isSet("disableIntrinsics");
-        if (!disableIntrinsics) {
+        String opt = Options.instance(context).get("intrinsify");
+        boolean enableIntrinsics = opt != null && opt.equals("all");
+        if (enableIntrinsics) {
             ServiceLoader<IntrinsicProcessor> serviceLoader =
                     ServiceLoader.load(IntrinsicProcessor.class);
             for (IntrinsicProcessor ip : serviceLoader) {
