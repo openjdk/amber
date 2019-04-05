@@ -44,6 +44,7 @@ public class MultilineStringLiteralLang {
      */
     static void test1() {
         EQ("""abc""", "abc");
+        EQ("""""", "");
         EQ("""abc"def""", "abc\"def");
         EQ("""abc""def""", "abc\"\"def");
         EQ("""abc\"""def""", "abc\"\"\"def");
