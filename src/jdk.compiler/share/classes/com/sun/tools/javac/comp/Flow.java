@@ -272,6 +272,29 @@ public class Flow {
         }
     }
 
+    public boolean breaksOutOf(Env<AttrContext> env, JCTree loop, JCTree body, TreeMaker make) {
+        //we need to disable diagnostics temporarily; the problem is that if
+        //a lambda expression contains e.g. an unreachable statement, an error
+        //message will be reported and will cause compilation to skip the flow analyis
+        //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
+        //related errors, which will allow for more errors to be detected
+        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
+        try {
+            boolean[] breaksOut = new boolean[1];
+            new AliveAnalyzer() {
+                @Override
+                public void visitBreak(JCBreak tree) {
+                    breaksOut[0] |= (super.alive == Liveness.ALIVE && tree.target == loop);
+                    super.visitBreak(tree);
+                }
+            }.analyzeTree(env, body, make);
+
+            return breaksOut[0];
+        } finally {
+            log.popDiagnosticHandler(diagHandler);
+        }
+    }
+
     /**
      * Definite assignment scan mode
      */
