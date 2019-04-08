@@ -66,17 +66,6 @@ import static java.lang.invoke.MethodType.methodType;
 /*non-public*/
 final class FormatterBootstraps {
 
-    private static final MethodHandle STRINGBUILDER_APPEND_BOOLEAN =
-            findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, boolean.class));
-    private static final MethodHandle STRINGBUILDER_APPEND_CHAR =
-            findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, char.class));
-    private static final MethodHandle STRINGBUILDER_APPEND_INT =
-            findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, int.class));
-    private static final MethodHandle STRINGBUILDER_APPEND_LONG =
-            findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, long.class));
-    private static final MethodHandle STRINGBUILDER_APPEND_STRING =
-            findVirtualMethodHandle(StringBuilder.class, "append", methodType(StringBuilder.class, String.class));
-
     private static final MethodHandle SPECIFIER_PRINT =
             findVirtualMethodHandle(Formatter.class, "print",
                     methodType(Formatter.class, FormatSpecifier.class, Object.class, Locale.class));
@@ -704,21 +693,6 @@ final class FormatterBootstraps {
         return conversion == Conversion.STRING && type == String.class;
     }
 
-    private static MethodHandle getAppenderHandle(Class<?> type) {
-        if (type == boolean.class || type == Boolean.class) {
-            return STRINGBUILDER_APPEND_BOOLEAN;
-        } else if (type == char.class || type == Character.class) {
-            return STRINGBUILDER_APPEND_CHAR;
-        } else if (type == long.class || type == Long.class) {
-            return STRINGBUILDER_APPEND_LONG;
-        } else if (type == int.class || type == Integer.class) {
-            return STRINGBUILDER_APPEND_INT;
-        } else {
-            return STRINGBUILDER_APPEND_STRING;
-        }
-    }
-
-
     private static boolean requiresLocalization(FormatSpecifier spec) {
         switch (spec.conversion()) {
             case BOOLEAN:
@@ -752,8 +726,6 @@ final class FormatterBootstraps {
             return SPECIFIER_PRINT;
         }
     }
-
-
 
     private static MethodHandle fallbackMethodHandle(MethodHandles.Lookup lookup, String name,
                                                      MethodType methodType, String format, boolean isStringMethod,
@@ -800,5 +772,4 @@ final class FormatterBootstraps {
             throw new RuntimeException(e);
         }
     }
-
 }
