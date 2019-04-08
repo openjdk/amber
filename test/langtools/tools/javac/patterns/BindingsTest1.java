@@ -145,6 +145,36 @@ public class BindingsTest1 {
             s.length();
         }
 
+        {
+            while (!(o1 instanceof String s)) {
+            }
+
+            s.length();
+        }
+
+        L5: {
+            while (!(o1 instanceof String s)) {
+            }
+
+            s.length();
+        }
+
+        {
+            L6: for ( ;!(o1 instanceof String s); ) {
+
+            }
+
+            s.length();
+        }
+
+        {
+            L7: do {
+
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
+
         System.out.println("BindingsTest1 complete");
     }
 }

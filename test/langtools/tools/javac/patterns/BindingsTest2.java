@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary Ensure that scopes arising from conditionalExpressions are handled corrected.
- * @compile/fail/ref=BindingsTest2.out -XDrawDiagnostics BindingsTest2.java
+ * @compile/fail/ref=BindingsTest2.out -XDrawDiagnostics -XDshould-stop.at=FLOW BindingsTest2.java
  */
 public class BindingsTest2 {
     public static boolean Ktrue() { return true; }
@@ -112,5 +112,79 @@ public class BindingsTest2 {
             System.out.println("done");
         }
 
+        {
+            while (!(o1 instanceof String s)) {
+                break;
+            }
+
+            s.length();
+        }
+
+        {
+            while (!(o1 instanceof String s)) {
+                if (false) break;
+            }
+
+            s.length();
+        }
+
+        {
+            while (!(o1 instanceof String s)) {
+                while (true);
+                break;
+            }
+
+            s.length();
+        }
+
+        {
+            for (; !(o1 instanceof String s); ) {
+                break;
+            }
+
+            s.length();
+        }
+
+        {
+            for (; !(o1 instanceof String s); ) {
+                if (false) break;
+            }
+
+            s.length();
+        }
+
+        {
+            for (; !(o1 instanceof String s); ) {
+                while (true);
+                break;
+            }
+
+            s.length();
+        }
+
+        {
+            do {
+                break;
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
+
+        {
+            do {
+                if (false) break;
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
+
+        {
+            do {
+                while (true);
+                break;
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
     }
 }

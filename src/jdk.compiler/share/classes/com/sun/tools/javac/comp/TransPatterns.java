@@ -64,8 +64,11 @@ import java.util.stream.Collectors;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
+import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
+import com.sun.tools.javac.util.List;
 
 /**
  * This pass translates pattern-matching constructs, such as instanceof <pattern>.
@@ -207,9 +210,7 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitIf(JCIf tree) {
-        bindingContext = new BasicBindingContext(
-                Attr.getMatchBindings(types, log, tree.cond, true)
-                        .appendList(Attr.getMatchBindings(types, log, tree.cond, false)));
+        bindingContext = new BasicBindingContext(getMatchBindings(tree.cond));
         try {
             super.visitIf(tree);
             result = bindingContext.decorateStatement(tree);
@@ -220,7 +221,7 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitForLoop(JCForLoop tree) {
-        bindingContext = new BasicBindingContext(Attr.getMatchBindings(types, log, tree.cond, true));
+        bindingContext = new BasicBindingContext(getMatchBindings(tree.cond));
         try {
             super.visitForLoop(tree);
             result = bindingContext.decorateStatement(tree);
@@ -231,9 +232,20 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitWhileLoop(JCWhileLoop tree) {
-        bindingContext = new BasicBindingContext(Attr.getMatchBindings(types, log, tree.cond, true));
+        bindingContext = new BasicBindingContext(getMatchBindings(tree.cond));
         try {
             super.visitWhileLoop(tree);
+            result = bindingContext.decorateStatement(tree);
+        } finally {
+            bindingContext.pop();
+        }
+    }
+
+    @Override
+    public void visitDoLoop(JCDoWhileLoop tree) {
+        bindingContext = new BasicBindingContext(getMatchBindings(tree.cond));
+        try {
+            super.visitDoLoop(tree);
             result = bindingContext.decorateStatement(tree);
         } finally {
             bindingContext.pop();
@@ -369,6 +381,10 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
+    private List<BindingSymbol> getMatchBindings(JCExpression cond) {
+        return Attr.getMatchBindings(types, log, cond, true)
+                        .appendList(Attr.getMatchBindings(types, log, cond, false));
+    }
     abstract class BindingContext {
         abstract VarSymbol getBindingFor(BindingSymbol varSymbol);
         abstract JCStatement decorateStatement(JCStatement stat);
