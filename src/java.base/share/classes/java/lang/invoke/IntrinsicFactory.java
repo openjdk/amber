@@ -26,6 +26,8 @@
 package java.lang.invoke;
 
 import java.io.IOException;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Formatter;
@@ -40,115 +42,25 @@ import java.util.stream.IntStream;
 public final class IntrinsicFactory {
     /**
      * formatterFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
+     * @param lookup               MethodHandles lookup
+     * @param name                 Name of method
+     * @param methodType           Method signature
+     * @param format               Formatter format string
+     * @param isStringMethod       Method's owner is String or not
+     * @param hasLocale            has Locale
      * @throws NoSuchMethodException no such method
      * @throws IllegalAccessException illegal access
      * @throws StringConcatException string concat error
      * @return Callsite for intrinsic method
      */
-    public static CallSite formatterFormatBootstrap(MethodHandles.Lookup lookup,
-                                                    String name,
-                                                    MethodType methodType,
-                                                    String format)
+    public static CallSite formatterBootstrap(MethodHandles.Lookup lookup,
+                                       String name,
+                                       MethodType methodType,
+                                       String format,
+                                       int isStringMethod,
+                                       int hasLocale)
             throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, false, false);
-    }
-
-    /**
-     * formatterLocaleFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite formatterLocaleFormatBootstrap(MethodHandles.Lookup lookup,
-                                                          String name,
-                                                          MethodType methodType,
-                                                          String format)
-            throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, false, true);
-    }
-
-    /**
-     * staticStringFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite staticStringFormatBootstrap(MethodHandles.Lookup lookup,
-                                                       String name,
-                                                       MethodType methodType,
-                                                       String format)
-            throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, true, false);
-    }
-
-    /**
-     * staticStringLocaleFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite staticStringLocaleFormatBootstrap(MethodHandles.Lookup lookup,
-                                                             String name,
-                                                             MethodType methodType,
-                                                             String format)
-            throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, true, true);
-    }
-
-    /**
-     * stringFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite stringFormatBootstrap(MethodHandles.Lookup lookup,
-                                                 String name,
-                                                 MethodType methodType,
-                                                 String format)
-            throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, true, false);
-    }
-
-    /**
-     * stringLocaleFormatBootstrap bootstrap.
-     * @param lookup      MethodHandles lookup
-     * @param name        Name of method
-     * @param methodType  Method signature
-     * @param format      Formatter format string
-     * @throws NoSuchMethodException no such method
-     * @throws IllegalAccessException illegal access
-     * @throws StringConcatException string concat error
-     * @return Callsite for intrinsic method
-     */
-    public static CallSite stringLocaleFormatBootstrap(MethodHandles.Lookup lookup,
-                                                       String name,
-                                                       MethodType methodType,
-                                                       String format)
-            throws NoSuchMethodException, IllegalAccessException, StringConcatException {
-        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format, true, true);
+        return FormatterBootstraps.formatterBootstrap(lookup, name, methodType, format,
+                isStringMethod == 1, hasLocale == 1);
     }
 }

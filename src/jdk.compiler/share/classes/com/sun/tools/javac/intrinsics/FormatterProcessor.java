@@ -90,6 +90,7 @@ public class FormatterProcessor implements IntrinsicProcessor {
 
     private static final ClassDesc CD_Locale = ClassDesc.of("java.util.Locale");
     private static final ClassDesc CD_IntrinsicFactory = ClassDesc.of("java.lang.invoke.IntrinsicFactory");
+    private static final String BSM_NAME = "formatterBootstrap";
 
     @Override
     public Result tryIntrinsify(ClassDesc ownerDesc,
@@ -102,10 +103,11 @@ public class FormatterProcessor implements IntrinsicProcessor {
             return new Result.None();
         }
 
+        boolean isStringMethod = CD_String.equals(ownerDesc);
         boolean hasLocale = CD_Locale.equals(methodType.parameterType(0));
         int formatArg = hasLocale ? 2 : 1;
 
-        if (CD_String.equals(ownerDesc)) {
+        if (isStringMethod) {
             formatArg = isStatic && hasLocale ? 1 : 0;
         }
 
@@ -125,20 +127,18 @@ public class FormatterProcessor implements IntrinsicProcessor {
             }
         }
 
-        String bsmName = getBSMName(ownerDesc, methodName, isStatic, hasLocale);
-
         MethodTypeDesc methodTypeLessFormat = methodType.dropParameterTypes(formatArg, formatArg + 1);
 
         return new Result.Indy(
                 DynamicCallSiteDesc.of(
                         ConstantDescs.ofCallsiteBootstrap(
                                 CD_IntrinsicFactory,
-                                bsmName,
+                                BSM_NAME,
                                 CD_CallSite
                         ),
                         methodName,
                         methodTypeLessFormat,
-                        new ConstantDesc[] { constantFormat }),
+                        new ConstantDesc[] {constantFormat, isStringMethod ? 1 : 0, hasLocale ? 1 : 0}),
                         intrinsics.dropArg(argClassDescs.length, formatArg)
         );
     }
