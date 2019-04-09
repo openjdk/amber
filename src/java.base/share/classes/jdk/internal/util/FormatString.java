@@ -18,8 +18,7 @@ import java.util.regex.Pattern;
 
 /**
  * This class provides functionality for parsing and verifying format strings used by
- * {@link java.util.Formatter}. The code was extracted from {@code Formatter} and moved
- * to this class to be accessible from {@link java.lang.invoke.FormatterBootstraps}.
+ * {@link java.util.Formatter}.
  */
 public class FormatString {
 
@@ -405,7 +404,7 @@ public class FormatString {
 
     }
 
-    
+
     public static class Flags {
 
         public static final int NONE          = 0;         // ''
@@ -684,5 +683,5 @@ public class FormatString {
             throw new IllegalFormatConversionException(c, arg.getClass());
         }
     }
-    
+
 }

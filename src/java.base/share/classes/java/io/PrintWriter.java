@@ -25,13 +25,12 @@
 
 package java.io;
 
-
-import java.nio.charset.Charset;
-import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.Objects;
 import java.util.Formatter;
 import java.util.Locale;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 
 /**
  * Prints formatted representations of objects to a text-output stream.  This
@@ -922,7 +921,6 @@ public class PrintWriter extends Writer {
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
-     *
      *
      * @throws  java.util.IllegalFormatException
      *          If a format string contains an illegal syntax, a format

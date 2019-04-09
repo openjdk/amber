@@ -25,11 +25,11 @@
 
 package java.io;
 
+import java.util.Formatter;
+import java.util.Locale;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Formatter;
-import java.util.Locale;
 
 /**
  * A {@code PrintStream} adds functionality to another output stream,
