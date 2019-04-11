@@ -2660,13 +2660,7 @@ public final class Formatter implements Closeable, Flushable {
     @IntrinsicCandidate
     public Formatter format(Locale l, String format, Object ... args) {
         List<FormatToken> fsa = parse(format);
-        format(l, fsa, args);
-        return this;
-    }
-
-    void format(Locale l, List<FormatToken> fsa, Object ... args) {
         ensureOpen();
-
         // index of last argument referenced
         int last = -1;
         // last ordinary index
@@ -2674,40 +2668,39 @@ public final class Formatter implements Closeable, Flushable {
 
         for (FormatToken ft : fsa) {
             try {
-
                 int index = ft.index();
                 switch (index) {
-                case -2:  // fixed string, "%n", or "%%"
-                    if (ft instanceof FixedString) {
-                        ((FixedString) ft).print(this);
-                    } else {
-                        print((FormatSpecifier) ft, (Object) null, l);
-                    }
-                    break;
-                case -1:  // relative index
-                    if (last < 0 || (args != null && last > args.length - 1))
-                        throw new MissingFormatArgumentException(ft.toString());
-                    print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
-                    break;
-                case 0:  // ordinary index
-                    lasto++;
-                    last = lasto;
-                    if (args != null && lasto > args.length - 1)
-                        throw new MissingFormatArgumentException(ft.toString());
-                    print((FormatSpecifier) ft, (args == null ? null : args[lasto]), l);
-                    break;
-                default:  // explicit index
-                    last = index - 1;
-                    if (args != null && last > args.length - 1)
-                        throw new MissingFormatArgumentException(ft.toString());
-                    print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
-                    break;
+                    case -2:  // fixed string, "%n", or "%%"
+                        if (ft instanceof FixedString) {
+                            ((FixedString) ft).print(this);
+                        } else {
+                            print((FormatSpecifier) ft, (Object) null, l);
+                        }
+                        break;
+                    case -1:  // relative index
+                        if (last < 0 || (args != null && last > args.length - 1))
+                            throw new MissingFormatArgumentException(ft.toString());
+                        print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
+                        break;
+                    case 0:  // ordinary index
+                        lasto++;
+                        last = lasto;
+                        if (args != null && lasto > args.length - 1)
+                            throw new MissingFormatArgumentException(ft.toString());
+                        print((FormatSpecifier) ft, (args == null ? null : args[lasto]), l);
+                        break;
+                    default:  // explicit index
+                        last = index - 1;
+                        if (args != null && last > args.length - 1)
+                            throw new MissingFormatArgumentException(ft.toString());
+                        print((FormatSpecifier) ft, (args == null ? null : args[last]), l);
+                        break;
                 }
             } catch (IOException x) {
                 lastException = x;
             }
         }
-
+        return this;
     }
 
     private Formatter print(FormatSpecifier spec, Object arg, Locale l) throws IOException {
@@ -2751,7 +2744,6 @@ public final class Formatter implements Closeable, Flushable {
         return this;
     }
 
-
     private void printInteger(FormatSpecifier spec, Object arg, Locale l) throws IOException {
         if (arg == null)
             print(spec, "null", l);
@@ -2773,7 +2765,7 @@ public final class Formatter implements Closeable, Flushable {
         if (arg == null)
             print(spec, "null", l);
         else if (arg instanceof Float)
-            print(spec, ((Float) arg).floatValue(), l);
+            print(spec, ((Double) arg).floatValue(), l);
         else if (arg instanceof Double)
             print(spec, ((Double) arg).doubleValue(), l);
         else if (arg instanceof BigDecimal)
@@ -2874,7 +2866,7 @@ public final class Formatter implements Closeable, Flushable {
         print(spec, s, l);
     }
 
-    Formatter printHashCode(FormatSpecifier spec, Object arg, Locale l) throws IOException {
+    private Formatter printHashCode(FormatSpecifier spec, Object arg, Locale l) throws IOException {
         String s = (arg == null
                 ? "null"
                 : Integer.toHexString(arg.hashCode()));
@@ -2882,7 +2874,7 @@ public final class Formatter implements Closeable, Flushable {
         return this;
     }
 
-    Formatter print(FormatSpecifier spec, String s, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, String s, Locale l) throws IOException {
         if (spec.precision() != -1 && spec.precision() < s.length())
             s = s.substring(0, spec.precision());
         if (Flags.contains(spec.flags(), Flags.UPPERCASE))
@@ -2891,12 +2883,12 @@ public final class Formatter implements Closeable, Flushable {
         return this;
     }
 
-    String toUpperCaseWithLocale(String s, Locale l) {
+    private String toUpperCaseWithLocale(String s, Locale l) {
         return s.toUpperCase(Objects.requireNonNullElse(l,
                 Locale.getDefault(Locale.Category.FORMAT)));
     }
 
-    Appendable appendJustified(FormatSpecifier spec, Appendable a, CharSequence cs) throws IOException {
+    private Appendable appendJustified(FormatSpecifier spec, Appendable a, CharSequence cs) throws IOException {
         if (spec.width() == -1) {
             return a.append(cs);
         }
@@ -2914,7 +2906,7 @@ public final class Formatter implements Closeable, Flushable {
         return a;
     }
 
-    Formatter print(FormatSpecifier spec, byte value, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, byte value, Locale l) throws IOException {
         long v = value;
         if (value < 0
                 && (spec.conversion() == Conversion.OCTAL_INTEGER
@@ -2925,7 +2917,7 @@ public final class Formatter implements Closeable, Flushable {
         return print(spec, v, l);
     }
 
-    Formatter print(FormatSpecifier spec, short value, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, short value, Locale l) throws IOException {
         long v = value;
         if (value < 0
                 && (spec.conversion() == Conversion.OCTAL_INTEGER
@@ -2936,7 +2928,7 @@ public final class Formatter implements Closeable, Flushable {
         return print(spec, v, l);
     }
 
-    Formatter print(FormatSpecifier spec, int value, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, int value, Locale l) throws IOException {
         long v = value;
         if (value < 0
                 && (spec.conversion() == Conversion.OCTAL_INTEGER
@@ -2947,8 +2939,7 @@ public final class Formatter implements Closeable, Flushable {
         return print(spec, v, l);
     }
 
-    Formatter print(FormatSpecifier spec, long value, Locale l) throws IOException {
-
+    private Formatter print(FormatSpecifier spec, long value, Locale l) throws IOException {
         StringBuilder sb = new StringBuilder();
 
         if (spec.conversion() == Conversion.DECIMAL_INTEGER) {
@@ -3002,7 +2993,7 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     // neg := val < 0
-    void leadingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
+    private void leadingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
         if (!neg) {
             if (Flags.contains(spec.flags(), Flags.PLUS)) {
                 sb.append('+');
@@ -3018,7 +3009,7 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     // neg := val < 0
-    void trailingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
+    private void trailingSign(FormatSpecifier spec, StringBuilder sb, boolean neg) {
         if (neg && Flags.contains(spec.flags(), Flags.PARENTHESES))
             sb.append(')');
     }
@@ -3077,11 +3068,11 @@ public final class Formatter implements Closeable, Flushable {
         appendJustified(spec, a, sb);
     }
 
-    Formatter print(FormatSpecifier spec, float value, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, float value, Locale l) throws IOException {
         return print(spec, (double) value, l);
     }
 
-    Formatter print(FormatSpecifier spec, double value, Locale l) throws IOException {
+    private Formatter print(FormatSpecifier spec, double value, Locale l) throws IOException {
         StringBuilder sb = new StringBuilder();
         boolean neg = Double.compare(value, 0.0) == -1;
 
