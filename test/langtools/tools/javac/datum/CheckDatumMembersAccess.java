@@ -41,7 +41,7 @@ import com.sun.tools.javac.util.Assert;
 
 public class CheckDatumMembersAccess {
 
-    record Datum(int AbstractFieldToSearchFor, int newField, int nonFinalField) {}
+    record Datum(int field) {}
 
     public static void main(String args[]) throws Throwable {
         new CheckDatumMembersAccess().run();
@@ -57,9 +57,8 @@ public class CheckDatumMembersAccess {
                 CheckDatumMembersAccess.class.getName() + "$Datum.class");
         ClassFile classFile = ClassFile.read(file);
         for (Field f : classFile.fields) {
-            if (f.getName(classFile.constant_pool).equals("AbstractFieldToSearchFor") ||
-                f.getName(classFile.constant_pool).equals("newField")) {
-                Assert.check((f.access_flags.flags & AccessFlags.ACC_FINAL) != 0, "fields of datum should be final");
+            if (f.getName(classFile.constant_pool).equals("field")) {
+                Assert.check((f.access_flags.flags & (AccessFlags.ACC_FINAL | AccessFlags.ACC_PRIVATE)) != 0, "record fields should be final and private");
             }
         }
     }
