@@ -1416,6 +1416,8 @@ public abstract class Symbol extends AnnoConstruct implements Element {
                 return ElementKind.INTERFACE;
             else if ((flags & ENUM) != 0)
                 return ElementKind.ENUM;
+            else if ((flags & RECORD) != 0)
+                return ElementKind.RECORD;
             else
                 return ElementKind.CLASS;
         }
@@ -1425,6 +1427,13 @@ public abstract class Symbol extends AnnoConstruct implements Element {
             apiComplete();
             long flags = flags();
             return Flags.asModifierSet(flags & ~DEFAULT);
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public java.util.List<VariableElement> getStateComponents() {
+            apiComplete();
+            // Inital implementation
+            return javax.lang.model.util.ElementFilter.stateComponentsIn(getEnclosedElements());
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1598,6 +1607,8 @@ public abstract class Symbol extends AnnoConstruct implements Element {
                     return ElementKind.PARAMETER;
             } else if ((flags & ENUM) != 0) {
                 return ElementKind.ENUM_CONSTANT;
+            } else if ((flags & RECORD) != 0) {
+                return ElementKind.STATE_COMPONENT;
             } else if (owner.kind == TYP || owner.kind == ERR) {
                 return ElementKind.FIELD;
             } else if (isResourceVariable()) {

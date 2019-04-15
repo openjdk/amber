@@ -32,7 +32,7 @@ import javax.lang.model.util.*;
 /**
  * Represents a class or interface program element.  Provides access
  * to information about the type and its members.  Note that an enum
- * type is a kind of class and an annotation type is a kind of
+ * type and a record type are kinds of class esand an annotation type is a kind of
  * interface.
  *
  * <p> While a {@code TypeElement} represents a class or interface
@@ -60,7 +60,7 @@ import javax.lang.model.util.*;
  */
 public interface TypeElement extends Element, Parameterizable, QualifiedNameable {
     /**
-     * Returns the fields, methods, constructors, and member types
+     * Returns the fields, methods, constructors, state components, and member types
      * that are directly declared in this class or interface.
      *
      * This includes any {@linkplain Elements.Origin#MANDATED
@@ -154,6 +154,38 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      * if there are none
      */
     List<? extends TypeParameterElement> getTypeParameters();
+
+    /**
+     * Returns the state components of this type element in
+     * declaration order.
+     *
+     * @implSpec The default implementations of this method returns an
+     * empty and unmodifiable list.
+     *
+     * @return the state components, or an empty list if there are
+     * none
+     *
+     * @since amber
+     */
+    default List<? extends VariableElement> getStateComponents() {
+        return List.of();
+    }
+
+    /**
+     * Returns the permitted subtypes of this type element in
+     * declaration order.
+     *
+     * @implSpec The default implementations of this method returns an
+     * empty and unmodifiable list.
+     *
+     * @return the permitted subtypes, or an empty list
+     * if there are none
+     *
+     * @since amber
+     */
+    default List<? extends TypeMirror> getPermittedSubtypes() {
+        return List.of();
+    }
 
     /**
      * Returns the package of a top-level type and returns the

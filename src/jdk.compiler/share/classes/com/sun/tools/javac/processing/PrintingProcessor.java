@@ -39,6 +39,8 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -216,6 +218,16 @@ public class PrintingProcessor extends AbstractProcessor {
 
                 printFormalTypeParameters(e, false);
 
+                if (kind == RECORD) {
+                    // Print out state components
+                    writer.print("(");
+                    writer.print(e.getStateComponents()
+                                 .stream()
+                                 .map(stateDes -> stateDes.asType().toString() + " " + stateDes.getSimpleName())
+                                 .collect(Collectors.joining(", ")));
+                    writer.print(")");
+                }
+
                 // Print superclass information if informative
                 if (kind == CLASS) {
                     TypeMirror supertype = e.getSuperclass();
@@ -228,6 +240,7 @@ public class PrintingProcessor extends AbstractProcessor {
                 }
 
                 printInterfaces(e);
+                printPermittedSubtypes(e);
             }
             writer.println(" {");
             indentation++;
@@ -255,7 +268,13 @@ public class PrintingProcessor extends AbstractProcessor {
                 for(Element element : enclosedElements)
                     this.visit(element);
             } else {
-                for(Element element : e.getEnclosedElements())
+                for(Element element :
+                        (kind != RECORD ?
+                         e.getEnclosedElements() :
+                         e.getEnclosedElements()
+                         .stream()
+                         .filter(elt -> elementUtils.getOrigin(elt) == Elements.Origin.EXPLICIT )
+                         .collect(Collectors.toList()) ) )
                     this.visit(element);
             }
 
@@ -447,6 +466,10 @@ public class PrintingProcessor extends AbstractProcessor {
                 modifiers.remove(Modifier.ABSTRACT);
                 break;
 
+            case RECORD:
+                modifiers.remove(Modifier.FINAL);
+                break;
+
             case METHOD:
             case FIELD:
                 Element enclosingElement = e.getEnclosingElement();
@@ -581,6 +604,16 @@ public class PrintingProcessor extends AbstractProcessor {
                         first = false;
                     }
                 }
+            }
+        }
+
+        private void printPermittedSubtypes(TypeElement e) {
+            List<? extends TypeMirror> subtypes = e.getPermittedSubtypes();
+            if (!subtypes.isEmpty()) { // could remove this check with more complicated joining call
+                writer.print("permits ");
+                writer.print(Stream.of(subtypes).
+                             map(subtype -> subtype.toString()).
+                             collect(Collectors.joining(", ")));
             }
         }
 

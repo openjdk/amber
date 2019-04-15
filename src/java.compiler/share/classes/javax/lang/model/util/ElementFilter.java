@@ -84,6 +84,10 @@ public class ElementFilter {
                                                ElementKind.ENUM,
                                                ElementKind.INTERFACE,
                                                ElementKind.ANNOTATION_TYPE));
+
+    private static final Set<ElementKind> STATE_COMPONENT_KIND =
+        Set.of(ElementKind.STATE_COMPONENT);
+
     /**
      * Returns a list of fields in {@code elements}.
      * @return a list of fields in {@code elements}
@@ -102,6 +106,17 @@ public class ElementFilter {
     public static Set<VariableElement>
             fieldsIn(Set<? extends Element> elements) {
         return setFilter(elements, FIELD_KINDS, VariableElement.class);
+    }
+
+    // Method below may only be temporary
+    /**
+     * Returns a list of state descriptions in {@code elements}.
+     * @return a list of state descriptions in {@code elements}
+     * @param elements the elements to filter
+     */
+    public static List<VariableElement>
+        stateComponentsIn(List<? extends Element> elements) {
+        return listFilter(elements, STATE_COMPONENT_KIND, VariableElement.class);
     }
 
     /**

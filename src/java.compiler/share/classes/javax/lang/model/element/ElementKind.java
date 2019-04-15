@@ -46,8 +46,12 @@ public enum ElementKind {
     // Declared types
     /** An enum type. */
     ENUM,
-    /** A class not described by a more specific kind (like {@code ENUM}). */
+    /**
+     * A class not described by a more specific kind (like {@code
+     * ENUM} or {@code RECORD}).
+     */
     CLASS,
+
     /** An annotation type. */
     ANNOTATION_TYPE,
     /**
@@ -90,6 +94,8 @@ public enum ElementKind {
      */
     OTHER,
 
+    // Constants added since initial release
+
     /**
      * A resource variable.
      * @since 1.7
@@ -101,17 +107,29 @@ public enum ElementKind {
      * @since 9
      * @spec JPMS
      */
-     MODULE;
+     MODULE,
 
+    /**
+     * A record type.
+     * @since amber
+     */
+    RECORD,
+
+    // Neither fish nor fowl; necessary?
+    /**
+     * A state component of a {@code record}.
+     * @since amber
+     */
+    STATE_COMPONENT;
 
     /**
      * Returns {@code true} if this is a kind of class:
-     * either {@code CLASS} or {@code ENUM}.
+     * either {@code CLASS} or {@code ENUM} or {@code RECORD}.
      *
      * @return {@code true} if this is a kind of class
      */
     public boolean isClass() {
-        return this == CLASS || this == ENUM;
+        return this == CLASS || this == ENUM || this == RECORD;
     }
 
     /**

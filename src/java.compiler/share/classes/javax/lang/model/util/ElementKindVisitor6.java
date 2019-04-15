@@ -154,6 +154,9 @@ public class ElementKindVisitor6<R, P>
         case INTERFACE:
             return visitTypeAsInterface(e, p);
 
+        case RECORD:
+            return visitTypeAsRecord(e, p);
+
         default:
             throw new AssertionError("Bad kind " + k + " for TypeElement" + e);
         }
@@ -212,12 +215,28 @@ public class ElementKindVisitor6<R, P>
     }
 
     /**
+     * Visits a {@code RECORD} type element.
+     *
+     * @implSpec This implementation calls {@code visitUnknown}.
+     *.
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code visitUnknown}
+     *
+     * @since amber
+     */
+    public R visitTypeAsRecord(TypeElement e, P p) {
+        return visitUnknown(e, p);
+    }
+
+    /**
      * Visits a variable element
      *
      * @implSpec This implementation dispatches to the visit method for
      * the specific {@linkplain ElementKind kind} of variable, {@code
      * ENUM_CONSTANT}, {@code EXCEPTION_PARAMETER}, {@code FIELD},
-     * {@code LOCAL_VARIABLE}, {@code PARAMETER}, or {@code RESOURCE_VARIABLE}.
+     * {@code LOCAL_VARIABLE}, {@code PARAMETER}, {@code RESOURCE_VARIABLE},
+     * or {@code STATE_COMPONENT}.
      *
      * @param e {@inheritDoc}
      * @param p {@inheritDoc}
@@ -244,6 +263,9 @@ public class ElementKindVisitor6<R, P>
 
         case RESOURCE_VARIABLE:
             return visitVariableAsResourceVariable(e, p);
+
+        case STATE_COMPONENT:
+            return visitVariableAsStateComponent(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for VariableElement" + e);
@@ -327,6 +349,21 @@ public class ElementKindVisitor6<R, P>
      * @since 1.7
      */
     public R visitVariableAsResourceVariable(VariableElement e, P p) {
+        return visitUnknown(e, p);
+    }
+
+    /**
+     * Visits a {@code STATE_COMPONENT} variable element.
+     *
+     * @implSpec This implementation calls {@code visitUnknown}.
+     *
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code visitUnknown}
+     *
+     * @since amber
+     */
+    public R visitVariableAsStateComponent(VariableElement e, P p) {
         return visitUnknown(e, p);
     }
 
