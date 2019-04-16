@@ -83,6 +83,7 @@ public class ElementFilter {
         Collections.unmodifiableSet(EnumSet.of(ElementKind.CLASS,
                                                ElementKind.ENUM,
                                                ElementKind.INTERFACE,
+                                               ElementKind.RECORD,
                                                ElementKind.ANNOTATION_TYPE));
 
     private static final Set<ElementKind> STATE_COMPONENT_KIND =
