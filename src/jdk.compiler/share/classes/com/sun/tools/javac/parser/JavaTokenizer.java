@@ -462,6 +462,7 @@ public class JavaTokenizer {
     /** Scan a string literal.
      */
     private void scanStringLiteral(int pos) {
+        boolean autoAlign = true;
         int firstEOLN = -1;
         int rescan = reader.bp;
         int openCount = countChar('\"', 3);
@@ -469,12 +470,20 @@ public class JavaTokenizer {
             reader.reset(rescan);
             openCount = countChar('\"', 1);
         }
+        boolean multiline = false;
         while (reader.bp < reader.buflen) {
             if (reader.ch == '\"') {
                 int closeCount = countChar('\"', openCount);
                 rescan = reader.bp;
                 if (openCount == closeCount) {
                     tk = Tokens.TokenKind.STRINGLITERAL;
+                    if (autoAlign && openCount == 3) {
+                        if (multiline) {
+                            reader.align();
+                        } else {
+                            reader.strip();
+                        }
+                    }
                     return;
                 }
                 reader.repeat('\"', closeCount);
@@ -483,6 +492,7 @@ public class JavaTokenizer {
                 if (openCount == 1) {
                     break;
                 }
+                multiline = true;
                 int start = reader.bp;
                 if (firstEOLN == -1) {
                     firstEOLN = start;
@@ -492,8 +502,16 @@ public class JavaTokenizer {
                 }
                 reader.putChar('\n', true);
                 processLineTerminator(start, reader.bp);
+            } else if (reader.ch == '\\') {
+                if (reader.peekChar() == '~') {
+                    reader.scanChar();
+                    reader.scanChar();
+                    autoAlign = false;
+                } else {
+                    scanLitChar(pos);
+                }
             } else {
-                scanLitChar(pos);
+                 reader.putChar(true);
             }
         }
         if (firstEOLN  != -1) {

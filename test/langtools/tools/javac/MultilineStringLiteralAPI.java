@@ -110,7 +110,7 @@ public class MultilineStringLiteralAPI {
                           "\"\"\"" + terminator +
                           "abc" + terminator +
                           "\"\"\";" + terminator +
-                          "        System.out.println(s.equals(\"\\nabc\\n\"));" + terminator +
+                          "        System.out.println(s.equals(\"abc\\n\"));" + terminator +
                           "    }" + terminator +
                           "}" + terminator;
             new JavacTask(TOOLBOX)

@@ -64,6 +64,10 @@ public class UnicodeReader {
      */
     protected int unicodeConversionBp = -1;
 
+    /** Control conversion of unicode characters
+     */
+    protected boolean unicodeConversion = true;
+
     protected Log log;
     protected Names names;
 
@@ -165,11 +169,92 @@ public class UnicodeReader {
         scanChar();
     }
 
+    private int findLast(int pos) {
+        for (int i = pos; i < sp; i++) {
+            char ch = sbuf[i];
+            if (ch == LF) {
+                return i;
+            }
+        }
+        return sp;
+    }
+
+    private int skipLeadingWS(int first, int last) {
+        for (int i = first; i < last; i++) {
+            char ch = sbuf[i];
+            if (!Character.isWhitespace(ch)) {
+                return i;
+            }
+        }
+        return last;
+    }
+
+    private int skipTrailingWS(int first, int last) {
+        for (int i = last; first < i; i--) {
+            char ch = sbuf[i - 1];
+            if (!Character.isWhitespace(ch)) {
+                return i;
+            }
+        }
+        return first;
+    }
+
+    protected void strip() {
+        int leading = skipLeadingWS(0, sp);
+        int trailing = skipTrailingWS(leading, sp);
+        int length = trailing - leading;
+        System.arraycopy(sbuf, leading, sbuf, 0, length);
+        sp = length;
+    }
+
+    protected void align() {
+        int minIndent = Integer.MAX_VALUE;
+        for (int first = 0, last = 0; last != sp; first = last + 1) {
+            last = findLast(first);
+            if (first != 0) {
+                int leading = skipLeadingWS(first, last);
+                if (leading != last || leading == sp) {
+                    minIndent = Integer.min(minIndent, leading - first);
+                }
+            }
+        }
+        if (minIndent == Integer.MAX_VALUE) {
+            minIndent = 0;
+        }
+        int cp = 0;
+        for (int first = 0, last = 0; last != sp; first = last + 1) {
+            last = findLast(first);
+            int trailing = skipTrailingWS(first, last);
+            if (first != trailing) {
+                if (first == 0) {
+                    cp += trailing;
+                } else {
+                    first += minIndent;
+                    int length = trailing - first;
+                    System.arraycopy(sbuf, first, sbuf, cp, length);
+                    cp += length;
+                }
+                if (last != sp) {
+                    sbuf[cp++] = LF;
+                }
+            } else if (first != 0 && last != sp){
+                sbuf[cp++] = LF;
+            }
+        }
+        sp = cp;
+    }
+
+    protected boolean setUnicodeConversion(boolean newState) {
+        boolean oldState = unicodeConversion;
+        unicodeConversion = newState;
+        return oldState;
+    }
+
     /** Convert unicode escape; bp points to initial '\' character
      *  (Spec 3.3).
      */
     protected void convertUnicode() {
-        if (ch == '\\' && unicodeConversionBp != bp ) {
+        if (ch == '\\' && unicodeConversion && unicodeConversionBp != bp ) {
             bp++; ch = buf[bp];
             if (ch == 'u') {
                 do {

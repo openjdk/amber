@@ -74,13 +74,13 @@ ghi
 """
 abc
 def
-ghi""", "\nabc\ndef\nghi");
+ghi""", "abc\ndef\nghi");
         EQ(
 """
 abc
 def
 ghi
-""", "\nabc\ndef\nghi\n");
+""", "abc\ndef\nghi\n");
     }
 
     /*
