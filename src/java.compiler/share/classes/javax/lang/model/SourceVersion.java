@@ -62,6 +62,12 @@ public enum SourceVersion {
      *  13: TBD
      */
 
+    // TOOD: The textual specs of isIdentifier, isName, and isKeyword
+    // may or may not need to be explicitly updated for "record" and
+    // "sealed" depending on how those tokens are formally handled in
+    // the JLS. If they are treated as restricted keywords, a spec
+    // update may not be strictly needed.
+
     /**
      * The original version.
      *
