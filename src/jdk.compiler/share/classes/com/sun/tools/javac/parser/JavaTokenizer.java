@@ -33,6 +33,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
+import java.lang.reflect.Method;
 import java.nio.CharBuffer;
 
 import static com.sun.tools.javac.parser.Tokens.*;
@@ -83,6 +84,10 @@ public class JavaTokenizer {
     /** The Unicode reader (low-level stream reader).
      */
     protected UnicodeReader reader;
+
+    /** Is string auto-aligned?
+     */
+    protected boolean isAutoAligned = false;
 
     protected ScannerFactory fac;
 
@@ -459,10 +464,20 @@ public class JavaTokenizer {
         }
     }
 
+    private static String align(String string) {
+        try {
+            Method align = String.class.getMethod("align");
+            string = (String) align.invoke(string);
+        } catch (Exception ex) {
+            // Bootstrapping situation, do nothing.
+        }
+        return string;
+    }
+
     /** Scan a string literal.
      */
     private void scanStringLiteral(int pos) {
-        boolean autoAlign = true;
+        boolean align = true;
         int firstEOLN = -1;
         int rescan = reader.bp;
         int openCount = countChar('\"', 3);
@@ -470,20 +485,13 @@ public class JavaTokenizer {
             reader.reset(rescan);
             openCount = countChar('\"', 1);
         }
-        boolean multiline = false;
         while (reader.bp < reader.buflen) {
             if (reader.ch == '\"') {
                 int closeCount = countChar('\"', openCount);
                 rescan = reader.bp;
                 if (openCount == closeCount) {
                     tk = Tokens.TokenKind.STRINGLITERAL;
-                    if (autoAlign && openCount == 3) {
-                        if (multiline) {
-                            reader.align();
-                        } else {
-                            reader.strip();
-                        }
-                    }
+                    isAutoAligned = align && openCount == 3;
                     return;
                 }
                 reader.repeat('\"', closeCount);
@@ -492,7 +500,6 @@ public class JavaTokenizer {
                 if (openCount == 1) {
                     break;
                 }
-                multiline = true;
                 int start = reader.bp;
                 if (firstEOLN == -1) {
                     firstEOLN = start;
@@ -506,7 +513,7 @@ public class JavaTokenizer {
                 if (reader.peekChar() == '~') {
                     reader.scanChar();
                     reader.scanChar();
-                    autoAlign = false;
+                    align = false;
                 } else {
                     scanLitChar(pos);
                 }
@@ -758,7 +765,10 @@ public class JavaTokenizer {
             switch (tk.tag) {
                 case DEFAULT: return new Token(tk, pos, endPos, comments);
                 case NAMED: return new NamedToken(tk, pos, endPos, name, comments);
-                case STRING: return new StringToken(tk, pos, endPos, reader.chars(), comments);
+                case STRING: {
+                    String string = isAutoAligned ? align(reader.chars()) : reader.chars();
+                    return new StringToken(tk, pos, endPos, string, comments);
+                }
                 case NUMERIC: return new NumericToken(tk, pos, endPos, reader.chars(), radix, comments);
                 default: throw new AssertionError();
             }

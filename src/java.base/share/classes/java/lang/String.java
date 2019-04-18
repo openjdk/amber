@@ -2846,21 +2846,22 @@ public final class String
      * @since 12
      */
     public String indent(int n) {
-        return isEmpty() ? "" :  indent(n, false);
+        if (isEmpty()) {
+            return "";
+        }
+        return indentStream(lines(), n).collect(Collectors.joining("\n", "", "\n"));
     }
 
-    private String indent(int n, boolean removeBlanks) {
-        Stream<String> stream = removeBlanks ? lines(Integer.MAX_VALUE, Integer.MAX_VALUE)
-                                             : lines();
+    private Stream<String> indentStream(Stream<String> stream, int n) {
         if (n > 0) {
             final String spaces = " ".repeat(n);
-            stream = stream.map(s -> spaces + s);
+            return stream.map(s -> spaces + s);
         } else if (n == Integer.MIN_VALUE) {
-            stream = stream.map(s -> s.stripLeading());
+            return stream.map(s -> s.stripLeading());
         } else if (n < 0) {
-            stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+            return stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
         }
-        return stream.collect(Collectors.joining("\n", "", "\n"));
+        return stream;
     }
 
     private int indexOfNonWhitespace() {
@@ -2932,11 +2933,6 @@ public final class String
      * Removes vertical and horizontal white space margins from around the
      * essential body of a multi-line string, while preserving relative
      * indentation and with optional indentation adjustment.
-     * <p>
-     * Invoking this method is equivalent to:
-     * <blockquote>
-     *  {@code this.align().indent(n)}
-     * </blockquote>
      *
      * @apiNote
      * Examples:
@@ -2974,11 +2970,22 @@ public final class String
         if (isEmpty()) {
             return "";
         }
-        int outdent = lines().filter(not(String::isBlank))
-            .mapToInt(String::indexOfNonWhitespace)
-            .min()
-            .orElse(0);
-        return indent(n - outdent, true);
+        long count = lines().count();
+        if (count == 1) {
+            return strip();
+        }
+        String last = lines().skip(count - 1).findFirst().orElse("");
+        int outdent = lines().skip(1)
+                             .filter(not(String::isBlank))
+                             .mapToInt(String::indexOfNonWhitespace)
+                             .min()
+                             .orElse(0);
+        boolean lastIsBlank = last.isBlank();
+        if (lastIsBlank) {
+            outdent = Integer.min(outdent, last.length());
+        }
+        return indentStream(lines(1, 1), n - outdent).map(s -> s.stripTrailing())
+                                                     .collect(Collectors.joining("\n", "", lastIsBlank ? "\n" : ""));
     }
 
     /**
