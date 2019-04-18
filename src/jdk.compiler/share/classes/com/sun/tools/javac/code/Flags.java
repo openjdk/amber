@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -320,20 +320,25 @@ public class Flags {
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
     /**
+     * Flag to indicate the given ParamSymbol has a user-friendly name filled.
+     */
+    public static final long NAME_FILLED = 1L<<58; //ParamSymbols only
+
+    /**
      * Flag to indicate sealed class/interface declaration.
      */
-    public static final long SEALED = 1L<<58;
+    public static final long SEALED = 1L<<59;
 
     /**
      * Flag to indicate that the class/interface has explicitly being annotated as not sealed.
      */
-    public static final long NON_FINAL = 1L<<59;
+    public static final long NON_FINAL = 1L<<60;
 
     /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
      * part of the state vector of a record.
      */
-    public static final long RECORD = 1L<<60;
+    public static final long RECORD = 1L<<61;
 
     /** Modifier masks.
      */
@@ -455,6 +460,7 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
+        NAME_FILLED(Flags.NAME_FILLED),
         SEALED(Flags.SEALED),
         RECORD(Flags.RECORD);
 
