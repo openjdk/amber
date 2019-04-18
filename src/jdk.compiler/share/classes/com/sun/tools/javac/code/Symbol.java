@@ -1585,11 +1585,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public int poolTag() {
             return ClassFile.CONSTANT_Fieldref;
         }
-        
-        MethodHandleSymbol asMethodHandle(boolean getter) {
-            if (getter) {
-                return new MethodHandleSymbol(owner)
-            }
+
+        public MethodHandleSymbol asMethodHandle(boolean getter) {
+            return new MethodHandleSymbol(this, getter);
         }
 
         /** Clone this symbol with new owner.
@@ -2168,7 +2166,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public MethodHandleSymbol(Symbol msym) {
             this(msym, false);
         }
-        
+
         public MethodHandleSymbol(Symbol msym, boolean getter) {
             super(msym.flags_field, msym.name, msym.type, msym.owner);
             this.refSym = msym;
@@ -2179,17 +2177,23 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          * Returns the kind associated with this method handle.
          */
         public int referenceKind() {
-            if (refSym.isConstructor()) {
-                return ClassFile.REF_newInvokeSpecial;
+            if (refSym.kind == VAR) {
+                return getter ?
+                        refSym.isStatic() ? ClassFile.REF_getStatic : ClassFile.REF_getField :
+                        refSym.isStatic() ? ClassFile.REF_putStatic : ClassFile.REF_putField;
             } else {
-                if (refSym.isStatic()) {
-                    return ClassFile.REF_invokeStatic;
-                } else if ((refSym.flags() & PRIVATE) != 0) {
-                    return ClassFile.REF_invokeSpecial;
-                } else if (refSym.enclClass().isInterface()) {
-                    return ClassFile.REF_invokeInterface;
+                if (refSym.isConstructor()) {
+                    return ClassFile.REF_newInvokeSpecial;
                 } else {
-                    return ClassFile.REF_invokeVirtual;
+                    if (refSym.isStatic()) {
+                        return ClassFile.REF_invokeStatic;
+                    } else if ((refSym.flags() & PRIVATE) != 0) {
+                        return ClassFile.REF_invokeSpecial;
+                    } else if (refSym.enclClass().isInterface()) {
+                        return ClassFile.REF_invokeInterface;
+                    } else {
+                        return ClassFile.REF_invokeVirtual;
+                    }
                 }
             }
         }

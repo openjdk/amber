@@ -2468,20 +2468,20 @@ public class Lower extends TreeTranslator {
     private void visitRecordDef(JCClassDecl tree) {
         make_at(tree.pos());
         List<VarSymbol> vars = types.recordVars(tree.type);
-        MethodSymbol[] getterMethHandles = new MethodSymbol[vars.size()];
+        MethodHandleSymbol[] getterMethHandles = new MethodHandleSymbol[vars.size()];
         // for the extractor we use the user provided getter, for the rest we access the field directly
-        MethodSymbol[] getterMethHandlesForExtractor = new MethodSymbol[vars.size()];
+        MethodHandleSymbol[] getterMethHandlesForExtractor = new MethodHandleSymbol[vars.size()];
         int index = 0;
         for (VarSymbol var : vars) {
             if (var.owner != tree.sym) {
                 var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
             }
-            getterMethHandles[index] = new Pool.MethodHandle(ClassFile.REF_getField, var, types);
+            getterMethHandles[index] = var.asMethodHandle(true);
             if (!var.accessors.isEmpty()) {
-                getterMethHandlesForExtractor[index] = new Pool.MethodHandle(ClassFile.REF_getField, var, types);
+                getterMethHandlesForExtractor[index] = getterMethHandles[index];
             } else {
-                Symbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());
-                getterMethHandlesForExtractor[index] = new Pool.MethodHandle(ClassFile.REF_invokeVirtual, msym, types);
+                MethodSymbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());
+                getterMethHandlesForExtractor[index] = msym.asHandle();
             }
             index++;
         }
@@ -2496,7 +2496,7 @@ public class Lower extends TreeTranslator {
         ));
     }
 
-    JCTree generateRecordMethod(JCClassDecl tree, Name name, List<VarSymbol> vars, MethodSymbol[] getterMethHandles) {
+    JCTree generateRecordMethod(JCClassDecl tree, Name name, List<VarSymbol> vars, MethodHandleSymbol[] getterMethHandles) {
         make_at(tree.pos());
         boolean isEquals = name == names.equals;
         MethodSymbol msym = lookupMethod(tree.pos(),
@@ -2506,14 +2506,14 @@ public class Lower extends TreeTranslator {
         if ((msym.flags() & RECORD) != 0) {
             Name bootstrapName = names.bootstrap;
             LoadableConstant[] staticArgsValues = new LoadableConstant[2 + getterMethHandles.length];
-            staticArgsValues[0] = LoadableConstant.Type(tree.sym);
+            staticArgsValues[0] = (ClassType)tree.sym.type;
             String concatNames = vars.stream()
                     .map(v -> v.name)
                     .collect(Collectors.joining(";", "", ""));
             staticArgsValues[1] = LoadableConstant.String(concatNames);
             int index = 2;
-            for (MethodSymbol mho : getterMethHandles) {
-                staticArgsValues[index] = mho.asHandle();
+            for (MethodHandleSymbol mho : getterMethHandles) {
+                staticArgsValues[index] = mho;
                 index++;
             }
 
@@ -2544,7 +2544,7 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    JCTree recordExtractor(JCClassDecl tree, MethodSymbol[] getterMethHandles) {
+    JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
         make_at(tree.pos());
         List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
         String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
@@ -2565,8 +2565,8 @@ public class Lower extends TreeTranslator {
         MethodType mt = new MethodType(fieldTypes, tree.type, List.nil(), syms.methodClass);
         staticArgsValues[0] = mt;
         int index = 1;
-        for (MethodSymbol mho : getterMethHandles) {
-            staticArgsValues[index] = mho.asHandle();
+        for (MethodHandleSymbol mho : getterMethHandles) {
+            staticArgsValues[index] = mho;
             index++;
         }
 

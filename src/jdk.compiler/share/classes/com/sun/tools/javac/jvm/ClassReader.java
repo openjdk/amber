@@ -1199,7 +1199,7 @@ public class ClassReader {
                         int numberOfPermittedSubtypes = nextChar();
                         for (int i = 0; i < numberOfPermittedSubtypes; i++) {
                             int subtype = nextChar();
-                            Type ct = readClassSymbol(subtype).erasure(types);
+                            Type ct = poolReader.getClass(nextChar()).erasure(types);
                             subtypes.add(ct);
                         }
                         sealed.permitted = subtypes.toList();

@@ -845,12 +845,12 @@ public class ClassWriter extends ClassFile {
         }
         databuf.appendChar(numParams);
         for (VarSymbol v: vars) {
-            databuf.appendChar(pool.put(v.name));
+            databuf.appendChar(poolWriter.putName(v.name));
             databuf.appendChar(adjustFlags(v.flags()));
             // descriptor
-            databuf.appendChar(pool.put(typeSig(v.erasure(types))));
+            databuf.appendChar(poolWriter.putSignature(v));
             // signature
-            databuf.appendChar(pool.put(typeSig(v.type)));
+            databuf.appendChar(poolWriter.putSignature(v));
         }
         int acountIdx = beginAttrs();
         int acount = 0;
@@ -918,7 +918,7 @@ public class ClassWriter extends ClassFile {
             int alenIdx = writeAttr(names.PermittedSubtypes);
             databuf.appendChar(ct.permitted.size());
             for (Type t : ct.permitted) {
-                databuf.appendChar(pool.put(t.tsym));
+                databuf.appendChar(poolWriter.putClass((ClassSymbol)t.tsym));
             }
             endAttr(alenIdx);
             return 1;
