@@ -1551,6 +1551,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             Assert.check(!annotationTypeMetadata.isMetadataForAnnotationType());
             this.annotationTypeMetadata = a;
         }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type> getPermittedSubtypes() {
+            return ((ClassType)type).permitted;
+        }
     }
 
 
