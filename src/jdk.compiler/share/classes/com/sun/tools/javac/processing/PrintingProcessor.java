@@ -610,10 +610,11 @@ public class PrintingProcessor extends AbstractProcessor {
         private void printPermittedSubtypes(TypeElement e) {
             List<? extends TypeMirror> subtypes = e.getPermittedSubtypes();
             if (!subtypes.isEmpty()) { // could remove this check with more complicated joining call
-                writer.print("permits ");
-                writer.print(Stream.of(subtypes).
-                             map(subtype -> subtype.toString()).
-                             collect(Collectors.joining(", ")));
+                writer.print(" permits ");
+                writer.print(subtypes
+                             .stream()
+                             .map(subtype -> subtype.toString())
+                             .collect(Collectors.joining(", ")));
             }
         }
 
