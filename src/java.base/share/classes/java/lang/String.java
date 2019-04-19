@@ -2885,17 +2885,24 @@ public final class String
      * Then, the <i>minimum indentation</i> (min) is determined as follows. For
      * each non-blank line (as defined by {@link String#isBlank()}), the
      * leading {@link Character#isWhitespace(int) white space} characters are
-     * counted. The <i>min</i> value is the smallest of these counts.
+     * counted. The
+     * leading {@link Character#isWhitespace(int) white space} characters on
+     * the last line are are also counted even if blank.
+     * The <i>min</i> value is the smallest of these counts.
      * <p>
      * For each non-blank line, <i>min</i> leading white space characters are
      * removed. Each white space character is treated as a single character. In
      * particular, the tab character {@code "\t"} (U+0009) is considered a
      * single character; it is not expanded.
      * <p>
-     * Leading and trailing blank lines, if any, are removed. Trailing spaces are
-     * preserved.
+     * The first leading and last trailing lines, if blank, are removed.
      * <p>
-     * Each line is suffixed with a line feed character {@code "\n"} (U+000A).
+     * The trailing white space of each line is also removed.
+     * </p>
+     * <p>
+     * Each line is suffixed with a line feed character {@code "\n"} (U+000A),
+     * except for the last line. The last line is suffixed with a line feed
+     * character {@code "\n"} (U+000A) only if the original last line was blank.
      * <p>
      * Finally, the lines are concatenated into a single string and returned.
      *
@@ -2906,14 +2913,23 @@ public final class String
      *
      * Example:
      * <blockquote><pre>
-     * """
-     *      This is the first line
-     *          This is the second line
-     * """.align();
+     * String s = """
+     *            This is the first line
+     *                This is the second line
+     *            """.align();
      *
      * returns
      * This is the first line
      *     This is the second line
+     *
+     * String t = """
+     *                This is the first line
+     *                    This is the second line
+     *            """.align();
+     *
+     * returns
+     *     This is the first line
+     *         This is the second line
      * </pre></blockquote>
      *
      * @return string with margins removed and line terminators normalized
@@ -2937,20 +2953,21 @@ public final class String
      * @apiNote
      * Examples:
      * <blockquote><pre>
-     * """
-     *      This is the first line
-     *          This is the second line
-     * """.align(0);
+     * String s = """
+     *            This is the first line
+     *                This is the second line
+     *            """.align();
      *
      * returns
      * This is the first line
      *     This is the second line
      *
      *
-     * """
-     *    This is the first line
-     *       This is the second line
-     * """.align(4);
+     * String t = """
+     *            This is the first line
+     *                This is the second line
+     *            """.align(4);
+     *
      * returns
      *     This is the first line
      *         This is the second line
