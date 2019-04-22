@@ -37,6 +37,7 @@ import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.intrinsics.Intrinsics;
 import com.sun.tools.javac.intrinsics.IntrinsicProcessor.Result;
 import com.sun.tools.javac.jvm.ClassFile;
+import com.sun.tools.javac.jvm.PoolConstant;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
@@ -305,13 +306,13 @@ public class IntrinsicsVisitor {
                     syms.methodTypeType).appendList(bsmStaticArgToTypes(staticArgs));
             Symbol bsm = rs.resolveQualifiedMethod(pos, attrEnv, site,
                     bsmName, bsm_staticArgs, List.nil());
+            PoolConstant.LoadableConstant[] loadableConstantsArr = objToLoadableConstantArr(staticArgs);
             DynamicMethodSymbol dynSym =
                     new DynamicMethodSymbol(methName,
                             syms.noSymbol,
-                            ClassFile.REF_invokeStatic,
-                            (MethodSymbol)bsm,
+                            ((MethodSymbol)bsm).asHandle(),
                             indyType,
-                            staticArgs.toArray());
+                            loadableConstantsArr);
 
             JCFieldAccess qualifier = make.Select(make.QualIdent(site.tsym), bsmName);
             qualifier.sym = dynSym;
@@ -351,6 +352,31 @@ public class IntrinsicsVisitor {
         } else {
             Assert.error("bad static arg " + arg);
             return null;
+        }
+    }
+
+    private PoolConstant.LoadableConstant[] objToLoadableConstantArr(List<Object> args) {
+        PoolConstant.LoadableConstant[] loadableConstants = new PoolConstant.LoadableConstant[args.size()];
+        int index = 0;
+        for (Object arg : args) {
+            loadableConstants[index++] = objToLoadableConstant(arg);
+        }
+        return loadableConstants;
+    }
+
+    PoolConstant.LoadableConstant objToLoadableConstant(Object o) {
+        if (o instanceof Integer) {
+            return PoolConstant.LoadableConstant.Int((int)o);
+        } else if (o instanceof Float) {
+            return PoolConstant.LoadableConstant.Float((float)o);
+        } else if (o instanceof Long) {
+            return PoolConstant.LoadableConstant.Long((long)o);
+        } else if (o instanceof Double) {
+            return PoolConstant.LoadableConstant.Double((double)o);
+        } else if (o instanceof String) {
+            return PoolConstant.LoadableConstant.String((String)o);
+        } else {
+            throw new AssertionError("unexpected constant: " + o);
         }
     }
 

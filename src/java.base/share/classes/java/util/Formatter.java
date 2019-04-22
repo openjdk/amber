@@ -2765,7 +2765,7 @@ public final class Formatter implements Closeable, Flushable {
         if (arg == null)
             print(spec, "null", l);
         else if (arg instanceof Float)
-            print(spec, ((Double) arg).floatValue(), l);
+            print(spec, ((Float) arg).floatValue(), l);
         else if (arg instanceof Double)
             print(spec, ((Double) arg).doubleValue(), l);
         else if (arg instanceof BigDecimal)
