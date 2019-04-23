@@ -1135,7 +1135,7 @@ public class TypeEnter implements Completer {
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.MANDATED),
                               names.toString,
                               make.Type(syms.stringType),
                               List.nil(),
@@ -1149,7 +1149,7 @@ public class TypeEnter implements Completer {
             if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
                 // public int hashCode() { return ???; }
                 JCMethodDecl hashCode = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
                               names.hashCode,
                               make.Type(syms.intType),
                               List.nil(),
@@ -1163,7 +1163,7 @@ public class TypeEnter implements Completer {
             if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
                 // public boolean equals(Object o) { return ???; }
                 JCMethodDecl equals = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
                               names.equals,
                               make.Type(syms.booleanType),
                               List.nil(),
@@ -1181,7 +1181,7 @@ public class TypeEnter implements Completer {
                     lookupMethod(tree.sym, names.readObject, List.nil()) == null) {
                     // private Object readResolve() { return ???; }
                     JCMethodDecl readResolve = make.
-                        MethodDef(make.Modifiers(Flags.PRIVATE | Flags.RECORD | Flags.FINAL),
+                        MethodDef(make.Modifiers(Flags.PRIVATE | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
                                   names.readResolve,
                                   make.Type(syms.objectType),
                                   List.nil(),
