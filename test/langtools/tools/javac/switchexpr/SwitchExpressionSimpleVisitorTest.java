@@ -53,7 +53,7 @@ public class SwitchExpressionSimpleVisitorTest {
         String code = "class Test {\n" +
                       "    int t(int i) {\n" +
                       "         return switch(i) {\n" +
-                      "              default: break -1;\n" +
+                      "              default: break-with -1;\n" +
                       "         }\n" +
                       "    }\n" +
                       "}\n";

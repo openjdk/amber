@@ -1429,12 +1429,12 @@ public class Attr extends JCTree.Visitor {
             attribStats(c.stats, caseEnv);
             new TreeScanner() {
                 @Override
-                public void visitBreak(JCBreak brk) {
+                public void visitBreakWith(JCBreakWith brk) {
                     if (brk.target == tree) {
                         caseTypePositions.append(brk.value != null ? brk.value.pos() : brk.pos());
                         caseTypes.append(brk.value != null ? brk.value.type : syms.errType);
                     }
-                    super.visitBreak(brk);
+                    super.visitBreakWith(brk);
                 }
 
                 @Override public void visitClassDef(JCClassDecl tree) {}
@@ -1864,67 +1864,33 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitBreak(JCBreak tree) {
-        if (env.info.breakResult != null) {
-            if (tree.value == null) {
-                tree.target = findJumpTarget(tree.pos(), tree.getTag(), null, env);
-                if (tree.target.hasTag(SWITCH_EXPRESSION)) {
-                    log.error(tree.pos(), Errors.BreakMissingValue);
-                }
-            } else {
-                if (env.info.breakResult.pt.hasTag(VOID)) {
-                    //can happen?
-                    env.info.breakResult.checkContext.report(tree.value.pos(),
-                              diags.fragment(Fragments.UnexpectedRetVal));
-                }
-                boolean attribute = true;
-                if (tree.value.hasTag(IDENT)) {
-                    //disambiguate break <LABEL> and break <ident-as-an-expression>:
-                    Name label = ((JCIdent) tree.value).name;
-                    Pair<JCTree, Error> jumpTarget = findJumpTargetNoError(tree.getTag(), label, env);
+        tree.target = findJumpTarget(tree.pos(), tree.getTag(), tree.label, env);
+        result = null;
+    }
 
-                    if (jumpTarget.fst != null) {
-                        JCTree speculative = deferredAttr.attribSpeculative(tree.value, env, unknownExprInfo);
-                        if (!speculative.type.hasTag(ERROR)) {
-                            log.error(tree.pos(), Errors.BreakAmbiguousTarget(label));
-                            if (jumpTarget.snd == null) {
-                                tree.target = jumpTarget.fst;
-                                attribute = false;
-                            } else {
-                                //nothing
-                            }
-                        } else {
-                            if (jumpTarget.snd != null) {
-                                log.error(tree.pos(), jumpTarget.snd);
-                            }
-                            tree.target = jumpTarget.fst;
-                            attribute = false;
-                        }
-                    }
+    public void visitBreakWith(JCBreakWith tree) {
+        if (env.info.breakResult != null) {
+            if (env.info.breakResult.pt.hasTag(VOID)) {
+                //can happen?
+                env.info.breakResult.checkContext.report(tree.value.pos(),
+                          diags.fragment(Fragments.UnexpectedRetVal));
+            }
+            attribTree(tree.value, env, env.info.breakResult);
+            JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), null, env);
+            if (immediateTarget.getTag() != SWITCH_EXPRESSION) {
+                log.error(tree.pos(), Errors.BreakExprNotImmediate(immediateTarget.getTag()));
+                Env<AttrContext> env1 = env;
+                while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
+                    env1 = env1.next;
                 }
-                if (attribute) {
-                    attribTree(tree.value, env, env.info.breakResult);
-                    JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), null, env);
-                    if (immediateTarget.getTag() != SWITCH_EXPRESSION) {
-                        log.error(tree.pos(), Errors.BreakExprNotImmediate(immediateTarget.getTag()));
-                        Env<AttrContext> env1 = env;
-                        while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
-                            env1 = env1.next;
-                        }
-                        Assert.checkNonNull(env1);
-                        tree.target = env1.tree;
-                    } else {
-                        tree.target = immediateTarget;
-                    }
-                }
+                Assert.checkNonNull(env1);
+                tree.target = env1.tree;
+            } else {
+                tree.target = immediateTarget;
             }
         } else {
-            if (tree.value == null || tree.value.hasTag(IDENT)) {
-                Name label = tree.value != null ? ((JCIdent) tree.value).name : null;
-                tree.target = findJumpTarget(tree.pos(), tree.getTag(), label, env);
-            } else {
-                log.error(tree.pos(), Errors.BreakComplexValueNoSwitchExpression);
-                attribTree(tree.value, env, unknownExprInfo);
-            }
+            log.error(tree.pos(), Errors.BreakComplexValueNoSwitchExpression);
+            attribTree(tree.value, env, unknownExprInfo);
         }
         result = null;
     }
@@ -2009,7 +1975,7 @@ public class Attr extends JCTree.Visitor {
                         if (label == null && tag == BREAK) return Pair.of(env1.tree, null);
                         break;
                     case SWITCH_EXPRESSION:
-                        if (tag == BREAK) {
+                        if (tag == BREAK || tag == BREAK_WITH) {
                             if (label == null) {
                                 return Pair.of(env1.tree, null);
                             } else {

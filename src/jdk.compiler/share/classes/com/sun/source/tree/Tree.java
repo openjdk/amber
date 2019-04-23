@@ -94,6 +94,20 @@ public interface Tree {
         BREAK(BreakTree.class),
 
         /**
+         * Used for instances of {@link BreakTree}.
+         *
+         * @since 13
+         *
+         * @deprecated
+         * This enum constant is modeling break-with,
+         * which are part of a preview feature and may be removed
+         * if the preview feature is removed.
+         */
+        @Deprecated(forRemoval=true, since="13")
+        @SuppressWarnings("removal")
+        BREAK_WITH(BreakWithTree.class),
+
+        /**
          * Used for instances of {@link CaseTree}.
          */
         CASE(CaseTree.class),

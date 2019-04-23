@@ -27,6 +27,7 @@ package com.sun.tools.javac.tree;
 
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCBreakWith;
 
 /** A subclass of Tree.Visitor, this class defines
  *  a general tree scanner pattern. Translation proceeds recursively in
@@ -219,6 +220,9 @@ public class TreeScanner extends Visitor {
     }
 
     public void visitBreak(JCBreak tree) {
+    }
+
+    public void visitBreakWith(JCBreakWith tree) {
         scan(tree.value);
     }
 

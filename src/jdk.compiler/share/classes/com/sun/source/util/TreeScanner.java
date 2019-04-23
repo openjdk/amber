@@ -467,8 +467,26 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
-    @SuppressWarnings("removal")
     public R visitBreak(BreakTree node, P p) {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc} This implementation returns {@code null}.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     *
+     * @deprecated
+     * This method is modeling switch expressions,
+     * which are part of a preview feature and may be removed
+     * if the preview feature is removed.
+     */
+    @Override
+    @Deprecated(forRemoval=true, since="13")
+    @SuppressWarnings("removal")
+    public R visitBreakWith(BreakWithTree node, P p) {
         return scan(node.getValue(), p);
     }
 

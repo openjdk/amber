@@ -53,7 +53,7 @@ public class ExpressionSwitchFallThrough {
         return switch (t) {
             case A: help = "a";
             case B: help += "b";
-            default: break help;
+            default: break-with help;
         };
     }
 
@@ -62,7 +62,7 @@ public class ExpressionSwitchFallThrough {
         return switch (t) {
             case A: help = "a";
             case B: help += "b";
-            default: break help;
+            default: break-with help;
         };
     }
 

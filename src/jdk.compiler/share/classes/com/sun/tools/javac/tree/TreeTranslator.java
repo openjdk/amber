@@ -258,8 +258,11 @@ public class TreeTranslator extends JCTree.Visitor {
     }
 
     public void visitBreak(JCBreak tree) {
-        if (tree.isValueBreak())
-            tree.value = translate(tree.value);
+        result = tree;
+    }
+
+    public void visitBreakWith(JCBreakWith tree) {
+        tree.value = translate(tree.value);
         result = tree;
     }
 

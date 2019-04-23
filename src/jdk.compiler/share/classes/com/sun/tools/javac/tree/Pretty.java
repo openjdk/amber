@@ -982,7 +982,20 @@ public class Pretty extends JCTree.Visitor {
     public void visitBreak(JCBreak tree) {
         try {
             print("break");
-            if (tree.value != null) print(" " + tree.value);
+            if (tree.label != null) print(" " + tree.label);
+            print(";");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitBreakWith(JCBreakWith tree) {
+        try {
+            print("break-with");
+            {
+                print(" ");
+                printExpr(tree.value);
+            }
             print(";");
         } catch (IOException e) {
             throw new UncheckedIOException(e);

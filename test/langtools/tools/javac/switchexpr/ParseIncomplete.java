@@ -50,9 +50,9 @@ public class ParseIncomplete {
             "    }" +
             "    int t2(Integer i) {" +
             "        return switch (i) {" +
-            "            case null: break 0;" +
-            "            case 0, 1: break 1;" +
-            "            default: break 2;" +
+            "            case null: break-with 0;" +
+            "            case 0, 1: break-with 1;" +
+            "            default: break-with 2;" +
             "        }" +
             "    }" +
             "}";

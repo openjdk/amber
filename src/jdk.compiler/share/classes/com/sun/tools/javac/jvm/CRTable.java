@@ -377,6 +377,11 @@ implements CRTFlags {
             result = sr;
         }
 
+        public void visitBreakWith(JCBreakWith tree) {
+            SourceRange sr = new SourceRange(startPos(tree), endPos(tree));
+            result = sr;
+        }
+
         public void visitContinue(JCContinue tree) {
             SourceRange sr = new SourceRange(startPos(tree), endPos(tree));
             result = sr;

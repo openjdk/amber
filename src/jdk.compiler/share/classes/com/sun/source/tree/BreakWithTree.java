@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,29 +25,29 @@
 
 package com.sun.source.tree;
 
-import javax.lang.model.element.Name;
-
 /**
- * A tree node for a {@code break} statement.
+ * A tree node for a {@code break-with} statement.
  *
  * For example:
  * <pre>
- *   break;
- *
- *   break <em>label</em> ;
+ *   break <em>expression</em> ;
  * </pre>
  *
- * @jls section 14.15
+ * @jls section TODO
  *
- * @author Peter von der Ah&eacute;
- * @author Jonathan Gibbons
- * @since 1.6
+ * @since 13
+ *
+ * @deprecated This method is modeling breaks from switch expressions,
+ * which are part of a preview feature and may be removed if
+ * the preview feature is removed.
  */
-public interface BreakTree extends StatementTree {
-    /**
-     * Returns the label for this {@code break} statement.
-     * @return the label
-     */
-    Name getLabel();
+@Deprecated(forRemoval=true, since="13")
+public interface BreakWithTree extends StatementTree {
 
+    /**
+     * Returns the expression for this {@code break-with} statement.
+     *
+     * @return the expression
+     */
+    ExpressionTree getValue();
 }

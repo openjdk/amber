@@ -364,6 +364,7 @@ public class JavacParser implements Parser {
                 case RETURN:
                 case THROW:
                 case BREAK:
+                case BREAK_WITH:
                 case CONTINUE:
                 case ELSE:
                 case FINALLY:
@@ -1436,7 +1437,7 @@ public class JavacParser implements Parser {
                     kind = JCCase.RULE;
                 } else {
                     JCExpression value = parseExpression();
-                    stats = List.of(to(F.at(value).Break(value)));
+                    stats = List.of(to(F.at(value).BreakWith(value)));
                     body = value;
                     kind = JCCase.RULE;
                     accept(SEMI);
@@ -2513,7 +2514,7 @@ public class JavacParser implements Parser {
             return List.nil();
         case LBRACE: case IF: case FOR: case WHILE: case DO: case TRY:
         case SWITCH: case SYNCHRONIZED: case RETURN: case THROW: case BREAK:
-        case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
+         case BREAK_WITH: case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
         case ASSERT:
             return List.of(parseSimpleStatement());
         case MONKEYS_AT:
@@ -2701,9 +2702,16 @@ public class JavacParser implements Parser {
         }
         case BREAK: {
             nextToken();
-            JCExpression value = token.kind == SEMI ? null : parseExpression();
+            Name label = LAX_IDENTIFIER.accepts(token.kind) ? ident() : null;
             accept(SEMI);
-            JCBreak t = toP(F.at(pos).Break(value));
+            JCBreak t = toP(F.at(pos).Break(label));
+            return t;
+        }
+        case BREAK_WITH: {
+            nextToken();
+            JCExpression value = parseExpression();
+            accept(SEMI);
+            JCBreakWith t = toP(F.at(pos).BreakWith(value));
             return t;
         }
         case CONTINUE: {

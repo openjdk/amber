@@ -620,11 +620,14 @@ public class TransTypes extends TreeTranslator {
 
     @Override
     public void visitBreak(JCBreak tree) {
-        if (tree.isValueBreak()) {
-            tree.value = translate(tree.value, erasure(tree.value.type));
-            tree.value.type = erasure(tree.value.type);
-            tree.value = retype(tree.value, tree.value.type, pt);
-        }
+        result = tree;
+    }
+
+    @Override
+    public void visitBreakWith(JCBreakWith tree) {
+        tree.value = translate(tree.value, erasure(tree.value.type));
+        tree.value.type = erasure(tree.value.type);
+        tree.value = retype(tree.value, tree.value.type, pt);
         result = tree;
     }
 

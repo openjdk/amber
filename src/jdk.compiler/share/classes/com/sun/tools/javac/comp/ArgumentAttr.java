@@ -77,6 +77,7 @@ import static com.sun.tools.javac.code.TypeTag.DEFERRED;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
+import com.sun.tools.javac.tree.JCTree.JCBreakWith;
 
 /**
  * This class performs attribution of method/constructor arguments when target-typing is enabled
@@ -468,7 +469,7 @@ public class ArgumentAttr extends JCTree.Visitor {
      */
     class SwitchExpressionType extends ArgumentType<JCSwitchExpression> {
         /** List of break expressions (lazily populated). */
-        Optional<List<JCBreak>> breakExpressions = Optional.empty();
+        Optional<List<JCBreakWith>> breakExpressions = Optional.empty();
 
         SwitchExpressionType(JCExpression tree, Env<AttrContext> env, JCSwitchExpression speculativeCond) {
             this(tree, env, speculativeCond, new HashMap<>());
@@ -487,7 +488,7 @@ public class ArgumentAttr extends JCTree.Visitor {
                 return attr.types.createErrorType(resultInfo.pt);
             } else {
                 //poly
-                for (JCBreak brk : breakExpressions()) {
+                for (JCBreakWith brk : breakExpressions()) {
                     checkSpeculative(brk.value, brk.value.type, resultInfo);
                 }
                 return localInfo.pt;
@@ -495,15 +496,16 @@ public class ArgumentAttr extends JCTree.Visitor {
         }
 
         /** Compute return expressions (if needed). */
-        List<JCBreak> breakExpressions() {
+        List<JCBreakWith> breakExpressions() {
             return breakExpressions.orElseGet(() -> {
-                final List<JCBreak> res;
-                ListBuffer<JCBreak> buf = new ListBuffer<>();
+                final List<JCBreakWith> res;
+                ListBuffer<JCBreakWith> buf = new ListBuffer<>();
                 new SwitchExpressionScanner() {
                     @Override
-                    public void visitBreak(JCBreak tree) {
+                    public void visitBreakWith(JCBreakWith tree) {
                         if (tree.target == speculativeTree)
                             buf.add(tree);
+                        super.visitBreakWith(tree);
                     }
                 }.scan(speculativeTree.cases);
                 res = buf.toList();

@@ -120,6 +120,7 @@ public class Tokens {
         ASSERT("assert", Tag.NAMED),
         BOOLEAN("boolean", Tag.NAMED),
         BREAK("break"),
+        BREAK_WITH("break-with"),
         BYTE("byte", Tag.NAMED),
         CASE("case"),
         CATCH("catch"),

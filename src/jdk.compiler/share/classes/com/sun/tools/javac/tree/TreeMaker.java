@@ -333,8 +333,14 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCBreak Break(JCExpression label) {
+    public JCBreak Break(Name label) {
         JCBreak tree = new JCBreak(label, null);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCBreakWith BreakWith(JCExpression value) {
+        JCBreakWith tree = new JCBreakWith(value, null);
         tree.pos = pos;
         return tree;
     }

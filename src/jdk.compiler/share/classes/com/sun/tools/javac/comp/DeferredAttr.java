@@ -1161,7 +1161,7 @@ public class DeferredAttr extends JCTree.Visitor {
 
         SwitchExpressionScanner() {
             super(EnumSet.of(BLOCK, CASE, CATCH, DOLOOP, FOREACHLOOP,
-                    FORLOOP, IF, BREAK, SYNCHRONIZED, SWITCH, TRY, WHILELOOP));
+                    FORLOOP, IF, BREAK_WITH, SYNCHRONIZED, SWITCH, TRY, WHILELOOP));
         }
     }
 

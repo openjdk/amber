@@ -130,6 +130,22 @@ public interface TreeVisitor<R,P> {
     R visitBreak(BreakTree node, P p);
 
     /**
+     * Visits a BreakWithTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 13
+     *
+     * @deprecated
+     * This method is modeling break with,
+     * which are part of a preview feature and may be removed
+     * if the preview feature is removed.
+     */
+    @Deprecated(forRemoval=true, since="13")
+    @SuppressWarnings("removal")
+    R visitBreakWith(BreakWithTree node, P p);
+
+    /**
      * Visits a CaseTree node.
      * @param node the node being visited
      * @param p a parameter value

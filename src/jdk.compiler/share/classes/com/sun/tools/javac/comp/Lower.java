@@ -59,6 +59,7 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCBreakWith;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
@@ -272,9 +273,8 @@ public class Lower extends TreeTranslator {
         }
 
         @Override
-        public void visitBreak(JCBreak tree) {
-            if (tree.isValueBreak())
-                scan(tree.value);
+        public void visitBreakWith(JCBreakWith tree) {
+            scan(tree.value);
         }
 
     }
@@ -3224,6 +3224,11 @@ public class Lower extends TreeTranslator {
                     if (tree.target == src)
                         tree.target = dest;
                 }
+                public void visitBreakWith(JCBreakWith tree) {
+                    if (tree.target == src)
+                        tree.target = dest;
+                    scan(tree.value);
+                }
                 public void visitContinue(JCContinue tree) {
                     if (tree.target == src)
                         tree.target = dest;
@@ -3676,9 +3681,12 @@ public class Lower extends TreeTranslator {
 
     @Override
     public void visitBreak(JCBreak tree) {
-        if (tree.isValueBreak()) {
-            tree.value = translate(tree.value, tree.target.type);
-        }
+        result = tree;
+    }
+
+    @Override
+    public void visitBreakWith(JCBreakWith tree) {
+        tree.value = translate(tree.value, tree.target.type);
         result = tree;
     }
 

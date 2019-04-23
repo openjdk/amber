@@ -241,6 +241,7 @@ class CompletenessAnalyzer {
         // Statement keywords
         ASSERT(TokenKind.ASSERT, XSTMT1|XSTART),  //  assert
         BREAK(TokenKind.BREAK, XSTMT1|XTERM|XSTART),  //  break
+        BREAK_WITH(TokenKind.BREAK_WITH, XSTMT1|XTERM|XSTART),  //  break-with
         CATCH(TokenKind.CATCH, XSTMT1|XSTART),  //  catch
         CONTINUE(TokenKind.CONTINUE, XSTMT1|XTERM|XSTART),  //  continue
         DO(TokenKind.DO, XSTMT1|XSTART),  //  do

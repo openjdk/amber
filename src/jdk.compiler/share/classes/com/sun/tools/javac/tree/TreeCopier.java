@@ -140,8 +140,15 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitBreak(BreakTree node, P p) {
         JCBreak t = (JCBreak) node;
+        return M.at(t.pos).Break(t.label);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
+    @SuppressWarnings("removal")
+    public JCTree visitBreakWith(BreakWithTree node, P p) {
+        JCBreakWith t = (JCBreakWith) node;
         JCExpression value = copy(t.value, p);
-        return M.at(t.pos).Break(value);
+        return M.at(t.pos).BreakWith(value);
     }
 
     @DefinedBy(Api.COMPILER_TREE)

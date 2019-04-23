@@ -38,34 +38,34 @@ public class TryCatch {
                         case 1:
                             try {
                                 new TryCatch().throwException();
-                                break -1;
+                                break-with -1;
                             } catch(Throwable ex) {
-                                break val;
+                                break-with val;
                             }
-                        default: break -1;
+                        default: break-with -1;
                     };
                     case 1 -> {
                         try {
-                            break new TryCatch().id(switch (p + 1) {
+                            break-with new TryCatch().id(switch (p + 1) {
                                 case 2:
                                     try {
                                         new TryCatch().throwException();
-                                        break -1;
+                                        break-with -1;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break -1;
+                                default: break-with -1;
                             });
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break -1;
+                            break-with -1;
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                 } - 1);
@@ -83,34 +83,34 @@ public class TryCatch {
                         case 1:
                             try {
                                 new TryCatch().throwException();
-                                break false;
+                                break-with false;
                             } catch(Throwable ex) {
-                                break true;
+                                break-with true;
                             }
-                        default: break false;
+                        default: break-with false;
                     };
                     case 1 -> {
                         try {
-                            break new TryCatch().id(switch (p + 1) {
+                            break-with new TryCatch().id(switch (p + 1) {
                                 case 2:
                                     try {
                                         new TryCatch().throwException();
-                                        break false;
+                                        break-with false;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break false;
+                                default: break-with false;
                             });
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break false;
+                            break-with false;
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                 } && (x = 1) == 1 && x == 1 ? val : -1);
@@ -127,34 +127,34 @@ public class TryCatch {
                         case B:
                             try {
                                 new TryCatch().throwException();
-                                break -1;
+                                break-with -1;
                             } catch(Throwable ex) {
-                                break val;
+                                break-with val;
                             }
-                        default: break -1;
+                        default: break-with -1;
                     };
                     case B -> {
                         try {
-                            break new TryCatch().id(switch (e.next()) {
+                            break-with new TryCatch().id(switch (e.next()) {
                                 case C:
                                     try {
                                         new TryCatch().throwException();
-                                        break -1;
+                                        break-with -1;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break -1;
+                                default: break-with -1;
                             });
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break -1;
+                            break-with -1;
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                 } - 1);
@@ -172,34 +172,34 @@ public class TryCatch {
                         case B:
                             try {
                                 new TryCatch().throwException();
-                                break false;
+                                break-with false;
                             } catch(Throwable ex) {
-                                break true;
+                                break-with true;
                             }
-                        default: break false;
+                        default: break-with false;
                     };
                     case B -> {
                         try {
-                            break new TryCatch().id(switch (e.next()) {
+                            break-with new TryCatch().id(switch (e.next()) {
                                 case C:
                                     try {
                                         new TryCatch().throwException();
-                                        break false;
+                                        break-with false;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break false;
+                                default: break-with false;
                             });
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break false;
+                            break-with false;
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                 } && (x = 1) == 1 && x == 1 ? val : -1);
@@ -216,34 +216,34 @@ public class TryCatch {
                         case "c":
                             try {
                                 new TryCatch().throwException();
-                                break -1;
+                                break-with -1;
                             } catch(Throwable ex) {
-                                break val;
+                                break-with val;
                             }
-                        default: break -1;
+                        default: break-with -1;
                     };
                     case "a" -> {
                         try {
-                            break new TryCatch().id(switch (s + "c") {
+                            break-with new TryCatch().id(switch (s + "c") {
                                 case "ac":
                                     try {
                                         new TryCatch().throwException();
-                                        break -1;
+                                        break-with -1;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break -1;
+                                default: break-with -1;
                             });
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break -1;
+                            break-with -1;
                         } catch(Throwable ex) {
-                            break val;
+                            break-with val;
                         }
                     }
                 } - 1);
@@ -261,34 +261,34 @@ public class TryCatch {
                         case "c":
                             try {
                                 new TryCatch().throwException();
-                                break false;
+                                break-with false;
                             } catch(Throwable ex) {
-                                break true;
+                                break-with true;
                             }
-                        default: break false;
+                        default: break-with false;
                     };
                     case "a" -> {
                         try {
-                            break new TryCatch().id(switch (s + "c") {
+                            break-with new TryCatch().id(switch (s + "c") {
                                 case "ac":
                                     try {
                                         new TryCatch().throwException();
-                                        break false;
+                                        break-with false;
                                     } catch(Throwable ex) {
                                         throw ex;
                                     }
-                                default: break false;
+                                default: break-with false;
                             });
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                     default -> {
                         try {
                             new TryCatch().throwException();
-                            break false;
+                            break-with false;
                         } catch(Throwable ex) {
-                            break true;
+                            break-with true;
                         }
                     }
                 } && (x = 1) == 1 && x == 1 ? val : -1);
@@ -330,75 +330,75 @@ public class TryCatch {
 
     static class FieldHolder {
         private final int intTest = switch (0) {
-            case -1: break -1;
+            case -1: break-with -1;
             default:
                 try {
-                    break new TryCatch().id(switch (2) {
+                    break-with new TryCatch().id(switch (2) {
                         case 2:
                             try {
                                 new TryCatch().throwException();
-                                break -1;
+                                break-with -1;
                             } catch(Throwable ex) {
                                 throw ex;
                             }
-                        default: break -1;
+                        default: break-with -1;
                     });
                 } catch(Throwable ex) {
-                    break 3;
+                    break-with 3;
                 }
         };
         private static final int intStaticTest = switch (0) {
-            case -1: break -1;
+            case -1: break-with -1;
             default:
                 try {
-                    break new TryCatch().id(switch (2) {
+                    break-with new TryCatch().id(switch (2) {
                         case 2:
                             try {
                                 new TryCatch().throwException();
-                                break -1;
+                                break-with -1;
                             } catch(Throwable ex) {
                                 throw ex;
                             }
-                        default: break -1;
+                        default: break-with -1;
                     });
                 } catch(Throwable ex) {
-                    break 3;
+                    break-with 3;
                 }
         };
         private final boolean booleanTest = switch (0) {
-            case -1: break false;
+            case -1: break-with false;
             default:
                 try {
-                    break new TryCatch().id(switch (2) {
+                    break-with new TryCatch().id(switch (2) {
                         case 2:
                             try {
                                 new TryCatch().throwException();
-                                break false;
+                                break-with false;
                             } catch(Throwable ex) {
                                 throw ex;
                             }
-                        default: break false;
+                        default: break-with false;
                     });
                 } catch(Throwable ex) {
-                    break true;
+                    break-with true;
                 }
         };
         private static final boolean booleanStaticTest = switch (0) {
-            case -1: break false;
+            case -1: break-with false;
             default:
                 try {
-                    break new TryCatch().id(switch (2) {
+                    break-with new TryCatch().id(switch (2) {
                         case 2:
                             try {
                                 new TryCatch().throwException();
-                                break false;
+                                break-with false;
                             } catch(Throwable ex) {
                                 throw ex;
                             }
-                        default: break false;
+                        default: break-with false;
                     });
                 } catch(Throwable ex) {
-                    break true;
+                    break-with true;
                 }
         };
     }

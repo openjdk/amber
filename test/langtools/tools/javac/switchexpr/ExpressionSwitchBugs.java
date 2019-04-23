@@ -39,42 +39,42 @@ public class ExpressionSwitchBugs {
     private void testNested() {
         int i = 0;
         check(42, id(switch (42) {
-            default: i++; break 42;
+            default: i++; break-with 42;
         }));
         i = 0;
         check(43, id(switch (42) {
             case 42: while (i == 0) {
                 i++;
             }
-            break 42 + i;
-            default: i++; break 42;
+            break-with 42 + i;
+            default: i++; break-with 42;
         }));
         i = 0;
         check(42, id(switch (42) {
             case 42: if (i == 0) {
-                break 42;
+                break-with 42;
             }
-            default: i++; break 43;
+            default: i++; break-with 43;
         }));
         i = 0;
         check(42, id(switch (42) {
             case 42: if (i == 0) {
-                break 41 + switch (0) {
+                break-with 41 + switch (0) {
                     case 0 -> 1;
                     default -> -1;
                 };
             }
-            default: i++; break 43;
+            default: i++; break-with 43;
         }));
     }
 
     private void testAnonymousClasses() {
         for (int i : new int[] {1, 2}) {
             check(3, id((switch (i) {
-                case 1: break new I() {
+                case 1: break-with new I() {
                     public int g() { return 3; }
                 };
-                default: break (I) () -> { return 3; };
+                default: break-with (I) () -> { return 3; };
             }).g()));
             check(3, id((switch (i) {
                 case 1 -> new I() {
@@ -96,7 +96,7 @@ public class ExpressionSwitchBugs {
         case 2 -> {
             int temp = 0;
             temp += 3;
-            break temp;
+            break-with temp;
         }
         default -> throw new IllegalStateException();
     });
@@ -107,7 +107,7 @@ public class ExpressionSwitchBugs {
         case 2 -> {
             int temp = 0;
             temp += 3;
-            break temp;
+            break-with temp;
         }
         default -> throw new IllegalStateException();
     });

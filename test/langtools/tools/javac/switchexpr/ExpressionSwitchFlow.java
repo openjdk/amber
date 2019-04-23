@@ -2,14 +2,14 @@
  * @test /nodynamiccopyright/
  * @bug 8212982
  * @summary Verify a compile-time error is produced if switch expression does not provide a value
- * @compile/fail/ref=ExpressionSwitchFlow.out --enable-preview -source ${jdk.version} -XDrawDiagnostics ExpressionSwitchFlow.java
+ * @compile/fail/ref=ExpressionSwitchFlow.out -XDdev --enable-preview -source ${jdk.version} -XDrawDiagnostics ExpressionSwitchFlow.java
  */
 
 public class ExpressionSwitchFlow {
     private String test1(int i) {
         return switch (i) {
             case 0 -> {}
-            default -> { break "other"; }
+            default -> { break-with "other"; }
         };
     }
     private String test2(int i) {
@@ -27,7 +27,7 @@ public class ExpressionSwitchFlow {
     }
     private String test4(int i) {
         return switch (i) {
-            case 0 -> { break "other"; }
+            case 0 -> { break-with "other"; }
             default -> {}
         };
     }

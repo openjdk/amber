@@ -37,6 +37,7 @@ import com.sun.tools.javac.tree.JCTree.JCAssignOp;
 import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCBreakWith;
 import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCCatch;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
@@ -259,6 +260,12 @@ public class TreeDiffer extends TreeScanner {
     @Override
     public void visitBreak(JCBreak tree) {
         JCBreak that = (JCBreak) parameter;
+        result = tree.label == that.label;
+    }
+
+    @Override
+    public void visitBreakWith(JCBreakWith tree) {
+        JCBreakWith that = (JCBreakWith) parameter;
         result = scan(tree.value, that.value);
     }
 

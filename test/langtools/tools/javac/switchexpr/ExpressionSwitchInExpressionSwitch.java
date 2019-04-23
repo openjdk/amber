@@ -43,11 +43,11 @@ public class ExpressionSwitchInExpressionSwitch {
             default -> {
                 int k = switch (j) {
                     default -> {
-                        break 42;
+                        break-with 42;
                     }
                 };
-                System.out.println("didn't break to the top level");
-                break 43;
+                System.out.println("didn't break-with to the top level");
+                break-with 43;
             }
         };
         if (i!=43) {

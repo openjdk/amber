@@ -418,6 +418,31 @@ public class JavaTokenizer {
                     }
                 }
                 if (!isJavaIdentifierPart) {
+                    if (reader.name().contentEquals("break")) {
+                        if (reader.ch == '-') {
+                            int pos = reader.bp;
+                            int savedPos = reader.sp;
+                            reader.putChar(true);
+                            boolean isJavaIdentifierStart = false;
+                            int codePoint = reader.peekSurrogates();
+                            if (codePoint >= 0) {
+                                if (isJavaIdentifierStart = Character.isJavaIdentifierStart(codePoint)) {
+                                    reader.putChar(true);
+                                }
+                            } else {
+                                isJavaIdentifierStart = Character.isJavaIdentifierStart(reader.ch);
+                            }
+                            if (isJavaIdentifierStart) {
+                                scanIdent();
+                            }
+                            if (tk == TokenKind.BREAK_WITH) {
+                                return ;
+                            } else {
+                                reader.bp = pos;
+                                reader.sp = savedPos;
+                            }
+                        }
+                    }
                     name = reader.name();
                     tk = tokens.lookupKind(name);
                     return;
