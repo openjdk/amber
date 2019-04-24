@@ -2168,21 +2168,39 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
     /** A class for condy.
      */
-    public static class DynamicVarSymbol extends VarSymbol {
-        public Object[] staticArgs;
-        public MethodSymbol bsm;
-        public int bsmKind;
+    public static class DynamicVarSymbol extends VarSymbol implements Dynamic, LoadableConstant {
+        public LoadableConstant[] staticArgs;
+        public MethodHandleSymbol bsm;
 
-        public DynamicVarSymbol(Name name, Symbol owner, int bsmKind, MethodSymbol bsm, Type type, Object[] staticArgs) {
+        public DynamicVarSymbol(Name name, Symbol owner, MethodHandleSymbol bsm, Type type, LoadableConstant[] staticArgs) {
             super(0, name, type, owner);
             this.bsm = bsm;
-            this.bsmKind = bsmKind;
             this.staticArgs = staticArgs;
         }
 
         @Override
         public boolean isDynamic() {
             return true;
+        }
+
+        @Override
+        public PoolConstant dynamicType() {
+            return type;
+        }
+
+        @Override
+        public LoadableConstant[] staticArgs() {
+            return staticArgs;
+        }
+
+        @Override
+        public LoadableConstant bootstrapMethod() {
+            return bsm;
+        }
+
+        @Override
+        public int poolTag() {
+            return ClassFile.CONSTANT_Dynamic;
         }
     }
 

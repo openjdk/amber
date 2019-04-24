@@ -168,7 +168,7 @@ public class Items {
     /** Make an item representing a condy.
      *  @param value    The condy value.
      */
-    Item makeCondyItem(DynamicVariable value) {
+    Item makeCondyItem(DynamicVarSymbol value) {
         return new CondyItem(value);
     }
 
@@ -484,7 +484,7 @@ public class Items {
             Assert.check(member.kind == Kinds.Kind.VAR);
             Type type = member.erasure(types);
             int rescode = Code.typecode(type);
-            code.emitLdc(pool.put(member));
+            code.emitLdc((DynamicVarSymbol)member);
             return stackItem[rescode];
         }
 
@@ -508,9 +508,9 @@ public class Items {
     /** An item representing a condy
      */
     class CondyItem extends Item {
-        DynamicVariable value;
+        DynamicVarSymbol value;
 
-        CondyItem(DynamicVariable value) {
+        CondyItem(DynamicVarSymbol value) {
             super(Code.typecode(value.type));
             this.value = value;
         }
@@ -522,11 +522,11 @@ public class Items {
 
         @Override
         Item load() {
-            int idx = pool.put(value);
+            int idx = poolWriter.putConstant(value);
             if (typecode == LONGcode || typecode == DOUBLEcode) {
                 code.emitop2(ldc2w, idx);
             } else {
-                code.emitLdc(idx);
+                code.emitLdc(LoadableConstant.Int(idx));
             }
             return stackItem[typecode];
         }

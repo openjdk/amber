@@ -176,9 +176,7 @@ public class LambdaToMethod extends TreeTranslator {
         Source source = Source.instance(context);
         // format: -XDforNonCapturingLambda=generateCondy, which is the default, or -XDforNonCapturingLambda=generateIndy
         String condyOp = options.get("forNonCapturingLambda");
-        condyForLambda = (condyOp != null ?
-                condyOp.equals("generateCondy") :
-                Feature.CONDY_FOR_LAMBDA.allowedInSource(source));
+        condyForLambda = condyOp != null && condyOp.equals("generateCondy");
     }
     // </editor-fold>
 
@@ -1223,9 +1221,9 @@ public class LambdaToMethod extends TreeTranslator {
             make.at(prevPos);
         }
     }
-    
+
     private JCExpression makeDynamicCall(DiagnosticPosition pos, Type site, Name bsmName,
-                                         List<Object> staticArgs, Type interfaceType, MethodType indyType, List<JCExpression> indyArgs,
+                                         List<LoadableConstant> staticArgs, Type interfaceType, MethodType indyType, List<JCExpression> indyArgs,
                                          Name methName) {
         return condyForLambda &&
                 !context.needsAltMetafactory() &&
@@ -1240,29 +1238,24 @@ public class LambdaToMethod extends TreeTranslator {
     private final boolean condyForLambda;
 
     private JCExpression makeCondy(DiagnosticPosition pos, Type site, Name bsmName,
-                                   List<Object> staticArgs, Type interfaceType, Name methName) {
+                                   List<LoadableConstant> staticArgs, Type interfaceType, Name methName) {
         int prevPos = make.pos;
         try {
             make.at(pos);
             List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
                     syms.stringType,
-                    syms.classType).appendList(bsmStaticArgToTypes(staticArgs));
+                    syms.methodTypeType).appendList(staticArgs.map(types::constantType));
 
             Symbol bsm = rs.resolveInternalMethod(pos, attrEnv, site,
                     bsmName, bsm_staticArgs, List.nil());
 
             Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(methName,
                     syms.noSymbol,
-                    bsm.isStatic() ?
-                            ClassFile.REF_invokeStatic :
-                            ClassFile.REF_invokeVirtual,
-                    (MethodSymbol)bsm,
+                    ((MethodSymbol)bsm).asHandle(),
                     interfaceType,
-                    staticArgs.toArray());
-
+                    staticArgs.toArray(new LoadableConstant[staticArgs.length()]));
             JCIdent ident = make.Ident(dynSym);
             ident.type = interfaceType;
-
             return ident;
         } finally {
             make.at(prevPos);

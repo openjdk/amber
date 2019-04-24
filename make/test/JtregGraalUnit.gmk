@@ -131,6 +131,7 @@ ifeq ($(INCLUDE_GRAAL), true)
           ADD_JAVAC_FLAGS := \
               $(TEST_JAVAC_FLAGS) \
               -XDstringConcat=inline \
+              -XDforNonCapturingLambda=generateIndy \
               , \
       ))
 

@@ -797,9 +797,9 @@ public class ClassWriter extends ClassFile {
         }
         databuf.appendChar(mergedProvides.size());
         mergedProvides.forEach((srvc, impls) -> {
-            databuf.appendChar(pool.put(srvc));
+            databuf.appendChar(poolWriter.putClass(srvc));
             databuf.appendChar(impls.size());
-            impls.forEach(impl -> databuf.appendChar(pool.put(impl)));
+            impls.forEach(impl -> databuf.appendChar(poolWriter.putClass(impl)));
         });
 
         endAttr(alenIdx);

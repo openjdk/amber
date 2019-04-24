@@ -1773,7 +1773,7 @@ public class Code {
                 int width = width(t);
                 Type old = stack[stacksize-width];
                 Assert.check(types.isSubtype(types.erasure(old),
-                                       types.erasure(t)));
+                                       types.erasure(t)), String.format("%s is not subtype of %s", old, t));
                 stack[stacksize-width] = t;
                 break;
             default:
