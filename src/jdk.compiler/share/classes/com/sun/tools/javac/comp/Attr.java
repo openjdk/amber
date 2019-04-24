@@ -1876,7 +1876,7 @@ public class Attr extends JCTree.Visitor {
                           diags.fragment(Fragments.UnexpectedRetVal));
             }
             attribTree(tree.value, env, env.info.breakResult);
-            JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), null, env);
+            JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), names.empty, env);
             if (immediateTarget.getTag() != SWITCH_EXPRESSION) {
                 log.error(tree.pos(), Errors.BreakExprNotImmediate(immediateTarget.getTag()));
                 Env<AttrContext> env1 = env;
@@ -1975,12 +1975,10 @@ public class Attr extends JCTree.Visitor {
                         if (label == null && tag == BREAK) return Pair.of(env1.tree, null);
                         break;
                     case SWITCH_EXPRESSION:
-                        if (tag == BREAK || tag == BREAK_WITH) {
-                            if (label == null) {
-                                return Pair.of(env1.tree, null);
-                            } else {
-                                pendingError = Errors.BreakOutsideSwitchExpression;
-                            }
+                        if (tag == BREAK_WITH) {
+                            return Pair.of(env1.tree, null);
+                        } else if (tag == BREAK) {
+                            pendingError = Errors.BreakOutsideSwitchExpression;
                         } else {
                             pendingError = Errors.ContinueOutsideSwitchExpression;
                         }
