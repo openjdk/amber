@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,7 +61,7 @@ public class TestRecord extends JavacTestingAbstractProcessor {
        return true;
     }
 
-    static record PersonalBest(Duration marathonTime) {
+    static record PersonalBest(Duration marathonTime) implements Serializable {
         private static final Duration MIN_QUAL_TIME = Duration.ofHours(3);
         public boolean bostonQualified() {
             return marathonTime.compareTo(MIN_QUAL_TIME) <= 0;
@@ -72,7 +72,7 @@ public class TestRecord extends JavacTestingAbstractProcessor {
      * Verify that a record modeled as an element behaves as expected
      * under 6 and latest specific visitors.
      */
-    private static void testRecord(Element element) {
+    private static void testRecord(Element element, Elements elements) {
         ElementVisitor visitor6 = new ElementKindVisitor6<Void, Void>() {};
 
         try {
@@ -87,6 +87,23 @@ public class TestRecord extends JavacTestingAbstractProcessor {
             @Override
             public Object visitTypeAsRecord(TypeElement e,
                                             Void p) {
+                System.out.println("printing record " + e);
+                List<? extends Element> enclosedElements = e.getEnclosedElements();
+                for (Element elem : enclosedElements) {
+                    System.out.println("name " + elem.getSimpleName());
+                    System.out.println("origin " + elements.getOrigin(elem));
+                    switch (elem.getSimpleName().toString()) {
+                        case "marathonTime": case "toString":
+                        case "<init>": case "hashCode":
+                        case "equals": case "readResolve":
+                            if (elements.getOrigin(elem) != Elements.Origin.MANDATED) {
+                                throw new RuntimeException("MANDATED origin expected");
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
                 return e; // a non-null value
             }
         };
@@ -107,7 +124,7 @@ public class TestRecord extends JavacTestingAbstractProcessor {
            System.out.println("Name: " + element.getSimpleName() +
                               "\tKind: " + element.getKind());
            if (element.getKind() == ElementKind.RECORD) {
-               testRecord(element);
+               testRecord(element, elements);
                recordCount++;
            }
            return super.visitType(element, p);
