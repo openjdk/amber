@@ -26,7 +26,7 @@
 class BreakComplexValueNoSwitchExpressions {
     void t() {
         while (true) {
-            break 1 + 1;
+            break-with 1 + 1;
         }
     }
 }

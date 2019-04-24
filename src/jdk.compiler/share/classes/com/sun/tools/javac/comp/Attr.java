@@ -1876,18 +1876,7 @@ public class Attr extends JCTree.Visitor {
                           diags.fragment(Fragments.UnexpectedRetVal));
             }
             attribTree(tree.value, env, env.info.breakResult);
-            JCTree immediateTarget = findJumpTarget(tree.pos(), tree.getTag(), names.empty, env);
-            if (immediateTarget.getTag() != SWITCH_EXPRESSION) {
-                log.error(tree.pos(), Errors.BreakExprNotImmediate(immediateTarget.getTag()));
-                Env<AttrContext> env1 = env;
-                while (env1 != null && env1.tree.getTag() != SWITCH_EXPRESSION) {
-                    env1 = env1.next;
-                }
-                Assert.checkNonNull(env1);
-                tree.target = env1.tree;
-            } else {
-                tree.target = immediateTarget;
-            }
+            tree.target = findJumpTarget(tree.pos(), tree.getTag(), names.empty, env);
         } else {
             log.error(tree.pos(), Errors.BreakComplexValueNoSwitchExpression);
             attribTree(tree.value, env, unknownExprInfo);
