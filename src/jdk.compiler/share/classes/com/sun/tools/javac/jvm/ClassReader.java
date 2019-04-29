@@ -1198,7 +1198,6 @@ public class ClassReader {
                         ListBuffer<Type> subtypes = new ListBuffer<>();
                         int numberOfPermittedSubtypes = nextChar();
                         for (int i = 0; i < numberOfPermittedSubtypes; i++) {
-                            int subtype = nextChar();
                             Type ct = poolReader.getClass(nextChar()).erasure(types);
                             subtypes.add(ct);
                         }

@@ -2,6 +2,9 @@
  * @test /nodynamiccopyright/
  * @summary smoke test for sealed and separate compilation
  * @compile/fail/ref=TestSeparate_Neg.out -XDrawDiagnostics TestSeparate_Neg.java SealedClasses.java
+ * @clean *
+ * @compile SealedClasses.java
+ * @compile/fail/ref=TestSeparate_Neg.out -XDrawDiagnostics TestSeparate_Neg.java
  */
 
 public class TestSeparate_Neg {
