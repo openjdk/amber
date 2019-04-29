@@ -27,6 +27,9 @@
  * @test
  * @summary smoke test for sealed and separate compilation
  * @compile TestSeparate01.java SealedClasses.java
+ * @clean *
+ * @compile SealedClasses.java
+ * @compile TestSeparate01.java
  */
 
 public class TestSeparate01 {
