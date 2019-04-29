@@ -1,0 +1,25 @@
+BadRecord.java:6:19: compiler.err.expected: '('
+BadRecord.java:8:21: compiler.err.illegal.start.of.type
+BadRecord.java:10:23: compiler.err.expected: token.identifier
+BadRecord.java:12:23: compiler.err.expected: token.identifier
+BadRecord.java:14:25: compiler.err.expected: ')'
+BadRecord.java:16:27: compiler.err.illegal.start.of.type
+BadRecord.java:18:26: compiler.err.illegal.start.of.type
+BadRecord.java:20:30: compiler.err.expected: token.identifier
+BadRecord.java:22:30: compiler.err.expected: token.identifier
+BadRecord.java:24:32: compiler.err.expected: ')'
+BadRecord.java:26:34: compiler.err.illegal.start.of.type
+BadRecord.java:28:33: compiler.err.illegal.start.of.type
+BadRecord.java:30:19: compiler.err.expected: '('
+BadRecord.java:32:20: compiler.err.illegal.start.of.type
+BadRecord.java:34:23: compiler.err.expected: token.identifier
+BadRecord.java:36:23: compiler.err.expected: token.identifier
+BadRecord.java:38:25: compiler.err.expected: ')'
+BadRecord.java:40:26: compiler.err.illegal.start.of.type
+BadRecord.java:42:26: compiler.err.illegal.start.of.type
+BadRecord.java:44:30: compiler.err.expected: token.identifier
+BadRecord.java:46:30: compiler.err.expected: token.identifier
+BadRecord.java:48:32: compiler.err.expected: ')'
+BadRecord.java:50:33: compiler.err.illegal.start.of.type
+BadRecord.java:52:33: compiler.err.illegal.start.of.type
+24 errors
