@@ -1350,17 +1350,8 @@ public class Attr extends JCTree.Visitor {
     }
 
     private boolean breaksOutOf(JCTree loop, JCTree body) {
-        //TODO: should correctly reflect liveness:
-        boolean[] breaksOut = new boolean[1];
-        new TreeScanner() {
-            @Override
-            public void visitBreak(JCBreak tree) {
-                breaksOut[0] |= tree.target == loop;
-                super.visitBreak(tree);
-            }
-        }.scan(body);
-
-        return breaksOut[0];
+        preFlow(body);
+        return flow.breaksOutOf(env, loop, body, make);
     }
 
     public void visitForLoop(JCForLoop tree) {
@@ -1382,16 +1373,16 @@ public class Attr extends JCTree.Visitor {
             } finally {
                 bodyEnv.info.scope.leave();
             }
-            if (!breaksOutOf(tree, tree.body)) {
-                List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
-
-                bindings.forEach(env.info.scope::enter);
-                bindings.forEach(BindingSymbol::preserveBinding);
-            }
             result = null;
         }
         finally {
             loopEnv.info.scope.leave(); // all injected match bindings vanish here.
+        }
+        if (!breaksOutOf(tree, tree.body)) {
+            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+
+            bindings.forEach(env.info.scope::enter);
+            bindings.forEach(BindingSymbol::preserveBinding);
         }
     }
 
