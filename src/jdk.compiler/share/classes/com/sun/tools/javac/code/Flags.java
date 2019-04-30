@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -320,14 +320,19 @@ public class Flags {
     public static final long BODY_ONLY_FINALIZE = 1L<<17; //blocks only
 
     /**
+     * Flag to indicate the given ParamSymbol has a user-friendly name filled.
+     */
+    public static final long NAME_FILLED = 1L<<58; //ParamSymbols only
+
+    /**
      * Flag to indicate the given variable is a match binding variable.
      */
-    public static final long MATCH_BINDING = 1L<<58;
+    public static final long MATCH_BINDING = 1L<<59;
 
     /**
      * A flag to indicate a match binding variable whose scope extends after the current statement.
      */
-    public static final long MATCH_BINDING_TO_OUTER = 1L<<59;
+    public static final long MATCH_BINDING_TO_OUTER = 1L<<60;
 
     /** Modifier masks.
      */
@@ -445,7 +450,8 @@ public class Flags {
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
-        ANONCONSTR_BASED(Flags.ANONCONSTR_BASED);
+        ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
+        NAME_FILLED(Flags.NAME_FILLED);
 
         Flag(long flag) {
             this.value = flag;
