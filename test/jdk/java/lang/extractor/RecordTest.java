@@ -23,8 +23,8 @@
  * questions.
  */
 
-import java.lang.compiler.Extractor;
-import java.lang.compiler.SwitchBootstraps;
+import java.lang.runtime.Extractor;
+import java.lang.runtime.SwitchBootstraps;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

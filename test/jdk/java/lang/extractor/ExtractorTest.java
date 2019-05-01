@@ -23,7 +23,7 @@
  * questions.
  */
 
-import java.lang.compiler.Extractor;
+import java.lang.runtime.Extractor;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -43,7 +43,7 @@ import static org.testng.Assert.assertTrue;
 /**
  * @test
  * @run testng ExtractorTest
- * @summary Smoke tests for java.lang.compiler.Extractor
+ * @summary Smoke tests for java.lang.runtime.Extractor
  */
 @Test
 public class ExtractorTest {

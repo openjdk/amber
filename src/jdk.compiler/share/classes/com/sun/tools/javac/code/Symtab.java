@@ -578,7 +578,7 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
-        extractorType = enterClass("java.lang.compiler.Extractor");
+        extractorType = enterClass("java.lang.runtime.Extractor");
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
