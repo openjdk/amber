@@ -3722,6 +3722,11 @@ public class JavacParser implements Parser {
         ListBuffer<JCVariableDecl> fields = new ListBuffer<>();
         if (token.kind == LPAREN) {
             nextToken();
+            // check for empty record
+            if (token.kind == RPAREN) {
+                nextToken();
+                return List.nil();
+            }
             fields.add(headerField(abstractRecord));
             while (token.kind == COMMA) {
                 nextToken();
