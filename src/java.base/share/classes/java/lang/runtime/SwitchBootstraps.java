@@ -23,7 +23,7 @@
  * questions.
  */
 
-package java.lang.compiler;
+package java.lang.runtime;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;

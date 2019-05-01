@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.compiler;
+package java.lang.runtime;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -40,7 +40,7 @@ import static org.testng.Assert.assertEquals;
  * @test
  * @key randomness
  * @run testng CarrierTest
- * @summary unit tests for java.lang.compiler.ExtractorCarriers
+ * @summary unit tests for java.lang.runtime.ExtractorCarriers
  */
 @Test
 public class CarrierTest {

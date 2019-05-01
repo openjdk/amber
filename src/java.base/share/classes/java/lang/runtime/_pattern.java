@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package java.lang.compiler;
+package java.lang.runtime;
 
 import java.util.Optional;
 import java.util.function.Function;
