@@ -554,6 +554,13 @@ public class Log extends AbstractLog {
             }
         }
 
+    /**Is an error reported at the given pos (inside the current source)?*/
+    public boolean hasErrorOn(DiagnosticPosition pos) {
+        JavaFileObject file = source != null ? source.fileObject : null;
+
+        return file != null && recorded.contains(new Pair<>(file, pos.getPreferredPosition()));
+    }
+
     /** Prompt user after an error.
      */
     public void prompt() {

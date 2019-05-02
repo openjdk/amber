@@ -534,7 +534,8 @@ public class Flow {
                 while (exits.nonEmpty()) {
                     PendingExit exit = exits.head;
                     exits = exits.tail;
-                    Assert.check(exit.tree.hasTag(RETURN));
+                    Assert.check(exit.tree.hasTag(RETURN) ||
+                                    log.hasErrorOn(exit.tree.pos()));
                 }
             } finally {
                 lint = lintPrev;
@@ -1053,7 +1054,8 @@ public class Flow {
                     PendingExit exit = exits.head;
                     exits = exits.tail;
                     if (!(exit instanceof ThrownPendingExit)) {
-                        Assert.check(exit.tree.hasTag(RETURN));
+                        Assert.check(exit.tree.hasTag(RETURN) ||
+                                         log.hasErrorOn(exit.tree.pos()));
                     } else {
                         // uncaught throws will be reported later
                         pendingExits.append(exit);
@@ -1385,7 +1387,8 @@ public class Flow {
                     PendingExit exit = exits.head;
                     exits = exits.tail;
                     if (!(exit instanceof ThrownPendingExit)) {
-                        Assert.check(exit.tree.hasTag(RETURN));
+                        Assert.check(exit.tree.hasTag(RETURN) ||
+                                        log.hasErrorOn(exit.tree.pos()));
                     } else {
                         // uncaught throws will be reported later
                         pendingExits.append(exit);
@@ -2005,7 +2008,9 @@ public class Flow {
                     while (exits.nonEmpty()) {
                         PendingExit exit = exits.head;
                         exits = exits.tail;
-                        Assert.check(exit.tree.hasTag(RETURN), exit.tree);
+                        Assert.check(exit.tree.hasTag(RETURN) ||
+                                         log.hasErrorOn(exit.tree.pos()),
+                                     exit.tree);
                         if (isInitialConstructor) {
                             Assert.check(exit instanceof AssignPendingExit);
                             inits.assign(((AssignPendingExit) exit).exit_inits);
@@ -2434,33 +2439,32 @@ public class Flow {
         
         @Override
         public void visitBreakWith(JCBreakWith tree) {
-            if (tree.target.hasTag(SWITCH_EXPRESSION)) {
-                JCSwitchExpression expr = (JCSwitchExpression) tree.target;
-                if (expr.type.hasTag(BOOLEAN)) {
-                    scanCond(tree.value);
-                    Bits initsAfterBreakWhenTrue = new Bits(initsWhenTrue);
-                    Bits initsAfterBreakWhenFalse = new Bits(initsWhenFalse);
-                    Bits uninitsAfterBreakWhenTrue = new Bits(uninitsWhenTrue);
-                    Bits uninitsAfterBreakWhenFalse = new Bits(uninitsWhenFalse);
-                    PendingExit exit = new PendingExit(tree) {
-                        @Override
-                        void resolveJump() {
-                            if (!inits.isReset()) {
-                                split(true);
-                            }
-                            initsWhenTrue.andSet(initsAfterBreakWhenTrue);
-                            initsWhenFalse.andSet(initsAfterBreakWhenFalse);
-                            uninitsWhenTrue.andSet(uninitsAfterBreakWhenTrue);
-                            uninitsWhenFalse.andSet(uninitsAfterBreakWhenFalse);
+            JCSwitchExpression expr = (JCSwitchExpression) tree.target;
+            if (expr != null && expr.type.hasTag(BOOLEAN)) {
+                scanCond(tree.value);
+                Bits initsAfterBreakWhenTrue = new Bits(initsWhenTrue);
+                Bits initsAfterBreakWhenFalse = new Bits(initsWhenFalse);
+                Bits uninitsAfterBreakWhenTrue = new Bits(uninitsWhenTrue);
+                Bits uninitsAfterBreakWhenFalse = new Bits(uninitsWhenFalse);
+                PendingExit exit = new PendingExit(tree) {
+                    @Override
+                    void resolveJump() {
+                        if (!inits.isReset()) {
+                            split(true);
                         }
-                    };
-                    merge();
-                    recordExit(exit);
-                    return ;
-                }
+                        initsWhenTrue.andSet(initsAfterBreakWhenTrue);
+                        initsWhenFalse.andSet(initsAfterBreakWhenFalse);
+                        uninitsWhenTrue.andSet(uninitsAfterBreakWhenTrue);
+                        uninitsWhenFalse.andSet(uninitsAfterBreakWhenFalse);
+                    }
+                };
+                merge();
+                recordExit(exit);
+                return ;
+            } else {
+                scan(tree.value);
+                recordExit(new AssignPendingExit(tree, inits, uninits));
             }
-            scan(tree.value);
-            recordExit(new AssignPendingExit(tree, inits, uninits));
         }
 
         @Override
