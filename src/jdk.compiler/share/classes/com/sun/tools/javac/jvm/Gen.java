@@ -338,9 +338,6 @@ public class Gen extends JCTree.Visitor {
      *  Mark beginning of gap in catch all range for finalizer.
      */
     void genFinalizer(Env<GenContext> env) {
-        if (code == null || env == null || env.info == null) {
-            System.err.println("!!!!");
-        }
         if (code.isAlive() && env.info.finalize != null)
             env.info.finalize.gen();
     }

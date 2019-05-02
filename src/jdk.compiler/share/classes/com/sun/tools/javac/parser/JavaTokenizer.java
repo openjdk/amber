@@ -418,30 +418,28 @@ public class JavaTokenizer {
                     }
                 }
                 if (!isJavaIdentifierPart) {
-                    if (reader.name().contentEquals("break")) {
-                        if (reader.ch == '-') {
-                            int pos = reader.bp;
-                            int savedPos = reader.sp;
-                            reader.putChar(true);
-                            boolean isJavaIdentifierStart = false;
-                            int codePoint = reader.peekSurrogates();
-                            if (codePoint >= 0) {
-                                if (isJavaIdentifierStart = Character.isJavaIdentifierStart(codePoint)) {
-                                    reader.putChar(true);
-                                }
-                            } else {
-                                isJavaIdentifierStart = Character.isJavaIdentifierStart(reader.ch);
+                    if (reader.ch == '-') {
+                        int savedBP = reader.bp;
+                        int savedSP = reader.sp;
+                        reader.putChar(true);
+                        boolean isJavaIdentifierStart;
+                        int codePoint = reader.peekSurrogates();
+                        if (codePoint >= 0) {
+                            if (isJavaIdentifierStart = Character.isJavaIdentifierStart(codePoint)) {
+                                reader.putChar(true);
                             }
-                            if (isJavaIdentifierStart) {
-                                scanIdent();
-                            }
-                            if (tk == TokenKind.BREAK_WITH) {
+                        } else {
+                            isJavaIdentifierStart = Character.isJavaIdentifierStart(reader.ch);
+                        }
+                        if (isJavaIdentifierStart) {
+                            scanIdent();
+                            if (tk != TokenKind.IDENTIFIER) {
                                 return ;
-                            } else {
-                                reader.bp = pos;
-                                reader.sp = savedPos;
                             }
                         }
+                        reader.bp = savedBP;
+                        reader.sp = savedSP;
+                        reader.ch = '-';
                     }
                     name = reader.name();
                     tk = tokens.lookupKind(name);

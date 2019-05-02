@@ -2514,7 +2514,7 @@ public class JavacParser implements Parser {
             return List.nil();
         case LBRACE: case IF: case FOR: case WHILE: case DO: case TRY:
         case SWITCH: case SYNCHRONIZED: case RETURN: case THROW: case BREAK:
-         case BREAK_WITH: case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
+        case BREAK_WITH: case CONTINUE: case SEMI: case ELSE: case FINALLY: case CATCH:
         case ASSERT:
             return List.of(parseSimpleStatement());
         case MONKEYS_AT:

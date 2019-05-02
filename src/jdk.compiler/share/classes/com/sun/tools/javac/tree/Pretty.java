@@ -992,10 +992,8 @@ public class Pretty extends JCTree.Visitor {
     public void visitBreakWith(JCBreakWith tree) {
         try {
             print("break-with");
-            {
-                print(" ");
-                printExpr(tree.value);
-            }
+            print(" ");
+            printExpr(tree.value);
             print(";");
         } catch (IOException e) {
             throw new UncheckedIOException(e);

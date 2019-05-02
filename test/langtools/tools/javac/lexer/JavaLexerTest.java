@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,13 +45,46 @@ import com.sun.tools.javac.util.Log;
 
 public class JavaLexerTest {
     public static void main(String... args) throws Exception {
-        new JavaLexerTest().run();
+        new JavaLexerTest().testLiterals();
+        new JavaLexerTest().testBreakWith();
     }
 
-    void run() throws Exception {
+    void testLiterals() throws Exception {
+        String input = "0bL 0b20L 0xL ";
+        JavaTokenizer tokenizer = prepareTokenizer(input);
+
+        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0bL");
+        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0b20L");
+        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0xL");
+    }
+
+    void testBreakWith() throws Exception {
+        String input = "break-with break - with break-1 break-wth " +
+                       "break-\ud801\udc00no break-\ud834\udd7bno";
+        JavaTokenizer tokenizer = prepareTokenizer(input);
+
+        assertKind(input, tokenizer, TokenKind.BREAK_WITH, "break-with");
+        assertKind(input, tokenizer, TokenKind.BREAK, "break");
+        assertKind(input, tokenizer, TokenKind.SUB, "-");
+        assertKind(input, tokenizer, TokenKind.IDENTIFIER, "with");
+        assertKind(input, tokenizer, TokenKind.BREAK, "break");
+        assertKind(input, tokenizer, TokenKind.SUB, "-");
+        assertKind(input, tokenizer, TokenKind.INTLITERAL, "1");
+        assertKind(input, tokenizer, TokenKind.BREAK, "break");
+        assertKind(input, tokenizer, TokenKind.SUB, "-");
+        assertKind(input, tokenizer, TokenKind.IDENTIFIER, "wth");
+        assertKind(input, tokenizer, TokenKind.BREAK, "break");
+        assertKind(input, tokenizer, TokenKind.SUB, "-");
+        assertKind(input, tokenizer, TokenKind.IDENTIFIER, "\ud801\udc00no");
+        assertKind(input, tokenizer, TokenKind.BREAK, "break");
+        assertKind(input, tokenizer, TokenKind.SUB, "-");
+        assertKind(input, tokenizer, TokenKind.ERROR, "\ud834\udd7b");
+        assertKind(input, tokenizer, TokenKind.IDENTIFIER, "no");
+    }
+
+    JavaTokenizer prepareTokenizer(String input) throws Exception {
         Context ctx = new Context();
         Log log = Log.instance(ctx);
-        String input = "0bL 0b20L 0xL ";
         log.useSource(new SimpleJavaFileObject(new URI("mem://Test.java"), JavaFileObject.Kind.SOURCE) {
             @Override
             public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
@@ -59,12 +92,8 @@ public class JavaLexerTest {
             }
         });
         char[] inputArr = input.toCharArray();
-        JavaTokenizer tokenizer = new JavaTokenizer(ScannerFactory.instance(ctx), inputArr, inputArr.length) {
+        return new JavaTokenizer(ScannerFactory.instance(ctx), inputArr, inputArr.length) {
         };
-
-        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0bL");
-        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0b20L");
-        assertKind(input, tokenizer, TokenKind.LONGLITERAL, "0xL");
     }
 
     void assertKind(String input, JavaTokenizer tokenizer, TokenKind kind, String expectedText) {
