@@ -84,14 +84,17 @@ public class DefiniteAssignment1 {
         {
         int x;
 
-        switch(a) {
-            case 1: x = 1; break;
-            case 0:
-            default: throw new IllegalStateException();
-        }
+        try {
+            switch(a) {
+                case 1: x = 1; break;
+                case 0:
+                default: throw new UnsupportedOperationException();
+            }
 
-        if (x != 0)
-            throw new IllegalStateException("Unexpected value.");
+            throw new IllegalStateException("Unexpected value: " + x);
+            } catch (UnsupportedOperationException ex) {
+                //OK
+            }
         }
 
         {
