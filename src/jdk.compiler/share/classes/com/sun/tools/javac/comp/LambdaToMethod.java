@@ -1244,7 +1244,7 @@ public class LambdaToMethod extends TreeTranslator {
             make.at(pos);
             List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
                     syms.stringType,
-                    syms.methodTypeType).appendList(staticArgs.map(types::constantType));
+                    syms.classType).appendList(staticArgs.map(types::constantType));
 
             Symbol bsm = rs.resolveInternalMethod(pos, attrEnv, site,
                     bsmName, bsm_staticArgs, List.nil());
