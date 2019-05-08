@@ -85,9 +85,13 @@ public class JavaTokenizer {
      */
     protected UnicodeReader reader;
 
-    /** Is string auto-aligned?
+    /** Should the string stripped of indentation?
      */
-    protected boolean isAutoAligned = false;
+    protected boolean shouldStripIndent;
+
+    /** Should the string's escapes be translated?
+     */
+    protected boolean shouldTranslateEscapes;
 
     protected ScannerFactory fac;
 
@@ -202,6 +206,192 @@ public class JavaTokenizer {
             }
         } else if (reader.bp != reader.buflen) {
             reader.putChar(true);
+        }
+    }
+
+    /** Read next character in character or string literal and copy into sbuf
+     * without translating escapes.
+     */
+    private void scanLitCharRaw(int pos) {
+        if (reader.ch == '\\') {
+            if (reader.peekChar() == '\\' && !reader.isUnicode()) {
+                reader.skipChar();
+                reader.putChar('\\', false);
+                reader.putChar('\\', true);
+            } else {
+                reader.putChar('\\', true);
+                switch (reader.ch) {
+                case '0': case '1': case '2': case '3':
+                case '4': case '5': case '6': case '7':
+                    char leadch = reader.ch;
+                    reader.putChar(true);
+                    if ('0' <= reader.ch && reader.ch <= '7') {
+                        reader.putChar(true);
+                        if (leadch <= '3' && '0' <= reader.ch && reader.ch <= '7') {
+                            reader.putChar(true);
+                        }
+                    }
+                    break;
+                case 'b':
+                case 't':
+                case 'n':
+                case 'f':
+                case 'r':
+                case '\'':
+                case '\"':
+                case '\\':
+                case ' ':
+                case '\n':
+                case '\r':
+                    reader.putChar(true); break;
+                default:
+                    lexError(reader.bp, Errors.IllegalEscChar);
+                }
+            }
+        } else if (reader.bp != reader.buflen) {
+            reader.putChar(true);
+        }
+    }
+
+    static class MultilineStringSupport {
+        private static final Method stripIndent;
+        private static final Method translateEscapes;
+        private static final boolean hasSupport;
+
+        private static Method getStringMethod(String name) {
+            try {
+                return String.class.getMethod(name);
+            } catch (Exception ex) {
+                // Bootstrapping issue, do nothing.
+            }
+            return null;
+        }
+
+        static {
+            stripIndent = getStringMethod("stripIndent");
+            translateEscapes = getStringMethod("translateEscapes");
+            hasSupport = stripIndent != null && translateEscapes != null;
+        }
+
+        static boolean hasSupport() {
+            return hasSupport;
+        }
+
+        static String stripIndent(String string) {
+            try {
+                string = (String)stripIndent.invoke(string);
+            } catch (Exception ex) {
+                // Bootstrapping issue, do nothing.
+            }
+            return string;
+        }
+
+        static String translateEscapes(String string) {
+            try {
+                string = (String)translateEscapes.invoke(string);
+            } catch (Exception ex) {
+                // Bootstrapping issue, do nothing.
+            }
+            return string;
+        }
+    }
+
+    /** Test for EOLN.
+     */
+    private boolean isEOLN() {
+        return reader.ch == LF || reader.ch == CR;
+    }
+
+    /** Test for CRLF.
+     */
+    private boolean isCRLF() {
+        return reader.ch == CR && reader.peekChar() == LF;
+    }
+
+    /** Count and skip repeated occurances of the specified character.
+     */
+    private int countChar(char ch, int max) {
+        int count = 0;
+        for ( ; count < max && reader.bp < reader.buflen && reader.ch == ch; count++) {
+            reader.scanChar();
+        }
+        return count;
+    }
+
+    /** Scan a string literal.
+     */
+    private void scanStringLiteral(int pos) {
+        boolean hasMultilineStringSupport = MultilineStringSupport.hasSupport();
+        int firstEOLN = -1;
+        int openCount = countChar('\"', 3);
+        switch (openCount) {
+        case 1: // traditional string
+            break;
+        case 2: // empty string
+            reader.reset(pos);
+            openCount = countChar('\"', 1);
+            break;
+        case 3: // multi-line string
+            // checkSourceLevel(pos, Feature.MULTILINE_STRING_LITERALS);
+            if (hasMultilineStringSupport) {
+                shouldStripIndent = true;
+                boolean hasOpenEOLN = false;
+                while (reader.bp < reader.buflen && Character.isWhitespace(reader.ch)) {
+                    hasOpenEOLN = isEOLN();
+                    if (hasOpenEOLN) {
+                        break;
+                    }
+                    reader.scanChar();
+                }
+                if (!hasOpenEOLN) {
+                    lexError(reader.bp, Errors.IllegalMultilineStringLitOpen);
+                    return;
+                }
+                if (isCRLF()) {
+                    reader.scanChar();
+                }
+                reader.scanChar();
+            } else {
+                reader.reset(pos);
+                openCount = countChar('\"', 1);
+            }
+            break;
+        }
+        while (reader.bp < reader.buflen) {
+            if (reader.ch == '\"') {
+                int closeCount = countChar('\"', openCount);
+                if (openCount == closeCount) {
+                    tk = Tokens.TokenKind.STRINGLITERAL;
+                    return;
+                }
+                reader.repeat('\"', closeCount);
+            } else if (isEOLN()) {
+                if (openCount == 1) {
+                    break;
+                }
+                if (firstEOLN == -1) {
+                    firstEOLN = reader.bp;
+                }
+                int start = reader.bp;
+                if (isCRLF()) {
+                    reader.scanChar();
+                }
+                reader.putChar('\n', true);
+                processLineTerminator(start, reader.bp);
+            } else if (reader.ch == '\\') {
+                if (hasMultilineStringSupport) {
+                    shouldTranslateEscapes = true;
+                    scanLitCharRaw(pos);
+                } else {
+                    scanLitChar(pos);
+                }
+            } else {
+                reader.putChar(true);
+            }
+        }
+        lexError(pos, Errors.UnclosedStrLit);
+        if (firstEOLN  != -1) {
+            reader.reset(firstEOLN);
         }
     }
 
@@ -464,79 +654,6 @@ public class JavaTokenizer {
         }
     }
 
-    private static String align(String string) {
-        try {
-            Method align = String.class.getMethod("align");
-            string = (String) align.invoke(string);
-        } catch (Exception ex) {
-            // Bootstrapping situation, do nothing.
-        }
-        return string;
-    }
-
-    /** Scan a string literal.
-     */
-    private void scanStringLiteral(int pos) {
-        boolean align = true;
-        int firstEOLN = -1;
-        int rescan = reader.bp;
-        int openCount = countChar('\"', 3);
-        if (openCount == 2) {
-            reader.reset(rescan);
-            openCount = countChar('\"', 1);
-        }
-        while (reader.bp < reader.buflen) {
-            if (reader.ch == '\"') {
-                int closeCount = countChar('\"', openCount);
-                rescan = reader.bp;
-                if (openCount == closeCount) {
-                    tk = Tokens.TokenKind.STRINGLITERAL;
-                    isAutoAligned = align && openCount == 3;
-                    return;
-                }
-                reader.repeat('\"', closeCount);
-                reader.reset(rescan);
-            } else if (reader.ch == LF || reader.ch == CR) {
-                if (openCount == 1) {
-                    break;
-                }
-                int start = reader.bp;
-                if (firstEOLN == -1) {
-                    firstEOLN = start;
-                }
-                if (reader.ch == CR && reader.peekChar() == LF) {
-                    reader.scanChar();
-                }
-                reader.putChar('\n', true);
-                processLineTerminator(start, reader.bp);
-            } else if (reader.ch == '\\') {
-                if (reader.peekChar() == '~') {
-                    reader.scanChar();
-                    reader.scanChar();
-                    align = false;
-                } else {
-                    scanLitChar(pos);
-                }
-            } else {
-                 reader.putChar(true);
-            }
-        }
-        if (firstEOLN  != -1) {
-            reader.reset(firstEOLN);
-        }
-        lexError(pos, Errors.UnclosedStrLit);
-    }
-
-    /** Count and skip repeated occurances of the specified character.
-     */
-    private int countChar(char ch, int max) {
-        int count = 0;
-        for ( ; count < max && reader.bp < reader.buflen && reader.ch == ch; count++) {
-            reader.scanChar();
-        }
-        return count;
-    }
-
     /** Read token.
      */
     public Token readToken() {
@@ -702,7 +819,7 @@ public class JavaTokenizer {
                         lexError(pos, Errors.EmptyCharLit);
                         reader.scanChar();
                     } else {
-                        if (reader.ch == CR || reader.ch == LF)
+                        if (isEOLN())
                             lexError(pos, Errors.IllegalLineEndInCharLit);
                         scanLitChar(pos);
                         if (reader.ch == '\'') {
@@ -766,7 +883,15 @@ public class JavaTokenizer {
                 case DEFAULT: return new Token(tk, pos, endPos, comments);
                 case NAMED: return new NamedToken(tk, pos, endPos, name, comments);
                 case STRING: {
-                    String string = isAutoAligned ? align(reader.chars()) : reader.chars();
+                    String string = reader.chars();
+                    if (shouldStripIndent) {
+                        string = MultilineStringSupport.stripIndent(string);
+                        shouldStripIndent = false;
+                    }
+                    if (shouldTranslateEscapes) {
+                        string = MultilineStringSupport.translateEscapes(string);
+                        shouldTranslateEscapes = false;
+                    }
                     return new StringToken(tk, pos, endPos, string, comments);
                 }
                 case NUMERIC: return new NumericToken(tk, pos, endPos, reader.chars(), radix, comments);

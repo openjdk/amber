@@ -2852,7 +2852,7 @@ public final class String
         return indentStream(lines(), n).collect(Collectors.joining("\n", "", "\n"));
     }
 
-    private Stream<String> indentStream(Stream<String> stream, int n) {
+    private static Stream<String> indentStream(Stream<String> stream, int n) {
         if (n > 0) {
             final String spaces = " ".repeat(n);
             return stream.map(s -> spaces + s);
@@ -2875,9 +2875,8 @@ public final class String
     }
 
     /**
-     * Removes vertical and horizontal white space margins from around the
-     * essential body of a multi-line string, while preserving relative
-     * indentation.
+     * Removes horizontal white space margins from the essential body of a
+     * multi-line string, while preserving relative indentation.
      * <p>
      * This string is first conceptually separated into lines as if by
      * {@link String#lines()}.
@@ -2895,8 +2894,6 @@ public final class String
      * particular, the tab character {@code "\t"} (U+0009) is considered a
      * single character; it is not expanded.
      * <p>
-     * The first leading and last trailing lines, if blank, are removed.
-     * <p>
      * The trailing white space of each line is also removed.
      * </p>
      * <p>
@@ -2913,23 +2910,12 @@ public final class String
      *
      * Example:
      * <blockquote><pre>
-     * String s = """
-     *            This is the first line
-     *                This is the second line
-     *            """.align();
+     * String s = ("   This is the first line\n" +
+     *             "       This is the second line\n").stripIndent();
      *
      * returns
      * This is the first line
      *     This is the second line
-     *
-     * String t = """
-     *                This is the first line
-     *                    This is the second line
-     *            """.align();
-     *
-     * returns
-     *     This is the first line
-     *         This is the second line
      * </pre></blockquote>
      *
      * @return string with margins removed and line terminators normalized
@@ -2940,33 +2926,25 @@ public final class String
      * @see Character#isWhitespace(int)
      *
      * @since 13
+     *
+     * @deprecated  Preview feature associated with Multi-line String Literals.
+     *              Use at your own risk.
      */
-    public String align() {
-        return align(0);
+    @Deprecated(forRemoval=true, since="13")
+    public String stripIndent() {
+        return stripIndent(0);
     }
 
     /**
-     * Removes vertical and horizontal white space margins from around the
-     * essential body of a multi-line string, while preserving relative
-     * indentation and with optional indentation adjustment.
+     * Removes white space margins from around the essential body of a
+     * multi-line string, while preserving relative indentation and with
+     * optional indentation adjustment.
      *
      * @apiNote
      * Examples:
      * <blockquote><pre>
-     * String s = """
-     *            This is the first line
-     *                This is the second line
-     *            """.align();
-     *
-     * returns
-     * This is the first line
-     *     This is the second line
-     *
-     *
-     * String t = """
-     *            This is the first line
-     *                This is the second line
-     *            """.align(4);
+     * String s = ("This is the first line\n" +
+     *             "    This is the second line\n").stripIndent(4);
      *
      * returns
      *     This is the first line
@@ -2979,30 +2957,211 @@ public final class String
      * @return string with margins removed, indentation adjusted and
      *         line terminators normalized
      *
-     * @see String#align()
+     * @see String#stripIndent()
      *
      * @since 13
+     *
+     * @deprecated  Preview feature associated with Multi-line String Literals.
+     *              Use at your own risk.
      */
-    public String align(int n) {
+    @Deprecated(forRemoval=true, since="13")
+    public String stripIndent(int n) {
         if (isEmpty()) {
             return "";
         }
-        long count = lines().count();
-        if (count == 1) {
-            return strip();
+        int outdent = Integer.MAX_VALUE;
+        boolean isNewLine = true;
+        int whitespaceCount = 0;
+        for (int i = 0; i < length(); i++) {
+            char ch = charAt(i);
+            if (ch == '\n' || ch == '\r') {
+                whitespaceCount = 0;
+                isNewLine = true;
+            } else if (Character.isWhitespace(ch)) {
+                whitespaceCount++;
+            } else {
+                if (isNewLine) {
+                    outdent = Math.min(outdent, whitespaceCount);
+                }
+                isNewLine = false;
+                whitespaceCount = 0;
+            }
         }
-        String last = lines().skip(count - 1).findFirst().orElse("");
-        int outdent = lines().skip(1)
-                             .filter(not(String::isBlank))
-                             .mapToInt(String::indexOfNonWhitespace)
-                             .min()
-                             .orElse(0);
-        boolean lastIsBlank = last.isBlank();
-        if (lastIsBlank) {
-            outdent = Integer.min(outdent, last.length());
+        if (isNewLine) {
+            outdent = Math.min(outdent, whitespaceCount);
         }
-        return indentStream(lines(1, 1), n - outdent).map(s -> s.stripTrailing())
-                                                     .collect(Collectors.joining("\n", "", lastIsBlank ? "\n" : ""));
+        return indentStream(lines(), n - outdent)
+                    .map(s -> s.stripTrailing())
+                    .collect(Collectors.joining("\n", "",
+                        isNewLine && whitespaceCount == 0 ? "\n" : ""));
+    }
+
+    /**
+     * Translates all escape sequences in the string into characters
+     * represented by those escapes specified in section
+     * 3.10.6 of the <cite>The Java&trade; Language Specification</cite>.
+     * <p>
+     * Escape sequences are translated as follows;
+     * <table class="plain">
+     *   <caption style="display:none">Escape sequences</caption>
+     *   <thead>
+     *   <tr>
+     *     <th scope="col">Escape</th>
+     *     <th scope="col">Name</th>
+     *     <th scope="col">Unicode/action</th>
+     *   </tr>
+     *   </thead>
+     *   <tr>
+     *     <td>{@code \u005Cb}</td>
+     *     <td>backspace</td>
+     *     <td>{@code \u005Cu0008}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Ct}</td>
+     *     <td>horizontal tab</td>
+     *     <td>{@code \u005Cu0009}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cn}</td>
+     *     <td>line feed</td>
+     *     <td>{@code \u005Cu000A}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cf}</td>
+     *     <td>form feed</td>
+     *     <td>{@code \u005Cu000C}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005Cr}</td>
+     *     <td>carriage return</td>
+     *     <td>{@code \u005Cu000D}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C"}</td>
+     *     <td>double quote</td>
+     *     <td>{@code \u005Cu0022}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C'}</td>
+     *     <td>single quote</td>
+     *     <td>{@code \u005Cu0027}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C\u005C}</td>
+     *     <td>backslash</td>
+     *     <td>{@code \u005Cu005C}</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C0 - \u005C377}</td>
+     *     <td>octal escape</td>
+     *     <td>code point equivalents</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C<space>}</td>
+     *     <td>continue after here</td>
+     *     <td>consumes prior white space</td>
+     *   </tr>
+     *   <tr>
+     *     <td>{@code \u005C<lineterminator>}</td>
+     *     <td>continue on next line</td>
+     *     <td>consumes line terminator</td>
+     *   </tr>
+     * </table>
+     * <p>
+     * Octal escapes \u005C0 - \u005C377 are translated to their code
+     * point equivalents.
+     *
+     * @throws MalformedEscapeException when an escape sequence is malformed.
+     *
+     * @return String with all escapes translated.
+     *
+     * @since 13
+     *
+     * @deprecated  Preview feature associated with Multi-line String Literals.
+     *              Use at your own risk.
+     */
+    @Deprecated(forRemoval=true, since="13")
+    public String translateEscapes() throws MalformedEscapeException {
+        if (isEmpty()) {
+            return "";
+        }
+        char[] chars = toCharArray();
+        int length = chars.length;
+        int from = 0;
+        int to = 0;
+        int whitespaceStart = 0;
+        while (from < length) {
+            char ch = chars[from++];
+            if (ch == '\\') {
+                ch = from < length ? chars[from++] : '\0';
+                switch (ch) {
+                case 'b':
+                    ch = '\b';
+                    break;
+                case 'f':
+                    ch = '\f';
+                    break;
+                case 'n':
+                    ch = '\n';
+                    break;
+                case 'r':
+                    ch = '\r';
+                    break;
+                case 't':
+                    ch = '\t';
+                    break;
+                case '\'':
+                    ch = '\'';
+                    break;
+                case '\"':
+                    ch = '\"';
+                    break;
+                case '\\':
+                    // ch = '\\';
+                    break;
+                case '0': case '1': case '2': case '3':
+                case '4': case '5': case '6': case '7':
+                    int limit = ch <= '3' ? 2 : 1;
+                    int code = Character.digit(ch, 8);
+                    for (int i = 0; i < limit && from < length; i++) {
+                        ch = chars[from];
+                        int digit = Character.digit(ch, 8);
+                        if (digit < 0) {
+                            break;
+                        }
+                        from++;
+                        code = code << 3 | digit;
+                    }
+                    if (0377 < code) {
+                        throw new MalformedEscapeException(from);
+                    }
+                    ch = (char)code;
+                    break;
+                case ' ':
+                    to = whitespaceStart;
+                    continue;
+                case '\n':
+                    whitespaceStart = to;
+                    continue;
+                case '\r':
+                    if (from < length && chars[from] == '\n') {
+                        from++;
+                    }
+                    whitespaceStart = to;
+                    continue;
+                default:
+                    throw new MalformedEscapeException(from);
+                }
+            }
+
+            if (ch == '\n' || ch == '\r' || !Character.isWhitespace(ch)) {
+                whitespaceStart = to + 1;
+            }
+
+            chars[to++] = ch;
+        }
+
+        return new String(chars, 0, to);
     }
 
     /**

@@ -50,13 +50,16 @@ public class MultilineStringLiteralAPI {
      * Check that correct/incorrect syntax is properly detected
      */
     static void test1() {
-        String[] s = new String[] { "a", "ab", "abc", "\u2022", "*".repeat(1000), "*".repeat(10000) };
-        for (String a : s)  {
+        for (String lineterminators : new String[] { "\n", "\r", "\r\n" })
+        for (String whitespace : new String[] { "", "   ", "\t", "\u2002" })
+        for (String content : new String[] { "a", "ab", "abc", "\u2022", "*".repeat(1000), "*".repeat(10000) })  {
             String code =
                     "public class CorrectTest {\n" +
                             "    public static void main(String... args) {\n" +
                             "        String xxx = " +
-                            "\"\"\"" + a + "\"\"\";\n" +
+                            "\"\"\"" + whitespace + lineterminators +
+                            content +
+                            "\"\"\";\n" +
                             "    }\n" +
                             "}\n";
             compPass(code);
@@ -69,7 +72,7 @@ public class MultilineStringLiteralAPI {
     static void test2() {
         compPass("public class UnicodeDelimiterTest {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \\u0022\\u0022\\u0022abc\\u0022\\u0022\\u0022;\n" +
+                "        String xxx = \\u0022\\u0022\\u0022\nabc\n\\u0022\\u0022\\u0022;\n" +
                 "    }\n" +
                 "}\n");
     }
@@ -80,22 +83,22 @@ public class MultilineStringLiteralAPI {
     static void test3() {
         compFail("public class EndTest {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc\"\"\"");
-        compFail("public class MultilineStringLiteralTest {\n" +
+                "        String xxx = \"\"\"\nabc\"\"\"");
+        compFail("public class TwoQuoteClose {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc\"\"");
-        compFail("public class MultilineStringLiteralTest {\n" +
+                "        String xxx = \"\"\"\nabc\"\"");
+        compFail("public class OneQuoteClose {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc\"");
-        compFail("public class MultilineStringLiteralTest {\n" +
+                "        String xxx = \"\"\"\nabc\"");
+        compFail("public class NoClose {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc");
-        compFail("public class MultilineStringLiteralTest {\n" +
+                "        String xxx = \"\"\"\nabc");
+        compFail("public class ZeroTerminator {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc\\u0000");
-        compFail("public class MultilineStringLiteralTest {\n" +
+                "        String xxx = \"\"\"\nabc\\u0000");
+        compFail("public class NonBreakingSpace {\n" +
                 "    public static void main(String... args) {\n" +
-                "        String xxx = \"\"\"abc\\u001A");
+                "        String xxx = \"\"\"\nabc\\u001A");
     }
 
     /*

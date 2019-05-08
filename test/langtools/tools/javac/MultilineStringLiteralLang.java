@@ -36,52 +36,50 @@
 public class MultilineStringLiteralLang {
     public static void main(String... args) {
         test1();
-        test2();
     }
 
     /*
      * Test basic string functionality.
      */
     static void test1() {
-        EQ("""abc""", "abc");
-        EQ("""""", "");
-        EQ("""abc"def""", "abc\"def");
-        EQ("""abc""def""", "abc\"\"def");
-        EQ("""abc\"""def""", "abc\"\"\"def");
-        EQ("""abc"\""def""", "abc\"\"\"def");
-        EQ("""abc""\"def""", "abc\"\"\"def");
-        EQ("""abc\ndef""", "abc\ndef");
-        EQ("""abc\u0020def""", "abc\u0020def");
-        EQ("""abc•def""", "abc•def");
+        EQ("""
+            abc\
+            """, "abc");
+        EQ("""
+            \
+            """, "");
+        EQ("""
+            abc
+            """, "abc\n");
+        EQ("""
 
-        LENGTH("""abc""", 3);
+            """, "\n");
+        EQ("""
+            "
+            """, "\"\n");
+        EQ("""
+            ""
+            """, "\"\"\n");
+         EQ("""
+            \"""
+            """, "\"\"\"\n");
+         EQ("""
+            "\""
+            """, "\"\"\"\n");
+        EQ("""
+            \r
+            """, "\r\n");
+        EQ("""
+            \u2022
+            """, "\u2022\n");
+        EQ("""
+            •
+            """, "\u2022\n");
+        LENGTH("""
+            abc
+            """, 4);
     }
 
-    /*
-     * Test multiline string functionality.
-     */
-    static void test2() {
-        EQ(
-"""abc
-def
-ghi""", "abc\ndef\nghi");
-        EQ(
-"""abc
-def
-ghi
-""", "abc\ndef\nghi\n");
-        EQ(
-"""
-abc
-def
-ghi""", "abc\ndef\nghi");
-        EQ(
-"""
-abc
-def
-ghi
-""", "abc\ndef\nghi\n");
-    }
 
     /*
      * Raise an exception if the string is not the expected length.
