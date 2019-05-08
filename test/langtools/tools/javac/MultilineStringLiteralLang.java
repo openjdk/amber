@@ -42,13 +42,7 @@ public class MultilineStringLiteralLang {
      * Test basic string functionality.
      */
     static void test1() {
-        EQ("""
-            abc\
-            """, "abc");
-        EQ("""
-            \
-            """, "");
-        EQ("""
+         EQ("""
             abc
             """, "abc\n");
         EQ("""

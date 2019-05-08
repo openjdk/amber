@@ -240,9 +240,6 @@ public class JavaTokenizer {
                 case '\'':
                 case '\"':
                 case '\\':
-                case ' ':
-                case '\n':
-                case '\r':
                     reader.putChar(true); break;
                 default:
                     lexError(reader.bp, Errors.IllegalEscChar);

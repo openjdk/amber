@@ -30,7 +30,6 @@
 public class TranslateEscapes {
     public static void main(String... arg) {
         test1();
-        test2();
     }
 
     /*
@@ -47,26 +46,10 @@ public class TranslateEscapes {
         verifyEscape("\\", '\\');
     }
 
-    /*
-     * Continuation escapes.
-     */
-    static void test2() {
-        verifyContinue("   abc\\\n   def", "   abc   def");
-        verifyContinue("   abc\\n   \\ def", "   abc\ndef");
-        verifyContinue("   abc\\\n   \\ def", "   abcdef");
-    }
-
     static void verifyEscape(String string, char ch) {
         String escapes = "\\" + string;
         if (escapes.translateEscapes().charAt(0) != ch) {
             System.err.format("\"%s\" not escape \"%s\"'%n", string, escapes);
-            throw new RuntimeException();
-        }
-    }
-
-    static void verifyContinue(String a, String b) {
-        if (!a.translateEscapes().equals(b)) {
-            System.err.format("\"%s\" not equal \"%s\"%n", a, b);
             throw new RuntimeException();
         }
     }

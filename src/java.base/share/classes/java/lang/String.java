@@ -3056,16 +3056,6 @@ public final class String
      *     <td>octal escape</td>
      *     <td>code point equivalents</td>
      *   </tr>
-     *   <tr>
-     *     <td>{@code \u005C<space>}</td>
-     *     <td>continue after here</td>
-     *     <td>consumes prior white space</td>
-     *   </tr>
-     *   <tr>
-     *     <td>{@code \u005C<lineterminator>}</td>
-     *     <td>continue on next line</td>
-     *     <td>consumes line terminator</td>
-     *   </tr>
      * </table>
      * <p>
      * Octal escapes \u005C0 - \u005C377 are translated to their code
@@ -3089,7 +3079,6 @@ public final class String
         int length = chars.length;
         int from = 0;
         int to = 0;
-        int whitespaceStart = 0;
         while (from < length) {
             char ch = chars[from++];
             if (ch == '\\') {
@@ -3137,25 +3126,9 @@ public final class String
                     }
                     ch = (char)code;
                     break;
-                case ' ':
-                    to = whitespaceStart;
-                    continue;
-                case '\n':
-                    whitespaceStart = to;
-                    continue;
-                case '\r':
-                    if (from < length && chars[from] == '\n') {
-                        from++;
-                    }
-                    whitespaceStart = to;
-                    continue;
                 default:
                     throw new MalformedEscapeException(from);
                 }
-            }
-
-            if (ch == '\n' || ch == '\r' || !Character.isWhitespace(ch)) {
-                whitespaceStart = to + 1;
             }
 
             chars[to++] = ch;
