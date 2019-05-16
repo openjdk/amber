@@ -2876,7 +2876,7 @@ public final class String
 
     /**
      * Removes horizontal white space margins from the essential body of a
-     * multi-line string, while preserving relative indentation.
+     * Text Block originated string, while preserving relative indentation.
      * <p>
      * This string is first conceptually separated into lines as if by
      * {@link String#lines()}.
@@ -2927,45 +2927,11 @@ public final class String
      *
      * @since 13
      *
-     * @deprecated  Preview feature associated with Multi-line String Literals.
+     * @deprecated  Preview feature associated with Text Blocks.
      *              Use at your own risk.
      */
     @Deprecated(forRemoval=true, since="13")
     public String stripIndent() {
-        return stripIndent(0);
-    }
-
-    /**
-     * Removes white space margins from around the essential body of a
-     * multi-line string, while preserving relative indentation and with
-     * optional indentation adjustment.
-     *
-     * @apiNote
-     * Examples:
-     * <blockquote><pre>
-     * String s = ("This is the first line\n" +
-     *             "    This is the second line\n").stripIndent(4);
-     *
-     * returns
-     *     This is the first line
-     *         This is the second line
-     * </pre></blockquote>
-     *
-     * @param n  number of leading white space characters
-     *           to add or remove
-     *
-     * @return string with margins removed, indentation adjusted and
-     *         line terminators normalized
-     *
-     * @see String#stripIndent()
-     *
-     * @since 13
-     *
-     * @deprecated  Preview feature associated with Multi-line String Literals.
-     *              Use at your own risk.
-     */
-    @Deprecated(forRemoval=true, since="13")
-    public String stripIndent(int n) {
         if (isEmpty()) {
             return "";
         }
@@ -2990,10 +2956,10 @@ public final class String
         if (isNewLine) {
             outdent = Math.min(outdent, whitespaceCount);
         }
-        return indentStream(lines(), n - outdent)
+        boolean blankLastLine = isNewLine && whitespaceCount == 0;
+        return indentStream(lines(), -outdent)
                     .map(s -> s.stripTrailing())
-                    .collect(Collectors.joining("\n", "",
-                        isNewLine && whitespaceCount == 0 ? "\n" : ""));
+                    .collect(Collectors.joining("\n", "", blankLastLine ? "\n" : ""));
     }
 
     /**
@@ -3067,7 +3033,7 @@ public final class String
      *
      * @since 13
      *
-     * @deprecated  Preview feature associated with Multi-line String Literals.
+     * @deprecated  Preview feature associated with Text Blocks.
      *              Use at your own risk.
      */
     @Deprecated(forRemoval=true, since="13")

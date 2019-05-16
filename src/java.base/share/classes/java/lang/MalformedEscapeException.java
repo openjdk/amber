@@ -32,7 +32,7 @@
  *
  * @since 13
  *
- * //@deprecated  Preview feature associated with Multi-line String Literals.
+ * //@deprecated  Preview feature associated with Text Blocks.
  *              Use at your own risk.
  */
 // @Deprecated(forRemoval=true, since="13")

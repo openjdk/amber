@@ -23,17 +23,12 @@
 
 /*
  * @test
- * @summary Unit tests for Multiline String Literal language changes
- * @compile -encoding utf8 MultilineStringLiteralLang.java
- * @run main/othervm MultilineStringLiteralLang
+ * @summary Unit tests for Text Block language changes
+ * @compile --enable-preview -source 13 -encoding utf8 TextBlockLang.java
+ * @run main/othervm --enable-preview TextBlockLang
  */
 
-/*
- * @compile --enable-preview -source 13 -encoding utf8 MultilineStringLiteralLang.java
- * @run main/othervm --enable-preview MultilineStringLiteralLang
- */
-
-public class MultilineStringLiteralLang {
+public class TextBlockLang {
     public static void main(String... args) {
         test1();
     }
@@ -59,6 +54,9 @@ public class MultilineStringLiteralLang {
             """, "\"\"\"\n");
          EQ("""
             "\""
+            """, "\"\"\"\n");
+        EQ("""
+            ""\"
             """, "\"\"\"\n");
         EQ("""
             \r

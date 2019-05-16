@@ -23,12 +23,12 @@
 
 /*
  * @test
- * @summary Unit tests for Multiline String Literal language changes
+ * @summary Unit tests for Text Block language changes
  * @library /tools/lib
  * @modules jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.main
  * @build toolbox.ToolBox toolbox.JavacTask
- * @run main MultilineStringLiteralAPI
+ * @run main TextBlockAPI
  */
 
 import toolbox.JavacTask;
@@ -36,7 +36,7 @@ import toolbox.JavaTask;
 import toolbox.Task;
 import toolbox.ToolBox;
 
-public class MultilineStringLiteralAPI {
+public class TextBlockAPI {
     private static ToolBox TOOLBOX = new ToolBox();
 
     public static void main(String... args) {
@@ -78,7 +78,7 @@ public class MultilineStringLiteralAPI {
     }
 
     /*
-     * Check edge cases of multiline string literal as last token
+     * Check edge cases of text blocks as last token
      */
     static void test3() {
         compFail("public class EndTest {\n" +
@@ -119,10 +119,10 @@ public class MultilineStringLiteralAPI {
             new JavacTask(TOOLBOX)
                     .sources(code)
                     .classpath(".")
-                    // .options("--enable-preview", "-source", "13")
+                    .options("--enable-preview", "-source", "13", "-encoding", "utf8")
                     .run();
             String output = new JavaTask(TOOLBOX)
-                    // .vmOptions("--enable-preview")
+                    .vmOptions("--enable-preview")
                     .classpath(".")
                     .classArgs("LineTerminatorTest")
                     .run()
@@ -142,8 +142,7 @@ public class MultilineStringLiteralAPI {
         String output = new JavacTask(TOOLBOX)
                 .sources(source)
                 .classpath(".")
-                // .options("--enable-preview", "-source", "13", "-encoding", "utf8")
-                .options("-encoding", "utf8")
+                .options("--enable-preview", "-source", "13", "-encoding", "utf8")
                 .run()
                 .writeAll()
                 .getOutput(Task.OutputKind.DIRECT);
@@ -160,8 +159,7 @@ public class MultilineStringLiteralAPI {
         String errors = new JavacTask(TOOLBOX)
                 .sources(source)
                 .classpath(".")
-                // .options("-XDrawDiagnostics", "--enable-preview", "-source", "13", "-encoding", "utf8")
-                .options("-XDrawDiagnostics", "-encoding", "utf8")
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", "13", "-encoding", "utf8")
                 .run(Task.Expect.FAIL)
                 .writeAll()
                 .getOutput(Task.OutputKind.DIRECT);

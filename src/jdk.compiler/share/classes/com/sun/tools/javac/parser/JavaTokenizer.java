@@ -250,7 +250,7 @@ public class JavaTokenizer {
         }
     }
 
-    static class MultilineStringSupport {
+    static class TextBlockSupport {
         private static final Method stripIndent;
         private static final Method translateEscapes;
         private static final boolean hasSupport;
@@ -318,7 +318,7 @@ public class JavaTokenizer {
     /** Scan a string literal.
      */
     private void scanStringLiteral(int pos) {
-        boolean hasMultilineStringSupport = MultilineStringSupport.hasSupport();
+        boolean hasTextBlockSupport = TextBlockSupport.hasSupport();
         int firstEOLN = -1;
         int openCount = countChar('\"', 3);
         switch (openCount) {
@@ -328,9 +328,9 @@ public class JavaTokenizer {
             reader.reset(pos);
             openCount = countChar('\"', 1);
             break;
-        case 3: // multi-line string
-            // checkSourceLevel(pos, Feature.MULTILINE_STRING_LITERALS);
-            if (hasMultilineStringSupport) {
+        case 3: // text block
+            checkSourceLevel(pos, Feature.TEXT_BLOCKS);
+            if (hasTextBlockSupport) {
                 shouldStripIndent = true;
                 boolean hasOpenEOLN = false;
                 while (reader.bp < reader.buflen && Character.isWhitespace(reader.ch)) {
@@ -341,7 +341,7 @@ public class JavaTokenizer {
                     reader.scanChar();
                 }
                 if (!hasOpenEOLN) {
-                    lexError(reader.bp, Errors.IllegalMultilineStringLitOpen);
+                    lexError(reader.bp, Errors.IllegalTextBlockOpen);
                     return;
                 }
                 if (isCRLF()) {
@@ -376,7 +376,7 @@ public class JavaTokenizer {
                 reader.putChar('\n', true);
                 processLineTerminator(start, reader.bp);
             } else if (reader.ch == '\\') {
-                if (hasMultilineStringSupport) {
+                if (hasTextBlockSupport) {
                     shouldTranslateEscapes = true;
                     scanLitCharRaw(pos);
                 } else {
@@ -882,11 +882,11 @@ public class JavaTokenizer {
                 case STRING: {
                     String string = reader.chars();
                     if (shouldStripIndent) {
-                        string = MultilineStringSupport.stripIndent(string);
+                        string = TextBlockSupport.stripIndent(string);
                         shouldStripIndent = false;
                     }
                     if (shouldTranslateEscapes) {
-                        string = MultilineStringSupport.translateEscapes(string);
+                        string = TextBlockSupport.translateEscapes(string);
                         shouldTranslateEscapes = false;
                     }
                     return new StringToken(tk, pos, endPos, string, comments);
