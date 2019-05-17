@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Formatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -2770,11 +2771,6 @@ public final class String
         return indexOfNonWhitespace() == length();
     }
 
-    private Stream<String> lines(int maxLeading, int maxTrailing) {
-        return isLatin1() ? StringLatin1.lines(value, maxLeading, maxTrailing)
-                          : StringUTF16.lines(value, maxLeading, maxTrailing);
-    }
-
     /**
      * Returns a stream of lines extracted from this string,
      * separated by line terminators.
@@ -2806,7 +2802,7 @@ public final class String
      * @since 11
      */
     public Stream<String> lines() {
-        return lines(0, 0);
+        return isLatin1() ? StringLatin1.lines(value) : StringUTF16.lines(value);
     }
 
     /**
@@ -2849,19 +2845,16 @@ public final class String
         if (isEmpty()) {
             return "";
         }
-        return indentStream(lines(), n).collect(Collectors.joining("\n", "", "\n"));
-    }
-
-    private static Stream<String> indentStream(Stream<String> stream, int n) {
+        Stream<String> stream = lines();
         if (n > 0) {
             final String spaces = " ".repeat(n);
-            return stream.map(s -> spaces + s);
+            stream = stream.map(s -> spaces + s);
         } else if (n == Integer.MIN_VALUE) {
-            return stream.map(s -> s.stripLeading());
+            stream = stream.map(s -> s.stripLeading());
         } else if (n < 0) {
-            return stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+            stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
         }
-        return stream;
+        return stream.collect(Collectors.joining("\n", "", "\n"));
     }
 
     private int indexOfNonWhitespace() {
@@ -2932,35 +2925,40 @@ public final class String
      */
     @Deprecated(forRemoval=true, since="13")
     public String stripIndent() {
-        if (isEmpty()) {
+        int length = length();
+        if (length == 0) {
             return "";
         }
+        char lastChar = charAt(length - 1);
+        boolean optOut = lastChar == '\n' || lastChar == '\r';
+        List<String> lines = lines().collect(Collectors.toList());
+        final int outdent = optOut ? 0 : outdent(lines);
+        return lines.stream()
+            .map(line -> {
+                int firstNonWhitespace = line.indexOfNonWhitespace();
+                int lastNonWhitespace = line.lastIndexOfNonWhitespace();
+                return firstNonWhitespace > lastNonWhitespace
+                    ? "" : line.substring(Math.min(outdent, firstNonWhitespace), lastNonWhitespace);
+            })
+            .collect(Collectors.joining("\n", "", optOut ? "\n" : ""));
+    }
+
+    private static int outdent(List<String> lines) {
+        // Note: outdent is guaranteed to be zero or positive number.
+        // If there isn't a non-blank line then the last must be blank
         int outdent = Integer.MAX_VALUE;
-        boolean isNewLine = true;
-        int whitespaceCount = 0;
-        for (int i = 0; i < length(); i++) {
-            char ch = charAt(i);
-            if (ch == '\n' || ch == '\r') {
-                whitespaceCount = 0;
-                isNewLine = true;
-            } else if (Character.isWhitespace(ch)) {
-                whitespaceCount++;
-            } else {
-                if (isNewLine) {
-                    outdent = Math.min(outdent, whitespaceCount);
-                }
-                isNewLine = false;
-                whitespaceCount = 0;
+        for (String line : lines) {
+            int leadingWhitespace = line.indexOfNonWhitespace();
+            if (leadingWhitespace != line.length()) {
+                outdent = Integer.min(outdent, leadingWhitespace);
             }
         }
-        if (isNewLine) {
-            outdent = Math.min(outdent, whitespaceCount);
+        String lastLine = lines.get(lines.size() - 1);
+        if (lastLine.isBlank()) {
+            outdent = Integer.min(outdent, lastLine.length());
         }
-        boolean blankLastLine = isNewLine && whitespaceCount == 0;
-        return indentStream(lines(), -outdent)
-                    .map(s -> s.stripTrailing())
-                    .collect(Collectors.joining("\n", "", blankLastLine ? "\n" : ""));
-    }
+        return outdent;
+   }
 
     /**
      * Translates all escape sequences in the string into characters

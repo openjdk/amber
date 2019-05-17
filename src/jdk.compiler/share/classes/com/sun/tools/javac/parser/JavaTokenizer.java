@@ -25,11 +25,14 @@
 
 package com.sun.tools.javac.parser;
 
+import com.sun.tools.javac.code.Lint;
+import com.sun.tools.javac.code.Lint.LintCategory;
 import com.sun.tools.javac.code.Preview;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
+import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
@@ -95,6 +98,11 @@ public class JavaTokenizer {
 
     protected ScannerFactory fac;
 
+    // The set of lint options currently in effect. It is initialized
+    // from the context, and then is set/reset as needed by Attr as it
+    // visits all the various parts of the trees during attribution.
+    protected Lint lint;
+
     private static final boolean hexFloatsWork = hexFloatsWork();
     private static boolean hexFloatsWork() {
         try {
@@ -130,6 +138,7 @@ public class JavaTokenizer {
         this.source = fac.source;
         this.preview = fac.preview;
         this.reader = reader;
+        this.lint = fac.lint;
     }
 
     protected void checkSourceLevel(int pos, Feature feature) {
@@ -157,6 +166,10 @@ public class JavaTokenizer {
         log.error(flags, pos, key);
         tk = TokenKind.ERROR;
         errPos = pos;
+    }
+
+    protected void lexWarning(int pos, JCDiagnostic.Warning key) {
+        log.warning(pos, key);
     }
 
     /** Read next character in character or string literal and copy into sbuf.
@@ -272,6 +285,42 @@ public class JavaTokenizer {
 
         static boolean hasSupport() {
             return hasSupport;
+        }
+
+        private static int indent(String line) {
+            return line.length() - line.stripLeading().length();
+        }
+
+        static boolean checkIncidentalWhitespace(String string) {
+            if (string.isEmpty()) {
+                return true;
+            }
+            char lastChar = string.charAt(string.length() - 1);
+            boolean optOut = lastChar == '\n' || lastChar == '\r';
+            if (optOut)       {
+                return true;
+            }
+            String[] lines = string.split("\\R");
+            int length = lines.length;
+            String lastLine = lines[length - 1];
+            int outdent = indent(lastLine);
+            for (String line : lines) {
+                if (!line.isBlank()) {
+                    outdent = Integer.min(outdent, indent(line));
+                    if (outdent == 0) {
+                        return true;
+                    }
+                }
+            }
+            if (outdent != 0) {
+                String start = lastLine.substring(0, outdent);
+                for (String line : lines) {
+                    if (!line.isBlank() && !line.startsWith(start)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         static String stripIndent(String string) {
@@ -882,6 +931,10 @@ public class JavaTokenizer {
                 case STRING: {
                     String string = reader.chars();
                     if (shouldStripIndent) {
+                        if (lint.isEnabled(LintCategory.TEXT_BLOCKS) &&
+                            !TextBlockSupport.checkIncidentalWhitespace(string)) {
+                            lexWarning(pos, Warnings.IncidentalWhitespaceInconsistent);
+                        }
                         string = TextBlockSupport.stripIndent(string);
                         shouldStripIndent = false;
                     }
