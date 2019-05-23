@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -321,7 +321,7 @@ static bool full_buffer_registration(BufferPtr buffer, JfrStorageAgeMspace* age_
   assert(buffer != NULL, "invariant");
   assert(buffer->retired(), "invariant");
   assert(age_mspace != NULL, "invariant");
-  MutexLockerEx lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
   JfrAgeNode* age_node = get_free_age_node(age_mspace, thread);
   if (age_node == NULL) {
     age_node = new_age_node(buffer, age_mspace, thread);
@@ -339,9 +339,9 @@ static bool full_buffer_registration(BufferPtr buffer, JfrStorageAgeMspace* age_
 void JfrStorage::register_full(BufferPtr buffer, Thread* thread) {
   assert(buffer != NULL, "invariant");
   assert(buffer->retired(), "invariant");
+  assert(buffer->acquired_by(thread), "invariant");
   if (!full_buffer_registration(buffer, _age_mspace, control(), thread)) {
     handle_registration_failure(buffer);
-    buffer->release();
   }
   if (control().should_post_buffer_full_message()) {
     _post_box.post(MSG_FULLBUFFER);
@@ -376,8 +376,8 @@ void JfrStorage::release(BufferPtr buffer, Thread* thread) {
     }
   }
   assert(buffer->empty(), "invariant");
+  assert(buffer->identity() != NULL, "invariant");
   control().increment_dead();
-  buffer->release();
   buffer->set_retired();
 }
 
@@ -623,7 +623,7 @@ static void insert_free_age_nodes(JfrStorageAgeMspace* age_mspace, JfrAgeNode* h
     assert(tail->next() == NULL, "invariant");
     assert(head != NULL, "invariant");
     assert(head->prev() == NULL, "invariant");
-    MutexLockerEx buffer_lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker buffer_lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
     age_mspace->insert_free_tail(head, tail, count);
   }
 }
@@ -674,7 +674,7 @@ static size_t process_full(Processor& processor, JfrStorageControl& control, Jfr
   JfrAgeNode* head;
   {
     // fetch age list
-    MutexLockerEx buffer_lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker buffer_lock(JfrBuffer_lock, Mutex::_no_safepoint_check_flag);
     count = age_mspace->full_count();
     head = age_mspace->clear_full();
     control.reset_full();
@@ -738,13 +738,14 @@ public:
   Scavenger(JfrStorageControl& control, Mspace* mspace) : _control(control), _mspace(mspace), _count(0), _amount(0) {}
   bool process(Type* t) {
     if (t->retired()) {
+      assert(t->identity() != NULL, "invariant");
+      assert(t->empty(), "invariant");
       assert(!t->transient(), "invariant");
       assert(!t->lease(), "invariant");
-      assert(t->empty(), "invariant");
-      assert(t->identity() == NULL, "invariant");
       ++_count;
       _amount += t->total_size();
       t->clear_retired();
+      t->release();
       _control.decrement_dead();
       mspace_release_full_critical(t, _mspace);
     }

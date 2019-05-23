@@ -268,6 +268,7 @@ void G1ConcurrentMarkThread::run_service() {
 
       {
         G1ConcPhase p(G1ConcurrentPhase::CLEAR_CLAIMED_MARKS, this);
+        MutexLocker ml(ClassLoaderDataGraph_lock);
         ClassLoaderDataGraph::clear_claimed_marks();
       }
 
@@ -397,7 +398,7 @@ void G1ConcurrentMarkThread::run_service() {
 }
 
 void G1ConcurrentMarkThread::stop_service() {
-  MutexLockerEx ml(CGC_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(CGC_lock, Mutex::_no_safepoint_check_flag);
   CGC_lock->notify_all();
 }
 
@@ -407,9 +408,9 @@ void G1ConcurrentMarkThread::sleep_before_next_cycle() {
   // below while the world is otherwise stopped.
   assert(!in_progress(), "should have been cleared");
 
-  MutexLockerEx x(CGC_lock, Mutex::_no_safepoint_check_flag);
+  MonitorLocker ml(CGC_lock, Mutex::_no_safepoint_check_flag);
   while (!started() && !should_terminate()) {
-    CGC_lock->wait(Mutex::_no_safepoint_check_flag);
+    ml.wait();
   }
 
   if (started()) {
