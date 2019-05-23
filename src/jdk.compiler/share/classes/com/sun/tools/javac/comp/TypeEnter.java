@@ -688,8 +688,6 @@ public class TypeEnter implements Completer {
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
-                : ((tree.mods.flags & Flags.RECORD) != 0)
-                ? syms.abstractRecordType
                 : syms.objectType;
             }
             ct.supertype_field = modelMissingTypes(baseEnv, supertype, extending, false);

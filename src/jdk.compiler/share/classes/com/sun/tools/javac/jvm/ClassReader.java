@@ -109,6 +109,10 @@ public class ClassReader {
      */
     boolean allowSealedTypes;
 
+    /** Switch: allow records
+     */
+    boolean allowRecords;
+
    /** Lint option: warn about classfile issues
      */
     boolean lintClassfile;
@@ -269,6 +273,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowSealedTypes = Feature.SEALED.allowedInSource(source);
+        allowRecords = Feature.RECORDS.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -1187,7 +1192,7 @@ public class ClassReader {
                 }
             },
 
-            new AttributeReader(names.PermittedSubtypes, V56, CLASS_ATTRIBUTE) {
+            new AttributeReader(names.PermittedSubtypes, V57, CLASS_ATTRIBUTE) {
                 @Override
                 protected boolean accepts(AttributeKind kind) {
                     return super.accepts(kind) && allowSealedTypes;
@@ -1205,6 +1210,18 @@ public class ClassReader {
                     }
                 }
             },
+
+            new AttributeReader(names.Record, V57, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowRecords;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        sym.flags_field |= RECORD;
+                    }
+                }
+            }
         };
 
         for (AttributeReader r: readers)
@@ -1396,9 +1413,7 @@ public class ClassReader {
         }
         ListBuffer<CompoundAnnotationProxy> proxies = new ListBuffer<>();
         for (CompoundAnnotationProxy proxy : annotations) {
-            if (proxy.type.tsym == syms.dataAnnotationType.tsym) {
-                sym.flags_field |= RECORD;
-            } else if (proxy.type.tsym.flatName() == syms.proprietaryType.tsym.flatName())
+            if (proxy.type.tsym.flatName() == syms.proprietaryType.tsym.flatName())
                 sym.flags_field |= PROPRIETARY;
             else if (proxy.type.tsym.flatName() == syms.profileType.tsym.flatName()) {
                 if (profile != Profile.DEFAULT) {
