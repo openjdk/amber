@@ -27,6 +27,7 @@
 
 #include "gc/shared/gcCause.hpp"
 #include "gc/shared/gcWhen.hpp"
+#include "gc/shared/verifyOption.hpp"
 #include "memory/allocation.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/perfData.hpp"
@@ -44,7 +45,6 @@
 
 class AdaptiveSizePolicy;
 class BarrierSet;
-class CollectorPolicy;
 class GCHeapSummary;
 class GCTimer;
 class GCTracer;
@@ -209,6 +209,9 @@ class CollectedHeap : public CHeapObj<mtInternal> {
 
   virtual size_t capacity() const = 0;
   virtual size_t used() const = 0;
+
+  // Returns unused capacity.
+  virtual size_t unused() const;
 
   // Return "true" if the part of the heap that allocates Java
   // objects has reached the maximal committed limit that it can
@@ -385,9 +388,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
 
   void increment_total_full_collections() { _total_full_collections++; }
 
-  // Return the CollectorPolicy for the heap
-  virtual CollectorPolicy* collector_policy() const = 0;
-
   // Return the SoftRefPolicy for the heap;
   virtual SoftRefPolicy* soft_ref_policy() = 0;
 
@@ -449,9 +449,8 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   // Print heap information on the given outputStream.
   virtual void print_on(outputStream* st) const = 0;
   // The default behavior is to call print_on() on tty.
-  virtual void print() const {
-    print_on(tty);
-  }
+  virtual void print() const;
+
   // Print more detailed heap information on the given
   // outputStream. The default behavior is to call print_on(). It is
   // up to each subclass to override it and add any additional output
