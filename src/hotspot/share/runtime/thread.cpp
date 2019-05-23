@@ -117,9 +117,8 @@
 #include "utilities/singleWriterSynchronizer.hpp"
 #include "utilities/vmError.hpp"
 #if INCLUDE_JVMCI
-#include "jvmci/jvmciCompiler.hpp"
-#include "jvmci/jvmciRuntime.hpp"
-#include "logging/logHandle.hpp"
+#include "jvmci/jvmci.hpp"
+#include "jvmci/jvmciEnv.hpp"
 #endif
 #ifdef COMPILER1
 #include "c1/c1_Compiler.hpp"
@@ -718,7 +717,11 @@ bool JavaThread::is_ext_suspend_completed(bool called_by_wait, int delay,
         // temporarily drops SR_lock while doing wait with safepoint check
         // (if we're a JavaThread - the WatcherThread can also call this)
         // and increase delay with each retry
-        SR_lock()->wait(!Thread::current()->is_Java_thread(), i * delay);
+        if (Thread::current()->is_Java_thread()) {
+          SR_lock()->wait(i * delay);
+        } else {
+          SR_lock()->wait_without_safepoint_check(i * delay);
+        }
 
         // check the actual thread state instead of what we saved above
         if (thread_state() != _thread_in_native_trans) {
@@ -759,7 +762,7 @@ bool JavaThread::wait_for_ext_suspend_completion(int retries, int delay,
   reset_bits = *bits;
 
   {
-    MutexLockerEx ml(SR_lock(), Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(SR_lock(), Mutex::_no_safepoint_check_flag);
     is_suspended = is_ext_suspend_completed(true /* called_by_wait */,
                                             delay, bits);
     pending = is_external_suspend();
@@ -790,10 +793,12 @@ bool JavaThread::wait_for_ext_suspend_completion(int retries, int delay,
     // safepoint requests from the VMThread
 
     {
-      MutexLocker ml(SR_lock());
+      Thread* t = Thread::current();
+      MonitorLocker ml(SR_lock(),
+                       t->is_Java_thread() ? Mutex::_safepoint_check_flag : Mutex::_no_safepoint_check_flag);
       // wait with safepoint check (if we're a JavaThread - the WatcherThread
       // can also call this)  and increase delay with each retry
-      SR_lock()->wait(!Thread::current()->is_Java_thread(), i * delay);
+      ml.wait(i * delay);
 
       is_suspended = is_ext_suspend_completed(true /* called_by_wait */,
                                               delay, bits);
@@ -947,6 +952,8 @@ void Thread::print_on(outputStream* st, bool print_extended_info) const {
   st->print(" ");
   debug_only(if (WizardMode) print_owned_locks_on(st);)
 }
+
+void Thread::print() const { print_on(tty); }
 
 // Thread::print_on_error() is called by fatal error handler. Don't use
 // any lock or allocate memory.
@@ -1289,7 +1296,7 @@ NonJavaThread::NonJavaThread() : Thread(), _next(NULL) {
 NonJavaThread::~NonJavaThread() { }
 
 void NonJavaThread::add_to_the_list() {
-  MutexLockerEx ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
   // Initialize BarrierSet-related data before adding to list.
   BarrierSet::barrier_set()->on_thread_attach(this);
   OrderAccess::release_store(&_next, _the_list._head);
@@ -1298,7 +1305,7 @@ void NonJavaThread::add_to_the_list() {
 
 void NonJavaThread::remove_from_the_list() {
   {
-    MutexLockerEx ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(NonJavaThreadsList_lock, Mutex::_no_safepoint_check_flag);
     // Cleanup BarrierSet-related data before removing from list.
     BarrierSet::barrier_set()->on_thread_detach(this);
     NonJavaThread* volatile* p = &_the_list._head;
@@ -1312,7 +1319,7 @@ void NonJavaThread::remove_from_the_list() {
   // Wait for any in-progress iterators.  Concurrent synchronize is not
   // allowed, so do it while holding a dedicated lock.  Outside and distinct
   // from NJTList_lock in case an iteration attempts to lock it.
-  MutexLockerEx ml(NonJavaThreadsListSync_lock, Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(NonJavaThreadsListSync_lock, Mutex::_no_safepoint_check_flag);
   _the_list._protect.synchronize();
   _next = NULL;                 // Safe to drop the link now.
 }
@@ -1397,7 +1404,7 @@ WatcherThread::WatcherThread() : NonJavaThread() {
 int WatcherThread::sleep() const {
   // The WatcherThread does not participate in the safepoint protocol
   // for the PeriodicTask_lock because it is not a JavaThread.
-  MutexLockerEx ml(PeriodicTask_lock, Mutex::_no_safepoint_check_flag);
+  MonitorLocker ml(PeriodicTask_lock, Mutex::_no_safepoint_check_flag);
 
   if (_should_terminate) {
     // check for termination before we do any housekeeping or wait
@@ -1417,8 +1424,7 @@ int WatcherThread::sleep() const {
   jlong time_before_loop = os::javaTimeNanos();
 
   while (true) {
-    bool timedout = PeriodicTask_lock->wait(Mutex::_no_safepoint_check_flag,
-                                            remaining);
+    bool timedout = ml.wait(remaining);
     jlong now = os::javaTimeNanos();
 
     if (remaining == 0) {
@@ -1506,7 +1512,7 @@ void WatcherThread::run() {
 
   // Signal that it is terminated
   {
-    MutexLockerEx mu(Terminator_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker mu(Terminator_lock, Mutex::_no_safepoint_check_flag);
     _watcher_thread = NULL;
     Terminator_lock->notify_all();
   }
@@ -1541,13 +1547,12 @@ void WatcherThread::stop() {
     }
   }
 
-  MutexLocker mu(Terminator_lock);
+  MonitorLocker mu(Terminator_lock);
 
   while (watcher_thread() != NULL) {
     // This wait should make safepoint checks, wait without a timeout,
     // and wait as a suspend-equivalent condition.
-    Terminator_lock->wait(!Mutex::_no_safepoint_check_flag, 0,
-                          Mutex::_as_suspend_equivalent_flag);
+    mu.wait(0, Mutex::_as_suspend_equivalent_flag);
   }
 }
 
@@ -1572,17 +1577,15 @@ bool jvmci_counters_include(JavaThread* thread) {
   return !JVMCICountersExcludeCompiler || !thread->is_Compiler_thread();
 }
 
-void JavaThread::collect_counters(typeArrayOop array) {
-  if (JVMCICounterSize > 0) {
-    JavaThreadIteratorWithHandle jtiwh;
-    for (int i = 0; i < array->length(); i++) {
-      array->long_at_put(i, _jvmci_old_thread_counters[i]);
-    }
-    for (; JavaThread *tp = jtiwh.next(); ) {
-      if (jvmci_counters_include(tp)) {
-        for (int i = 0; i < array->length(); i++) {
-          array->long_at_put(i, array->long_at(i) + tp->_jvmci_counters[i]);
-        }
+void JavaThread::collect_counters(jlong* array, int length) {
+  assert(length == JVMCICounterSize, "wrong value");
+  for (int i = 0; i < length; i++) {
+    array[i] = _jvmci_old_thread_counters[i];
+  }
+  for (JavaThreadIteratorWithHandle jtiwh; JavaThread *tp = jtiwh.next(); ) {
+    if (jvmci_counters_include(tp)) {
+      for (int i = 0; i < length; i++) {
+        array[i] += tp->_jvmci_counters[i];
       }
     }
   }
@@ -1610,7 +1613,6 @@ void JavaThread::initialize() {
   set_deopt_compiled_method(NULL);
   clear_must_deopt_id();
   set_monitor_chunks(NULL);
-  set_next(NULL);
   _on_thread_list = false;
   set_thread_state(_thread_new);
   _terminated = _not_terminated;
@@ -1624,7 +1626,6 @@ void JavaThread::initialize() {
   _pending_deoptimization = -1;
   _pending_failed_speculation = 0;
   _pending_transfer_to_interpreter = false;
-  _adjusting_comp_level = false;
   _in_retryable_allocation = false;
   _jvmci._alternate_call_target = NULL;
   assert(_jvmci._implicit_exception_pc == NULL, "must be");
@@ -1990,7 +1991,7 @@ void JavaThread::exit(bool destroy_vm, ExitType exit_type) {
     // in order to not surprise the thread that made the suspend request.
     while (true) {
       {
-        MutexLockerEx ml(SR_lock(), Mutex::_no_safepoint_check_flag);
+        MutexLocker ml(SR_lock(), Mutex::_no_safepoint_check_flag);
         if (!is_external_suspend()) {
           set_terminated(_thread_exiting);
           ThreadService::current_thread_exiting(this, is_daemon(threadObj()));
@@ -2359,7 +2360,7 @@ void JavaThread::java_suspend() {
     return;
   }
 
-  { MutexLockerEx ml(SR_lock(), Mutex::_no_safepoint_check_flag);
+  { MutexLocker ml(SR_lock(), Mutex::_no_safepoint_check_flag);
     if (!is_external_suspend()) {
       // a racing resume has cancelled us; bail out now
       return;
@@ -2418,7 +2419,7 @@ int JavaThread::java_suspend_self() {
          (is_Java_thread() && !((JavaThread*)this)->has_last_Java_frame()),
          "must have walkable stack");
 
-  MutexLockerEx ml(SR_lock(), Mutex::_no_safepoint_check_flag);
+  MonitorLocker ml(SR_lock(), Mutex::_no_safepoint_check_flag);
 
   assert(!this->is_ext_suspended(),
          "a thread trying to self-suspend should not already be suspended");
@@ -2446,7 +2447,7 @@ int JavaThread::java_suspend_self() {
 
     // _ext_suspended flag is cleared by java_resume()
     while (is_ext_suspended()) {
-      this->SR_lock()->wait(Mutex::_no_safepoint_check_flag);
+      ml.wait();
     }
   }
   return ret;
@@ -2520,21 +2521,6 @@ void JavaThread::check_safepoint_and_suspend_for_native_trans(JavaThread *thread
     SafepointMechanism::block_if_requested(curJT);
   }
 
-  if (thread->is_deopt_suspend()) {
-    thread->clear_deopt_suspend();
-    RegisterMap map(thread, false);
-    frame f = thread->last_frame();
-    while (f.id() != thread->must_deopt_id() && ! f.is_first_frame()) {
-      f = f.sender(&map);
-    }
-    if (f.id() == thread->must_deopt_id()) {
-      thread->clear_must_deopt_id();
-      f.deoptimize(thread);
-    } else {
-      fatal("missed deoptimization!");
-    }
-  }
-
   JFR_ONLY(SUSPEND_THREAD_CONDITIONAL(thread);)
 }
 
@@ -2588,7 +2574,7 @@ void JavaThread::java_resume() {
     return;
   }
 
-  MutexLockerEx ml(SR_lock(), Mutex::_no_safepoint_check_flag);
+  MutexLocker ml(SR_lock(), Mutex::_no_safepoint_check_flag);
 
   clear_external_suspend();
 
@@ -2846,17 +2832,16 @@ void JavaThread::make_zombies() {
 #endif // PRODUCT
 
 
-void JavaThread::deoptimized_wrt_marked_nmethods() {
+void JavaThread::deoptimize_marked_methods(bool in_handshake) {
   if (!has_last_Java_frame()) return;
   // BiasedLocking needs an updated RegisterMap for the revoke monitors pass
   StackFrameStream fst(this, UseBiasedLocking);
   for (; !fst.is_done(); fst.next()) {
     if (fst.current()->should_be_deoptimized()) {
-      Deoptimization::deoptimize(this, *fst.current(), fst.register_map());
+      Deoptimization::deoptimize(this, *fst.current(), fst.register_map(), in_handshake);
     }
   }
 }
-
 
 // If the caller is a NamedThread, then remember, in the current scope,
 // the given JavaThread in its _processed_thread field.
@@ -3041,6 +3026,8 @@ void JavaThread::print_on(outputStream *st, bool print_extended_info) const {
   }
 }
 
+void JavaThread::print() const { print_on(tty); }
+
 void JavaThread::print_name_on_error(outputStream* st, char *buf, int buflen) const {
   st->print("%s", get_thread_name_string(buf, buflen));
 }
@@ -3205,8 +3192,7 @@ void JavaThread::prepare(jobject jni_thread, ThreadPriority prio) {
 oop JavaThread::current_park_blocker() {
   // Support for JSR-166 locks
   oop thread_oop = threadObj();
-  if (thread_oop != NULL &&
-      JDK_Version::current().supports_thread_park_blocker()) {
+  if (thread_oop != NULL) {
     return java_lang_Thread::park_blocker(thread_oop);
   }
   return NULL;
@@ -3469,7 +3455,6 @@ void CodeCacheSweeperThread::nmethods_do(CodeBlobClosure* cf) {
 // would like. We are actively migrating Threads_lock uses to other
 // mechanisms in order to reduce Threads_lock contention.
 
-JavaThread* Threads::_thread_list = NULL;
 int         Threads::_number_of_threads = 0;
 int         Threads::_number_of_non_daemon_threads = 0;
 int         Threads::_return_code = 0;
@@ -3776,7 +3761,6 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   }
 
   // Initialize Threads state
-  _thread_list = NULL;
   _number_of_threads = 0;
   _number_of_non_daemon_threads = 0;
 
@@ -3853,10 +3837,10 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
     // Wait for the VM thread to become ready, and VMThread::run to initialize
     // Monitors can have spurious returns, must always check another state flag
     {
-      MutexLocker ml(Notify_lock);
+      MonitorLocker ml(Notify_lock);
       os::start_thread(vmthread);
       while (vmthread->active_handles() == NULL) {
-        Notify_lock->wait();
+        ml.wait();
       }
     }
   }
@@ -3934,10 +3918,8 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   bool force_JVMCI_intialization = false;
   if (EnableJVMCI) {
     // Initialize JVMCI eagerly when it is explicitly requested.
-    // Or when JVMCIPrintProperties is enabled.
-    // The JVMCI Java initialization code will read this flag and
-    // do the printing if it's set.
-    force_JVMCI_intialization = EagerJVMCI || JVMCIPrintProperties;
+    // Or when JVMCILibDumpJNIConfig or JVMCIPrintProperties is enabled.
+    force_JVMCI_intialization = EagerJVMCI || JVMCIPrintProperties || JVMCILibDumpJNIConfig;
 
     if (!force_JVMCI_intialization) {
       // 8145270: Force initialization of JVMCI runtime otherwise requests for blocking
@@ -3978,15 +3960,13 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   SystemDictionary::compute_java_loaders(CHECK_JNI_ERR);
 
 #if INCLUDE_CDS
-  if (DumpSharedSpaces) {
-    // capture the module path info from the ModuleEntryTable
-    ClassLoader::initialize_module_path(THREAD);
-  }
+  // capture the module path info from the ModuleEntryTable
+  ClassLoader::initialize_module_path(THREAD);
 #endif
 
 #if INCLUDE_JVMCI
   if (force_JVMCI_intialization) {
-    JVMCIRuntime::force_initialization(CHECK_JNI_ERR);
+    JVMCI::initialize_compiler(CHECK_JNI_ERR);
     CompileBroker::compilation_init_phase2();
   }
 #endif
@@ -4024,13 +4004,11 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
   RTMLockingCounters::init();
 #endif
 
-  if (JDK_Version::current().post_vm_init_hook_enabled()) {
-    call_postVMInitHook(THREAD);
-    // The Java side of PostVMInitHook.run must deal with all
-    // exceptions and provide means of diagnosis.
-    if (HAS_PENDING_EXCEPTION) {
-      CLEAR_PENDING_EXCEPTION;
-    }
+  call_postVMInitHook(THREAD);
+  // The Java side of PostVMInitHook.run must deal with all
+  // exceptions and provide means of diagnosis.
+  if (HAS_PENDING_EXCEPTION) {
+    CLEAR_PENDING_EXCEPTION;
   }
 
   {
@@ -4185,7 +4163,7 @@ void Threads::create_vm_init_agents() {
   for (agent = Arguments::agents(); agent != NULL; agent = agent->next()) {
     // CDS dumping does not support native JVMTI agent.
     // CDS dumping supports Java agent if the AllowArchivingWithJavaAgent diagnostic option is specified.
-    if (DumpSharedSpaces) {
+    if (DumpSharedSpaces || DynamicDumpSharedSpaces) {
       if(!agent->is_instrument_lib()) {
         vm_exit_during_cds_dumping("CDS dumping does not support native JVMTI agent, name", agent->name());
       } else if (!AllowArchivingWithJavaAgent) {
@@ -4286,7 +4264,7 @@ void JavaThread::invoke_shutdown_hooks() {
     JavaValue result(T_VOID);
     JavaCalls::call_static(&result,
                            shutdown_klass,
-                           vmSymbols::shutdown_method_name(),
+                           vmSymbols::shutdown_name(),
                            vmSymbols::void_method_signature(),
                            THREAD);
   }
@@ -4334,12 +4312,11 @@ bool Threads::destroy_vm() {
   _vm_complete = false;
 #endif
   // Wait until we are the last non-daemon thread to execute
-  { MutexLocker nu(Threads_lock);
+  { MonitorLocker nu(Threads_lock);
     while (Threads::number_of_non_daemon_threads() > 1)
       // This wait should make safepoint checks, wait without a timeout,
       // and wait as a suspend-equivalent condition.
-      Threads_lock->wait(!Mutex::_no_safepoint_check_flag, 0,
-                         Mutex::_as_suspend_equivalent_flag);
+      nu.wait(0, Mutex::_as_suspend_equivalent_flag);
   }
 
   EventShutdown e;
@@ -4370,7 +4347,7 @@ bool Threads::destroy_vm() {
     // queue until after the vm thread is dead. After this point,
     // we'll never emerge out of the safepoint before the VM exits.
 
-    MutexLockerEx ml(Heap_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(Heap_lock, Mutex::_no_safepoint_check_flag);
 
     VMThread::wait_for_vm_thread_exit();
     assert(SafepointSynchronize::is_at_safepoint(), "VM thread should exit at Safepoint");
@@ -4442,9 +4419,6 @@ void Threads::add(JavaThread* p, bool force_daemon) {
 
   BarrierSet::barrier_set()->on_thread_attach(p);
 
-  p->set_next(_thread_list);
-  _thread_list = p;
-
   // Once a JavaThread is added to the Threads list, smr_delete() has
   // to be used to delete it. Otherwise we can just delete it directly.
   p->set_on_thread_list();
@@ -4475,26 +4449,12 @@ void Threads::remove(JavaThread* p, bool is_daemon) {
 
   // Extra scope needed for Thread_lock, so we can check
   // that we do not remove thread without safepoint code notice
-  { MutexLocker ml(Threads_lock);
+  { MonitorLocker ml(Threads_lock);
 
     assert(ThreadsSMRSupport::get_java_thread_list()->includes(p), "p must be present");
 
     // Maintain fast thread list
     ThreadsSMRSupport::remove_thread(p);
-
-    JavaThread* current = _thread_list;
-    JavaThread* prev    = NULL;
-
-    while (current != p) {
-      prev    = current;
-      current = current->next();
-    }
-
-    if (prev) {
-      prev->set_next(current->next());
-    } else {
-      _thread_list = p->next();
-    }
 
     _number_of_threads--;
     if (!is_daemon) {
@@ -4503,7 +4463,7 @@ void Threads::remove(JavaThread* p, bool is_daemon) {
       // Only one thread left, do a notify on the Threads_lock so a thread waiting
       // on destroy_vm will wake up.
       if (number_of_non_daemon_threads() == 1) {
-        Threads_lock->notify_all();
+        ml.notify_all();
       }
     }
     ThreadService::remove_thread(p, is_daemon);
@@ -4616,13 +4576,6 @@ void Threads::metadata_handles_do(void f(Metadata*)) {
   ThreadHandlesClosure handles_closure(f);
   threads_do(&handles_closure);
 }
-
-void Threads::deoptimized_wrt_marked_nmethods() {
-  ALL_JAVA_THREADS(p) {
-    p->deoptimized_wrt_marked_nmethods();
-  }
-}
-
 
 // Get count Java threads that are waiting to enter the specified monitor.
 GrowableArray<JavaThread*>* Threads::get_pending_threads(ThreadsList * t_list,

@@ -1047,11 +1047,11 @@ Node* MemNode::can_see_stored_value(Node* st, PhaseTransform* phase) const {
         // Try harder before giving up. Unify base pointers with casts (e.g., raw/non-raw pointers).
         intptr_t st_off = 0;
         Node* st_base = AddPNode::Ideal_base_and_offset(st_adr, phase, st_off);
-        if (ld_base == NULL)                        return NULL;
-        if (st_base == NULL)                        return NULL;
-        if (ld_base->uncast() != st_base->uncast()) return NULL;
-        if (ld_off != st_off)                       return NULL;
-        if (ld_off == Type::OffsetBot)              return NULL;
+        if (ld_base == NULL)                                   return NULL;
+        if (st_base == NULL)                                   return NULL;
+        if (!ld_base->eqv_uncast(st_base, /*keep_deps=*/true)) return NULL;
+        if (ld_off != st_off)                                  return NULL;
+        if (ld_off == Type::OffsetBot)                         return NULL;
         // Same base, same offset.
         // Possible improvement for arrays: check index value instead of absolute offset.
 
@@ -1062,6 +1062,7 @@ Node* MemNode::can_see_stored_value(Node* st, PhaseTransform* phase) const {
         // (Actually, we haven't yet proven the Q's are the same.)
         // In other words, we are loading from a casted version of
         // the same pointer-and-offset that we stored to.
+        // Casted version may carry a dependency and it is respected.
         // Thus, we are able to replace L by V.
       }
       // Now prove that we have a LoadQ matched to a StoreQ, for some Q.
@@ -3549,9 +3550,6 @@ bool InitializeNode::detect_init_independence(Node* n, int& count) {
 // within the initialized memory.
 intptr_t InitializeNode::can_capture_store(StoreNode* st, PhaseTransform* phase, bool can_reshape) {
   const int FAIL = 0;
-  if (st->is_unaligned_access()) {
-    return FAIL;
-  }
   if (st->req() != MemNode::ValueIn + 1)
     return FAIL;                // an inscrutable StoreNode (card mark?)
   Node* ctl = st->in(MemNode::Control);
@@ -3567,6 +3565,10 @@ intptr_t InitializeNode::can_capture_store(StoreNode* st, PhaseTransform* phase,
     return FAIL;                // inscrutable address
   if (alloc != allocation())
     return FAIL;                // wrong allocation!  (store needs to float up)
+  int size_in_bytes = st->memory_size();
+  if ((size_in_bytes != 0) && (offset % size_in_bytes) != 0) {
+    return FAIL;                // mismatched access
+  }
   Node* val = st->in(MemNode::ValueIn);
   int complexity_count = 0;
   if (!detect_init_independence(val, complexity_count))
