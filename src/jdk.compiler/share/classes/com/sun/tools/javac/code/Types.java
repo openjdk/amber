@@ -2752,7 +2752,7 @@ public class Types {
      * signature</em> of the other.  This is <b>not</b> an equivalence
      * relation.
      *
-     * @jls section 8.4.2.
+     * @jls 8.4.2 Method Signature
      * @see #overrideEquivalent(Type t, Type s)
      * @param t first signature (possibly raw).
      * @param s second signature (could be subjected to erasure).
@@ -2771,7 +2771,7 @@ public class Types {
      * equivalence</em>.  This is the natural extension of
      * isSubSignature to an equivalence relation.
      *
-     * @jls section 8.4.2.
+     * @jls 8.4.2 Method Signature
      * @see #isSubSignature(Type t, Type s)
      * @param t a signature (possible raw, could be subjected to
      * erasure).
@@ -4233,7 +4233,7 @@ public class Types {
 
     /**
      * Return-Type-Substitutable.
-     * @jls section 8.4.5
+     * @jls 8.4.5 Method Result
      */
     public boolean returnTypeSubstitutable(Type r1, Type r2) {
         if (hasSameArgs(r1, r2))
@@ -5221,6 +5221,8 @@ public class Types {
                 return syms.methodHandleType;
             case ClassFile.CONSTANT_MethodType:
                 return syms.methodTypeType;
+            case ClassFile.CONSTANT_Dynamic:
+                return ((DynamicVarSymbol)c).type;
             default:
                 throw new AssertionError("Not a loadable constant: " + c.poolTag());
         }
