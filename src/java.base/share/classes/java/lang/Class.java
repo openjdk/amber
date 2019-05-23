@@ -3554,8 +3554,8 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.12
      */
     public boolean isRecord() {
-        // A record must directly extend java.lang.AbstractRecord
-        return AbstractRecord.class.isAssignableFrom(this);
+        // we need to create a native method that checks if the Record attribute is present or not
+        return false;
     }
 
     /**

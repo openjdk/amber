@@ -2333,13 +2333,6 @@ public class Gen extends JCTree.Visitor {
             ClassSymbol c = cdef.sym;
             this.toplevel = env.toplevel;
             this.endPosTable = toplevel.endPositions;
-            if (c.isRecord()) {
-                Attribute.Compound attribute = c.attribute(syms.dataAnnotationType.tsym);
-                if (attribute == null) {
-                    attribute = new Attribute.Compound(syms.dataAnnotationType, List.nil());
-                    c.appendAttributes(List.of(attribute));
-                }
-            }
             /* method normalizeDefs() can add references to external classes into the constant pool
              */
             cdef.defs = normalizeDefs(cdef.defs, c);
