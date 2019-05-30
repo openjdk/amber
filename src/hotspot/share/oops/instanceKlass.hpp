@@ -538,12 +538,8 @@ public:
   ClassState  init_state()                 { return (ClassState)_init_state; }
   bool is_rewritten() const                { return (_misc_flags & _misc_rewritten) != 0; }
 
-  bool is_sealed() const {
-    return is_final() &&
-      _permitted_subtypes != NULL &&
-      _permitted_subtypes != Universe::the_empty_short_array() &&
-      _permitted_subtypes->length() > 0;
-  }
+  // is this a sealed class
+  bool is_sealed() const;
 
   // defineClass specified verification
   bool should_verify_class() const         {

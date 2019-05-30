@@ -202,15 +202,15 @@ bool InlineTree::should_not_inline(ciMethod *callee_method,
   const char* fail_msg = NULL;
 
   // First check all inlining restrictions which are required for correctness
-  if ( callee_method->is_abstract()) {
+  if (callee_method->is_abstract()) {
     fail_msg = "abstract method"; // // note: we allow ik->is_abstract()
   } else if (!callee_method->holder()->is_initialized() &&
              // access allowed in the context of static initializer
-             !C->is_compiling_clinit_for(callee_method->holder())) {
+             C->needs_clinit_barrier(callee_method->holder(), caller_method)) {
     fail_msg = "method holder not initialized";
-  } else if ( callee_method->is_native()) {
+  } else if (callee_method->is_native()) {
     fail_msg = "native method";
-  } else if ( callee_method->dont_inline()) {
+  } else if (callee_method->dont_inline()) {
     fail_msg = "don't inline by annotation";
   }
 
@@ -321,6 +321,35 @@ bool InlineTree::should_not_inline(ciMethod *callee_method,
   return false;
 }
 
+bool InlineTree::is_not_reached(ciMethod* callee_method, ciMethod* caller_method, int caller_bci, ciCallProfile& profile) {
+  if (!UseInterpreter) {
+    return false; // -Xcomp
+  }
+  if (profile.count() > 0) {
+    return false; // reachable according to profile
+  }
+  if (!callee_method->was_executed_more_than(0)) {
+    return true; // callee was never executed
+  }
+  if (caller_method->is_not_reached(caller_bci)) {
+    return true; // call site not resolved
+  }
+  if (profile.count() == -1) {
+    return false; // immature profile; optimistically treat as reached
+  }
+  assert(profile.count() == 0, "sanity");
+
+  // Profile info is scarce.
+  // Try to guess: check if the call site belongs to a start block.
+  // Call sites in a start block should be reachable if no exception is thrown earlier.
+  ciMethodBlocks* caller_blocks = caller_method->get_method_blocks();
+  bool is_start_block = caller_blocks->block_containing(caller_bci)->start_bci() == 0;
+  if (is_start_block) {
+    return false; // treat the call reached as part of start block
+  }
+  return true; // give up and treat the call site as not reached
+}
+
 //-----------------------------try_to_inline-----------------------------------
 // return true if ok
 // Relocated from "InliningClosure::try_to_inline"
@@ -372,7 +401,7 @@ bool InlineTree::try_to_inline(ciMethod* callee_method, ciMethod* caller_method,
       // inline constructors even if they are not reached.
     } else if (forced_inline()) {
       // Inlining was forced by CompilerOracle, ciReplay or annotation
-    } else if (profile.count() == 0) {
+    } else if (is_not_reached(callee_method, caller_method, caller_bci, profile)) {
       // don't inline unreached call sites
        set_msg("call site not reached");
        return false;
@@ -449,14 +478,18 @@ bool InlineTree::try_to_inline(ciMethod* callee_method, ciMethod* caller_method,
 
 //------------------------------pass_initial_checks----------------------------
 bool InlineTree::pass_initial_checks(ciMethod* caller_method, int caller_bci, ciMethod* callee_method) {
-  ciInstanceKlass *callee_holder = callee_method ? callee_method->holder() : NULL;
   // Check if a callee_method was suggested
-  if( callee_method == NULL )            return false;
+  if (callee_method == NULL) {
+    return false;
+  }
+  ciInstanceKlass *callee_holder = callee_method->holder();
   // Check if klass of callee_method is loaded
-  if( !callee_holder->is_loaded() )      return false;
-  if( !callee_holder->is_initialized() &&
+  if (!callee_holder->is_loaded()) {
+    return false;
+  }
+  if (!callee_holder->is_initialized() &&
       // access allowed in the context of static initializer
-      !C->is_compiling_clinit_for(callee_holder)) {
+      C->needs_clinit_barrier(callee_holder, caller_method)) {
     return false;
   }
   if( !UseInterpreter ) /* running Xcomp */ {
