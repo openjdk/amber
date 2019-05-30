@@ -126,7 +126,8 @@
 #define JAVA_13_VERSION                   57
 
 void ClassFileParser::set_class_bad_constant_seen(short bad_constant) {
-  assert((bad_constant == 19 || bad_constant == 20) && _major_version >= JAVA_9_VERSION,
+  assert((bad_constant == JVM_CONSTANT_Module ||
+          bad_constant == JVM_CONSTANT_Package) && _major_version >= JAVA_9_VERSION,
          "Unexpected bad constant pool entry");
   if (_bad_constant_seen == 0) _bad_constant_seen = bad_constant;
 }
@@ -334,8 +335,7 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
                                      names,
                                      lengths,
                                      indices,
-                                     hashValues,
-                                     CHECK);
+                                     hashValues);
             names_count = 0;
           }
         } else {
@@ -343,8 +343,8 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
         }
         break;
       }
-      case 19:
-      case 20: {
+      case JVM_CONSTANT_Module:
+      case JVM_CONSTANT_Package: {
         // Record that an error occurred in these two cases but keep parsing so
         // that ACC_Module can be checked for in the access_flags.  Need to
         // throw NoClassDefFoundError in that case.
@@ -372,8 +372,7 @@ void ClassFileParser::parse_constant_pool_entries(const ClassFileStream* const s
                              names,
                              lengths,
                              indices,
-                             hashValues,
-                             CHECK);
+                             hashValues);
   }
 
   // Copy _current pointer of local copy back to stream.
@@ -822,7 +821,7 @@ void ClassFileParser::patch_constant_pool(ConstantPool* cp,
         guarantee_property(java_lang_String::is_instance(patch()),
                            "Illegal class patch at %d in class file %s",
                            index, CHECK);
-        Symbol* const name = java_lang_String::as_symbol(patch(), CHECK);
+        Symbol* const name = java_lang_String::as_symbol(patch());
         patch_class(cp, index, NULL, name);
       }
       break;
@@ -5900,7 +5899,7 @@ void ClassFileParser::prepend_host_package_name(const InstanceKlass* unsafe_anon
     // The new class name is created with a refcount of one. When installed into the InstanceKlass,
     // it'll be two and when the ClassFileParser destructor runs, it'll go back to one and get deleted
     // when the class is unloaded.
-    _class_name = SymbolTable::new_symbol(new_anon_name, symbol_len, CHECK);
+    _class_name = SymbolTable::new_symbol(new_anon_name, symbol_len);
   }
 }
 
