@@ -675,8 +675,7 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
 }
 
 bool InstanceKlass::is_sealed() const {
-  return is_final() &&
-        _permitted_subtypes != NULL &&
+  return _permitted_subtypes != NULL &&
         _permitted_subtypes != Universe::the_empty_short_array() &&
         _permitted_subtypes->length() > 0;
 }

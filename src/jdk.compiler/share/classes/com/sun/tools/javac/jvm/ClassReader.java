@@ -2484,7 +2484,6 @@ public class ClassReader {
 
         if (ct.permitted != null && !ct.permitted.isEmpty()) {
             c.flags_field |= SEALED;
-            c.flags_field &= ~FINAL;
         }
 
         // reset and read rest of classinfo
