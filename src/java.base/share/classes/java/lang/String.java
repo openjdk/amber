@@ -2895,50 +2895,69 @@ public final class String
     }
 
     /**
-     * Removes horizontal white space margins from the essential body of a
-     * Text Block originated string, while preserving relative indentation.
+     * Returns a string whose value is this string, with incidental
+     * {@linkplain Character#isWhitespace(int) white space} removed from
+     * the beginning and end of every line.
      * <p>
-     * This string is first conceptually separated into lines as if by
+     * Incidental {@linkplain Character#isWhitespace(int) white space}
+     * is often present in a text block to align the content with the opening
+     * delimiter. For example, in the following code, dots represent incidental
+     * {@linkplain Character#isWhitespace(int) white space}:
+     * <blockquote><pre>
+     * String html = """
+     * ..............&lt;html&gt;
+     * ..............    &lt;body&gt;
+     * ..............        &lt;p&gt;Hello, world&lt;/p&gt;
+     * ..............    &lt;/body&gt;
+     * ..............&lt;/html&gt;
+     * ..............""";
+     * </pre></blockquote>
+     * This method treats the incidental
+     * {@linkplain Character#isWhitespace(int) white space} as indentation to be
+     * stripped, producing a string that preserves the relative indentation of
+     * the content. Using | to visualize the start of each line of the string:
+     * <blockquote><pre>
+     * |&lt;html&gt;
+     * |    &lt;body&gt;
+     * |        &lt;p&gt;Hello, world&lt;/p&gt;
+     * |    &lt;/body&gt;
+     * |&lt;/html&gt;
+     * </pre></blockquote>
+     * First, the individual lines of this string are extracted as if by using
      * {@link String#lines()}.
      * <p>
-     * Then, the <i>minimum indentation</i> (min) is determined as follows. For
-     * each non-blank line (as defined by {@link String#isBlank()}), the
-     * leading {@link Character#isWhitespace(int) white space} characters are
-     * counted. The
-     * leading {@link Character#isWhitespace(int) white space} characters on
-     * the last line are are also counted even if blank.
-     * The <i>min</i> value is the smallest of these counts.
+     * Then, the <i>minimum indentation</i> (min) is determined as follows.
+     * For each non-blank line (as defined by {@link String#isBlank()}), the
+     * leading {@linkplain Character#isWhitespace(int) white space} characters are
+     * counted. The leading {@linkplain Character#isWhitespace(int) white space}
+     * characters on the last line are also counted even if
+     * {@linkplain String#isBlank() blank}. The <i>min</i> value is the smallest
+     * of these counts.
      * <p>
-     * For each non-blank line, <i>min</i> leading white space characters are
-     * removed. Each white space character is treated as a single character. In
-     * particular, the tab character {@code "\t"} (U+0009) is considered a
-     * single character; it is not expanded.
+     * For each {@linkplain String#isBlank() non-blank} line, <i>min</i> leading
+     * {@linkplain Character#isWhitespace(int) white space} characters are removed,
+     * and any trailing {@linkplain Character#isWhitespace(int) white space}
+     * characters are removed. {@linkplain String#isBlank() Blank} lines are
+     * replaced with the empty string.
+     *
      * <p>
-     * The trailing white space of each line is also removed.
-     * </p>
-     * <p>
-     * Each line is suffixed with a line feed character {@code "\n"} (U+000A),
-     * except for the last line. The last line is suffixed with a line feed
-     * character {@code "\n"} (U+000A) only if the original last line was blank.
-     * <p>
-     * Finally, the lines are concatenated into a single string and returned.
+     * Finally, the lines are joined into a new string, using the LF character
+     * {@code "\n"} (U+000A) to separate lines.
      *
      * @apiNote
      * This method's primary purpose is to shift a block of lines as far as
      * possible to the left, while preserving relative indentation. Lines
-     * that were indented the least will thus have no leading white space.
+     * that were indented the least will thus have no leading
+     * {@linkplain Character#isWhitespace(int) white space}.
      *
-     * Example:
-     * <blockquote><pre>
-     * String s = ("   This is the first line\n" +
-     *             "       This is the second line\n").stripIndent();
+     * @implNote
+     * This method treats all {@linkplain Character#isWhitespace(int) white space}
+     * characters as having equal width. As long as the indentation on every
+     * line is consistently composed of the same character sequences, then the
+     * result will be as described above.
      *
-     * returns
-     * This is the first line
-     *     This is the second line
-     * </pre></blockquote>
-     *
-     * @return string with margins removed and line terminators normalized
+     * @return string with incidental indentation removed and line
+     *         terminators normalized
      *
      * @see String#lines()
      * @see String#isBlank()
@@ -2947,8 +2966,8 @@ public final class String
      *
      * @since 13
      *
-     * @deprecated  Preview feature associated with Text Blocks.
-     *              Use at your own risk.
+     * @deprecated  This method is associated with text blocks, a preview language feature.
+     *              Text blocks and/or this method may be changed or removed in a future release.
      */
     @Deprecated(forRemoval=true, since="13")
     public String stripIndent() {
@@ -2964,8 +2983,9 @@ public final class String
             .map(line -> {
                 int firstNonWhitespace = line.indexOfNonWhitespace();
                 int lastNonWhitespace = line.lastIndexOfNonWhitespace();
+                int incidentalWhitespace = Math.min(outdent, firstNonWhitespace);
                 return firstNonWhitespace > lastNonWhitespace
-                    ? "" : line.substring(Math.min(outdent, firstNonWhitespace), lastNonWhitespace);
+                    ? "" : line.substring(incidentalWhitespace, lastNonWhitespace);
             })
             .collect(Collectors.joining("\n", "", optOut ? "\n" : ""));
     }
@@ -2985,16 +3005,15 @@ public final class String
             outdent = Integer.min(outdent, lastLine.length());
         }
         return outdent;
-   }
+    }
 
     /**
-     * Translates all escape sequences in the string into characters
-     * represented by those escapes specified in section
-     * 3.10.6 of the <cite>The Java&trade; Language Specification</cite>.
+     * Returns a string whose value is this string, with escape sequences
+     * translated as if in a string literal.
      * <p>
      * Escape sequences are translated as follows;
      * <table class="plain">
-     *   <caption style="display:none">Escape sequences</caption>
+     *   <caption style="display:none">Translation</caption>
      *   <thead>
      *   <tr>
      *     <th scope="col">Escape</th>
@@ -3005,42 +3024,42 @@ public final class String
      *   <tr>
      *     <td>{@code \u005Cb}</td>
      *     <td>backspace</td>
-     *     <td>{@code \u005Cu0008}</td>
+     *     <td>{@code U+0008}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005Ct}</td>
      *     <td>horizontal tab</td>
-     *     <td>{@code \u005Cu0009}</td>
+     *     <td>{@code U+0009}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005Cn}</td>
      *     <td>line feed</td>
-     *     <td>{@code \u005Cu000A}</td>
+     *     <td>{@code U+000A}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005Cf}</td>
      *     <td>form feed</td>
-     *     <td>{@code \u005Cu000C}</td>
+     *     <td>{@code U+000C}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005Cr}</td>
      *     <td>carriage return</td>
-     *     <td>{@code \u005Cu000D}</td>
+     *     <td>{@code U+000D}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005C"}</td>
      *     <td>double quote</td>
-     *     <td>{@code \u005Cu0022}</td>
+     *     <td>{@code U+0022}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005C'}</td>
      *     <td>single quote</td>
-     *     <td>{@code \u005Cu0027}</td>
+     *     <td>{@code U+0027}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005C\u005C}</td>
      *     <td>backslash</td>
-     *     <td>{@code \u005Cu005C}</td>
+     *     <td>{@code U+005C}</td>
      *   </tr>
      *   <tr>
      *     <td>{@code \u005C0 - \u005C377}</td>
@@ -3048,21 +3067,25 @@ public final class String
      *     <td>code point equivalents</td>
      *   </tr>
      * </table>
-     * <p>
-     * Octal escapes \u005C0 - \u005C377 are translated to their code
-     * point equivalents.
      *
-     * @throws MalformedEscapeException when an escape sequence is malformed.
+     * @implNote
+     * This method does <em>not</em> translate Unicode escapes such as "{@code \u005cu2022}".
+     * Unicode escapes are translated by the Java compiler when reading input characters and
+     * are not part of the string literal specification.
      *
-     * @return String with all escapes translated.
+     * @throws IllegalArgumentException when an escape sequence is malformed.
+     *
+     * @return String with escape sequences translated.
+     *
+     * @jls 3.10.7 Escape Sequences
      *
      * @since 13
      *
-     * @deprecated  Preview feature associated with Text Blocks.
-     *              Use at your own risk.
+     * @deprecated  This method is associated with text blocks, a preview language feature.
+     *              Text blocks and/or this method may be changed or removed in a future release.
      */
     @Deprecated(forRemoval=true, since="13")
-    public String translateEscapes() throws MalformedEscapeException {
+    public String translateEscapes() {
         if (isEmpty()) {
             return "";
         }
@@ -3091,34 +3114,30 @@ public final class String
                     ch = '\t';
                     break;
                 case '\'':
-                    ch = '\'';
-                    break;
                 case '\"':
-                    ch = '\"';
-                    break;
                 case '\\':
-                    // ch = '\\';
+                    // as is
                     break;
                 case '0': case '1': case '2': case '3':
                 case '4': case '5': case '6': case '7':
-                    int limit = ch <= '3' ? 2 : 1;
-                    int code = Character.digit(ch, 8);
-                    for (int i = 0; i < limit && from < length; i++) {
+                    int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
+                    int code = ch - '0';
+                    while (from < limit) {
                         ch = chars[from];
-                        int digit = Character.digit(ch, 8);
-                        if (digit < 0) {
+                        if (ch < '0' || '7' < ch) {
                             break;
                         }
                         from++;
-                        code = code << 3 | digit;
-                    }
-                    if (0377 < code) {
-                        throw new MalformedEscapeException(from);
+                        code = (code << 3) | (ch - '0');
                     }
                     ch = (char)code;
                     break;
-                default:
-                    throw new MalformedEscapeException(from);
+                default: {
+                    String msg = String.format(
+                        "Invalid escape sequence: \\%c \\\\u%04X",
+                        ch, (int)ch);
+                    throw new IllegalArgumentException(msg);
+                }
                 }
             }
 
@@ -3288,6 +3307,30 @@ public final class String
      */
     public static String format(Locale l, String format, Object... args) {
         return new Formatter(l).format(format, args).toString();
+    }
+
+    /**
+     * Formats using this string as the format string, and the supplied
+     * arguments.
+     *
+     * @implSpec This method is equivalent to {@code String.format(this, args)}.
+     *
+     * @param  args
+     *         Arguments referenced by the format specifiers in this string.
+     *
+     * @return  A formatted string
+     *
+     * @see  java.lang.String#format(String,Object...)
+     * @see  java.util.Formatter
+     *
+     * @since 13
+     *
+     * @deprecated  This method is associated with text blocks, a preview language feature.
+     *              Text blocks and/or this method may be changed or removed in a future release.
+     */
+    @Deprecated(forRemoval=true, since="13")
+    public String formatted(Object... args) {
+        return new Formatter().format(this, args).toString();
     }
 
     /**

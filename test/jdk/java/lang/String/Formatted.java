@@ -23,35 +23,32 @@
 
 /*
  * @test
- * @summary This exercises String#stripIndent patterns and limits.
- * @run main StripIndent
+ * @summary Unit tests for instance versions of String#format
+ * @run main Formatted
  */
 
-public class StripIndent {
-    public static void main(String... arg) {
+import java.util.Locale;
+
+public class Formatted {
+    public static void main(String[] args) {
         test1();
     }
 
     /*
-     * Case combinations.
+     * Test String#formatted(Object... args) functionality.
      */
     static void test1() {
-        verify("", "");
-        verify("abc", "abc");
-        verify("   abc", "abc");
-        verify("abc   ", "abc");
-        verify("   abc\n   def\n   ", "abc\ndef\n");
-        verify("   abc\n   def\n", "   abc\n   def\n");
-        verify("   abc\n   def", "abc\ndef");
-        verify("   abc\n      def\n   ", "abc\n   def\n");
+        check("formatted(Object... args)",
+                "Test this %s".formatted("and that"),
+                String.format("Test this %s", "and that"));
     }
 
-    static void verify(String a, String b) {
-        if (!a.stripIndent().equals(b)) {
-            System.err.format("\"%s\" not equal \"%s\"%n", a, b);
+    static void check(String test, String output, String expected) {
+        if (output != expected && (output == null || !output.equals(expected))) {
+            System.err.println("Testing " + test + ": unexpected result");
+            System.err.println("Output: " + output);
+            System.err.println("Expected: " + expected);
             throw new RuntimeException();
         }
     }
 }
-
-

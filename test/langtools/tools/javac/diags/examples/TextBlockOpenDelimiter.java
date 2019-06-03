@@ -21,37 +21,14 @@
  * questions.
  */
 
-/*
- * @test
- * @summary This exercises String#stripIndent patterns and limits.
- * @run main StripIndent
- */
+ // key: compiler.warn.preview.feature.use.plural
+ // key: compiler.misc.feature.text.blocks
+ // key: compiler.err.illegal.text.block.open
+ // options: --enable-preview -source 13 -Xlint:preview
 
-public class StripIndent {
-    public static void main(String... arg) {
-        test1();
-    }
-
-    /*
-     * Case combinations.
-     */
-    static void test1() {
-        verify("", "");
-        verify("abc", "abc");
-        verify("   abc", "abc");
-        verify("abc   ", "abc");
-        verify("   abc\n   def\n   ", "abc\ndef\n");
-        verify("   abc\n   def\n", "   abc\n   def\n");
-        verify("   abc\n   def", "abc\ndef");
-        verify("   abc\n      def\n   ", "abc\n   def\n");
-    }
-
-    static void verify(String a, String b) {
-        if (!a.stripIndent().equals(b)) {
-            System.err.format("\"%s\" not equal \"%s\"%n", a, b);
-            throw new RuntimeException();
-        }
+class TextBlockOpenDelimiter {
+    String m() {
+        return """xxxx
+               """;
     }
 }
-
-
