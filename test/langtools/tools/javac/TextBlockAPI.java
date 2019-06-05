@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8223967
  * @summary Unit tests for Text Block language changes
  * @library /tools/lib
  * @modules jdk.compiler/com.sun.tools.javac.api

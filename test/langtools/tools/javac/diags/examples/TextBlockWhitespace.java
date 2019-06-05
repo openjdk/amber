@@ -24,6 +24,7 @@
  // key: compiler.warn.preview.feature.use.plural
  // key: compiler.misc.feature.text.blocks
  // key: compiler.warn.inconsistent.white.space.indentation
+ // key: compiler.warn.trailing.white.space.will.be.removed
  // options: --enable-preview -source 13 -Xlint:preview,text-blocks
 
 class TextBlockWhitespace {

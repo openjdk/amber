@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8223775
  * @summary This exercises String#stripIndent patterns and limits.
  * @run main StripIndent
  */

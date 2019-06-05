@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8223967
  * @summary Unit tests for Text Block language changes
  * @compile --enable-preview -source 13 -encoding utf8 TextBlockLang.java
  * @run main/othervm --enable-preview TextBlockLang

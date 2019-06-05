@@ -2949,6 +2949,10 @@ public final class String
      * possible to the left, while preserving relative indentation. Lines
      * that were indented the least will thus have no leading
      * {@linkplain Character#isWhitespace(int) white space}.
+     * The line count of the result will be the same as line count of this
+     * string.
+     * If this string ends with a line terminator then the result will end
+     * with a line terminator.
      *
      * @implNote
      * This method treats all {@linkplain Character#isWhitespace(int) white space}
@@ -3018,7 +3022,7 @@ public final class String
      *   <tr>
      *     <th scope="col">Escape</th>
      *     <th scope="col">Name</th>
-     *     <th scope="col">Unicode/action</th>
+     *     <th scope="col">Translation</th>
      *   </tr>
      *   </thead>
      *   <tr>
@@ -3657,7 +3661,7 @@ public final class String
         return value;
     }
 
-    private boolean isLatin1() {
+    boolean isLatin1() {
         return COMPACT_STRINGS && coder == LATIN1;
     }
 

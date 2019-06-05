@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * bug 8203444
  * @summary Unit tests for instance versions of String#format
  * @run main Formatted
  */

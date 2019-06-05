@@ -39,6 +39,8 @@ import com.sun.tools.javac.util.JCDiagnostic.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.CharBuffer;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.sun.tools.javac.parser.Tokens.*;
 import static com.sun.tools.javac.util.LayoutCharacters.*;
@@ -315,48 +317,62 @@ public class JavaTokenizer {
             return line.length() - line.stripLeading().length();
         }
 
-        /** Verify that the incidental indentation of all lines in the string
-         *  is identical.
+        enum WhitespaceChecks {
+            INCONSISTENT,
+            TRAILING
+        };
+
+        /** Check that the use of white space in content is not problematic.
          */
-        static boolean checkIncidentalWhitespace(String string) {
+        static Set<WhitespaceChecks> checkWhitespace(String string) {
+            // Start with empty result set.
+            Set<WhitespaceChecks> checks = new HashSet<>();
             // No need to check empty strings.
             if (string.isEmpty()) {
-                return true;
+                return checks;
             }
-            // No need to check if opting out (last line is empty.)
+            // Maximum common indentation.
+            int outdent = 0;
+            // No need to check indentation if opting out (last line is empty.)
             char lastChar = string.charAt(string.length() - 1);
             boolean optOut = lastChar == '\n' || lastChar == '\r';
-            if (optOut)       {
-                return true;
-            }
             // Split string based at line terminators.
             String[] lines = string.split("\\R");
             int length = lines.length;
-            // Prime with the last line indentation (may be blank.)
+            // Extract last line.
             String lastLine = lines[length - 1];
-            // Maximum common indentation.
-            int outdent = indent(lastLine);
-            for (String line : lines) {
-                // Blanks lines have no influence (last line accounted.)
-                if (!line.isBlank()) {
-                    outdent = Integer.min(outdent, indent(line));
-                    if (outdent == 0) {
-                        return true;
-                    }
-                }
-            }
-            // If any line has no indentation then same as opting out.
-            if (outdent != 0) {
-                // Last line is representative.
-                String start = lastLine.substring(0, outdent);
+            if (!optOut) {
+                // Prime with the last line indentation (may be blank.)
+                outdent = indent(lastLine);
                 for (String line : lines) {
-                    // Fail if a line does not have the same indentation.
-                    if (!line.isBlank() && !line.startsWith(start)) {
-                        return false;
+                    // Blanks lines have no influence (last line accounted for.)
+                    if (!line.isBlank()) {
+                        outdent = Integer.min(outdent, indent(line));
+                        if (outdent == 0) {
+                            break;
+                        }
                     }
                 }
             }
-            return true;
+            // Last line is representative.
+            String start = lastLine.substring(0, outdent);
+            for (String line : lines) {
+                // Fail if a line does not have the same indentation.
+                if (!line.isBlank() && !line.startsWith(start)) {
+                    // Mix of different white space
+                    checks.add(WhitespaceChecks.INCONSISTENT);
+                }
+                // Line has content even after indent is removed.
+                if (outdent < line.length()) {
+                    // Is the last character a white space.
+                    lastChar = line.charAt(line.length() - 1);
+                    if (Character.isWhitespace(lastChar)) {
+                        // Has trailing white space.
+                        checks.add(WhitespaceChecks.TRAILING);
+                    }
+                }
+            }
+            return checks;
         }
 
         /** Invoke String::stripIndent through reflection.
@@ -1006,10 +1022,17 @@ public class JavaTokenizer {
                     // If a text block.
                     if (shouldStripIndent) {
                         // Verify that the incidental indentation is consistent.
-                        if (lint.isEnabled(LintCategory.TEXT_BLOCKS) &&
-                            !TextBlockSupport.checkIncidentalWhitespace(string)) {
-                            lexWarning(LintCategory.TEXT_BLOCKS, pos,
-                                       Warnings.InconsistentWhiteSpaceIndentation);
+                        if (lint.isEnabled(LintCategory.TEXT_BLOCKS)) {
+                            Set<TextBlockSupport.WhitespaceChecks> checks =
+                                    TextBlockSupport.checkWhitespace(string);
+                            if (checks.contains(TextBlockSupport.WhitespaceChecks.INCONSISTENT)) {
+                                lexWarning(LintCategory.TEXT_BLOCKS, pos,
+                                        Warnings.InconsistentWhiteSpaceIndentation);
+                            }
+                            if (checks.contains(TextBlockSupport.WhitespaceChecks.TRAILING)) {
+                                lexWarning(LintCategory.TEXT_BLOCKS, pos,
+                                        Warnings.TrailingWhiteSpaceWillBeRemoved);
+                            }
                         }
                         // Remove incidental indentation.
                         string = TextBlockSupport.stripIndent(string);

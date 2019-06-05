@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8223780
  * @summary This exercises String#translateEscapes patterns and limits.
  * @run main TranslateEscapes
  */
