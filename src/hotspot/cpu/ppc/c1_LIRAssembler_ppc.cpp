@@ -35,7 +35,9 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/cardTableBarrierSet.hpp"
+#include "memory/universe.hpp"
 #include "nativeInst_ppc.hpp"
+#include "oops/compressedOops.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/safepointMechanism.inline.hpp"
@@ -77,6 +79,9 @@ int LIR_Assembler::check_icache() {
   return offset;
 }
 
+void LIR_Assembler::clinit_barrier(ciMethod* method) {
+  ShouldNotReachHere(); // not implemented
+}
 
 void LIR_Assembler::osr_entry() {
   // On-stack-replacement entry sequence:
@@ -1237,7 +1242,7 @@ void LIR_Assembler::reg2mem(LIR_Opr from_reg, LIR_Opr dest, BasicType type,
   int disp_value = addr->disp();
   bool needs_patching = (patch_code != lir_patch_none);
   bool compress_oop = (type == T_ARRAY || type == T_OBJECT) && UseCompressedOops && !wide &&
-                      Universe::narrow_oop_mode() != Universe::UnscaledNarrowOop;
+                      CompressedOops::mode() != CompressedOops::UnscaledNarrowOop;
   bool load_disp = addr->index()->is_illegal() && !Assembler::is_simm16(disp_value);
   bool use_R29 = compress_oop && load_disp; // Avoid register conflict, also do null check before killing R29.
   // Null check for large offsets in LIRGenerator::do_StoreField.

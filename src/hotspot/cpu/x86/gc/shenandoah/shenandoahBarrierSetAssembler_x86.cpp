@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -23,6 +23,7 @@
 
 #include "precompiled.hpp"
 #include "gc/shenandoah/shenandoahBarrierSetAssembler.hpp"
+#include "gc/shenandoah/shenandoahForwarding.hpp"
 #include "gc/shenandoah/shenandoahHeap.hpp"
 #include "gc/shenandoah/shenandoahHeapRegion.hpp"
 #include "gc/shenandoah/shenandoahHeuristics.hpp"
@@ -53,12 +54,14 @@ void ShenandoahBarrierSetAssembler::arraycopy_prologue(MacroAssembler* masm, Dec
 
   if (type == T_OBJECT || type == T_ARRAY) {
 #ifdef _LP64
-    if (!checkcast && !obj_int) {
-      // Save count for barrier
-      __ movptr(r11, count);
-    } else if (disjoint && obj_int) {
-      // Save dst in r11 in the disjoint case
-      __ movq(r11, dst);
+    if (!checkcast) {
+      if (!obj_int) {
+        // Save count for barrier
+        __ movptr(r11, count);
+      } else if (disjoint) {
+        // Save dst in r11 in the disjoint case
+        __ movq(r11, dst);
+      }
     }
 #else
     if (disjoint) {
@@ -123,13 +126,15 @@ void ShenandoahBarrierSetAssembler::arraycopy_epilogue(MacroAssembler* masm, Dec
 
   if (type == T_OBJECT || type == T_ARRAY) {
 #ifdef _LP64
-    if (!checkcast && !obj_int) {
-      // Save count for barrier
-      count = r11;
-    } else if (disjoint && obj_int) {
-      // Use the saved dst in the disjoint case
-      dst = r11;
-    } else if (checkcast) {
+    if (!checkcast) {
+      if (!obj_int) {
+        // Save count for barrier
+        count = r11;
+      } else if (disjoint && obj_int) {
+        // Use the saved dst in the disjoint case
+        dst = r11;
+      }
+    } else {
       tmp = rscratch1;
     }
 #else
@@ -312,18 +317,46 @@ void ShenandoahBarrierSetAssembler::satb_write_barrier_pre(MacroAssembler* masm,
   __ bind(done);
 }
 
-void ShenandoahBarrierSetAssembler::resolve_forward_pointer(MacroAssembler* masm, Register dst) {
+void ShenandoahBarrierSetAssembler::resolve_forward_pointer(MacroAssembler* masm, Register dst, Register tmp) {
   assert(ShenandoahCASBarrier, "should be enabled");
   Label is_null;
   __ testptr(dst, dst);
   __ jcc(Assembler::zero, is_null);
-  resolve_forward_pointer_not_null(masm, dst);
+  resolve_forward_pointer_not_null(masm, dst, tmp);
   __ bind(is_null);
 }
 
-void ShenandoahBarrierSetAssembler::resolve_forward_pointer_not_null(MacroAssembler* masm, Register dst) {
+void ShenandoahBarrierSetAssembler::resolve_forward_pointer_not_null(MacroAssembler* masm, Register dst, Register tmp) {
   assert(ShenandoahCASBarrier || ShenandoahLoadRefBarrier, "should be enabled");
-  __ movptr(dst, Address(dst, ShenandoahBrooksPointer::byte_offset()));
+  // The below loads the mark word, checks if the lowest two bits are
+  // set, and if so, clear the lowest two bits and copy the result
+  // to dst. Otherwise it leaves dst alone.
+  // Implementing this is surprisingly awkward. I do it here by:
+  // - Inverting the mark word
+  // - Test lowest two bits == 0
+  // - If so, set the lowest two bits
+  // - Invert the result back, and copy to dst
+
+  bool borrow_reg = (tmp == noreg);
+  if (borrow_reg) {
+    // No free registers available. Make one useful.
+    tmp = rscratch1;
+    __ push(tmp);
+  }
+
+  Label done;
+  __ movptr(tmp, Address(dst, oopDesc::mark_offset_in_bytes()));
+  __ notptr(tmp);
+  __ testb(tmp, markOopDesc::marked_value);
+  __ jccb(Assembler::notZero, done);
+  __ orptr(tmp, markOopDesc::marked_value);
+  __ notptr(tmp);
+  __ mov(dst, tmp);
+  __ bind(done);
+
+  if (borrow_reg) {
+    __ pop(tmp);
+  }
 }
 
 
@@ -333,13 +366,7 @@ void ShenandoahBarrierSetAssembler::load_reference_barrier_not_null(MacroAssembl
   Label done;
 
   Address gc_state(r15_thread, in_bytes(ShenandoahThreadLocalData::gc_state_offset()));
-  __ testb(gc_state, ShenandoahHeap::HAS_FORWARDED | ShenandoahHeap::EVACUATION | ShenandoahHeap::TRAVERSAL);
-  __ jccb(Assembler::zero, done);
-
-  // Heap is unstable, need to perform the resolve even if LRB is inactive
-  resolve_forward_pointer_not_null(masm, dst);
-
-  __ testb(gc_state, ShenandoahHeap::EVACUATION | ShenandoahHeap::TRAVERSAL);
+  __ testb(gc_state, ShenandoahHeap::HAS_FORWARDED);
   __ jccb(Assembler::zero, done);
 
    if (dst != rax) {
@@ -472,55 +499,6 @@ void ShenandoahBarrierSetAssembler::store_at(MacroAssembler* masm, DecoratorSet 
   } else {
     BarrierSetAssembler::store_at(masm, decorators, type, dst, val, tmp1, tmp2);
   }
-}
-
-void ShenandoahBarrierSetAssembler::tlab_allocate(MacroAssembler* masm,
-                                                  Register thread, Register obj,
-                                                  Register var_size_in_bytes,
-                                                  int con_size_in_bytes,
-                                                  Register t1, Register t2,
-                                                  Label& slow_case) {
-  assert_different_registers(obj, t1, t2);
-  assert_different_registers(obj, var_size_in_bytes, t1);
-  Register end = t2;
-  if (!thread->is_valid()) {
-#ifdef _LP64
-    thread = r15_thread;
-#else
-    assert(t1->is_valid(), "need temp reg");
-    thread = t1;
-    __ get_thread(thread);
-#endif
-  }
-
-  __ verify_tlab();
-
-  __ movptr(obj, Address(thread, JavaThread::tlab_top_offset()));
-  if (var_size_in_bytes == noreg) {
-    __ lea(end, Address(obj, con_size_in_bytes + ShenandoahBrooksPointer::byte_size()));
-  } else {
-    __ addptr(var_size_in_bytes, ShenandoahBrooksPointer::byte_size());
-    __ lea(end, Address(obj, var_size_in_bytes, Address::times_1));
-  }
-  __ cmpptr(end, Address(thread, JavaThread::tlab_end_offset()));
-  __ jcc(Assembler::above, slow_case);
-
-  // update the tlab top pointer
-  __ movptr(Address(thread, JavaThread::tlab_top_offset()), end);
-
-  // Initialize brooks pointer
-#ifdef _LP64
-  __ incrementq(obj, ShenandoahBrooksPointer::byte_size());
-#else
-  __ incrementl(obj, ShenandoahBrooksPointer::byte_size());
-#endif
-  __ movptr(Address(obj, ShenandoahBrooksPointer::byte_offset()), obj);
-
-  // recover var_size_in_bytes if necessary
-  if (var_size_in_bytes == end) {
-    __ subptr(var_size_in_bytes, obj);
-  }
-  __ verify_tlab();
 }
 
 // Special Shenandoah CAS implementation that handles false negatives
@@ -721,9 +699,10 @@ void ShenandoahBarrierSetAssembler::restore_vector_registers(MacroAssembler* mas
   }
 }
 
+#undef __
+
 #ifdef COMPILER1
 
-#undef __
 #define __ ce->masm()->
 
 void ShenandoahBarrierSetAssembler::gen_pre_barrier_stub(LIR_Assembler* ce, ShenandoahPreBarrierStub* stub) {
@@ -850,7 +829,7 @@ address ShenandoahBarrierSetAssembler::generate_shenandoah_lrb(StubCodeGenerator
   address start = __ pc();
 
 #ifdef _LP64
-  Label not_done;
+  Label resolve_oop, slow_path;
 
   // We use RDI, which also serves as argument register for slow call.
   // RAX always holds the src object ptr, except after the slow call and
@@ -872,13 +851,31 @@ address ShenandoahBarrierSetAssembler::generate_shenandoah_lrb(StubCodeGenerator
   // unlive: rdi
   __ testbool(r8);
   // unlive: r8
-  __ jccb(Assembler::notZero, not_done);
+  __ jccb(Assembler::notZero, resolve_oop);
 
   __ pop(r8);
   __ pop(rdi);
   __ ret(0);
 
-  __ bind(not_done);
+  __ bind(resolve_oop);
+
+  __ movptr(r8, Address(rax, oopDesc::mark_offset_in_bytes()));
+  // Test if both lowest bits are set. We trick it by negating the bits
+  // then test for both bits clear.
+  __ notptr(r8);
+  __ testb(r8, markOopDesc::marked_value);
+  __ jccb(Assembler::notZero, slow_path);
+  // Clear both lower bits. It's still inverted, so set them, and then invert back.
+  __ orptr(r8, markOopDesc::marked_value);
+  __ notptr(r8);
+  // At this point, r8 contains the decoded forwarding pointer.
+  __ mov(rax, r8);
+
+  __ pop(r8);
+  __ pop(rdi);
+  __ ret(0);
+
+  __ bind(slow_path);
 
   __ push(rcx);
   __ push(rdx);

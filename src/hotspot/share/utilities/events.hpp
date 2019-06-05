@@ -137,11 +137,6 @@ template <class T> class EventLogBase : public EventLog {
 // A simple wrapper class for fixed size text messages.
 template <size_t bufsz>
 class FormatStringLogMessage : public FormatBuffer<bufsz> {
- public:
-  // Wrap this buffer in a stringStream.
-  stringStream stream() {
-    return stringStream(this->_buf, this->size());
-  }
 };
 typedef FormatStringLogMessage<256> StringLogMessage;
 typedef FormatStringLogMessage<512> ExtendedStringLogMessage;
@@ -156,7 +151,7 @@ class FormatStringEventLog : public EventLogBase< FormatStringLogMessage<bufsz> 
     if (!this->should_log()) return;
 
     double timestamp = this->fetch_timestamp();
-    MutexLockerEx ml(&this->_mutex, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(&this->_mutex, Mutex::_no_safepoint_check_flag);
     int index = this->compute_log_index();
     this->_records[index].thread = thread;
     this->_records[index].timestamp = timestamp;
@@ -237,7 +232,7 @@ class Events : AllStatic {
 };
 
 inline void Events::log(Thread* thread, const char* format, ...) {
-  if (LogEvents) {
+  if (LogEvents && _messages != NULL) {
     va_list ap;
     va_start(ap, format);
     _messages->logv(thread, format, ap);
@@ -246,7 +241,7 @@ inline void Events::log(Thread* thread, const char* format, ...) {
 }
 
 inline void Events::log_exception(Thread* thread, const char* format, ...) {
-  if (LogEvents) {
+  if (LogEvents && _exceptions != NULL) {
     va_list ap;
     va_start(ap, format);
     _exceptions->logv(thread, format, ap);
@@ -255,13 +250,13 @@ inline void Events::log_exception(Thread* thread, const char* format, ...) {
 }
 
 inline void Events::log_exception(Thread* thread, Handle h_exception, const char* message, const char* file, int line) {
-  if (LogEvents) {
+  if (LogEvents && _exceptions != NULL) {
     _exceptions->log(thread, h_exception, message, file, line);
   }
 }
 
 inline void Events::log_redefinition(Thread* thread, const char* format, ...) {
-  if (LogEvents) {
+  if (LogEvents && _redefinitions != NULL) {
     va_list ap;
     va_start(ap, format);
     _redefinitions->logv(thread, format, ap);
@@ -270,13 +265,13 @@ inline void Events::log_redefinition(Thread* thread, const char* format, ...) {
 }
 
 inline void Events::log_class_unloading(Thread* thread, InstanceKlass* ik) {
-  if (LogEvents) {
+  if (LogEvents && _class_unloading != NULL) {
     _class_unloading->log(thread, ik);
   }
 }
 
 inline void Events::log_deopt_message(Thread* thread, const char* format, ...) {
-  if (LogEvents) {
+  if (LogEvents && _deopt_messages != NULL) {
     va_list ap;
     va_start(ap, format);
     _deopt_messages->logv(thread, format, ap);
@@ -291,7 +286,7 @@ inline void EventLogBase<T>::print_log_on(outputStream* out) {
     // Not yet attached? Don't try to use locking
     print_log_impl(out);
   } else {
-    MutexLockerEx ml(&_mutex, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(&_mutex, Mutex::_no_safepoint_check_flag);
     print_log_impl(out);
   }
 }
