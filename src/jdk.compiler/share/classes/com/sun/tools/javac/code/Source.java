@@ -189,6 +189,7 @@ public enum Source {
         SWITCH_MULTIPLE_CASE_LABELS(JDK13, Fragments.FeatureMultipleCaseLabels, DiagKind.PLURAL),
         SWITCH_RULE(JDK13, Fragments.FeatureSwitchRules, DiagKind.PLURAL),
         SWITCH_EXPRESSION(JDK13, Fragments.FeatureSwitchExpressions, DiagKind.PLURAL),
+        TEXT_BLOCKS(JDK13, Fragments.FeatureTextBlocks, DiagKind.PLURAL),
         CONCISE_METHOD_BODIES(JDK13, Fragments.FeatureConciseMethodBodies, DiagKind.PLURAL);
 
         enum DiagKind {
