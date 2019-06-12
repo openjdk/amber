@@ -1220,6 +1220,7 @@ public class ClassReader {
                     if (sym.kind == TYP) {
                         sym.flags_field |= RECORD;
                     }
+                    bp = bp + attrLen;
                 }
             }
         };
