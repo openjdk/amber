@@ -24,6 +24,7 @@
 /*
  * @test
  * @summary Basic pattern test
+ * @ignore
  * @run main PatternTypeTest1
  */
 public class PatternTypeTest1 {

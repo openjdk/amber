@@ -4,7 +4,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -21,40 +23,34 @@
  * questions.
  */
 
-/*
- * @test
- * @summary Basic pattern switch test
- * @compile PatternMatchTest1.java
- * @run main PatternMatchTest1
+package com.sun.source.tree;
+
+import javax.lang.model.element.Name;
+
+import java.util.List;
+
+/**
+ * XXX
  */
-public class PatternMatchTest1 {
+public interface DeconstructionPatternTree extends PatternTree {
 
-    public static void main(String[] args) throws Throwable {
+    /**
+     * XXX
+     * @return XXX
+     */
+    Tree getDeconstructor();
 
-        Integer i = 42;
-        String s = "Hello";
-        Object o = i;
+    /**
+     * XXX
+     * @return XXX
+     */
+    List<? extends PatternTree> getNestedPatterns();
 
-        switch (o) {
-            case var j: {
-                System.out.println("Matches a var!");
-                i++;
-                break;
-            }
-            default:
-                throw new AssertionError("Broken");
-        }
+    /**
+     * A binding variable name.
+     * @return something
+     */
+    Name getBinding();
 
-        switch (o) {
-            case String j:
-                throw new AssertionError("Broken");
-            default:
-                System.out.println("Good");
-                i++;
-                break;
-        }
-        if (i != 44) {
-            throw new AssertionError("Broken");
-        }
-    }
 }
+

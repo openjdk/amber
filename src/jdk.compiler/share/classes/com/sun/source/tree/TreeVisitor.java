@@ -266,6 +266,14 @@ public interface TreeVisitor<R,P> {
     R visitBindingPattern(BindingPatternTree node, P p);
 
     /**
+     * Visits an DeconstructionPatternTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitDeconstructionPattern(DeconstructionPatternTree node, P p);
+
+    /**
      * Visits a LiteralPattern node.
      * @param node the node being visited
      * @param p a parameter value

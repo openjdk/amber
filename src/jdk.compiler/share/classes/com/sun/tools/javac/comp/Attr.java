@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.comp;
 
+import sun.invoke.util.BytecodeName;
+
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -123,6 +125,7 @@ public class Attr extends JCTree.Visitor {
     final Dependencies dependencies;
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
+    final ClassReader reader;
 
     public static Attr instance(Context context) {
         Attr instance = context.get(attrKey);
@@ -158,6 +161,7 @@ public class Attr extends JCTree.Visitor {
         typeEnvs = TypeEnvs.instance(context);
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
+        reader = ClassReader.instance(context);
 
         Options options = Options.instance(context);
 
@@ -3849,6 +3853,37 @@ public class Attr extends JCTree.Visitor {
         result = tree.type;
     }
 
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        Type site = tree.type = attribType(tree.deconstructor, env);
+        ListBuffer<Type> components = new ListBuffer<>();
+        for (JCPattern n : tree.nested) {
+            components.append(attribExpr(n, env));
+        }
+        MethodSymbol foundPattern = null;
+        Iterable<Symbol> patterns = site.tsym.members().getSymbols(sym -> sym.kind == Kind.MTH && sym.name.startsWith(names.fromString("\\%pattern\\%")));
+        for (Symbol pattern : patterns) {
+            String[] parts = BytecodeName.toSourceName(pattern.name.toString()).split("\\$", 4);
+            if (!parts[2].contentEquals(site.tsym.name))
+                continue;
+            ListBuffer<Type> patternComponents = new ListBuffer<>();
+            byte[] sig = Convert.string2utf(parts[3]);
+            int[] idx = {1};
+            while (sig[idx[0]] != ')') {//TODO: handle errors
+                patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
+            }
+            if (types.isSameTypes(components.toList(), patternComponents.toList())) {
+                //found:
+                foundPattern = (MethodSymbol) pattern;
+                tree.innerTypes = patternComponents.toList();
+                break;
+            }
+        }
+        tree.extractorResolver = foundPattern;
+//        //TODO: some checks....
+        result = tree.type;
+    }
+
     public void visitLiteralPattern(JCLiteralPattern tree) {
         Type patType = attribTree(tree.value, env, resultInfo);
 
@@ -5576,7 +5611,7 @@ public class Attr extends JCTree.Visitor {
             }
             super.visitBindingPattern(that);
         }
-
+        //XXX: DeconstructionPattern!!!!
         @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {

@@ -111,7 +111,7 @@ public class ScopeTest extends JavacTemplateTestBase {
 
     private void assertFail(String expectedDiag, String block) {
         reset();
-        addCompileOptions("--enable-preview", "-source", "12");
+        addCompileOptions("--enable-preview", "-source", "13");
         program(block);
         try {
             compile();

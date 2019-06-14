@@ -48,6 +48,8 @@ import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree.*;
 
+import sun.invoke.util.BytecodeName;
+
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
@@ -1190,8 +1192,58 @@ public class TypeEnter implements Completer {
                     memberEnter.memberEnter(readResolve, env);
                 }
             }
+            List<Type> fieldTypes = TreeInfo.recordFields(tree).stream().map(f -> f.sym.type).collect(List.collector());
+            String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
+            String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
+            Name extractorName = names.fromString(extractorStr);
+            // public Extractor extractorName () { return ???; }
+            MethodType extractorMT = new MethodType(List.nil(), syms.extractorType, List.nil(), syms.methodClass);
+            MethodSymbol extractorSym = new MethodSymbol(
+                    Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
+                    extractorName, extractorMT, tree.sym);
+            tree.sym.members().enter(extractorSym);
         }
+        //where:
+            private String argsTypeSig(List<Type> typeList) {
+                LowerSignatureGenerator sg = new LowerSignatureGenerator();
+                sg.assembleSig(typeList);
+                return sg.toString();
+            }
 
+            /**
+             * Signature Generation
+             */
+            private class LowerSignatureGenerator extends Types.SignatureGenerator {
+
+                /**
+                 * An output buffer for type signatures.
+                 */
+                StringBuilder sb = new StringBuilder();
+
+                LowerSignatureGenerator() {
+                    super(types);
+                }
+
+                @Override
+                protected void append(char ch) {
+                    sb.append(ch);
+                }
+
+                @Override
+                protected void append(byte[] ba) {
+                    sb.append(new String(ba));
+                }
+
+                @Override
+                protected void append(Name name) {
+                    sb.append(name.toString());
+                }
+
+                @Override
+                public String toString() {
+                    return sb.toString();
+                }
+            }
     }
 
     private Symbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {

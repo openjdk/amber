@@ -225,6 +225,11 @@ public interface Tree {
         BINDING_PATTERN(BindingPatternTree.class),
 
         /**
+         * Used for instances of {@link DeconstructionPatternTree}.
+         */
+        DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
+
+        /**
          * Used for instances of {@link LiteralPatternTree}.
          */
         LITERAL_PATTERN(LiteralPatternTree.class),

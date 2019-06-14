@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic test for patterns in switch expression
- * @compile --enable-preview -source 12 SwitchExpressionWithPatterns.java
+ * @compile --enable-preview -source 13 SwitchExpressionWithPatterns.java
  * @run main/othervm --enable-preview SwitchExpressionWithPatterns
  */
 

@@ -25,8 +25,6 @@
 
 package com.sun.tools.javac.comp;
 
-import sun.invoke.util.BytecodeName;
-
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -58,6 +56,7 @@ import com.sun.tools.javac.tree.EndPosTable;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
+import com.sun.tools.javac.code.Kinds.Kind;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
@@ -2547,15 +2546,8 @@ public class Lower extends TreeTranslator {
     JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
         make_at(tree.pos());
         List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
-        String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
-        String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
-        Name extractorName = names.fromString(extractorStr);
-        // public Extractor extractorName () { return ???; }
-        MethodType extractorMT = new MethodType(List.nil(), syms.extractorType, List.nil(), syms.methodClass);
-        MethodSymbol extractorSym = new MethodSymbol(
-                Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
-                extractorName, extractorMT, tree.sym);
-        tree.sym.members().enter(extractorSym);
+        MethodSymbol extractorSym =
+                (MethodSymbol) tree.sym.members().getSymbols(sym -> sym.kind == Kind.MTH && (sym.flags() & Flags.RECORD) != 0).iterator().next();
 
         Name bootstrapName = names.makeLazyExtractor;
         LoadableConstant[] staticArgsValues = new LoadableConstant[1 + getterMethHandles.length];
@@ -2597,47 +2589,6 @@ public class Lower extends TreeTranslator {
             return make.MethodDef((MethodSymbol)msym, make.Block(0, List.of(make.Return(makeNewClass(tree.sym.type, args)))));
         } else {
             return make.Block(SYNTHETIC, List.nil());
-        }
-    }
-
-    private String argsTypeSig(List<Type> typeList) {
-        LowerSignatureGenerator sg = new LowerSignatureGenerator();
-        sg.assembleSig(typeList);
-        return sg.toString();
-    }
-
-    /**
-     * Signature Generation
-     */
-    private class LowerSignatureGenerator extends Types.SignatureGenerator {
-
-        /**
-         * An output buffer for type signatures.
-         */
-        StringBuilder sb = new StringBuilder();
-
-        LowerSignatureGenerator() {
-            super(types);
-        }
-
-        @Override
-        protected void append(char ch) {
-            sb.append(ch);
-        }
-
-        @Override
-        protected void append(byte[] ba) {
-            sb.append(new String(ba));
-        }
-
-        @Override
-        protected void append(Name name) {
-            sb.append(name.toString());
-        }
-
-        @Override
-        public String toString() {
-            return sb.toString();
         }
     }
 

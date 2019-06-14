@@ -1,7 +1,7 @@
 /*
  * @test
  * @summary Basic tests for bindings from instanceof
- * @compile BindingsTest1.java
+ * @compile -doe BindingsTest1.java
  * @run main BindingsTest1
  */
 
@@ -42,6 +42,7 @@ public class BindingsTest1 {
         }
 
         // Test for (e1 || e2).F = union(e1.F, e2.F)
+        //XXX:
         if (!(o1 instanceof String s) || !(o3 instanceof Integer in)){
         } else {
             s.length();
