@@ -51,9 +51,12 @@ import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
+import com.sun.tools.javac.code.Type.ClassType;
 import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
+import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+import java.util.Iterator;
 
 /** This pass implements dataflow analysis for Java programs though
  *  different AST visitor steps. Liveness analysis (see AliveAnalyzer) checks that
@@ -745,6 +748,9 @@ public class Flow {
                                 case LITERALPATTERN: {
                                     break;  // does not dominate any other pattern.
                                 }
+                                case DECONSTRUCTIONPATTERN: {
+                                    break; //TODO: domination for deconstruction patterns
+                                }
                                 default: {
                                     Assert.check(false);
                                     break;
@@ -800,6 +806,10 @@ public class Flow {
                     constants.add(s.name);
                 }
             }
+            Set<Type> permittedTypes = new HashSet<>();
+            if (tree.selector.type.hasTag(CLASS) && ((ClassType) tree.selector.type).permitted.nonEmpty()) {
+                ((ClassType) tree.selector.type).permitted.stream().forEach(permittedTypes::add);
+            }
             boolean hasDefault = false;
             Liveness prevAlive = alive;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
@@ -817,6 +827,20 @@ public class Flow {
                             if (lit.type != null)
                                 constants.remove(lit.type.constValue());
                         }
+                        if (permittedTypes != null) {
+                            if (pat.hasTag(BINDINGPATTERN)) {
+                                JCPattern bindingPattern = pat;
+                                Iterator<Type> permIt = permittedTypes.iterator();
+                                while (permIt.hasNext()) {
+                                    if (types.isSameType(permIt.next(), bindingPattern.type)) {
+                                        permIt.remove();
+                                        break;
+                                    }
+                                }
+                            } else {
+                                //TODO: deconstructor patterns?
+                            }
+                        }
                     }
                 }
                 scanStats(c.stats);
@@ -830,7 +854,7 @@ public class Flow {
                     }
                 }
             }
-            if ((constants == null || !constants.isEmpty()) && !hasDefault) {
+            if ((constants == null || !constants.isEmpty()) && (permittedTypes == null || !permittedTypes.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);
             }
             alive = prevAlive;

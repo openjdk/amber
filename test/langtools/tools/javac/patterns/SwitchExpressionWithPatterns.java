@@ -46,6 +46,8 @@ public class SwitchExpressionWithPatterns {
             assertEquals(3, f.applyAsInt((long) 0));
             assertEquals(3, f.applyAsInt((float) 0));
             assertEquals(4, f.applyAsInt((byte) 13));
+            assertEquals(105, f.applyAsInt(new R(0, 5)));
+            assertEquals(7, f.applyAsInt(new R(1, 6)));
         }
     }
 
@@ -55,6 +57,8 @@ public class SwitchExpressionWithPatterns {
             case 41: check++; //fall-through
             case Integer i: check++; break check;
             case Long l, Float f: break 3;
+            case R(0, var j): break 100 + j;
+            case R(var i, var j): break i + j;
             default: break 4;
         };
 
@@ -66,6 +70,8 @@ public class SwitchExpressionWithPatterns {
             case 41 -> 2;
             case Integer j -> { break 1; }
             case Long l, Float f -> 3;
+            case R(0, var j) -> 100 + j;
+            case R(var i, var j) -> i + j;
             default -> { break 4; }
         };
     }
@@ -76,6 +82,8 @@ public class SwitchExpressionWithPatterns {
             case 41: check++; //fall-through
             case Integer j: check++; break;
             case Long l, Float f: check = 3; break;
+            case R(0, var j): check = 100 + j; break;
+            case R(var i, var j): check = i + j; break;
             default: check = 4; break;
         }
         return check;
@@ -87,6 +95,8 @@ public class SwitchExpressionWithPatterns {
             case 41 -> check = 2;
             case Integer j -> { check = 1; }
             case Long l, Float f -> check = 3;
+            case R(0, var j) -> check = 100 + j;
+            case R(var i, var j) -> check = i + j;
             default -> { check = 4; }
         };
         return check;
@@ -96,4 +106,6 @@ public class SwitchExpressionWithPatterns {
         if (expected != actual)
             throw new AssertionError("Expected: " + expected + ", actual: " + actual);
     }
+
+    record R(int i, int j);
 }

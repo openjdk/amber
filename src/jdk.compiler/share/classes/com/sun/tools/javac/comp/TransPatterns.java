@@ -306,11 +306,11 @@ public class TransPatterns extends TreeTranslator {
             for (int i = 0; i < ((JCDeconstructionPattern) patt).getNestedPatterns().size(); i++) {
                 JCPattern nested = ((JCDeconstructionPattern) patt).getNestedPatterns().get(i);
                 params[i + 1] = preparePatternExtractor(nested, nested.type, nestedBindings[i] = new ListBuffer<>());
-                if (nested.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
-                    bindingVars.append(syms.lengthVar);
-                } else {
+                if (nested.hasTag(Tag.BINDINGPATTERN)) {
                     bindingVars.appendList(nestedBindings[i].toList());
                     nestedBindings[i].clear();
+                } else {
+                    bindingVars.append(syms.lengthVar);
                 }
             }
             
@@ -622,10 +622,25 @@ public class TransPatterns extends TreeTranslator {
                     List<JCStatement> stats = clause.stats;
                     if (clause.completesNormally) {
                         stats = stats.append(make.at(tree.pos).Exec(make.Assign(make.Ident(fallthroughSym), make.Literal(BOOLEAN, 1).setType(syms.booleanType)).setType(syms.booleanType)));
+                    } else {
+                        JCBreak stop = make.at(tree.pos).Break(null);
+                        stop.target = pendingMatchLabel;
+                        stats = stats.append(stop);
                     }
                     body = make.Block(0, stats);
                     JCStatement translatedIf = translate(make.If(jcMatches, body, null));
-                    JCIf testStatement = translatedIf.hasTag(Tag.IF) ? (JCIf)translatedIf : (JCIf) ((JCBlock)translatedIf).stats.tail.head;
+                    JCIf testStatement = null;
+
+                    if (translatedIf.hasTag(Tag.IF)) {
+                        testStatement = (JCIf)translatedIf;
+                    } else {
+                        for (JCStatement st : ((JCBlock)translatedIf).stats) {
+                            if (st.hasTag(Tag.IF)) {
+                                testStatement = (JCIf) st;
+                                break;
+                            }
+                        }
+                    }
 
                     testStatement.cond = makeBinary(Tag.OR,
                             make.Ident(fallthroughSym),
