@@ -26,6 +26,7 @@
 package jdk.javadoc.internal.doclets.toolkit;
 
 import java.io.*;
+import java.lang.ref.*;
 import java.util.*;
 
 import javax.lang.model.element.Element;

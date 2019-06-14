@@ -45,6 +45,7 @@ import static javax.lang.model.util.ElementFilter.methodsIn;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Accessors.Kind;
 import com.sun.tools.javac.code.Attribute.Compound;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.ExportsFlag;
@@ -462,6 +463,8 @@ public class JavacElements implements Elements {
         Symbol sym = cast(Symbol.class, e);
         if ((sym.flags() & Flags.GENERATEDCONSTR) != 0)
             return Origin.MANDATED;
+        if ((sym.flags() & (Flags.RECORD | Flags.MANDATED)) != 0)
+            return Origin.MANDATED;
         //TypeElement.getEnclosedElements does not return synthetic elements,
         //and most synthetic elements are not read from the classfile anyway:
         return Origin.EXPLICIT;
@@ -799,5 +802,24 @@ public class JavacElements implements Elements {
 
     public void newRound() {
         resultCache.clear();
+    }
+
+    @Override
+    public ExecutableElement getterFor(VariableElement variableElement) {
+        return accessorFor(Kind.GET, variableElement);
+    }
+
+    @Override
+    public ExecutableElement setterFor(VariableElement variableElement) {
+        return accessorFor(Kind.SET, variableElement);
+    }
+
+    private ExecutableElement accessorFor(Accessors.Kind kind, VariableElement variableElement) {
+        for (Pair<Accessors.Kind, MethodSymbol> accessor : ((VarSymbol)variableElement).accessors) {
+            if (accessor.fst == kind) {
+                return accessor.snd;
+            }
+        }
+        return null;
     }
 }

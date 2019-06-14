@@ -1,0 +1,2 @@
+NoAddFieldsCanBeDeclaredInDatumTest.java:9:13: compiler.err.record.fields.must.be.in.header
+1 error

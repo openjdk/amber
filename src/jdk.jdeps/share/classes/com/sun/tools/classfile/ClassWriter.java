@@ -642,6 +642,22 @@ public class ClassWriter {
         }
 
         @Override
+        public Void visitRecord(Record_attribute attr, ClassOutputStream out) {
+            out.writeShort(attr.num_params);
+            for (Record_attribute.Param_data e: attr.params)
+                writeParamData(e, out);
+            new AttributeWriter().write(attr.attributes, out);
+            return null;
+        }
+
+        protected void writeParamData(Record_attribute.Param_data pd, ClassOutputStream out) {
+            out.writeShort(pd.param_name_index);
+            out.writeShort(pd.param_flags);
+            out.writeShort(pd.param_descriptor);
+            out.writeShort(pd.param_signature);
+        }
+
+        @Override
         public Void visitRuntimeInvisibleAnnotations(RuntimeInvisibleAnnotations_attribute attr, ClassOutputStream out) {
             annotationWriter.write(attr.annotations, out);
             return null;
@@ -678,6 +694,16 @@ public class ClassWriter {
         @Override
         public Void visitRuntimeVisibleTypeAnnotations(RuntimeVisibleTypeAnnotations_attribute attr, ClassOutputStream out) {
             annotationWriter.write(attr.annotations, out);
+            return null;
+        }
+
+        @Override
+        public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, ClassOutputStream out) {
+            int n = attr.subtypes.length;
+            out.writeShort(n);
+            for (int i = 0 ; i < n ; i++) {
+                out.writeShort(attr.subtypes[i]);
+            }
             return null;
         }
 

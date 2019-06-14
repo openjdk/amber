@@ -370,6 +370,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & DEPRECATED) != 0;
     }
 
+    public boolean isRecord() {
+        return (flags_field & RECORD) != 0;
+    }
+
     public boolean hasDeprecatedAnnotation() {
         return (flags_field & DEPRECATED_ANNOTATION) != 0;
     }
@@ -402,12 +406,24 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags() & INTERFACE) != 0;
     }
 
+    public boolean isAbstract() {
+        return (flags() & ABSTRACT) != 0;
+    }
+
     public boolean isPrivate() {
         return (flags_field & Flags.AccessFlags) == PRIVATE;
     }
 
     public boolean isEnum() {
         return (flags() & ENUM) != 0;
+    }
+
+    public boolean isSealed() {
+        return (flags_field & SEALED) != 0;
+    }
+
+    public boolean isFinal() {
+        return (flags_field & FINAL) != 0;
     }
 
     /** Is this symbol declared (directly or indirectly) local
@@ -1429,6 +1445,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return ElementKind.INTERFACE;
             else if ((flags & ENUM) != 0)
                 return ElementKind.ENUM;
+            else if ((flags & RECORD) != 0)
+                return ElementKind.RECORD;
             else
                 return ElementKind.CLASS;
         }
@@ -1438,6 +1456,13 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             apiComplete();
             long flags = flags();
             return Flags.asModifierSet(flags & ~DEFAULT);
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public java.util.List<VariableElement> getStateComponents() {
+            apiComplete();
+            // Inital implementation
+            return javax.lang.model.util.ElementFilter.stateComponentsIn(getEnclosedElements());
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1530,6 +1555,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             Assert.check(!annotationTypeMetadata.isMetadataForAnnotationType());
             this.annotationTypeMetadata = a;
         }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type> getPermittedSubtypes() {
+            return ((ClassType)type).permitted;
+        }
     }
 
 
@@ -1551,6 +1581,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          *    If this is a local variable, its logical slot number.
          */
         public int adr = -1;
+
+        public List<Pair<Accessors.Kind, MethodSymbol>> accessors = List.nil();
 
         /** Construct a variable symbol, given its flags, name, type and owner.
          */
@@ -1596,6 +1628,23 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
         }
 
+        @Override
+        public Type erasure(Types types) {
+            if (erasure_field == null) {
+                erasure_field = types.erasure(type);
+                if (!accessors.isEmpty()) {
+                    for (Pair<Accessors.Kind, MethodSymbol> accessorPair : accessors) {
+                        if (accessorPair.fst == Accessors.Kind.GET) {
+                            ((MethodType)accessorPair.snd.type).restype = erasure_field;
+                        } else {
+                            // set accessors are not yet generated
+                        }
+                    }
+                }
+            }
+            return erasure_field;
+        }
+
         @DefinedBy(Api.LANGUAGE_MODEL)
         public ElementKind getKind() {
             long flags = flags();
@@ -1606,6 +1655,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                     return ElementKind.PARAMETER;
             } else if ((flags & ENUM) != 0) {
                 return ElementKind.ENUM_CONSTANT;
+            } else if ((flags & RECORD) != 0) {
+                return ElementKind.STATE_COMPONENT;
             } else if (owner.kind == TYP || owner.kind == ERR) {
                 return ElementKind.FIELD;
             } else if (isResourceVariable()) {
@@ -1778,6 +1829,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public int poolTag() {
             return owner.isInterface() ?
                     ClassFile.CONSTANT_InterfaceMethodref : ClassFile.CONSTANT_Methodref;
+        }
+
+        public boolean isDynamic() {
+            return false;
         }
 
         public boolean isHandle() {
@@ -2159,6 +2214,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     public static class MethodHandleSymbol extends MethodSymbol implements LoadableConstant {
 
         private Symbol refSym;
+        // in case the simbol is a variable
         private boolean getter;
 
         public MethodHandleSymbol(Symbol msym) {

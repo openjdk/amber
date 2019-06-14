@@ -1,0 +1,5 @@
+SealedTest01.java:19:43: compiler.err.cant.inherit.from.sealed: SealedTest01.SC
+SealedTest01.java:20:44: compiler.err.cant.inherit.from.sealed: SealedTest01.SAC
+SealedTest01.java:21:46: compiler.err.cant.inherit.from.sealed: SealedTest01.SI
+SealedTest01.java:22:47: compiler.err.cant.inherit.from.sealed: SealedTest01.SI
+4 errors

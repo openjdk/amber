@@ -148,6 +148,11 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * parameter}, {@linkplain ExecutableElement the executable
      * element} which declares the parameter is returned.
      *
+     * <li> If this is a {@linkplain
+     * VariableElement#getEnclosingElement state component},
+     * {@linkplain ExecutableElement the type} which declares the
+     * state component is returned.
+     *
      * <li> If this is a {@linkplain ModuleElement#getEnclosingElement
      * module}, {@code null} is returned.
      *
@@ -166,7 +171,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      *
      * A {@linkplain TypeElement#getEnclosedElements class or
      * interface} is considered to enclose the fields, methods,
-     * constructors, and member types that it directly declares.
+     * constructors, state components, and member types that it directly declares.
      *
      * A {@linkplain PackageElement#getEnclosedElements package}
      * encloses the top-level classes and interfaces within it, but is

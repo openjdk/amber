@@ -53,6 +53,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/recordParamStreams.hpp"
 #include "prims/jvm_misc.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
@@ -1660,6 +1661,63 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
+JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
+{
+  // current is not a primitive or array class
+  JVMWrapper("JVM_GetRecordParametersCount");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  // Ensure class is linked
+  k->link_class(CHECK_0);
+
+  return k->record_params_count();
+}
+JVM_END
+
+JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
+{
+  // current is not a primitive or array class
+  JVMWrapper("JVM_GetRecordParameters");
+  JvmtiVMObjectAllocEventCollector oam;
+
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
+  constantPoolHandle cp(THREAD, k->constants());
+
+  // Ensure class is linked
+  k->link_class(CHECK_NULL);
+
+  // Allocate result
+  int num_record_params = k->record_params_count();
+  Array<u2>* record_parameters = k->record_params();
+  // DEBUG
+  //tty->print_cr("num_record_params == %d", num_record_params);
+
+  if (num_record_params == 0) {
+    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
+    return (jobjectArray) JNIHandles::make_local(env, res);
+  }
+
+  objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
+  objArrayHandle result (THREAD, r);
+
+  int out_idx = 0;
+  fieldDescriptor fd;
+  for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
+    for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
+      if (fileStream.name() == recordParamsStream.name()) {
+        fd.reinitialize(k, fileStream.index());
+        oop field = Reflection::new_field(&fd, CHECK_NULL);
+        result->obj_at_put(out_idx, field);
+        ++out_idx;
+      }
+    }
+  }
+  assert(out_idx == num_record_params, "just checking");
+  return (jobjectArray) JNIHandles::make_local(env, result());
+}
+JVM_END
+
 static bool select_method(const methodHandle& method, bool want_constructor) {
   if (want_constructor) {
     return (method->is_initializer() && !method->is_static());
@@ -1855,6 +1913,44 @@ JVM_ENTRY(jobjectArray, JVM_GetNestMembers(JNIEnv* env, jclass current))
     }
     else {
       assert(host == ck, "must be singleton nest");
+    }
+    return (jobjectArray)JNIHandles::make_local(THREAD, result());
+  }
+}
+JVM_END
+
+JVM_ENTRY(jobjectArray, JVM_GetPermittedSubtypes(JNIEnv* env, jclass current))
+{
+  JVMWrapper("JVM_GetPermittedSubtypes");
+  Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
+  assert(c->is_instance_klass(), "must be");
+  InstanceKlass* ck = InstanceKlass::cast(c);
+  Symbol* icce = vmSymbols::java_lang_IncompatibleClassChangeError();
+  {
+    JvmtiVMObjectAllocEventCollector oam;
+    Array<u2>* subtypes = ck->permitted_subtypes();
+    int length = subtypes == NULL ? 0 : subtypes->length();
+    if (length == 0) {
+        return NULL;
+    }
+    objArrayOop r = oopFactory::new_objArray(SystemDictionary::Class_klass(), length, CHECK_NULL);
+    objArrayHandle result (THREAD, r);
+    int i;
+    for (i = 0; i < length; i++) {
+      int cp_index = subtypes->at(i);
+      Klass* k = ck->constants()->klass_at(cp_index, CHECK_NULL);
+      if (k->is_instance_klass()) {
+        result->obj_at_put(i, k->java_mirror());
+      } else {
+        ResourceMark rm(THREAD);
+        Exceptions::fthrow(THREAD_AND_LOCATION,
+                           icce,
+                           "Class %s can not be a permitted subtype of %s",
+                           k->external_name(),
+                           ck->external_name()
+                           );
+        return NULL;
+      }
     }
     return (jobjectArray)JNIHandles::make_local(THREAD, result());
   }

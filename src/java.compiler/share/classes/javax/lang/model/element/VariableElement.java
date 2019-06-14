@@ -31,8 +31,8 @@ import javax.lang.model.type.TypeKind;
 
 /**
  * Represents a field, {@code enum} constant, method or constructor
- * parameter, local variable, resource variable, or exception
- * parameter.
+ * parameter, local variable, resource variable, exception
+ * parameter, or state component.
  *
  * @author Joseph D. Darcy
  * @author Scott Seligman
@@ -97,6 +97,9 @@ public interface VariableElement extends Element {
      *
      * The enclosing element of a method or constructor parameter is
      * the executable declaring the parameter.
+     *
+     * The enclosing element of a state component is the type
+     * declaring the state component.
      *
      * @return the enclosing element of this variable
      */

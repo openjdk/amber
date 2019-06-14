@@ -974,6 +974,12 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
          */
         public List<Type> all_interfaces_field;
 
+        /** The classes, or interfaces, permitted to extend this class, or interface
+         */
+        public List<Type> permitted;
+
+        public boolean isPermittedExplicit = false;
+
         public ClassType(Type outer, List<Type> typarams, TypeSymbol tsym) {
             this(outer, typarams, tsym, TypeMetadata.EMPTY);
         }
@@ -986,6 +992,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             this.allparams_field = null;
             this.supertype_field = null;
             this.interfaces_field = null;
+            this.permitted = List.nil();
         }
 
         public int poolTag() {

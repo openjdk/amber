@@ -159,6 +159,7 @@
   template(tag_deprecated,                            "Deprecated")                               \
   template(tag_source_debug_extension,                "SourceDebugExtension")                     \
   template(tag_signature,                             "Signature")                                \
+  template(tag_record,                                "Record")                                   \
   template(tag_runtime_visible_annotations,           "RuntimeVisibleAnnotations")                \
   template(tag_runtime_invisible_annotations,         "RuntimeInvisibleAnnotations")              \
   template(tag_runtime_visible_parameter_annotations, "RuntimeVisibleParameterAnnotations")       \
@@ -168,6 +169,7 @@
   template(tag_runtime_invisible_type_annotations,    "RuntimeInvisibleTypeAnnotations")          \
   template(tag_enclosing_method,                      "EnclosingMethod")                          \
   template(tag_bootstrap_methods,                     "BootstrapMethods")                         \
+  template(tag_permitted_subtypes,                    "PermittedSubtypes")                        \
                                                                                                   \
   /* exception klasses: at least all exceptions thrown by the VM have entries here */             \
   template(java_lang_ArithmeticException,             "java/lang/ArithmeticException")            \

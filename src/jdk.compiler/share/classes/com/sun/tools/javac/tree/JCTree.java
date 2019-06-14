@@ -767,6 +767,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCExpression extending;
         /** the interfaces implemented by this class */
         public List<JCExpression> implementing;
+        /** the subclasses allowed to extend this class, if sealed */
+        public List<JCExpression> permitting;
         /** all variables and methods defined in this class */
         public List<JCTree> defs;
         /** the symbol */
@@ -776,6 +778,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                            List<JCTypeParameter> typarams,
                            JCExpression extending,
                            List<JCExpression> implementing,
+                           List<JCExpression> permitting,
                            List<JCTree> defs,
                            ClassSymbol sym)
         {
@@ -784,6 +787,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             this.typarams = typarams;
             this.extending = extending;
             this.implementing = implementing;
+            this.permitting = permitting;
             this.defs = defs;
             this.sym = sym;
         }
@@ -939,23 +943,27 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public VarSymbol sym;
         /** explicit start pos */
         public int startPos = Position.NOPOS;
+        /** accessors */
+        public List<Pair<Accessors.Kind, Name>> accessors;
 
         protected JCVariableDecl(JCModifiers mods,
                          Name name,
                          JCExpression vartype,
                          JCExpression init,
-                         VarSymbol sym) {
+                         VarSymbol sym,
+                         List<Pair<Accessors.Kind, Name>> accessors) {
             this.mods = mods;
             this.name = name;
             this.vartype = vartype;
             this.init = init;
             this.sym = sym;
+            this.accessors = accessors;
         }
 
         protected JCVariableDecl(JCModifiers mods,
                          JCExpression nameexpr,
                          JCExpression vartype) {
-            this(mods, null, vartype, null, null);
+            this(mods, null, vartype, null, null, null);
             this.nameexpr = nameexpr;
             if (nameexpr.hasTag(Tag.IDENT)) {
                 this.name = ((JCIdent)nameexpr).name;

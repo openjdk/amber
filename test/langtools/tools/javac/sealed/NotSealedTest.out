@@ -1,0 +1,6 @@
+NotSealedTest.java:10:24: compiler.err.cant.applied.sealed.and.not.sealed.ann: NotSealedTest.AB
+NotSealedTest.java:10:24: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.AB
+NotSealedTest.java:13:16: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.SNS
+NotSealedTest.java:14:16: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.SNSI
+1 error
+3 warnings

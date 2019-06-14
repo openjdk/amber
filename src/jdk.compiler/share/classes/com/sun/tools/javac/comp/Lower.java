@@ -25,16 +25,21 @@
 
 package com.sun.tools.javac.comp;
 
+import sun.invoke.util.BytecodeName;
+
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.comp.Resolve.MethodResolutionContext;
 import com.sun.tools.javac.jvm.*;
+import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.main.Option.PkgInfo;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.tree.*;
@@ -57,10 +62,6 @@ import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
-import com.sun.tools.javac.tree.JCTree.JCBreak;
-import com.sun.tools.javac.tree.JCTree.JCCase;
-import com.sun.tools.javac.tree.JCTree.JCExpression;
-import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import com.sun.tools.javac.tree.JCTree.GenericSwitch;
 import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
@@ -801,6 +802,21 @@ public class Lower extends TreeTranslator {
      */
     private MethodSymbol lookupMethod(DiagnosticPosition pos, Name name, Type qual, List<Type> args) {
         return rs.resolveInternalMethod(pos, attrEnv, qual, name, args, List.nil());
+    }
+
+    private Symbol findMethodOrFailSilently(
+            DiagnosticPosition pos,
+            Env<AttrContext> env,
+            Type site,
+            Name name,
+            List<Type> argtypes,
+            List<Type> typeargtypes) {
+        MethodResolutionContext resolveContext = rs.new MethodResolutionContext();
+        resolveContext.internalResolution = true;
+        resolveContext.silentFail = true;
+        Symbol sym = rs.resolveQualifiedMethod(resolveContext, pos, env, site.tsym,
+                site, name, argtypes, typeargtypes);
+        return sym;
     }
 
     /** Anon inner classes are used as access constructor tags.
@@ -2189,6 +2205,10 @@ public class Lower extends TreeTranslator {
             (types.supertype(currentClass.type).tsym.flags() & ENUM) == 0)
             visitEnumDef(tree);
 
+        if ((tree.mods.flags & RECORD) != 0) {
+            visitRecordDef(tree);
+        }
+
         // If this is a nested class, define a this$n field for
         // it and add to proxies.
         JCVariableDecl otdef = null;
@@ -2256,6 +2276,37 @@ public class Lower extends TreeTranslator {
 
         // Return empty block {} as a placeholder for an inner class.
         result = make_at(tree.pos()).Block(SYNTHETIC, List.nil());
+    }
+
+    List<JCTree> accessors(JCClassDecl tree) {
+        ListBuffer<JCTree> buffer = new ListBuffer<>();
+        tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> vd.sym.accessors.nonEmpty())
+                .forEach(vd -> {
+                    for (Pair<Accessors.Kind, MethodSymbol> accessor : vd.sym.accessors) {
+                        MethodSymbol accessorSym = accessor.snd;
+                        if ((accessorSym.flags() & Flags.MANDATED) != 0) {
+                            make_at(tree.pos());
+                            switch (accessor.fst) {
+                                case GET:
+                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                            List.of(make.Return(make.Ident(vd.sym))))));
+                                    break;
+                                case SET:
+                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
+                                            List.of(make.Exec(
+                                                    make.Assign(make.Ident(vd.sym), make.Ident(accessorSym.params.head))
+                                                            .setType(vd.sym.type))))));
+                                    break;
+                                default:
+                                    Assert.error("Cannot get here!");
+                            }
+                        }
+                    }
+                });
+        return buffer.toList();
     }
 
     /** Translate an enum class. */
@@ -2411,6 +2462,226 @@ public class Lower extends TreeTranslator {
         varDef.args = varDef.args.
             prepend(makeLit(syms.intType, ordinal)).
             prepend(makeLit(syms.stringType, var.name.toString()));
+    }
+
+    /** Translate a record. */
+    private void visitRecordDef(JCClassDecl tree) {
+        make_at(tree.pos());
+        List<VarSymbol> vars = types.recordVars(tree.type);
+        MethodHandleSymbol[] getterMethHandles = new MethodHandleSymbol[vars.size()];
+        // for the extractor we use the user provided getter, for the rest we access the field directly
+        MethodHandleSymbol[] getterMethHandlesForExtractor = new MethodHandleSymbol[vars.size()];
+        int index = 0;
+        for (VarSymbol var : vars) {
+            if (var.owner != tree.sym) {
+                var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
+            }
+            getterMethHandles[index] = var.asMethodHandle(true);
+            if (!var.accessors.isEmpty()) {
+                getterMethHandlesForExtractor[index] = getterMethHandles[index];
+            } else {
+                MethodSymbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());
+                getterMethHandlesForExtractor[index] = msym.asHandle();
+            }
+            index++;
+        }
+
+        tree.defs = tree.defs.appendList(accessors(tree));
+        tree.defs = tree.defs.appendList(List.of(
+                generateRecordMethod(tree, names.toString, vars, getterMethHandles),
+                generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
+                generateRecordMethod(tree, names.equals, vars, getterMethHandles),
+                recordExtractor(tree, getterMethHandlesForExtractor),
+                recordReadResolve(tree)
+        ));
+    }
+
+    JCTree generateRecordMethod(JCClassDecl tree, Name name, List<VarSymbol> vars, MethodHandleSymbol[] getterMethHandles) {
+        make_at(tree.pos());
+        boolean isEquals = name == names.equals;
+        MethodSymbol msym = lookupMethod(tree.pos(),
+                name,
+                tree.sym.type,
+                isEquals ? List.of(syms.objectType) : List.nil());
+        if ((msym.flags() & RECORD) != 0) {
+            Name bootstrapName = names.bootstrap;
+            LoadableConstant[] staticArgsValues = new LoadableConstant[2 + getterMethHandles.length];
+            staticArgsValues[0] = (ClassType)tree.sym.type;
+            String concatNames = vars.stream()
+                    .map(v -> v.name)
+                    .collect(Collectors.joining(";", "", ""));
+            staticArgsValues[1] = LoadableConstant.String(concatNames);
+            int index = 2;
+            for (MethodHandleSymbol mho : getterMethHandles) {
+                staticArgsValues[index] = mho;
+                index++;
+            }
+
+            List<Type> staticArgTypes = List.of(syms.classType,
+                    syms.stringType,
+                    new ArrayType(syms.methodHandleType, syms.arrayClass));
+
+            JCFieldAccess qualifier = makeIndyQualifier(syms.objectMethodBuildersType, tree, msym,
+                    List.of(syms.methodHandleLookupType,
+                            syms.stringType,
+                            syms.typeDescriptorType).appendList(staticArgTypes),
+                    staticArgsValues, bootstrapName, name, false);
+
+            VarSymbol _this = new VarSymbol(SYNTHETIC, names._this, tree.sym.type, tree.sym);
+
+            JCMethodInvocation proxyCall;
+            if (!isEquals) {
+                proxyCall = make.Apply(List.nil(), qualifier, List.of(make.Ident(_this)));
+            } else {
+                VarSymbol o = msym.params.head;
+                o.adr = 0;
+                proxyCall = make.Apply(List.nil(), qualifier, List.of(make.Ident(_this), make.Ident(o)));
+            }
+            proxyCall.type = qualifier.type;
+            return make.MethodDef(msym, make.Block(0, List.of(make.Return(proxyCall))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
+        make_at(tree.pos());
+        List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
+        String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
+        String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
+        Name extractorName = names.fromString(extractorStr);
+        // public Extractor extractorName () { return ???; }
+        MethodType extractorMT = new MethodType(List.nil(), syms.extractorType, List.nil(), syms.methodClass);
+        MethodSymbol extractorSym = new MethodSymbol(
+                Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
+                extractorName, extractorMT, tree.sym);
+        tree.sym.members().enter(extractorSym);
+
+        Name bootstrapName = names.makeLazyExtractor;
+        LoadableConstant[] staticArgsValues = new LoadableConstant[1 + getterMethHandles.length];
+        /** this method descriptor should have the same arguments as the record constructor and its
+         *  return type should be the same as the type of the record
+         */
+        MethodType mt = new MethodType(fieldTypes, tree.type, List.nil(), syms.methodClass);
+        staticArgsValues[0] = mt;
+        int index = 1;
+        for (MethodHandleSymbol mho : getterMethHandles) {
+            staticArgsValues[index] = mho;
+            index++;
+        }
+
+        List<Type> staticArgTypes = List.of(syms.methodTypeType,
+                new ArrayType(syms.methodHandleType, syms.arrayClass));
+        JCFieldAccess qualifier = makeIndyQualifier(syms.extractorType, tree, extractorSym,
+                List.of(syms.methodHandleLookupType,
+                        syms.stringType,
+                        syms.methodTypeType).appendList(staticArgTypes),
+                staticArgsValues, bootstrapName, bootstrapName, true);
+
+        JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.nil());
+        proxyCall.type = qualifier.type;
+        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(proxyCall))));
+    }
+
+    JCTree recordReadResolve(JCClassDecl tree) {
+        make_at(tree.pos());
+        Symbol msym = findMethodOrFailSilently(
+                tree.pos(),
+                attrEnv,
+                tree.sym.type,
+                names.readResolve,
+                List.nil(),
+                List.nil());
+        if (!msym.kind.isResolutionError() && (msym.flags() & RECORD) != 0) {
+            List<JCExpression> args = TreeInfo.recordFields(tree).map(vd -> make.Ident(vd));
+            return make.MethodDef((MethodSymbol)msym, make.Block(0, List.of(make.Return(makeNewClass(tree.sym.type, args)))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
+    }
+
+    private String argsTypeSig(List<Type> typeList) {
+        LowerSignatureGenerator sg = new LowerSignatureGenerator();
+        sg.assembleSig(typeList);
+        return sg.toString();
+    }
+
+    /**
+     * Signature Generation
+     */
+    private class LowerSignatureGenerator extends Types.SignatureGenerator {
+
+        /**
+         * An output buffer for type signatures.
+         */
+        StringBuilder sb = new StringBuilder();
+
+        LowerSignatureGenerator() {
+            super(types);
+        }
+
+        @Override
+        protected void append(char ch) {
+            sb.append(ch);
+        }
+
+        @Override
+        protected void append(byte[] ba) {
+            sb.append(new String(ba));
+        }
+
+        @Override
+        protected void append(Name name) {
+            sb.append(name.toString());
+        }
+
+        @Override
+        public String toString() {
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Creates an indy qualifier, helpful to be part of an indy invocation
+     * @param site                the site
+     * @param tree                a class declaration tree
+     * @param msym                the method symbol
+     * @param staticArgTypes      the static argument types
+     * @param staticArgValues     the static argument values
+     * @param bootstrapName       the bootstrap name to look for
+     * @param argName             normally bootstraps receives a method name as second argument, if you want that name
+     *                            to be different to that of the bootstrap name pass a different name here
+     * @param isStatic            is it static or not
+     * @return                    a field access tree
+     */
+    JCFieldAccess makeIndyQualifier(
+            Type site,
+            JCClassDecl tree,
+            MethodSymbol msym,
+            List<Type> staticArgTypes,
+            LoadableConstant[] staticArgValues,
+            Name bootstrapName,
+            Name argName,
+            boolean isStatic) {
+        Symbol bsm = rs.resolveInternalMethod(tree.pos(), attrEnv, site,
+                bootstrapName, staticArgTypes, List.nil());
+
+        MethodType indyType = msym.type.asMethodType();
+        indyType = new MethodType(
+                isStatic ? List.nil() : indyType.argtypes.prepend(tree.sym.type),
+                indyType.restype,
+                indyType.thrown,
+                syms.methodClass
+        );
+        DynamicMethodSymbol dynSym = new DynamicMethodSymbol(argName,
+                syms.noSymbol,
+                ((MethodSymbol)bsm).asHandle(),
+                indyType,
+                staticArgValues);
+        JCFieldAccess qualifier = make.Select(make.QualIdent(site.tsym), argName);
+        qualifier.sym = dynSym;
+        qualifier.type = msym.type.asMethodType().restype;
+        return qualifier;
     }
 
     public void visitMethodDef(JCMethodDecl tree) {

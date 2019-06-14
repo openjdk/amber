@@ -161,11 +161,23 @@ public class TreeMaker implements JCTree.Factory {
                                 List<JCExpression> implementing,
                                 List<JCTree> defs)
     {
+        return ClassDef(mods, name, typarams, extending, implementing, List.nil(), defs);
+    }
+
+    public JCClassDecl ClassDef(JCModifiers mods,
+                                Name name,
+                                List<JCTypeParameter> typarams,
+                                JCExpression extending,
+                                List<JCExpression> implementing,
+                                List<JCExpression> permitting,
+                                List<JCTree> defs)
+    {
         JCClassDecl tree = new JCClassDecl(mods,
                                      name,
                                      typarams,
                                      extending,
                                      implementing,
+                                     permitting,
                                      defs,
                                      null);
         tree.pos = pos;
@@ -210,7 +222,11 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init) {
-        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null);
+        return VarDef(mods, name, vartype, init, null);
+    }
+
+    public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init, List<Pair<Accessors.Kind, Name>> accessors) {
+        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null, accessors);
         tree.pos = pos;
         return tree;
     }
@@ -851,7 +867,7 @@ public class TreeMaker implements JCTree.Factory {
                 v.name,
                 Type(v.type),
                 init,
-                v).setPos(pos).setType(v.type);
+                v, null).setPos(pos).setType(v.type);
     }
 
     /** Create annotation trees from annotations.

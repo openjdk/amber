@@ -66,7 +66,7 @@ bool klassVtable::is_preinitialized_vtable() {
 void klassVtable::compute_vtable_size_and_num_mirandas(
     int* vtable_length_ret, int* num_new_mirandas,
     GrowableArray<Method*>* all_mirandas, const Klass* super,
-    Array<Method*>* methods, AccessFlags class_flags, u2 major_version,
+    Array<Method*>* methods, AccessFlags class_flags, bool is_class_sealed, u2 major_version,
     Handle classloader, Symbol* classname, Array<InstanceKlass*>* local_interfaces,
     TRAPS) {
   NoSafepointVerifier nsv;
@@ -83,7 +83,7 @@ void klassVtable::compute_vtable_size_and_num_mirandas(
     assert(methods->at(i)->is_method(), "must be a Method*");
     methodHandle mh(THREAD, methods->at(i));
 
-    if (needs_new_vtable_entry(mh, super, classloader, classname, class_flags, major_version, THREAD)) {
+    if (needs_new_vtable_entry(mh, super, classloader, classname, class_flags, is_class_sealed, major_version, THREAD)) {
       assert(!methods->at(i)->is_private(), "private methods should not need a vtable entry");
       vtable_length += vtableEntry::size(); // we need a new entry
     }
@@ -397,7 +397,7 @@ bool klassVtable::update_inherited_vtable(InstanceKlass* klass, const methodHand
     return false;
   }
 
-  if (target_method->is_final_method(klass->access_flags())) {
+  if (target_method->is_final_method(klass->access_flags(), klass->is_sealed())) {
     // a final method never needs a new entry; final methods can be statically
     // resolved and they have to be present in the vtable only if they override
     // a super's method, in which case they re-use its entry
@@ -584,6 +584,7 @@ bool klassVtable::needs_new_vtable_entry(const methodHandle& target_method,
                                          Handle classloader,
                                          Symbol* classname,
                                          AccessFlags class_flags,
+                                         bool is_sealed,
                                          u2 major_version,
                                          TRAPS) {
   if (class_flags.is_interface()) {
@@ -594,7 +595,7 @@ bool klassVtable::needs_new_vtable_entry(const methodHandle& target_method,
     return false;
   }
 
-  if (target_method->is_final_method(class_flags) ||
+  if (target_method->is_final_method(class_flags, is_sealed) ||
       // a final method never needs a new entry; final methods can be statically
       // resolved and they have to be present in the vtable only if they override
       // a super's method, in which case they re-use its entry

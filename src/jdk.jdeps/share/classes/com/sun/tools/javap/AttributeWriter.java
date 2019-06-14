@@ -25,6 +25,8 @@
 
 package com.sun.tools.javap;
 
+import java.util.Collection;
+
 import com.sun.tools.classfile.AccessFlags;
 import com.sun.tools.classfile.AnnotationDefault_attribute;
 import com.sun.tools.classfile.Attribute;
@@ -40,6 +42,8 @@ import com.sun.tools.classfile.ConstantPoolException;
 import com.sun.tools.classfile.ConstantValue_attribute;
 import com.sun.tools.classfile.DefaultAttribute;
 import com.sun.tools.classfile.Deprecated_attribute;
+import com.sun.tools.classfile.Descriptor;
+import com.sun.tools.classfile.Descriptor.InvalidDescriptor;
 import com.sun.tools.classfile.EnclosingMethod_attribute;
 import com.sun.tools.classfile.Exceptions_attribute;
 import com.sun.tools.classfile.InnerClasses_attribute;
@@ -56,6 +60,8 @@ import com.sun.tools.classfile.ModuleResolution_attribute;
 import com.sun.tools.classfile.ModuleTarget_attribute;
 import com.sun.tools.classfile.NestHost_attribute;
 import com.sun.tools.classfile.NestMembers_attribute;
+import com.sun.tools.classfile.Record_attribute;
+import com.sun.tools.classfile.Record_attribute.Param_data;
 import com.sun.tools.classfile.RuntimeInvisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleTypeAnnotations_attribute;
@@ -63,6 +69,8 @@ import com.sun.tools.classfile.RuntimeParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleTypeAnnotations_attribute;
+import com.sun.tools.classfile.PermittedSubtypes_attribute;
+import com.sun.tools.classfile.Signature;
 import com.sun.tools.classfile.Signature_attribute;
 import com.sun.tools.classfile.SourceDebugExtension_attribute;
 import com.sun.tools.classfile.SourceFile_attribute;
@@ -70,11 +78,16 @@ import com.sun.tools.classfile.SourceID_attribute;
 import com.sun.tools.classfile.StackMapTable_attribute;
 import com.sun.tools.classfile.StackMap_attribute;
 import com.sun.tools.classfile.Synthetic_attribute;
+import com.sun.tools.classfile.Type;
 
 import static com.sun.tools.classfile.AccessFlags.*;
 
 import com.sun.tools.javac.util.Assert;
 import com.sun.tools.javac.util.StringUtils;
+
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /*
  *  A writer for writing Attributes as text.
@@ -714,6 +727,72 @@ public class AttributeWriter extends BasicWriter
     }
 
     @Override
+    public Void visitRecord(Record_attribute attr, Void p) {
+        println("Record:");
+        indent(+1);
+        for (int i = 0; i < attr.num_params; i++) {
+            writeParamData(attr.params[i]);
+        }
+        write(attr, attr.attributes, constant_pool);
+        indent(-1);
+        return null;
+    }
+
+    void writeParamData(Param_data pd) {
+        AccessFlags flags = new AccessFlags(pd.param_flags);
+        writeModifiers(flags.getFieldModifiers());
+        Descriptor descriptor = new Descriptor(pd.param_descriptor);
+        print(getJavaFieldType(descriptor));
+        print(" ");
+        try {
+            print(pd.getName(constant_pool));
+        } catch (ConstantPoolException cpe) {
+            // ignore
+        }
+        println(";");
+        try {
+            indent(+1);
+            println("descriptor: " + descriptor.getValue(constant_pool));
+            writeList(String.format("flags: (0x%04x) ", flags.flags), flags.getFieldFlags(), "\n");
+            Signature signature = new Signature(pd.param_signature);
+            Type t = signature.getType(constant_pool);
+            println("signature: " + getJavaName(t.toString()));
+            indent(-1);
+        } catch (ConstantPoolException cpe) {
+            // ignore
+        }
+        println();
+    }
+
+    void writeList(String prefix, Collection<?> items, String suffix) {
+        print(prefix);
+        String sep = "";
+        for (Object item: items) {
+            print(sep);
+            print(item);
+            sep = ", ";
+        }
+        print(suffix);
+    }
+
+    String getJavaFieldType(Descriptor d) {
+        try {
+            return getJavaName(d.getFieldType(constant_pool));
+        } catch (ConstantPoolException e) {
+            return report(e);
+        } catch (InvalidDescriptor e) {
+            return report(e);
+        }
+    }
+
+    void writeModifiers(Collection<String> items) {
+        for (Object item: items) {
+            print(item);
+            print(" ");
+        }
+    }
+
+    @Override
     public Void visitRuntimeVisibleAnnotations(RuntimeVisibleAnnotations_attribute attr, Void ignore) {
         println("RuntimeVisibleAnnotations:");
         indent(+1);
@@ -790,6 +869,22 @@ public class AttributeWriter extends BasicWriter
     @Override
     public Void visitRuntimeInvisibleParameterAnnotations(RuntimeInvisibleParameterAnnotations_attribute attr, Void ignore) {
         visitParameterAnnotations("RuntimeInvisibleParameterAnnotations:", (RuntimeParameterAnnotations_attribute) attr);
+        return null;
+    }
+
+    @Override
+    public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, Void ignore) {
+        println("PermittedSubtypes:");
+        indent(+1);
+        try {
+            CONSTANT_Class_info[] subtypes = attr.getSubtypes(constant_pool);
+            for (int i = 0; i < subtypes.length; i++) {
+                println(constantWriter.stringValue(subtypes[i]));
+            }
+            indent(-1);
+        } catch (ConstantPoolException ex) {
+            throw new AssertionError(ex);
+        }
         return null;
     }
 

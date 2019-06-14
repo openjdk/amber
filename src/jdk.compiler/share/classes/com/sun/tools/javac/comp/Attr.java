@@ -169,6 +169,7 @@ public class Attr extends JCTree.Visitor {
         allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
+        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -204,6 +205,13 @@ public class Attr extends JCTree.Visitor {
      * RFE: 6425594
      */
     boolean useBeforeDeclarationWarning;
+
+    /**
+     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
+     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
+     * gets integrated
+     */
+    boolean dontErrorIfSealedExtended;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -877,6 +885,7 @@ public class Attr extends JCTree.Visitor {
      *  @param interfaceExpected true if only an interface is expected here.
      */
     Type attribBase(JCTree tree,
+                    ClassSymbol subType,
                     Env<AttrContext> env,
                     boolean classExpected,
                     boolean interfaceExpected,
@@ -884,9 +893,10 @@ public class Attr extends JCTree.Visitor {
         Type t = tree.type != null ?
             tree.type :
             attribType(tree, env);
-        return checkBase(t, tree, env, classExpected, interfaceExpected, checkExtensible);
+        return checkBase(t, subType, tree, env, classExpected, interfaceExpected, checkExtensible);
     }
     Type checkBase(Type t,
+                   ClassSymbol subType,
                    JCTree tree,
                    Env<AttrContext> env,
                    boolean classExpected,
@@ -1094,12 +1104,11 @@ public class Attr extends JCTree.Visitor {
                 if (tree.name == names.init && owner.type != syms.objectType) {
                     JCBlock body = tree.body;
                     if (body.stats.isEmpty() ||
-                            !TreeInfo.isSelfCall(body.stats.head)) {
-                        body.stats = body.stats.
-                                prepend(typeEnter.SuperCall(make.at(body.pos),
-                                        List.nil(),
-                                        List.nil(),
-                                        false));
+                            TreeInfo.getConstructorInvocationName(body.stats, names,
+                                    (env.enclClass.sym.flags() & RECORD) != 0) == names.empty) {
+                        JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
+                                make.Ident(names._super), make.Idents(List.nil())));
+                        body.stats = body.stats.prepend(supCall);
                     } else if ((env.enclClass.sym.flags() & ENUM) != 0 &&
                             (tree.mods.flags & GENERATEDCONSTR) == 0 &&
                             TreeInfo.isSuperCall(body.stats.head)) {
@@ -4736,7 +4745,7 @@ public class Attr extends JCTree.Visitor {
         Set<Type> boundSet = new HashSet<>();
         if (bounds.nonEmpty()) {
             // accept class or interface or typevar as first bound.
-            bounds.head.type = checkBase(bounds.head.type, bounds.head, env, false, false, false);
+            bounds.head.type = checkBase(bounds.head.type, syms.unknownSymbol, bounds.head, env, false, false, false);
             boundSet.add(types.erasure(bounds.head.type));
             if (bounds.head.type.isErroneous()) {
                 return bounds.head.type;
@@ -4752,7 +4761,7 @@ public class Attr extends JCTree.Visitor {
                 // if first bound was a class or interface, accept only interfaces
                 // as further bounds.
                 for (JCExpression bound : bounds.tail) {
-                    bound.type = checkBase(bound.type, bound, env, false, true, false);
+                    bound.type = checkBase(bound.type, syms.unknownSymbol, bound, env, false, true, false);
                     if (bound.type.isErroneous()) {
                         bounds = List.of(bound);
                     }
@@ -5026,6 +5035,44 @@ public class Attr extends JCTree.Visitor {
             chk.validate(tree.typarams, env);
             chk.validate(tree.extending, env);
             chk.validate(tree.implementing, env);
+        }
+
+        Type st = types.supertype(c.type);
+        boolean anyParentIsSealed = false;
+        ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
+        if (st != Type.noType && (st.tsym.isSealed())) {
+            potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
+            anyParentIsSealed = true;
+        }
+
+        if (tree.implementing != null) {
+            for (JCExpression expr : tree.implementing) {
+                if (expr.type.tsym.isSealed()) {
+                    potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
+                    anyParentIsSealed = true;
+                }
+            }
+        }
+
+        for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
+            if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                boolean areNestmates = sealedParentPair.fst.tsym.outermostClass() == tree.sym.outermostClass();
+                boolean isSealed = sealedParentPair.fst.tsym.isSealed();
+                if (areNestmates) {
+                    if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
+                        sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                    } else if (!dontErrorIfSealedExtended) {
+                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                    }
+                } else if (!dontErrorIfSealedExtended) {
+                    log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                }
+            }
+        }
+
+        if (anyParentIsSealed) {
+            // once we have the non-final keyword this will change
+            c.flags_field |= (c.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
         }
 
         c.markAbstractIfNeeded(types);

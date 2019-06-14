@@ -96,7 +96,9 @@ public class TestSourceVersion {
          */
         Set<String> restrictedKeywords =
             Set.of("open", "module", "requires", "transitive", "exports",
-                   "opens", "to", "uses", "provides", "with");
+                   "opens", "to", "uses", "provides", "with",
+                   // Assume "record" and "sealed" will be restricted keywords.
+                   "record", "sealed");
 
         for(String key : restrictedKeywords) {
             for(SourceVersion version : SourceVersion.values()) {

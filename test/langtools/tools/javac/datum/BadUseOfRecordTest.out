@@ -1,0 +1,5 @@
+BadUseOfRecordTest.java:9:15: compiler.err.record.not.allowed: record
+BadUseOfRecordTest.java:13:11: compiler.err.record.not.allowed: record
+BadUseOfRecordTest.java:15:10: compiler.err.record.not.allowed: record
+BadUseOfRecordTest.java:17:12: compiler.err.record.not.allowed: record
+4 errors

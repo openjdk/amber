@@ -47,12 +47,14 @@
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+
 import javax.tools.*;
 
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Pair;
 
 public class JavacTreeScannerTest extends AbstractTreeScannerTest {
     /**
@@ -148,6 +150,8 @@ public class JavacTreeScannerTest extends AbstractTreeScannerTest {
                 List<?> list = (List<?>) o;
                 for (Object item: list)
                     reflectiveScan(item);
+            } else if (o instanceof Pair) {
+                return;
             } else
                 error("unexpected item: " + o);
         }

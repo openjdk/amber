@@ -84,6 +84,7 @@ module java.base {
     exports java.lang.module;
     exports java.lang.ref;
     exports java.lang.reflect;
+    exports java.lang.runtime;
     exports java.math;
     exports java.net;
     exports java.net.spi;
@@ -129,10 +130,11 @@ module java.base {
     exports javax.security.auth.x500;
     exports javax.security.cert;
 
-
     // additional qualified exports may be inserted at build time
     // see make/gensrc/GenModuleInfo.gmk
 
+    exports sun.invoke.util to
+        jdk.compiler;
     exports com.sun.security.ntlm to
         java.security.sasl;
     exports jdk.internal to

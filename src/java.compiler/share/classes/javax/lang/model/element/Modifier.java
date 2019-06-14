@@ -59,6 +59,11 @@ public enum Modifier {
      */
      DEFAULT,
     /** The modifier {@code static} */          STATIC,
+    /**
+     * The modifier {@code sealed}
+     * @since amber
+     */
+    SEALED, // Not sure this the best order; certainly after public/private.
     /** The modifier {@code final} */           FINAL,
     /** The modifier {@code transient} */       TRANSIENT,
     /** The modifier {@code volatile} */        VOLATILE,

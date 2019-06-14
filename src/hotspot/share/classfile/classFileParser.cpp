@@ -1749,6 +1749,7 @@ void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
       _fields->at_put(i++, fa[j]);
     }
     assert(_fields->length() == i, "");
+    //tty->print_cr("length of the _fields array %d for class %s", i, _class_name->as_klass_external_name());
   }
 
   if (_need_verify && length > 1) {
@@ -3223,6 +3224,122 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
   return length;
 }
 
+u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFileStream* const cfs,
+                                                           const u1* const permitted_subtypes_attribute_start,
+                                                           TRAPS) {
+  const u1* const current_mark = cfs->current();
+  u2 length = 0;
+  if (permitted_subtypes_attribute_start != NULL) {
+    cfs->set_current(permitted_subtypes_attribute_start);
+    cfs->guarantee_more(2, CHECK_0);  // length
+    length = cfs->get_u2_fast();
+  }
+  const int size = length;
+  Array<u2>* const permitted_subtypes = MetadataFactory::new_array<u2>(_loader_data, size, CHECK_0);
+  _permitted_subtypes = permitted_subtypes;
+
+  int index = 0;
+  cfs->guarantee_more(2 * length, CHECK_0);
+  for (int n = 0; n < length; n++) {
+    const u2 class_info_index = cfs->get_u2_fast();
+    check_property(
+      valid_klass_reference_at(class_info_index),
+      "Permitted subtype class_info_index %u has bad constant type in class file %s",
+      class_info_index, CHECK_0);
+    permitted_subtypes->at_put(index++, class_info_index);
+  }
+  assert(index == size, "wrong size");
+
+  // Restore buffer's current position.
+  cfs->set_current(current_mark);
+
+  return length;
+}
+
+void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* const cfs,
+                                                           const u1* const record_attribute_start,
+                                                           ConstantPool* cp,
+                                                           u2* const record_params_count_ptr,
+                                                           TRAPS) {
+  assert(NULL == _record_params, "invariant");
+
+  const u1* const current_mark = cfs->current();
+  u2 num_of_params = 0;
+  if (record_attribute_start != NULL) {
+    cfs->set_current(record_attribute_start);
+    cfs->guarantee_more(2, CHECK);  // length
+    num_of_params = cfs->get_u2_fast();
+    // DEBUG
+    // tty->print_cr("this record has %d parameters", num_of_params);
+  }
+
+  *record_params_count_ptr = num_of_params;
+
+  ResourceMark rm(THREAD);
+  u2* const record_params_array = NEW_RESOURCE_ARRAY_IN_THREAD(THREAD,
+                                              u2,
+                                              num_of_params * (RecordParamInfo::param_slots + 1));
+  for (int n = 0; n < num_of_params; n++) {
+    cfs->guarantee_more(RecordParamInfo::param_slots, CHECK);
+
+    const u2 name_index = cfs->get_u2_fast();
+    check_property(valid_symbol_at(name_index),
+      "Invalid constant pool index %u for record parameter name in class file %s",
+      name_index, CHECK);
+    const Symbol* const name = cp->symbol_at(name_index);
+    verify_legal_field_name(name, CHECK);
+    // DEBUG
+    // tty->print_cr("name read %s", name->as_klass_external_name());
+
+    AccessFlags access_flags;
+    const jint flags = cfs->get_u2_fast() & JVM_RECOGNIZED_FIELD_MODIFIERS;
+    verify_legal_field_modifiers(flags, false, CHECK);
+    access_flags.set_flags(flags);
+
+    const u2 descriptor_index = cfs->get_u2_fast();
+    check_property(valid_symbol_at(descriptor_index),
+      "Invalid constant pool index %u for record parameter descriptor in class file %s",
+      descriptor_index, CHECK);
+    const Symbol* const descriptor = cp->symbol_at(descriptor_index);
+    verify_legal_field_signature(name, descriptor, CHECK);
+    // DEBUG
+    // tty->print_cr("descriptor read %s", descriptor->as_klass_external_name());
+
+    const u2 signature_index = cfs->get_u2_fast();
+    check_property(valid_symbol_at(signature_index),
+      "Invalid constant pool index %u for record parameter signature in class file %s",
+      signature_index, CHECK);
+    const Symbol* const sig = cp->symbol_at(signature_index);
+    // DEBUG
+    // tty->print_cr("signature read %s", sig->as_klass_external_name());
+
+    RecordParamInfo* const record_param_info = RecordParamInfo::from_record_params_array(record_params_array, n);
+    record_param_info->initialize(
+                      access_flags.as_short(),
+                      name_index,
+                      descriptor_index,
+                      signature_index);
+  }
+
+  assert(NULL == _record_params, "invariant");
+
+  _record_params = MetadataFactory::new_array<u2>(_loader_data,
+                                     num_of_params * RecordParamInfo::param_slots,
+                                     CHECK);
+  {
+    int i = 0;
+    for (; i < num_of_params * RecordParamInfo::param_slots; i++) {
+      _record_params->at_put(i, record_params_array[i]);
+    }
+    assert(_record_params->length() == i, "");
+    // DEBUG
+    // tty->print_cr("length of the _record_params array %d for class %s", i, _class_name->as_klass_external_name());
+  }
+
+  // Restore buffer's current position.
+  cfs->set_current(current_mark);
+}
+
 void ClassFileParser::parse_classfile_synthetic_attribute(TRAPS) {
   set_class_synthetic_flag(true);
 }
@@ -3332,12 +3449,18 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   _inner_classes = Universe::the_empty_short_array();
   // Set nest members attribute to default sentinel
   _nest_members = Universe::the_empty_short_array();
+  // Set _permitted_subtypes attribute to default sentinel
+  _permitted_subtypes = Universe::the_empty_short_array();
+  // Set record params to default sentinel
+  _record_params = Universe::the_empty_short_array();
   cfs->guarantee_more(2, CHECK);  // attributes_count
   u2 attributes_count = cfs->get_u2_fast();
   bool parsed_sourcefile_attribute = false;
   bool parsed_innerclasses_attribute = false;
   bool parsed_nest_members_attribute = false;
+  bool parsed_permitted_subtypes_attribute = false;
   bool parsed_nest_host_attribute = false;
+  bool parsed_record_attribute = false;
   bool parsed_enclosingmethod_attribute = false;
   bool parsed_bootstrap_methods_attribute = false;
   const u1* runtime_visible_annotations = NULL;
@@ -3357,6 +3480,10 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   u2  enclosing_method_method_index = 0;
   const u1* nest_members_attribute_start = NULL;
   u4  nest_members_attribute_length = 0;
+  const u1* record_attribute_start = NULL;
+  u4  record_attribute_length = 0;
+  const u1* permitted_subtypes_attribute_start = NULL;
+  u4  permitted_subtypes_attribute_length = 0;
 
   // Iterate over attributes
   while (attributes_count--) {
@@ -3539,6 +3666,25 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          "Nest-host class_info_index %u has bad constant type in class file %s",
                          class_info_index, CHECK);
           _nest_host = class_info_index;
+        } else if (tag == vmSymbols::tag_permitted_subtypes()) {
+            // Check for PermittedSubtypes tag
+            if (parsed_permitted_subtypes_attribute) {
+              classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
+            } else {
+              parsed_permitted_subtypes_attribute = true;
+            }
+            permitted_subtypes_attribute_start = cfs->current();
+            permitted_subtypes_attribute_length = attribute_length;
+            cfs->skip_u1(permitted_subtypes_attribute_length, CHECK);
+        } else if (tag == vmSymbols::tag_record()) {
+          if (parsed_record_attribute) {
+            classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
+          } else {
+            parsed_record_attribute = true;
+          }
+          record_attribute_start = cfs->current();
+          record_attribute_length = attribute_length;
+          cfs->skip_u1(record_attribute_length, CHECK);
         } else {
           // Unknown attribute
           cfs->skip_u1(attribute_length, CHECK);
@@ -3587,6 +3733,27 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
       guarantee_property(
         nest_members_attribute_length == sizeof(num_of_classes) + sizeof(u2) * num_of_classes,
         "Wrong NestMembers attribute length in class file %s", CHECK);
+    }
+  }
+
+  if (parsed_record_attribute) {
+    parse_classfile_record_attribute(
+                            cfs,
+                            record_attribute_start,
+                            cp,
+                            &_record_params_count,
+                            CHECK);
+  }
+
+  if (parsed_permitted_subtypes_attribute) {
+    const u2 num_of_subtypes = parse_classfile_permitted_subtypes_attribute(
+                            cfs,
+                            permitted_subtypes_attribute_start,
+                            CHECK);
+    if (_need_verify) {
+      guarantee_property(
+        permitted_subtypes_attribute_length == sizeof(num_of_subtypes) + sizeof(u2) * num_of_subtypes,
+        "Wrong PermittedSubtypes attribute length in class file %s", CHECK);
     }
   }
 
@@ -3644,7 +3811,8 @@ void ClassFileParser::create_combined_annotations(TRAPS) {
 // Transfer ownership of metadata allocated to the InstanceKlass.
 void ClassFileParser::apply_parsed_class_metadata(
                                             InstanceKlass* this_klass,
-                                            int java_fields_count, TRAPS) {
+                                            int java_fields_count,
+                                            int record_params_count, TRAPS) {
   assert(this_klass != NULL, "invariant");
 
   _cp->set_pool_holder(this_klass);
@@ -3656,6 +3824,8 @@ void ClassFileParser::apply_parsed_class_metadata(
   this_klass->set_nest_host_index(_nest_host);
   this_klass->set_local_interfaces(_local_interfaces);
   this_klass->set_annotations(_combined_annotations);
+  this_klass->set_record_params(_record_params, record_params_count);
+  this_klass->set_permitted_subtypes(_permitted_subtypes);
   // Delay the setting of _transitive_interfaces until after initialize_supers() in
   // fill_instance_klass(). It is because the _transitive_interfaces may be shared with
   // its _super. If an OOM occurs while loading the current klass, its _super field
@@ -4727,12 +4897,13 @@ void ClassFileParser::verify_legal_class_modifiers(jint flags, TRAPS) const {
   const bool is_super      = (flags & JVM_ACC_SUPER)      != 0;
   const bool is_enum       = (flags & JVM_ACC_ENUM)       != 0;
   const bool is_annotation = (flags & JVM_ACC_ANNOTATION) != 0;
-  const bool major_gte_15  = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_12  = _major_version >= JAVA_12_VERSION;
 
-  if ((is_abstract && is_final) ||
-      (is_interface && !is_abstract) ||
-      (is_interface && major_gte_15 && (is_super || is_enum)) ||
-      (!is_interface && major_gte_15 && is_annotation)) {
+  if ((is_abstract && is_final && !major_gte_12) ||
+      (is_interface && !is_abstract && !major_gte_12) ||
+      (is_interface && major_gte_1_5 && (is_super || is_enum)) ||
+      (!is_interface && major_gte_1_5 && is_annotation)) {
     ResourceMark rm(THREAD);
     Exceptions::fthrow(
       THREAD_AND_LOCATION,
@@ -5495,7 +5666,7 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
 
   // this transfers ownership of a lot of arrays from
   // the parser onto the InstanceKlass*
-  apply_parsed_class_metadata(ik, _java_fields_count, CHECK);
+  apply_parsed_class_metadata(ik, _java_fields_count, _record_params_count, CHECK);
 
   // note that is not safe to use the fields in the parser from this point on
   assert(NULL == _cp, "invariant");
@@ -5505,6 +5676,8 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   assert(NULL == _nest_members, "invariant");
   assert(NULL == _local_interfaces, "invariant");
   assert(NULL == _combined_annotations, "invariant");
+  assert(NULL == _record_params, "invariant");
+  assert(NULL == _permitted_subtypes, "invariant");
 
   if (_has_final_method) {
     ik->set_has_final_method();
@@ -5684,6 +5857,8 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   // it's official
   set_klass(ik);
 
+  check_subtyping(CHECK);
+
   debug_only(ik->verify();)
 }
 
@@ -5786,6 +5961,8 @@ ClassFileParser::ClassFileParser(ClassFileStream* stream,
   _inner_classes(NULL),
   _nest_members(NULL),
   _nest_host(0),
+  _record_params(NULL),
+  _permitted_subtypes(NULL),
   _local_interfaces(NULL),
   _transitive_interfaces(NULL),
   _combined_annotations(NULL),
@@ -5819,6 +5996,7 @@ ClassFileParser::ClassFileParser(ClassFileStream* stream,
   _super_class_index(0),
   _itfs_len(0),
   _java_fields_count(0),
+  _record_params_count(0),
   _need_verify(false),
   _relax_verify(false),
   _has_nonstatic_concrete_methods(false),
@@ -5892,10 +6070,12 @@ void ClassFileParser::clear_class_metadata() {
   _methods = NULL;
   _inner_classes = NULL;
   _nest_members = NULL;
+  _permitted_subtypes = NULL;
   _local_interfaces = NULL;
   _combined_annotations = NULL;
   _annotations = _type_annotations = NULL;
   _fields_annotations = _fields_type_annotations = NULL;
+  _record_params = NULL;
 }
 
 // Destructor to clean up
@@ -5921,6 +6101,14 @@ ClassFileParser::~ClassFileParser() {
 
   if (_nest_members != NULL && _nest_members != Universe::the_empty_short_array()) {
     MetadataFactory::free_array<u2>(_loader_data, _nest_members);
+  }
+
+  if (_record_params != NULL && _record_params != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<u2>(_loader_data, _record_params);
+  }
+  
+  if (_permitted_subtypes != NULL && _permitted_subtypes != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<u2>(_loader_data, _permitted_subtypes);
   }
 
   // Free interfaces
@@ -6255,10 +6443,6 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
       );
       return;
     }
-    // Make sure super class is not final
-    if (_super_klass->is_final()) {
-      THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
-    }
   }
 
   // Compute the transitive list of all unique interfaces implemented by this class
@@ -6276,12 +6460,16 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
+  bool is_sealed = _permitted_subtypes != NULL &&
+                         _permitted_subtypes != Universe::the_empty_short_array() &&
+                         _permitted_subtypes->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,
                                                     _super_klass,
                                                     _methods,
                                                     _access_flags,
+                                                    is_sealed,
                                                     _major_version,
                                                     loader,
                                                     _class_name,
@@ -6301,6 +6489,34 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   // Compute reference typ
   _rt = (NULL ==_super_klass) ? REF_NONE : _super_klass->reference_type();
 
+}
+
+void ClassFileParser::check_subtyping(TRAPS) {
+  assert(NULL != _klass, "_klass should have been resolved before calling this method");
+  if (_super_klass != NULL) {
+    if (_super_klass->is_final()) {
+      THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
+    } else if (_super_klass->is_sealed()) {
+      bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
+      if (!isPermittedSubtype) {
+        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from sealed class");
+      }
+    }
+  }
+  Array<InstanceKlass*>* local_interfaces = _klass->local_interfaces();
+  if (local_interfaces != NULL && local_interfaces != Universe::the_empty_instance_klass_array()) {
+    for (int i = 0; i < local_interfaces->length(); i++) {
+      InstanceKlass* intf = local_interfaces->at(i);
+      if (intf->is_final()) {
+        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
+      } else if (intf->is_sealed()) {
+        bool isPermittedSubtype = intf->has_as_permitted_subtype(_klass, CHECK);
+        if (!isPermittedSubtype) {
+          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from sealed interface");
+        }
+      }
+    }
+  }
 }
 
 void ClassFileParser::set_klass(InstanceKlass* klass) {

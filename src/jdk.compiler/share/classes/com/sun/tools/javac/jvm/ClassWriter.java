@@ -406,6 +406,7 @@ public class ClassWriter extends ClassFile {
 
     private void writeParamAnnotations(List<VarSymbol> params,
                                        RetentionPolicy retention) {
+        databuf.appendByte(params.length());
         for (VarSymbol s : params) {
             ListBuffer<Attribute.Compound> buf = new ListBuffer<>();
             for (Attribute.Compound a : s.getRawAttributes())
@@ -427,11 +428,11 @@ public class ClassWriter extends ClassFile {
     /** Write method parameter annotations;
      *  return number of attributes written.
      */
-    int writeParameterAttrs(MethodSymbol m) {
+    int writeParameterAttrs(List<VarSymbol> vars) {
         boolean hasVisible = false;
         boolean hasInvisible = false;
-        if (m.params != null) {
-            for (VarSymbol s : m.params) {
+        if (vars != null) {
+            for (VarSymbol s : vars) {
                 for (Attribute.Compound a : s.getRawAttributes()) {
                     switch (types.getRetention(a)) {
                     case SOURCE: break;
@@ -446,13 +447,13 @@ public class ClassWriter extends ClassFile {
         int attrCount = 0;
         if (hasVisible) {
             int attrIndex = writeAttr(names.RuntimeVisibleParameterAnnotations);
-            writeParamAnnotations(m, RetentionPolicy.RUNTIME);
+            writeParamAnnotations(vars, RetentionPolicy.RUNTIME);
             endAttr(attrIndex);
             attrCount++;
         }
         if (hasInvisible) {
             int attrIndex = writeAttr(names.RuntimeInvisibleParameterAnnotations);
-            writeParamAnnotations(m, RetentionPolicy.CLASS);
+            writeParamAnnotations(vars, RetentionPolicy.CLASS);
             endAttr(attrIndex);
             attrCount++;
         }
@@ -831,6 +832,34 @@ public class ClassWriter extends ClassFile {
         endAttr(alenIdx);
     }
 
+    int writeRecordAttribute(ClassSymbol csym) {
+        int alenIdx = writeAttr(names.Record);
+        Scope s = csym.members();
+        List<VarSymbol> vars = List.nil();
+        int numParams = 0;
+        for (Symbol sym : s.getSymbols(NON_RECURSIVE)) {
+            if (sym.kind == VAR && sym.isRecord()) {
+                vars = vars.prepend((VarSymbol)sym);
+                numParams++;
+            }
+        }
+        databuf.appendChar(numParams);
+        for (VarSymbol v: vars) {
+            databuf.appendChar(poolWriter.putName(v.name));
+            databuf.appendChar(adjustFlags(v.flags()));
+            // descriptor
+            databuf.appendChar(poolWriter.putSignature(v));
+            // signature
+            databuf.appendChar(poolWriter.putSignature(v));
+        }
+        int acountIdx = beginAttrs();
+        int acount = 0;
+        acount += writeParameterAttrs(vars);
+        endAttrs(acountIdx, acount);
+        endAttr(alenIdx);
+        return 1;
+    }
+
     /**
      * Write NestMembers attribute (if needed)
      */
@@ -879,6 +908,22 @@ public class ClassWriter extends ClassFile {
                 listNested(s, seen);
             }
         }
+    }
+
+    /** Write "PermittedSubtypes" attribute.
+     */
+    int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
+        ClassType ct = (ClassType)csym.type;
+        if (ct.permitted.nonEmpty()) {
+            int alenIdx = writeAttr(names.PermittedSubtypes);
+            databuf.appendChar(ct.permitted.size());
+            for (Type t : ct.permitted) {
+                databuf.appendChar(poolWriter.putClass((ClassSymbol)t.tsym));
+            }
+            endAttr(alenIdx);
+            return 1;
+        }
+        return 0;
     }
 
     /** Write "bootstrapMethods" attribute.
@@ -966,7 +1011,7 @@ public class ClassWriter extends ClassFile {
         }
         acount += writeMemberAttrs(m);
         if (!m.isLambdaMethod())
-            acount += writeParameterAttrs(m);
+            acount += writeParameterAttrs(m.params);
         endAttrs(acountIdx, acount);
     }
 
@@ -1491,6 +1536,12 @@ public class ClassWriter extends ClassFile {
             flags = ACC_MODULE;
         } else {
             flags = adjustFlags(c.flags() & ~DEFAULT);
+            if (c.isSealed()) {
+                flags &= ~SEALED;
+                if (((ClassType)c.type).permitted.isEmpty()) {
+                    flags |= FINAL;
+                }
+            }
             if ((flags & PROTECTED) != 0) flags |= PUBLIC;
             flags = flags & ClassFlags & ~STRICTFP;
             if ((flags & INTERFACE) == 0) flags |= ACC_SUPER;
@@ -1598,6 +1649,14 @@ public class ClassWriter extends ClassFile {
                 acount += writeNestMembersIfNeeded(c);
                 acount += writeNestHostIfNeeded(c);
             }
+        }
+
+        if (c.isRecord()) {
+            acount += writeRecordAttribute(c);
+        }
+
+        if (target.hasSealedTypes()) {
+            acount += writePermittedSubtypesIfNeeded(c);
         }
 
         if (!poolWriter.bootstrapMethods.isEmpty()) {

@@ -32,6 +32,7 @@
 #include "oops/fieldInfo.hpp"
 #include "oops/instanceOop.hpp"
 #include "oops/klassVtable.hpp"
+#include "oops/recordParamInfo.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/os.hpp"
 #include "utilities/accessFlags.hpp"
@@ -182,6 +183,10 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
+  // The PermittedSubtypes attribute. An array of shorts, where each is a
+  // class info index for the class that is a permitted subtype.
+  Array<jushort>* _permitted_subtypes;
+
   // the source debug extension for this klass, NULL if not specified.
   // Specified as UTF-8 string without terminating zero byte in the classfile,
   // it is stored in the instanceklass as a NULL-terminated UTF-8 string
@@ -189,6 +194,8 @@ class InstanceKlass: public Klass {
   // Array name derived from this class which needs unreferencing
   // if this class is unloaded.
   Symbol*         _array_name;
+
+  Array<u2>*      _record_params;
 
   // Number of heapOopSize words used by non-static fields in this klass
   // (including inherited fields but after header_size()).
@@ -202,6 +209,7 @@ class InstanceKlass: public Klass {
   u2              _source_file_name_index;
   u2              _static_oop_field_count;// number of static oop fields in this klass
   u2              _java_fields_count;    // The number of declared Java fields
+  u2              _record_params_count;  // The number of record parameters
   int             _nonstatic_oop_map_size;// size in words of nonstatic oop map blocks
 
   int             _itable_len;           // length of Java itable (in words)
@@ -418,6 +426,8 @@ class InstanceKlass: public Klass {
   friend class fieldDescriptor;
   FieldInfo* field(int index) const { return FieldInfo::from_field_array(_fields, index); }
 
+  RecordParamInfo* record_param(int index) const { return RecordParamInfo::from_record_params_array(_record_params, index); }
+
  public:
   int     field_offset      (int index) const { return field(index)->offset(); }
   int     field_access_flags(int index) const { return field(index)->access_flags(); }
@@ -446,9 +456,31 @@ class InstanceKlass: public Klass {
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
 
+  // record parameters
+  int     record_param_access_flags(int index) const { return record_param(index)->access_flags(); }
+  Symbol* record_param_name(int index) const { return record_param(index)->name(constants()); }
+  Symbol* record_param_signature(int index) const { return record_param(index)->signature(constants()); }
+  Symbol* record_param_descriptor(int index) const { return record_param(index)->signature(constants()); }
+
+  int record_params_count() const       { return (int)_record_params_count; }
+
+  Array<u2>* record_params() const       { return _record_params; }
+  void set_record_params(Array<u2>* record_params, u2 record_params_count) {
+    guarantee(_record_params == NULL || record_params == NULL, "Just checking");
+    _record_params = record_params;
+    _record_params_count = record_params_count;
+  }
+
+// permitted subtypes
+  Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
+  void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
+
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
   bool has_nest_member(InstanceKlass* k, TRAPS) const;
+
+  // Called to verify that k is a permitted subtype of this class
+  bool has_as_permitted_subtype(InstanceKlass* k, TRAPS) const;
 public:
   // Returns nest-host class, resolving and validating it if needed
   // Returns NULL if an exception occurs during loading, or validation fails
@@ -505,6 +537,9 @@ public:
   bool is_reentrant_initialization(Thread *thread)  { return thread == _init_thread; }
   ClassState  init_state()                 { return (ClassState)_init_state; }
   bool is_rewritten() const                { return (_misc_flags & _misc_rewritten) != 0; }
+
+  // is this a sealed class
+  bool is_sealed() const;
 
   // defineClass specified verification
   bool should_verify_class() const         {

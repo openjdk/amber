@@ -25,6 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit.taglets;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import javax.lang.model.element.Element;
@@ -150,6 +151,15 @@ public abstract class TagletWriter {
      * @return the output of the see tags.
      */
     protected abstract Content seeTagOutput(Element holder, List<? extends DocTree> seeTags);
+
+    /**
+     * Return the accessor tag output.
+     *
+     * @param holder
+     * @param tags the accessor tags
+     * @return the output of the accessor tag.
+     */
+    protected abstract Content accessorTagOutput(Element holder, List<? extends DocTree> tags);
 
     /**
      * Return the output for a simple tag.

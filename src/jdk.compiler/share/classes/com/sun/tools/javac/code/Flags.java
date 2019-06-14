@@ -334,20 +334,38 @@ public class Flags {
      */
     public static final long MATCH_BINDING_TO_OUTER = 1L<<60;
 
+    /**
+     * Flag to indicate sealed class/interface declaration.
+     */
+    public static final long SEALED = 1L<<61;
+
+    /**
+     * Flag to indicate that the class/interface has explicitly being annotated as not sealed.
+     */
+    public static final long NON_FINAL = 1L<<62;
+
+    /**
+     * Flag to indicate that a class is a record. The flag is also used to mark fields that are
+     * part of the state vector of a record.
+     */
+    public static final long RECORD = 1L<<63;
+
     /** Modifier masks.
      */
     public static final int
-        AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
-        LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
-        MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
-        ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
-        InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
-        VarFlags              = AccessFlags | FINAL | STATIC |
-                                VOLATILE | TRANSIENT | ENUM,
-        ConstructorFlags      = AccessFlags,
-        InterfaceMethodFlags  = ABSTRACT | PUBLIC,
-        MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                SYNCHRONIZED | FINAL | STRICTFP;
+        AccessFlags                 = PUBLIC | PROTECTED | PRIVATE,
+        LocalClassFlags             = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        LocalRecordFlags            = LocalClassFlags | STATIC,
+        MemberClassFlags            = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberRecordClassFlags      = MemberClassFlags | STATIC,
+        ClassFlags                  = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
+        InterfaceVarFlags           = FINAL | STATIC | PUBLIC,
+        VarFlags                    = AccessFlags | FINAL | STATIC |
+                                      VOLATILE | TRANSIENT | ENUM,
+        ConstructorFlags            = AccessFlags,
+        InterfaceMethodFlags        = ABSTRACT | PUBLIC,
+        MethodFlags                 = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                      SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
         ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
@@ -366,6 +384,7 @@ public class Flags {
             if (0 != (flags & PRIVATE))   modifiers.add(Modifier.PRIVATE);
             if (0 != (flags & ABSTRACT))  modifiers.add(Modifier.ABSTRACT);
             if (0 != (flags & STATIC))    modifiers.add(Modifier.STATIC);
+            if (0 != (flags & SEALED))    modifiers.add(Modifier.SEALED);
             if (0 != (flags & FINAL))     modifiers.add(Modifier.FINAL);
             if (0 != (flags & TRANSIENT)) modifiers.add(Modifier.TRANSIENT);
             if (0 != (flags & VOLATILE))  modifiers.add(Modifier.VOLATILE);
@@ -451,7 +470,9 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
-        NAME_FILLED(Flags.NAME_FILLED);
+        NAME_FILLED(Flags.NAME_FILLED),
+        SEALED(Flags.SEALED),
+        RECORD(Flags.RECORD);
 
         Flag(long flag) {
             this.value = flag;
