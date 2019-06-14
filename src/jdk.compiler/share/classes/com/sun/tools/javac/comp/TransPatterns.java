@@ -251,10 +251,10 @@ public class TransPatterns extends TreeTranslator {
                                                 new ClassType(syms.classType.getEnclosingType(),
                                                               List.of(tempType),
                                                               syms.classType.tsym));
-            
+
             Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
                     names.fromString("ofType"), bsm_staticArgs, List.nil());
-            
+
             Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(names.fromString("ofType"),
                     syms.noSymbol,
                     new Symbol.MethodHandleSymbol(ofType),
@@ -378,6 +378,30 @@ public class TransPatterns extends TreeTranslator {
                                                 indyType,
                                                 new LoadableConstant[] {lc});
             return wrapWithAdapt(patt.pos(), ofConstant, target);
+        } else if (patt.hasTag(Tag.ANYPATTERN)) {
+            Type tempType = patt.type.hasTag(BOT) ?
+                    syms.objectType
+                    : types.boxedTypeOrType(patt.type);
+            Type indyType = syms.objectType;
+            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                                syms.stringType,
+                                                new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(syms.extractorType),
+                                                              syms.classType.tsym),
+                                                new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(tempType),
+                                                              syms.classType.tsym));
+
+            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
+                    names.fromString("ofType"), bsm_staticArgs, List.nil());
+
+            Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(names.fromString("ofType"),
+                    syms.noSymbol,
+                    new Symbol.MethodHandleSymbol(ofType),
+                    indyType,
+                    new LoadableConstant[] {(ClassType) tempType});
+
+            return wrapWithAdapt(patt.pos(), dynSym, target);
         } else {
             throw new IllegalStateException();
         }

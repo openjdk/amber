@@ -752,7 +752,10 @@ public class JavacParser implements Parser {
 
     public JCPattern parsePattern() {
         int pos = token.pos;
-        if (token.kind == IDENTIFIER && token.name() == names.var) {
+        if (token.kind == UNDERSCORE) {
+            nextToken();
+            return toP(F.at(pos).AnyPattern());
+        } else if (token.kind == IDENTIFIER && token.name() == names.var) {
             nextToken();
             return toP(F.at(pos).BindingPattern(ident(), null));
         } else {

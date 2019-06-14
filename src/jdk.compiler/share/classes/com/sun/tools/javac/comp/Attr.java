@@ -3838,6 +3838,12 @@ public class Attr extends JCTree.Visitor {
                         });
     }
 
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
+        tree.type = resultInfo.pt;
+        result = tree.type;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null) {
             ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
@@ -3858,10 +3864,14 @@ public class Attr extends JCTree.Visitor {
         Type site = tree.type = attribType(tree.deconstructor, env);
         ListBuffer<Type> components = new ListBuffer<>();
         for (JCPattern n : tree.nested) {
-            components.append(attribExpr(n, env));
+            if ((n.hasTag(BINDINGPATTERN) && ((JCBindingPattern) n).vartype == null) || n.hasTag(ANYPATTERN)) {
+                components.append(Type.noType);
+            } else {
+                components.append(attribExpr(n, env));
+            }
         }
-        MethodSymbol foundPattern = null;
         Iterable<Symbol> patterns = site.tsym.members().getSymbols(sym -> sym.kind == Kind.MTH && sym.name.startsWith(names.fromString("\\%pattern\\%")));
+        List<Pair<MethodSymbol, List<Type>>> foundPatterns = List.nil();
         for (Symbol pattern : patterns) {
             String[] parts = BytecodeName.toSourceName(pattern.name.toString()).split("\\$", 4);
             if (!parts[2].contentEquals(site.tsym.name))
@@ -3872,16 +3882,36 @@ public class Attr extends JCTree.Visitor {
             while (sig[idx[0]] != ')') {//TODO: handle errors
                 patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
             }
-            if (types.isSameTypes(components.toList(), patternComponents.toList())) {
-                //found:
-                foundPattern = (MethodSymbol) pattern;
-                tree.innerTypes = patternComponents.toList();
-                break;
+            if (isSameTypesIgnoreNone(components.toList(), patternComponents.toList())) {
+                //found a pattern:
+                foundPatterns = foundPatterns.prepend(Pair.of((MethodSymbol) pattern, patternComponents.toList()));
             }
         }
-        tree.extractorResolver = foundPattern;
+        if (foundPatterns.size() == 1) {
+            tree.extractorResolver = foundPatterns.head.fst;
+            List<Type> currentTypes;
+            tree.innerTypes = currentTypes = foundPatterns.head.snd;
+            //fix var/any patterns:
+            for (JCPattern nestedPattern : tree.nested) {
+                if (nestedPattern.type == null) {
+                    attribExpr(nestedPattern, env, currentTypes.head);
+                }
+                currentTypes = currentTypes.tail;
+            }
+        } else {
+            //TODO: error:
+        }
 //        //TODO: some checks....
         result = tree.type;
+    }
+
+    private boolean isSameTypesIgnoreNone(List<Type> ts, List<Type> ss) {
+        while (ts.tail != null && ss.tail != null &&
+               (ts.head == Type.noType || types.isSameType(ts.head, ss.head))) {
+            ts = ts.tail;
+            ss = ss.tail;
+        }
+        return ts.tail == null && ss.tail == null;
     }
 
     public void visitLiteralPattern(JCLiteralPattern tree) {

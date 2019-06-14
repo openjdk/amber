@@ -243,6 +243,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         /** Patterns.
          */
+        ANYPATTERN,
         BINDINGPATTERN,
         DECONSTRUCTIONPATTERN,
         LITERALPATTERN,
@@ -2246,6 +2247,34 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public static class JCAnyPattern extends JCPattern
+            implements AnyPatternTree {
+
+        protected JCAnyPattern() {
+        }
+
+        @Override
+        public void accept(Visitor v) {
+            v.visitAnyPattern(this);
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return Kind.ANY_PATTERN;
+        }
+
+        @Override
+        @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
+            return v.visitAnyPattern(this, d);
+        }
+
+        @Override
+        public Tag getTag() {
+            return ANYPATTERN;
+        }
+    }
+
     public static class JCBindingPattern extends JCPattern
             implements BindingPatternTree {
         public Name name;
@@ -3430,6 +3459,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitBinary(JCBinary that)               { visitTree(that); }
         public void visitTypeCast(JCTypeCast that)           { visitTree(that); }
         public void visitTypeTest(JCInstanceOf that)         { visitTree(that); }
+        public void visitAnyPattern(JCAnyPattern that)       { visitTree(that); }
         public void visitBindingPattern(JCBindingPattern that) { visitTree(that); }
         public void visitDeconstructionPattern(JCDeconstructionPattern that) { visitTree(that); }
         public void visitLiteralPattern(JCLiteralPattern that) { visitTree(that); }

@@ -303,6 +303,10 @@ public class TreeScanner extends Visitor {
         scan(tree.pattern);
     }
 
+    @Override
+    public void visitAnyPattern(JCTree.JCAnyPattern that) {
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null)
             scan(tree.vartype);
