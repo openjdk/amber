@@ -46,6 +46,7 @@ import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import com.sun.tools.javac.tree.JCTree.JCThrow;
+import com.sun.tools.javac.tree.JCTree.JCYield;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.tree.TreeTranslator;
@@ -157,7 +158,7 @@ public class TransSwitches extends TreeTranslator {
                 @Override
                 public void visitMethodDef(JCMethodDecl tree) {}
                 @Override
-                public void visitBreak(JCBreak tree) {
+                public void visitYield(JCYield tree) {
                     if (tree.target == switchExpr) {
                         tree.target = switchStatement;
                         JCExpressionStatement assignment =

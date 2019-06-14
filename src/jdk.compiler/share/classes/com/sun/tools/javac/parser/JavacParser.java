@@ -942,8 +942,8 @@ public class JavacParser implements Parser {
                 int patternPos = token.pos;
                 JCTree pattern = parseType(true);
                 if (token.kind == IDENTIFIER) {
-                    if (pattern.hasTag(IDENT) && isRestrictedLocalVarTypeName((JCIdent) pattern, keepLineMap)) {
-                        reportSyntaxError(pos, Errors.VarNotAllowed);
+                    if (pattern.hasTag(IDENT) && isRestrictedTypeName(((JCIdent) pattern).name, pattern.pos, true)) {
+                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, ((JCIdent) pattern).name == names.var ? Source.JDK10 : Source.JDK13));
                         pattern = null;
                     }
                     pattern = toP(F.at(patternPos).BindingPattern(ident(), pattern));
