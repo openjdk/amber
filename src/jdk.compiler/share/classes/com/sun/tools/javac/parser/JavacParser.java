@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -182,6 +182,8 @@ public class JavacParser implements Parser {
         this.keepLineMap = keepLineMap;
         this.errorTree = F.Erroneous();
         endPosTable = newEndPosTable(keepEndPositions);
+        this.allowYieldStatement = (!preview.isPreview(Feature.SWITCH_EXPRESSION) || preview.isEnabled()) &&
+                Feature.SWITCH_EXPRESSION.allowedInSource(source);
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -210,6 +212,10 @@ public class JavacParser implements Parser {
      * This is needed to parse receiver types.
      */
     boolean allowThisIdent;
+
+    /** Switch: is yield statement allowed in this source level?
+     */
+    boolean allowYieldStatement;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -788,9 +794,10 @@ public class JavacParser implements Parser {
 
     public JCExpression unannotatedType(boolean allowVar) {
         JCExpression result = term(TYPE);
+        Name restrictedTypeName;
 
-        if (!allowVar && isRestrictedLocalVarTypeName(result, true)) {
-            syntaxError(result.pos, Errors.VarNotAllowedHere);
+        if (!allowVar && (restrictedTypeName = restrictedTypeName(result, true)) != null) {
+            syntaxError(result.pos, Errors.RestrictedTypeNotAllowedHere(restrictedTypeName));
         }
 
         return result;
@@ -1399,6 +1406,7 @@ public class JavacParser implements Parser {
             break;
         case SWITCH:
             checkSourceLevel(Feature.SWITCH_EXPRESSION);
+            allowYieldStatement = true;
             int switchPos = token.pos;
             nextToken();
             JCExpression selector = parExpression();
@@ -1458,7 +1466,7 @@ public class JavacParser implements Parser {
                     kind = JCCase.RULE;
                 } else {
                     JCExpression value = parseExpression();
-                    stats = List.of(to(F.at(value).Break(value)));
+                    stats = List.of(to(F.at(value).Yield(value)));
                     body = value;
                     kind = JCCase.RULE;
                     accept(SEMI);
@@ -1629,7 +1637,7 @@ public class JavacParser implements Parser {
         int depth = 0;
         boolean type = false;
         ParensResult defaultResult = ParensResult.PARENS;
-        outer: for (int lookahead = 0 ; ; lookahead++) {
+        outer: for (int lookahead = 0; ; lookahead++) {
             TokenKind tk = S.token(lookahead).kind;
             switch (tk) {
                 case COMMA:
@@ -1804,12 +1812,13 @@ public class JavacParser implements Parser {
         if (explicitParams) {
             LambdaClassifier lambdaClassifier = new LambdaClassifier();
             for (JCVariableDecl param: params) {
+                Name restrictedTypeName;
                 if (param.vartype != null &&
-                        isRestrictedLocalVarTypeName(param.vartype, false) &&
+                        (restrictedTypeName = restrictedTypeName(param.vartype, false)) != null &&
                         param.vartype.hasTag(TYPEARRAY)) {
                     log.error(DiagnosticFlag.SYNTAX, param.pos,
                         Feature.VAR_SYNTAX_IMPLICIT_LAMBDAS.allowedInSource(source)
-                            ? Errors.VarNotAllowedArray : Errors.VarNotAllowedHere);
+                            ? Errors.RestrictedTypeNotAllowedArray(restrictedTypeName) : Errors.RestrictedTypeNotAllowedHere(restrictedTypeName));
                 }
                 lambdaClassifier.addParameter(param);
                 if (lambdaClassifier.result() == LambdaParameterKind.ERROR) {
@@ -1821,7 +1830,7 @@ public class JavacParser implements Parser {
             }
             for (JCVariableDecl param: params) {
                 if (param.vartype != null
-                        && isRestrictedLocalVarTypeName(param.vartype, true)) {
+                        && restrictedTypeName(param.vartype, true) != null) {
                     checkSourceLevel(param.pos, Feature.VAR_SYNTAX_IMPLICIT_LAMBDAS);
                     param.startPos = TreeInfo.getStartPos(param.vartype);
                     param.vartype = null;
@@ -1859,7 +1868,7 @@ public class JavacParser implements Parser {
 
         void addParameter(JCVariableDecl param) {
             if (param.vartype != null && param.name != names.empty) {
-                if (isRestrictedLocalVarTypeName(param.vartype, false)) {
+                if (restrictedTypeName(param.vartype, false) != null) {
                     reduce(LambdaParameterKind.VAR);
                 } else {
                     reduce(LambdaParameterKind.EXPLICIT);
@@ -1966,10 +1975,27 @@ public class JavacParser implements Parser {
         return args.toList();
     }
 
-    JCMethodInvocation arguments(List<JCExpression> typeArgs, JCExpression t) {
+    JCExpression arguments(List<JCExpression> typeArgs, JCExpression t) {
         int pos = token.pos;
         List<JCExpression> args = arguments();
-        return toP(F.at(pos).Apply(typeArgs, t, args));
+        JCExpression mi = F.at(pos).Apply(typeArgs, t, args);
+        if (t.hasTag(IDENT) && isInvalidUnqualifiedMethodIdentifier(((JCIdent) t).pos,
+                                                                    ((JCIdent) t).name)) {
+            log.error(DiagnosticFlag.SYNTAX, t, Errors.InvalidYield);
+            mi = F.Erroneous(List.of(mi));
+        }
+        return toP(mi);
+    }
+
+    boolean isInvalidUnqualifiedMethodIdentifier(int pos, Name name) {
+        if (name == names.yield) {
+            if (allowYieldStatement) {
+                return true;
+            } else {
+                log.warning(pos, Warnings.InvalidYield);
+            }
+        }
+        return false;
     }
 
     /**  TypeArgumentsOpt = [ TypeArguments ]
@@ -2528,6 +2554,7 @@ public class JavacParser implements Parser {
 
     /**This method parses a statement appearing inside a block.
      */
+    @SuppressWarnings("fallthrough")
     List<JCStatement> blockStatement() {
         //todo: skip to anchor on error(?)
         int pos = token.pos;
@@ -2565,25 +2592,71 @@ public class JavacParser implements Parser {
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
-        }
-        //otherwise
-        Token prevToken = token;
-        JCExpression t = term(EXPR | TYPE);
-        if (token.kind == COLON && t.hasTag(IDENT)) {
-            nextToken();
-            JCStatement stat = parseStatementAsBlock();
-            return List.of(F.at(pos).Labelled(prevToken.name(), stat));
-        } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
-            pos = token.pos;
-            JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-            F.at(pos);
-            return localVariableDeclarations(mods, t);
-        } else {
-            // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-            t = checkExprStat(t);
-            accept(SEMI);
-            JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-            return List.of(expr);
+        case IDENTIFIER:
+            if (token.name() == names.yield && allowYieldStatement) {
+                Token next = S.token(1);
+                boolean isYieldStatement;
+                switch (next.kind) {
+                    case PLUS: case SUB: case STRINGLITERAL: case CHARLITERAL:
+                    case INTLITERAL: case FLOATLITERAL: case DOUBLELITERAL:
+                    case NULL: case IDENTIFIER: case TRUE: case FALSE:
+                    case NEW: case SWITCH: case THIS: case SUPER:
+                        isYieldStatement = true;
+                        break;
+                    case PLUSPLUS: case SUBSUB:
+                        isYieldStatement = S.token(2).kind != SEMI;
+                        break;
+                    case LPAREN:
+                        int lookahead = 2;
+                        int balance = 1;
+                        boolean hasComma = false;
+                        Token l;
+                        while ((l = S.token(lookahead)).kind != EOF && balance != 0) {
+                            switch (l.kind) {
+                                case LPAREN: balance++; break;
+                                case RPAREN: balance--; break;
+                                case COMMA: if (balance == 1) hasComma = true; break;
+                            }
+                            lookahead++;
+                        }
+                        isYieldStatement = (!hasComma && lookahead != 3) || l.kind == ARROW;
+                        break;
+                    case SEMI: //error recovery - this is not a valid statement:
+                        isYieldStatement = true;
+                        break;
+                    default:
+                        isYieldStatement = false;
+                        break;
+                }
+
+                if (isYieldStatement) {
+                    nextToken();
+                    JCExpression t = term(EXPR);
+                    accept(SEMI);
+                    return List.of(toP(F.at(pos).Yield(t)));
+                }
+
+                //else intentional fall-through
+            }
+        default:
+            Token prevToken = token;
+            JCExpression t = term(EXPR | TYPE);
+            if (token.kind == COLON && t.hasTag(IDENT)) {
+                nextToken();
+                JCStatement stat = parseStatementAsBlock();
+                return List.of(F.at(pos).Labelled(prevToken.name(), stat));
+            } else if ((lastmode & TYPE) != 0 && LAX_IDENTIFIER.accepts(token.kind)) {
+                pos = token.pos;
+                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+                F.at(pos);
+                return localVariableDeclarations(mods, t);
+            } else {
+                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+                t = checkExprStat(t);
+                accept(SEMI);
+                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+                return List.of(expr);
+            }
         }
     }
     //where
@@ -2724,9 +2797,9 @@ public class JavacParser implements Parser {
         }
         case BREAK: {
             nextToken();
-            JCExpression value = token.kind == SEMI ? null : parseExpression();
+            Name label = LAX_IDENTIFIER.accepts(token.kind) ? ident() : null;
             accept(SEMI);
-            JCBreak t = toP(F.at(pos).Break(value));
+            JCBreak t = toP(F.at(pos).Break(label));
             return t;
         }
         case CONTINUE: {
@@ -3203,14 +3276,14 @@ public class JavacParser implements Parser {
         int startPos = Position.NOPOS;
         if (elemType.hasTag(IDENT)) {
             Name typeName = ((JCIdent)elemType).name;
-            if (isRestrictedLocalVarTypeName(typeName, pos, !compound && localDecl)) {
+            if (isRestrictedTypeName(typeName, pos, !compound && localDecl)) {
                 if (type.hasTag(TYPEARRAY) && !compound) {
                     //error - 'var' and arrays
-                    reportSyntaxError(pos, Errors.VarNotAllowedArray);
+                    reportSyntaxError(pos, Errors.RestrictedTypeNotAllowedArray(typeName));
                 } else {
                     if(compound)
                         //error - 'var' in compound local var decl
-                        reportSyntaxError(pos, Errors.VarNotAllowedCompound);
+                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowedCompound(typeName));
                     startPos = TreeInfo.getStartPos(mods);
                     if (startPos == Position.NOPOS)
                         startPos = TreeInfo.getStartPos(type);
@@ -3226,23 +3299,30 @@ public class JavacParser implements Parser {
         return result;
     }
 
-    boolean isRestrictedLocalVarTypeName(JCExpression e, boolean shouldWarn) {
+    Name restrictedTypeName(JCExpression e, boolean shouldWarn) {
         switch (e.getTag()) {
             case IDENT:
-                return isRestrictedLocalVarTypeName(((JCIdent)e).name, e.pos, shouldWarn);
+                return isRestrictedTypeName(((JCIdent)e).name, e.pos, shouldWarn) ? ((JCIdent)e).name : null;
             case TYPEARRAY:
-                return isRestrictedLocalVarTypeName(((JCArrayTypeTree)e).elemtype, shouldWarn);
+                return restrictedTypeName(((JCArrayTypeTree)e).elemtype, shouldWarn);
             default:
-                return false;
+                return null;
         }
     }
 
-    boolean isRestrictedLocalVarTypeName(Name name, int pos, boolean shouldWarn) {
+    boolean isRestrictedTypeName(Name name, int pos, boolean shouldWarn) {
         if (name == names.var) {
             if (Feature.LOCAL_VARIABLE_TYPE_INFERENCE.allowedInSource(source)) {
                 return true;
             } else if (shouldWarn) {
-                log.warning(pos, Warnings.VarNotAllowed);
+                log.warning(pos, Warnings.RestrictedTypeNotAllowed(name, Source.JDK10));
+            }
+        }
+        if (name == names.yield) {
+            if (allowYieldStatement) {
+                return true;
+            } else if (shouldWarn) {
+                log.warning(pos, Warnings.RestrictedTypeNotAllowedPreview(name, Source.JDK13));
             }
         }
         return false;
@@ -3636,8 +3716,8 @@ public class JavacParser implements Parser {
     Name typeName() {
         int pos = token.pos;
         Name name = ident();
-        if (isRestrictedLocalVarTypeName(name, pos, true)) {
-            reportSyntaxError(pos, Errors.VarNotAllowed);
+        if (isRestrictedTypeName(name, pos, true)) {
+            reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(name, name == names.var ? Source.JDK10 : Source.JDK13));
         }
         return name;
     }
