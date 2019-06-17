@@ -160,14 +160,14 @@ public class TransSwitches extends TreeTranslator {
                 @Override
                 public void visitYield(JCYield tree) {
                     if (tree.target == switchExpr) {
-                        tree.target = switchStatement;
+                        JCBreak newBreak = make.Break(null);
+                        newBreak.target = switchStatement;
                         JCExpressionStatement assignment =
                                 make.Exec(make.Assign(make.Ident(dollar_switchexpr),
                                                       translate(tree.value))
                                               .setType(dollar_switchexpr.type));
                         result = make.Block(0, List.of(assignment,
-                                                       tree));
-                        tree.value = null;
+                                                       newBreak));
                     } else {
                         result = tree;
                     }

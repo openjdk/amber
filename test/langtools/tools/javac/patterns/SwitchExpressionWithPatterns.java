@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic test for patterns in switch expression
- * @compile --enable-preview -source 12 SwitchExpressionWithPatterns.java
+ * @compile --enable-preview -source ${jdk.version} SwitchExpressionWithPatterns.java
  * @run main/othervm --enable-preview SwitchExpressionWithPatterns
  */
 
@@ -53,9 +53,9 @@ public class SwitchExpressionWithPatterns {
         int check = 0;
         return switch (in) {
             case 41: check++; //fall-through
-            case Integer i: check++; break check;
-            case Long l, Float f: break 3;
-            default: break 4;
+            case Integer i: check++; yield check;
+            case Long l, Float f: yield 3;
+            default: yield 4;
         };
 
     }
@@ -64,9 +64,9 @@ public class SwitchExpressionWithPatterns {
         int check = 0;
         return switch (in) {
             case 41 -> 2;
-            case Integer j -> { break 1; }
+            case Integer j -> { yield 1; }
             case Long l, Float f -> 3;
-            default -> { break 4; }
+            default -> { yield 4; }
         };
     }
 
