@@ -32,7 +32,7 @@
  *          jdk.compiler/com.sun.tools.javac.tree
  *          jdk.compiler/com.sun.tools.javac.util
  * @build DPrinter
- * @run main RecordsMustBeStaticTest
+ * @run main NestedRecordsMustBeStaticAndFinalTest
  */
 
 import java.io.*;
@@ -53,9 +53,9 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.Assert;
 import com.sun.tools.javac.util.Context;
 
-public class RecordsMustBeStaticTest {
+public class NestedRecordsMustBeStaticAndFinalTest {
     public static void main(String... args) throws Exception {
-        new RecordsMustBeStaticTest().run();
+        new NestedRecordsMustBeStaticAndFinalTest().run();
     }
 
     void run() throws Exception {
