@@ -49,6 +49,9 @@ public class SimpleDeconstructionPattern {
         if (!test6(new P(41))) {
             throw new IllegalStateException();
         }
+        if (!((new BaseUse(new BaseSubclass(0))) instanceof BaseUse(BaseSubclass(0)))) {
+            throw new IllegalStateException();
+        }
     }
 
     private static boolean test1(Object o) throws Throwable {
@@ -79,5 +82,9 @@ public class SimpleDeconstructionPattern {
     }
 
     public record P2(P p, String s) {
-    }    
+    }
+
+    public interface Base {}
+    public record BaseUse(Base b) {}
+    public record BaseSubclass(int i) implements Base {}
 }

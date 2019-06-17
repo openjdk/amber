@@ -3882,7 +3882,7 @@ public class Attr extends JCTree.Visitor {
             while (sig[idx[0]] != ')') {//TODO: handle errors
                 patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
             }
-            if (isSameTypesIgnoreNone(components.toList(), patternComponents.toList())) {
+            if (isSubTypesIgnoreNone(components.toList(), patternComponents.toList())) {
                 //found a pattern:
                 foundPatterns = foundPatterns.prepend(Pair.of((MethodSymbol) pattern, patternComponents.toList()));
             }
@@ -3905,9 +3905,9 @@ public class Attr extends JCTree.Visitor {
         result = tree.type;
     }
 
-    private boolean isSameTypesIgnoreNone(List<Type> ts, List<Type> ss) {
+    private boolean isSubTypesIgnoreNone(List<Type> ts, List<Type> ss) {
         while (ts.tail != null && ss.tail != null &&
-               (ts.head == Type.noType || types.isSameType(ts.head, ss.head))) {
+               (ts.head == Type.noType || types.isSubtype(ts.head, ss.head))) {
             ts = ts.tail;
             ss = ss.tail;
         }
