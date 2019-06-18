@@ -1,10 +1,10 @@
 /*
  * @test /nodynamiccopyright/
  * @summary smoke negative test for datum classes
- * @compile/fail/ref=NoAddFieldsCanBeDeclaredInDatumTest.out -XDrawDiagnostics NoAddFieldsCanBeDeclaredInDatumTest.java
+ * @compile/fail/ref=NoAddInstanceFieldsCanBeDeclaredInDatumTest.out -XDrawDiagnostics NoAddInstanceFieldsCanBeDeclaredInDatumTest.java
  */
 
-public class NoAddFieldsCanBeDeclaredInDatumTest {
+public class NoAddInstanceFieldsCanBeDeclaredInDatumTest {
     record Bad1(int i) {
         int y;
     }

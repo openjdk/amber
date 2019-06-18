@@ -58,7 +58,8 @@ public class CheckDatumMembersAccess {
         ClassFile classFile = ClassFile.read(file);
         for (Field f : classFile.fields) {
             if (f.getName(classFile.constant_pool).equals("field")) {
-                Assert.check((f.access_flags.flags & (AccessFlags.ACC_FINAL | AccessFlags.ACC_PRIVATE)) != 0, "record fields should be final and private");
+                Assert.check((f.access_flags.flags & (AccessFlags.ACC_FINAL)) != 0, "record fields should be final");
+                Assert.check((f.access_flags.flags & (AccessFlags.ACC_PRIVATE)) != 0, "record fields should be private");
             }
         }
     }

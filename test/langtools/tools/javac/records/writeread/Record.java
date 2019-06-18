@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,33 +23,6 @@
  * questions.
  */
 
-/*
- * @test
- * @summary smoke test for datum classes
- * @run main Pos01
- */
-public class Pos01 {
+import java.util.List;
 
-    static void assertTrue(boolean cond) {
-        if (!cond) {
-            throw new AssertionError();
-        }
-    }
-
-    static record Sup(int x, int y) { }
-
-    static record Foo(int x, int y, int z);
-
-    public static void main(String[] args) {
-        Foo foo = new Foo(1, 2, 3);
-        Foo foo2 = new Foo(1, 2, 3);
-        Foo foo3 = new Foo(1, 2, 4);
-        assertTrue(foo.toString().equals("Foo[x=1, y=2, z=3]"));
-//        assertTrue(foo.hashCode() == java.util.Objects.hash(1, 2, 3));
-        assertTrue(foo.equals(foo2));
-        assertTrue(!foo.equals(foo3));
-        assertTrue(foo.x() == 1);
-        assertTrue(foo.y() == 2);
-        assertTrue(foo.z() == 3);
-    }
-}
+record Record1<T>(int i, int j, List<String> ls, List<T> lt);
