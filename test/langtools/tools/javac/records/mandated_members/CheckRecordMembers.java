@@ -24,16 +24,18 @@
  */
 
 /**
- * DataClassTest
+ * CheckRecordMembers
  *
  * @test
+ * @summary check that the accessors, equals, hashCode and toString methods
+ *          work as expected
  * @library /tools/javac/lib
  * @modules jdk.compiler/com.sun.tools.javac.file
  *          jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.util
  * @build combo.ComboTestHelper
 
- * @run main DataClassTest
+ * @run main CheckRecordMembers
  */
 
 import java.lang.reflect.AccessibleObject;
@@ -52,7 +54,7 @@ import javax.tools.JavaFileObject;
 import com.sun.tools.javac.file.PathFileObject;
 import combo.ComboTask;
 
-public class DataClassTest extends combo.ComboInstance<DataClassTest> {
+public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> {
 
     enum FieldTypeKind implements combo.ComboParameter {
         BYTE("byte", byte.class),
@@ -97,11 +99,11 @@ public class DataClassTest extends combo.ComboInstance<DataClassTest> {
             "record Data(#{FT[0]} f0, #{FT[1]} f1) { }";
 
     public static void main(String... args) throws Exception {
-        new combo.ComboTestHelper<DataClassTest>()
+        new combo.ComboTestHelper<CheckRecordMembers>()
                 .withArrayDimension("FT", (x, t, index) -> {
                     x.fieldType[index] = t;
                 }, 2, FieldTypeKind.values())
-                .run(DataClassTest::new);
+                .run(CheckRecordMembers::new);
     }
 
     FieldTypeKind[] fieldType = new FieldTypeKind[2];
