@@ -1,10 +1,10 @@
 /*
  * @test /nodynamiccopyright/
  * @summary check that record is not used as a type name
- * @compile/fail/ref=BadUseOfRecordTest.out -XDrawDiagnostics BadUseOfRecordTest.java
+ * @compile/fail/ref=BadUseOfRecordKeywordTest.out -XDrawDiagnostics BadUseOfRecordKeywordTest.java
  */
 
-class BadUseOfRecordTest {
+class BadUseOfRecordKeywordTest {
 
     interface record {
         void m();
