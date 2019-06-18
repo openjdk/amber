@@ -28,5 +28,8 @@
  */
 
 public record AllowStaticFieldsInRecordsTest(int x) {
-    static int S = 3;
+    static int I = 1;
+    static final String S = "Hello World!";
+    static private Object O = null;
+    static protected Object O2 = null;
 }
