@@ -1,0 +1,6 @@
+RecordsCantHaveExtendsClause.java:12:21: compiler.err.expected: ';'
+RecordsCantHaveExtendsClause.java:12:36: compiler.err.expected: token.identifier
+RecordsCantHaveExtendsClause.java:17:28: compiler.err.expected: ';'
+RecordsCantHaveExtendsClause.java:17:37: compiler.err.invalid.meth.decl.ret.type.req
+RecordsCantHaveExtendsClause.java:17:41: compiler.err.expected: token.identifier
+5 errors

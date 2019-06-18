@@ -3741,7 +3741,7 @@ public class JavacParser implements Parser {
         List<JCTypeParameter> typarams = typeParametersOpt();
 
         List<JCVariableDecl> headerFields =
-                headerFields((mods.flags & Flags.ABSTRACT) != 0);
+                headerFields();
 
         List<JCExpression> implementing = List.nil();
         if (token.kind == IMPLEMENTS) {
@@ -3799,7 +3799,7 @@ public class JavacParser implements Parser {
         return name;
     }
 
-    List<JCVariableDecl> headerFields(boolean abstractRecord) {
+    List<JCVariableDecl> headerFields() {
         ListBuffer<JCVariableDecl> fields = new ListBuffer<>();
         if (token.kind == LPAREN) {
             nextToken();
@@ -3808,10 +3808,10 @@ public class JavacParser implements Parser {
                 nextToken();
                 return List.nil();
             }
-            fields.add(headerField(abstractRecord));
+            fields.add(headerField());
             while (token.kind == COMMA) {
                 nextToken();
-                fields.add(headerField(abstractRecord));
+                fields.add(headerField());
             }
             accept(RPAREN);
         } else {
@@ -3820,13 +3820,12 @@ public class JavacParser implements Parser {
         return fields.toList();
     }
 
-    JCVariableDecl headerField(boolean abstractRecord) {
+    JCVariableDecl headerField() {
         JCModifiers mods = modifiersOpt();
         if (mods.flags != 0) {
             log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
         }
-        mods.flags |= Flags.RECORD | Flags.FINAL;
-        mods.flags |= abstractRecord ? Flags.PROTECTED : 0;
+        mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE;
         JCExpression type = parseType();
         int pos = token.pos;
         Name id = ident();
