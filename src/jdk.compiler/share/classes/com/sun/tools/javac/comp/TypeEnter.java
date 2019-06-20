@@ -1132,6 +1132,44 @@ public class TypeEnter implements Completer {
          *  to the symbol table.
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
+            if (!defaultConstructorGenerated) {
+                // let's check if there is a constructor with exactly the same arguments as the record components
+                List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
+                List<Type> erasedTypes = types.erasure(recordComponentTypes);
+                JCMethodDecl canonicalDecl = null;
+                for (JCTree def : tree.defs) {
+                    if (TreeInfo.isConstructor(def)) {
+                        JCMethodDecl mdecl = (JCMethodDecl)def;
+                        if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), erasedTypes)) {
+                            canonicalDecl = mdecl;
+                            break;
+                        }
+                    }
+                }
+                if (canonicalDecl != null && !types.isSameTypes(erasedTypes, recordComponentTypes)) {
+                    // error we found a constructor with the same erasure as the canonical constructor
+                    log.error(canonicalDecl, Errors.ConstructorWithSameErasureAsCanonical);
+                }
+                MethodSymbol canonicalInit = canonicalDecl == null ?
+                        null :
+                        canonicalDecl.sym;
+                if (canonicalInit == null) {
+                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                    JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
+                    tree.defs = tree.defs.prepend(constrDef);
+                    defaultConstructorGenerated = true;
+                } else {
+                    /* there is an explicit constructor that match the canonical constructor by type
+                       let's check that the match is also by name
+                    */
+                    List<Name> recordComponentNames = TreeInfo.recordFields(tree).map(vd -> vd.sym.name);
+                    List<Name> initParamNames = canonicalInit.params.map(p -> p.name);
+                    if (!initParamNames.equals(recordComponentNames)) {
+                        log.error(canonicalDecl, Errors.CanonicalWithNameMismatch);
+                    }
+                }
+            }
+
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
@@ -1208,7 +1246,7 @@ public class TypeEnter implements Completer {
                 LowerSignatureGenerator sg = new LowerSignatureGenerator();
                 sg.assembleSig(typeList);
                 return sg.toString();
-            }
+        }
 
             /**
              * Signature Generation

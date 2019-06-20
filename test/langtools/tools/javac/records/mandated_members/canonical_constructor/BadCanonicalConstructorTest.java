@@ -1,6 +1,6 @@
 /*
  * @test /nodynamiccopyright/
- * @summary check that a datum can inherit from DataClass or an abstract datum class
+ * @summary check that the compiler doesn't accept canonical constructors with wrong accessibility
  * @compile/fail/ref=BadCanonicalConstructorTest.out -XDrawDiagnostics BadCanonicalConstructorTest.java
  */
 
