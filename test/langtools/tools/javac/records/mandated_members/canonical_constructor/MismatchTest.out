@@ -1,0 +1,5 @@
+MismatchTest.java:11:16: compiler.err.canonical.with.name.mismatch
+MismatchTest.java:15:16: compiler.err.constructor.with.same.erasure.as.canonical
+- compiler.note.unchecked.filename: MismatchTest.java
+- compiler.note.unchecked.recompile
+2 errors
