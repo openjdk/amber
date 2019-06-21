@@ -23,7 +23,8 @@
  * questions.
  */
 
-import java.lang.runtime.Extractor;
+import java.lang.runtime.PatternHandle;
+import java.lang.runtime.PatternHandles;
 import java.lang.runtime.SwitchBootstraps;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
@@ -35,30 +36,30 @@ import org.testng.annotations.Test;
 import static java.lang.invoke.MethodHandleInfo.REF_newInvokeSpecial;
 import static org.testng.Assert.assertEquals;
 
-@Test
 /**
  * @test
  * @run testng RecordTest
  * @summary End-to-end test for record patterns
  */
+@Test
 public class RecordTest {
     record R(int a, String b, double c);
     record RR(R r1, R R2);
 
-    private Extractor recordExtractor(Class<?> recordClass,
-                                      Class<?>... paramTypes) throws Throwable {
-        return Extractor.findExtractor(MethodHandles.lookup(), "_", Extractor.class,
-                                       recordClass, MethodType.methodType(void.class, paramTypes), recordClass.getName(), REF_newInvokeSpecial);
+    private PatternHandle recordExtractor(Class<?> recordClass,
+                                          Class<?>... paramTypes) throws Throwable {
+        return PatternHandles.ofNamed(MethodHandles.lookup(), "_", PatternHandle.class,
+                recordClass, MethodType.methodType(void.class, paramTypes), recordClass.getName(), REF_newInvokeSpecial);
     }
 
     public void testRecord() throws Throwable {
         R r = new R(1, "two", 3.14d);
-        Extractor rExtract = recordExtractor(R.class, int.class, String.class, double.class);
+        PatternHandle rExtract = recordExtractor(R.class, int.class, String.class, double.class);
 
-        MethodHandle tryExtract = Extractor.extractorTryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rExtract);
-        MethodHandle a = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 0);
-        MethodHandle b = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 1);
-        MethodHandle c = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 2);
+        MethodHandle tryExtract = PatternHandles.tryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rExtract);
+        MethodHandle a = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 0);
+        MethodHandle b = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 1);
+        MethodHandle c = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 2);
 
         Object o = tryExtract.invoke(r);
         assertEquals(1, a.invoke(o));
@@ -71,17 +72,17 @@ public class RecordTest {
         R r2 = new R(2, "four", 6.0d);
         RR rr = new RR(r1, r2);
 
-        Extractor rExtract = recordExtractor(R.class, int.class, String.class, double.class);
-        Extractor rrExtract = recordExtractor(RR.class, R.class, R.class);
+        PatternHandle rExtract = recordExtractor(R.class, int.class, String.class, double.class);
+        PatternHandle rrExtract = recordExtractor(RR.class, R.class, R.class);
 
-        MethodHandle tryExtractR = Extractor.extractorTryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rExtract);
-        MethodHandle ra = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 0);
-        MethodHandle rb = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 1);
-        MethodHandle rc = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 2);
+        MethodHandle tryExtractR = PatternHandles.tryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rExtract);
+        MethodHandle ra = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 0);
+        MethodHandle rb = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 1);
+        MethodHandle rc = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rExtract, 2);
 
-        MethodHandle tryExtractRr = Extractor.extractorTryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract);
-        MethodHandle r1c = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract, 0);
-        MethodHandle r2c = Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract, 1);
+        MethodHandle tryExtractRr = PatternHandles.tryMatch(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract);
+        MethodHandle r1c = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract, 0);
+        MethodHandle r2c = PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class, rrExtract, 1);
 
         Object o = tryExtractRr.invoke(rr);
         R o1 = (R) r1c.invoke(o);
@@ -97,10 +98,10 @@ public class RecordTest {
     }
 
     public void testNested() throws Throwable {
-        Extractor rExtract = recordExtractor(R.class, int.class, String.class, double.class);
-        Extractor rrExtract = recordExtractor(RR.class, R.class, R.class);
+        PatternHandle rExtract = recordExtractor(R.class, int.class, String.class, double.class);
+        PatternHandle rrExtract = recordExtractor(RR.class, R.class, R.class);
 
-        Extractor e = Extractor.ofNested(rrExtract, rExtract);
+        PatternHandle e = PatternHandles.nested(rrExtract, rExtract);
 
         R r1 = new R(1, "two", 3.14d);
         R r2 = new R(2, "four", 6.0d);
@@ -114,7 +115,7 @@ public class RecordTest {
         assertEquals(e.component(3).invoke(o), "two");
         assertEquals(e.component(4).invoke(o), 3.14d);
 
-        Extractor ee = Extractor.ofNested(rrExtract, rExtract, rExtract);
+        PatternHandle ee = PatternHandles.nested(rrExtract, rExtract, rExtract);
         o = ee.tryMatch().invoke(rr);
 
         assertEquals(ee.component(0).invoke(o), new R(1, "two", 3.14d));
@@ -133,13 +134,13 @@ public class RecordTest {
     record T(String s, String t);
     record U();
 
-    private Object component(Extractor e, int num, Object carrier) throws Throwable {
-        return Extractor.extractorComponent(MethodHandles.lookup(), "_", MethodHandle.class,
-                                            e, num).invoke(carrier);
+    private Object component(PatternHandle e, int num, Object carrier) throws Throwable {
+        return PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class,
+                e, num).invoke(carrier);
     }
 
     public void testRecordSwitch() throws Throwable {
-        Extractor[] extractors = {
+        PatternHandle[] extractors = {
                 recordExtractor(A.class, int.class),
                 recordExtractor(B.class, int.class, int.class),
                 recordExtractor(S.class, String.class),
@@ -156,8 +157,8 @@ public class RecordTest {
         };
 
         CallSite cs = SwitchBootstraps.patternSwitch(MethodHandles.lookup(), "_",
-                                                     MethodType.methodType(SwitchBootstraps.PatternSwitchResult.class, Object.class),
-                                                     extractors);
+                MethodType.methodType(SwitchBootstraps.PatternSwitchResult.class, Object.class),
+                extractors);
         MethodHandle mh = cs.dynamicInvoker();
         for (int i = 0; i < exemplars.length; i++) {
             Object exemplar = exemplars[i];
@@ -191,14 +192,14 @@ public class RecordTest {
     record Box(Object o1);
 
     public void testNestedRecord() throws Throwable {
-        Extractor boxA = Extractor.ofNested(recordExtractor(Box.class, Object.class),
-                                            recordExtractor(A.class, int.class));
-        Extractor boxB = Extractor.ofNested(recordExtractor(Box.class, Object.class),
-                                            recordExtractor(B.class, int.class, int.class));
+        PatternHandle boxA = PatternHandles.nested(recordExtractor(Box.class, Object.class),
+                recordExtractor(A.class, int.class));
+        PatternHandle boxB = PatternHandles.nested(recordExtractor(Box.class, Object.class),
+                recordExtractor(B.class, int.class, int.class));
 
         CallSite cs = SwitchBootstraps.patternSwitch(MethodHandles.lookup(), "_",
-                                                     MethodType.methodType(SwitchBootstraps.PatternSwitchResult.class, Object.class),
-                                                     boxA, boxB);
+                MethodType.methodType(SwitchBootstraps.PatternSwitchResult.class, Object.class),
+                boxA, boxB);
         MethodHandle mh = cs.dynamicInvoker();
 
         assertEquals(((SwitchBootstraps.PatternSwitchResult) mh.invoke(new Box(new A(1)))).index, 0);
@@ -215,34 +216,35 @@ public class RecordTest {
 
 
     public void testNestedWithConstant() throws Throwable {
-        Extractor rb = recordExtractor(Box.class, Object.class);
-        Extractor rs = recordExtractor(RString.class, String.class);
-        Extractor ro = recordExtractor(RObject.class, Object.class);
-        Extractor ri = recordExtractor(Rint.class, int.class);
-        Extractor cs = Extractor.ofConstant("foo");
-        Extractor cn = Extractor.ofConstant(null);
-        Extractor ci = Extractor.ofConstant(3);
+        PatternHandle rb = recordExtractor(Box.class, Object.class);
+        PatternHandle rs = recordExtractor(RString.class, String.class);
+        PatternHandle ro = recordExtractor(RObject.class, Object.class);
+        PatternHandle ri = recordExtractor(Rint.class, int.class);
+        PatternHandle cs = PatternHandles.ofConstant("foo");
+        PatternHandle cn = PatternHandles.ofConstant(null);
+        PatternHandle ci = PatternHandles.ofConstant(3);
 
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(rs, cs), new RString("foo"), "foo");
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(rs, cs), new RString("bar"));
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(rs, cs), new RString(null));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.MATCH, PatternHandles.nested(rs, cs), new RString("foo"), "foo");
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(rs, cs), new RString("bar"));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(rs, cs), new RString(null));
 
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(ro, cs), new RObject("foo"), "foo");
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject("bar"));
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject(3));
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ro, cs), new RObject(null));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.MATCH, PatternHandles.nested(ro, cs), new RObject("foo"), "foo");
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(ro, cs), new RObject("bar"));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(ro, cs), new RObject(3));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(ro, cs), new RObject(null));
 
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH, Extractor.ofNested(ri, ci), new Rint(3), 3);
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL, Extractor.ofNested(ri, ci), new Rint(2));
+        // @@@ These are waiting for support for either unboxing in adapt() or primitive constant patterns
+//        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.MATCH, PatternHandles.nested(ri, ci), new Rint(3), 3);
+//        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH, PatternHandles.nested(ri, ci), new Rint(2));
 
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.MATCH,
-                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
-                                  new Box(new RString("foo")), new RString("foo"), "foo");
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL,
-                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
-                                  new Box(new RString("bar")));
-        ExtractorTest.assertMatch(ExtractorTest.MatchKind.FAIL,
-                                  Extractor.ofNested(rb, Extractor.ofNested(rs, cs)),
-                                  new Box("foo"));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.MATCH,
+                PatternHandles.nested(rb, PatternHandles.nested(rs, cs)),
+                new Box(new RString("foo")), new RString("foo"), "foo");
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH,
+                PatternHandles.nested(rb, PatternHandles.nested(rs, cs)),
+                new Box(new RString("bar")));
+        PatternHandleTest.assertMatch(PatternHandleTest.MatchKind.NO_MATCH,
+                PatternHandles.nested(rb, PatternHandles.nested(rs, cs)),
+                new Box("foo"));
     }
 }
