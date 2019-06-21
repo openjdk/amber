@@ -205,7 +205,7 @@ public class Names {
     public final Name record;
     public final Name where;
     public final Name non;
-    public final Name makeLazyExtractor;
+    public final Name ofLazyProjection;
 
     // sealed types
     public final Name permits;
@@ -372,7 +372,7 @@ public class Names {
         record = fromString("record");
         where = fromString("where");
         non = fromString("non");
-        makeLazyExtractor = fromString("makeLazyExtractor");
+        ofLazyProjection = fromString("ofLazyProjection");
 
         // sealed types
         permits = fromString("permits");
