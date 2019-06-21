@@ -24,7 +24,6 @@
  */
 package java.lang.runtime;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.Collections;
