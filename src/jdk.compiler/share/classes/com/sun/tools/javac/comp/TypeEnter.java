@@ -1072,7 +1072,7 @@ public class TypeEnter implements Completer {
         private void addAccessors(JCVariableDecl tree, Env<AttrContext> env) {
             for (Pair<Accessors.Kind, Name> accessor : tree.accessors) {
                 Type accessorType = accessor.fst.accessorType(syms, tree.sym.type);
-                Symbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
+                MethodSymbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
                 if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
                     JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED),
                               accessor.snd,
@@ -1086,8 +1086,13 @@ public class TypeEnter implements Completer {
                               null);
                     memberEnter.memberEnter(getter, env);
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
-                } else if (implSym != null && (implSym.flags() & Flags.PUBLIC) == 0) {
-                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
+                } else if (implSym != null) {
+                    if ((implSym.flags() & Flags.PUBLIC) == 0) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
+                    }
+                    if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch);
+                    }
                 }
             }
         }
@@ -1231,10 +1236,10 @@ public class TypeEnter implements Completer {
         }
     }
 
-    private Symbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
+    private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
         for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
             if (types.isSameTypes(s.type.getParameterTypes(), argtypes)) {
-                return s;
+                return (MethodSymbol) s;
             }
         }
         return null;
