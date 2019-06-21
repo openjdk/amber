@@ -118,6 +118,10 @@ public class PatternHandleTest {
         Object carrier;
         try {
             TryMatchInvoker inv = invokers.get(e.descriptor().returnType());
+            // @@@ temporary hack until we break out the assert-match machinery
+            if (inv == null)
+                inv = (MethodHandle mh, Object x) -> mh.invoke(x);
+            // @@@ end temporary hack
             carrier = inv.tryMatch(e.tryMatch(), target);
         }
         catch (Throwable t) {
