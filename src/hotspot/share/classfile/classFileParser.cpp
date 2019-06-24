@@ -3668,6 +3668,9 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
           _nest_host = class_info_index;
         } else if (tag == vmSymbols::tag_permitted_subtypes()) {
             // Check for PermittedSubtypes tag
+            if (!_access_flags.is_final()) {
+                classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+            }
             if (parsed_permitted_subtypes_attribute) {
               classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
             } else {
@@ -6461,7 +6464,8 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
-  bool is_sealed = _permitted_subtypes != NULL &&
+  bool is_sealed = _access_flags.is_final() &&
+                         _permitted_subtypes != NULL &&
                          _permitted_subtypes != Universe::the_empty_short_array() &&
                          _permitted_subtypes->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
@@ -6496,11 +6500,9 @@ void ClassFileParser::check_subtyping(TRAPS) {
   assert(NULL != _klass, "_klass should have been resolved before calling this method");
   if (_super_klass != NULL) {
     if (_super_klass->is_final()) {
-      THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
-    } else if (_super_klass->is_sealed()) {
       bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
       if (!isPermittedSubtype) {
-        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from sealed class");
+        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
       }
     }
   }
@@ -6509,11 +6511,9 @@ void ClassFileParser::check_subtyping(TRAPS) {
     for (int i = 0; i < local_interfaces->length(); i++) {
       InstanceKlass* intf = local_interfaces->at(i);
       if (intf->is_final()) {
-        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
-      } else if (intf->is_sealed()) {
         bool isPermittedSubtype = intf->has_as_permitted_subtype(_klass, CHECK);
         if (!isPermittedSubtype) {
-          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from sealed interface");
+          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
         }
       }
     }
