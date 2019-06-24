@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,11 +28,12 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * PatternCarriers
  */
-public class ExtractorCarriers {
+class PatternCarriers {
 
     private static final CarrierFactory factory = CarrierFactories.DUMB;
 
@@ -121,9 +122,9 @@ public class ExtractorCarriers {
      * @param methodType the type of the carrier elements
      * @return the component method handles
      */
-    public static MethodHandle[] carrierComponents(MethodType methodType) {
+    public static List<MethodHandle> carrierComponents(MethodType methodType) {
         MethodHandle[] components = new MethodHandle[methodType.parameterCount()];
         Arrays.setAll(components, i -> factory.component(methodType, i));
-        return components;
+        return List.of(components);
     }
 }

@@ -28,12 +28,8 @@ package com.sun.tools.javac.comp;
 import sun.invoke.util.BytecodeName;
 
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
-import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -61,7 +57,6 @@ import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
@@ -2545,41 +2540,47 @@ public class Lower extends TreeTranslator {
 
     JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
         make_at(tree.pos());
+
+        // let's generate the name of the extractor method
         List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
         String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
         String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
         Name extractorName = names.fromString(extractorStr);
-        // public Extractor extractorName () { return ???; }
-        MethodType extractorMT = new MethodType(List.nil(), syms.extractorType, List.nil(), syms.methodClass);
+
+        // let's create the condy now
+        Name bsmName = names.ofLazyProjection;
+        List<Type> staticArgTypes = List.of(syms.classType,
+                new ArrayType(syms.methodHandleType, syms.arrayClass));
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                syms.classType).appendList(staticArgTypes);
+
+        Symbol bsm = rs.resolveInternalMethod(tree, attrEnv, syms.patternHandlesType,
+                bsmName, bsm_staticArgs, List.nil());
+
+        LoadableConstant[] staticArgs = new LoadableConstant[1 + getterMethHandles.length];
+        staticArgs[0] = (ClassType)tree.sym.type;
+        int index = 1;
+        for (MethodHandleSymbol mho : getterMethHandles) {
+            staticArgs[index] = mho;
+            index++;
+        }
+
+        Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(extractorName,
+                syms.noSymbol,
+                ((MethodSymbol)bsm).asHandle(),
+                syms.patternHandleType,
+                staticArgs);
+        JCIdent ident = make.Ident(dynSym);
+        ident.type = syms.patternHandleType;
+
+        // public PatternHandle extractorName () { return ???; }
+        MethodType extractorMT = new MethodType(List.nil(), syms.patternHandleType, List.nil(), syms.methodClass);
         MethodSymbol extractorSym = new MethodSymbol(
                 Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
                 extractorName, extractorMT, tree.sym);
         tree.sym.members().enter(extractorSym);
-
-        Name bootstrapName = names.makeLazyExtractor;
-        LoadableConstant[] staticArgsValues = new LoadableConstant[1 + getterMethHandles.length];
-        /** this method descriptor should have the same arguments as the record constructor and its
-         *  return type should be the same as the type of the record
-         */
-        MethodType mt = new MethodType(fieldTypes, tree.type, List.nil(), syms.methodClass);
-        staticArgsValues[0] = mt;
-        int index = 1;
-        for (MethodHandleSymbol mho : getterMethHandles) {
-            staticArgsValues[index] = mho;
-            index++;
-        }
-
-        List<Type> staticArgTypes = List.of(syms.methodTypeType,
-                new ArrayType(syms.methodHandleType, syms.arrayClass));
-        JCFieldAccess qualifier = makeIndyQualifier(syms.extractorType, tree, extractorSym,
-                List.of(syms.methodHandleLookupType,
-                        syms.stringType,
-                        syms.methodTypeType).appendList(staticArgTypes),
-                staticArgsValues, bootstrapName, bootstrapName, true);
-
-        JCMethodInvocation proxyCall = make.Apply(List.nil(), qualifier, List.nil());
-        proxyCall.type = qualifier.type;
-        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(proxyCall))));
+        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(ident))));
     }
 
     JCTree recordReadResolve(JCClassDecl tree) {

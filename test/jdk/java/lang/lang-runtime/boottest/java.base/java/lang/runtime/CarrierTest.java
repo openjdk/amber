@@ -24,7 +24,6 @@
  */
 package java.lang.runtime;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,7 +69,7 @@ public class CarrierTest {
                                                      boolean.class, booleanVals);
 
     void testCarrier(MethodType type, Object[] values) throws Throwable {
-        for (ExtractorCarriers.CarrierFactory cf : ExtractorCarriers.CarrierFactories.values()) {
+        for (PatternCarriers.CarrierFactory cf : PatternCarriers.CarrierFactories.values()) {
             assertEquals(type.parameterCount(), values.length);
             Object carrier = cf.constructor(type).invokeWithArguments(values);
             for (int i = 0; i < values.length; i++)

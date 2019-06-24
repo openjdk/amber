@@ -832,7 +832,7 @@ public class SwitchBootstraps {
     public static CallSite patternSwitch(MethodHandles.Lookup lookup,
                                          String invocationName,
                                          MethodType invocationType,
-                                         Extractor... patterns) throws Throwable {
+                                         PatternHandle... patterns) throws Throwable {
         if (invocationType.parameterCount() != 1
             || (!invocationType.returnType().equals(PatternSwitchResult.class))
             || invocationType.parameterType(0).isPrimitive())
@@ -843,9 +843,9 @@ public class SwitchBootstraps {
         Class<?> targetType = invocationType.parameterType(0);
 
         for (int i = 0; i < patterns.length; i++) {
-            Extractor pattern = patterns[i];
+            PatternHandle pattern = patterns[i];
             if (pattern.descriptor().returnType() != targetType)
-                patterns[i] = Extractor.adapt(pattern, targetType);
+                patterns[i] = PatternHandles.adaptTarget(pattern, targetType);
         }
 
         if (Stream.of(patterns).anyMatch(Objects::isNull))
@@ -855,10 +855,10 @@ public class SwitchBootstraps {
     }
 
     static class PatternSwitchCallSite extends ConstantCallSite {
-        private final Extractor[] patterns;
+        private final PatternHandle[] patterns;
 
         PatternSwitchCallSite(MethodType targetType,
-                              Extractor[] patterns) throws Throwable {
+                              PatternHandle[] patterns) throws Throwable {
             super(targetType, PATTERN_INIT_HOOK);
             this.patterns = patterns;
         }
@@ -869,7 +869,7 @@ public class SwitchBootstraps {
 
             // Dumbest possible strategy
             for (int i = 0; i < patterns.length; i++) {
-                Extractor e = patterns[i];
+                PatternHandle e = patterns[i];
                 Object o = e.tryMatch().invoke(target);
                 if (o != null)
                     return new PatternSwitchResult(i, o);
