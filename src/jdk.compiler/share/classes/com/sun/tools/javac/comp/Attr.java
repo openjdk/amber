@@ -4970,9 +4970,10 @@ public class Attr extends JCTree.Visitor {
 
         for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
             if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                boolean areNestmates = sealedParentPair.fst.tsym.outermostClass() == tree.sym.outermostClass();
+                boolean areInSameCompilationUnit = TreeInfo.declarationFor(sealedParentPair.fst.tsym, env.toplevel) != null &&
+                        TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null;
                 boolean isSealed = sealedParentPair.fst.tsym.isSealed();
-                if (areNestmates) {
+                if (areInSameCompilationUnit) {
                     if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
                         sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
                     } else if (!dontErrorIfSealedExtended) {

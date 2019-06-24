@@ -1696,6 +1696,8 @@ public class ClassWriter extends ClassFile {
             result |= ACC_VARARGS;
         if ((flags & DEFAULT) != 0)
             result &= ~ABSTRACT;
+        if ((flags & SEALED) != 0)
+            result |= FINAL;
         return result;
     }
 
