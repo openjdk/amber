@@ -54,6 +54,9 @@ public class CanonicalConstructorTest {
         R3 r3 = new R3(1, 2);
         R4 r4 = new R4(1, 2);
 
-        Assert.check(r1.i == r2.i && r2.i == r3.i && r3.i == r4.i && r4.i == 1 && r1.j == r2.j && r2.j == r3.j && r3.j == r4.j && r4.j == 2, "unexpected value of record component");
+        Assert.check(r1.i == r2.i && r2.i == r3.i &&
+                r3.i == r4.i && r4.i == 1 &&
+                r1.j == r2.j && r2.j == r3.j &&
+                r3.j == r4.j && r4.j == 2, "unexpected value of record component");
     }
 }
