@@ -3291,11 +3291,6 @@ void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* co
     // DEBUG
     // tty->print_cr("name read %s", name->as_klass_external_name());
 
-    AccessFlags access_flags;
-    const jint flags = cfs->get_u2_fast() & JVM_RECOGNIZED_FIELD_MODIFIERS;
-    verify_legal_field_modifiers(flags, false, CHECK);
-    access_flags.set_flags(flags);
-
     const u2 descriptor_index = cfs->get_u2_fast();
     check_property(valid_symbol_at(descriptor_index),
       "Invalid constant pool index %u for record parameter descriptor in class file %s",
@@ -3315,7 +3310,6 @@ void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* co
 
     RecordParamInfo* const record_param_info = RecordParamInfo::from_record_params_array(record_params_array, n);
     record_param_info->initialize(
-                      access_flags.as_short(),
                       name_index,
                       descriptor_index,
                       signature_index);
