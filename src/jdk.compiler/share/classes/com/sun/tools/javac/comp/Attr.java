@@ -166,7 +166,6 @@ public class Attr extends JCTree.Visitor {
         allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
-        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -202,13 +201,6 @@ public class Attr extends JCTree.Visitor {
      * RFE: 6425594
      */
     boolean useBeforeDeclarationWarning;
-
-    /**
-     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
-     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
-     * gets integrated
-     */
-    boolean dontErrorIfSealedExtended;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -4783,45 +4775,6 @@ public class Attr extends JCTree.Visitor {
             chk.validate(tree.typarams, env);
             chk.validate(tree.extending, env);
             chk.validate(tree.implementing, env);
-        }
-
-        Type st = types.supertype(c.type);
-        boolean anyParentIsSealed = false;
-        ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
-        if (st != Type.noType && (st.tsym.isSealed())) {
-            potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
-            anyParentIsSealed = true;
-        }
-
-        if (tree.implementing != null) {
-            for (JCExpression expr : tree.implementing) {
-                if (expr.type.tsym.isSealed()) {
-                    potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
-                    anyParentIsSealed = true;
-                }
-            }
-        }
-
-        for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
-            if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                boolean areInSameCompilationUnit = TreeInfo.declarationFor(sealedParentPair.fst.tsym, env.toplevel) != null &&
-                        TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null;
-                boolean isSealed = sealedParentPair.fst.tsym.isSealed();
-                if (areInSameCompilationUnit) {
-                    if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
-                        sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
-                    } else if (!dontErrorIfSealedExtended) {
-                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
-                    }
-                } else if (!dontErrorIfSealedExtended) {
-                    log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
-                }
-            }
-        }
-
-        if (anyParentIsSealed) {
-            // once we have the non-final keyword this will change
-            c.flags_field |= (c.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
         }
 
         c.markAbstractIfNeeded(types);

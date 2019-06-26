@@ -143,6 +143,8 @@ public class TypeEnter implements Completer {
         Source source = Source.instance(context);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowDeprecationOnImport = Feature.DEPRECATION_ON_IMPORT.allowedInSource(source);
+        Options options = Options.instance(context);
+        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
     }
 
     /** Switch: support type annotations.
@@ -159,6 +161,13 @@ public class TypeEnter implements Completer {
      *  unnecessarily deep recursion.
      */
     boolean completionEnabled = true;
+
+    /**
+     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
+     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
+     * gets integrated
+     */
+    boolean dontErrorIfSealedExtended;
 
     /* Verify Imports:
      */
@@ -1056,6 +1065,45 @@ public class TypeEnter implements Completer {
             if (tree.sym.isAnnotationType()) {
                 Assert.check(tree.sym.isCompleted());
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));
+            }
+
+            Type st = types.supertype(tree.sym.type);
+            boolean anyParentIsSealed = false;
+            ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
+            if (st != Type.noType && (st.tsym.isSealed())) {
+                potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
+                anyParentIsSealed = true;
+            }
+
+            if (tree.implementing != null) {
+                for (JCExpression expr : tree.implementing) {
+                    if (expr.type.tsym.isSealed()) {
+                        potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
+                        anyParentIsSealed = true;
+                    }
+                }
+            }
+
+            for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
+                if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
+                    boolean areInSameCompilationUnit = TreeInfo.declarationFor(sealedParentPair.fst.tsym, env.toplevel) != null &&
+                            TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null;
+                    boolean isSealed = sealedParentPair.fst.tsym.isSealed();
+                    if (areInSameCompilationUnit) {
+                        if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
+                            sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                        } else if (!dontErrorIfSealedExtended) {
+                            log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                        }
+                    } else if (!dontErrorIfSealedExtended) {
+                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                    }
+                }
+            }
+
+            if (anyParentIsSealed) {
+                // once we have the non-final keyword this will change
+                tree.sym.flags_field |= (tree.sym.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
             }
         }
 

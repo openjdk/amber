@@ -32,23 +32,51 @@
 import com.sun.tools.javac.util.Assert;
 
 public class CheckingAttributeAtRuntimeTest {
-    sealed class Sealed permits Sub {}
 
-    class Sub extends Sealed {}
+    sealed class Sealed1 permits Sub1 {}
 
-    sealed interface SealedI permits Sub2 {}
+    class Sub1 extends Sealed1 {}
 
-    class Sub2 implements SealedI {}
+    sealed interface SealedI1 permits Sub2 {}
+
+    class Sub2 implements SealedI1 {}
+
+    sealed class Sealed2 {}
+
+    class Sub3 extends Sealed2 {}
 
     public static void main(String... args) {
-        Class<?> sealedClass = Sealed.class;
-        Assert.check(sealedClass.isSealed());
-        Assert.check(sealedClass.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass.getPermittedSubtypes()[0] == Sub.class);
+        Class<?> sealedClass1 = Sealed1.class;
+        Assert.check(sealedClass1.isSealed());
+        Assert.check(sealedClass1.getPermittedSubtypes().length == 1);
+        Assert.check(sealedClass1.getPermittedSubtypes()[0] == Sub1.class);
 
-        Class<?> sealedI = SealedI.class;
+        Class<?> sealedI = SealedI1.class;
         Assert.check(sealedI.isSealed());
         Assert.check(sealedI.getPermittedSubtypes().length == 1);
         Assert.check(sealedI.getPermittedSubtypes()[0] == Sub2.class);
+
+        Class<?> sealedClass2 = Sealed2.class;
+        Assert.check(sealedClass2.isSealed());
+        Assert.check(sealedClass2.getPermittedSubtypes().length == 1);
+        Assert.check(sealedClass2.getPermittedSubtypes()[0] == Sub3.class);
+
+        Class<?> sealedClass3 = Sealed3.class;
+        Assert.check(sealedClass3.isSealed());
+        Assert.check(sealedClass3.getPermittedSubtypes().length == 1);
+        Assert.check(sealedClass3.getPermittedSubtypes()[0] == Sub4.class);
+
+        Class<?> sealedClass4 = Sealed4.class;
+        Assert.check(sealedClass4.isSealed());
+        Assert.check(sealedClass4.getPermittedSubtypes().length == 1);
+        Assert.check(sealedClass4.getPermittedSubtypes()[0] == Sub5.class);
     }
 }
+
+sealed class Sealed3 {}
+
+class Sub4 extends Sealed3 {}
+
+sealed class Sealed4 permits Sub5 {}
+
+class Sub5 extends Sealed4 {}
