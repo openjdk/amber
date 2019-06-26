@@ -76,21 +76,6 @@ class RecordParameterStreamBase : public StackObj {
   }
   bool done() const { return _index >= _limit; }
 
-  // Accessors for current record parameter
-  AccessFlags access_flags() const {
-    AccessFlags flags;
-    flags.set_flags(record_param()->access_flags());
-    return flags;
-  }
-
-  void set_access_flags(u2 flags) const {
-    record_param()->set_access_flags(flags);
-  }
-
-  void set_access_flags(AccessFlags flags) const {
-    set_access_flags(flags.as_short());
-  }
-
   Symbol* name() const {
     return record_param()->name(_constants);
   }

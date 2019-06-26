@@ -846,9 +846,8 @@ public class ClassWriter extends ClassFile {
         databuf.appendChar(numParams);
         for (VarSymbol v: vars) {
             databuf.appendChar(poolWriter.putName(v.name));
-            databuf.appendChar(adjustFlags(v.flags()));
             // descriptor
-            databuf.appendChar(poolWriter.putSignature(v));
+            databuf.appendChar(poolWriter.putDescriptor(v));
             // signature
             databuf.appendChar(poolWriter.putSignature(v));
         }

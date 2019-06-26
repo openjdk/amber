@@ -40,11 +40,10 @@ class RecordParamInfo {
   friend class RecordParameterStreamBase;
   friend class JavaRecordParameterStream;
   enum ParamOffset {
-    access_flags_offset      = 0,
-    name_index_offset        = 1,
-    descriptor_index_offset  = 2,
-    signature_index_offset   = 3,
-    param_slots              = 4
+    name_index_offset        = 0,
+    descriptor_index_offset  = 1,
+    signature_index_offset   = 2,
+    param_slots              = 3
   };
 
 private:
@@ -65,21 +64,17 @@ public:
     return ((RecordParamInfo*)(record_params + index * param_slots));
   }
 
-  void initialize(u2 access_flags,
-                  u2 name_index,
+  void initialize(u2 name_index,
                   u2 descriptor_index,
                   u2 signature_index) {
-    _shorts[access_flags_offset] = access_flags;
     _shorts[name_index_offset] = name_index;
     _shorts[descriptor_index_offset] = descriptor_index;
     _shorts[signature_index_offset] = signature_index;
   }
 
-  u2 access_flags() const                                   { return _shorts[access_flags_offset];      }
   Symbol* name(const constantPoolHandle& cp) const          { return cp->symbol_at(name_index());       }
   Symbol* signature(const constantPoolHandle& cp) const     { return cp->symbol_at(signature_index());  }
   Symbol* descriptor(const constantPoolHandle& cp) const    { return cp->symbol_at(descriptor_index()); }
-  void set_access_flags(u2 val)                             { _shorts[access_flags_offset] = val;       }
 };
 
 #endif // SHARE_VM_OOPS_RECORDPARAMINFO_HPP
