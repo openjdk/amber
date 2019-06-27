@@ -3435,6 +3435,7 @@ public final class Class<T> implements java.io.Serializable,
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
     private native String[]     getRecordComponentNames0();
+    private native boolean      isRecord0();
 
     /**
      * Helper method to get the method name from arguments.
@@ -3540,8 +3541,7 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.12
      */
     public boolean isRecord() {
-        // we need to create a native method that checks if the Record attribute is present or not
-        return false;
+        return isRecord0();
     }
 
     // Fetches the factory for reflective objects

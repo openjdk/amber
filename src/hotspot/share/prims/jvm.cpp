@@ -1698,6 +1698,12 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass)
 }
 JVM_END
 
+JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
+  JVMWrapper("JVM_IsRecord");
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls)));
+  return (jboolean) k->record_params_count() >= 0;
+JVM_END
+
 static bool select_method(const methodHandle& method, bool want_constructor) {
   if (want_constructor) {
     return (method->is_initializer() && !method->is_static());

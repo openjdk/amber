@@ -520,6 +520,9 @@ JVM_GetClassDeclaredConstructors(JNIEnv *env, jclass ofClass, jboolean publicOnl
 JNIEXPORT jobjectArray JNICALL
 JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass);
 
+JNIEXPORT jboolean JNICALL
+JVM_IsRecord(JNIEnv *env, jclass cls);
+
 /* Differs from JVM_GetClassModifiers in treatment of inner classes.
    This returns the access flags for the class as specified in the
    class file rather than searching the InnerClasses attribute (if
