@@ -2253,24 +2253,28 @@ public final class Class<T> implements java.io.Serializable,
      * TBD
      * @return TBD
      * @throws SecurityException TBD
-     * @since 1.12
+     * @throws NoSuchMethodException TBD
+     * @since 1.14
      */
     @CallerSensitive
-    public Field[] getRecordParameters() throws SecurityException {
+    public Method[] getRecordAccessors() throws SecurityException, NoSuchMethodException {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
-        return isPrimitive() || isArray() ? new Field[0] : copyFields(privateGetRecordParameters());
-    }
-
-    /**
-     * Returns the number of record parameters if this class is a record, 0 if not
-     * @return the number of record parameters
-     * @since 1.12
-     */
-    public int getRecordParametersCount() {
-        return isPrimitive() || isArray() ? 0 : getRecordParametersCount0();
+        if (isPrimitive() || isArray()) {
+            return new Method[0];
+        }
+        String[] componentNames = getRecordComponentNames0();
+        if (componentNames == null || componentNames.length == 0) {
+            return new Method[0];
+        }
+        Method[] result = new Method[componentNames.length];
+        int i = 0;
+        for (String componentName : componentNames) {
+            result[i] = getMethod(componentName);
+        }
+        return result;
     }
 
     /**
@@ -2973,8 +2977,6 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
         volatile Class<?>[] interfaces;
-        // record parameters
-        volatile Field[] recordParameters;
 
         // Cached names
         String simpleName;
@@ -3091,21 +3093,6 @@ public final class Class<T> implements java.io.Serializable,
             } else {
                 rd.declaredFields = res;
             }
-        }
-        return res;
-    }
-
-    private Field[] privateGetRecordParameters() {
-        Field[] res;
-        ReflectionData<T> rd = reflectionData();
-        if (rd != null) {
-            res = rd.recordParameters;
-            if (res != null) return res;
-        }
-        // No cached value available; request value from VM
-        res = Reflection.filterFields(this, getRecordParameters0());
-        if (rd != null) {
-            rd.recordParameters = res;
         }
         return res;
     }
@@ -3447,8 +3434,7 @@ public final class Class<T> implements java.io.Serializable,
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
-    private native Field[]      getRecordParameters0();
-    private native int          getRecordParametersCount0();
+    private native String[]     getRecordComponentNames0();
 
     /**
      * Helper method to get the method name from arguments.
@@ -3556,48 +3542,6 @@ public final class Class<T> implements java.io.Serializable,
     public boolean isRecord() {
         // we need to create a native method that checks if the Record attribute is present or not
         return false;
-    }
-
-    /**
-     * Returns an array with the names of the components
-     *
-     * @return an array with the names of the components
-     * @since 1.12
-     */
-    public String[] getRecordParameterNames() {
-        if (isRecord()) {
-            Field[] recordParameters = getRecordParameters();
-            String[] names = new String[recordParameters.length];
-            int i = 0;
-            for (Field field : recordParameters) {
-                names[i] = field.getName();
-                i++;
-            }
-            return names;
-        } else {
-            return new String[0];
-        }
-    }
-
-    /**
-     * Returns an array with the types of the record parameters
-     *
-     * @return an array with the types of the record parameters
-     * @since 1.12
-     */
-    public Class<?>[] getRecordParameterTypes() {
-        if (isRecord()) {
-            Field[] recordParameters = getRecordParameters();
-            Class<?>[] types = new Class<?>[recordParameters.length];
-            int i = 0;
-            for (Field field : recordParameters) {
-                types[i] = field.getType();
-                i++;
-            }
-            return types;
-        } else {
-            return new Class<?>[0];
-        }
     }
 
     // Fetches the factory for reflective objects

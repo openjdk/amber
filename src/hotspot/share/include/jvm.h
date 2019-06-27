@@ -518,10 +518,7 @@ JNIEXPORT jobjectArray JNICALL
 JVM_GetClassDeclaredConstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
 JNIEXPORT jobjectArray JNICALL
-JVM_GetRecordParameters(JNIEnv *env, jclass ofClass);
-
-JNIEXPORT jint JNICALL
-JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass);
+JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass);
 
 /* Differs from JVM_GetClassModifiers in treatment of inner classes.
    This returns the access flags for the class as specified in the
