@@ -1661,24 +1661,10 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
-JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
+JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass))
 {
   // current is not a primitive or array class
-  JVMWrapper("JVM_GetRecordParametersCount");
-  JvmtiVMObjectAllocEventCollector oam;
-
-  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
-  // Ensure class is linked
-  k->link_class(CHECK_0);
-
-  return k->record_params_count();
-}
-JVM_END
-
-JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
-{
-  // current is not a primitive or array class
-  JVMWrapper("JVM_GetRecordParameters");
+  JVMWrapper("JVM_GetRecordComponentNames");
   JvmtiVMObjectAllocEventCollector oam;
 
   InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
@@ -1698,23 +1684,17 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
     return (jobjectArray) JNIHandles::make_local(env, res);
   }
 
-  objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
-  objArrayHandle result (THREAD, r);
+  objArrayOop  dest_o = oopFactory::new_objArray(SystemDictionary::String_klass(), num_record_params, CHECK_NULL);
+  objArrayHandle dest(THREAD, dest_o);
 
   int out_idx = 0;
-  fieldDescriptor fd;
   for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
-    for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
-      if (fileStream.name() == recordParamsStream.name()) {
-        fd.reinitialize(k, fileStream.index());
-        oop field = Reflection::new_field(&fd, CHECK_NULL);
-        result->obj_at_put(out_idx, field);
-        ++out_idx;
-      }
-    }
+    Handle str = java_lang_String::create_from_symbol(recordParamsStream.name(), CHECK_NULL);
+    dest->obj_at_put(out_idx, str());
+    ++out_idx;
   }
   assert(out_idx == num_record_params, "just checking");
-  return (jobjectArray) JNIHandles::make_local(env, result());
+  return (jobjectArray) JNIHandles::make_local(dest());
 }
 JVM_END
 

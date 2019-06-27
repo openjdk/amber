@@ -123,8 +123,7 @@ JVM_GetPermittedSubtypes
 JVM_GetPrimitiveArrayElement
 JVM_GetProperties
 JVM_GetProtectionDomain
-JVM_GetRecordParameters
-JVM_GetRecordParametersCount
+JVM_GetRecordComponentNames
 JVM_GetSimpleBinaryName
 JVM_GetStackAccessControlContext
 JVM_GetSystemPackage
