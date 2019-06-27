@@ -3259,16 +3259,16 @@ u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFile
 void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* const cfs,
                                                            const u1* const record_attribute_start,
                                                            ConstantPool* cp,
-                                                           u2* const record_params_count_ptr,
+                                                           int* const record_params_count_ptr,
                                                            TRAPS) {
   assert(NULL == _record_params, "invariant");
 
   const u1* const current_mark = cfs->current();
-  u2 num_of_params = 0;
+  int num_of_params = 0;
   if (record_attribute_start != NULL) {
     cfs->set_current(record_attribute_start);
     cfs->guarantee_more(2, CHECK);  // length
-    num_of_params = cfs->get_u2_fast();
+    num_of_params = (int)cfs->get_u2_fast();
     // DEBUG
     // tty->print_cr("this record has %d parameters", num_of_params);
   }

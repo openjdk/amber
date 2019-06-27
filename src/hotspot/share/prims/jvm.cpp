@@ -1679,8 +1679,8 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass)
   // DEBUG
   //tty->print_cr("num_record_params == %d", num_record_params);
 
-  if (num_record_params == 0) {
-    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
+  if (num_record_params <= 0) {
+    oop res = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
     return (jobjectArray) JNIHandles::make_local(env, res);
   }
 
@@ -1701,7 +1701,7 @@ JVM_END
 JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
   JVMWrapper("JVM_IsRecord");
   InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls)));
-  return (jboolean) k->record_params_count() >= 0;
+  return (jboolean) (k->record_params_count() >= 0);
 JVM_END
 
 static bool select_method(const methodHandle& method, bool want_constructor) {

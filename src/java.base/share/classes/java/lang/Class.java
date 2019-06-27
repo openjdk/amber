@@ -2273,6 +2273,7 @@ public final class Class<T> implements java.io.Serializable,
         int i = 0;
         for (String componentName : componentNames) {
             result[i] = getMethod(componentName);
+            i++;
         }
         return result;
     }
