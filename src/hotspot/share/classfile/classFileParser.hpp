@@ -154,7 +154,7 @@ class ClassFileParser {
   u2 _super_class_index;
   u2 _itfs_len;
   u2 _java_fields_count;
-  u2 _record_params_count;
+  int _record_params_count;
 
   bool _need_verify;
   bool _relax_verify;
@@ -297,7 +297,7 @@ class ClassFileParser {
   void parse_classfile_record_attribute(const ClassFileStream* const cfs,
                                         const u1* const record_attribute_start,
                                         ConstantPool* cp,
-                                        u2* const record_params_count_ptr,
+                                        int* const record_params_count_ptr,
                                         TRAPS);
 
   void parse_classfile_attributes(const ClassFileStream* const cfs,

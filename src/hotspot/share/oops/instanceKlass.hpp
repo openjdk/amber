@@ -209,7 +209,7 @@ class InstanceKlass: public Klass {
   u2              _source_file_name_index;
   u2              _static_oop_field_count;// number of static oop fields in this klass
   u2              _java_fields_count;    // The number of declared Java fields
-  u2              _record_params_count;  // The number of record parameters
+  int              _record_params_count;  // The number of record parameters
   int             _nonstatic_oop_map_size;// size in words of nonstatic oop map blocks
 
   int             _itable_len;           // length of Java itable (in words)
@@ -461,10 +461,10 @@ class InstanceKlass: public Klass {
   Symbol* record_param_signature(int index) const { return record_param(index)->signature(constants()); }
   Symbol* record_param_descriptor(int index) const { return record_param(index)->signature(constants()); }
 
-  int record_params_count() const       { return (int)_record_params_count; }
+  int record_params_count() const       { return _record_params_count; }
 
   Array<u2>* record_params() const       { return _record_params; }
-  void set_record_params(Array<u2>* record_params, u2 record_params_count) {
+  void set_record_params(Array<u2>* record_params, int record_params_count) {
     guarantee(_record_params == NULL || record_params == NULL, "Just checking");
     _record_params = record_params;
     _record_params_count = record_params_count;
