@@ -1101,9 +1101,13 @@ public class TypeEnter implements Completer {
                 }
             }
 
-            if (anyParentIsSealed) {
+            if (anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) == 0) ) {
                 // once we have the non-final keyword this will change
                 tree.sym.flags_field |= (tree.sym.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
+            }
+
+            if (!anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) != 0) ) {
+                log.error(tree, Errors.NonSealedWithNoSealedSupertype);
             }
         }
 

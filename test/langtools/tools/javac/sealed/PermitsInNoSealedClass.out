@@ -1,0 +1,2 @@
+PermitsInNoSealedClass.java:10:21: compiler.err.permits.in.no.sealed.class
+1 error

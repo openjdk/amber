@@ -332,7 +332,7 @@ public class Flags {
     /**
      * Flag to indicate that the class/interface has explicitly being annotated as not sealed.
      */
-    public static final long NON_FINAL = 1L<<60;
+    public static final long NON_SEALED = 1L<<60;
 
     /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
@@ -343,26 +343,31 @@ public class Flags {
     /** Modifier masks.
      */
     public static final int
-        AccessFlags                 = PUBLIC | PROTECTED | PRIVATE,
-        LocalClassFlags             = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
-        LocalRecordFlags            = LocalClassFlags | STATIC,
-        MemberClassFlags            = LocalClassFlags | INTERFACE | AccessFlags,
-        MemberRecordClassFlags      = MemberClassFlags | STATIC,
-        ClassFlags                  = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
-        InterfaceVarFlags           = FINAL | STATIC | PUBLIC,
-        VarFlags                    = AccessFlags | FINAL | STATIC |
-                                      VOLATILE | TRANSIENT | ENUM,
-        ConstructorFlags            = AccessFlags,
-        InterfaceMethodFlags        = ABSTRACT | PUBLIC,
-        MethodFlags                 = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                      SYNCHRONIZED | FINAL | STRICTFP;
+        AccessFlags                      = PUBLIC | PROTECTED | PRIVATE,
+        LocalClassFlags                  = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        LocalRecordFlags                 = LocalClassFlags | STATIC,
+        MemberClassFlags                 = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberRecordClassFlags           = MemberClassFlags | STATIC,
+        ClassFlags                       = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
+        InterfaceVarFlags                = FINAL | STATIC | PUBLIC,
+        VarFlags                         = AccessFlags | FINAL | STATIC |
+                                           VOLATILE | TRANSIENT | ENUM,
+        ConstructorFlags                 = AccessFlags,
+        InterfaceMethodFlags             = ABSTRACT | PUBLIC,
+        MethodFlags                      = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                           SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
-        ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
-        ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
-        InterfaceMethodMask         = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
-        AnnotationTypeElementMask   = ABSTRACT | PUBLIC,
-        LocalVarFlags               = FINAL | PARAMETER,
-        ReceiverParamFlags          = PARAMETER;
+        ExtendedStandardFlags            = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
+        ExtendedLocalClassFlags          = (long)LocalClassFlags | SEALED | NON_SEALED,
+        ExtendedLocalRecordFlags         = (long)LocalRecordFlags | SEALED | NON_SEALED,
+        ExtendedMemberClassFlags         = (long)MemberClassFlags | SEALED | NON_SEALED,
+        ExtendedMemberRecordClassFlags   = (long)MemberRecordClassFlags | SEALED | NON_SEALED,
+        ExtendedClassFlags               = (long)ClassFlags | SEALED | NON_SEALED,
+        ModifierFlags                    = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED,
+        InterfaceMethodMask              = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
+        AnnotationTypeElementMask        = ABSTRACT | PUBLIC,
+        LocalVarFlags                    = FINAL | PARAMETER,
+        ReceiverParamFlags               = PARAMETER;
 
 
     public static Set<Modifier> asModifierSet(long flags) {
@@ -462,6 +467,7 @@ public class Flags {
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
         SEALED(Flags.SEALED),
+        NON_SEALED(Flags.NON_SEALED),
         RECORD(Flags.RECORD);
 
         Flag(long flag) {

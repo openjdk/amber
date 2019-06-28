@@ -1,6 +1,6 @@
-NotSealedTest.java:10:24: compiler.err.cant.applied.sealed.and.not.sealed.ann: NotSealedTest.AB
-NotSealedTest.java:10:24: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.AB
-NotSealedTest.java:13:16: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.SNS
-NotSealedTest.java:14:16: compiler.warn.incorrect.application.of.not.sealed.ann: NotSealedTest.SNSI
-1 error
-3 warnings
+NotSealedTest.java:11:23: compiler.err.illegal.combination.of.modifiers: sealed, non_sealed
+NotSealedTest.java:13:18: compiler.err.illegal.combination.of.modifiers: final, sealed
+NotSealedTest.java:15:22: compiler.err.illegal.combination.of.modifiers: final, non_sealed
+NotSealedTest.java:19:24: compiler.err.mod.not.allowed.here: sealed
+NotSealedTest.java:17:16: compiler.err.non.sealed.with.no.sealed.supertype
+5 errors
