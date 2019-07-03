@@ -62,6 +62,15 @@ public:
   }
 
   u2 accessor_index() const                                { return _shorts[accessor_index_offset];   }
+
+  Symbol* name(const constantPoolHandle& cp) const {
+    int accessor_index = _shorts[accessor_index_offset];
+    int method_ref_info = cp->int_at(accessor_index);
+    int name_and_type_index = extract_high_short_from_int(method_ref_info);
+    int name_and_type_info = cp->int_at(name_and_type_index);
+    int name_index = extract_low_short_from_int(name_and_type_info);
+    return cp->symbol_at(name_index);
+  }
 };
 
 #endif // SHARE_VM_OOPS_RECORDPARAMINFO_HPP

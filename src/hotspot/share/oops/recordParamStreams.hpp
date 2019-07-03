@@ -79,6 +79,10 @@ class RecordParameterStreamBase : public StackObj {
   int accessor_index() const {
     return record_param()->accessor_index();
   }
+
+  Symbol* name() const {
+    return record_param()->name(_constants);
+  }
 };
 
 // Iterate over the record parameters
