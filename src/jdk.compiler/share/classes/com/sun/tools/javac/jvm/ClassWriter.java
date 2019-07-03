@@ -845,16 +845,8 @@ public class ClassWriter extends ClassFile {
         }
         databuf.appendChar(numParams);
         for (VarSymbol v: vars) {
-            databuf.appendChar(poolWriter.putName(v.name));
-            // descriptor
-            databuf.appendChar(poolWriter.putDescriptor(v));
-            // signature
-            databuf.appendChar(poolWriter.putSignature(v));
+            databuf.appendChar(poolWriter.putMember(v.accessors.head.snd));
         }
-        int acountIdx = beginAttrs();
-        int acount = 0;
-        acount += writeParameterAttrs(vars);
-        endAttrs(acountIdx, acount);
         endAttr(alenIdx);
         return 1;
     }

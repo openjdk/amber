@@ -1689,7 +1689,14 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass)
 
   int out_idx = 0;
   for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
-    Handle str = java_lang_String::create_from_symbol(recordParamsStream.name(), CHECK_NULL);
+    int accessor_index = recordParamsStream.accessor_index();
+    //tty->print_cr("accessor index == %d", accessor_index);
+    int method_ref_info = (int)k->constants()->int_at(accessor_index);
+    int name_and_type_index = extract_high_short_from_int(method_ref_info);
+    int name_and_type_info = (int)k->constants()->int_at(name_and_type_index);
+    int name_index = extract_low_short_from_int(name_and_type_info);
+    //tty->print_cr("name index == %d", name_index);
+    Handle str = java_lang_String::create_from_symbol(k->constants()->symbol_at(name_index), CHECK_NULL);
     dest->obj_at_put(out_idx, str());
     ++out_idx;
   }

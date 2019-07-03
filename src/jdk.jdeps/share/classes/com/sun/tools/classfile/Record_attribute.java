@@ -38,11 +38,10 @@ public class Record_attribute extends Attribute {
     Record_attribute(ClassReader cr, int name_index, int length) throws IOException {
         super(name_index, length);
         num_params = cr.readUnsignedShort();
-        params = new Param_data[num_params];
+        accessors = new int[num_params];
         for (int i = 0; i < num_params; i++) {
-            params[i] = new Param_data(cr);
+            accessors[i] = cr.readUnsignedShort();
         }
-        attributes = new Attributes(cr);
     }
 
     @Override
@@ -51,24 +50,5 @@ public class Record_attribute extends Attribute {
     }
 
     public final int num_params;
-    public final Param_data[] params;
-    public final Attributes attributes;
-
-    public static class Param_data {
-        Param_data(ClassReader cr) throws IOException {
-            param_name_index = cr.readUnsignedShort();
-            param_flags = cr.readUnsignedShort();
-            param_descriptor = cr.readUnsignedShort();
-            param_signature = cr.readUnsignedShort();
-        }
-
-        public String getName(ConstantPool constant_pool) throws ConstantPoolException {
-            return constant_pool.getUTF8Value(param_name_index);
-        }
-
-        public final int param_name_index;
-        public final int param_flags;
-        public final int param_descriptor;
-        public final int param_signature;
-    }
+    public final int[] accessors;
 }

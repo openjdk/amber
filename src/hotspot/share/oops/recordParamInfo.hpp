@@ -40,22 +40,15 @@ class RecordParamInfo {
   friend class RecordParameterStreamBase;
   friend class JavaRecordParameterStream;
   enum ParamOffset {
-    name_index_offset        = 0,
-    descriptor_index_offset  = 1,
-    signature_index_offset   = 2,
-    param_slots              = 3
+    accessor_index_offset    = 0,
+    param_slots              = 1
   };
 
 private:
   u2 _shorts[param_slots];
 
-  void set_name_index(u2 val)                              { _shorts[name_index_offset] = val;         }
-  void set_descriptor_index(u2 val)                        { _shorts[descriptor_index_offset] = val;   }
-  void set_signature_index(u2 val)                         { _shorts[signature_index_offset] = val;    }
+  void set_accessor_index(u2 val)                          { _shorts[accessor_index_offset] = val;    }
 
-  u2 name_index() const                                    { return _shorts[name_index_offset];        }
-  u2 descriptor_index() const                              { return _shorts[descriptor_index_offset];  }
-  u2 signature_index() const                               { return _shorts[signature_index_offset];   }
 public:
   static RecordParamInfo* from_record_params_array(Array<u2>* record_params, int index) {
     return ((RecordParamInfo*)record_params->adr_at(index * param_slots));
@@ -64,17 +57,11 @@ public:
     return ((RecordParamInfo*)(record_params + index * param_slots));
   }
 
-  void initialize(u2 name_index,
-                  u2 descriptor_index,
-                  u2 signature_index) {
-    _shorts[name_index_offset] = name_index;
-    _shorts[descriptor_index_offset] = descriptor_index;
-    _shorts[signature_index_offset] = signature_index;
+  void initialize(u2 accessor_index) {
+    _shorts[accessor_index_offset] = accessor_index;
   }
 
-  Symbol* name(const constantPoolHandle& cp) const          { return cp->symbol_at(name_index());       }
-  Symbol* signature(const constantPoolHandle& cp) const     { return cp->symbol_at(signature_index());  }
-  Symbol* descriptor(const constantPoolHandle& cp) const    { return cp->symbol_at(descriptor_index()); }
+  u2 accessor_index() const                                { return _shorts[accessor_index_offset];   }
 };
 
 #endif // SHARE_VM_OOPS_RECORDPARAMINFO_HPP

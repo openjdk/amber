@@ -457,9 +457,7 @@ class InstanceKlass: public Klass {
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
 
   // record parameters
-  Symbol* record_param_name(int index) const { return record_param(index)->name(constants()); }
-  Symbol* record_param_signature(int index) const { return record_param(index)->signature(constants()); }
-  Symbol* record_param_descriptor(int index) const { return record_param(index)->signature(constants()); }
+  int record_param_accessor_index(int index) const { return record_param(index)->accessor_index(); }
 
   int record_params_count() const       { return _record_params_count; }
 

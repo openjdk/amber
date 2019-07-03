@@ -61,7 +61,6 @@ import com.sun.tools.classfile.ModuleTarget_attribute;
 import com.sun.tools.classfile.NestHost_attribute;
 import com.sun.tools.classfile.NestMembers_attribute;
 import com.sun.tools.classfile.Record_attribute;
-import com.sun.tools.classfile.Record_attribute.Param_data;
 import com.sun.tools.classfile.RuntimeInvisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleTypeAnnotations_attribute;
@@ -731,37 +730,10 @@ public class AttributeWriter extends BasicWriter
         println("Record:");
         indent(+1);
         for (int i = 0; i < attr.num_params; i++) {
-            writeParamData(attr.params[i]);
+            println("#" + attr.accessors[i]);
         }
-        write(attr, attr.attributes, constant_pool);
         indent(-1);
         return null;
-    }
-
-    void writeParamData(Param_data pd) {
-        AccessFlags flags = new AccessFlags(pd.param_flags);
-        writeModifiers(flags.getFieldModifiers());
-        Descriptor descriptor = new Descriptor(pd.param_descriptor);
-        print(getJavaFieldType(descriptor));
-        print(" ");
-        try {
-            print(pd.getName(constant_pool));
-        } catch (ConstantPoolException cpe) {
-            // ignore
-        }
-        println(";");
-        try {
-            indent(+1);
-            println("descriptor: " + descriptor.getValue(constant_pool));
-            writeList(String.format("flags: (0x%04x) ", flags.flags), flags.getFieldFlags(), "\n");
-            Signature signature = new Signature(pd.param_signature);
-            Type t = signature.getType(constant_pool);
-            println("signature: " + getJavaName(t.toString()));
-            indent(-1);
-        } catch (ConstantPoolException cpe) {
-            // ignore
-        }
-        println();
     }
 
     void writeList(String prefix, Collection<?> items, String suffix) {
