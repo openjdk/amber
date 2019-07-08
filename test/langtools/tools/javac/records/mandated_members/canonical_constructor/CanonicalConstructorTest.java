@@ -32,7 +32,7 @@
 import com.sun.tools.javac.util.Assert;
 
 public class CanonicalConstructorTest {
-    record R1(int i, int j);
+    record R1(int i, int j) {}
     record R2(int i, int j) {
         public R2 {}
     }

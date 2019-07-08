@@ -3752,11 +3752,7 @@ public class JavacParser implements Parser {
             implementing = typeList();
         }
         List<JCTree> defs = List.nil();
-        if (token.kind == LBRACE) {
-            defs = classInterfaceOrRecordBody(name, false, true);
-        } else {
-            accept(SEMI);
-        }
+        defs = classInterfaceOrRecordBody(name, false, true);
         java.util.List<JCVariableDecl> fields = new ArrayList<>();
         Set<Name> seenNames = new HashSet<>();
         for (JCVariableDecl field : headerFields) {
@@ -3863,12 +3859,7 @@ public class JavacParser implements Parser {
             permitting = typeList();
         }
         List<JCTree> defs;
-        if (token.kind == LBRACE) {
-            defs = classInterfaceOrRecordBody(name, true, false);
-        } else {
-            accept(SEMI);
-            defs = List.nil();
-        }
+        defs = classInterfaceOrRecordBody(name, true, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, null, extending, permitting, defs));
         attach(result, dc);

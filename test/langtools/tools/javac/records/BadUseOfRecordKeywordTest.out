@@ -2,4 +2,6 @@ BadUseOfRecordKeywordTest.java:9:15: compiler.err.record.not.allowed: record
 BadUseOfRecordKeywordTest.java:13:11: compiler.err.record.not.allowed: record
 BadUseOfRecordKeywordTest.java:15:10: compiler.err.record.not.allowed: record
 BadUseOfRecordKeywordTest.java:17:12: compiler.err.record.not.allowed: record
-4 errors
+BadUseOfRecordKeywordTest.java:17:25: compiler.err.expected: '{'
+BadUseOfRecordKeywordTest.java:18:2: compiler.err.premature.eof
+6 errors

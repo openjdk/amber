@@ -11,10 +11,10 @@ class RecordsCantHaveExtendsClause {
     // even Object which is the implicit super class for records
     record R1(int x) extends Object {}
 
-    record R2(int y);
+    record R2(int y) {}
 
     // can't extend other records either
-    record R3(int y, int x) extends R2(y);
+    record R3(int y, int x) extends R2(y) {}
 
     // records can implement interfaces
     record R4() implements Serializable, Runnable {
