@@ -1143,7 +1143,7 @@ public class TypeEnter implements Completer {
                         log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
                     }
                     if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
-                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch);
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
                     }
                 }
             }

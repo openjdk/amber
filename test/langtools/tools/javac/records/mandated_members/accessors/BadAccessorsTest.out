@@ -1,5 +1,5 @@
 BadAccessorsTest.java:12:13: compiler.err.method.must.be.public: i
 BadAccessorsTest.java:13:21: compiler.err.method.must.be.public: j
 BadAccessorsTest.java:14:23: compiler.err.method.must.be.public: k
-BadAccessorsTest.java:16:21: compiler.err.accessor.return.type.doesnt.match
+BadAccessorsTest.java:16:21: compiler.err.accessor.return.type.doesnt.match: java.util.List<java.lang.String>, java.util.List
 4 errors
