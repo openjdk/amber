@@ -644,17 +644,9 @@ public class ClassWriter {
         @Override
         public Void visitRecord(Record_attribute attr, ClassOutputStream out) {
             out.writeShort(attr.num_params);
-            for (Record_attribute.Param_data e: attr.params)
-                writeParamData(e, out);
-            new AttributeWriter().write(attr.attributes, out);
+            for (int e: attr.accessors)
+                out.writeShort(e);
             return null;
-        }
-
-        protected void writeParamData(Record_attribute.Param_data pd, ClassOutputStream out) {
-            out.writeShort(pd.param_name_index);
-            out.writeShort(pd.param_flags);
-            out.writeShort(pd.param_descriptor);
-            out.writeShort(pd.param_signature);
         }
 
         @Override

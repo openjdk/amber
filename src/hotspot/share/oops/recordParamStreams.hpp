@@ -76,16 +76,12 @@ class RecordParameterStreamBase : public StackObj {
   }
   bool done() const { return _index >= _limit; }
 
+  int accessor_index() const {
+    return record_param()->accessor_index();
+  }
+
   Symbol* name() const {
     return record_param()->name(_constants);
-  }
-
-  Symbol* descriptor() const {
-    return record_param()->descriptor(_constants);
-  }
-
-  Symbol* signature() const {
-    return record_param()->signature(_constants);
   }
 };
 
@@ -94,23 +90,11 @@ class JavaRecordParameterStream : public RecordParameterStreamBase {
  public:
   JavaRecordParameterStream(const InstanceKlass* k): RecordParameterStreamBase(k->record_params(), k->constants(), 0, k->record_params_count()) {}
 
-  int name_index() const {
-    return record_param()->name_index();
+  int accessor_index() const {
+    return record_param()->accessor_index();
   }
-  void set_name_index(int index) {
-    record_param()->set_name_index(index);
-  }
-  int descriptor_index() const {
-    return record_param()->descriptor_index();
-  }
-  void set_descriptor_index(int index) {
-    record_param()->set_descriptor_index(index);
-  }
-  int signature_index() const {
-    return record_param()->signature_index();
-  }
-  void set_generic_signature_index(int index) {
-    record_param()->set_signature_index(index);
+  void set_accessor_index(int index) {
+    record_param()->set_accessor_index(index);
   }
 };
 

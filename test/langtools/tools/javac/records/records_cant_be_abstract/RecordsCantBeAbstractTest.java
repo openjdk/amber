@@ -4,4 +4,4 @@
  * @compile/fail/ref=RecordsCantBeAbstractTest.out -XDrawDiagnostics RecordsCantBeAbstractTest.java
  */
 
-abstract record RecordsCantBeAbstractTest(int i);
+abstract record RecordsCantBeAbstractTest(int i) {}

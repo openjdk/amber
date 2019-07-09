@@ -1091,7 +1091,11 @@ public class TypeEnter implements Completer {
                     boolean isSealed = sealedParentPair.fst.tsym.isSealed();
                     if (areInSameCompilationUnit) {
                         if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
-                            sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                            if (tree.sym.isAnonymous()) {
+                                log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                            } else {
+                                sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                            }
                         } else if (!dontErrorIfSealedExtended) {
                             log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
                         }
@@ -1101,9 +1105,13 @@ public class TypeEnter implements Completer {
                 }
             }
 
-            if (anyParentIsSealed) {
+            if (anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) == 0) ) {
                 // once we have the non-final keyword this will change
                 tree.sym.flags_field |= (tree.sym.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
+            }
+
+            if (!anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) != 0) ) {
+                log.error(tree, Errors.NonSealedWithNoSealedSupertype);
             }
         }
 
@@ -1139,7 +1147,7 @@ public class TypeEnter implements Completer {
                         log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
                     }
                     if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
-                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch);
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
                     }
                 }
             }

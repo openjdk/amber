@@ -36,7 +36,7 @@ import com.sun.tools.classfile.*;
 
 public class MethodParametersForCanonicalConstructorTest {
 
-    record R1(int i, int j);
+    record R1(int i, int j) {}
 
     record R2(int i, int j) {
         public R2 {}

@@ -1689,7 +1689,7 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass)
 
   int out_idx = 0;
   for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
-    Handle str = java_lang_String::create_from_symbol(recordParamsStream.name(), CHECK_NULL);
+    Handle str = java_lang_String::create_from_symbol(recordParamsStream.name() , CHECK_NULL);
     dest->obj_at_put(out_idx, str());
     ++out_idx;
   }

@@ -94,6 +94,7 @@ public class Check {
     private final Target target;
     private final Profile profile;
     private final boolean warnOnAnyAccessToMembers;
+    private final boolean debug;
 
     // The set of lint options currently in effect. It is initialized
     // from the context, and then is set/reset as needed by Attr as it
@@ -155,6 +156,7 @@ public class Check {
                 enforceMandatoryWarnings, "sunapi", null);
 
         deferredLintHandler = DeferredLintHandler.instance(context);
+        debug = options.isSet("debug");
     }
 
     /** Character for synthetic names
@@ -1137,6 +1139,9 @@ public class Check {
                 mask = VarFlags;
             break;
         case MTH:
+            if (debug) {
+                System.out.println("checking method with flags " + Flags.toString(flags));
+            }
             if (sym.name == names.init) {
                 if ((sym.owner.flags_field & ENUM) != 0) {
                     // enum constructors cannot be declared public or
@@ -1168,8 +1173,11 @@ public class Check {
                 implicit |= sym.owner.flags_field & STRICTFP;
             break;
         case TYP:
+            if (debug) {
+                System.out.println("checking type with flags " + Flags.toString(flags));
+            }
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
                     (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
@@ -1178,7 +1186,7 @@ public class Check {
                     log.error(pos, Errors.NestedRecordsMustBeStatic);
                 }
             } else if (sym.owner.kind == TYP) {
-                mask = (flags & RECORD) != 0 ? MemberRecordClassFlags : MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? ExtendedMemberRecordClassFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
@@ -1188,7 +1196,7 @@ public class Check {
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
             } else {
-                mask = ClassFlags;
+                mask = ExtendedClassFlags;
             }
             // Interfaces are always ABSTRACT
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;
@@ -1209,6 +1217,9 @@ public class Check {
             throw new AssertionError();
         }
         long illegal = flags & ExtendedStandardFlags & ~mask;
+        if (debug) {
+            System.out.println("illegal flags: " + Flags.toString(illegal));
+        }
         if (illegal != 0) {
             if ((illegal & INTERFACE) != 0) {
                 log.error(pos, ((flags & ANNOTATION) != 0) ? Errors.AnnotationDeclNotAllowedHere : Errors.IntfNotAllowedHere);
@@ -1249,7 +1260,13 @@ public class Check {
                  (sym.kind == TYP ||
                   checkDisjoint(pos, flags,
                                 ABSTRACT | NATIVE,
-                                STRICTFP))) {
+                                STRICTFP))
+                 && checkDisjoint(pos, flags,
+                                FINAL,
+                           SEALED | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                           FINAL | NON_SEALED)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;

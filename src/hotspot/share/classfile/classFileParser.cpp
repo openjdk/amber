@@ -3282,37 +3282,18 @@ void ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* co
   for (int n = 0; n < num_of_params; n++) {
     cfs->guarantee_more(RecordParamInfo::param_slots, CHECK);
 
-    const u2 name_index = cfs->get_u2_fast();
-    check_property(valid_symbol_at(name_index),
-      "Invalid constant pool index %u for record parameter name in class file %s",
-      name_index, CHECK);
-    const Symbol* const name = cp->symbol_at(name_index);
-    verify_legal_field_name(name, CHECK);
+    const u2 method_ref_index = cfs->get_u2_fast();
+    //check_property(valid_symbol_at(method_ref_index),
+    //  "Invalid constant pool index %u for record parameter name in class file %s",
+    //  method_ref_index, CHECK);
+    //const Symbol* const method_ref = cp->symbol_at(method_ref_index);
+    // we will need a way to verify that the symbol is correct
+    // verify_legal_field_name(name, CHECK);
     // DEBUG
     // tty->print_cr("name read %s", name->as_klass_external_name());
 
-    const u2 descriptor_index = cfs->get_u2_fast();
-    check_property(valid_symbol_at(descriptor_index),
-      "Invalid constant pool index %u for record parameter descriptor in class file %s",
-      descriptor_index, CHECK);
-    const Symbol* const descriptor = cp->symbol_at(descriptor_index);
-    verify_legal_field_signature(name, descriptor, CHECK);
-    // DEBUG
-    // tty->print_cr("descriptor read %s", descriptor->as_klass_external_name());
-
-    const u2 signature_index = cfs->get_u2_fast();
-    check_property(valid_symbol_at(signature_index),
-      "Invalid constant pool index %u for record parameter signature in class file %s",
-      signature_index, CHECK);
-    const Symbol* const sig = cp->symbol_at(signature_index);
-    // DEBUG
-    // tty->print_cr("signature read %s", sig->as_klass_external_name());
-
     RecordParamInfo* const record_param_info = RecordParamInfo::from_record_params_array(record_params_array, n);
-    record_param_info->initialize(
-                      name_index,
-                      descriptor_index,
-                      signature_index);
+    record_param_info->initialize(method_ref_index);
   }
 
   assert(NULL == _record_params, "invariant");

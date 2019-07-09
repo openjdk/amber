@@ -38,7 +38,6 @@ import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.parser.Tokens.*;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
-import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
@@ -105,6 +104,8 @@ public class JavacParser implements Parser {
 
     /** End position mappings container */
     protected final AbstractEndPosTable endPosTable;
+
+    private final boolean debug;
 
     // Because of javac's limited lookahead, some contexts are ambiguous in
     // the presence of type annotations even though they are not ambiguous
@@ -184,6 +185,7 @@ public class JavacParser implements Parser {
         endPosTable = newEndPosTable(keepEndPositions);
         this.allowYieldStatement = (!preview.isPreview(Feature.SWITCH_EXPRESSION) || preview.isEnabled()) &&
                 Feature.SWITCH_EXPRESSION.allowedInSource(source);
+        debug = fac.options.isSet("debug");
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -3070,17 +3072,17 @@ public class JavacParser implements Parser {
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
             case IDENTIFIER  : {
-                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.FINAL)) {
+                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
                     Token tokenSub = S.token(1);
-                    Token tokenFinal = S.token(2);
-                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenFinal.pos) {
-                        flag = Flags.NON_FINAL;
+                    Token tokenSealed = S.token(2);
+                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenSealed.pos && tokenSealed.name() == names.sealed) {
+                        flag = Flags.NON_SEALED;
                         nextToken();
                         nextToken();
                         break;
                     }
                 }
-                if (isSealedClassDeclaration()) {
+                if (token.name() == names.sealed) {
                     flag = Flags.SEALED;
                     break;
                 }
@@ -3749,11 +3751,7 @@ public class JavacParser implements Parser {
             implementing = typeList();
         }
         List<JCTree> defs = List.nil();
-        if (token.kind == LBRACE) {
-            defs = classInterfaceOrRecordBody(name, false, true);
-        } else {
-            accept(SEMI);
-        }
+        defs = classInterfaceOrRecordBody(name, false, true);
         java.util.List<JCVariableDecl> fields = new ArrayList<>();
         Set<Name> seenNames = new HashSet<>();
         for (JCVariableDecl field : headerFields) {
@@ -3860,12 +3858,7 @@ public class JavacParser implements Parser {
             permitting = typeList();
         }
         List<JCTree> defs;
-        if (token.kind == LBRACE) {
-            defs = classInterfaceOrRecordBody(name, true, false);
-        } else {
-            accept(SEMI);
-            defs = List.nil();
-        }
+        defs = classInterfaceOrRecordBody(name, true, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
             mods, name, typarams, null, extending, permitting, defs));
         attach(result, dc);
@@ -4039,6 +4032,9 @@ public class JavacParser implements Parser {
             Comment dc = token.comment(CommentStyle.JAVADOC);
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
+            if (debug) {
+                System.out.println("read flags " + Flags.toString(mods.flags));
+            }
             if (token.kind == CLASS ||
                 isRecordToken() ||
                 token.kind == INTERFACE ||
@@ -4129,15 +4125,6 @@ public class JavacParser implements Parser {
 
     boolean isRecordToken() {
         return token.kind == IDENTIFIER && token.name() == names.record;
-    }
-
-    boolean isSealedClassDeclaration() {
-        Token next = S.token(1);
-        return token.kind == IDENTIFIER && token.name() == names.sealed &&
-                (peekToken(TokenKind.CLASS) ||
-                        peekToken(TokenKind.INTERFACE) ||
-                        peekToken(TokenKind.ABSTRACT) ||
-                        next.kind == IDENTIFIER && next.name() == names.record);
     }
 
     /** MethodDeclaratorRest =

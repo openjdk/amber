@@ -25,4 +25,4 @@
 
 import java.util.List;
 
-record Record1<T>(int i, int j, List<String> ls, List<T> lt);
+record Record1<T>(int i, int j, List<String> ls, List<T> lt) {}

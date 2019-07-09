@@ -37,11 +37,11 @@ public class RecordReflectionTest {
 
     class NoRecord {}
 
-    record R1();
+    record R1() {}
 
-    record R2(int i, int j);
+    record R2(int i, int j) {}
 
-    record R3(List<String> ls);
+    record R3(List<String> ls) {}
 
     public static void main(String... args) throws Throwable {
         Class<?> noRecordClass = NoRecord.class;

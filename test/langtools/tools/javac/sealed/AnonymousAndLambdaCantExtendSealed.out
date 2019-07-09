@@ -1,0 +1,3 @@
+AnonymousAndLambdaCantExtendSealed.java:9:30: compiler.err.cant.inherit.from.sealed: AnonymousAndLambdaCantExtendSealed.I1
+AnonymousAndLambdaCantExtendSealed.java:13:40: compiler.err.cant.inherit.from.sealed: AnonymousAndLambdaCantExtendSealed.I2
+2 errors

@@ -45,10 +45,10 @@ public class CheckReadResolveMethodTest {
     }
 
     // readResolve should be generated the record implements Serializable
-    record Point2(int i, int j) implements Serializable;
+    record Point2(int i, int j) implements Serializable {}
 
     // no readResolve should be generated as the record doesnt implement Serializable
-    record Point3(int i, int j);
+    record Point3(int i, int j) {}
 
     // no readResolve should be generated as an implementation is already provided
     record Point4(int i, int j) {

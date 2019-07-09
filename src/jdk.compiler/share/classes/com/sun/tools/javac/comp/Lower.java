@@ -2303,6 +2303,23 @@ public class Lower extends TreeTranslator {
         return buffer.toList();
     }
 
+    /* this method looks for explicit accessors to add them to the corresponding field
+     */
+    void findUserDefinedAccessors(JCClassDecl tree) {
+        tree.defs.stream()
+                .filter(t -> t.hasTag(VARDEF))
+                .map(t -> (JCVariableDecl)t)
+                .filter(vd -> (vd.sym.accessors.isEmpty() && !vd.sym.isStatic()))
+                .forEach(vd -> {
+                    MethodSymbol msym = lookupMethod(tree.pos(),
+                            vd.name,
+                            tree.sym.type,
+                            List.nil());
+                    Assert.check(msym != null, "there has to be a user defined accessor");
+                    vd.sym.accessors = List.of(new Pair<>(Accessors.Kind.GET, msym));
+                });
+    }
+
     /** Translate an enum class. */
     private void visitEnumDef(JCClassDecl tree) {
         make_at(tree.pos());
@@ -2488,6 +2505,7 @@ public class Lower extends TreeTranslator {
                 recordExtractor(tree, getterMethHandlesForExtractor),
                 recordReadResolve(tree)
         ));
+        findUserDefinedAccessors(tree);
     }
 
     JCTree generateRecordMethod(JCClassDecl tree, Name name, List<VarSymbol> vars, MethodHandleSymbol[] getterMethHandles) {

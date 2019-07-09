@@ -2794,6 +2794,10 @@ public class Attr extends JCTree.Visitor {
             Type currentTarget = targetInfo.target;
             Type lambdaType = targetInfo.descriptor;
 
+            if (currentTarget.tsym != null && ((ClassSymbol)currentTarget.tsym).isSealed()) {
+                log.error(that, Errors.CantInheritFromSealed(currentTarget.tsym));
+            }
+
             if (currentTarget.isErroneous()) {
                 result = that.type = currentTarget;
                 return;
