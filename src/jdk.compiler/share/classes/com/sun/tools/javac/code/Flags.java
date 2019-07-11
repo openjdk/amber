@@ -451,7 +451,9 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
-        NAME_FILLED(Flags.NAME_FILLED);
+        NAME_FILLED(Flags.NAME_FILLED),
+        MATCH_BINDING(Flags.MATCH_BINDING),
+        MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER);
 
         Flag(long flag) {
             this.value = flag;
