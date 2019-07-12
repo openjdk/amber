@@ -28,7 +28,9 @@ package com.sun.tools.javac.comp;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
+import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
 
 import com.sun.tools.javac.code.*;
@@ -949,7 +951,7 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                 }
                 if (helper != null) {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
@@ -965,9 +967,7 @@ public class TypeEnter implements Completer {
                                     TreeInfo.getConstructorInvocationName(((JCMethodDecl)def).body.stats, names, true);
                             if (constructorInvocationName == names.empty ||
                                     constructorInvocationName == names._super) {
-                                RecordConstructorHelper helper = new RecordConstructorHelper(
-                                        sym,
-                                        TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                                RecordConstructorHelper helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                                 JCMethodDecl methDecl = (JCMethodDecl)def;
                                 if (constructorInvocationName == names.empty) {
                                     JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
@@ -1052,14 +1052,14 @@ public class TypeEnter implements Completer {
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
                 addEnumMembers(tree, env);
             }
-            List<JCTree> defsToEnter = (tree.sym.flags_field & RECORD) != 0 ?
+            boolean isRecord = (tree.sym.flags_field & RECORD) != 0;
+            List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if ((tree.mods.flags & RECORD) != 0) {
-                if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-                    addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
-                }
+            if (isRecord) {
+                addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
                 addAccessorsIfNeeded(tree, env);
+                //List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
             }
 
             if (tree.sym.isAnnotationType()) {
@@ -1130,7 +1130,7 @@ public class TypeEnter implements Completer {
                 Type accessorType = accessor.fst.accessorType(syms, tree.sym.type);
                 MethodSymbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
                 if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
-                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED),
+                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
                               accessor.snd,
                               make.Type(accessorType.getReturnType()),
                               List.nil(),
@@ -1213,7 +1213,7 @@ public class TypeEnter implements Completer {
                         null :
                         canonicalDecl.sym;
                 if (canonicalInit == null) {
-                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree));
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
                     defaultConstructorGenerated = true;
@@ -1314,6 +1314,7 @@ public class TypeEnter implements Completer {
        TypeSymbol owner();
        List<Name> superArgs();
        List<Name> inits();
+       default JCMethodDecl finalAdjustment(JCMethodDecl md) { return md; }
     }
 
     class BasicConstructorHelper implements DefaultConstructorHelper {
@@ -1435,17 +1436,19 @@ public class TypeEnter implements Completer {
 
     class RecordConstructorHelper extends BasicConstructorHelper {
 
-        List<VarSymbol> recordFields;
+        List<VarSymbol> recordFieldSymbols;
+        List<JCVariableDecl> recordFieldDecls;
 
-        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields) {
+        RecordConstructorHelper(TypeSymbol owner, List<JCVariableDecl> recordFieldDecls) {
             super(owner);
-            this.recordFields = recordFields;
+            this.recordFieldDecls = recordFieldDecls;
+            this.recordFieldSymbols = recordFieldDecls.map(vd -> vd.sym);
         }
 
         @Override
         public Type constructorType() {
             if (constructorType == null) {
-                List<Type> argtypes = recordFields.map(v -> v.type);
+                List<Type> argtypes = recordFieldSymbols.map(v -> v.type);
                 constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
@@ -1455,8 +1458,8 @@ public class TypeEnter implements Completer {
         public MethodSymbol constructorSymbol() {
             MethodSymbol csym = super.constructorSymbol();
             ListBuffer<VarSymbol> params = new ListBuffer<>();
-            for (VarSymbol p : recordFields) {
-                params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
+            for (VarSymbol p : recordFieldSymbols) {
+                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD, p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;
@@ -1465,7 +1468,17 @@ public class TypeEnter implements Completer {
 
         @Override
         public List<Name> inits() {
-            return recordFields.map(v -> v.name);
+            return recordFieldSymbols.map(v -> v.name);
+        }
+
+        @Override
+        public JCMethodDecl finalAdjustment(JCMethodDecl md) {
+            List<JCVariableDecl> tmpRecordFieldDecls = recordFieldDecls;
+            for (JCVariableDecl arg : md.params) {
+                arg.mods.annotations = tmpRecordFieldDecls.head.mods.annotations;
+                tmpRecordFieldDecls = tmpRecordFieldDecls.tail;
+            }
+            return md;
         }
     }
 
@@ -1488,8 +1501,8 @@ public class TypeEnter implements Completer {
         helper.inits().forEach((initName) -> {
             stats.add(make.Exec(make.Assign(make.Select(make.Ident(names._this), initName), make.Ident(initName))));
         });
-        JCTree result = make.MethodDef(initSym, make.Block(0, stats.toList()));
-        return result;
+        JCMethodDecl result = make.MethodDef(initSym, make.Block(0, stats.toList()));
+        return helper.finalAdjustment(result);
     }
 
     /**
