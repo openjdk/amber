@@ -2874,6 +2874,8 @@ public class Check {
             }
         }
 
+        //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
+
         if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s)) {
             // debug
             //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
@@ -3182,8 +3184,7 @@ public class Check {
                     return true;
             } else if (target == names.PARAMETER) {
                 if (s.kind == VAR &&
-                    (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0) ||
-                    (s.owner.kind == TYP && s.owner.isRecord())) {
+                    (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0)) {
                     return true;
                 }
             } else if (target == names.CONSTRUCTOR) {
