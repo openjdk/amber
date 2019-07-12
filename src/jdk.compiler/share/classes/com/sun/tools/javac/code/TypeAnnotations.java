@@ -1266,7 +1266,7 @@ public class TypeAnnotations {
                 // No type annotations can occur here.
             } else {
                 // There is nothing else in a variable declaration that needs separation.
-                Assert.error("Unhandled variable kind");
+                Assert.error("Unhandled variable kind: " + tree.sym.getKind());
             }
 
             scan(tree.mods);

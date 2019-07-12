@@ -3824,7 +3824,7 @@ public class JavacParser implements Parser {
         if (mods.flags != 0) {
             log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
         }
-        mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE;
+        mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE | Flags.MANDATED;
         JCExpression type = parseType();
         int pos = token.pos;
         Name id = ident();

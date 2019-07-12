@@ -2839,9 +2839,9 @@ public class Check {
 
     /** Check the annotations of a symbol.
      */
-    public void validateAnnotations(List<JCAnnotation> annotations, Symbol s) {
+    public void validateAnnotations(List<JCAnnotation> annotations, JCTree declarationTree, Symbol s) {
         for (JCAnnotation a : annotations)
-            validateAnnotation(a, s);
+            validateAnnotation(a, declarationTree, s);
     }
 
     /** Check the type annotations.
@@ -2853,11 +2853,48 @@ public class Check {
 
     /** Check an annotation of a symbol.
      */
-    private void validateAnnotation(JCAnnotation a, Symbol s) {
+    private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
 
-        if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s))
-            log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+        if (s.isRecord() && s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF)) {
+            // we are seeing a record field, which had the original annotations, now is the moment,
+            // before stripping some of them just below, to check if the original annotations
+            // applied to records at all, first version only cares about declaration annotations
+            // we will add type annotations later on
+            Name[] targets = getTargetNames(a, s);
+            boolean appliesToRecords = false;
+            for (Name target : targets) {
+                appliesToRecords = target == names.FIELD || target == names.PARAMETER || target == names.METHOD;
+                if (appliesToRecords) {
+                    break;
+                }
+            }
+            if (!appliesToRecords) {
+                log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            }
+        }
+
+        if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s)) {
+            // debug
+            //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
+            if (s.isRecord() || s.owner.isRecord() && (s.flags_field & Flags.MANDATED) != 0) {
+                JCModifiers modifiers = TreeInfo.getModifiers(declarationTree);
+                // lets first remove the annotation from the modifier
+                if (modifiers != null) {
+                    ListBuffer<JCAnnotation> newAnnotations = new ListBuffer<>();
+                    for (JCAnnotation anno : modifiers.annotations) {
+                        if (anno != a) {
+                            newAnnotations.add(anno);
+                        }
+                    }
+                    modifiers.annotations = newAnnotations.toList();
+                }
+                // now lets remove it from the symbol
+                s.getMetadata().remove(a.attribute);
+            } else {
+                log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            }
+        }
 
         if (a.annotationType.type.tsym == syms.functionalInterfaceType.tsym) {
             if (s.kind != TYP) {
@@ -3107,10 +3144,9 @@ public class Check {
         }
 
     /** Is the annotation applicable to the symbol? */
-    boolean annotationApplicable(JCAnnotation a, Symbol s) {
+    Name[] getTargetNames(JCAnnotation a, Symbol s) {
         Attribute.Array arr = getAttributeTargetAttribute(a.annotationType.type.tsym);
         Name[] targets;
-
         if (arr == null) {
             targets = defaultTargetMetaInfo(a, s);
         } else {
@@ -3119,11 +3155,20 @@ public class Check {
             for (int i=0; i<arr.values.length; ++i) {
                 Attribute app = arr.values[i];
                 if (!(app instanceof Attribute.Enum)) {
-                    return true; // recovery
+                    return new Name[0];
                 }
                 Attribute.Enum e = (Attribute.Enum) app;
                 targets[i] = e.value.name;
             }
+        }
+        return targets;
+    }
+
+    boolean annotationApplicable(JCAnnotation a, Symbol s) {
+        Name[] targets = getTargetNames(a, s);
+        if (targets.length == 0) {
+            // recovery
+            return true;
         }
         for (Name target : targets) {
             if (target == names.TYPE) {
