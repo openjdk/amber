@@ -920,10 +920,9 @@ public class JavacParser implements Parser {
             if (token.kind == INSTANCEOF) {
                 int pos = token.pos;
                 nextToken();
-                int patternPos = token.pos;
                 JCTree pattern = parseType();
                 if (token.kind == IDENTIFIER) {
-                    pattern = toP(F.at(patternPos).BindingPattern(ident(), pattern));
+                    pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {

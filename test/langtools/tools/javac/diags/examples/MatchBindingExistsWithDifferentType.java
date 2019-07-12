@@ -21,10 +21,10 @@
  * questions.
  */
 
-// key: compiler.err.match.binding.exists
+// key: compiler.err.match.binding.exists.with.different.type
 
-class MatchBindingExists {
-    public void test(Object o1, Object o2) {
-        if (o1 instanceof String k && o2 instanceof Integer k) {}
+class MatchBindingExistsWithDifferentType {
+    public static void main(Object o1, Object o2) {
+        if (o1 instanceof String k || o2 instanceof Integer k) {}
     }
 }

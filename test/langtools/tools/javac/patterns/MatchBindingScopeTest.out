@@ -1,5 +1,4 @@
 MatchBindingScopeTest.java:18:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
-MatchBindingScopeTest.java:22:53: compiler.err.already.defined: kindname.variable, j, kindname.method, main(java.lang.String[])
 MatchBindingScopeTest.java:22:36: compiler.err.match.binding.exists
 MatchBindingScopeTest.java:29:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
 MatchBindingScopeTest.java:30:32: compiler.err.cant.resolve.location: kindname.variable, k, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
@@ -13,4 +12,4 @@ MatchBindingScopeTest.java:55:48: compiler.err.cant.resolve.location: kindname.v
 MatchBindingScopeTest.java:56:32: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
 MatchBindingScopeTest.java:61:23: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
 MatchBindingScopeTest.java:64:23: compiler.err.cant.resolve.location: kindname.variable, j, , , (compiler.misc.location: kindname.class, MatchBindingScopeTest, null)
-15 errors
+14 errors

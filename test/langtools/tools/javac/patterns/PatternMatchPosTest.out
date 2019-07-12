@@ -3,3 +3,10 @@ o instanceof String s
 o
 String s
 String
+(o instanceof java.lang.String s)
+o instanceof java.lang.String s
+o
+java.lang.String s
+java.lang.String
+java.lang
+java
