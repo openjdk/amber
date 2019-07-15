@@ -1603,7 +1603,7 @@ public class Attr extends JCTree.Visitor {
                                 }
                                 break;
                         }
-                        matchBindings = getMatchBindings(types, log, pat, true, matchBindings);
+                        matchBindings = matchBindingsComputer.getMatchBindings(pat, true, matchBindings);
                     }
                 } else {
                     if (hasDefault) {
@@ -1611,7 +1611,7 @@ public class Attr extends JCTree.Visitor {
                     } else {
                         hasDefault = true;
                     }
-                    matchBindings = getMatchBindings(types, log, null, true, matchBindings);
+                    matchBindings = matchBindingsComputer.getMatchBindings(null, true, matchBindings);
                 }
 
                 Env<AttrContext> caseEnv = bindingEnv(switchEnv, matchBindings);

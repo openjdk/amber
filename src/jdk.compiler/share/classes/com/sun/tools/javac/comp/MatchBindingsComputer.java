@@ -71,6 +71,14 @@ public class MatchBindingsComputer extends TreeScanner {
         return bindings;
     }
 
+    public List<BindingSymbol> getMatchBindings(JCTree expression, boolean whenTrue, List<BindingSymbol> intersectWith) {
+        List<BindingSymbol> bindings = getMatchBindings(expression, whenTrue);
+        if (intersectWith != null) {
+            bindings = intersection(expression, intersectWith, bindings);
+        }
+        return bindings;
+    }
+
     @Override
     public void visitBindingPattern(JCBindingPattern tree) {
         bindings = whenTrue ? List.of(tree.symbol) : List.nil();
