@@ -257,7 +257,7 @@ public class Flow {
 
     public boolean aliveAfter(Env<AttrContext> env, JCTree that, TreeMaker make) {
         //we need to disable diagnostics temporarily; the problem is that if
-        //a lambda expression contains e.g. an unreachable statement, an error
+        //"that" contains e.g. an unreachable statement, an error
         //message will be reported and will cause compilation to skip the flow analyis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
@@ -274,7 +274,7 @@ public class Flow {
 
     public boolean breaksOutOf(Env<AttrContext> env, JCTree loop, JCTree body, TreeMaker make) {
         //we need to disable diagnostics temporarily; the problem is that if
-        //a lambda expression contains e.g. an unreachable statement, an error
+        //"that" contains e.g. an unreachable statement, an error
         //message will be reported and will cause compilation to skip the flow analyis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected

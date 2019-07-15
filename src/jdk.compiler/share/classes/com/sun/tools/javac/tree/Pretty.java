@@ -243,15 +243,6 @@ public class Pretty extends JCTree.Visitor {
         printExpr(tree);
     }
 
-    public <T extends JCTree> void printPatterns(List<T> trees) throws IOException {
-        if (trees.nonEmpty()) {
-            printPattern(trees.head);
-            for (List<T> l = trees.tail; l.nonEmpty(); l = l.tail) {
-                print(", ");
-                printPattern(l.head);
-            }
-        }
-    }
     /** Derived visitor method: print list of statements, each on a separate line.
      */
     public void printStats(List<? extends JCTree> trees) throws IOException {

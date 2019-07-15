@@ -37,24 +37,37 @@ import com.sun.tools.javac.tree.JCTree.JCConditional;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
 import com.sun.tools.javac.tree.TreeScanner;
+import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Name;
 
 
 public class MatchBindingsComputer extends TreeScanner {
+    protected static final Context.Key<MatchBindingsComputer> matchBindingsComputerKey = new Context.Key<>();
 
-    private final JCTree tree;
     private final Log log;
     private final Types types;
     boolean whenTrue;
     List<BindingSymbol> bindings;
 
-    public MatchBindingsComputer(Types types, Log log, JCTree tree, boolean whenTrue) {
-        this.tree = tree;
+    public static MatchBindingsComputer instance(Context context) {
+        MatchBindingsComputer instance = context.get(matchBindingsComputerKey);
+        if (instance == null)
+            instance = new MatchBindingsComputer(context);
+        return instance;
+    }
+
+    protected MatchBindingsComputer(Context context) {
+        this.log = Log.instance(context);
+        this.types = Types.instance(context);
+    }
+
+    public List<BindingSymbol> getMatchBindings(JCTree expression, boolean whenTrue) {
         this.whenTrue = whenTrue;
-        this.log = log;
-        this.types = types;
+        this.bindings = List.nil();
+        scan(expression);
+        return bindings;
     }
 
     @Override
@@ -178,14 +191,6 @@ public class MatchBindingsComputer extends TreeScanner {
     public void scan(JCTree tree) {
         bindings = List.nil();
         super.scan(tree);
-    }
-
-    public List<BindingSymbol> getBindings(List<BindingSymbol> intersectWith) {
-        scan(tree);
-        if (intersectWith != null) {
-            bindings = intersection(tree, intersectWith, bindings);
-        }
-        return bindings;
     }
 
     public static class BindingSymbol extends VarSymbol {
