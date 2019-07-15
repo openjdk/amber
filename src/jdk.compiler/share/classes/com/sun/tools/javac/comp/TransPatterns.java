@@ -70,6 +70,7 @@ import java.util.stream.Collectors;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
+import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
@@ -99,6 +100,7 @@ public class TransPatterns extends TreeTranslator {
     private Log log;
     private ConstFold constFold;
     private Names names;
+    private Target target;
 
     BindingContext bindingContext = new BindingContext() {
         @Override
@@ -143,6 +145,7 @@ public class TransPatterns extends TreeTranslator {
         log = Log.instance(context);
         constFold = ConstFold.instance(context);
         names = Names.instance(context);
+        target = Target.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
     }
 
@@ -154,8 +157,8 @@ public class TransPatterns extends TreeTranslator {
             Type tempType = tree.expr.type.hasTag(BOT) ?
                     syms.objectType
                     : tree.expr.type;
-            VarSymbol temp = new VarSymbol(pattSym.flags(),
-                    pattSym.name.append(names.fromString("$temp")),
+            VarSymbol temp = new VarSymbol(pattSym.flags() | Flags.SYNTHETIC,
+                    names.fromString(pattSym.name.toString() + target.syntheticNameChar() + "temp"),
                     tempType,
                     patt.symbol.owner);
             JCExpression translatedExpr = translate(tree.expr);
@@ -482,7 +485,7 @@ public class TransPatterns extends TreeTranslator {
             this.parent = bindingContext;
             this.hoistedVarMap = matchBindings.stream()
                     .filter(v -> parent.getBindingFor(v) == null)
-                    .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags(), v.name.append(names.fromString("$binding")), v.type, v.owner)));
+                    .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags(), v.name, v.type, v.owner)));
         }
 
         @Override

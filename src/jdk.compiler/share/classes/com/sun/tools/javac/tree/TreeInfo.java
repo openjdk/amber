@@ -490,6 +490,15 @@ public class TreeInfo {
                     return getStartPos(node.vartype);
                 }
             }
+            case BINDINGPATTERN: {
+                JCBindingPattern node = (JCBindingPattern)tree;
+                if (node.vartype == null) {
+                    //var binding pattern
+                    return node.pos;
+                } else {
+                    return getStartPos(node.vartype);
+                }
+            }
             case ERRONEOUS: {
                 JCErroneous node = (JCErroneous)tree;
                 if (node.errs != null && node.errs.nonEmpty())

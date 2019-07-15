@@ -939,14 +939,13 @@ public class JavacParser implements Parser {
             if (token.kind == INSTANCEOF) {
                 int pos = token.pos;
                 nextToken();
-                int patternPos = token.pos;
                 JCTree pattern = parseType(true);
                 if (token.kind == IDENTIFIER) {
                     if (pattern.hasTag(IDENT) && isRestrictedTypeName(((JCIdent) pattern).name, pattern.pos, true)) {
                         reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, ((JCIdent) pattern).name == names.var ? Source.JDK10 : Source.JDK13));
                         pattern = null;
                     }
-                    pattern = toP(F.at(patternPos).BindingPattern(ident(), pattern));
+                    pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
