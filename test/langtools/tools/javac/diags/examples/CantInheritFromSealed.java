@@ -25,8 +25,12 @@
 
 // key: compiler.err.cant.inherit.from.sealed
 
-sealed interface SealedInterface {
+sealed interface SealedInterface permits Sub1 {
     void m();
+}
+
+class Sub1 implements SealedInterface {
+    public void m() { }
 }
 
 class CantInheritFromSealed implements SealedInterface {

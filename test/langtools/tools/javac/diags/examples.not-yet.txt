@@ -164,18 +164,28 @@ compiler.err.locn.module-info.not.allowed.on.patch.path
 compiler.misc.cant.resolve.modules
 compiler.misc.file.does.not.contain.module
 
-# datum related messages
-compiler.err.accessors.not.supported.in.source
-compiler.err.cant.extend.datum
-compiler.err.datum.can.only.declare.methods.as.members
-compiler.err.datum.cant.declare.duplicate.fields
-compiler.err.datum.must.declare.at.least.one.field
+# records related messages
 compiler.err.duplicate.argument.to.super
 compiler.err.expected3
-compiler.err.unexpected.accessor.kind
-compiler.misc.bad.datum.super
 compiler.misc.bad.super.fields
 compiler.misc.super.field.mismatch
+compiler.err.accessor.return.type.doesnt.match
+compiler.err.canonical.with.name.mismatch
+compiler.err.cant.extend.record
+compiler.err.constructor.with.same.erasure.as.canonical
+compiler.err.local.record
+compiler.err.method.must.be.public
+compiler.err.nested.records.must.be.static
+compiler.err.non.sealed.with.no.sealed.supertype
+compiler.err.permits.in.no.sealed.class
+compiler.err.record.can.only.declare.methods.as.members
+compiler.err.record.cant.be.abstract
+compiler.err.record.cant.declare.duplicate.fields
+compiler.err.record.cant.declare.field.modifiers
+compiler.err.record.fields.must.be.in.header
+compiler.err.record.not.allowed
+compiler.misc.bad.record.super
+compiler.misc.feature.sealed.types
 
 # these keys were in javac.properties and examples are hard to be produced for them
 # basically because in most cases the compilation ends with an exception
