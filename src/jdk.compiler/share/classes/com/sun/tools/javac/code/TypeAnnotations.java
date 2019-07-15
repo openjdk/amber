@@ -1067,6 +1067,13 @@ public class TypeAnnotations {
                                         outer_type_index, location);
                 }
 
+                case BINDING_PATTERN: {
+                    final List<JCTree> newPath = path.tail;
+                    return resolveFrame(newPath.head, newPath.tail.head,
+                                        newPath, currentLambda,
+                                        outer_type_index, location);
+                }
+
                 default:
                     throw new AssertionError("Unresolved frame: " + frame +
                                              " of kind: " + frame.getKind() +

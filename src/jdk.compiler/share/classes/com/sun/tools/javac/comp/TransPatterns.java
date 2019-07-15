@@ -93,14 +93,15 @@ public class TransPatterns extends TreeTranslator {
         return instance;
     }
 
-    private Symtab syms;
+    private final Symtab syms;
+    private final Types types;
+    private final Operators operators;
+    private final Log log;
+    private final ConstFold constFold;
+    private final Names names;
+    private final Target target;
+    private final MatchBindingsComputer matchBindingsComputer;
     private TreeMaker make;
-    private Types types;
-    private Operators operators;
-    private Log log;
-    private ConstFold constFold;
-    private Names names;
-    private Target target;
 
     BindingContext bindingContext = new BindingContext() {
         @Override
@@ -146,6 +147,7 @@ public class TransPatterns extends TreeTranslator {
         constFold = ConstFold.instance(context);
         names = Names.instance(context);
         target = Target.instance(context);
+        matchBindingsComputer = MatchBindingsComputer.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
     }
 
@@ -206,10 +208,10 @@ public class TransPatterns extends TreeTranslator {
         List<BindingSymbol> matchBindings;
         switch (tree.getTag()) {
             case AND:
-                matchBindings = Attr.getMatchBindings(types, log, tree.lhs, true);
+                matchBindings = matchBindingsComputer.getMatchBindings(tree.lhs, true);
                 break;
             case OR:
-                matchBindings = Attr.getMatchBindings(types, log, tree.lhs, false);
+                matchBindings = matchBindingsComputer.getMatchBindings(tree.lhs, false);
                 break;
             default:
                 matchBindings = List.nil();
@@ -239,8 +241,8 @@ public class TransPatterns extends TreeTranslator {
     @Override
     public void visitConditional(JCConditional tree) {
         bindingContext = new BasicBindingContext(
-                Attr.getMatchBindings(types, log, tree.cond, true)
-                        .appendList(Attr.getMatchBindings(types, log, tree.cond, false)));
+                matchBindingsComputer.getMatchBindings(tree.cond, true)
+                        .appendList(matchBindingsComputer.getMatchBindings(tree.cond, false)));
         try {
             super.visitConditional(tree);
             result = bindingContext.decorateExpression(tree);
@@ -464,8 +466,8 @@ public class TransPatterns extends TreeTranslator {
     }
 
     private List<BindingSymbol> getMatchBindings(JCExpression cond) {
-        return Attr.getMatchBindings(types, log, cond, true)
-                        .appendList(Attr.getMatchBindings(types, log, cond, false));
+        return matchBindingsComputer.getMatchBindings(cond, true)
+                        .appendList(matchBindingsComputer.getMatchBindings(cond, false));
     }
     abstract class BindingContext {
         abstract VarSymbol getBindingFor(BindingSymbol varSymbol);
