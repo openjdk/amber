@@ -48,7 +48,7 @@ public interface DeconstructionPatternTree extends PatternTree {
 
     /**
      * A binding variable name.
-     * @return something
+     * @return the name of the binding variable
      */
     Name getBinding();
 

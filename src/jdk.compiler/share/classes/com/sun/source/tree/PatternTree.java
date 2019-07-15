@@ -25,11 +25,8 @@
 
 package com.sun.source.tree;
 
-import javax.lang.model.element.Name;
-
 /**
- * A super-type for all the patterns.
+ * A tree node used as the base class for the different kinds of
+ * statements.
  */
-public interface PatternTree extends Tree {
-
-}
+public interface PatternTree extends Tree {}

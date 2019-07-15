@@ -126,6 +126,7 @@ public class Attr extends JCTree.Visitor {
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
     final ClassReader reader;
+    final MatchBindingsComputer matchBindingsComputer;
 
     public static Attr instance(Context context) {
         Attr instance = context.get(attrKey);
@@ -162,6 +163,7 @@ public class Attr extends JCTree.Visitor {
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
         reader = ClassReader.instance(context);
+        matchBindingsComputer = MatchBindingsComputer.instance(context);
 
         Options options = Options.instance(context);
 
@@ -1338,7 +1340,7 @@ public class Attr extends JCTree.Visitor {
         attribStat(tree.body, env.dup(tree));
         attribExpr(tree.cond, env, syms.booleanType);
         if (!breaksOutOf(tree, tree.body)) {
-            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+            List<BindingSymbol> bindings = matchBindingsComputer.getMatchBindings(tree.cond, false);
 
             bindings.forEach(env.info.scope::enter);
             bindings.forEach(BindingSymbol::preserveBinding);
@@ -1349,14 +1351,14 @@ public class Attr extends JCTree.Visitor {
     public void visitWhileLoop(JCWhileLoop tree) {
         attribExpr(tree.cond, env, syms.booleanType);
         // include x.T in while's body
-        Env<AttrContext> whileEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        Env<AttrContext> whileEnv = bindingEnv(env, matchBindingsComputer.getMatchBindings(tree.cond, true));
         try {
             attribStat(tree.body, whileEnv.dup(tree));
         } finally {
             whileEnv.info.scope.leave();
         }
         if (!breaksOutOf(tree, tree.body)) {
-            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+            List<BindingSymbol> bindings = matchBindingsComputer.getMatchBindings(tree.cond, false);
 
             bindings.forEach(env.info.scope::enter);
             bindings.forEach(BindingSymbol::preserveBinding);
@@ -1378,7 +1380,7 @@ public class Attr extends JCTree.Visitor {
             if (tree.cond != null) {
                 attribExpr(tree.cond, loopEnv, syms.booleanType);
                 // include x.T in the evaluation scopes of body & step.
-                matchBindings = getMatchBindings(types, log, tree.cond, true);
+                matchBindings = matchBindingsComputer.getMatchBindings(tree.cond, true);
             }
             Env<AttrContext> bodyEnv = bindingEnv(loopEnv, matchBindings);
             try {
@@ -1394,7 +1396,7 @@ public class Attr extends JCTree.Visitor {
             loopEnv.info.scope.leave(); // all injected match bindings vanish here.
         }
         if (!breaksOutOf(tree, tree.body)) {
-            List<BindingSymbol> bindings = getMatchBindings(types, log, tree.cond, false);
+            List<BindingSymbol> bindings = matchBindingsComputer.getMatchBindings(tree.cond, false);
 
             bindings.forEach(env.info.scope::enter);
             bindings.forEach(BindingSymbol::preserveBinding);
@@ -1614,7 +1616,7 @@ public class Attr extends JCTree.Visitor {
                                 }
                                 break;
                         }
-                        matchBindings = getMatchBindings(types, log, pat, true, matchBindings);
+                        matchBindings = matchBindingsComputer.getMatchBindings(pat, true, matchBindings);
                     }
                 } else {
                     if (hasDefault) {
@@ -1622,7 +1624,7 @@ public class Attr extends JCTree.Visitor {
                     } else {
                         hasDefault = true;
                     }
-                    matchBindings = getMatchBindings(types, log, null, true, matchBindings);
+                    matchBindings = matchBindingsComputer.getMatchBindings(null, true, matchBindings);
                 }
 
                 Env<AttrContext> caseEnv = bindingEnv(switchEnv, matchBindings);
@@ -1802,7 +1804,7 @@ public class Attr extends JCTree.Visitor {
         */
 
         Type truetype;
-        Env<AttrContext> trueEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, true));
+        Env<AttrContext> trueEnv = bindingEnv(env, matchBindingsComputer.getMatchBindings(tree.cond, true));
         try {
             truetype = attribTree(tree.truepart, trueEnv, condInfo);
         } finally {
@@ -1810,7 +1812,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         Type falsetype;
-        Env<AttrContext> falseEnv = bindingEnv(env, getMatchBindings(types, log, tree.cond, false));
+        Env<AttrContext> falseEnv = bindingEnv(env, matchBindingsComputer.getMatchBindings(tree.cond, false));
         try {
             falsetype = attribTree(tree.falsepart, falseEnv, condInfo);
         } finally {
@@ -1981,7 +1983,7 @@ public class Attr extends JCTree.Visitor {
 
         // if (x) { y } [ else z ] include x.T in y; include x.F in z
 
-        List<BindingSymbol> thenBindings = getMatchBindings(types, log, tree.cond, true);
+        List<BindingSymbol> thenBindings = matchBindingsComputer.getMatchBindings(tree.cond, true);
         Env<AttrContext> thenEnv = bindingEnv(env, thenBindings);
 
         try {
@@ -1993,7 +1995,7 @@ public class Attr extends JCTree.Visitor {
         preFlow(tree.thenpart);
         boolean aliveAfterThen = flow.aliveAfter(env, tree.thenpart, make);
         boolean aliveAfterElse;
-        List<BindingSymbol> elseBindings = getMatchBindings(types, log, tree.cond, false);
+        List<BindingSymbol> elseBindings = matchBindingsComputer.getMatchBindings(tree.cond, false);
 
         if (tree.elsepart != null) {
             Env<AttrContext> elseEnv = bindingEnv(env, elseBindings);
@@ -3724,10 +3726,10 @@ public class Attr extends JCTree.Visitor {
         List<BindingSymbol> matchBindings;
         switch (tree.getTag()) {
             case AND:
-                matchBindings = getMatchBindings(types, log, tree.lhs, true);
+                matchBindings = matchBindingsComputer.getMatchBindings(tree.lhs, true);
                 break;
             case OR:
-                matchBindings = getMatchBindings(types, log, tree.lhs, false);
+                matchBindings = matchBindingsComputer.getMatchBindings(tree.lhs, false);
                 break;
             default:
                 matchBindings = List.nil();
@@ -5710,12 +5712,4 @@ public class Attr extends JCTree.Visitor {
         }.scan(pid);
     }
 
-
-    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue) {
-        return getMatchBindings(types, log, expression, whenTrue, null);
-    }
-
-    public static List<BindingSymbol> getMatchBindings(Types types, Log log, JCTree expression, boolean whenTrue, List<BindingSymbol> intersectWith) {
-        return new MatchBindingsComputer(types, log, expression, whenTrue).getBindings(intersectWith);
-    }
 }
