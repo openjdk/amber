@@ -472,7 +472,9 @@ public class Flags {
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
         SEALED(Flags.SEALED),
-        RECORD(Flags.RECORD);
+        RECORD(Flags.RECORD),
+        MATCH_BINDING(Flags.MATCH_BINDING),
+        MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER);
 
         Flag(long flag) {
             this.value = flag;

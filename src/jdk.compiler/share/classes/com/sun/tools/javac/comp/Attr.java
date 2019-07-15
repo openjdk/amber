@@ -3809,7 +3809,8 @@ public class Attr extends JCTree.Visitor {
             attribTree(tree.pattern, env, castInfo);
             clazztype = tree.pattern.type;
             if (!clazztype.hasTag(TYPEVAR)) {
-                clazztype = chk.checkClassOrArrayType(tree.pattern.pos(), clazztype);
+                JCBindingPattern pattern = (JCBindingPattern) tree.pattern;
+                clazztype = chk.checkClassOrArrayType(pattern.vartype.pos(), clazztype);
             }
         } else {
             clazztype = attribType(tree.pattern, env);

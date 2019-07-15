@@ -176,6 +176,21 @@ public class BindingsTest1 {
             s.length();
         }
 
+        if (o1 instanceof String s) {
+            Runnable r1 = new Runnable() {
+                @Override
+                public void run() {
+                    s.length();
+                }
+            };
+            r1.run();
+            Runnable r2 = () -> {
+                s.length();
+            };
+            r2.run();
+            String s2 = s;
+        }
+
         System.out.println("BindingsTest1 complete");
     }
 }

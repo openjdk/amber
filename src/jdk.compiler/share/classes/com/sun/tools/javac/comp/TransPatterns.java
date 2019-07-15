@@ -70,6 +70,7 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Type.ClassType;
 import com.sun.tools.javac.code.Type.MethodType;
 import com.sun.tools.javac.comp.MatchBindingsComputer.BindingSymbol;
+import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
@@ -110,6 +111,7 @@ public class TransPatterns extends TreeTranslator {
     private ConstFold constFold;
     private Names names;
     private Resolve rs;
+    private Target target;
 
     BindingContext bindingContext = new BindingContext() {
         @Override
@@ -160,6 +162,7 @@ public class TransPatterns extends TreeTranslator {
         constFold = ConstFold.instance(context);
         names = Names.instance(context);
         rs = Resolve.instance(context);
+        target = Target.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
     }
 
@@ -172,8 +175,8 @@ public class TransPatterns extends TreeTranslator {
             Type tempType = tree.expr.type.hasTag(BOT) ?
                     syms.objectType
                     : tree.expr.type;
-            VarSymbol temp = new VarSymbol(0,
-                    names.fromString("" + (idx++)).append(names.fromString("$temp")), //XXX: use a better name if possible: pattSym.name
+            VarSymbol temp = new VarSymbol(Flags.SYNTHETIC,
+                    names.fromString("" + (idx++) + target.syntheticNameChar() + "temp"), //XXX: use a better name if possible: pattSym.name
                     tempType,
                     currentMethodSym); //XXX: currentMethodSym may not exist!!!!
             JCExpression translatedExpr = translate(tree.expr);
@@ -851,7 +854,13 @@ public class TransPatterns extends TreeTranslator {
             this.parent = bindingContext;
             this.hoistedVarMap = matchBindings.stream()
                     .filter(v -> parent.getBindingFor(v) == null)
+<<<<<<< working copy
                     .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags() & ~Flags.MATCH_BINDING, v.name.append(names.fromString("$binding")), v.type, v.owner)));
+||||||| base
+                    .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags(), v.name.append(names.fromString("$binding")), v.type, v.owner)));
+=======
+                    .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags(), v.name, v.type, v.owner)));
+>>>>>>> merge rev
         }
 
         @Override

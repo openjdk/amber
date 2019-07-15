@@ -1842,7 +1842,7 @@ public class Flow {
          */
         protected boolean trackable(VarSymbol sym) {
             return
-                sym.pos >= startPos && ((sym.flags() & MATCH_BINDING) == 0) &&
+                sym.pos >= startPos &&
                 ((sym.owner.kind == MTH || sym.owner.kind == VAR ||
                 isFinalUninitializedField(sym)));
         }
@@ -2819,11 +2819,6 @@ public class Flow {
             // Do nothing for modules
         }
 
-        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCBindingPattern tree) {
-            // Do nothing
-        }
-
     /**************************************************************************
      * main method
      *************************************************************************/
@@ -3021,11 +3016,6 @@ public class Flow {
 
         public void visitModuleDef(JCModuleDecl tree) {
             // Do nothing for modules
-        }
-
-        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCBindingPattern tree) {
-            // Do nothing
         }
 
     /**************************************************************************

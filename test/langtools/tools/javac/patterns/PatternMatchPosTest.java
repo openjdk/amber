@@ -97,6 +97,9 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     if (print) {
                         int start = (int) sp.getStartPosition(dataPath.getCompilationUnit(), tree);
                         int end = (int) sp.getEndPosition(dataPath.getCompilationUnit(), tree);
+                        if (start == (-1)) {
+                            System.err.println("!");
+                        }
                         System.out.println(text.substring(start, end));
                     }
                     return super.scan(tree, p);
@@ -122,9 +125,11 @@ class PatternMatchPosTestData {
         //no var in instanceof:
 //        if (o instanceof var s) { }
         if (o instanceof String s) { }
+        if (o instanceof java.lang.String s) { }
         switch (o) {
             case 1: break;
             case String s: break;
+            case java.lang.Integer i: break;
             case var s: break;
         }
     }
