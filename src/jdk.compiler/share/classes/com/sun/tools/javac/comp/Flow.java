@@ -258,7 +258,7 @@ public class Flow {
 
     public boolean aliveAfter(Env<AttrContext> env, JCTree that, TreeMaker make) {
         //we need to disable diagnostics temporarily; the problem is that if
-        //a lambda expression contains e.g. an unreachable statement, an error
+        //"that" contains e.g. an unreachable statement, an error
         //message will be reported and will cause compilation to skip the flow analyis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
@@ -275,7 +275,7 @@ public class Flow {
 
     public boolean breaksOutOf(Env<AttrContext> env, JCTree loop, JCTree body, TreeMaker make) {
         //we need to disable diagnostics temporarily; the problem is that if
-        //a lambda expression contains e.g. an unreachable statement, an error
+        //"that" contains e.g. an unreachable statement, an error
         //message will be reported and will cause compilation to skip the flow analyis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
@@ -1717,7 +1717,7 @@ public class Flow {
          */
         protected boolean trackable(VarSymbol sym) {
             return
-                sym.pos >= startPos && ((sym.flags() & MATCH_BINDING) == 0) &&
+                sym.pos >= startPos &&
                 ((sym.owner.kind == MTH || sym.owner.kind == VAR ||
                 isFinalUninitializedField(sym)));
         }
@@ -2694,11 +2694,6 @@ public class Flow {
             // Do nothing for modules
         }
 
-        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCBindingPattern tree) {
-            // Do nothing
-        }
-
     /**************************************************************************
      * main method
      *************************************************************************/
@@ -2896,11 +2891,6 @@ public class Flow {
 
         public void visitModuleDef(JCModuleDecl tree) {
             // Do nothing for modules
-        }
-
-        // TODO: 2017-02-02 JUST TO ALLOW THINGS TO CONTINUE
-        public void visitTypeTestPattern(JCBindingPattern tree) {
-            // Do nothing
         }
 
     /**************************************************************************

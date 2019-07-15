@@ -353,19 +353,19 @@ public class Flags {
     /** Modifier masks.
      */
     public static final int
-        AccessFlags                 = PUBLIC | PROTECTED | PRIVATE,
-        LocalClassFlags             = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
+        LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
         LocalRecordFlags            = LocalClassFlags | STATIC,
-        MemberClassFlags            = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
         MemberRecordClassFlags      = MemberClassFlags | STATIC,
-        ClassFlags                  = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
-        InterfaceVarFlags           = FINAL | STATIC | PUBLIC,
-        VarFlags                    = AccessFlags | FINAL | STATIC |
-                                      VOLATILE | TRANSIENT | ENUM,
-        ConstructorFlags            = AccessFlags,
-        InterfaceMethodFlags        = ABSTRACT | PUBLIC,
-        MethodFlags                 = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                      SYNCHRONIZED | FINAL | STRICTFP;
+        ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
+        InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
+        VarFlags              = AccessFlags | FINAL | STATIC |
+                                VOLATILE | TRANSIENT | ENUM,
+        ConstructorFlags      = AccessFlags,
+        InterfaceMethodFlags  = ABSTRACT | PUBLIC,
+        MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags            = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
         ExtendedLocalClassFlags          = (long)LocalClassFlags | SEALED | NON_SEALED,
@@ -476,6 +476,8 @@ public class Flags {
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
+        MATCH_BINDING(Flags.MATCH_BINDING),
+        MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER),
         SEALED(Flags.SEALED),
         NON_SEALED(Flags.NON_SEALED),
         RECORD(Flags.RECORD);

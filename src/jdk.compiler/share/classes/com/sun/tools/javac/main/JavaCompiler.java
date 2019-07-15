@@ -1558,6 +1558,12 @@ public class JavaCompiler {
             env.tree = transTypes.translateTopLevelClass(env.tree, localMake);
             compileStates.put(env, CompileState.TRANSTYPES);
 
+            if (shouldStop(CompileState.TRANSPATTERNS))
+                return;
+
+            env.tree = TransPatterns.instance(context).translateTopLevelClass(env, env.tree, localMake);
+            compileStates.put(env, CompileState.TRANSPATTERNS);
+
             if (Feature.LAMBDA.allowedInSource(source) && scanner.hasLambdas) {
                 if (shouldStop(CompileState.UNLAMBDA))
                     return;
@@ -1565,12 +1571,6 @@ public class JavaCompiler {
                 env.tree = LambdaToMethod.instance(context).translateTopLevelClass(env, env.tree, localMake);
                 compileStates.put(env, CompileState.UNLAMBDA);
             }
-
-            if (shouldStop(CompileState.TRANSPATTERNS))
-                return;
-
-            env.tree = TransPatterns.instance(context).translateTopLevelClass(env, env.tree, localMake);
-            compileStates.put(env, CompileState.TRANSPATTERNS);
 
             if (shouldStop(CompileState.LOWER))
                 return;

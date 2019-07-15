@@ -105,5 +105,6 @@ public class PatternMatchPosTest extends AbstractProcessor {
 class PatternMatchPosTestData {
     void data(Object o) {
         if (o instanceof String s) { }
+        if (o instanceof java.lang.String s) { }
     }
 }
