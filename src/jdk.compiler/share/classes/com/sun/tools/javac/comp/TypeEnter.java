@@ -1056,11 +1056,13 @@ public class TypeEnter implements Completer {
             List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
+            List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
                 addAccessorsIfNeeded(tree, env);
-                //List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
             }
+            // now we need to enter any additional mandated member that could have been added in the previous step
+            memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
 
             if (tree.sym.isAnnotationType()) {
                 Assert.check(tree.sym.isCompleted());
