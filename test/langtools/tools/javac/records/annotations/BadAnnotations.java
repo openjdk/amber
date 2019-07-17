@@ -4,12 +4,10 @@
  * @compile/fail/ref=BadAnnotations.out -XDrawDiagnostics BadAnnotations.java
  */
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 class BadAnnotations {
+    // negative cases
     @Target({ ElementType.CONSTRUCTOR })
     @interface Foo1 {}
     record R1(@Foo1 int i) {}
@@ -46,4 +44,13 @@ class BadAnnotations {
     // no target applies to all
     @interface Foo9 {}
     record R9(@Foo9 int i) {}
+
+    // type annotations are allowed too
+    @Target({ ElementType.TYPE_USE })
+    @interface Foo10 {}
+    record R10(@Foo10 int i) {}
+
+    @Target({ ElementType.TYPE_PARAMETER })
+    @interface Foo11 {}
+    record R11(@Foo11 int i) {}
 }

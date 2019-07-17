@@ -2864,7 +2864,12 @@ public class Check {
             Name[] targets = getTargetNames(a, s);
             boolean appliesToRecords = false;
             for (Name target : targets) {
-                appliesToRecords = target == names.FIELD || target == names.PARAMETER || target == names.METHOD;
+                appliesToRecords =
+                                target == names.FIELD ||
+                                target == names.PARAMETER ||
+                                target == names.METHOD ||
+                                target == names.TYPE_USE ||
+                                target == names.TYPE_PARAMETER;
                 if (appliesToRecords) {
                     break;
                 }
