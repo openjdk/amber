@@ -2855,6 +2855,9 @@ public class Check {
      */
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
+        if (debug) {
+            System.out.println("validating annotations for tree " + declarationTree);
+        }
 
         if (s.isRecord() && s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF)) {
             // we are seeing a record field, which had the original annotations, now is the moment,
