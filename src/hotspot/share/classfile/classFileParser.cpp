@@ -4676,6 +4676,22 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
   const Klass* const super = this_klass->super();
   if (super != NULL) {
 
+    if (super->is_final()) {
+      assert(super->is_instance_klass(), "super is not instance klass");
+      const InstanceKlass* super_ik = InstanceKlass::cast(super);
+      bool isPermittedSubtype = super_ik->has_as_permitted_subtype(this_klass, CHECK);
+      if (!isPermittedSubtype) {
+        ResourceMark rm(THREAD);
+        Exceptions::fthrow(
+          THREAD_AND_LOCATION,
+          vmSymbols::java_lang_VerifyError(),
+          "class %s cannot inherit from final class %s",
+          this_klass->external_name(),
+          super_ik->external_name());
+        return;
+      }
+    }
+
     // If the loader is not the boot loader then throw an exception if its
     // superclass is in package jdk.internal.reflect and its loader is not a
     // special reflection class loader
@@ -4736,6 +4752,20 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
   for (int i = lng - 1; i >= 0; i--) {
     InstanceKlass* const k = local_interfaces->at(i);
     assert (k != NULL && k->is_interface(), "invalid interface");
+    if (k->is_final()) {
+      bool isPermittedSubtype = k->has_as_permitted_subtype(this_klass, CHECK);
+      if (!isPermittedSubtype) {
+        ResourceMark rm(THREAD);
+        Exceptions::fthrow(
+          THREAD_AND_LOCATION,
+          vmSymbols::java_lang_VerifyError(),
+          "class %s cannot implement sealed interface %s",
+          this_klass->external_name(),
+          k->external_name());
+        return;
+      }
+    }
+
     Reflection::VerifyClassAccessResults vca_result =
       Reflection::verify_class_access(this_klass, k, false);
     if (vca_result != Reflection::ACCESS_OK) {
@@ -5836,8 +5866,6 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik, bool changed_by_loa
   // it's official
   set_klass(ik);
 
-  check_subtyping(CHECK);
-
   debug_only(ik->verify();)
 }
 
@@ -6085,7 +6113,7 @@ ClassFileParser::~ClassFileParser() {
   if (_record_params != NULL && _record_params != Universe::the_empty_short_array()) {
     MetadataFactory::free_array<u2>(_loader_data, _record_params);
   }
-  
+
   if (_permitted_subtypes != NULL && _permitted_subtypes != Universe::the_empty_short_array()) {
     MetadataFactory::free_array<u2>(_loader_data, _permitted_subtypes);
   }
@@ -6469,30 +6497,6 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   // Compute reference typ
   _rt = (NULL ==_super_klass) ? REF_NONE : _super_klass->reference_type();
 
-}
-
-void ClassFileParser::check_subtyping(TRAPS) {
-  assert(NULL != _klass, "_klass should have been resolved before calling this method");
-  if (_super_klass != NULL) {
-    if (_super_klass->is_final()) {
-      bool isPermittedSubtype = _super_klass->has_as_permitted_subtype(_klass, CHECK);
-      if (!isPermittedSubtype) {
-        THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final class");
-      }
-    }
-  }
-  Array<InstanceKlass*>* local_interfaces = _klass->local_interfaces();
-  if (local_interfaces != NULL && local_interfaces != Universe::the_empty_instance_klass_array()) {
-    for (int i = 0; i < local_interfaces->length(); i++) {
-      InstanceKlass* intf = local_interfaces->at(i);
-      if (intf->is_final()) {
-        bool isPermittedSubtype = intf->has_as_permitted_subtype(_klass, CHECK);
-        if (!isPermittedSubtype) {
-          THROW_MSG(vmSymbols::java_lang_VerifyError(), "Cannot inherit from final interface");
-        }
-      }
-    }
-  }
 }
 
 void ClassFileParser::set_klass(InstanceKlass* klass) {

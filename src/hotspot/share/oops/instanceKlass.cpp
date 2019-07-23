@@ -212,7 +212,7 @@ bool InstanceKlass::has_nest_member(InstanceKlass* k, TRAPS) const {
 }
 
 // Called to verify that k is a permitted subtype of this class
-bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
+bool InstanceKlass::has_as_permitted_subtype(const InstanceKlass* k, TRAPS) const {
   if (k == NULL) {
     if (log_is_enabled(Trace, class, sealed)) {
       ResourceMark rm(THREAD);
@@ -224,7 +224,7 @@ bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
     if (log_is_enabled(Trace, class, sealed)) {
       ResourceMark rm(THREAD);
       log_trace(class, sealed)("Checked for permitted subtype of %s in non-sealed class %s",
-                                  k->external_name(), this->external_name());
+                               k->external_name(), this->external_name());
     }
     return false;
   }
@@ -232,15 +232,33 @@ bool InstanceKlass::has_as_permitted_subtype(InstanceKlass* k, TRAPS) const {
   if (log_is_enabled(Trace, class, sealed)) {
     ResourceMark rm(THREAD);
     log_trace(class, sealed)("Checking for permitted subtype of %s in %s",
-                                k->external_name(), this->external_name());
+                             k->external_name(), this->external_name());
   }
 
   oop classloader1 = this->class_loader();
   oop classloader2 = k->class_loader();
   if (!oopDesc::equals(classloader1, classloader2)) {
-      log_trace(class, sealed)("Checked for same class loader of permitted subtype of %s and sealed class %s",
-                                        k->external_name(), this->external_name());
+      log_trace(class, sealed)("Check failed for same class loader of permitted subtype of %s and sealed class %s",
+                               k->external_name(), this->external_name());
       return false;
+  }
+
+  // Check that the class and its super are either in the same named module or
+  // in the same package.
+  ModuleEntry* k_module = k->module();
+  if (k_module->is_named()) {
+    if (k_module != this->module()) {
+      log_trace(class, sealed)("Check failed for same module of permitted subtype of %s and sealed class %s",
+                               k->external_name(), this->external_name());
+      return false;
+    }
+  } else {
+    // In unnamed module, check that the classes are in the same package.
+    if (k->package() != this->package()) {
+      log_trace(class, sealed)("Check failed for same package of permitted subtype of %s and sealed class %s",
+                               k->external_name(), this->external_name());
+      return false;
+    }
   }
 
   // Check for a resolved cp entry, else fall back to a name check.

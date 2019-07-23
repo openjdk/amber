@@ -476,9 +476,10 @@ private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
   bool has_nest_member(InstanceKlass* k, TRAPS) const;
 
-  // Called to verify that k is a permitted subtype of this class
-  bool has_as_permitted_subtype(InstanceKlass* k, TRAPS) const;
 public:
+  // Called to verify that k is a permitted subtype of this class
+  bool has_as_permitted_subtype(const InstanceKlass* k, TRAPS) const;
+
   // Returns nest-host class, resolving and validating it if needed
   // Returns NULL if an exception occurs during loading, or validation fails
   InstanceKlass* nest_host(Symbol* validationException, TRAPS);
