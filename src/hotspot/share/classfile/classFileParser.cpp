@@ -1749,7 +1749,6 @@ void ClassFileParser::parse_fields(const ClassFileStream* const cfs,
       _fields->at_put(i++, fa[j]);
     }
     assert(_fields->length() == i, "");
-    //tty->print_cr("length of the _fields array %d for class %s", i, _class_name->as_klass_external_name());
   }
 
   if (_need_verify && length > 1) {
@@ -4759,8 +4758,9 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
         Exceptions::fthrow(
           THREAD_AND_LOCATION,
           vmSymbols::java_lang_VerifyError(),
-          "class %s cannot implement sealed interface %s",
+          "class %s cannot %s sealed interface %s",
           this_klass->external_name(),
+          this_klass->is_interface() ? "extend" : "implement",
           k->external_name());
         return;
       }
@@ -4906,10 +4906,10 @@ void ClassFileParser::verify_legal_class_modifiers(jint flags, TRAPS) const {
   const bool is_enum       = (flags & JVM_ACC_ENUM)       != 0;
   const bool is_annotation = (flags & JVM_ACC_ANNOTATION) != 0;
   const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
-  const bool major_gte_12  = _major_version >= JAVA_12_VERSION;
+  const bool major_gte_14  = _major_version >= JAVA_14_VERSION;
 
-  if ((is_abstract && is_final && !major_gte_12) ||
-      (is_interface && !is_abstract && !major_gte_12) ||
+  if ((is_abstract && is_final && !major_gte_14) ||
+      (is_interface && !is_abstract) ||
       (is_interface && major_gte_1_5 && (is_super || is_enum)) ||
       (!is_interface && major_gte_1_5 && is_annotation)) {
     ResourceMark rm(THREAD);
