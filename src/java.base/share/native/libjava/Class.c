@@ -76,7 +76,7 @@ static JNINativeMethod methods[] = {
     {"getRawTypeAnnotations", "()" BA,          (void *)&JVM_GetClassTypeAnnotations},
     {"getNestHost0",         "()" CLS,          (void *)&JVM_GetNestHost},
     {"getNestMembers0",      "()[" CLS,         (void *)&JVM_GetNestMembers},
-    {"getPermittedSubtypes0", "()[" CLS,        (void *)&JVM_GetPermittedSubtypes},
+    {"getPermittedSubtypes0", "()[" STR,        (void *)&JVM_GetPermittedSubtypes},
     {"getRecordComponentNames0",  "()[" STR,    (void *)&JVM_GetRecordComponentNames},
     {"isRecord0",                 "()Z",        (void *)&JVM_IsRecord},
 };

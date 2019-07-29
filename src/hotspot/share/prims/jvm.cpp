@@ -1910,35 +1910,30 @@ JVM_ENTRY(jobjectArray, JVM_GetPermittedSubtypes(JNIEnv* env, jclass current))
   JVMWrapper("JVM_GetPermittedSubtypes");
   Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
   assert(c->is_instance_klass(), "must be");
-  InstanceKlass* ck = InstanceKlass::cast(c);
-  Symbol* icce = vmSymbols::java_lang_IncompatibleClassChangeError();
+  InstanceKlass* ik = InstanceKlass::cast(c);
+
   {
     JvmtiVMObjectAllocEventCollector oam;
-    Array<u2>* subtypes = ck->permitted_subtypes();
+    Array<u2>* subtypes = ik->permitted_subtypes();
     int length = subtypes == NULL ? 0 : subtypes->length();
-    if (length == 0) {
-        return NULL;
-    }
-    objArrayOop r = oopFactory::new_objArray(SystemDictionary::Class_klass(), length, CHECK_NULL);
-    objArrayHandle result (THREAD, r);
-    int i;
-    for (i = 0; i < length; i++) {
-      int cp_index = subtypes->at(i);
-      Klass* k = ck->constants()->klass_at(cp_index, CHECK_NULL);
-      if (k->is_instance_klass()) {
-        result->obj_at_put(i, k->java_mirror());
-      } else {
-        ResourceMark rm(THREAD);
-        Exceptions::fthrow(THREAD_AND_LOCATION,
-                           icce,
-                           "Class %s can not be a permitted subtype of %s",
-                           k->external_name(),
-                           ck->external_name()
-                           );
-        return NULL;
+    if (length != 0) {
+      objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(),
+                                               length, CHECK_NULL);
+      objArrayHandle result (THREAD, r);
+      int i;
+      for (i = 0; i < length; i++) {
+        int cp_index = subtypes->at(i);
+        // This returns <package-name>/<class-name>.
+        Symbol* klass_name = ik->constants()->klass_name_at(cp_index);
+        assert(klass_name != NULL, "Unexpected null klass_name");
+        Handle perm_subtype_h = java_lang_String::create_from_symbol(klass_name, CHECK_NULL);
+        result->obj_at_put(i, perm_subtype_h());
       }
+      return (jobjectArray)JNIHandles::make_local(THREAD, result());
+    } else {
+      objArrayOop result = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
+      return (jobjectArray)JNIHandles::make_local(env, result);
     }
-    return (jobjectArray)JNIHandles::make_local(THREAD, result());
   }
 }
 JVM_END
