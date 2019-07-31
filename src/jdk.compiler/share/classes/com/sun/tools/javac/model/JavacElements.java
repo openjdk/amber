@@ -168,6 +168,11 @@ public class JavacElements implements Elements {
         return doGetTypeElement(module, name);
     }
 
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public boolean isSealed(TypeElement te) {
+        return (((ClassSymbol) te).flags() & Flags.SEALED) != 0;
+    }
+
     private ClassSymbol doGetTypeElement(ModuleElement module, CharSequence name) {
         ensureEntered("getTypeElement");
         return doGetElement(module, "getTypeElement", name, ClassSymbol.class);
