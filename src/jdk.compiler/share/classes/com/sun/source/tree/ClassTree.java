@@ -25,6 +25,7 @@
 
 package com.sun.source.tree;
 
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Name;
 
@@ -83,6 +84,18 @@ public interface ClassTree extends StatementTree {
      * @return the interfaces
      */
     List<? extends Tree> getImplementsClause();
+
+    /**
+     * Returns the subtypes permitted by this type declaration.
+     * @implSpec this implementation returns an empty list
+     * @return the subtypes
+     * @since amber
+     */
+    @Deprecated(forRemoval=true, since="amber")
+    @SuppressWarnings("removal")
+    default List<? extends Tree> getPermitsClause() {
+        return Collections.emptyList();
+    }
 
     /**
      * Returns the members declared in this type declaration.
