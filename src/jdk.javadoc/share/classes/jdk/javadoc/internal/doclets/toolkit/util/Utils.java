@@ -441,53 +441,72 @@ public class Utils {
 
     public String modifiersToString(Element e, boolean trailingSpace) {
         SortedSet<Modifier> set = new TreeSet<>(e.getModifiers());
-        set.remove(Modifier.NATIVE);
-        set.remove(Modifier.STRICTFP);
-        set.remove(Modifier.SYNCHRONIZED);
+        set.remove(NATIVE);
+        set.remove(STRICTFP);
+        set.remove(SYNCHRONIZED);
+        set.remove(SEALED);
 
         return new ElementKindVisitor9<String, SortedSet<Modifier>>() {
             final StringBuilder sb = new StringBuilder();
 
             void addVisibilityModifier(Set<Modifier> modifiers) {
                 if (modifiers.contains(PUBLIC)) {
-                    sb.append("public").append(" ");
+                    append("public");
                 } else if (modifiers.contains(PROTECTED)) {
-                    sb.append("protected").append(" ");
+                    append("protected");
                 } else if (modifiers.contains(PRIVATE)) {
-                    sb.append("private").append(" ");
+                    append("private");
                 }
             }
 
             void addStatic(Set<Modifier> modifiers) {
                 if (modifiers.contains(STATIC)) {
-                    sb.append("static").append(" ");
+                    append("static");
                 }
             }
 
-            void addModifers(Set<Modifier> modifiers) {
-                String s = set.stream().map(Modifier::toString).collect(Collectors.joining(" "));
-                sb.append(s);
-                if (!s.isEmpty())
+            void addSealed(TypeElement e) {
+                if (elementUtils.isSealed(e)) {
+                    append("sealed");
+                } else if (needsNonSealed(e)) {
+                    append("non-sealed");
+                }
+            }
+
+            boolean needsNonSealed(TypeElement te) {
+                return isSealed(te.getSuperclass())
+                        || te.getInterfaces().stream().anyMatch(this::isSealed);
+            }
+
+            boolean isSealed(TypeMirror tm) {
+                return tm.getKind() == DECLARED
+                        && elementUtils.isSealed((TypeElement) (typeUtils.asElement(tm)));
+            }
+
+            void addModifiers(Set<Modifier> modifiers) {
+                modifiers.stream().map(Modifier::toString).forEach(this::append);
+            }
+
+            void append(String s) {
+                if (sb.length() > 0) {
                     sb.append(" ");
+                }
+                sb.append(s);
             }
 
             String finalString(String s) {
-                sb.append(s);
+                append(s);
                 if (trailingSpace) {
-                    if (sb.lastIndexOf(" ") == sb.length() - 1) {
-                        return sb.toString();
-                    } else {
-                        return sb.append(" ").toString();
-                    }
-                } else {
-                    return sb.toString().trim();
+                    sb.append(" ");
                 }
+                return sb.toString();
             }
 
             @Override
             public String visitTypeAsInterface(TypeElement e, SortedSet<Modifier> p) {
                 addVisibilityModifier(p);
                 addStatic(p);
+                addSealed(e);
                 return finalString("interface");
             }
 
@@ -507,13 +526,26 @@ public class Utils {
 
             @Override
             public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> p) {
-                addModifers(p);
+                Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> set = beforeSealed;
+                for (Modifier m : Modifier.values()) {
+                    if (m == SEALED) {
+                        set = afterSealed;
+                    }
+                    if (p.contains(m)) {
+                        set.add(m);
+                    }
+                }
+                addModifiers(beforeSealed);
+                addSealed(e);
+                addModifiers(afterSealed);
                 return finalString("class");
             }
 
             @Override
             protected String defaultAction(Element e, SortedSet<Modifier> p) {
-                addModifers(p);
+                addModifiers(p);
                 return sb.toString().trim();
             }
 
