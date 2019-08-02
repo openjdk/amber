@@ -69,6 +69,7 @@ import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
+import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.util.List;
 
 /**
@@ -171,6 +172,7 @@ public class TransPatterns extends TreeTranslator {
                         makeBinary(Tag.EQ, fakeInit, convert(make.Ident(temp), castTargetType)));
             }
             result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr), (JCExpression)result).setType(syms.booleanType);
+            ((LetExpr) result).needsCond = true;
         } else {
             super.visitTypeTest(tree);
         }
@@ -408,7 +410,11 @@ public class TransPatterns extends TreeTranslator {
             this.parent = bindingContext;
             this.hoistedVarMap = matchBindings.stream()
                     .filter(v -> parent.getBindingFor(v) == null)
-                    .collect(Collectors.toMap(v -> v, v -> new VarSymbol(v.flags(), v.name, v.type, v.owner)));
+                    .collect(Collectors.toMap(v -> v, v -> {
+                        VarSymbol res = new VarSymbol(v.flags(), v.name, v.type, v.owner);
+                        res.setTypeAttributes(v.getRawTypeAttributes());
+                        return res;
+                    }));
         }
 
         @Override
@@ -460,7 +466,7 @@ public class TransPatterns extends TreeTranslator {
         }
 
         private JCVariableDecl makeHoistedVarDecl(int pos, VarSymbol varSymbol) {
-            return make.at(pos).VarDef(varSymbol, makeDefaultValue(pos, varSymbol.erasure(types)));
+            return make.at(pos).VarDef(varSymbol, null/*makeDefaultValue(pos, varSymbol.erasure(types))*/);
         }
     }
 }
