@@ -3783,6 +3783,8 @@ public class Attr extends JCTree.Visitor {
             chk.checkTransparentVar(tree.pos(), v, env.info.scope);
             // env.info.scope.enter(v); // we inject into scopes expressly at various points.
         }
+        annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
+        annotate.flush();
         result = tree.type;
     }
 
