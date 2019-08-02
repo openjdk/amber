@@ -451,7 +451,6 @@ public class TransPatterns extends TreeTranslator {
         JCExpression decorateExpression(JCExpression expr) {
             for (VarSymbol vsym : hoistedVarMap.values()) {
                 expr = make.at(expr.pos).LetExpr(makeHoistedVarDecl(expr.pos, vsym), expr).setType(expr.type);
-//                ((LetExpr) expr).needsCond = true;
             }
             return expr;
         }
