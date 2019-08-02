@@ -263,6 +263,28 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                 pre.add(link);
             }
         }
+        List<? extends TypeMirror> permits = typeElement.getPermittedSubtypes();
+        if (!permits.isEmpty()) {
+            boolean isFirst = true;
+            for (TypeMirror type : permits) {
+                TypeElement tDoc = utils.asTypeElement(type);
+                if (!(utils.isPublic(tDoc) || utils.isLinkable(tDoc))) {
+                    continue;
+                }
+                if (isFirst) {
+                    pre.add(DocletConstants.NL);
+                    pre.add("permits ");
+                    isFirst = false;
+                } else {
+                    pre.add(", ");
+                }
+                Content link = getLink(new LinkInfoImpl(configuration,
+                        LinkInfoImpl.Kind.PERMITTED_SUBTYPES,
+                        type));
+                pre.add(link);
+            }
+
+        }
         classInfoTree.add(pre);
     }
 
