@@ -1096,7 +1096,7 @@ public class TypeEnter implements Completer {
                             if (tree.sym.isAnonymous()) {
                                 log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
                             } else {
-                                sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
+                                sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.append(tree.sym.type);
                             }
                         } else if (!dontErrorIfSealedExtended) {
                             log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));

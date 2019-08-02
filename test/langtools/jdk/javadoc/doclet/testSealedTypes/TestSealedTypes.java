@@ -153,4 +153,110 @@ public class TestSealedTypes extends JavadocTester {
                 "public sealed interface <span class=\"typeNameLabel\">B</span>");
     }
 
+    @Test
+    public void testSinglePermits(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A permits B { }",
+                "package p; public class B extends A { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a></pre>");
+    }
+
+    @Test
+    public void testMultiplePermits(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A permits B,C,D { }",
+                "package p; public class B extends A { }",
+                "package p; public class C extends A { }",
+                "package p; public class D extends A { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                        + "extends java.lang.Object\n"
+                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                        + "<a href=\"C.html\" title=\"class in p\">C</a>, "
+                        + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
+    }
+
+    @Test
+    public void testPartialMultiplePermits(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A permits B,C,D { }",
+                "package p; public class B extends A { }",
+                "package p; public class C extends A { }",
+                "package p;        class D extends A { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                        + "extends java.lang.Object\n"
+                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                        + "<a href=\"C.html\" title=\"class in p\">C</a></pre>");
+    }
+
+    @Test
+    public void testImplicitPermitsAuxiliary(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A { }\n"
+                + "class B extends A { }\n"
+                + "class C extends A { }\n"
+                + "class D extends A { }\n");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "-package",
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                        + "extends java.lang.Object\n"
+                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                        + "<a href=\"C.html\" title=\"class in p\">C</a>, "
+                        + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
+    }
+
+    @Test
+    public void testImplicitPermitsNested(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A {\n"
+                        + "  public static class B extends A { }\n"
+                        + "  public static class C extends A { }\n"
+                        + "  public static class D extends A { }\n"
+                        + "}");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                        + "extends java.lang.Object\n"
+                        + "permits <a href=\"A.B.html\" title=\"class in p\">A.B</a>, "
+                        + "<a href=\"A.C.html\" title=\"class in p\">A.C</a>, "
+                        + "<a href=\"A.D.html\" title=\"class in p\">A.D</a></pre>");
+    }
 }
