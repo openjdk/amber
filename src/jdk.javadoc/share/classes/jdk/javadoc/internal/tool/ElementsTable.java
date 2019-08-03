@@ -1200,7 +1200,7 @@ public class ElementsTable {
                                                     ElementKind.PACKAGE,
                                                     ElementKind.MODULE);
 
-        // all possible accesss levels allowed for each element
+        // all possible access levels allowed for each element
         private final EnumMap<ElementKind, EnumSet<AccessKind>> filterMap =
                 new EnumMap<>(ElementKind.class);
 
@@ -1285,7 +1285,7 @@ public class ElementsTable {
             switch (kind) {
                 case CLASS: case METHOD: case MODULE: case PACKAGE:
                     return kind;
-                case ANNOTATION_TYPE: case ENUM: case INTERFACE:
+                case RECORD: case ANNOTATION_TYPE: case ENUM: case INTERFACE:
                     return ElementKind.CLASS;
                 case CONSTRUCTOR: case ENUM_CONSTANT: case EXCEPTION_PARAMETER:
                 case FIELD: case INSTANCE_INIT: case LOCAL_VARIABLE: case PARAMETER:

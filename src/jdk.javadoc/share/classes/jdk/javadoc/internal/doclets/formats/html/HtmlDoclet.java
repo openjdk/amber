@@ -236,22 +236,21 @@ public class HtmlDoclet extends AbstractDoclet {
      * {@inheritDoc}
      */
     @Override // defined by AbstractDoclet
-    protected void generateClassFiles(SortedSet<TypeElement> arr, ClassTree classtree)
+    protected void generateClassFiles(SortedSet<TypeElement> typeElems, ClassTree classTree)
             throws DocletException {
-        List<TypeElement> list = new ArrayList<>(arr);
-        for (TypeElement klass : list) {
-            if (utils.hasHiddenTag(klass) ||
-                    !(configuration.isGeneratedDoc(klass) && utils.isIncluded(klass))) {
+        for (TypeElement te : typeElems) {
+            if (utils.hasHiddenTag(te) ||
+                    !(configuration.isGeneratedDoc(te) && utils.isIncluded(te))) {
                 continue;
             }
-            if (utils.isAnnotationType(klass)) {
+            if (utils.isAnnotationType(te)) {
                 AbstractBuilder annotationTypeBuilder =
                     configuration.getBuilderFactory()
-                        .getAnnotationTypeBuilder(klass);
+                        .getAnnotationTypeBuilder(te);
                 annotationTypeBuilder.build();
             } else {
                 AbstractBuilder classBuilder =
-                    configuration.getBuilderFactory().getClassBuilder(klass, classtree);
+                    configuration.getBuilderFactory().getClassBuilder(te, classTree);
                 classBuilder.build();
             }
         }

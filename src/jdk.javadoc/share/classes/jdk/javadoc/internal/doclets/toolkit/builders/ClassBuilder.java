@@ -70,6 +70,11 @@ public class ClassBuilder extends AbstractBuilder {
     private final boolean isEnum;
 
     /**
+     * Keep track of whether or not this typeElement is an record.
+     */
+    private final boolean isRecord;
+
+    /**
      * The content tree for the class documentation.
      */
     private Content contentTree;
@@ -91,13 +96,20 @@ public class ClassBuilder extends AbstractBuilder {
         if (utils.isInterface(typeElement)) {
             isInterface = true;
             isEnum = false;
+            isRecord = false;
         } else if (utils.isEnum(typeElement)) {
             isInterface = false;
             isEnum = true;
+            isRecord = false;
             utils.setEnumDocumentation(typeElement);
+        } else if (utils.isRecord(typeElement)) {
+            isInterface = false;
+            isEnum = false;
+            isRecord = true;
         } else {
             isInterface = false;
             isEnum = false;
+            isRecord = false;
         }
     }
 
@@ -133,6 +145,8 @@ public class ClassBuilder extends AbstractBuilder {
             key = "doclet.Interface";
         } else if (isEnum) {
             key = "doclet.Enum";
+        } else if (isRecord) {
+            key = "doclet.Record";
         } else {
             key = "doclet.Class";
         }
