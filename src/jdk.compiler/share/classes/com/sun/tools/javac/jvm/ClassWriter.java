@@ -26,10 +26,7 @@
 package com.sun.tools.javac.jvm;
 
 import java.io.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import javax.tools.JavaFileManager;
 import javax.tools.FileObject;
@@ -49,6 +46,7 @@ import com.sun.tools.javac.jvm.PoolConstant.Dynamic.BsmKey;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.util.*;
+import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
@@ -345,13 +343,16 @@ public class ClassWriter extends ClassFile {
     /** Write member (field or method) attributes;
      *  return number of attributes written.
      */
-    int writeMemberAttrs(Symbol sym) {
-        int acount = writeFlagAttrs(sym.flags());
+    int writeMemberAttrs(Symbol sym, boolean isRecordComponent) {
+        int acount = 0;
+        if (!isRecordComponent) {
+            acount = writeFlagAttrs(sym.flags());
+        }
         long flags = sym.flags();
         if ((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
             (flags & ANONCONSTR) == 0 &&
             (!types.isSameType(sym.type, sym.erasure(types)) ||
-             poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
+            poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);
@@ -359,9 +360,25 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeJavaAnnotations(sym.getRawAttributes());
+        if (!isRecordComponent) {
+            acount += writeJavaAnnotations(sym.getRawAttributes().diff(extractRecordComponentAnnos(sym)));
+        } else {
+            acount += writeJavaAnnotations(extractRecordComponentAnnos(sym));
+        }
         acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
         return acount;
+    }
+
+    private List<Attribute.Compound> extractRecordComponentAnnos(Symbol sym) {
+        List<Attribute.Compound> annos = sym.getRawAttributes();
+        ListBuffer<Attribute.Compound> recordCompAnnosBuffer = new ListBuffer<>();
+        for (Attribute.Compound compound : annos) {
+            Name[] targetNames = check.getTargetNames(compound.type.tsym);
+            if (Arrays.stream(targetNames).filter(name -> name == names.RECORD_COMPONENT).findAny().isPresent()) {
+                recordCompAnnosBuffer.add(compound);
+            }
+        }
+        return recordCompAnnosBuffer.toList();
     }
 
     /**
@@ -402,7 +419,6 @@ public class ClassWriter extends ClassFile {
         } else
             return 0;
     }
-
 
     private void writeParamAnnotations(List<VarSymbol> params,
                                        RetentionPolicy retention) {
@@ -845,10 +861,20 @@ public class ClassWriter extends ClassFile {
         }
         databuf.appendChar(numParams);
         for (VarSymbol v: vars) {
-            databuf.appendChar(poolWriter.putMember(v.accessors.head.snd));
+            //databuf.appendChar(poolWriter.putMember(v.accessors.head.snd));
+            writeComponentInfo(v);
         }
         endAttr(alenIdx);
         return 1;
+    }
+
+    private void writeComponentInfo(VarSymbol v) {
+        databuf.appendChar(poolWriter.putName(v.name));
+        databuf.appendChar(poolWriter.putDescriptor(v));
+        int acountIdx = beginAttrs();
+        int acount = 0;
+        acount += writeMemberAttrs(v, true);
+        endAttrs(acountIdx, acount);
     }
 
     /**
@@ -956,7 +982,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeMemberAttrs(v);
+        acount += writeMemberAttrs(v, false);
         endAttrs(acountIdx, acount);
     }
 
@@ -1000,7 +1026,7 @@ public class ClassWriter extends ClassFile {
             if (!m.isLambdaMethod()) // Per JDK-8138729, do not emit parameters table for lambda bodies.
                 acount += writeMethodParametersAttr(m);
         }
-        acount += writeMemberAttrs(m);
+        acount += writeMemberAttrs(m, false);
         if (!m.isLambdaMethod())
             acount += writeParameterAttrs(m.params);
         endAttrs(acountIdx, acount);
