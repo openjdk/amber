@@ -175,7 +175,6 @@ public class Names {
     public final Name TYPE;
     public final Name TYPE_PARAMETER;
     public final Name TYPE_USE;
-    public final Name RECORD_COMPONENT;
 
     // members of java.lang.annotation.RetentionPolicy
     public final Name CLASS;
@@ -347,7 +346,6 @@ public class Names {
         TYPE = fromString("TYPE");
         TYPE_PARAMETER = fromString("TYPE_PARAMETER");
         TYPE_USE = fromString("TYPE_USE");
-        RECORD_COMPONENT = fromString("RECORD_COMPONENT");
 
         // members of java.lang.annotation.RetentionPolicy
         CLASS = fromString("CLASS");

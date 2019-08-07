@@ -200,7 +200,7 @@ public class TypeAnnotations {
         if (e.value.name == names.TYPE) {
             if (s.kind == TYP)
                 return AnnotationType.DECLARATION;
-        } else if (e.value.name == names.FIELD || e.value.name == names.RECORD_COMPONENT) {
+        } else if (e.value.name == names.FIELD) {
             if (s.kind == VAR &&
                     s.owner.kind != MTH)
                 return AnnotationType.DECLARATION;
