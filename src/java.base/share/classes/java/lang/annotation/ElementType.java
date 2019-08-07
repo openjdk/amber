@@ -114,12 +114,5 @@ public enum ElementType {
      *
      * @since 9
      */
-    MODULE,
-
-    /**
-     * Record component declaration
-     *
-     * @since amber
-     */
-    RECORD_COMPONENT
+    MODULE
 }
