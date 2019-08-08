@@ -33,6 +33,7 @@ import java.util.TreeSet;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -316,9 +317,9 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
      * Get the class hierarchy tree for the given class.
      *
      * @param type the class to print the hierarchy for
-     * @return a content tree for class inheritence
+     * @return a content tree for class inheritance
      */
-    private Content getClassInheritenceTree(TypeMirror type) {
+    private Content getClassInheritanceTree(TypeMirror type) {
         TypeMirror sup;
         HtmlTree classTree = null;
         do {
@@ -369,19 +370,20 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         if (!utils.isClass(typeElement)) {
             return;
         }
-        classContentTree.add(getClassInheritenceTree(typeElement.asType()));
+        classContentTree.add(getClassInheritanceTree(typeElement.asType()));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void addTypeParamInfo(Content classInfoTree) {
-        if (!utils.getTypeParamTrees(typeElement).isEmpty()) {
-            Content typeParam = (new ParamTaglet()).getTagletOutput(typeElement,
+    public void addParamInfo(Content classInfoTree) {
+        if (utils.hasBlockTag(typeElement, DocTree.Kind.PARAM)) {
+            Content paramInfo = (new ParamTaglet()).getTagletOutput(typeElement,
                     getTagletWriterInstance(false));
-            Content dl = HtmlTree.DL(typeParam);
-            classInfoTree.add(dl);
+            if (!paramInfo.isEmpty()) {
+                classInfoTree.add(HtmlTree.DL(paramInfo));
+            }
         }
     }
 

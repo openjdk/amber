@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -431,6 +431,28 @@ public class Utils {
         return e.getKind() == ElementKind.RECORD;
     }
 
+    public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
+        TypeElement te = (TypeElement) ee.getEnclosingElement();
+        List<? extends VariableElement> stateComps = te.getStateComponents();
+        List<? extends VariableElement> params = ee.getParameters();
+        if (stateComps.size() != params.size()) {
+            return false;
+        }
+
+        Iterator<? extends VariableElement> stateIter = stateComps.iterator();
+        Iterator<? extends VariableElement> paramIter = params.iterator();
+        while (paramIter.hasNext() && stateIter.hasNext()) {
+            VariableElement param = paramIter.next();
+            VariableElement comp = stateIter.next();
+            if (!Objects.equals(param.getSimpleName(), comp.getSimpleName())
+                    || !typeUtils.isSameType(param.asType(), comp.asType())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public SortedSet<VariableElement> serializableFields(TypeElement aclass) {
         return configuration.workArounds.getSerializableFields(this, aclass);
     }
@@ -643,7 +665,7 @@ public class Utils {
 
     public boolean isTypeElement(Element e) {
         switch (e.getKind()) {
-            case CLASS: case ENUM: case INTERFACE: case ANNOTATION_TYPE:
+            case CLASS: case ENUM: case INTERFACE: case ANNOTATION_TYPE: case RECORD:
                 return true;
             default:
                 return false;
@@ -653,7 +675,7 @@ public class Utils {
     /**
      * Get the signature. It is the parameter list, type is qualified.
      * For instance, for a method {@code mymethod(String x, int y)},
-     * it will return {@code(java.lang.String,int)}.
+     * it will return {@code (java.lang.String,int)}.
      *
      * @param e
      * @return String
@@ -1411,27 +1433,6 @@ public class Utils {
         }
         sb.append(text, pos, textLength);
         return sb;
-    }
-
-    /**
-     * The documentation for values() and valueOf() in Enums are set by the
-     * doclet only iff the user or overridden methods are missing.
-     * @param elem
-     */
-    public void setEnumDocumentation(TypeElement elem) {
-        for (Element e : getMethods(elem)) {
-            ExecutableElement ee = (ExecutableElement)e;
-            if (!getFullBody(e).isEmpty()) // ignore if already set
-                continue;
-            if (ee.getSimpleName().contentEquals("values") && ee.getParameters().isEmpty()) {
-                removeCommentHelper(ee); // purge previous entry
-                configuration.cmtUtils.setEnumValuesTree(e);
-            }
-            if (ee.getSimpleName().contentEquals("valueOf") && ee.getParameters().size() == 1) {
-                removeCommentHelper(ee); // purge previous entry
-                configuration.cmtUtils.setEnumValueOfTree(e);
-            }
-        }
     }
 
     /**
@@ -2574,7 +2575,7 @@ public class Utils {
 
     private SimpleElementVisitor9<Boolean, Void> shouldDocumentVisitor = null;
 
-    protected boolean shouldDocument(Element e) {
+    public boolean shouldDocument(Element e) {
         if (shouldDocumentVisitor == null) {
             shouldDocumentVisitor = new SimpleElementVisitor9<Boolean, Void>() {
                 private boolean hasSource(TypeElement e) {
@@ -3262,20 +3263,20 @@ public class Utils {
         return getBlockTags(element, DocTree.Kind.EXCEPTION, DocTree.Kind.THROWS);
     }
 
-    public List<? extends DocTree> getTypeParamTrees(Element element) {
+    public List<? extends ParamTree> getTypeParamTrees(Element element) {
         return getParamTrees(element, true);
     }
 
-    public List<? extends DocTree> getParamTrees(Element element) {
+    public List<? extends ParamTree> getParamTrees(Element element) {
         return getParamTrees(element, false);
     }
 
-    private  List<? extends DocTree> getParamTrees(Element element, boolean isTypeParameters) {
-        List<DocTree> out = new ArrayList<>();
+    private  List<? extends ParamTree> getParamTrees(Element element, boolean isTypeParameters) {
+        List<ParamTree> out = new ArrayList<>();
         for (DocTree dt : getBlockTags(element, PARAM)) {
             ParamTree pt = (ParamTree) dt;
             if (pt.isTypeParameter() == isTypeParameters) {
-                out.add(dt);
+                out.add(pt);
             }
         }
         return out;
