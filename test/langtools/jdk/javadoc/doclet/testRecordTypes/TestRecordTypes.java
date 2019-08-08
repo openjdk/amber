@@ -132,4 +132,73 @@ public class TestRecordTypes extends JavadocTester {
                 "<code><span class=\"memberNameLink\"><a href=\"#%3Cinit%3E(int)\">R</a></span>&#8203;(int&nbsp;r1)</code>");
     }
 
+    @Test
+    public void testGeneratedComments(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; /** This is record R. \n"
+                        + " * @param r1  This is a component.\n"
+                        + " */\n"
+                        + "public record R(int r1) { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "-sourcepath", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        // While we don't normally test values that just come from resource files,
+        // in these cases, we want to verify that something non-empty was put into
+        // the documentation for the generated members.
+        checkOrder("p/R.html",
+                "<section class=\"constructorSummary\">",
+                "<a href=\"#%3Cinit%3E(int)\">R</a>",
+                "Creates an instance of a <code>R</code> record.",
+                "<section class=\"methodSummary\">",
+                "<a href=\"#equals(java.lang.Object)\">equals</a>",
+                "Indicates whether some other object is \"equal to\" this one.",
+                "<a href=\"#hashCode()\">hashCode</a>",
+                "Returns a hash code value for this object.",
+                "<a href=\"#r1()\">r1</a>",
+                "Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> state component.",
+                "<a href=\"#toString()\">toString</a>",
+                "Returns a string representation of this object."
+        );
+    }
+
+    @Test
+    public void testUserComments(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; /** This is record R. \n"
+                + " * @param r1  This is a component.\n"
+                + " */\n"
+                + "public record R(int r1) {\n"
+                + "/** User constructor. */ public R { }\n"
+                + "/** User equals. */ public boolean equals(Object other) { return false; }\n"
+                + "/** User hashCode. */ public int hashCode() { return 0; }\n"
+                + "/** User toString. */ public String toString() { return \"\"; }\n"
+                + "/** User accessor. */ public int r1() { return r1; }\n"
+                + "}");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "-sourcepath", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOrder("p/R.html",
+                "<section class=\"constructorSummary\">",
+                "<a href=\"#%3Cinit%3E(int)\">R</a>",
+                "User constructor.",
+                "<section class=\"methodSummary\">",
+                "<a href=\"#equals(java.lang.Object)\">equals</a>",
+                "User equals.",
+                "<a href=\"#hashCode()\">hashCode</a>",
+                "User hashCode.",
+                "<a href=\"#r1()\">r1</a>",
+                "User accessor.",
+                "<a href=\"#toString()\">toString</a>",
+                "User toString."
+        );
+    }
+
 }
