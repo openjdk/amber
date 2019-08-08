@@ -1459,10 +1459,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public java.util.List<VariableElement> getStateComponents() {
+        public List<? extends VarSymbol> getStateComponents() {
             apiComplete();
-            // Inital implementation
-            return javax.lang.model.util.ElementFilter.stateComponentsIn(getEnclosedElements());
+            ListBuffer<VarSymbol> lb = new ListBuffer<>();
+            for (Symbol sym : getEnclosedElements()) {
+                if (sym.kind == Kind.VAR && ((sym.flags() & RECORD) != 0))
+                    lb.append((VarSymbol) sym);
+            }
+            return lb.toList();
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)

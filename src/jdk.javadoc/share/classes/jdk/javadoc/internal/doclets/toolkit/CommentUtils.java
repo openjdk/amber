@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,15 +43,18 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 
+import com.sun.source.doctree.AttributeTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.IdentifierTree;
+import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.TextTree;
 import com.sun.source.util.DocTreeFactory;
@@ -65,6 +68,7 @@ import jdk.javadoc.internal.doclets.toolkit.util.Utils;
 public class CommentUtils {
 
     final BaseConfiguration configuration;
+    final Utils utils;
     final Resources resources;
     final DocTreeFactory treeFactory;
     final HashMap<Element, DocCommentDuo> dcTreesMap = new HashMap<>();
@@ -73,6 +77,7 @@ public class CommentUtils {
 
     protected CommentUtils(BaseConfiguration configuration) {
         this.configuration = configuration;
+        utils = configuration.utils;
         resources = configuration.getResources();
         trees = configuration.docEnv.getDocTrees();
         treeFactory = trees.getDocTreeFactory();
@@ -107,17 +112,17 @@ public class CommentUtils {
         return treeFactory.newSeeTree(list);
     }
 
-    public DocTree makeTextTree(String content) {
-        TextTree text = treeFactory.newTextTree(content);
-        return (DocTree) text;
+    public TextTree makeTextTree(String content) {
+        return treeFactory.newTextTree(content);
     }
 
-    public void setEnumValuesTree(Element e) {
-        Utils utils = configuration.utils;
-        String klassName = utils.getSimpleName(utils.getEnclosingTypeElement(e));
+    public TextTree makeTextTreeForResource(String key) {
+        return treeFactory.newTextTree(resources.getText(key));
+    }
 
+    public void setEnumValuesTree(ExecutableElement ee) {
         List<DocTree> fullBody = new ArrayList<>();
-        fullBody.add(treeFactory.newTextTree(resources.getText("doclet.enum_values_doc.fullbody", klassName)));
+        fullBody.add(treeFactory.newTextTree(resources.getText("doclet.enum_values_doc.fullbody")));
 
         List<DocTree> descriptions = new ArrayList<>();
         descriptions.add(treeFactory.newTextTree(resources.getText("doclet.enum_values_doc.return")));
@@ -125,11 +130,10 @@ public class CommentUtils {
         List<DocTree> tags = new ArrayList<>();
         tags.add(treeFactory.newReturnTree(descriptions));
         DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, tags);
-        dcTreesMap.put(e, new DocCommentDuo(null, docTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
     }
 
-    public void setEnumValueOfTree(Element e) {
-
+    public void setEnumValueOfTree(ExecutableElement ee) {
         List<DocTree> fullBody = new ArrayList<>();
         fullBody.add(treeFactory.newTextTree(resources.getText("doclet.enum_valueof_doc.fullbody")));
 
@@ -137,7 +141,6 @@ public class CommentUtils {
 
         List<DocTree> paramDescs = new ArrayList<>();
         paramDescs.add(treeFactory.newTextTree(resources.getText("doclet.enum_valueof_doc.param_name")));
-        ExecutableElement ee = (ExecutableElement) e;
         java.util.List<? extends VariableElement> parameters = ee.getParameters();
         VariableElement param = parameters.get(0);
         IdentifierTree id = treeFactory.newIdentifierTree(elementUtils.getName(param.getSimpleName().toString()));
@@ -161,7 +164,193 @@ public class CommentUtils {
 
         DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, tags);
 
-        dcTreesMap.put(e, new DocCommentDuo(null, docTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the canonical constructor for a record.
+     * @param ee the constructor
+     */
+    public void setRecordConstructorTree(ExecutableElement ee) {
+        TypeElement te = utils.getEnclosingTypeElement(ee);
+
+        List<DocTree> fullBody =
+                makeDescriptionWithName("doclet.record_constructor_doc.fullbody", te.getSimpleName());
+
+        List<DocTree> tags = new ArrayList<>();
+        java.util.List<? extends VariableElement> parameters = ee.getParameters();
+        for (VariableElement param : ee.getParameters()) {
+            Name name = param.getSimpleName();
+            IdentifierTree id = treeFactory.newIdentifierTree(name);
+            tags.add(treeFactory.newParamTree(false, id,
+                    makeDescriptionWithComponent("doclet.record_constructor_doc.param_name", te, name)));
+        }
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, tags);
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the standard {@code equals} method for a record.
+     * @param ee the {@code equals} method
+     */
+    public void setRecordEqualsTree(ExecutableElement ee) {
+        List<DocTree> fullBody = List.of(makeTextTreeForResource("doclet.record_equals_doc.fullbody"));
+
+        Name paramName = ee.getParameters().get(0).getSimpleName();
+        IdentifierTree id = treeFactory.newIdentifierTree(paramName);
+        List<DocTree> paramDesc =
+                makeDescriptionWithName("doclet.record_equals_doc.param_name", paramName);
+        DocTree paramTree = treeFactory.newParamTree(false, id, paramDesc);
+
+        DocTree returnTree = treeFactory.newReturnTree(
+                makeDescriptionWithName("doclet.record_equals_doc.return", paramName));
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of(paramTree, returnTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the standard {@code hashCode} method for a record.
+     * @param ee the {@code hashCode} method
+     */
+    public void setRecordHashCodeTree(ExecutableElement ee) {
+        List<DocTree> fullBody = List.of(makeTextTreeForResource("doclet.record_hashCode_doc.fullbody"));
+
+        DocTree returnTree = treeFactory.newReturnTree(
+                List.of(makeTextTreeForResource("doclet.record_hashCode_doc.return")));
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of(returnTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the standard {@code toString} method for a record.
+     * @param ee the {@code toString} method
+     */
+    public void setRecordToStringTree(ExecutableElement ee) {
+        List<DocTree> fullBody = List.of(
+                treeFactory.newTextTree(resources.getText("doclet.record_toString_doc.fullbody")));
+
+        DocTree returnTree = treeFactory.newReturnTree(List.of(
+                treeFactory.newTextTree(resources.getText("doclet.record_toString_doc.return"))));
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of(returnTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the accessor method for a state component of a record.
+     * @param ee the accessor method
+     */
+    public void setRecordAccessorTree(ExecutableElement ee) {
+        TypeElement te = utils.getEnclosingTypeElement(ee);
+
+        List<DocTree> fullBody =
+                makeDescriptionWithComponent("doclet.record_accessor_doc.fullbody", te, ee.getSimpleName());
+
+        DocTree returnTree = treeFactory.newReturnTree(
+                    makeDescriptionWithComponent("doclet.record_accessor_doc.return", te, ee.getSimpleName()));
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of(returnTree));
+        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Generates the description for the field for a state component of a record.
+     * @param ve the field
+     */
+    public void setRecordFieldTree(VariableElement ve) {
+        TypeElement te = utils.getEnclosingTypeElement(ve);
+
+        List<DocTree> fullBody =
+            makeDescriptionWithComponent("doclet.record_field_doc.fullbody", te, ve.getSimpleName());
+
+        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of());
+        dcTreesMap.put(ve, new DocCommentDuo(null, docTree));
+    }
+
+    /**
+     * Creates a description that contains a reference to a state component of a record.
+     * The description is looked up as a resource, and should contain {@code {0}} where the
+     * reference to the component is to be inserted. The reference will be a link if the
+     * doc comment for the record has a {@code @param} tag for the component.
+     * @param key the resource key for the description
+     * @param elem the record element
+     * @param component the name of the component
+     * @return the description
+     */
+    private List<DocTree> makeDescriptionWithComponent(String key, TypeElement elem, Name component) {
+        List<DocTree> result = new ArrayList<>();
+        String text = resources.getText(key);
+        int index = text.indexOf("{0}");
+        result.add(treeFactory.newTextTree(text.substring(0, index)));
+        Name A = elementUtils.getName("a");
+        Name CODE = elementUtils.getName("code");
+        Name HREF = elementUtils.getName("href");
+        List<DocTree> code = List.of(
+                treeFactory.newStartElementTree(CODE, List.of(), false),
+                treeFactory.newTextTree(component.toString()),
+                treeFactory.newEndElementTree(CODE));
+        if (hasParamForComponent(elem, component)) {
+            DocTree href = treeFactory.newAttributeTree(HREF,
+                    AttributeTree.ValueKind.DOUBLE,
+                    List.of(treeFactory.newTextTree("#param-" + component)));
+            result.add(treeFactory.newStartElementTree(A, List.of(href), false));
+            result.addAll(code);
+            result.add(treeFactory.newEndElementTree(A));
+        } else {
+            result.addAll(code);
+        }
+        result.add(treeFactory.newTextTree(text.substring(index + 3)));
+        return result;
+    }
+
+    /**
+     * Returns whether or not the doc comment for a record contains an {@code @param}}
+     * for a state component of the record.
+     * @param elem the record element
+     * @param component the name of the component
+     * @return whether or not there is a {@code @param}} for the component
+     */
+    private boolean hasParamForComponent(TypeElement elem, Name component) {
+        DocCommentTree elemComment = utils.getDocCommentTree(elem);
+        if (elemComment == null) {
+            return false;
+        }
+
+        for (DocTree t : elemComment.getBlockTags()) {
+            if (t instanceof ParamTree && ((ParamTree) t).getName().getName() == component) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Creates a description that contains the simple name of a program element
+     * The description is looked up as a resource, and should contain {@code {0}} where the
+     * name is to be inserted. T
+     * @param key the resource key for the description
+     * @param name the name
+     * @return the description
+     */
+    private List<DocTree> makeDescriptionWithName(String key, Name name) {
+        String text = resources.getText(key);
+        int index = text.indexOf("{0}");
+        if (index == -1) {
+            return List.of(treeFactory.newTextTree(text));
+        } else {
+            Name CODE = elementUtils.getName("code");
+            return List.of(
+                    treeFactory.newTextTree(text.substring(0, index)),
+                    treeFactory.newStartElementTree(CODE, List.of(), false),
+                    treeFactory.newTextTree(name.toString()),
+                    treeFactory.newEndElementTree(CODE),
+                    treeFactory.newTextTree(text.substring(index + 3))
+            );
+        }
     }
 
     /*
@@ -215,22 +404,11 @@ public class CommentUtils {
     }
 
     public void setDocCommentTree(Element element, List<? extends DocTree> fullBody,
-                                  List<? extends DocTree> blockTags, Utils utils) {
+                                  List<? extends DocTree> blockTags) {
         DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, blockTags);
         dcTreesMap.put(element, new DocCommentDuo(null, docTree));
         // A method having null comment (no comment) that might need to be replaced
         // with a synthetic comment, remove such a comment from the cache.
-        utils.removeCommentHelper(element);
-    }
-
-    public void setAccessorCommentTree(Element element, List<DocTree> fullBody,
-                                  List<DocTree> blockTags, Utils utils) {
-        DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, blockTags);
-        TreePath pathToEncl = utils.docTrees.getPath(element.getEnclosingElement());
-        dcTreesMap.put(element, new DocCommentDuo(pathToEncl, docTree));
-        // There maybe an entry with the original comments usually null,
-        // therefore remove that entry if it exists, and allow a new one
-        // to be reestablished.
         utils.removeCommentHelper(element);
     }
 
