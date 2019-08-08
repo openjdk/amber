@@ -468,7 +468,7 @@ public class JavacElements implements Elements {
         Symbol sym = cast(Symbol.class, e);
         if ((sym.flags() & Flags.GENERATEDCONSTR) != 0)
             return Origin.MANDATED;
-        if ((sym.flags() & (Flags.RECORD | Flags.MANDATED)) != 0)
+        if ((sym.flags() & Flags.MANDATED) != 0)
             return Origin.MANDATED;
         //TypeElement.getEnclosedElements does not return synthetic elements,
         //and most synthetic elements are not read from the classfile anyway:
