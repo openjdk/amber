@@ -82,6 +82,23 @@ public class TestRecordTypes extends JavadocTester {
     }
 
     @Test
+    public void testEmptyRecord(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public record R() { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "-sourcepath", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/R.html", true,
+                "<h1 title=\"Record R\" class=\"title\">Record R</h1>",
+                "public record <span class=\"typeNameLabel\">R</span>",
+                "<code><span class=\"memberNameLink\"><a href=\"#%3Cinit%3E()\">R</a></span>()</code>");
+    }
+
+    @Test
     public void testAtParam(Path base) throws IOException {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
