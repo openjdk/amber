@@ -187,10 +187,10 @@ public class TestSealedTypes extends JavadocTester {
 
         checkOutput("p/A.html", true,
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
-                        + "extends java.lang.Object\n"
-                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
-                        + "<a href=\"C.html\" title=\"class in p\">C</a>, "
-                        + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                + "<a href=\"C.html\" title=\"class in p\">C</a>, "
+                + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
     }
 
     @Test
@@ -209,9 +209,55 @@ public class TestSealedTypes extends JavadocTester {
 
         checkOutput("p/A.html", true,
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
-                        + "extends java.lang.Object\n"
-                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
-                        + "<a href=\"C.html\" title=\"class in p\">C</a></pre>");
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
+    }
+
+    @Test
+    public void testPartialMultiplePermitsWithSubtypes1(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A permits B,C,D { }",
+                "package p; public class B extends A { }",
+                "package p; public class C extends A { }",
+                "package p;        sealed class D extends A permits D1, D2 { }",
+                "package p; public class D1 extends D { }",
+                "package p; public class D2 extends D { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
+    }
+
+    @Test
+    public void testPartialMultiplePermitsWithSubtypes2(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; public sealed class A permits B,C,D { }",
+                "package p; public class B extends A { }",
+                "package p; public class C extends A { }",
+                "package p;        non-sealed class D extends A { }",
+                "package p; public class D1 extends D { }",
+                "package p; public class D2 extends D { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "--source-path", src.toString(),
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/A.html", true,
+                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
     }
 
     @Test
@@ -231,10 +277,10 @@ public class TestSealedTypes extends JavadocTester {
 
         checkOutput("p/A.html", true,
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
-                        + "extends java.lang.Object\n"
-                        + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
-                        + "<a href=\"C.html\" title=\"class in p\">C</a>, "
-                        + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
+                + "<a href=\"C.html\" title=\"class in p\">C</a>, "
+                + "<a href=\"D.html\" title=\"class in p\">D</a></pre>");
     }
 
     @Test
@@ -242,10 +288,10 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A {\n"
-                        + "  public static class B extends A { }\n"
-                        + "  public static class C extends A { }\n"
-                        + "  public static class D extends A { }\n"
-                        + "}");
+                + "  public static class B extends A { }\n"
+                + "  public static class C extends A { }\n"
+                + "  public static class D extends A { }\n"
+                + "}");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
@@ -254,9 +300,9 @@ public class TestSealedTypes extends JavadocTester {
 
         checkOutput("p/A.html", true,
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
-                        + "extends java.lang.Object\n"
-                        + "permits <a href=\"A.B.html\" title=\"class in p\">A.B</a>, "
-                        + "<a href=\"A.C.html\" title=\"class in p\">A.C</a>, "
-                        + "<a href=\"A.D.html\" title=\"class in p\">A.D</a></pre>");
+                + "extends java.lang.Object\n"
+                + "permits <a href=\"A.B.html\" title=\"class in p\">A.B</a>, "
+                + "<a href=\"A.C.html\" title=\"class in p\">A.C</a>, "
+                + "<a href=\"A.D.html\" title=\"class in p\">A.D</a></pre>");
     }
 }

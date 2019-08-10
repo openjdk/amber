@@ -269,9 +269,10 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             boolean isFirst = true;
             for (TypeMirror type : permits) {
                 TypeElement tDoc = utils.asTypeElement(type);
-                if (!(utils.isPublic(tDoc) || utils.isLinkable(tDoc))) {
-                    continue;
-                }
+                // Document all permitted subtypes, not just public linkable types,
+                // because it may be of interest to the reader that not all of the
+                // subtypes may be accessible: for example, in a pattern statement
+                // switching on the type of an object.
                 if (isFirst) {
                     pre.add(DocletConstants.NL);
                     pre.add("permits ");
