@@ -3817,6 +3817,9 @@ public class JavacParser implements Parser {
         return fields.toList();
     }
 
+    static final Set<String> forbiddenRecordComponentNames = Set.of("toString", "hashCode", "getClass",
+            "readObjectNoData", "readResolve", "writeReplace", "serialPersistentFields");
+
     JCVariableDecl headerField() {
         JCModifiers mods = modifiersOpt();
         if (mods.flags != 0) {
@@ -3826,6 +3829,9 @@ public class JavacParser implements Parser {
         JCExpression type = parseType();
         int pos = token.pos;
         Name id = ident();
+        if (forbiddenRecordComponentNames.contains(id.toString())) {
+            log.error(pos, Errors.IllegalRecordComponentName(id));
+        }
         List<Pair<Accessors.Kind, Name>> accessors = List.of(new Pair<>(Accessors.Kind.GET, id));
         return toP(F.at(pos).VarDef(mods, id, type, null, accessors));
     }
