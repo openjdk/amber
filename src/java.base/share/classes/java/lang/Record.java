@@ -40,7 +40,7 @@ package java.lang;
  *
  * <p>A record class has the following mandated members: a public <em>canonical
  * constructor</em>, whose descriptor is the same as the record descriptor;
- * a private static field corresponding to each component, whose name and
+ * a private final field corresponding to each component, whose name and
  * type are the same as that of the component; a public accessor method
  * corresponding to each component, whose name and return type are the same as
  * that of the component.  If not explicitly declared in the body of the record,
@@ -84,8 +84,8 @@ public abstract class Record {
      * only if the argument is an instance of the same record type as this object,
      * and each component of this record is equal to the corresponding component
      * of the argument, according to {@link Object#equals(Object)} for components
-     * whose types are reference types, and {@code ==} for components whose
-     * types are primitive types.
+     * whose types are reference types, and the primitive wrapper equality
+     * comparison for components whose types are primitive types.
      *
      * @see Object#equals(Object)
      *
@@ -130,4 +130,3 @@ public abstract class Record {
     @Override
     public abstract String toString();
 }
-
