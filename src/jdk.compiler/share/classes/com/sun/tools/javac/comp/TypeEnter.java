@@ -692,6 +692,9 @@ public class TypeEnter implements Completer {
             if (tree.extending != null) {
                 extending = clearTypeParams(tree.extending);
                 supertype = attr.attribBase(extending, sym, baseEnv, true, false, true);
+                if (supertype == syms.recordType) {
+                    log.error(tree, Errors.InvalidSupertypeRecord);
+                }
             } else {
                 extending = null;
                 supertype = ((tree.mods.flags & Flags.ENUM) != 0)
@@ -699,7 +702,7 @@ public class TypeEnter implements Completer {
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
-                : syms.objectType;
+                : sym.isRecord() ? syms.recordType : syms.objectType;
             }
             ct.supertype_field = modelMissingTypes(baseEnv, supertype, extending, false);
 
