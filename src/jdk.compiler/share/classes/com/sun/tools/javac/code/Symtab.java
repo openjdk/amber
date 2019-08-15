@@ -218,6 +218,7 @@ public class Symtab {
     public final Type patternHandlesType;
     public final Type patternHandleType;
     public final Type typeDescriptorType;
+    public final Type recordType;
 
     /** The symbol representing the length field of an array.
      */
@@ -578,6 +579,7 @@ public class Symtab {
         patternHandlesType = enterClass("java.lang.runtime.PatternHandles");
         patternHandleType = enterClass("java.lang.runtime.PatternHandle");
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
+        recordType = enterClass("java.lang.Record");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);
