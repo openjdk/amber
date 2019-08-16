@@ -3586,6 +3586,7 @@ void InstanceKlass::collect_statistics(KlassSizeStats *sz) const {
   n += (sz->_fields_bytes                = sz->count_array(fields()));
   n += (sz->_inner_classes_bytes         = sz->count_array(inner_classes()));
   n += (sz->_nest_members_bytes          = sz->count_array(nest_members()));
+  n += (sz->_permitted_subtypes_bytes    = sz->count_array(permitted_subtypes()));
   sz->_ro_bytes += n;
 
   const ConstantPool* cp = constants();

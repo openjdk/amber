@@ -468,7 +468,7 @@ class InstanceKlass: public Klass {
     _record_params_count = record_params_count;
   }
 
-// permitted subtypes
+  // permitted subtypes
   Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
   void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
 

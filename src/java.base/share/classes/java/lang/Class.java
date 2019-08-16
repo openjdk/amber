@@ -4151,7 +4151,7 @@ public final class Class<T> implements java.io.Serializable,
         ClassDesc[] constants = new ClassDesc[descriptors.length];
         int i = 0;
         for (String descriptor : descriptors) {
-            ClassDesc cd = ClassDesc.of(descriptor);
+            ClassDesc cd = ClassDesc.of(descriptor.replace('/', '.'));
             constants[i++] = cd;
         }
         return constants;
