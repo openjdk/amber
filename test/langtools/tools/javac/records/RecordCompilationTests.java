@@ -104,7 +104,7 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertFail("compiler.err.expected", "record R(foo) { }");
         assertFail("compiler.err.expected", "record R(int int) { }");
         assertFail("compiler.err.restricted.type.not.allowed.here", "record R(var x) { }");
-        // @@@ assertFail("compiler.err.restricted.type.not.allowed.here", "record R(record x) { }");
+        assertFail("compiler.err.restricted.type.not.allowed.here", "record R(record x) { }");
         assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(public String foo) { }");
         assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(private String foo) { }");
         assertFail("compiler.err.mod.not.allowed.here", "abstract record R(String foo) { }");
@@ -168,7 +168,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testNoExtendRecord() {
-        // @@@ Not finished, waiting on j.l.Record
         assertFail("compiler.err.invalid.supertype.record",
                    "class R extends Record { public String toString() { return null; } public int hashCode() { return 0; } public boolean equals(Object o) { return false; } } }");
     }
@@ -247,17 +246,14 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
 //                   "public R(int x, int y) { this.x = x; }");
 
         // canonical ctor must be public
-        // @@@ Should fail
-//        assertFail("", "record R(int x, int y) { # }",
-//                   "R(int x, int y) { this.x = x; this.y = y; }");
+        assertFail("compiler.err.canonical.constructor.must.be.public", "record R(int x, int y) { # }",
+                   "R(int x, int y) { this.x = x; this.y = y; }");
 
         // ctor args must match types
-        /*
-        assertFail("",
+        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
                 "import java.util.*;\n" +
                         "record R(List<String> list) { # }",
                 "R(List list) { this.list = list; }");
-        */
     }
 
     public void testAnnotationCriteria() {
