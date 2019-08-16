@@ -208,7 +208,7 @@ public abstract class JavacTemplateTestBase {
         if (!diags.errorsFound())
             fail("Expected failed compilation: " + key);
         if (!diags.containsErrorKey(key))
-            fail("Expected compilation error " + key);
+            fail(String.format("Expected compilation error with %s, found %s", key, diags.keys()));
     }
 
     /** Assert that a previous call to compile() failed with a specific error key */
