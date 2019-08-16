@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @compile noLoadSubtypes.jcod
+ * @compile getPermittedSubtypes.jcod
  * @run main getPermittedSubtypesTest
  */
 
@@ -63,7 +63,7 @@ public class getPermittedSubtypesTest {
             // Create ArrayList of permitted subtypes class names.
             ArrayList<String> permittedNames = new ArrayList<String>();
             for (int i = 0; i < permitted.length; i++) {
-                permittedNames.add(((ClassDesc)permitted[i]).displayName());
+                permittedNames.add(((ClassDesc)permitted[i]).descriptorString());
             }
 
             if (permittedNames.size() != expected.length) {
@@ -87,21 +87,33 @@ public class getPermittedSubtypesTest {
         }
     }
 
-    public static void main(String... args) {
-        testSealedInfo(SealedI1.class, new String[] {"getPermittedSubtypesTest$notSealed",
-                                                     "getPermittedSubtypesTest$Sub1",
-                                                     "getPermittedSubtypesTest$Extender"});
-        testSealedInfo(Sealed1.class, new String[] {"getPermittedSubtypesTest$Sub1"});
+    public static void main(String... args) throws Throwable {
+        testSealedInfo(SealedI1.class, new String[] {"LgetPermittedSubtypesTest$notSealed;",
+                                                     "LgetPermittedSubtypesTest$Sub1;",
+                                                     "LgetPermittedSubtypesTest$Extender;"});
+        testSealedInfo(Sealed1.class, new String[] {"LgetPermittedSubtypesTest$Sub1;"});
         testSealedInfo(noPermits.class, new String[] { });
         testSealedInfo(Final4.class, new String[] { });
         testSealedInfo(notSealed.class, new String[] { });
+
+        // Test class with PermittedSubtypes attribute but old class file version.
+        testSealedInfo(oldClassFile.class, new String[] { });
+
+        // Test class with empty PermittedSubtypes attribute.
+        testSealedInfo(noSubtypes.class, new String[] { });
+
         // Test returning names of non-existing classes.
+        testSealedInfo(noLoadSubtypes.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
+
+        // Test that loading a class with a corrupted PermittedSubtypes attribute
+        // causes a ClassFormatError.
         try {
-            testSealedInfo(noLoadSubtypes.class, new String[]{"iDontExist",
-                    "I/Dont/Exist/Either"});
-            throw new AssertionError("should fail");
-        } catch (IllegalArgumentException iae) {
-            // ok
+            Class.forName("badPermittedAttr");
+            throw new RuntimeException("Expected ClasFormatError exception not thrown");
+        } catch (ClassFormatError cfe) {
+            if (!cfe.getMessage().contains("Permitted subtype class_info_index 15 has bad constant type")) {
+                throw new RuntimeException("Unexpected ClassFormatError exception: " + cfe.getMessage());
+            }
         }
     }
 }

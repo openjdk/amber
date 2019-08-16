@@ -299,6 +299,7 @@ class ClassFileParser {
                                         ConstantPool* cp,
                                         int* const record_params_count_ptr,
                                         TRAPS);
+  bool supports_sealed_types();
 
   void parse_classfile_attributes(const ClassFileStream* const cfs,
                                   ConstantPool* cp,

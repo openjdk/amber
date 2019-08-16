@@ -3411,6 +3411,11 @@ void ClassFileParser::parse_classfile_bootstrap_methods_attribute(const ClassFil
                      CHECK);
 }
 
+bool ClassFileParser::supports_sealed_types() {
+  return _major_version == JAVA_14_VERSION;
+    // TBD: add: && _minor_version == JAVA_PREVIEW_MINOR_VERSION && Arguments::enable_preview()
+}
+
 void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cfs,
                                                  ConstantPool* cp,
                  ClassFileParser::ClassAnnotationCollector* parsed_annotations,
@@ -3641,18 +3646,20 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          class_info_index, CHECK);
           _nest_host = class_info_index;
         } else if (tag == vmSymbols::tag_permitted_subtypes()) {
-            // Check for PermittedSubtypes tag
-            if (!_access_flags.is_final()) {
-                classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+            if (supports_sealed_types()) {
+              // Check for PermittedSubtypes tag
+              if (!_access_flags.is_final()) {
+                  classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+              }
+              if (parsed_permitted_subtypes_attribute) {
+                classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
+              } else {
+                parsed_permitted_subtypes_attribute = true;
+              }
+              permitted_subtypes_attribute_start = cfs->current();
+              permitted_subtypes_attribute_length = attribute_length;
             }
-            if (parsed_permitted_subtypes_attribute) {
-              classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
-            } else {
-              parsed_permitted_subtypes_attribute = true;
-            }
-            permitted_subtypes_attribute_start = cfs->current();
-            permitted_subtypes_attribute_length = attribute_length;
-            cfs->skip_u1(permitted_subtypes_attribute_length, CHECK);
+            cfs->skip_u1(attribute_length, CHECK);
         } else if (tag == vmSymbols::tag_record()) {
           if (parsed_record_attribute) {
             classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
