@@ -107,12 +107,10 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         // @@@ assertFail("compiler.err.restricted.type.not.allowed.here", "record R(record x) { }");
         assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(public String foo) { }");
         assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(private String foo) { }");
-        // @@@ Duplicates RecordCantBeAbstractTest
         assertFail("compiler.err.mod.not.allowed.here", "abstract record R(String foo) { }");
         assertFail("compiler.err.illegal.combination.of.modifiers", "non-sealed record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "public public record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "private private record R(String foo) { }");
-        // @@@ Duplicates DatumCanNotDeclaredFieldsWithSameName
         assertFail("compiler.err.record.cant.declare.duplicate.fields", "record R(int x, int x) {}");
     }
 
@@ -134,19 +132,17 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testRestrictedIdentifiers() {
-        // @@@ Duplicates BadUseOfRecordKeywordTest
         for (String s : List.of("interface record { void m(); }",
                 "@interface record { }",
                 "class record { }",
                 "record record(int x) { }",
                 "enum record { A, B }",
                 "class R<record> { }")) {
-            assertFail("compiler.err.record.not.allowed", s);
+            assertFail("compiler.err.restricted.type.not.allowed", s);
         }
     }
 
     public void testValidMembers() {
-        // @@@ Duplicates NoAddInstanceFieldsCanBeDeclaredInDatumTest (partially; rest is duplicated in testFieldDeclarations)
         for (String s : List.of("record X(int j) { }",
                 "interface I { }",
                 "static { }",
@@ -164,7 +160,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testBadExtends() {
-        // @@@ Duplicate RecordCantHaveExtendsTest
         assertFail("compiler.err.expected", "record R(int x) extends Object { }");
         assertFail("compiler.err.expected", "record R(int x) {}\n"
                 + "record R2(int x) extends R { }");
@@ -174,12 +169,11 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
 
     public void testNoExtendRecord() {
         // @@@ Not finished, waiting on j.l.Record
-//        assertFail("",
-//                   "class R extends Record { public String toString() { return null; } public int hashCode() { return 0; } public boolean equals(Object o) { return false; } } }");
+        assertFail("compiler.err.invalid.supertype.record",
+                   "class R extends Record { public String toString() { return null; } public int hashCode() { return 0; } public boolean equals(Object o) { return false; } } }");
     }
 
     public void testFieldDeclarations() {
-        // @@@ Duplicates AllowStaticFieldsInRecordTest
         // static fields are OK
         assertOK("public record R(int x) {\n" +
                 "    static int I = 1;\n" +

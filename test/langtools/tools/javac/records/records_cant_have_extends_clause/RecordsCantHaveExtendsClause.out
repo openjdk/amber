@@ -1,3 +1,0 @@
-RecordsCantHaveExtendsClause.java:12:21: compiler.err.expected: '{'
-RecordsCantHaveExtendsClause.java:17:28: compiler.err.expected: '{'
-2 errors
