@@ -38,7 +38,7 @@ public class CheckReadResolveMethodTest {
 
     // readResolve should be generated as a constructor is provided
     record Point1(int i, int j) implements Serializable {
-        Point1(int i, int j) {
+        public Point1(int i, int j) {
             this.i = i;
             this.j = j;
         }

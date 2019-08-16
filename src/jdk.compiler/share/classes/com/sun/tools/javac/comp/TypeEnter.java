@@ -1231,6 +1231,9 @@ public class TypeEnter implements Completer {
                     if (!initParamNames.equals(recordComponentNames)) {
                         log.error(canonicalDecl, Errors.CanonicalWithNameMismatch);
                     }
+                    if (!canonicalInit.isPublic()) {
+                        log.error(canonicalDecl, Errors.CanonicalConstructorMustBePublic);
+                    }
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
                 }
