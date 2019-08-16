@@ -27,6 +27,7 @@
  * @modules jdk.compiler/com.sun.tools.javac.util
  */
 
+import java.lang.constant.*;
 import com.sun.tools.javac.util.Assert;
 
 public class CheckingAttributeAtRuntimeTest {
@@ -47,27 +48,27 @@ public class CheckingAttributeAtRuntimeTest {
         Class<?> sealedClass1 = Sealed1.class;
         Assert.check(sealedClass1.isSealed());
         Assert.check(sealedClass1.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass1.getPermittedSubtypes()[0] == Sub1.class);
+        Assert.check(sealedClass1.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub1")));
 
         Class<?> sealedI = SealedI1.class;
         Assert.check(sealedI.isSealed());
         Assert.check(sealedI.getPermittedSubtypes().length == 1);
-        Assert.check(sealedI.getPermittedSubtypes()[0] == Sub2.class);
+        Assert.check(sealedI.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub2")));
 
         Class<?> sealedClass2 = Sealed2.class;
         Assert.check(sealedClass2.isSealed());
         Assert.check(sealedClass2.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass2.getPermittedSubtypes()[0] == Sub3.class);
+        Assert.check(sealedClass2.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub3")));
 
         Class<?> sealedClass3 = Sealed3.class;
         Assert.check(sealedClass3.isSealed());
         Assert.check(sealedClass3.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass3.getPermittedSubtypes()[0] == Sub4.class);
+        Assert.check(sealedClass3.getPermittedSubtypes()[0].equals(ClassDesc.of("Sub4")));
 
         Class<?> sealedClass4 = Sealed4.class;
         Assert.check(sealedClass4.isSealed());
         Assert.check(sealedClass4.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass4.getPermittedSubtypes()[0] == Sub5.class);
+        Assert.check(sealedClass4.getPermittedSubtypes()[0].equals(ClassDesc.of("Sub5")));
     }
 }
 
