@@ -101,17 +101,18 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertFail("compiler.err.premature.eof", "record R();");
         assertFail("compiler.err.illegal.start.of.type", "record R(,) { }");
         assertFail("compiler.err.illegal.start.of.type", "record R((int x)) { }");
+        assertFail("compiler.err.expected", "record R { }");
         assertFail("compiler.err.expected", "record R(foo) { }");
         assertFail("compiler.err.expected", "record R(int int) { }");
-        assertFail("compiler.err.restricted.type.not.allowed.here", "record R(var x) { }");
-        assertFail("compiler.err.restricted.type.not.allowed.here", "record R(record x) { }");
-        assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(public String foo) { }");
-        assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(private String foo) { }");
         assertFail("compiler.err.mod.not.allowed.here", "abstract record R(String foo) { }");
         assertFail("compiler.err.illegal.combination.of.modifiers", "non-sealed record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "public public record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "private private record R(String foo) { }");
         assertFail("compiler.err.record.cant.declare.duplicate.fields", "record R(int x, int x) {}");
+        for (String s : List.of("var", "record"))
+            assertFail("compiler.err.restricted.type.not.allowed.here", "record R(# x) { }", s);
+        for (String s : List.of("public", "private", "volatile", "final"))
+            assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(# String foo) { }", s);
     }
 
     public void testGoodDeclarations() {
@@ -123,6 +124,18 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertOK("@Deprecated record R(int x, int y) { }");
         assertOK("record R(@Deprecated int x, int y) { }");
         assertOK("record R<T>(T x, T y) { }");
+    }
+
+    public void testGoodMemberDeclarations() {
+        // @@@ Duplicates RecordsCanReDeclareMembersTest
+        String template = "public record R(int x) {\n"
+                + "    public R(int x) { this.x = x; }\n"
+                + "    public int x() { return x; }\n"
+                + "    public boolean equals(Object o) { return true; }\n"
+                + "    public int hashCode() { return 0; }\n"
+                + "    public String toString() { return null; }\n"
+                + "}";
+        assertOK(template);
     }
 
     public void testBadComponentNames() {
@@ -201,6 +214,8 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testAccessorRedeclaration() {
+        // @@@ Duplicates BadAccessorsTest
+        // @@@ Duplicates UserDefinedAccessorsMustBePublic
         assertOK("public record R(int x) {\n" +
                 "    public int x() { return x; };" +
                 "}");
@@ -217,6 +232,11 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertFail("compiler.err.method.must.be.public",
                 "public record R(int x) {\n" +
                         "    int x() { return 0; };" +
+                        "}");
+
+        assertFail("compiler.err.method.must.be.public",
+                "public record R(int x) {\n" +
+                        "    private int x() { return 0; };" +
                         "}");
 
         // @@@ Error: should fail, but doesn't
@@ -254,16 +274,64 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                 "import java.util.*;\n" +
                         "record R(List<String> list) { # }",
                 "R(List list) { this.list = list; }");
+
+        // ctor should not add checked exceptions
+        // @@@ Currently failing
+//        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
+//                   "record R() { # }",
+//                   "public R() throws Exception { }");
+
+        // but unchecked exceptions are OK
+        assertOK("record R() { # }",
+                 "public R() throws IllegalArgumentException { }");
+
+        // @@@ Duplicates MismatchTest
+        // If types match, names must match
+        assertFail("compiler.err.canonical.with.name.mismatch",
+                   "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
     }
 
     public void testAnnotationCriteria() {
-        // OK to anno with FIELD, METHOD, PARAM, TYPE_USE, and COMPONENT, no @Target, or group thereof
-        // Not OK to anno when @Target specified and none of those are available
-        // OK to redeclare with or without same annos
+        String imports = "import java.lang.annotation.*;\n";
+        String A_COMPONENT = "@Target({ ElementType.RECORD_COMPONENT }) @interface A {}\n";
+        String A_FIELD = "@Target({ ElementType.FIELD }) @interface A {}\n";
+        String A_METHOD = "@Target({ ElementType.METHOD }) @interface A {}\n";
+        String A_PARAM = "@Target({ ElementType.PARAMETER }) @interface A {}\n";
+        String A_TYPE_USE = "@Target({ ElementType.TYPE_USE }) @interface A {}\n";
+        String A_MULTI = "@Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE }) @interface A {}\n";
+        String A_NONE = "@interface A {}\n";
+
+        String A_CTOR = "@Target({ ElementType.CONSTRUCTOR }) @interface A {}\n";
+        String A_PACKAGE = "@Target({ ElementType.PACKAGE }) @interface A {}\n";
+        String A_TYPE = "@Target({ ElementType.TYPE }) @interface A {}\n";
+        String A_LOCAL = "@Target({ ElementType.LOCAL_VARIABLE }) @interface A {}\n";
+        String A_ANNOTATION_TYPE = "@Target({ ElementType.ANNOTATION_TYPE }) @interface A {}\n";
+        String A_TYPE_PARAMETER = "@Target({ ElementType.TYPE_PARAMETER }) @interface A {}\n";
+        String A_MODULE = "@Target({ ElementType.MODULE }) @interface A {}\n";
+        String A_MORE = "@Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, " +
+                       "ElementType.TYPE_USE, ElementType.CONSTRUCTOR, " +
+                       "ElementType.PACKAGE, ElementType.TYPE, ElementType.LOCAL_VARIABLE }) @interface A {}\n";
+
+        for (String s : List.of(A_COMPONENT, A_FIELD, A_METHOD, A_PARAM, A_TYPE_USE, A_MULTI, A_NONE, A_MORE))
+            assertOK(imports + s + "record R(@A int x) { }");
+
+        // @@@ Should also fail for TYPE_PARAMETER
+        for (String s : List.of(A_PACKAGE, A_CTOR, A_TYPE, A_LOCAL, A_ANNOTATION_TYPE, /* A_TYPE_PARAMETER, */ A_MODULE))
+            assertFail("compiler.err.annotation.type.not.applicable", imports + s + "record R(@A int x) { }");
+
+        // TODO: OK to redeclare with or without same annos
     }
 
     public void testIllegalSerializationMembers() {
-        // readResolve, writeReplace, readObject, writeObject, readObjectNoData, serialPersistentFields
+        // @@@ Should fail
+//        String template = "record R(int x) { # }";
+//        for (String s : List.of("private static final java.io.ObjectStreamField[] serialPersistentFields = {};",
+//                                "private void writeObject(java.io.ObjectOutputStream stream) { }",
+//                                "private Object writeReplace() { }",
+//                                "private Object readResolve() { }",
+//                                "private void readObject(java.io.ObjectInputStream stream) { }",
+//                                "private void readObjectNoData() { }"))
+//            assertFail("", template, s);
     }
 
     public void testLocalRecords() {
