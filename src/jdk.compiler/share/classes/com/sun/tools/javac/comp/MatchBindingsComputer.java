@@ -154,16 +154,13 @@ public class MatchBindingsComputer extends TreeScanner {
     }
 
     private List<BindingSymbol> intersection(JCTree tree, List<BindingSymbol> lhsBindings, List<BindingSymbol> rhsBindings) {
-        // It is an error if, for intersection(a,b), if a and b contain the same variable name but with different types.
+        // It is an error if, for intersection(a,b), if a and b contain the same variable name (may be eventually relaxed to merge variables of same type)
         List<BindingSymbol> list = List.nil();
         for (BindingSymbol v1 : lhsBindings) {
             for (BindingSymbol v2 : rhsBindings) {
                 if (v1.name == v2.name) {
-                    if (types.isSameType(v1.type, v2.type)) {
-                        list = list.append(new IntersectionBindingSymbol(List.of(v1, v2)));
-                    } else {
-                        log.error(tree.pos(), Errors.MatchBindingExistsWithDifferentType);
-                    }
+                    log.error(tree.pos(), Errors.MatchBindingExists);
+                    list = list.append(v2);
                 }
             }
         }
@@ -216,29 +213,4 @@ public class MatchBindingsComputer extends TreeScanner {
         }
     }
 
-    public static class IntersectionBindingSymbol extends BindingSymbol {
-
-        List<BindingSymbol> aliases = List.nil();
-
-        public IntersectionBindingSymbol(List<BindingSymbol> aliases) {
-            super(aliases.head.name, aliases.head.type, aliases.head.owner);
-            this.aliases = aliases.stream()
-                    .flatMap(b -> b.aliases().stream())
-                    .collect(List.collector());
-        }
-
-        @Override
-        List<BindingSymbol> aliases() {
-            return aliases;
-        }
-
-        @Override
-        public void preserveBinding() {
-            aliases.stream().forEach(BindingSymbol::preserveBinding);
-        }
-
-        public boolean isPreserved() {
-            return aliases.stream().allMatch(BindingSymbol::isPreserved);
-        }
-    }
 }

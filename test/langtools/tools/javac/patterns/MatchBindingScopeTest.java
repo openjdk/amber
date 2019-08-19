@@ -35,7 +35,7 @@ public class MatchBindingScopeTest {
         }
 
         if (o1 instanceof String j || o2 instanceof Integer j) { // NOT OK, types differ
-            System.out.println(j); // NOT OK
+            System.out.println(j);
         } else {
             System.out.println(j); // NOT OK.
         }
