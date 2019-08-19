@@ -114,5 +114,12 @@ public enum ElementType {
      *
      * @since 9
      */
-    MODULE
+    MODULE,
+
+    /**
+     * Record component
+     *
+     * @since 14
+     */
+    RECORD_COMPONENT;
 }
