@@ -1,8 +1,0 @@
-IllegalRecordComponentNameTest.java:8:22: compiler.err.illegal.record.component.name: toString
-IllegalRecordComponentNameTest.java:9:22: compiler.err.illegal.record.component.name: hashCode
-IllegalRecordComponentNameTest.java:10:22: compiler.err.illegal.record.component.name: getClass
-IllegalRecordComponentNameTest.java:11:22: compiler.err.illegal.record.component.name: readObjectNoData
-IllegalRecordComponentNameTest.java:12:22: compiler.err.illegal.record.component.name: readResolve
-IllegalRecordComponentNameTest.java:13:22: compiler.err.illegal.record.component.name: writeReplace
-IllegalRecordComponentNameTest.java:14:22: compiler.err.illegal.record.component.name: serialPersistentFields
-7 errors

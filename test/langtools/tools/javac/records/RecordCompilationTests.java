@@ -134,7 +134,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testGoodMemberDeclarations() {
-        // @@@ Duplicates RecordsCanReDeclareMembersTest
         String template = "public record R(int x) {\n"
                 + "    public R(int x) { this.x = x; }\n"
                 + "    public int x() { return x; }\n"
@@ -146,7 +145,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testBadComponentNames() {
-        // @@@ Duplicates IllegalRecordComponentNameTest
         for (String s : BAD_COMPONENT_NAMES)
             assertFail("compiler.err.illegal.record.component.name", "record R(int #) { } ", s);
     }
@@ -221,8 +219,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testAccessorRedeclaration() {
-        // @@@ Duplicates BadAccessorsTest
-        // @@@ Duplicates UserDefinedAccessorsMustBePublic
         assertOK("public record R(int x) {\n" +
                 "    public int x() { return x; };" +
                 "}");
@@ -292,7 +288,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertOK("record R() { # }",
                  "public R() throws IllegalArgumentException { }");
 
-        // @@@ Duplicates MismatchTest
         // If types match, names must match
         assertFail("compiler.err.canonical.with.name.mismatch",
                    "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
