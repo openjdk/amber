@@ -4094,6 +4094,9 @@ public class JavacParser implements Parser {
                         log.error(DiagnosticFlag.SYNTAX, pos, Errors.InvalidMethDeclRetTypeReq);
                     else if (annosAfterParams.nonEmpty())
                         illegal(annosAfterParams.head.pos);
+                    if (isRecord && token.kind == LBRACE) {
+                        mods.flags |= Flags.COMPACT_RECORD_CONSTRUCTOR;
+                    }
                     return List.of(methodDeclaratorRest(
                         pos, mods, null, names.init, typarams,
                         isInterface, true, isRecord, dc));

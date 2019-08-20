@@ -43,7 +43,10 @@ public class MethodParametersForCanonicalConstructorTest {
     }
 
     record R3(int i, int j) {
-        public R3(int i, int j) {}
+        public R3(int i, int j) {
+            this.i = i;
+            this.j = j;
+        }
     }
 
     public static void main(String args[]) throws Throwable {

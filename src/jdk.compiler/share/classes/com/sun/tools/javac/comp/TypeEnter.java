@@ -970,23 +970,25 @@ public class TypeEnter implements Completer {
                                     constructorInvocationName == names._super) {
                                 RecordConstructorHelper helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                                 JCMethodDecl methDecl = (JCMethodDecl)def;
-                                if (constructorInvocationName == names.empty) {
-                                    JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
-                                            make.Ident(names._super), List.nil()));
-                                    methDecl.body.stats = methDecl.body.stats.prepend(supCall);
-                                }
-                                ListBuffer<JCStatement> initializations = new ListBuffer<>();
-                                List<Name> inits = helper.inits();
-                                InitializationFinder initFinder = new InitializationFinder(inits);
-                                initFinder.scan(methDecl.body.stats);
-                                List<Name> found = initFinder.found.toList();
-                                inits = inits.diff(found);
-                                if (!inits.isEmpty()) {
-                                    for (Name initName : inits) {
-                                        initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
-                                                initName), make.Ident(initName))));
+                                if ((methDecl.mods.flags & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
+                                    if (constructorInvocationName == names.empty) {
+                                        JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
+                                                make.Ident(names._super), List.nil()));
+                                        methDecl.body.stats = methDecl.body.stats.prepend(supCall);
                                     }
-                                    methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
+                                    ListBuffer<JCStatement> initializations = new ListBuffer<>();
+                                    List<Name> inits = helper.inits();
+                                    InitializationFinder initFinder = new InitializationFinder(inits);
+                                    initFinder.scan(methDecl.body.stats);
+                                    List<Name> found = initFinder.found.toList();
+                                    inits = inits.diff(found);
+                                    if (!inits.isEmpty()) {
+                                        for (Name initName : inits) {
+                                            initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
+                                                    initName), make.Ident(initName))));
+                                        }
+                                        methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
+                                    }
                                 }
                             }
                         }
