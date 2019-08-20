@@ -207,6 +207,12 @@ public class Names {
     public final Name non;
     public final Name ofLazyProjection;
 
+    // serialization members, used by records too
+    public final Name serialPersistentFields;
+    public final Name writeObject;
+    public final Name writeReplace;
+    public final Name readObjectNoData;
+
     // sealed types
     public final Name permits;
     public final Name sealed;
@@ -373,6 +379,11 @@ public class Names {
         where = fromString("where");
         non = fromString("non");
         ofLazyProjection = fromString("ofLazyProjection");
+
+        serialPersistentFields = fromString("serialPersistentFields");
+        writeObject = fromString("writeObject");
+        writeReplace = fromString("writeReplace");
+        readObjectNoData = fromString("readObjectNoData");
 
         // sealed types
         permits = fromString("permits");
