@@ -340,6 +340,11 @@ public class Flags {
      */
     public static final long RECORD = 1L<<61;
 
+    /**
+     * Flag to mark a record constructor as a compact one
+     */
+    public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51;
+
     /** Modifier masks.
      */
     public static final int

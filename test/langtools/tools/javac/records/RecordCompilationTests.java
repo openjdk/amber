@@ -264,9 +264,8 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
             assertOK("record R(int x, int y) { # }", goodCtor);
 
         // Not OK to redeclare canonical without DA
-        // @@@ Should fail
-//        assertFail("", "record R(int x, int y) { # }",
-//                   "public R(int x, int y) { this.x = x; }");
+        assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x, int y) { # }",
+                   "public R(int x, int y) { this.x = x; }");
 
         // canonical ctor must be public
         assertFail("compiler.err.canonical.constructor.must.be.public", "record R(int x, int y) { # }",
