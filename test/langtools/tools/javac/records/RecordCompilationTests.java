@@ -317,11 +317,10 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
 
         // @@@ Should also fail for TYPE_PARAMETER
         for (ElementType e : badSet) {
-            if (e == TYPE_PARAMETER) continue; // @@@ temporary hack awaiting fix
             assertFail("compiler.err.annotation.type.not.applicable", imports + annotations.get(e) + "record R(@A int x) { }");
         }
-        // @@@ Also should fail, pending TYPE_PARAMETER fix
-        //assertFail("compiler.err.annotation.type.not.applicable", imports + A_BAD + "record R(@A int x) { }");
+
+        assertFail("compiler.err.annotation.type.not.applicable", imports + A_BAD + "record R(@A int x) { }");
 
         // TODO: OK to redeclare with or without same annos
     }
