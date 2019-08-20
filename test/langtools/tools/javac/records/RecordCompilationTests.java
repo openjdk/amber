@@ -324,14 +324,14 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
 
     public void testIllegalSerializationMembers() {
         // @@@ Should fail
-//        String template = "record R(int x) { # }";
-//        for (String s : List.of("private static final java.io.ObjectStreamField[] serialPersistentFields = {};",
-//                                "private void writeObject(java.io.ObjectOutputStream stream) { }",
-//                                "private Object writeReplace() { }",
-//                                "private Object readResolve() { }",
-//                                "private void readObject(java.io.ObjectInputStream stream) { }",
-//                                "private void readObjectNoData() { }"))
-//            assertFail("", template, s);
+        String template = "record R(int x) { # }";
+        for (String s : List.of("private static final java.io.ObjectStreamField[] serialPersistentFields = {};",
+                                "private void writeObject(java.io.ObjectOutputStream stream) { }",
+                                "private Object writeReplace() { }",
+                                "private Object readResolve() { }",
+                                "private void readObject(java.io.ObjectInputStream stream) { }",
+                                "private void readObjectNoData() { }"))
+            assertFail("compiler.err.illegal.record.member", template, s);
     }
 
     public void testLocalRecords() {
