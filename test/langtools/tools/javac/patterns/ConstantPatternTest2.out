@@ -18,7 +18,7 @@ ConstantPatternTest2.java:83:28: compiler.err.illegal.start.of.type
 ConstantPatternTest2.java:83:32: compiler.err.expected: ';'
 ConstantPatternTest2.java:87:28: compiler.err.illegal.start.of.type
 ConstantPatternTest2.java:87:30: compiler.err.expected: ';'
-ConstantPatternTest2.java:91:17: compiler.err.var.not.allowed
+ConstantPatternTest2.java:91:17: compiler.err.restricted.type.not.allowed: var, 10
 ConstantPatternTest2.java:95:28: compiler.err.illegal.start.of.type
 ConstantPatternTest2.java:95:30: compiler.err.expected: ';'
 ConstantPatternTest2.java:97:28: compiler.err.illegal.start.of.type
