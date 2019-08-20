@@ -243,10 +243,10 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                         "}");
 
         // @@@ Error: should fail, but doesn't
-//        assertFail("something",
-//                   "public record R(int x) {\n" +
-//                   "    public int x() throws Exception { return 0; };" +
-//                   "}");
+        assertFail("compiler.err.method.cant.throw.checked.exception",
+                   "public record R(int x) {\n" +
+                   "    public int x() throws Exception { return 0; };" +
+                   "}");
 
         for (String s : List.of("List", "List<?>", "Object", "ArrayList<String>", "int"))
             assertFail("compiler.err.accessor.return.type.doesnt.match",
@@ -278,10 +278,9 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                 "R(List list) { this.list = list; }");
 
         // ctor should not add checked exceptions
-        // @@@ Currently failing
-//        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
-//                   "record R() { # }",
-//                   "public R() throws Exception { }");
+        assertFail("compiler.err.method.cant.throw.checked.exception",
+                   "record R() { # }",
+                   "public R() throws Exception { }");
 
         // but unchecked exceptions are OK
         assertOK("record R() { # }",

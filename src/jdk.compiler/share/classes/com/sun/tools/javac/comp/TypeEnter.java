@@ -52,12 +52,11 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import static com.sun.tools.javac.code.TypeTag.CLASS;
-import static com.sun.tools.javac.code.TypeTag.ERROR;
-import static com.sun.tools.javac.code.TypeTag.NONE;
 
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
+import static com.sun.tools.javac.code.TypeTag.*;
+import static com.sun.tools.javac.code.TypeTag.BOT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;
@@ -1157,8 +1156,27 @@ public class TypeEnter implements Completer {
                     if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
                         log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
                     }
+                    if (implSym.type.asMethodType().thrown.stream().filter(exc -> !isUnchecked(exc)).findAny().isPresent()) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
+                    }
                 }
             }
+        }
+
+        /** Is exc an exception symbol that need not be declared?
+         */
+        boolean isUnchecked(ClassSymbol exc) {
+            return exc.kind == ERR ||
+                   exc.isSubClass(syms.errorType.tsym, types) ||
+                   exc.isSubClass(syms.runtimeExceptionType.tsym, types);
+        }
+
+        /** Is exc an exception type that need not be declared?
+         */
+        boolean isUnchecked(Type exc) {
+            return (exc.hasTag(TYPEVAR)) ? isUnchecked(types.supertype(exc)) :
+                   (exc.hasTag(CLASS)) ? isUnchecked((ClassSymbol)exc.tsym) :
+                   exc.hasTag(BOT);
         }
 
         /** Add the implicit members for an enum type
@@ -1284,6 +1302,9 @@ public class TypeEnter implements Completer {
                     }
                     if (!canonicalInit.isPublic()) {
                         log.error(canonicalDecl, Errors.CanonicalConstructorMustBePublic);
+                    }
+                    if (canonicalInit.type.asMethodType().thrown.stream().filter(exc -> !isUnchecked(exc)).findAny().isPresent()) {
+                        log.error(TreeInfo.declarationFor(canonicalInit, env.enclClass), Errors.MethodCantThrowCheckedException);
                     }
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
