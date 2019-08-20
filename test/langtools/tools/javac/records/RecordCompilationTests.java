@@ -24,14 +24,21 @@
  */
 
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 import tools.javac.combo.JavacTemplateTestBase;
 
+import static java.lang.annotation.ElementType.*;
 import static java.util.stream.Collectors.toList;
+import static org.testng.Assert.assertEquals;
 
 /**
  * RecordCompilationTests
@@ -293,31 +300,35 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
 
     public void testAnnotationCriteria() {
         String imports = "import java.lang.annotation.*;\n";
-        String A_COMPONENT = "@Target({ ElementType.RECORD_COMPONENT }) @interface A {}\n";
-        String A_FIELD = "@Target({ ElementType.FIELD }) @interface A {}\n";
-        String A_METHOD = "@Target({ ElementType.METHOD }) @interface A {}\n";
-        String A_PARAM = "@Target({ ElementType.PARAMETER }) @interface A {}\n";
-        String A_TYPE_USE = "@Target({ ElementType.TYPE_USE }) @interface A {}\n";
-        String A_MULTI = "@Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE }) @interface A {}\n";
-        String A_NONE = "@interface A {}\n";
+        String template = "@Target({ # }) @interface A {}\n";
+        EnumMap<ElementType, String> annotations = new EnumMap<>(ElementType.class);
+        for (ElementType e : values())
+            annotations.put(e, template.replace("#", "ElementType." + e.name()));
+        EnumSet<ElementType> goodSet = EnumSet.of(RECORD_COMPONENT, FIELD, METHOD, PARAMETER, TYPE_USE);
+        EnumSet<ElementType> badSet = EnumSet.of(CONSTRUCTOR, PACKAGE, TYPE, LOCAL_VARIABLE, ANNOTATION_TYPE, TYPE_PARAMETER, MODULE);
 
-        String A_CTOR = "@Target({ ElementType.CONSTRUCTOR }) @interface A {}\n";
-        String A_PACKAGE = "@Target({ ElementType.PACKAGE }) @interface A {}\n";
-        String A_TYPE = "@Target({ ElementType.TYPE }) @interface A {}\n";
-        String A_LOCAL = "@Target({ ElementType.LOCAL_VARIABLE }) @interface A {}\n";
-        String A_ANNOTATION_TYPE = "@Target({ ElementType.ANNOTATION_TYPE }) @interface A {}\n";
-        String A_TYPE_PARAMETER = "@Target({ ElementType.TYPE_PARAMETER }) @interface A {}\n";
-        String A_MODULE = "@Target({ ElementType.MODULE }) @interface A {}\n";
-        String A_MORE = "@Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, " +
-                       "ElementType.TYPE_USE, ElementType.CONSTRUCTOR, " +
-                       "ElementType.PACKAGE, ElementType.TYPE, ElementType.LOCAL_VARIABLE }) @interface A {}\n";
+        assertEquals(goodSet.size() + badSet.size(), values().length);
+        String A_GOOD = template.replace("#",
+                                         goodSet.stream().map(ElementType::name).map(s -> "ElementType." + s).collect(Collectors.joining(",")));
+        String A_BAD = template.replace("#",
+                                        badSet.stream().map(ElementType::name).map(s -> "ElementType." + s).collect(Collectors.joining(",")));
+        String A_ALL = template.replace("#",
+                                        Stream.of(ElementType.values()).map(ElementType::name).map(s -> "ElementType." + s).collect(Collectors.joining(",")));
+        String A_NONE = "@interface A {}";
 
-        for (String s : List.of(A_COMPONENT, A_FIELD, A_METHOD, A_PARAM, A_TYPE_USE, A_MULTI, A_NONE, A_MORE))
-            assertOK(imports + s + "record R(@A int x) { }");
+        for (ElementType e : goodSet)
+            assertOK(imports + annotations.get(e) + "record R(@A int x) { }");
+        assertOK(imports + A_GOOD + "record R(@A int x) { }");
+        assertOK(imports + A_ALL + "record R(@A int x) { }");
+        assertOK(imports + A_NONE);
 
         // @@@ Should also fail for TYPE_PARAMETER
-        for (String s : List.of(A_PACKAGE, A_CTOR, A_TYPE, A_LOCAL, A_ANNOTATION_TYPE, /* A_TYPE_PARAMETER, */ A_MODULE))
-            assertFail("compiler.err.annotation.type.not.applicable", imports + s + "record R(@A int x) { }");
+        for (ElementType e : badSet) {
+            if (e == TYPE_PARAMETER) continue; // @@@ temporary hack awaiting fix
+            assertFail("compiler.err.annotation.type.not.applicable", imports + annotations.get(e) + "record R(@A int x) { }");
+        }
+        // @@@ Also should fail, pending TYPE_PARAMETER fix
+        //assertFail("compiler.err.annotation.type.not.applicable", imports + A_BAD + "record R(@A int x) { }");
 
         // TODO: OK to redeclare with or without same annos
     }
@@ -347,5 +358,13 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                 "        record RR(int x) { public int x() { return y; }};\n" +
                 "    }\n" +
                 "}");
+
+        // Can't self-shadow
+        assertFail("compiler.err.already.defined",
+                   "class R { \n" +
+                   "    void m() { \n" +
+                   "        record R(int x) { };\n" +
+                   "    }\n" +
+                   "}");
     }
 }
