@@ -188,6 +188,7 @@ public class MatchBindingsComputer extends TreeScanner {
                     if (types.isSameType(v1.type, v2.type)) {
                         list = list.append(new IntersectionBindingSymbol(List.of(v1, v2)));
                     } else {
+                        list = list.append(v2);
                         log.error(tree.pos(), Errors.MatchBindingExistsWithDifferentType);
                     }
                 }
