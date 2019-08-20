@@ -94,7 +94,7 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
     );
 
     static final String sourceTemplate =
-            "record Data(#{FT[0]} f0, #{FT[1]} f1) { }";
+            "public record Data(#{FT[0]} f0, #{FT[1]} f1) { }";
 
     public static void main(String... args) throws Exception {
         new combo.ComboTestHelper<CheckRecordMembers>()
@@ -109,16 +109,16 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
     @Override
     public void doWork() throws Throwable {
         newCompilationTask()
-                .withSourceFromTemplate(sourceTemplate)
+                .withSourceFromTemplate("Data", sourceTemplate)
                 .generate(this::check);
     }
 
     void check(ComboTask.Result<Iterable<? extends JavaFileObject>> result) {
-        List<Object> f0s = dataValues.get(fieldType[0]);
-        List<Object> f1s = dataValues.get(fieldType[1]);
-
         if (result.hasErrors() || result.hasWarnings())
             fail("Compilation errors not expected: " + result.compilationInfo());
+
+        List<Object> f0s = dataValues.get(fieldType[0]);
+        List<Object> f1s = dataValues.get(fieldType[1]);
 
         Iterable<? extends PathFileObject> pfoIt = (Iterable<? extends PathFileObject>) result.get();
         PathFileObject pfo = pfoIt.iterator().next();
@@ -146,11 +146,6 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
                 || fieldF0.getType() != fieldType[0].clazz
                 || fieldF1.getType() != fieldType[1].clazz)
                 fail("Unexpected field or getter type: " + result.compilationInfo());
-
-            for (AccessibleObject o : List.of(ctor, getterF0, getterF1, equalsMethod, hashCodeMethod, toStringMethod)) {
-                // @@@ Why do we need this?
-                o.setAccessible(true);
-            }
 
             for (Object f0 : f0s) {
                 for (Object f1 : f1s) {
