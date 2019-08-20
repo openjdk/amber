@@ -1,6 +1,0 @@
-BadAnnotations.java:13:15: compiler.err.annotation.type.not.applicable
-BadAnnotations.java:17:15: compiler.err.annotation.type.not.applicable
-BadAnnotations.java:21:15: compiler.err.annotation.type.not.applicable
-BadAnnotations.java:25:15: compiler.err.annotation.type.not.applicable
-BadAnnotations.java:29:15: compiler.err.annotation.type.not.applicable
-5 errors

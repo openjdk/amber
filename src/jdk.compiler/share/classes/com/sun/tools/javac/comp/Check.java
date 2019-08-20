@@ -2871,8 +2871,7 @@ public class Check {
                                 target == names.FIELD ||
                                 target == names.PARAMETER ||
                                 target == names.METHOD ||
-                                target == names.TYPE_USE ||
-                                target == names.TYPE_PARAMETER;
+                                target == names.TYPE_USE;
                 if (appliesToRecords) {
                     break;
                 }
