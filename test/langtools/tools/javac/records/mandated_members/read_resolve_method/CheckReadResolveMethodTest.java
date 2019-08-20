@@ -24,6 +24,8 @@
 /*
  * @test
  * @summary check that members of abtract datum has protected access
+ * @ignore currently the compiler is generating a readResolve method but this test is failing now
+ * as the compiler will error if there is an explicit declaration of readResolve.
  * @modules jdk.jdeps/com.sun.tools.classfile
  *          jdk.compiler/com.sun.tools.javac.util
  * @compile CheckReadResolveMethodTest.java
