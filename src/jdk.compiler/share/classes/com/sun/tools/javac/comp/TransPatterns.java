@@ -617,9 +617,10 @@ public class TransPatterns extends TreeTranslator {
                 pendingMatchLabel = make.Labelled(names.fromString("match$" + tree.pos), null);
                 VarSymbol fallthroughSym = new VarSymbol(0, names.fromString("fallthrough$" + tree.pos), syms.booleanType, currentMethodSym);
 
-                JCStatement fallthroughInit = make.at(tree.pos).VarDef(fallthroughSym, make.Literal(BOOLEAN, 0).setType(syms.booleanType));
+                boolean hasFallThrough = false;
+                boolean wasFallThrough = false;
 
-                List<JCStatement> resultStatements = List.of(fallthroughInit);
+                List<JCStatement> resultStatements = List.nil();
 
                 for (JCCase clause : tree.cases) {
                     Assert.check(clause.pats.size() <= 1);
@@ -649,11 +650,19 @@ public class TransPatterns extends TreeTranslator {
                         }
                     }
 
-                    testStatement.cond = makeBinary(Tag.OR,
-                            make.Ident(fallthroughSym),
-                            testStatement.cond);
+                    if (wasFallThrough) {
+                        testStatement.cond = makeBinary(Tag.OR,
+                                make.Ident(fallthroughSym),
+                                testStatement.cond);
+                    }
 
+                    hasFallThrough |= wasFallThrough = clause.completesNormally;
                     resultStatements = resultStatements.append(translatedIf);
+                }
+                if (hasFallThrough) {
+                    resultStatements = resultStatements.prepend(make.at(tree.pos)
+                                                                    .VarDef(fallthroughSym,
+                                                                            make.Literal(BOOLEAN, 0).setType(syms.booleanType)));
                 }
                 pendingMatchLabel.body = make.Block(0, resultStatements);
                 result = pendingMatchLabel;
