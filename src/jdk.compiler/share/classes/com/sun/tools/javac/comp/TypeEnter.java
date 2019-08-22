@@ -1432,6 +1432,9 @@ public class TypeEnter implements Completer {
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
                     // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
+                } else if (owner().isRecord()) {
+                    // record constructors are public
+                    flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
                 }
