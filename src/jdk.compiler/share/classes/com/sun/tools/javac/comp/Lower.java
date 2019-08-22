@@ -2502,7 +2502,8 @@ public class Lower extends TreeTranslator {
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
                 generateRecordMethod(tree, names.equals, vars, getterMethHandles),
-                recordExtractor(tree, getterMethHandlesForExtractor)
+                recordExtractor(tree, getterMethHandlesForExtractor),
+                recordReadResolve(tree)
         ));
         findUserDefinedAccessors(tree);
     }
@@ -2598,6 +2599,23 @@ public class Lower extends TreeTranslator {
                 extractorName, extractorMT, tree.sym);
         tree.sym.members().enter(extractorSym);
         return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(ident))));
+    }
+
+    JCTree recordReadResolve(JCClassDecl tree) {
+        make_at(tree.pos());
+        Symbol msym = findMethodOrFailSilently(
+                tree.pos(),
+                attrEnv,
+                tree.sym.type,
+                names.readResolve,
+                List.nil(),
+                List.nil());
+        if (!msym.kind.isResolutionError() && (msym.flags() & RECORD) != 0) {
+            List<JCExpression> args = TreeInfo.recordFields(tree).map(vd -> make.Ident(vd));
+            return make.MethodDef((MethodSymbol)msym, make.Block(0, List.of(make.Return(makeNewClass(tree.sym.type, args)))));
+        } else {
+            return make.Block(SYNTHETIC, List.nil());
+        }
     }
 
     private String argsTypeSig(List<Type> typeList) {
