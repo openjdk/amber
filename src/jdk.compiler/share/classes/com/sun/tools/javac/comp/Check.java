@@ -117,7 +117,7 @@ public class Check {
 
         names = Names.instance(context);
         dfltTargetMeta = new Name[] { names.PACKAGE, names.TYPE,
-            names.FIELD, names.METHOD, names.CONSTRUCTOR,
+            names.FIELD, names.RECORD_COMPONENT, names.METHOD, names.CONSTRUCTOR,
             names.ANNOTATION_TYPE, names.LOCAL_VARIABLE, names.PARAMETER};
         log = Log.instance(context);
         rs = Resolve.instance(context);
@@ -2855,23 +2855,26 @@ public class Check {
      */
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
+        boolean isRecordMember = s.isRecord() || s.enclClass() != null && s.enclClass().isRecord();
         if (debug) {
             System.out.println("validating annotations for tree " + declarationTree);
         }
 
-        if (s.isRecord() && s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF)) {
+        if (isRecordMember &&
+                s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF)) {
             // we are seeing a record field, which had the original annotations, now is the moment,
             // before stripping some of them just below, to check if the original annotations
             // applied to records at all, first version only cares about declaration annotations
             // we will add type annotations later on
-            Name[] targets = getTargetNames(a, s);
+            Name[] targets = getTargetNames(a);
             boolean appliesToRecords = false;
             for (Name target : targets) {
                 appliesToRecords =
                                 target == names.FIELD ||
                                 target == names.PARAMETER ||
                                 target == names.METHOD ||
-                                target == names.TYPE_USE;
+                                target == names.TYPE_USE ||
+                                target == names.RECORD_COMPONENT;
                 if (appliesToRecords) {
                     break;
                 }
@@ -2886,7 +2889,7 @@ public class Check {
         if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s)) {
             // debug
             //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
-            if (s.isRecord() || s.owner.isRecord() && (s.flags_field & Flags.MANDATED) != 0) {
+            if (isRecordMember && (s.flags_field & Flags.MANDATED) != 0) {
                 JCModifiers modifiers = TreeInfo.getModifiers(declarationTree);
                 // lets first remove the annotation from the modifier
                 if (modifiers != null) {
@@ -3062,6 +3065,7 @@ public class Check {
             targets.add(names.ANNOTATION_TYPE);
             targets.add(names.CONSTRUCTOR);
             targets.add(names.FIELD);
+            targets.add(names.RECORD_COMPONENT);
             targets.add(names.LOCAL_VARIABLE);
             targets.add(names.METHOD);
             targets.add(names.PACKAGE);
@@ -3153,11 +3157,15 @@ public class Check {
         }
 
     /** Is the annotation applicable to the symbol? */
-    Name[] getTargetNames(JCAnnotation a, Symbol s) {
-        Attribute.Array arr = getAttributeTargetAttribute(a.annotationType.type.tsym);
+    Name[] getTargetNames(JCAnnotation a) {
+        return getTargetNames(a.annotationType.type.tsym);
+    }
+
+    public Name[] getTargetNames(TypeSymbol annoSym) {
+        Attribute.Array arr = getAttributeTargetAttribute(annoSym);
         Name[] targets;
         if (arr == null) {
-            targets = defaultTargetMetaInfo(a, s);
+            targets = defaultTargetMetaInfo();
         } else {
             // TODO: can we optimize this?
             targets = new Name[arr.values.length];
@@ -3174,7 +3182,7 @@ public class Check {
     }
 
     boolean annotationApplicable(JCAnnotation a, Symbol s) {
-        Name[] targets = getTargetNames(a, s);
+        Name[] targets = getTargetNames(a);
         if (targets.length == 0) {
             // recovery
             return true;
@@ -3183,7 +3191,7 @@ public class Check {
             if (target == names.TYPE) {
                 if (s.kind == TYP)
                     return true;
-            } else if (target == names.FIELD) {
+            } else if (target == names.FIELD || target == names.RECORD_COMPONENT) {
                 if (s.kind == VAR && s.owner.kind != MTH)
                     return true;
             } else if (target == names.METHOD) {
@@ -3239,7 +3247,7 @@ public class Check {
     }
 
     private final Name[] dfltTargetMeta;
-    private Name[] defaultTargetMetaInfo(JCAnnotation a, Symbol s) {
+    private Name[] defaultTargetMetaInfo() {
         return dfltTargetMeta;
     }
 
