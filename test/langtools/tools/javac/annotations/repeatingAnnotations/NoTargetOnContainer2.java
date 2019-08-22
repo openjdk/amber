@@ -43,7 +43,9 @@ import java.lang.annotation.*;
     ElementType.ANNOTATION_TYPE,
     ElementType.FIELD,
     ElementType.TYPE_USE,
-    ElementType.TYPE_PARAMETER})
+    ElementType.TYPE_PARAMETER,
+    ElementType.RECORD_COMPONENT
+})
 @Repeatable(FooContainer.class)
 @interface Foo {}
 

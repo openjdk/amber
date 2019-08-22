@@ -37,10 +37,10 @@ import com.sun.tools.classfile.Attribute.Visitor;
 public class Record_attribute extends Attribute {
     Record_attribute(ClassReader cr, int name_index, int length) throws IOException {
         super(name_index, length);
-        num_params = cr.readUnsignedShort();
-        accessors = new int[num_params];
-        for (int i = 0; i < num_params; i++) {
-            accessors[i] = cr.readUnsignedShort();
+        component_count = cr.readUnsignedShort();
+        component_info_arr = new ComponentInfo[component_count];
+        for (int i = 0; i < component_count; i++) {
+            component_info_arr[i] = new ComponentInfo(cr);
         }
     }
 
@@ -49,6 +49,22 @@ public class Record_attribute extends Attribute {
         return visitor.visitRecord(this, data);
     }
 
-    public final int num_params;
-    public final int[] accessors;
+    public final int component_count;
+    public final ComponentInfo[] component_info_arr;
+
+    public static class ComponentInfo {
+        ComponentInfo(ClassReader cr) throws IOException {
+            name_index = cr.readUnsignedShort();
+            descriptor = new Descriptor(cr);
+            attributes = new Attributes(cr);
+        }
+
+        public String getName(ConstantPool constant_pool) throws ConstantPoolException {
+            return constant_pool.getUTF8Value(name_index);
+        }
+
+        public final int name_index;
+        public final Descriptor descriptor;
+        public final Attributes attributes;
+    }
 }

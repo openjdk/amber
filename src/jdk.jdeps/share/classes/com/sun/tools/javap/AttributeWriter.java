@@ -729,11 +729,52 @@ public class AttributeWriter extends BasicWriter
     public Void visitRecord(Record_attribute attr, Void p) {
         println("Record:");
         indent(+1);
-        for (int i = 0; i < attr.num_params; i++) {
-            println("#" + attr.accessors[i]);
+        for (Record_attribute.ComponentInfo componentInfo : attr.component_info_arr) {
+            Signature_attribute sigAttr = (Signature_attribute) componentInfo.attributes.get(Attribute.Signature);
+
+            if (sigAttr == null)
+                print(getJavaFieldType(componentInfo.descriptor));
+            else {
+                try {
+                    Type t = sigAttr.getParsedSignature().getType(constant_pool);
+                    print(getJavaName(t.toString()));
+                } catch (ConstantPoolException e) {
+                    // report error?
+                    // fall back on non-generic descriptor
+                    print(getJavaFieldType(componentInfo.descriptor));
+                }
+            }
+
+            print(" ");
+            try {
+                print(componentInfo.getName(constant_pool));
+            } catch (ConstantPoolException e) {
+                report(e);
+                return null;
+            }
+            print(";");
+            println();
+            indent(+1);
+            if (options.showDescriptors) {
+                println("descriptor: " + getValue(componentInfo.descriptor));
+            }
+            if (options.showAllAttrs) {
+                for (Attribute componentAttr: componentInfo.attributes)
+                    write(componentInfo, componentAttr, constant_pool);
+                println();
+            }
+            indent(-1);
         }
         indent(-1);
         return null;
+    }
+
+    String getValue(Descriptor d) {
+        try {
+            return d.getValue(constant_pool);
+        } catch (ConstantPoolException e) {
+            return report(e);
+        }
     }
 
     void writeList(String prefix, Collection<?> items, String suffix) {
