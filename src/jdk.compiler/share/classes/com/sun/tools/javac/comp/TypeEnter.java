@@ -1156,7 +1156,7 @@ public class TypeEnter implements Completer {
                     if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
                         log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
                     }
-                    if (implSym.type.asMethodType().thrown.stream().filter(exc -> !isUnchecked(exc)).findAny().isPresent()) {
+                    if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                         log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
                     }
                 }
@@ -1303,7 +1303,7 @@ public class TypeEnter implements Completer {
                     if (!canonicalInit.isPublic()) {
                         log.error(canonicalDecl, Errors.CanonicalConstructorMustBePublic);
                     }
-                    if (canonicalInit.type.asMethodType().thrown.stream().filter(exc -> !isUnchecked(exc)).findAny().isPresent()) {
+                    if (canonicalInit.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                         log.error(TreeInfo.declarationFor(canonicalInit, env.enclClass), Errors.MethodCantThrowCheckedException);
                     }
                     // let's use the RECORD flag to mark it as the canonical constructor
@@ -1432,6 +1432,9 @@ public class TypeEnter implements Completer {
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
                     // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
+                } else if (owner().isRecord()) {
+                    // record constructors are public
+                    flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
                 }

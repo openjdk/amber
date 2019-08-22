@@ -359,4 +359,13 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                    "    }\n" +
                    "}");
     }
+
+    public void testNestedRecords() {
+        String template =
+                "class R { \n" +
+                "    # record RR(int a) { }\n" +
+                "}";
+        for (String s : List.of("", "static", "private", "private static"))
+            assertOK(template, s);
+    }
 }
