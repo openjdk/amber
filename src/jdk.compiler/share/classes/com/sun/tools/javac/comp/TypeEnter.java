@@ -1058,9 +1058,6 @@ public class TypeEnter implements Completer {
             List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if (isRecord) {
-                checkForSerializationMembers(tree, env);
-            }
             List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
@@ -1211,54 +1208,6 @@ public class TypeEnter implements Completer {
                           null, //make.Block(0, Tree.emptyList.prepend(make.Return(make.Ident(names._null)))),
                           null);
             memberEnter.memberEnter(valueOf, env);
-        }
-
-        private void checkForSerializationMembers(JCClassDecl tree, Env<AttrContext> env) {
-            // non-static void writeObject(java.io.ObjectOutputStream) {}
-            MethodSymbol ms = lookupMethod(tree.sym, names.writeObject, List.of(syms.objectOutputStreamType));
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.writeObject, ms, syms.voidType, false);
-            }
-            // non-static Object writeReplace() {}
-            ms = lookupMethod(tree.sym, names.writeReplace, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.writeReplace, ms, syms.objectType, false);
-            }
-            // non-static Object readResolve() {}
-            ms = lookupMethod(tree.sym, names.readResolve, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readResolve, ms, syms.objectType, false);
-            }
-            // non-static void readObjectNoData() {}
-            ms = lookupMethod(tree.sym, names.readObjectNoData, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readObjectNoData, ms, syms.voidType, false);
-            }
-            // non-static void readObject(java.io.ObjectInputStream stream) {}
-            ms = lookupMethod(tree.sym, names.readObject, List.of(syms.objectInputStreamType));
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readObject, ms, syms.voidType, false);
-            }
-            Type objectStreamFieldArr = new ArrayType(syms.objectStreamFieldType, syms.arrayClass);
-            Symbol fieldSym = lookupField(tree.sym, names.serialPersistentFields, objectStreamFieldArr);
-            if (fieldSym != null) {
-                errorOnSerializationMember(tree, names.serialPersistentFields, fieldSym, objectStreamFieldArr, true);
-            }
-        }
-
-        private void errorOnSerializationMember(JCClassDecl tree,
-                                                Name name, Symbol sym, Type expectedType, boolean shouldBeStatic) {
-            Type typeOrReturnType = sym.kind == MTH ? sym.type.asMethodType().getReturnType() : sym.type;
-            if (sym.isStatic() == shouldBeStatic && (typeOrReturnType == expectedType || types.isSameType(typeOrReturnType, expectedType))) {
-                for (JCTree def : tree.defs) {
-                    Symbol sym2 = TreeInfo.symbolFor(def);
-                    if (sym2 == sym) {
-                        log.error(def, Errors.IllegalRecordMember(name));
-                        return;
-                    }
-                }
-                log.error(tree, Errors.IllegalRecordMember(name));
-            }
         }
 
         /** Add the implicit members for a record
