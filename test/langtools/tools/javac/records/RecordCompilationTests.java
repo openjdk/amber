@@ -142,6 +142,17 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                 + "    public String toString() { return null; }\n"
                 + "}";
         assertOK(template);
+
+        // now with varargs
+        template = "public record R(int i, int... j) {\n"
+                + "    public R(int i, int... j) { this.i = i; this.j = j; }\n"
+                + "    public int i() { return i; }\n"
+                + "    public int[] j() { return j; }\n"
+                + "    public boolean equals(Object o) { return true; }\n"
+                + "    public int hashCode() { return 0; }\n"
+                + "    public String toString() { return null; }\n"
+                + "}";
+        assertOK(template);
     }
 
     public void testBadComponentNames() {

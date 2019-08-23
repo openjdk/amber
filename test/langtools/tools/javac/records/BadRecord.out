@@ -1,13 +1,14 @@
 BadRecord.java:6:20: compiler.err.expected: '('
+BadRecord.java:6:21: compiler.err.illegal.start.of.type
 BadRecord.java:8:23: compiler.err.illegal.start.of.type
 BadRecord.java:10:25: compiler.err.expected: token.identifier
 BadRecord.java:12:25: compiler.err.expected: token.identifier
-BadRecord.java:14:26: compiler.err.expected: ')'
+BadRecord.java:14:26: compiler.err.expected3: ',', ')', '['
 BadRecord.java:16:28: compiler.err.illegal.start.of.type
 BadRecord.java:18:27: compiler.err.illegal.start.of.type
 BadRecord.java:20:31: compiler.err.expected: token.identifier
 BadRecord.java:22:31: compiler.err.expected: token.identifier
-BadRecord.java:24:33: compiler.err.expected: ')'
+BadRecord.java:24:33: compiler.err.expected3: ',', ')', '['
 BadRecord.java:26:35: compiler.err.illegal.start.of.type
 BadRecord.java:28:34: compiler.err.illegal.start.of.type
 BadRecord.java:30:20: compiler.err.expected: '('
@@ -15,14 +16,14 @@ BadRecord.java:32:21: compiler.err.illegal.start.of.type
 BadRecord.java:34:24: compiler.err.expected: token.identifier
 BadRecord.java:36:24: compiler.err.expected: token.identifier
 BadRecord.java:36:25: compiler.err.expected: '{'
-BadRecord.java:38:26: compiler.err.expected: ')'
+BadRecord.java:38:26: compiler.err.expected3: ',', ')', '['
 BadRecord.java:40:27: compiler.err.illegal.start.of.type
 BadRecord.java:42:27: compiler.err.illegal.start.of.type
 BadRecord.java:42:28: compiler.err.expected: '{'
 BadRecord.java:44:31: compiler.err.expected: token.identifier
 BadRecord.java:46:31: compiler.err.expected: token.identifier
 BadRecord.java:46:32: compiler.err.expected: '{'
-BadRecord.java:48:33: compiler.err.expected: ')'
+BadRecord.java:48:33: compiler.err.expected3: ',', ')', '['
 BadRecord.java:50:34: compiler.err.illegal.start.of.type
 BadRecord.java:52:34: compiler.err.illegal.start.of.type
 BadRecord.java:52:35: compiler.err.expected: '{'
@@ -33,4 +34,4 @@ BadRecord.java:62:21: compiler.err.record.cant.declare.field.modifiers
 BadRecord.java:64:21: compiler.err.record.cant.declare.field.modifiers
 BadRecord.java:71:16: compiler.err.record.fields.must.be.in.header
 BadRecord.java:72:2: compiler.err.premature.eof
-35 errors
+36 errors

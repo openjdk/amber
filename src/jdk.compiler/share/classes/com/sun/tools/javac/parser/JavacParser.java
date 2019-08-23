@@ -1785,7 +1785,7 @@ public class JavacParser implements Parser {
 
     JCExpression lambdaExpressionOrStatement(boolean hasParens, boolean explicitParams, int pos) {
         List<JCVariableDecl> params = explicitParams ?
-                formalParameters(true) :
+                formalParameters(true, false) :
                 implicitParameters(hasParens);
         if (explicitParams) {
             LambdaClassifier lambdaClassifier = new LambdaClassifier();
@@ -3345,10 +3345,10 @@ public class JavacParser implements Parser {
     /** VariableDeclaratorId = Ident BracketsOpt
      */
     JCVariableDecl variableDeclaratorId(JCModifiers mods, JCExpression type) {
-        return variableDeclaratorId(mods, type, false);
+        return variableDeclaratorId(mods, type, false, false);
     }
     //where
-    JCVariableDecl variableDeclaratorId(JCModifiers mods, JCExpression type, boolean lambdaParameter) {
+    JCVariableDecl variableDeclaratorId(JCModifiers mods, JCExpression type, boolean lambdaParameter, boolean recordComponent) {
         int pos = token.pos;
         Name name;
         if (lambdaParameter && token.kind == UNDERSCORE) {
@@ -3394,7 +3394,15 @@ public class JavacParser implements Parser {
             log.error(token.pos, Errors.VarargsAndOldArraySyntax);
         }
         type = bracketsOpt(type);
-        return toP(F.at(pos).VarDef(mods, name, type, null));
+        List<Pair<Accessors.Kind, Name>> accessors = null;
+        if (recordComponent) {
+            if (forbiddenRecordComponentNames.contains(name.toString())) {
+                log.error(pos, Errors.IllegalRecordComponentName(name));
+            }
+            accessors = List.of(new Pair<>(Accessors.Kind.GET, name));
+        }
+
+        return toP(F.at(pos).VarDef(mods, name, type, null, accessors));
     }
 
     /** Resources = Resource { ";" Resources }
@@ -3748,8 +3756,7 @@ public class JavacParser implements Parser {
 
         List<JCTypeParameter> typarams = typeParametersOpt();
 
-        List<JCVariableDecl> headerFields =
-                headerFields();
+        List<JCVariableDecl> headerFields = formalParameters(false, true);
 
         List<JCExpression> implementing = List.nil();
         if (token.kind == IMPLEMENTS) {
@@ -3776,14 +3783,21 @@ public class JavacParser implements Parser {
                     }
                     ListBuffer<JCVariableDecl> tmpParams = new ListBuffer<>();
                     for (JCVariableDecl param : fields) {
-                        tmpParams.add(F.at(param).VarDef(F.Modifiers(Flags.PARAMETER), param.name, param.vartype, null));
+                        tmpParams.add(F.at(param).VarDef(F.Modifiers(Flags.PARAMETER | param.mods.flags & Flags.VARARGS), param.name, param.vartype, null));
                     }
                     methDef.params = tmpParams.toList();
                 }
             }
         }
         for (int i = fields.size() - 1; i >= 0; i--) {
-            defs = defs.prepend(fields.get(i));
+            JCVariableDecl field = fields.get(i);
+            if ((field.mods.flags & Flags.VARARGS) != 0) {
+                if ((field.mods.flags & Flags.VARARGS) != 0) {
+                    JCModifiers newMods = F.Modifiers(field.mods.flags & ~Flags.VARARGS | Flags.ORIGINALLY_VARARGS);
+                    field = F.at(field).VarDef(newMods, field.name, field.vartype, null, field.accessors);
+                }
+            }
+            defs = defs.prepend(field);
         }
         JCClassDecl result = toP(F.at(pos).ClassDef(mods, name, typarams, null, implementing, defs));
         attach(result, dc);
@@ -4288,15 +4302,15 @@ public class JavacParser implements Parser {
      *  FormalParameterListNovarargs = [ FormalParameterListNovarargs , ] FormalParameter
      */
     List<JCVariableDecl> formalParameters() {
-        return formalParameters(false);
+        return formalParameters(false, false);
     }
-    List<JCVariableDecl> formalParameters(boolean lambdaParameters) {
+    List<JCVariableDecl> formalParameters(boolean lambdaParameters, boolean recordComponents) {
         ListBuffer<JCVariableDecl> params = new ListBuffer<>();
         JCVariableDecl lastParam;
         accept(LPAREN);
         if (token.kind != RPAREN) {
-            this.allowThisIdent = !lambdaParameters;
-            lastParam = formalParameter(lambdaParameters);
+            this.allowThisIdent = !lambdaParameters && !recordComponents;
+            lastParam = formalParameter(lambdaParameters, recordComponents);
             if (lastParam.nameexpr != null) {
                 this.receiverParam = lastParam;
             } else {
@@ -4308,7 +4322,7 @@ public class JavacParser implements Parser {
                     log.error(DiagnosticFlag.SYNTAX, lastParam, Errors.VarargsMustBeLast);
                 }
                 nextToken();
-                params.append(lastParam = formalParameter(lambdaParameters));
+                params.append(lastParam = formalParameter(lambdaParameters, recordComponents));
             }
         }
         if (token.kind == RPAREN) {
@@ -4420,10 +4434,17 @@ public class JavacParser implements Parser {
      *  LastFormalParameter = { FINAL | '@' Annotation } Type '...' Ident | FormalParameter
      */
     protected JCVariableDecl formalParameter() {
-        return formalParameter(false);
+        return formalParameter(false, false);
     }
-    protected JCVariableDecl formalParameter(boolean lambdaParameter) {
-        JCModifiers mods = optFinal(Flags.PARAMETER);
+
+    protected JCVariableDecl formalParameter(boolean lambdaParameter, boolean recordComponent) {
+        JCModifiers mods = !recordComponent ? optFinal(Flags.PARAMETER) : modifiersOpt();
+        if (recordComponent && mods.flags != 0) {
+            log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
+        }
+        if (recordComponent) {
+            mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE | Flags.MANDATED;
+        }
         // need to distinguish between vararg annos and array annos
         // look at typeAnnotationsPushedBack comment
         this.permitTypeAnnotationsPushBack = true;
@@ -4444,12 +4465,12 @@ public class JavacParser implements Parser {
             }
             typeAnnotationsPushedBack = List.nil();
         }
-        return variableDeclaratorId(mods, type, lambdaParameter);
+        return variableDeclaratorId(mods, type, lambdaParameter, recordComponent);
     }
 
     protected JCVariableDecl implicitParameter() {
         JCModifiers mods = F.at(token.pos).Modifiers(Flags.PARAMETER);
-        return variableDeclaratorId(mods, null, true);
+        return variableDeclaratorId(mods, null, true, false);
     }
 
 /* ---------- auxiliary methods -------------- */

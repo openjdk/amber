@@ -1371,7 +1371,14 @@ public class TypeEnter implements Completer {
                     memberEnter.memberEnter(readResolve, env);
                 }
             }
+            // lets remove a temporary flag used to mark if the record component was initially declared as a varargs
+            List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
+            for (JCVariableDecl field: recordFields) {
+                field.mods.flags &= ~Flags.ORIGINALLY_VARARGS;
+                field.sym.flags_field &= ~Flags.ORIGINALLY_VARARGS;
+            }
         }
+
     }
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
@@ -1551,7 +1558,7 @@ public class TypeEnter implements Completer {
             MethodSymbol csym = super.constructorSymbol();
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
-                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD, p.name, p.type, csym));
+                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.ORIGINALLY_VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;
