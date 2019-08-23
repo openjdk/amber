@@ -30,17 +30,12 @@
  *          jdk.compiler/com.sun.tools.javac.code
  *          jdk.compiler/com.sun.tools.javac.file
  *          jdk.compiler/com.sun.tools.javac.util
- * @ignore
- */
-
-/*
-  this test is failing with a message saying that: Field "i" in class RecordFieldsTest has illegal signature "Ljava/util/List<Ljava/lang/String;>;"
  */
 
 import java.lang.reflect.*;
 import java.util.*;
 
-//import com.sun.tools.javac.util.Assert;
+import com.sun.tools.javac.util.Assert;
 
 public record RecordFieldsTest(List<String> i) {
 
@@ -50,7 +45,7 @@ public record RecordFieldsTest(List<String> i) {
         Field[] fields = classOfRecord.getDeclaredFields();
         for (Field f: fields) {
             System.out.println("field " + f.toString());
-            //Assert.check(Modifier.isPrivate(f.getModifiers()));
+            Assert.check(Modifier.isPrivate(f.getModifiers()));
             System.out.println("type: " + f.getType());
             System.out.println("signature: " + f.toGenericString());
         }
