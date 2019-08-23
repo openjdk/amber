@@ -242,7 +242,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                         "    private int x() { return 0; };" +
                         "}");
 
-        // @@@ Error: should fail, but doesn't
         assertFail("compiler.err.method.cant.throw.checked.exception",
                    "public record R(int x) {\n" +
                    "    public int x() throws Exception { return 0; };" +
@@ -257,19 +256,24 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testConstructorRedeclaration() {
-        for (String goodCtor : List.of("public R(int x) { this(x, 0); }",
+        for (String goodCtor : List.of(
+                "public R(int x) { this(x, 0); }",
                 "public R(int x, int y) { this.x = x; this.y = y; }",
                 "public R { }",
                 "public R { x = 0; }"))
             assertOK("record R(int x, int y) { # }", goodCtor);
+
+        assertOK("import java.util.*; record R(String x, String y) {  public R { Objects.requireNonNull(x); Objects.requireNonNull(y); } }");
 
         // Not OK to redeclare canonical without DA
         assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x, int y) { # }",
                    "public R(int x, int y) { this.x = x; }");
 
         // canonical ctor must be public
-        assertFail("compiler.err.canonical.constructor.must.be.public", "record R(int x, int y) { # }",
-                   "R(int x, int y) { this.x = x; this.y = y; }");
+        for (String s : List.of("", "protected", "private"))
+            assertFail("compiler.err.canonical.constructor.must.be.public", "record R(int x, int y) { # }",
+                       "# R(int x, int y) { this.x = x; this.y = y; }",
+                       s);
 
         // ctor args must match types
         assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
@@ -315,7 +319,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertOK(imports + A_ALL + "record R(@A int x) { }");
         assertOK(imports + A_NONE);
 
-        // @@@ Should also fail for TYPE_PARAMETER
         for (ElementType e : badSet) {
             assertFail("compiler.err.annotation.type.not.applicable", imports + annotations.get(e) + "record R(@A int x) { }");
         }
@@ -326,7 +329,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     }
 
     public void testIllegalSerializationMembers() {
-        // @@@ Should fail
         String template = "record R(int x) { # }";
         for (String s : List.of("private static final java.io.ObjectStreamField[] serialPersistentFields = {};",
                                 "private void writeObject(java.io.ObjectOutputStream stream) { }",
@@ -335,6 +337,25 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                                 "private void readObject(java.io.ObjectInputStream stream) { }",
                                 "private void readObjectNoData() { }"))
             assertFail("compiler.err.illegal.record.member", template, s);
+    }
+
+    public void testNestedRecords() {
+        String template = "class R { \n" +
+                          "    # record RR(int a) { }\n" +
+                          "}";
+        for (String s : List.of("", "static", "final",
+                                "private", "public", "protected",
+                                "private static", "public static", "private static final"))
+            assertOK(template, s);
+    }
+
+    public void testDuplicatedMember() {
+        String template
+                = "    record R(int i) {\n" +
+                  "        public int i() { return i; }\n" +
+                  "        public int i() { return i; }\n" +
+                  "    }";
+        assertFail("compiler.err.already.defined", template);
     }
 
     public void testLocalRecords() {
@@ -358,14 +379,5 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                    "        record R(int x) { };\n" +
                    "    }\n" +
                    "}");
-    }
-
-    public void testNestedRecords() {
-        String template =
-                "class R { \n" +
-                "    # record RR(int a) { }\n" +
-                "}";
-        for (String s : List.of("", "static", "private", "private static"))
-            assertOK(template, s);
     }
 }

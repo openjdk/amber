@@ -36,16 +36,13 @@
  * @run main CheckRecordMembers
  */
 
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javax.tools.JavaFileObject;
 
@@ -55,23 +52,35 @@ import combo.ComboTask;
 public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> {
 
     enum FieldTypeKind implements combo.ComboParameter {
-        BYTE("byte", byte.class),
-        SHORT("short", short.class),
-        CHAR("char", char.class),
-        INT("int", int.class),
-        LONG("long", long.class),
-        FLOAT("float", float.class),
-        DOUBLE("double", double.class),
-        BOOLEAN("boolean", boolean.class),
-        OBJECT("Object", Object.class),
-        STRING("String", String.class);
+        BYTE("byte", byte.class,
+             List.of(Byte.MIN_VALUE, (byte) -4, (byte) -1, (byte) 0, (byte) 1, (byte) 4, Byte.MAX_VALUE)),
+        SHORT("short", short.class,
+              List.of(Short.MIN_VALUE, (short) -4, (short) -1, (short) 0, (short) 1, (short) 4, Short.MAX_VALUE)),
+        CHAR("char", char.class,
+             List.of(Character.MIN_VALUE, 'a', 'A', 'z', (char) 0, Character.MAX_VALUE)),
+        INT("int", int.class,
+            List.of(Integer.MIN_VALUE, (int) -4, (int) -1, (int) 0, (int) 1, (int) 4, Integer.MAX_VALUE)),
+        LONG("long", long.class,
+             List.of(Long.MIN_VALUE, (long) -4, (long) -1, (long) 0, (long) 1, (long) 4, Long.MAX_VALUE)),
+        FLOAT("float", float.class,
+              List.of(Float.MIN_VALUE, Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 0.0f, -0.0f, 1.0f, -1.0f, 2.0f, -2.0f, Float.MAX_VALUE)),
+        DOUBLE("double", double.class,
+               List.of(Double.MIN_VALUE, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0d, -0.0d, 1.0d, -1.0d, 2.0d, -2.0d, Double.MAX_VALUE)),
+        BOOLEAN("boolean", boolean.class,
+                List.of(true, false)),
+        OBJECT("Object", Object.class,
+               Arrays.asList(null, 3, "foo", new String[] {"a"})),
+        STRING("String", String.class,
+               Arrays.asList(null, "", "foo", "bar"));
 
-        String retTypeStr;
-        Class<?> clazz;
+        final String retTypeStr;
+        final Class<?> clazz;
+        final List<Object> dataValues;
 
-        FieldTypeKind(String retTypeStr, Class<?> clazz) {
+        FieldTypeKind(String retTypeStr, Class<?> clazz, List<Object> values) {
             this.retTypeStr = retTypeStr;
             this.clazz = clazz;
+            dataValues = values;
         }
 
         public String expand(String optParameter) {
@@ -79,32 +88,17 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
         }
     }
 
-    static final Map<FieldTypeKind, List<Object>> dataValues
-            = Map.ofEntries(
-            Map.entry(FieldTypeKind.BYTE, List.of(Byte.MIN_VALUE, (byte) -4, (byte) -1, (byte) 0, (byte) 1, (byte) 4, Byte.MAX_VALUE)),
-            Map.entry(FieldTypeKind.SHORT, List.of(Short.MIN_VALUE, (short) -4, (short) -1, (short) 0, (short) 1, (short) 4, Short.MAX_VALUE)),
-            Map.entry(FieldTypeKind.CHAR, List.of(Character.MIN_VALUE, 'a', 'A', 'z', (char) 0, Character.MAX_VALUE)),
-            Map.entry(FieldTypeKind.INT, List.of(Integer.MIN_VALUE, (int) -4, (int) -1, (int) 0, (int) 1, (int) 4, Integer.MAX_VALUE)),
-            Map.entry(FieldTypeKind.LONG, List.of(Long.MIN_VALUE, (long) -4, (long) -1, (long) 0, (long) 1, (long) 4, Long.MAX_VALUE)),
-            Map.entry(FieldTypeKind.FLOAT, List.of(Float.MIN_VALUE, Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, 0.0f, -0.0f, 1.0f, -1.0f, 2.0f, -2.0f, Float.MAX_VALUE)),
-            Map.entry(FieldTypeKind.DOUBLE, List.of(Double.MIN_VALUE, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0d, -0.0d, 1.0d, -1.0d, 2.0d, -2.0d, Double.MAX_VALUE)),
-            Map.entry(FieldTypeKind.BOOLEAN, List.of(true, false)),
-            Map.entry(FieldTypeKind.OBJECT, Arrays.asList(null, 3, "foo", new String[] {"a"})),
-            Map.entry(FieldTypeKind.STRING, Arrays.asList(null, "", "foo", "bar"))
-    );
-
     static final String sourceTemplate =
-            "public record Data(#{FT[0]} f0, #{FT[1]} f1) { }";
+            "public record Data(#{FT0} f0, #{FT1} f1) { }";
 
     public static void main(String... args) throws Exception {
         new combo.ComboTestHelper<CheckRecordMembers>()
-                .withArrayDimension("FT", (x, t, index) -> {
-                    x.fieldType[index] = t;
-                }, 2, FieldTypeKind.values())
+                .withDimension("FT0", (x, t) -> { x.ft0 = t; }, FieldTypeKind.values())
+                .withDimension("FT1", (x, t) -> { x.ft1 = t; }, FieldTypeKind.values())
                 .run(CheckRecordMembers::new);
     }
 
-    FieldTypeKind[] fieldType = new FieldTypeKind[2];
+    FieldTypeKind ft0, ft1;
 
     @Override
     public void doWork() throws Throwable {
@@ -117,8 +111,8 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
         if (result.hasErrors() || result.hasWarnings())
             fail("Compilation errors not expected: " + result.compilationInfo());
 
-        List<Object> f0s = dataValues.get(fieldType[0]);
-        List<Object> f1s = dataValues.get(fieldType[1]);
+        List<Object> f0s = ft0.dataValues;
+        List<Object> f1s = ft1.dataValues;
 
         Iterable<? extends PathFileObject> pfoIt = (Iterable<? extends PathFileObject>) result.get();
         PathFileObject pfo = pfoIt.iterator().next();
@@ -132,7 +126,7 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
             ClassLoader cl = new URLClassLoader(urls);
             clazz = cl.loadClass("Data");
 
-            ctor = clazz.getConstructor(fieldType[0].clazz, fieldType[1].clazz);
+            ctor = clazz.getConstructor(ft0.clazz, ft1.clazz);
             getterF0 = clazz.getMethod("f0");
             getterF1 = clazz.getMethod("f1");
             fieldF0 = clazz.getDeclaredField("f0");
@@ -141,10 +135,10 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
             hashCodeMethod = clazz.getMethod("hashCode");
             toStringMethod = clazz.getMethod("toString");
 
-            if (getterF0.getReturnType() != fieldType[0].clazz
-                || getterF1.getReturnType() != fieldType[1].clazz
-                || fieldF0.getType() != fieldType[0].clazz
-                || fieldF1.getType() != fieldType[1].clazz)
+            if (getterF0.getReturnType() != ft0.clazz
+                || getterF1.getReturnType() != ft1.clazz
+                || fieldF0.getType() != ft0.clazz
+                || fieldF1.getType() != ft1.clazz)
                 fail("Unexpected field or getter type: " + result.compilationInfo());
 
             for (Object f0 : f0s) {
@@ -157,8 +151,8 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
                     Object actualF1 = getterF1.invoke(datum);
                     if (!Objects.equals(f0, actualF0) || !Objects.equals(f1, actualF1))
                         fail(String.format("Getters don't report back right values for %s %s/%s, %s %s/%s",
-                                           fieldType[0].clazz, f0, actualF0,
-                                           fieldType[1].clazz, f1, actualF1));
+                                           ft0.clazz, f0, actualF0,
+                                           ft1.clazz, f1, actualF1));
 
                     int hashCode = (int) hashCodeMethod.invoke(datum);
                     int expectedHash = Objects.hash(f0, f1);
@@ -183,26 +177,26 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
                             boolean isEqualReverse = (boolean) equalsMethod.invoke(other, datum);
                             boolean f0f2Equal = Objects.equals(f0, f2);
                             boolean f1f3Equal = Objects.equals(f1, f3);
-                            if (fieldType[0] == FieldTypeKind.FLOAT) {
+                            if (ft0 == FieldTypeKind.FLOAT) {
                                 f0f2Equal = Float.compare((float)f0, (float)f2) == 0;
-                            } else if (fieldType[0] == FieldTypeKind.DOUBLE) {
+                            } else if (ft0 == FieldTypeKind.DOUBLE) {
                                 f0f2Equal = Double.compare((double)f0, (double)f2) == 0;
                             }
-                            if (fieldType[1] == FieldTypeKind.FLOAT) {
+                            if (ft1 == FieldTypeKind.FLOAT) {
                                 f1f3Equal = Float.compare((float)f1, (float)f3) == 0;
-                            } else if (fieldType[1] == FieldTypeKind.DOUBLE) {
+                            } else if (ft1 == FieldTypeKind.DOUBLE) {
                                 f1f3Equal = Double.compare((double)f1, (double)f3) == 0;
                             }
                             boolean shouldEqual = f0f2Equal && f1f3Equal;
                             // @@@ fail
                             if (shouldEqual != isEqual)
                                 System.err.println(String.format("Equals not as expected: %s %s/%s, %s %s/%s",
-                                                   fieldType[0].clazz, f0, f2,
-                                                   fieldType[1].clazz, f1, f3));
+                                                   ft0.clazz, f0, f2,
+                                                   ft1.clazz, f1, f3));
                             if (isEqualReverse != isEqual)
                                 fail(String.format("Equals not symmetric: %s %s/%s, %s %s/%s",
-                                                   fieldType[0].clazz, f0, f2,
-                                                   fieldType[1].clazz, f1, f3));
+                                                   ft0.clazz, f0, f2,
+                                                   ft1.clazz, f1, f3));
 
                         }
                     }
