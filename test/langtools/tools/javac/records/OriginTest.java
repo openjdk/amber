@@ -109,7 +109,6 @@ public class OriginTest {
                 ElementScanner9<Void, Void> scanner = new ElementScanner9<>() {
                     public Void visitExecutable(ExecutableElement ee, Void p) {
                         Elements.Origin o = elements.getOrigin(ee);
-                        System.err.println("  Executable " + o + " " + ee);
                         if (o != expectedOrigin) {
                             error("Unexpected origin " + o + " for " + ee);
                         }
