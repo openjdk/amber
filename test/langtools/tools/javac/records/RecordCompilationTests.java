@@ -52,9 +52,12 @@ import static org.testng.Assert.assertEquals;
 @Test
 public class RecordCompilationTests extends JavacTemplateTestBase {
 
-    private static final List<String> BAD_COMPONENT_NAMES
-            = List.of("hashCode", "toString", "getClass",
-            "readObjectNoData", "readResolve", "writeReplace", "serialPersistentFields");
+    private static final List<String> BAD_COMPONENT_NAMES = List.of(
+            "clone", "finalize", "getClass", "hashCode",
+            "notify", "notifyAll", "readObjectNoData",
+            "readResolve", "serialPersistentFields",
+            "serialVersionUID", "toString", "wait",
+            "writeReplace");
 
     // @@@ When records become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
