@@ -508,6 +508,7 @@ InstanceKlass::InstanceKlass(const ClassFileParser& parser, unsigned kind, Klass
   _nest_host_index(0),
   _nest_host(NULL),
   _permitted_subtypes(NULL),
+  _record_components(NULL),
   _static_field_size(parser.static_field_size()),
   _nonstatic_oop_map_size(nonstatic_oop_map_size(parser.total_oop_map_count())),
   _itable_len(parser.itable_size()),
@@ -570,6 +571,18 @@ void InstanceKlass::deallocate_interfaces(ClassLoaderData* loader_data,
   }
 }
 
+void InstanceKlass::deallocate_record_components(ClassLoaderData* loader_data,
+                                                 Array<RecordComponent*>* record_components) {
+  if (record_components != NULL && !record_components->is_shared()) {
+    for (int i = 0; i < record_components->length(); i++) {
+      RecordComponent* record_component = record_components->at(i);
+      if (record_component == NULL) continue;  // maybe null if error processing
+      MetadataFactory::free_metadata(loader_data, record_component);
+    }
+    MetadataFactory::free_array<RecordComponent*>(loader_data, record_components);
+  }
+}
+
 // This function deallocates the metadata and C heap pointers that the
 // InstanceKlass points to.
 void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
@@ -597,6 +610,9 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
 
   deallocate_methods(loader_data, methods());
   set_methods(NULL);
+
+  deallocate_record_components(loader_data, record_components());
+  set_record_components(NULL);
 
   if (method_ordering() != NULL &&
       method_ordering() != Universe::the_empty_int_array() &&
@@ -669,12 +685,6 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
     MetadataFactory::free_array<jushort>(loader_data, nest_members());
   }
   set_nest_members(NULL);
-
-  if (record_params() != NULL &&
-      record_params() != Universe::the_empty_short_array()) {
-    MetadataFactory::free_array<jushort>(loader_data, record_params());
-  }
-  set_record_params(NULL, 0);
 
   if (permitted_subtypes() != NULL &&
       permitted_subtypes() != Universe::the_empty_short_array() &&
@@ -2406,8 +2416,8 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   }
 
   it->push(&_nest_members);
-  it->push(&_record_params);
   it->push(&_permitted_subtypes);
+  it->push(&_record_components);
 }
 
 void InstanceKlass::remove_unshareable_info() {
@@ -3324,6 +3334,8 @@ void InstanceKlass::print_on(outputStream* st) const {
   st->print(BULLET"inner classes:     "); inner_classes()->print_value_on(st);     st->cr();
   st->print(BULLET"nest members:     "); nest_members()->print_value_on(st);     st->cr();
   st->print(BULLET"permitted subtypes:     "); permitted_subtypes()->print_value_on(st);     st->cr();
+  // TBD - need to check for NULL?
+  st->print(BULLET"record components:     "); record_components()->print_value_on(st);     st->cr();
   if (java_mirror() != NULL) {
     st->print(BULLET"java mirror:       ");
     java_mirror()->print_value_on(st);
@@ -3587,6 +3599,7 @@ void InstanceKlass::collect_statistics(KlassSizeStats *sz) const {
   n += (sz->_inner_classes_bytes         = sz->count_array(inner_classes()));
   n += (sz->_nest_members_bytes          = sz->count_array(nest_members()));
   n += (sz->_permitted_subtypes_bytes    = sz->count_array(permitted_subtypes()));
+  n += (sz->_record_components_bytes     = sz->count_array(record_components()));
   sz->_ro_bytes += n;
 
   const ConstantPool* cp = constants();
@@ -3609,6 +3622,17 @@ void InstanceKlass::collect_statistics(KlassSizeStats *sz) const {
       }
     }
   }
+
+  const Array<RecordComponent*>* components = record_components();
+  if (components != NULL) {
+    for (int i = 0; i < components->length(); i++) {
+      RecordComponent* component = components->at(i);
+      if (component) {
+        component->collect_statistics(sz);
+      }
+    }
+  }
+
 }
 #endif // INCLUDE_SERVICES
 

@@ -28,6 +28,7 @@
 #include "memory/referenceType.hpp"
 #include "oops/annotations.hpp"
 #include "oops/constantPool.hpp"
+#include "oops/recordComponent.hpp"
 #include "oops/typeArrayOop.hpp"
 #include "utilities/accessFlags.hpp"
 
@@ -98,8 +99,8 @@ class ClassFileParser {
   Array<u2>* _inner_classes;
   Array<u2>* _nest_members;
   u2 _nest_host;
-  Array<u2>* _record_params;
   Array<u2>* _permitted_subtypes;
+  Array<RecordComponent*>* _record_components;
   Array<InstanceKlass*>* _local_interfaces;
   Array<InstanceKlass*>* _transitive_interfaces;
   Annotations* _combined_annotations;
@@ -154,7 +155,6 @@ class ClassFileParser {
   u2 _super_class_index;
   u2 _itfs_len;
   u2 _java_fields_count;
-  int _record_params_count;
 
   bool _need_verify;
   bool _relax_verify;
@@ -190,7 +190,7 @@ class ClassFileParser {
 
   void create_combined_annotations(TRAPS);
   void apply_parsed_class_attributes(InstanceKlass* k);  // update k
-  void apply_parsed_class_metadata(InstanceKlass* k, int fields_count, int record_params_count, TRAPS);
+  void apply_parsed_class_metadata(InstanceKlass* k, int fields_count, TRAPS);
   void clear_class_metadata();
 
   // Constant pool parsing
@@ -294,12 +294,14 @@ class ClassFileParser {
                                             const u1* const permitted_subtypes_attribute_start,
                                             TRAPS);
 
-  void parse_classfile_record_attribute(const ClassFileStream* const cfs,
-                                        const u1* const record_attribute_start,
-                                        ConstantPool* cp,
-                                        int* const record_params_count_ptr,
-                                        TRAPS);
+  u2 parse_classfile_record_attribute(const ClassFileStream* const cfs,
+                                      const ConstantPool* cp,
+                                      const u1* const record_attribute_start,
+                                      TRAPS);
+
+  // TBD: do these need to be in header file?
   bool supports_sealed_types();
+  bool supports_records();
 
   void parse_classfile_attributes(const ClassFileStream* const cfs,
                                   ConstantPool* cp,
