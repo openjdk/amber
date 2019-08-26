@@ -295,6 +295,11 @@ bool VM_RedefineClasses::is_modifiable_class(oop klass_mirror) {
   if (InstanceKlass::cast(k)->is_unsafe_anonymous()) {
     return false;
   }
+
+  // Cannot redefine or retransform a record.
+  if (InstanceKlass::cast(k)->is_record()) {
+    return false;
+  }
   return true;
 }
 

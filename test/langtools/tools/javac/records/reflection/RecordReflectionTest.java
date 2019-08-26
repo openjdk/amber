@@ -25,7 +25,6 @@
  * @test
  * @summary reflection test for records
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @ignore Temporarily disabled, waiting for VM support
  */
 
 import java.lang.reflect.*;

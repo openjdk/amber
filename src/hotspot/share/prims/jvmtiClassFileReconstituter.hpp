@@ -119,6 +119,7 @@ class JvmtiClassFileReconstituter : public JvmtiConstantPoolReconstituter {
   void write_nest_host_attribute();
   void write_nest_members_attribute();
   void write_permitted_subtypes_attribute();
+  void write_record_attribute();
 
   address writeable_address(size_t size);
   void write_u1(u1 x);

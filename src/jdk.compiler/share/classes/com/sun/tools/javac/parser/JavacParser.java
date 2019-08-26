@@ -3838,8 +3838,12 @@ public class JavacParser implements Parser {
         return fields.toList();
     }
 
-    static final Set<String> forbiddenRecordComponentNames = Set.of("toString", "hashCode", "getClass",
-            "readObjectNoData", "readResolve", "writeReplace", "serialPersistentFields");
+    static final Set<String> forbiddenRecordComponentNames = Set.of(
+            "clone", "finalize", "getClass", "hashCode",
+            "notify", "notifyAll", "readObjectNoData",
+            "readResolve", "serialPersistentFields",
+            "serialVersionUID", "toString", "wait",
+            "writeReplace");
 
     JCVariableDecl headerField() {
         JCModifiers mods = modifiersOpt();
