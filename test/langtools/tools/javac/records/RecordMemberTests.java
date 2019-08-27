@@ -38,6 +38,7 @@ import static org.testng.Assert.*;
  * RecordMemberTests
  *
  * @test
+ * @compile -XDallowStaticMembersInInners RecordMemberTests.java
  * @run testng RecordMemberTests
  */
 @Test
@@ -139,14 +140,13 @@ public class RecordMemberTests {
         assertEquals(o.sf(), "instance");
     }
 
-    // @@@ Fails with error message about invalid static members
-//    class InstanceNestedRecordHelper {
-//        record R(int x) { }
-//    }
-//
-//    public void testNestedRecordsStatic() {
-//        assertTrue((InstanceNestedRecordHelper.R.class.getModifiers() & Modifier.STATIC) != 0);
-//    }
+    class InstanceNestedRecordHelper {
+        record R(int x) { }
+    }
+
+    public void testNestedRecordsStatic() {
+        assertTrue((InstanceNestedRecordHelper.R.class.getModifiers() & Modifier.STATIC) != 0);
+    }
 
     class LocalRecordHelper {
         Class<?> m(int x) {
@@ -170,10 +170,10 @@ public class RecordMemberTests {
             record R2(int x) { }
         }
 
-//        Runnable r = new Runnable() {
-//            record R3(int x) { }
-//            public void run() { }
-//        };
+        Runnable r = new Runnable() {
+            record R3(int x) { }
+            public void run() { }
+        };
 
         Class<?> m() {
             record R4(int x) { }
@@ -202,7 +202,7 @@ public class RecordMemberTests {
         }
     }
 
-    public void testNestedRecordsStatic() {
+    public void testNestedRecordsStatic2() {
         NestedRecordHelper n = new NestedRecordHelper();
         for (Class<?> c : List.of(NestedRecordHelper.R1.class,
                                   NestedRecordHelper.Nested.R2.class,
@@ -216,4 +216,3 @@ public class RecordMemberTests {
         }
     }
 }
-
