@@ -23,6 +23,13 @@
  * questions.
  */
 
+/**
+ * RecordMemberTests
+ *
+ * @test
+ * @run testng RecordMemberTests
+ */
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -34,13 +41,6 @@ import java.util.function.Supplier;
 import org.testng.annotations.*;
 import static org.testng.Assert.*;
 
-/**
- * RecordMemberTests
- *
- * @test
- * @compile -XDallowStaticMembersInInners RecordMemberTests.java
- * @run testng RecordMemberTests
- */
 @Test
 public class RecordMemberTests {
     record R1(int i, int j) {}
@@ -140,14 +140,6 @@ public class RecordMemberTests {
         assertEquals(o.sf(), "instance");
     }
 
-    class InstanceNestedRecordHelper {
-        record R(int x) { }
-    }
-
-    public void testNestedRecordsStatic() {
-        assertTrue((InstanceNestedRecordHelper.R.class.getModifiers() & Modifier.STATIC) != 0);
-    }
-
     class LocalRecordHelper {
         Class<?> m(int x) {
             record R (int x) { }
@@ -169,11 +161,6 @@ public class RecordMemberTests {
         static class Nested {
             record R2(int x) { }
         }
-
-        Runnable r = new Runnable() {
-            record R3(int x) { }
-            public void run() { }
-        };
 
         Class<?> m() {
             record R4(int x) { }
@@ -202,7 +189,7 @@ public class RecordMemberTests {
         }
     }
 
-    public void testNestedRecordsStatic2() {
+    public void testNestedRecordsStatic() {
         NestedRecordHelper n = new NestedRecordHelper();
         for (Class<?> c : List.of(NestedRecordHelper.R1.class,
                                   NestedRecordHelper.Nested.R2.class,
