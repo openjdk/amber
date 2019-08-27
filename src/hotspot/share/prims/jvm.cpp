@@ -1676,7 +1676,7 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass)
       JvmtiVMObjectAllocEventCollector oam;
       constantPoolHandle cp(THREAD, ik->constants());
       int length = components->length();
-      assert(length != 0, "unexpected record_components length");
+      assert(length >= 0, "unexpected record_components length");
       objArrayOop name_strings = oopFactory::new_objArray(SystemDictionary::String_klass(),
                                                           length, CHECK_NULL);
       objArrayHandle name_strings_h (THREAD, name_strings);
