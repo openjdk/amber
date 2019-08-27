@@ -63,6 +63,8 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
             Integer.toString(Runtime.version().feature())};
 
+    // -- test framework code --
+
     @AfterMethod
     public void dumpTemplateIfError(ITestResult result) {
         // Make sure offending template ends up in log file on failure
@@ -123,6 +125,7 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
             assertFail("compiler.err.restricted.type.not.allowed.here", "record R(# x) { }", s);
         for (String s : List.of("public", "private", "volatile", "final"))
             assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(# String foo) { }", s);
+        assertFail("compiler.err.varargs.must.be.last", "record R(int... x, int... y) {}");
     }
 
     public void testGoodDeclarations() {
@@ -131,6 +134,8 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertOK("record R() implements java.io.Serializable, Runnable { public void run() { } }");
         assertOK("record R(int x) { }");
         assertOK("record R(int x, int y) { }");
+        assertOK("record R(int... xs) { }");
+        assertOK("record R(String... ss) { }");
         assertOK("@Deprecated record R(int x, int y) { }");
         assertOK("record R(@Deprecated int x, int y) { }");
         assertOK("record R<T>(T x, T y) { }");
@@ -140,17 +145,6 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         String template = "public record R(int x) {\n"
                 + "    public R(int x) { this.x = x; }\n"
                 + "    public int x() { return x; }\n"
-                + "    public boolean equals(Object o) { return true; }\n"
-                + "    public int hashCode() { return 0; }\n"
-                + "    public String toString() { return null; }\n"
-                + "}";
-        assertOK(template);
-
-        // now with varargs
-        template = "public record R(int i, int... j) {\n"
-                + "    public R(int i, int... j) { this.i = i; this.j = j; }\n"
-                + "    public int i() { return i; }\n"
-                + "    public int[] j() { return j; }\n"
                 + "    public boolean equals(Object o) { return true; }\n"
                 + "    public int hashCode() { return 0; }\n"
                 + "    public String toString() { return null; }\n"
@@ -282,6 +276,11 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         // Not OK to redeclare canonical without DA
         assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x, int y) { # }",
                    "public R(int x, int y) { this.x = x; }");
+
+        // Not OK to rearrange or change names
+        for (String s : List.of("public R(int y, int x) { this.x = x; this.y = y; }",
+                                "public R(int _x, int _y) { this.x = _x; this.y = _y; }"))
+            assertFail("compiler.err.canonical.with.name.mismatch", "record R(int x, int y) { # }", s);
 
         // canonical ctor must be public
         for (String s : List.of("", "protected", "private"))
