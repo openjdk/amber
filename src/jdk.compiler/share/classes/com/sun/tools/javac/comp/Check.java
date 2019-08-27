@@ -95,6 +95,7 @@ public class Check {
     private final Profile profile;
     private final boolean warnOnAnyAccessToMembers;
     private final boolean debug;
+    private final boolean allowStaticMembersInInners;
 
     // The set of lint options currently in effect. It is initialized
     // from the context, and then is set/reset as needed by Attr as it
@@ -135,6 +136,7 @@ public class Check {
         source = Source.instance(context);
         target = Target.instance(context);
         warnOnAnyAccessToMembers = options.isSet("warnOnAccessToMembers");
+        allowStaticMembersInInners = options.isSet("allowStaticMembersInInners");
 
         Target target = Target.instance(context);
         syntheticNameChar = target.syntheticNameChar();
@@ -1190,7 +1192,7 @@ public class Check {
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0) {
+                else if ((flags & ENUM) != 0 && !allowStaticMembersInInners) {
                     log.error(pos, Errors.EnumsMustBeStatic);
                 }
                 // Nested interfaces and enums are always STATIC (Spec ???)
