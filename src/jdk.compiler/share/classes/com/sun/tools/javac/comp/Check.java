@@ -1190,7 +1190,8 @@ public class Check {
             } else if (sym.owner.kind == TYP) {
                 mask = (flags & RECORD) != 0 ? ExtendedMemberRecordClassFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
-                    (sym.owner.flags_field & STATIC) != 0)
+                    (sym.owner.flags_field & STATIC) != 0 ||
+                    allowStaticMembersInInners)
                     mask |= STATIC;
                 else if ((flags & ENUM) != 0 && !allowStaticMembersInInners) {
                     log.error(pos, Errors.EnumsMustBeStatic);
