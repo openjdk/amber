@@ -68,9 +68,13 @@ public class StaticMembersInInnerClassesTest {
         enum E { A, B }
 
         E e;
+
+        static class StaticNested {
+            String bar() { return "bar"; }
+        }
     }
 
-    public void testNestedRecordsStatic() {
+    public void testNestedStaticMembers() {
         assertTrue((InstanceNestedHelper.R.class.getModifiers() & Modifier.STATIC) != 0);
         InstanceNestedHelper inner = new InstanceNestedHelper(1);
         assertTrue(inner.x() == 1);
@@ -79,6 +83,7 @@ public class StaticMembersInInnerClassesTest {
         assertTrue(inner.foo().equals("foo"));
         assertTrue(InstanceNestedHelper.E.A.toString().equals("A"));
         assertTrue(inner.e.toString().equals("B"));
+        assertTrue(new InstanceNestedHelper.StaticNested().bar().toString().equals("bar"));
     }
 
     Runnable r = new Runnable() {
