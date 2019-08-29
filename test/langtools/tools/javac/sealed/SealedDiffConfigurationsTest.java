@@ -55,6 +55,7 @@ import static com.sun.tools.classfile.ConstantPool.*;
 
 public class SealedDiffConfigurationsTest extends TestRunner {
     ToolBox tb;
+    private final static String JDK_VERSION = Integer.toString(Runtime.version().feature());
 
     SealedDiffConfigurationsTest() {
         super(System.err);
@@ -92,6 +93,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         new JavacTask(tb)
                 .outdir(out)
+                .options("--enable-preview", "-source", JDK_VERSION)
                 .files(findJavaFiles(test))
                 .run()
                 .writeAll();
@@ -120,6 +122,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         new JavacTask(tb)
                 .outdir(out)
                 .files(findJavaFiles(test))
+                .options("--enable-preview", "-source", JDK_VERSION)
                 .run()
                 .writeAll();
 
@@ -184,6 +187,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         new JavacTask(tb)
                 .outdir(out)
                 .files(findJavaFiles(pkg))
+                .options("--enable-preview", "-source", JDK_VERSION)
                 .run()
                 .writeAll();
 
@@ -224,6 +228,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         new JavacTask(tb)
                 .outdir(out)
                 .files(findJavaFiles(pkg1, pkg2))
+                .options("--enable-preview", "-source", JDK_VERSION)
                 .run()
                 .writeAll();
 
@@ -245,7 +250,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                            "}");
 
         List<String> error = new JavacTask(tb)
-                .options("-XDrawDiagnostics")
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", JDK_VERSION)
                 .files(findJavaFiles(test))
                 .run(Task.Expect.FAIL)
                 .writeAll()
@@ -284,7 +289,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                           "}");
 
         List<String> error = new JavacTask(tb)
-                .options("-XDrawDiagnostics")
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", JDK_VERSION)
                 .files(findJavaFiles(pkg))
                 .run(Task.Expect.FAIL)
                 .writeAll()
@@ -317,7 +322,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                         "}");
 
         List<String> error = new JavacTask(tb)
-                .options("-XDrawDiagnostics")
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", JDK_VERSION)
                 .files(findJavaFiles(pkg))
                 .run(Task.Expect.FAIL)
                 .writeAll()

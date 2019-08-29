@@ -25,6 +25,8 @@
  * @test
  * @summary reflection test for records
  * @modules jdk.compiler/com.sun.tools.javac.util
+ * @compile --enable-preview -source ${jdk.version} RecordReflectionTest.java
+ * @run main/othervm --enable-preview RecordReflectionTest
  */
 
 import java.lang.reflect.*;

@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary smoke test for sealed classes
- * @compile/fail/ref=SealedTest01.out -XDrawDiagnostics SealedTest01.java
+ * @compile/fail/ref=SealedTest01.out --enable-preview -source ${jdk.version} -XDrawDiagnostics SealedTest01.java
  */
 
 class SealedTest01 {

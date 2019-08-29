@@ -185,6 +185,16 @@ public class JavacParser implements Parser {
         endPosTable = newEndPosTable(keepEndPositions);
         this.allowYieldStatement = (!preview.isPreview(Feature.SWITCH_EXPRESSION) || preview.isEnabled()) &&
                 Feature.SWITCH_EXPRESSION.allowedInSource(source);
+        this.allowRecords = true; // to speed up testing for now
+                /*
+                (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
+                Feature.RECORDS.allowedInSource(source);
+                */
+        this.allowSealedTypes = true;
+                /*
+                (!preview.isPreview(Feature.SEALED) || preview.isEnabled()) &&
+                Feature.SEALED.allowedInSource(source);
+                */
         debug = fac.options.isSet("debug");
     }
 
@@ -218,6 +228,14 @@ public class JavacParser implements Parser {
     /** Switch: is yield statement allowed in this source level?
      */
     boolean allowYieldStatement;
+
+    /** Switch: are records allowed in this source level?
+     */
+    boolean allowRecords;
+
+    /** Switch: are sealed types allowed in this source level?
+     */
+    boolean allowSealedTypes;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -3071,19 +3089,21 @@ public class JavacParser implements Parser {
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
             case IDENTIFIER  : {
-                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
-                    Token tokenSub = S.token(1);
-                    Token tokenSealed = S.token(2);
-                    if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenSealed.pos && tokenSealed.name() == names.sealed) {
-                        flag = Flags.NON_SEALED;
-                        nextToken();
-                        nextToken();
+                if (allowSealedTypes) {
+                    if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
+                        Token tokenSub = S.token(1);
+                        Token tokenSealed = S.token(2);
+                        if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenSealed.pos && tokenSealed.name() == names.sealed) {
+                            flag = Flags.NON_SEALED;
+                            nextToken();
+                            nextToken();
+                            break;
+                        }
+                    }
+                    if (token.name() == names.sealed) {
+                        flag = Flags.SEALED;
                         break;
                     }
-                }
-                if (token.name() == names.sealed) {
-                    flag = Flags.SEALED;
-                    break;
                 }
                 break loop;
             }
@@ -3329,7 +3349,7 @@ public class JavacParser implements Parser {
             }
         }
         if (name == names.record) {
-            if (Feature.RECORDS.allowedInSource(source)) {
+            if (allowRecords) {
                 return true;
             } else if (shouldWarn) {
                 log.warning(pos, Warnings.RestrictedTypeNotAllowedPreview(name, Source.JDK14));
@@ -3339,7 +3359,7 @@ public class JavacParser implements Parser {
     }
 
     boolean isRestrictedRecordTypeName(Name name) {
-        return Feature.RECORDS.allowedInSource(source) && name == names.record;
+        return allowRecords && name == names.record;
     }
 
     /** VariableDeclaratorId = Ident BracketsOpt
@@ -3702,7 +3722,11 @@ public class JavacParser implements Parser {
             if (parseModuleInfo) {
                 erroneousTree = syntaxError(pos, errs, Errors.ExpectedModuleOrOpen);
             } else {
-                erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, RECORD));
+                if (allowRecords) {
+                    erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, RECORD));
+                } else {
+                    erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
+                }
             }
             return toP(F.Exec(erroneousTree));
         }
@@ -3731,7 +3755,7 @@ public class JavacParser implements Parser {
             implementing = typeList();
         }
         List<JCExpression> permitting = List.nil();
-        if (token.kind == IDENTIFIER && token.name() == names.permits) {
+        if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
             if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
             }
@@ -3880,7 +3904,7 @@ public class JavacParser implements Parser {
             extending = typeList();
         }
         List<JCExpression> permitting = List.nil();
-        if (token.kind == IDENTIFIER && token.name() == names.permits) {
+        if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
             if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
             }
@@ -4157,7 +4181,7 @@ public class JavacParser implements Parser {
     }
 
     boolean isRecordToken() {
-        return token.kind == IDENTIFIER && token.name() == names.record;
+        return allowRecords && token.kind == IDENTIFIER && token.name() == names.record;
     }
 
     /** MethodDeclaratorRest =

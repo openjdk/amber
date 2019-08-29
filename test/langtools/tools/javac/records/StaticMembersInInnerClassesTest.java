@@ -27,8 +27,8 @@
  * StaticMembersInInnerClassesTest
  *
  * @test
- * @compile -XDallowStaticMembersInInners StaticMembersInInnerClassesTest.java
- * @run testng StaticMembersInInnerClassesTest
+ * @compile --enable-preview -source ${jdk.version} -XDallowStaticMembersInInners StaticMembersInInnerClassesTest.java
+ * @run testng/othervm --enable-preview StaticMembersInInnerClassesTest
  */
 
 import org.testng.annotations.*;

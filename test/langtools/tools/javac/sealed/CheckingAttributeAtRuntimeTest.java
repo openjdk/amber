@@ -25,6 +25,8 @@
  * @test
  * @summary checking for permitted subtypes attribute at runtime
  * @modules jdk.compiler/com.sun.tools.javac.util
+ * @compile --enable-preview -source ${jdk.version} CheckingAttributeAtRuntimeTest.java
+ * @run main/othervm --enable-preview CheckingAttributeAtRuntimeTest
  */
 
 import java.lang.constant.*;

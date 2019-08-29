@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary smoke test for sealed classes
- * @compile/fail/ref=AnonymousAndLambdaCantExtendSealed.out -XDrawDiagnostics AnonymousAndLambdaCantExtendSealed.java
+ * @compile/fail/ref=AnonymousAndLambdaCantExtendSealed.out --enable-preview -source ${jdk.version} -XDrawDiagnostics AnonymousAndLambdaCantExtendSealed.java
  */
 
 class AnonymousAndLambdaCantExtendSealed {
