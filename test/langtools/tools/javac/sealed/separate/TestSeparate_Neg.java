@@ -1,10 +1,10 @@
 /*
  * @test /nodynamiccopyright/
  * @summary smoke test for sealed and separate compilation
- * @compile/fail/ref=TestSeparate_Neg.out -XDrawDiagnostics TestSeparate_Neg.java SealedClasses.java
+ * @compile/fail/ref=TestSeparate_Neg1.out --enable-preview -source ${jdk.version} -XDrawDiagnostics TestSeparate_Neg.java SealedClasses.java
  * @clean *
- * @compile SealedClasses.java
- * @compile/fail/ref=TestSeparate_Neg.out -XDrawDiagnostics TestSeparate_Neg.java
+ * @compile --enable-preview -source ${jdk.version} SealedClasses.java
+ * @compile/fail/ref=TestSeparate_Neg2.out --enable-preview -source ${jdk.version} -XDrawDiagnostics TestSeparate_Neg.java
  */
 
 public class TestSeparate_Neg {

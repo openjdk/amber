@@ -25,6 +25,8 @@
  * @test
  * @summary checking finality of methods in sealed classes
  * @modules jdk.compiler/com.sun.tools.javac.util
+ * @compile --enable-preview -source ${jdk.version} MethodsOfSealedTypesAreNotFinalByDefaultTest.java
+ * @run main/othervm --enable-preview MethodsOfSealedTypesAreNotFinalByDefaultTest
  */
 
 import java.lang.reflect.*;

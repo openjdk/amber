@@ -27,7 +27,8 @@
  * @modules jdk.compiler/com.sun.tools.javac.code
  *          jdk.compiler/com.sun.tools.javac.util
  * @library /tools/javac/lib
- * @build AnnoProcessorOnRecordsTest JavacTestingAbstractProcessor
+ * @build JavacTestingAbstractProcessor
+ * @compile AnnoProcessorOnRecordsTest.java
  * @compile -XDaccessInternalAPI -processor AnnoProcessorOnRecordsTest -proc:only AnnoProcessorOnRecordsTest.java
  */
 

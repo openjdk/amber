@@ -70,6 +70,8 @@ public class OriginTest {
         test(ALL_EXPLICIT, Elements.Origin.EXPLICIT);
     }
 
+    private final static String JDK_VERSION = Integer.toString(Runtime.version().feature());
+
     void test(String src, Elements.Origin origin) throws Exception {
         Matcher m = Pattern.compile("record ([^(]+)").matcher(src);
         if (!m.find()) throw new IllegalArgumentException();
@@ -77,7 +79,7 @@ public class OriginTest {
         Files.writeString(file, src);
         JavaCompiler tool = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager fm = tool.getStandardFileManager(null, null, null);
-        List<String> options = List.of();
+        List<String> options = List.of("--enable-preview", "-source", JDK_VERSION);
         List<String> classes = List.of();
         Iterable<? extends JavaFileObject> files = fm.getJavaFileObjects(file);
         JavacTask task = (JavacTask) tool.getTask(null, null, null,
@@ -127,10 +129,3 @@ public class OriginTest {
 
     int errors;
 }
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary smoke test for sealed classes
- * @compile/fail/ref=NotSealedTest.out -XDrawDiagnostics NotSealedTest.java
+ * @compile/fail/ref=NotSealedTest.out --enable-preview -source ${jdk.version} -XDrawDiagnostics NotSealedTest.java
  */
 
 import java.lang.annotation.*;
