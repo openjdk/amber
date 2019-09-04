@@ -36,13 +36,14 @@ import static org.testng.Assert.*;
  * VarargsRecordsTest
  *
  * @test
- * @compile --enable-preview -source ${jdk.version} VarargsRecordsTest.java
+ * @compile --enable-preview -source 14 VarargsRecordsTest.java
  * @run testng/othervm --enable-preview VarargsRecordsTest
  */
 @Test
 public class VarargsRecordsTest {
     record RI(int... xs) { }
     record RII(int x, int... xs) { }
+    record RX(int[] xs) { }
 
     RI r1 = new RI();
     RI r2 = new RI(1);
@@ -92,5 +93,10 @@ public class VarargsRecordsTest {
         assertEquals(xsMethod.getParameterCount(), 0);
         assertEquals((xsMethod.getModifiers() & (Modifier.PRIVATE | Modifier.PROTECTED | Modifier.STATIC | Modifier.ABSTRACT)), 0);
         assertEquals(((int[]) xsMethod.invoke(ri))[0], 1);
+    }
+
+    public void testNotVarargs() throws ReflectiveOperationException {
+        Constructor c = RX.class.getConstructor(int[].class);
+        assertFalse(c.isVarArgs());
     }
 }

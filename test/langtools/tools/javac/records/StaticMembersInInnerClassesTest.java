@@ -27,7 +27,7 @@
  * StaticMembersInInnerClassesTest
  *
  * @test
- * @compile --enable-preview -source ${jdk.version} -XDallowStaticMembersInInners StaticMembersInInnerClassesTest.java
+ * @compile --enable-preview -source 14 -XDallowStaticMembersInInners StaticMembersInInnerClassesTest.java
  * @run testng/othervm --enable-preview StaticMembersInInnerClassesTest
  */
 

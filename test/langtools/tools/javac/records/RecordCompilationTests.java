@@ -356,10 +356,18 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         String template = "class R { \n" +
                           "    # record RR(int a) { }\n" +
                           "}";
+
         for (String s : List.of("", "static", "final",
                                 "private", "public", "protected",
                                 "private static", "public static", "private static final"))
             assertOK(template, s);
+
+        for (String s : List.of("class C { }",
+                                "static class C { }",
+                                "enum X { A; }",
+                                "interface I { }",
+                                "record RR(int y) { }"))
+            assertOK("record R(int x) { # }", s);
     }
 
     public void testDuplicatedMember() {

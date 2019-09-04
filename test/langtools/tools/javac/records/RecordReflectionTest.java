@@ -24,15 +24,17 @@
 /*
  * @test
  * @summary reflection test for records
- * @modules jdk.compiler/com.sun.tools.javac.util
- * @compile --enable-preview -source ${jdk.version} RecordReflectionTest.java
- * @run main/othervm --enable-preview RecordReflectionTest
+ * @compile --enable-preview -source 14 RecordReflectionTest.java
+ * @run testng/othervm --enable-preview RecordReflectionTest
  */
 
 import java.lang.reflect.*;
 import java.util.List;
-import com.sun.tools.javac.util.Assert;
 
+import org.testng.annotations.*;
+import static org.testng.Assert.*;
+
+@Test
 public class RecordReflectionTest {
 
     class NoRecord {}
@@ -43,26 +45,34 @@ public class RecordReflectionTest {
 
     record R3(List<String> ls) {}
 
-    public static void main(String... args) throws Throwable {
-        Class<?> noRecordClass = NoRecord.class;
-        Assert.check(!noRecordClass.isRecord());
-        Assert.check(noRecordClass.getRecordAccessors().length == 0);
+    public void testIsRecord() {
+        assertFalse(NoRecord.class.isRecord());
 
-        RecordReflectionTest recordReflectionTest = new RecordReflectionTest();
-        recordReflectionTest.checkRecordReflection(new R1(), 0, null, null);
-        recordReflectionTest.checkRecordReflection(new R2(1, 2), 2, new Object[]{1, 2}, new String[]{"int", "int"});
-        recordReflectionTest.checkRecordReflection(new R3(List.of("1")), 1, new Object[]{List.of("1")}, new String[]{"java.util.List<java.lang.String>"});
+        for (Class<?> c : List.of(R1.class, R2.class, R3.class))
+            assertTrue(c.isRecord());
     }
 
-    void checkRecordReflection(Object recordOb, int numberOfComponents, Object[] values, String[] signatures) throws Throwable {
+    public void testGetComponentsNoRecord() throws ReflectiveOperationException {
+        assertTrue(NoRecord.class.getRecordAccessors().length == 0);
+    }
+
+    public void testRecordAccessors() throws ReflectiveOperationException {
+        checkRecordReflection(new R1(), 0, null, null);
+        checkRecordReflection(new R2(1, 2), 2, new Object[]{1, 2}, new String[]{"int", "int"});
+        checkRecordReflection(new R3(List.of("1")), 1, new Object[]{List.of("1")}, new String[]{"java.util.List<java.lang.String>"});
+    }
+
+
+    private void checkRecordReflection(Object recordOb, int numberOfComponents, Object[] values, String[] signatures) throws ReflectiveOperationException {
         Class<?> recordClass = recordOb.getClass();
-        Assert.check(recordClass.isRecord());
+        assertTrue(recordClass.isRecord());
         Method[] accessors = recordClass.getRecordAccessors();
-        Assert.check(accessors.length == numberOfComponents);
+        assertEquals(accessors.length, numberOfComponents);
         int i = 0;
         for (Method m : accessors) {
-            Assert.check(m.invoke(recordOb).equals(values[i]));
-            Assert.check(m.getGenericReturnType().toString().equals(signatures[i]), String.format("signature of method \"%s\" different from expected signature \"%s\"", m.getGenericReturnType(), signatures[i]));
+            assertEquals(m.invoke(recordOb), values[i]);
+            assertEquals(m.getGenericReturnType().toString(), signatures[i],
+                         String.format("signature of method \"%s\" different from expected signature \"%s\"", m.getGenericReturnType(), signatures[i]));
             i++;
         }
     }
