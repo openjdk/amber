@@ -27,7 +27,7 @@
  * RecordMemberTests
  *
  * @test
- * @compile --enable-preview -source ${jdk.version} RecordMemberTests.java
+ * @compile --enable-preview -source 14 RecordMemberTests.java
  * @run testng/othervm --enable-preview RecordMemberTests
  */
 
