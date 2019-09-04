@@ -87,6 +87,18 @@ public class getPermittedSubtypesTest {
         }
     }
 
+    public static void testBadSealedType(String typeName, String expectedCFEMessage) throws Throwable {
+        try {
+            Class.forName(typeName);
+            throw new RuntimeException("Expected ClasFormatError exception not thrown for " + typeName);
+        } catch (ClassFormatError cfe) {
+            if (!cfe.getMessage().contains(expectedCFEMessage)) {
+                throw new RuntimeException(
+                    "Type " + typeName + " got unexpected ClassFormatError exception: " + cfe.getMessage());
+            }
+        }
+    }
+
     public static void main(String... args) throws Throwable {
         testSealedInfo(SealedI1.class, new String[] {"LgetPermittedSubtypesTest$notSealed;",
                                                      "LgetPermittedSubtypesTest$Sub1;",
@@ -107,13 +119,11 @@ public class getPermittedSubtypesTest {
 
         // Test that loading a class with a corrupted PermittedSubtypes attribute
         // causes a ClassFormatError.
-        try {
-            Class.forName("badPermittedAttr");
-            throw new RuntimeException("Expected ClasFormatError exception not thrown");
-        } catch (ClassFormatError cfe) {
-            if (!cfe.getMessage().contains("Permitted subtype class_info_index 15 has bad constant type")) {
-                throw new RuntimeException("Unexpected ClassFormatError exception: " + cfe.getMessage());
-            }
-        }
+        testBadSealedType("badPermittedAttr",
+                          "Permitted subtype class_info_index 15 has bad constant type");
+
+        // Test that loading a sealed final class with a non-empty PermitedSubtypes attribute
+        // causes a ClassFormatError.
+        testBadSealedType("sealedButFinal", "PermittedSubtypes attribute in final class file");
     }
 }

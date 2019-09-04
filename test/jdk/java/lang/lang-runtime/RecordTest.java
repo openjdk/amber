@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,8 +43,8 @@ import static org.testng.Assert.assertEquals;
  */
 @Test
 public class RecordTest {
-    record R(int a, String b, double c);
-    record RR(R r1, R R2);
+    record R(int a, String b, double c) { };
+    record RR(R r1, R R2) { };
 
     private PatternHandle recordExtractor(Class<?> recordClass,
                                           Class<?>... paramTypes) throws Throwable {
@@ -128,11 +128,11 @@ public class RecordTest {
         assertEquals(ee.component(7).invoke(o), 6.0d);
     }
 
-    record A(int a);
-    record B(int a, int b);
-    record S(String s);
-    record T(String s, String t);
-    record U();
+    record A(int a) { };
+    record B(int a, int b) { };
+    record S(String s) { };
+    record T(String s, String t) { };
+    record U() { };
 
     private Object component(PatternHandle e, int num, Object carrier) throws Throwable {
         return PatternHandles.component(MethodHandles.lookup(), "_", MethodHandle.class,
@@ -189,7 +189,7 @@ public class RecordTest {
         }
     }
 
-    record Box(Object o1);
+    record Box(Object o1) { };
 
     public void testNestedRecord() throws Throwable {
         PatternHandle boxA = PatternHandles.nested(recordExtractor(Box.class, Object.class),
