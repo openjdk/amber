@@ -1,6 +1,0 @@
-NotSealedTest.java:11:23: compiler.err.illegal.combination.of.modifiers: sealed, non_sealed
-NotSealedTest.java:13:18: compiler.err.illegal.combination.of.modifiers: final, sealed
-NotSealedTest.java:15:22: compiler.err.illegal.combination.of.modifiers: final, non_sealed
-NotSealedTest.java:19:24: compiler.err.mod.not.allowed.here: sealed
-NotSealedTest.java:17:16: compiler.err.non.sealed.with.no.sealed.supertype
-5 errors
