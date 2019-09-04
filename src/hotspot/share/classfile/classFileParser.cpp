@@ -3676,8 +3676,9 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
         } else if (tag == vmSymbols::tag_permitted_subtypes()) {
             if (supports_sealed_types()) {
               // Check for PermittedSubtypes tag
-              if (!_access_flags.is_final()) {
-                  classfile_parse_error("PermittedSubtypes attribute in non-final class file %s", CHECK);
+              // Classes with empty PermittedSubtype attributes are marked ACC_FINAL.
+              if (_access_flags.is_final() && attribute_length > 2) {
+                classfile_parse_error("PermittedSubtypes attribute in final class file %s", CHECK);
               }
               if (parsed_permitted_subtypes_attribute) {
                 classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
@@ -4720,18 +4721,30 @@ static Array<InstanceKlass*>* compute_transitive_interfaces(const InstanceKlass*
 static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
   assert(this_klass != NULL, "invariant");
   const Klass* const super = this_klass->super();
+
   if (super != NULL) {
+    assert(super->is_instance_klass(), "super is not instance klass");
+    const InstanceKlass* super_ik = InstanceKlass::cast(super);
 
     if (super->is_final()) {
-      assert(super->is_instance_klass(), "super is not instance klass");
-      const InstanceKlass* super_ik = InstanceKlass::cast(super);
-      bool isPermittedSubtype = super_ik->has_as_permitted_subtype(this_klass, CHECK);
-      if (!isPermittedSubtype) {
+      ResourceMark rm(THREAD);
+      Exceptions::fthrow(
+        THREAD_AND_LOCATION,
+        vmSymbols::java_lang_VerifyError(),
+        "class %s cannot inherit from final class %s",
+        this_klass->external_name(),
+        super_ik->external_name());
+      return;
+    }
+
+    if (super_ik->is_sealed()) {
+      bool is_permitted_subtype = super_ik->has_as_permitted_subtype(this_klass, CHECK);
+      if (!is_permitted_subtype) {
         ResourceMark rm(THREAD);
         Exceptions::fthrow(
           THREAD_AND_LOCATION,
           vmSymbols::java_lang_VerifyError(),
-          "class %s cannot inherit from final class %s",
+          "class %s cannot inherit from sealed class %s",
           this_klass->external_name(),
           super_ik->external_name());
         return;
@@ -4742,7 +4755,6 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
     // superclass is in package jdk.internal.reflect and its loader is not a
     // special reflection class loader
     if (!this_klass->class_loader_data()->is_the_null_class_loader_data()) {
-      assert(super->is_instance_klass(), "super is not instance klass");
       PackageEntry* super_package = super->package();
       if (super_package != NULL &&
           super_package->name()->fast_compare(vmSymbols::jdk_internal_reflect()) == 0 &&
@@ -4798,9 +4810,10 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
   for (int i = lng - 1; i >= 0; i--) {
     InstanceKlass* const k = local_interfaces->at(i);
     assert (k != NULL && k->is_interface(), "invalid interface");
-    if (k->is_final()) {
-      bool isPermittedSubtype = k->has_as_permitted_subtype(this_klass, CHECK);
-      if (!isPermittedSubtype) {
+
+    if (k->is_sealed()) {
+      bool is_permitted_subtype = k->has_as_permitted_subtype(this_klass, CHECK);
+      if (!is_permitted_subtype) {
         ResourceMark rm(THREAD);
         Exceptions::fthrow(
           THREAD_AND_LOCATION,

@@ -78,7 +78,7 @@ public class SealedModuleTest {
             Class p3_c3_class = Class.forName("sealedP3.c3");
             throw new RuntimeException("Expected VerifyError exception not thrown");
         } catch (VerifyError e) {
-            if (!e.getMessage().contains("cannot inherit from final class")) {
+            if (!e.getMessage().contains("cannot inherit from sealed class")) {
                 throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
             }
         }

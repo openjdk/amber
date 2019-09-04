@@ -4163,7 +4163,7 @@ public final class Class<T> implements java.io.Serializable,
      * @since 14
      */
     public boolean isSealed() {
-        return Modifier.isFinal(getModifiers()) && getPermittedSubtypes().length != 0;
+        return getPermittedSubtypes().length != 0;
     }
 
     private native String[] getPermittedSubtypes0();
