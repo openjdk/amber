@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -427,6 +427,32 @@ public class Utils {
         return typeUtils.isSubtype(e.asType(), getExternalizableType());
     }
 
+    public boolean isRecord(TypeElement e) {
+        return e.getKind() == ElementKind.RECORD;
+    }
+
+    public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
+        TypeElement te = (TypeElement) ee.getEnclosingElement();
+        List<? extends VariableElement> stateComps = te.getStateComponents();
+        List<? extends VariableElement> params = ee.getParameters();
+        if (stateComps.size() != params.size()) {
+            return false;
+        }
+
+        Iterator<? extends VariableElement> stateIter = stateComps.iterator();
+        Iterator<? extends VariableElement> paramIter = params.iterator();
+        while (paramIter.hasNext() && stateIter.hasNext()) {
+            VariableElement param = paramIter.next();
+            VariableElement comp = stateIter.next();
+            if (!Objects.equals(param.getSimpleName(), comp.getSimpleName())
+                    || !typeUtils.isSameType(param.asType(), comp.asType())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public SortedSet<VariableElement> serializableFields(TypeElement aclass) {
         return configuration.workArounds.getSerializableFields(this, aclass);
     }
@@ -440,84 +466,123 @@ public class Utils {
     }
 
     public String modifiersToString(Element e, boolean trailingSpace) {
-        SortedSet<Modifier> set = new TreeSet<>(e.getModifiers());
-        set.remove(Modifier.NATIVE);
-        set.remove(Modifier.STRICTFP);
-        set.remove(Modifier.SYNCHRONIZED);
+        SortedSet<Modifier> modifiers = new TreeSet<>(e.getModifiers());
+        modifiers.remove(NATIVE);
+        modifiers.remove(STRICTFP);
+        modifiers.remove(SYNCHRONIZED);
+        modifiers.remove(SEALED);
 
         return new ElementKindVisitor9<String, SortedSet<Modifier>>() {
             final StringBuilder sb = new StringBuilder();
 
             void addVisibilityModifier(Set<Modifier> modifiers) {
                 if (modifiers.contains(PUBLIC)) {
-                    sb.append("public").append(" ");
+                    append("public");
                 } else if (modifiers.contains(PROTECTED)) {
-                    sb.append("protected").append(" ");
+                    append("protected");
                 } else if (modifiers.contains(PRIVATE)) {
-                    sb.append("private").append(" ");
+                    append("private");
                 }
             }
 
             void addStatic(Set<Modifier> modifiers) {
                 if (modifiers.contains(STATIC)) {
-                    sb.append("static").append(" ");
+                    append("static");
                 }
             }
 
-            void addModifers(Set<Modifier> modifiers) {
-                String s = set.stream().map(Modifier::toString).collect(Collectors.joining(" "));
-                sb.append(s);
-                if (!s.isEmpty())
+            void addSealed(TypeElement e) {
+                if (elementUtils.isSealed(e)) {
+                    append("sealed");
+                } else if (needsNonSealed(e)) {
+                    append("non-sealed");
+                }
+            }
+
+            boolean needsNonSealed(TypeElement te) {
+                return isSealed(te.getSuperclass())
+                        || te.getInterfaces().stream().anyMatch(this::isSealed);
+            }
+
+            boolean isSealed(TypeMirror tm) {
+                return tm.getKind() == DECLARED
+                        && elementUtils.isSealed((TypeElement) (typeUtils.asElement(tm)));
+            }
+
+            void addModifiers(Set<Modifier> modifiers) {
+                modifiers.stream().map(Modifier::toString).forEach(this::append);
+            }
+
+            void append(String s) {
+                if (sb.length() > 0) {
                     sb.append(" ");
+                }
+                sb.append(s);
             }
 
             String finalString(String s) {
-                sb.append(s);
+                append(s);
                 if (trailingSpace) {
-                    if (sb.lastIndexOf(" ") == sb.length() - 1) {
-                        return sb.toString();
-                    } else {
-                        return sb.append(" ").toString();
-                    }
-                } else {
-                    return sb.toString().trim();
+                    sb.append(" ");
                 }
+                return sb.toString();
             }
 
             @Override
-            public String visitTypeAsInterface(TypeElement e, SortedSet<Modifier> p) {
-                addVisibilityModifier(p);
-                addStatic(p);
+            public String visitTypeAsInterface(TypeElement e, SortedSet<Modifier> mods) {
+                addVisibilityModifier(mods);
+                addStatic(mods);
+                addSealed(e);
                 return finalString("interface");
             }
 
             @Override
-            public String visitTypeAsEnum(TypeElement e, SortedSet<Modifier> p) {
-                addVisibilityModifier(p);
-                addStatic(p);
+            public String visitTypeAsEnum(TypeElement e, SortedSet<Modifier> mods) {
+                addVisibilityModifier(mods);
+                addStatic(mods);
                 return finalString("enum");
             }
 
             @Override
-            public String visitTypeAsAnnotationType(TypeElement e, SortedSet<Modifier> p) {
-                addVisibilityModifier(p);
-                addStatic(p);
+            public String visitTypeAsAnnotationType(TypeElement e, SortedSet<Modifier> mods) {
+                addVisibilityModifier(mods);
+                addStatic(mods);
                 return finalString("@interface");
             }
 
             @Override
-            public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> p) {
-                addModifers(p);
-                return finalString("class");
+            public String visitTypeAsRecord(TypeElement e, SortedSet<Modifier> mods) {
+                mods.remove(FINAL); // suppress the implicit `final`
+                return visitTypeAsClass(e, mods);
             }
 
             @Override
-            protected String defaultAction(Element e, SortedSet<Modifier> p) {
-                addModifers(p);
+            public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> mods) {
+                Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> set = beforeSealed;
+                for (Modifier m : Modifier.values()) {
+                    if (m == SEALED) {
+                        set = afterSealed;
+                    }
+                    if (mods.contains(m)) {
+                        set.add(m);
+                    }
+                }
+                addModifiers(beforeSealed);
+                addSealed(e);
+                addModifiers(afterSealed);
+                String keyword = e.getKind() == ElementKind.RECORD ? "record" : "class";
+                return finalString(keyword);
+            }
+
+            @Override
+            protected String defaultAction(Element e, SortedSet<Modifier> mods) {
+                addModifiers(mods);
                 return sb.toString().trim();
             }
 
-        }.visit(e, set);
+        }.visit(e, modifiers);
     }
 
     public boolean isFunctionalInterface(AnnotationMirror amirror) {
@@ -600,7 +665,7 @@ public class Utils {
 
     public boolean isTypeElement(Element e) {
         switch (e.getKind()) {
-            case CLASS: case ENUM: case INTERFACE: case ANNOTATION_TYPE:
+            case CLASS: case ENUM: case INTERFACE: case ANNOTATION_TYPE: case RECORD:
                 return true;
             default:
                 return false;
@@ -610,7 +675,7 @@ public class Utils {
     /**
      * Get the signature. It is the parameter list, type is qualified.
      * For instance, for a method {@code mymethod(String x, int y)},
-     * it will return {@code(java.lang.String,int)}.
+     * it will return {@code (java.lang.String,int)}.
      *
      * @param e
      * @return String
@@ -1371,27 +1436,6 @@ public class Utils {
     }
 
     /**
-     * The documentation for values() and valueOf() in Enums are set by the
-     * doclet only iff the user or overridden methods are missing.
-     * @param elem
-     */
-    public void setEnumDocumentation(TypeElement elem) {
-        for (Element e : getMethods(elem)) {
-            ExecutableElement ee = (ExecutableElement)e;
-            if (!getFullBody(e).isEmpty()) // ignore if already set
-                continue;
-            if (ee.getSimpleName().contentEquals("values") && ee.getParameters().isEmpty()) {
-                removeCommentHelper(ee); // purge previous entry
-                configuration.cmtUtils.setEnumValuesTree(e);
-            }
-            if (ee.getSimpleName().contentEquals("valueOf") && ee.getParameters().size() == 1) {
-                removeCommentHelper(ee); // purge previous entry
-                configuration.cmtUtils.setEnumValueOfTree(e);
-            }
-        }
-    }
-
-    /**
      * Returns a locale independent upper cased String. That is, it
      * always uses US locale, this is a clone of the one in StringUtils.
      * @param s to convert
@@ -1768,7 +1812,7 @@ public class Utils {
                     result = compareStrings(getFullyQualifiedName(o1), getFullyQualifiedName(o2));
                     if (result != 0)
                         return result;
-                    return compareElementTypeKinds(o1, o2);
+                    return compareElementKinds(o1, o2);
                 }
             };
         }
@@ -1817,7 +1861,7 @@ public class Utils {
                         return result;
                     }
                     // if names are the same, compare element kinds
-                    result = compareElementTypeKinds(e1, e2);
+                    result = compareElementKinds(e1, e2);
                     if (result != 0) {
                         return result;
                     }
@@ -1993,7 +2037,7 @@ public class Utils {
                     if (result != 0) {
                         return result;
                     }
-                    return compareElementTypeKinds(e1, e2);
+                    return compareElementKinds(e1, e2);
                 }
             };
         }
@@ -2005,6 +2049,8 @@ public class Utils {
      * for creating specific comparators for an use-case.
      */
     private abstract class ElementComparator implements Comparator<Element> {
+        public ElementComparator() { }
+
         /**
          * compares two parameter arrays by first comparing the length of the arrays, and
          * then each Type of the parameter in the array.
@@ -2013,21 +2059,6 @@ public class Utils {
          * @return a negative integer, zero, or a positive integer as the first
          *         argument is less than, equal to, or greater than the second.
          */
-        final EnumMap<ElementKind, Integer> elementKindOrder;
-        public ElementComparator() {
-            elementKindOrder = new EnumMap<>(ElementKind.class);
-            elementKindOrder.put(ElementKind.MODULE, 0);
-            elementKindOrder.put(ElementKind.PACKAGE, 1);
-            elementKindOrder.put(ElementKind.CLASS, 2);
-            elementKindOrder.put(ElementKind.ENUM, 3);
-            elementKindOrder.put(ElementKind.ENUM_CONSTANT, 4);
-            elementKindOrder.put(ElementKind.INTERFACE, 5);
-            elementKindOrder.put(ElementKind.ANNOTATION_TYPE, 6);
-            elementKindOrder.put(ElementKind.FIELD, 7);
-            elementKindOrder.put(ElementKind.CONSTRUCTOR, 8);
-            elementKindOrder.put(ElementKind.METHOD, 9);
-        }
-
         protected int compareParameters(boolean caseSensitive, List<? extends VariableElement> params1,
                                                                List<? extends VariableElement> params2) {
 
@@ -2090,10 +2121,28 @@ public class Utils {
             String thatElement = getFullyQualifiedName(e2);
             return compareStrings(thisElement, thatElement);
         }
-        protected int compareElementTypeKinds(Element e1, Element e2) {
-            return Integer.compare(elementKindOrder.get(e1.getKind()),
-                                   elementKindOrder.get(e2.getKind()));
+
+        protected int compareElementKinds(Element e1, Element e2) {
+            return Integer.compare(getKindIndex(e1), getKindIndex(e2));
         }
+
+        private int getKindIndex(Element e) {
+            switch (e.getKind()) {
+                case MODULE:            return 0;
+                case PACKAGE:           return 1;
+                case CLASS:             return 2;
+                case ENUM:              return 3;
+                case ENUM_CONSTANT:     return 4;
+                case RECORD:            return 5;
+                case INTERFACE:         return 6;
+                case ANNOTATION_TYPE:   return 7;
+                case FIELD:             return 8;
+                case CONSTRUCTOR:       return 9;
+                case METHOD:            return 10;
+                default: throw new IllegalArgumentException(e.getKind().toString());
+            }
+        }
+
         boolean hasParameters(Element e) {
             return new SimpleElementVisitor9<Boolean, Void>() {
                 @Override
@@ -2195,6 +2244,7 @@ public class Utils {
         out.addAll(getClasses(pkg));
         out.addAll(getEnums(pkg));
         out.addAll(getAnnotationTypes(pkg));
+        out.addAll(getRecords(pkg));
         return out;
     }
 
@@ -2223,6 +2273,14 @@ public class Utils {
 
     public List<TypeElement> getAnnotationTypesUnfiltered(Element e) {
         return convertToTypeElement(getItems(e, false, ANNOTATION_TYPE));
+    }
+
+    public List<TypeElement> getRecords(Element e) {
+        return convertToTypeElement(getItems(e, true, RECORD));
+    }
+
+    public List<TypeElement> getRecordsUnfiltered(Element e) {
+        return convertToTypeElement(getItems(e, false, RECORD));
     }
 
     public List<VariableElement> getFields(Element e) {
@@ -2399,6 +2457,7 @@ public class Utils {
         clist.addAll(getInterfaces(e));
         clist.addAll(getAnnotationTypes(e));
         clist.addAll(getEnums(e));
+        clist.addAll(getRecords(e));
         oset = new TreeSet<>(makeGeneralPurposeComparator());
         oset.addAll(clist);
         cachedClasses.put(e, oset);
@@ -2516,7 +2575,7 @@ public class Utils {
 
     private SimpleElementVisitor9<Boolean, Void> shouldDocumentVisitor = null;
 
-    protected boolean shouldDocument(Element e) {
+    public boolean shouldDocument(Element e) {
         if (shouldDocumentVisitor == null) {
             shouldDocumentVisitor = new SimpleElementVisitor9<Boolean, Void>() {
                 private boolean hasSource(TypeElement e) {
@@ -3204,20 +3263,20 @@ public class Utils {
         return getBlockTags(element, DocTree.Kind.EXCEPTION, DocTree.Kind.THROWS);
     }
 
-    public List<? extends DocTree> getTypeParamTrees(Element element) {
+    public List<? extends ParamTree> getTypeParamTrees(Element element) {
         return getParamTrees(element, true);
     }
 
-    public List<? extends DocTree> getParamTrees(Element element) {
+    public List<? extends ParamTree> getParamTrees(Element element) {
         return getParamTrees(element, false);
     }
 
-    private  List<? extends DocTree> getParamTrees(Element element, boolean isTypeParameters) {
-        List<DocTree> out = new ArrayList<>();
+    private  List<? extends ParamTree> getParamTrees(Element element, boolean isTypeParameters) {
+        List<ParamTree> out = new ArrayList<>();
         for (DocTree dt : getBlockTags(element, PARAM)) {
             ParamTree pt = (ParamTree) dt;
             if (pt.isTypeParameter() == isTypeParameters) {
-                out.add(dt);
+                out.add(pt);
             }
         }
         return out;

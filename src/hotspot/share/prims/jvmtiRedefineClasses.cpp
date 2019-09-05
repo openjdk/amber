@@ -295,6 +295,11 @@ bool VM_RedefineClasses::is_modifiable_class(oop klass_mirror) {
   if (InstanceKlass::cast(k)->is_unsafe_anonymous()) {
     return false;
   }
+
+  // Cannot redefine or retransform a record.
+  if (InstanceKlass::cast(k)->is_record()) {
+    return false;
+  }
   return true;
 }
 
@@ -788,6 +793,63 @@ static jvmtiError check_nest_attributes(InstanceKlass* the_class,
   return JVMTI_ERROR_NONE;
 }
 
+static jvmtiError check_permitted_subtypes_attribute(InstanceKlass* the_class,
+                                                     InstanceKlass* scratch_class) {
+  // Check whether the class NestMembers attribute has been changed.
+  Array<u2>* the_permitted_subtypes = the_class->permitted_subtypes();
+  Array<u2>* scr_permitted_subtypes = scratch_class->permitted_subtypes();
+  bool the_subtypes_exists = the_permitted_subtypes != Universe::the_empty_short_array();
+  bool scr_subtypes_exists = scr_permitted_subtypes != Universe::the_empty_short_array();
+  int subtypes_len = the_permitted_subtypes->length();
+  if (the_subtypes_exists && scr_subtypes_exists) {
+    if (subtypes_len != scr_permitted_subtypes->length()) {
+      log_trace(redefine, class, sealed)
+        ("redefined class %s attribute change error: PermittedSubtypes len=%d changed to len=%d",
+         the_class->external_name(), subtypes_len, scr_permitted_subtypes->length());
+      return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+    }
+
+    // The order of entries in the PermittedSubtypes array is not specified so
+    // we have to explicitly check for the same contents. We do this by copying
+    // the referenced symbols into their own arrays, sorting them and then
+    // comparing each element pair.
+
+    Symbol** the_syms = NEW_RESOURCE_ARRAY_RETURN_NULL(Symbol*, subtypes_len);
+    Symbol** scr_syms = NEW_RESOURCE_ARRAY_RETURN_NULL(Symbol*, subtypes_len);
+
+    if (the_syms == NULL || scr_syms == NULL) {
+      return JVMTI_ERROR_OUT_OF_MEMORY;
+    }
+
+    for (int i = 0; i < subtypes_len; i++) {
+      int the_cp_index = the_permitted_subtypes->at(i);
+      int scr_cp_index = scr_permitted_subtypes->at(i);
+      the_syms[i] = the_class->constants()->klass_name_at(the_cp_index);
+      scr_syms[i] = scratch_class->constants()->klass_name_at(scr_cp_index);
+    }
+
+    qsort(the_syms, subtypes_len, sizeof(Symbol*), symcmp);
+    qsort(scr_syms, subtypes_len, sizeof(Symbol*), symcmp);
+
+    for (int i = 0; i < subtypes_len; i++) {
+      if (the_syms[i] != scr_syms[i]) {
+        log_trace(redefine, class, sealed)
+          ("redefined class %s attribute change error: PermittedSubtypes[%d]: %s changed to %s",
+           the_class->external_name(), i, the_syms[i]->as_C_string(), scr_syms[i]->as_C_string());
+        return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+      }
+    }
+  } else if (the_subtypes_exists ^ scr_subtypes_exists) {
+    const char* action_str = (the_subtypes_exists) ? "removed" : "added";
+    log_trace(redefine, class, sealed)
+      ("redefined class %s attribute change error: PermittedSubtypes attribute %s",
+       the_class->external_name(), action_str);
+    return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+  }
+
+  return JVMTI_ERROR_NONE;
+}
+
 static bool can_add_or_delete(Method* m) {
       // Compatibility mode
   return (AllowRedefinitionToAddDeleteMethods &&
@@ -837,6 +899,12 @@ jvmtiError VM_RedefineClasses::compare_and_normalize_class_versions(
 
   // Check whether the nest-related attributes have been changed.
   jvmtiError err = check_nest_attributes(the_class, scratch_class);
+  if (err != JVMTI_ERROR_NONE) {
+    return err;
+  }
+
+  // Check whether the PermittedSubtypes attribute has been changed.
+  err = check_permitted_subtypes_attribute(the_class, scratch_class);
   if (err != JVMTI_ERROR_NONE) {
     return err;
   }

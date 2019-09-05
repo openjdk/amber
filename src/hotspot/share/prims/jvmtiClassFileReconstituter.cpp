@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@
 #include "interpreter/bytecodeStream.hpp"
 #include "memory/universe.hpp"
 #include "oops/fieldStreams.hpp"
+#include "oops/recordComponent.hpp"
 #include "prims/jvmtiClassFileReconstituter.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/signature.hpp"
@@ -423,6 +424,60 @@ void JvmtiClassFileReconstituter::write_nest_members_attribute() {
   }
 }
 
+//  PermittedSubtypes {
+//    u2 attribute_name_index;
+//    u4 attribute_length;
+//    u2 number_of_classes;
+//    u2 classes[number_of_classes];
+//  }
+void JvmtiClassFileReconstituter::write_permitted_subtypes_attribute() {
+  Array<u2>* permitted_subtypes = ik()->permitted_subtypes();
+  int number_of_classes = permitted_subtypes->length();
+  int length = sizeof(u2) * (1 + number_of_classes); // '1 +' is for number_of_classes field
+
+  write_attribute_name_index("PermittedSubtypes");
+  write_u4(length);
+  write_u2(number_of_classes);
+  for (int i = 0; i < number_of_classes; i++) {
+    u2 class_cp_index = permitted_subtypes->at(i);
+    write_u2(class_cp_index);
+  }
+}
+
+//  Record {
+//    u2 attribute_name_index;
+//    u4 attribute_length;
+//    u2 number_of_classes;
+//    u2 classes[number_of_classes];
+//  }
+void JvmtiClassFileReconstituter::write_record_attribute() {
+  Array<RecordComponent*>* components = ik()->record_components();
+  int number_of_components = components->length();
+
+  int length = sizeof(u2) + (RecordComponent::size() * number_of_components);
+  for (int x = 0; x < number_of_components; x++) {
+    RecordComponent* component = components->at(x);
+    if (component->descriptor_index() != 0) {
+      length += 8; // Signature attribute size
+      assert(component->attributes_count() > 0, "Bad component attributes count");
+    }
+    // TBD check for annotation attributes and add their size.
+  }
+
+  write_attribute_name_index("Record");
+  write_u4(length);
+  write_u2(number_of_components);
+  for (int i = 0; i < number_of_components; i++) {
+    RecordComponent* component = components->at(i);
+    write_u2(component->name_index());
+    write_u2(component->descriptor_index());
+    write_u2(component->attributes_count());
+    if (component->generic_signature_index() != 0) {
+      write_signature_attribute(component->generic_signature_index());
+    }
+    // TBD need to write annotation stuff here!
+  }
+}
 
 // Write InnerClasses attribute
 // JVMSpec|   InnerClasses_attribute {
@@ -699,6 +754,12 @@ void JvmtiClassFileReconstituter::write_class_attributes() {
   if (ik()->nest_members() != Universe::the_empty_short_array()) {
     ++attr_count;
   }
+  if (ik()->permitted_subtypes() != Universe::the_empty_short_array()) {
+    ++attr_count;
+  }
+  if (ik()->record_components() != NULL) {
+    ++attr_count;
+  }
 
   write_u2(attr_count);
 
@@ -728,6 +789,12 @@ void JvmtiClassFileReconstituter::write_class_attributes() {
   }
   if (ik()->nest_members() != Universe::the_empty_short_array()) {
     write_nest_members_attribute();
+  }
+  if (ik()->permitted_subtypes() != Universe::the_empty_short_array()) {
+    write_permitted_subtypes_attribute();
+  }
+  if (ik()->record_components() != NULL) {
+    write_record_attribute();
   }
 }
 

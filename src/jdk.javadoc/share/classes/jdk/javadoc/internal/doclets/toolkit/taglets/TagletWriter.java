@@ -29,6 +29,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
@@ -243,13 +244,13 @@ public abstract class TagletWriter {
         tagletManager.checkTags(element, utils.getFullBody(element), true);
         for (Taglet taglet : taglets) {
             if (utils.isTypeElement(element) && taglet instanceof ParamTaglet) {
-                //The type parameters are documented in a special section away
-                //from the tag info, so skip here.
+                // The type parameters and state components are documented in a special
+                // section away from the tag info, so skip here.
                 continue;
             }
             if (taglet instanceof DeprecatedTaglet) {
-                //Deprecated information is documented "inline", not in tag info
-                //section.
+                // Deprecated information is documented "inline", not in tag info
+                // section.
                 continue;
             }
             if (taglet instanceof SimpleTaglet && !((SimpleTaglet) taglet).enabled) {

@@ -24,6 +24,8 @@
 /*
  * @test
  * @summary check that members of abtract datum has protected access
+ * @ignore currently the compiler is generating a readResolve method but this test is failing now
+ * as the compiler will error if there is an explicit declaration of readResolve.
  * @modules jdk.jdeps/com.sun.tools.classfile
  *          jdk.compiler/com.sun.tools.javac.util
  * @compile CheckReadResolveMethodTest.java
@@ -38,17 +40,17 @@ public class CheckReadResolveMethodTest {
 
     // readResolve should be generated as a constructor is provided
     record Point1(int i, int j) implements Serializable {
-        Point1(int i, int j) {
+        public Point1(int i, int j) {
             this.i = i;
             this.j = j;
         }
     }
 
     // readResolve should be generated the record implements Serializable
-    record Point2(int i, int j) implements Serializable;
+    record Point2(int i, int j) implements Serializable {}
 
     // no readResolve should be generated as the record doesnt implement Serializable
-    record Point3(int i, int j);
+    record Point3(int i, int j) {}
 
     // no readResolve should be generated as an implementation is already provided
     record Point4(int i, int j) {

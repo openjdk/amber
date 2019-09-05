@@ -120,6 +120,7 @@ class OopStorage;
   do_klass(AccessController_klass,                      java_security_AccessController                        ) \
   do_klass(SecureClassLoader_klass,                     java_security_SecureClassLoader                       ) \
   do_klass(ClassNotFoundException_klass,                java_lang_ClassNotFoundException                      ) \
+  do_klass(Record_klass,                                java_lang_Record                                      ) \
   do_klass(NoClassDefFoundError_klass,                  java_lang_NoClassDefFoundError                        ) \
   do_klass(LinkageError_klass,                          java_lang_LinkageError                                ) \
   do_klass(ClassCastException_klass,                    java_lang_ClassCastException                          ) \

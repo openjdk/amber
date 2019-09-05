@@ -175,6 +175,7 @@ public class Names {
     public final Name TYPE;
     public final Name TYPE_PARAMETER;
     public final Name TYPE_USE;
+    public final Name RECORD_COMPONENT;
 
     // members of java.lang.annotation.RetentionPolicy
     public final Name CLASS;
@@ -205,7 +206,13 @@ public class Names {
     public final Name record;
     public final Name where;
     public final Name non;
-    public final Name makeLazyExtractor;
+    public final Name ofLazyProjection;
+
+    // serialization members, used by records too
+    public final Name serialPersistentFields;
+    public final Name writeObject;
+    public final Name writeReplace;
+    public final Name readObjectNoData;
 
     // sealed types
     public final Name permits;
@@ -346,6 +353,7 @@ public class Names {
         TYPE = fromString("TYPE");
         TYPE_PARAMETER = fromString("TYPE_PARAMETER");
         TYPE_USE = fromString("TYPE_USE");
+        RECORD_COMPONENT = fromString("RECORD_COMPONENT");
 
         // members of java.lang.annotation.RetentionPolicy
         CLASS = fromString("CLASS");
@@ -372,7 +380,12 @@ public class Names {
         record = fromString("record");
         where = fromString("where");
         non = fromString("non");
-        makeLazyExtractor = fromString("makeLazyExtractor");
+        ofLazyProjection = fromString("ofLazyProjection");
+
+        serialPersistentFields = fromString("serialPersistentFields");
+        writeObject = fromString("writeObject");
+        writeReplace = fromString("writeReplace");
+        readObjectNoData = fromString("readObjectNoData");
 
         // sealed types
         permits = fromString("permits");

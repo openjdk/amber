@@ -54,12 +54,11 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import static com.sun.tools.javac.code.TypeTag.CLASS;
-import static com.sun.tools.javac.code.TypeTag.ERROR;
-import static com.sun.tools.javac.code.TypeTag.NONE;
 
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
+import static com.sun.tools.javac.code.TypeTag.*;
+import static com.sun.tools.javac.code.TypeTag.BOT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;
@@ -145,6 +144,8 @@ public class TypeEnter implements Completer {
         Source source = Source.instance(context);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowDeprecationOnImport = Feature.DEPRECATION_ON_IMPORT.allowedInSource(source);
+        Options options = Options.instance(context);
+        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
     }
 
     /** Switch: support type annotations.
@@ -161,6 +162,13 @@ public class TypeEnter implements Completer {
      *  unnecessarily deep recursion.
      */
     boolean completionEnabled = true;
+
+    /**
+     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
+     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
+     * gets integrated
+     */
+    boolean dontErrorIfSealedExtended;
 
     /* Verify Imports:
      */
@@ -683,6 +691,9 @@ public class TypeEnter implements Completer {
             if (tree.extending != null) {
                 extending = clearTypeParams(tree.extending);
                 supertype = attr.attribBase(extending, sym, baseEnv, true, false, true);
+                if (supertype == syms.recordType) {
+                    log.error(tree, Errors.InvalidSupertypeRecord);
+                }
             } else {
                 extending = null;
                 supertype = ((tree.mods.flags & Flags.ENUM) != 0)
@@ -690,7 +701,7 @@ public class TypeEnter implements Completer {
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
-                : syms.objectType;
+                : sym.isRecord() ? syms.recordType : syms.objectType;
             }
             ct.supertype_field = modelMissingTypes(baseEnv, supertype, extending, false);
 
@@ -942,7 +953,7 @@ public class TypeEnter implements Completer {
                         }
                     }
                 } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                 }
                 if (helper != null) {
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
@@ -958,27 +969,27 @@ public class TypeEnter implements Completer {
                                     TreeInfo.getConstructorInvocationName(((JCMethodDecl)def).body.stats, names, true);
                             if (constructorInvocationName == names.empty ||
                                     constructorInvocationName == names._super) {
-                                RecordConstructorHelper helper = new RecordConstructorHelper(
-                                        sym,
-                                        TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                                RecordConstructorHelper helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                                 JCMethodDecl methDecl = (JCMethodDecl)def;
-                                if (constructorInvocationName == names.empty) {
-                                    JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
-                                            make.Ident(names._super), List.nil()));
-                                    methDecl.body.stats = methDecl.body.stats.prepend(supCall);
-                                }
-                                ListBuffer<JCStatement> initializations = new ListBuffer<>();
-                                List<Name> inits = helper.inits();
-                                InitializationFinder initFinder = new InitializationFinder(inits);
-                                initFinder.scan(methDecl.body.stats);
-                                List<Name> found = initFinder.found.toList();
-                                inits = inits.diff(found);
-                                if (!inits.isEmpty()) {
-                                    for (Name initName : inits) {
-                                        initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
-                                                initName), make.Ident(initName))));
+                                if ((methDecl.mods.flags & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
+                                    if (constructorInvocationName == names.empty) {
+                                        JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
+                                                make.Ident(names._super), List.nil()));
+                                        methDecl.body.stats = methDecl.body.stats.prepend(supCall);
                                     }
-                                    methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
+                                    ListBuffer<JCStatement> initializations = new ListBuffer<>();
+                                    List<Name> inits = helper.inits();
+                                    InitializationFinder initFinder = new InitializationFinder(inits);
+                                    initFinder.scan(methDecl.body.stats);
+                                    List<Name> found = initFinder.found.toList();
+                                    inits = inits.diff(found);
+                                    if (!inits.isEmpty()) {
+                                        for (Name initName : inits) {
+                                            initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
+                                                    initName), make.Ident(initName))));
+                                        }
+                                        methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
+                                    }
                                 }
                             }
                         }
@@ -1045,19 +1056,71 @@ public class TypeEnter implements Completer {
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
                 addEnumMembers(tree, env);
             }
-            List<JCTree> defsToEnter = (tree.sym.flags_field & RECORD) != 0 ?
+            boolean isRecord = (tree.sym.flags_field & RECORD) != 0;
+            List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if ((tree.mods.flags & RECORD) != 0) {
-                if ((tree.mods.flags & (RECORD | ABSTRACT)) == RECORD) {
-                    addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
-                }
+            if (isRecord) {
+                checkForSerializationMembers(tree, env);
+            }
+            List<JCTree> defsBeforeAddingNewMembers = tree.defs;
+            if (isRecord) {
+                addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
                 addAccessorsIfNeeded(tree, env);
             }
+            // now we need to enter any additional mandated member that could have been added in the previous step
+            memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
 
             if (tree.sym.isAnnotationType()) {
                 Assert.check(tree.sym.isCompleted());
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));
+            }
+
+            Type st = types.supertype(tree.sym.type);
+            boolean anyParentIsSealed = false;
+            ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
+            if (st != Type.noType && (st.tsym.isSealed())) {
+                potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
+                anyParentIsSealed = true;
+            }
+
+            if (tree.implementing != null) {
+                for (JCExpression expr : tree.implementing) {
+                    if (expr.type.tsym.isSealed()) {
+                        potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
+                        anyParentIsSealed = true;
+                    }
+                }
+            }
+
+            for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
+                if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
+                    boolean areInSameCompilationUnit = TreeInfo.declarationFor(sealedParentPair.fst.tsym, env.toplevel) != null &&
+                            TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null;
+                    boolean isSealed = sealedParentPair.fst.tsym.isSealed();
+                    if (areInSameCompilationUnit) {
+                        if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
+                            if (tree.sym.isAnonymous()) {
+                                log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                            } else {
+                                sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.append(tree.sym.type);
+                            }
+                        } else if (!dontErrorIfSealedExtended) {
+                            log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                        }
+                    } else if (!dontErrorIfSealedExtended) {
+                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                    }
+                }
+            }
+
+            if (anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) == 0) ) {
+                // once we have the non-final keyword this will change
+                tree.sym.flags_field |= (tree.sym.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
+            }
+
+            if (!anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) != 0) ) {
+                log.error(tree, Errors.NonSealedWithNoSealedSupertype);
             }
         }
 
@@ -1074,9 +1137,9 @@ public class TypeEnter implements Completer {
         private void addAccessors(JCVariableDecl tree, Env<AttrContext> env) {
             for (Pair<Accessors.Kind, Name> accessor : tree.accessors) {
                 Type accessorType = accessor.fst.accessorType(syms, tree.sym.type);
-                Symbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
+                MethodSymbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
                 if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
-                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED),
+                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
                               accessor.snd,
                               make.Type(accessorType.getReturnType()),
                               List.nil(),
@@ -1088,10 +1151,34 @@ public class TypeEnter implements Completer {
                               null);
                     memberEnter.memberEnter(getter, env);
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
-                } else if (implSym != null && (implSym.flags() & Flags.PUBLIC) == 0) {
-                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
+                } else if (implSym != null) {
+                    if ((implSym.flags() & Flags.PUBLIC) == 0) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
+                    }
+                    if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
+                    }
+                    if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
+                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
+                    }
                 }
             }
+        }
+
+        /** Is exc an exception symbol that need not be declared?
+         */
+        boolean isUnchecked(ClassSymbol exc) {
+            return exc.kind == ERR ||
+                   exc.isSubClass(syms.errorType.tsym, types) ||
+                   exc.isSubClass(syms.runtimeExceptionType.tsym, types);
+        }
+
+        /** Is exc an exception type that need not be declared?
+         */
+        boolean isUnchecked(Type exc) {
+            return (exc.hasTag(TYPEVAR)) ? isUnchecked(types.supertype(exc)) :
+                   (exc.hasTag(CLASS)) ? isUnchecked((ClassSymbol)exc.tsym) :
+                   exc.hasTag(BOT);
         }
 
         /** Add the implicit members for an enum type
@@ -1128,6 +1215,54 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(valueOf, env);
         }
 
+        private void checkForSerializationMembers(JCClassDecl tree, Env<AttrContext> env) {
+            // non-static void writeObject(java.io.ObjectOutputStream) {}
+            MethodSymbol ms = lookupMethod(tree.sym, names.writeObject, List.of(syms.objectOutputStreamType));
+            if (ms != null) {
+                errorOnSerializationMember(tree, names.writeObject, ms, syms.voidType, false);
+            }
+            // non-static Object writeReplace() {}
+            ms = lookupMethod(tree.sym, names.writeReplace, List.nil());
+            if (ms != null) {
+                errorOnSerializationMember(tree, names.writeReplace, ms, syms.objectType, false);
+            }
+            // non-static Object readResolve() {}
+            ms = lookupMethod(tree.sym, names.readResolve, List.nil());
+            if (ms != null) {
+                errorOnSerializationMember(tree, names.readResolve, ms, syms.objectType, false);
+            }
+            // non-static void readObjectNoData() {}
+            ms = lookupMethod(tree.sym, names.readObjectNoData, List.nil());
+            if (ms != null) {
+                errorOnSerializationMember(tree, names.readObjectNoData, ms, syms.voidType, false);
+            }
+            // non-static void readObject(java.io.ObjectInputStream stream) {}
+            ms = lookupMethod(tree.sym, names.readObject, List.of(syms.objectInputStreamType));
+            if (ms != null) {
+                errorOnSerializationMember(tree, names.readObject, ms, syms.voidType, false);
+            }
+            Type objectStreamFieldArr = new ArrayType(syms.objectStreamFieldType, syms.arrayClass);
+            Symbol fieldSym = lookupField(tree.sym, names.serialPersistentFields, objectStreamFieldArr);
+            if (fieldSym != null) {
+                errorOnSerializationMember(tree, names.serialPersistentFields, fieldSym, objectStreamFieldArr, true);
+            }
+        }
+
+        private void errorOnSerializationMember(JCClassDecl tree,
+                                                Name name, Symbol sym, Type expectedType, boolean shouldBeStatic) {
+            Type typeOrReturnType = sym.kind == MTH ? sym.type.asMethodType().getReturnType() : sym.type;
+            if (sym.isStatic() == shouldBeStatic && (typeOrReturnType == expectedType || types.isSameType(typeOrReturnType, expectedType))) {
+                for (JCTree def : tree.defs) {
+                    Symbol sym2 = TreeInfo.symbolFor(def);
+                    if (sym2 == sym) {
+                        log.error(def, Errors.IllegalRecordMember(name));
+                        return;
+                    }
+                }
+                log.error(tree, Errors.IllegalRecordMember(name));
+            }
+        }
+
         /** Add the implicit members for a record
          *  to the symbol table.
          */
@@ -1154,7 +1289,7 @@ public class TypeEnter implements Completer {
                         null :
                         canonicalDecl.sym;
                 if (canonicalInit == null) {
-                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree).map(vd -> vd.sym));
+                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree));
                     JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
                     tree.defs = tree.defs.prepend(constrDef);
                     defaultConstructorGenerated = true;
@@ -1167,6 +1302,14 @@ public class TypeEnter implements Completer {
                     if (!initParamNames.equals(recordComponentNames)) {
                         log.error(canonicalDecl, Errors.CanonicalWithNameMismatch);
                     }
+                    if (!canonicalInit.isPublic()) {
+                        log.error(canonicalDecl, Errors.CanonicalConstructorMustBePublic);
+                    }
+                    if (canonicalInit.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
+                        log.error(TreeInfo.declarationFor(canonicalInit, env.enclClass), Errors.MethodCantThrowCheckedException);
+                    }
+                    // let's use the RECORD flag to mark it as the canonical constructor
+                    canonicalInit.flags_field |= Flags.RECORD;
                 }
             }
 
@@ -1230,16 +1373,22 @@ public class TypeEnter implements Completer {
                     memberEnter.memberEnter(readResolve, env);
                 }
             }
-            List<Type> fieldTypes = TreeInfo.recordFields(tree).stream().map(f -> f.sym.type).collect(List.collector());
+            List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
             String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
             String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
             Name extractorName = names.fromString(extractorStr);
-            // public Extractor extractorName () { return ???; }
-            MethodType extractorMT = new MethodType(List.nil(), syms.extractorType, List.nil(), syms.methodClass);
+            MethodType extractorMT = new MethodType(List.nil(), syms.patternHandleType, List.nil(), syms.methodClass);
             MethodSymbol extractorSym = new MethodSymbol(
                     Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
                     extractorName, extractorMT, tree.sym);
             tree.sym.members().enter(extractorSym);
+
+            // lets remove a temporary flag used to mark if the record component was initially declared as a varargs
+            List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
+            for (JCVariableDecl field: recordFields) {
+                field.mods.flags &= ~Flags.ORIGINALLY_VARARGS;
+                field.sym.flags_field &= ~Flags.ORIGINALLY_VARARGS;
+            }
         }
         //where:
             private String argsTypeSig(List<Type> typeList) {
@@ -1282,11 +1431,21 @@ public class TypeEnter implements Completer {
                     return sb.toString();
                 }
             }
+
     }
 
-    private Symbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
+    private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
         for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
             if (types.isSameTypes(s.type.getParameterTypes(), argtypes)) {
+                return (MethodSymbol) s;
+            }
+        }
+        return null;
+    }
+
+    private Symbol lookupField(TypeSymbol tsym, Name name, Type type) {
+        for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == VAR)) {
+            if (types.isSameType(s.type, type)) {
                 return s;
             }
         }
@@ -1304,6 +1463,7 @@ public class TypeEnter implements Completer {
        TypeSymbol owner();
        List<Name> superArgs();
        List<Name> inits();
+       default JCMethodDecl finalAdjustment(JCMethodDecl md) { return md; }
     }
 
     class BasicConstructorHelper implements DefaultConstructorHelper {
@@ -1332,6 +1492,9 @@ public class TypeEnter implements Completer {
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
                     // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
+                } else if (owner().isRecord()) {
+                    // record constructors are public
+                    flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
                 }
@@ -1425,17 +1588,19 @@ public class TypeEnter implements Completer {
 
     class RecordConstructorHelper extends BasicConstructorHelper {
 
-        List<VarSymbol> recordFields;
+        List<VarSymbol> recordFieldSymbols;
+        List<JCVariableDecl> recordFieldDecls;
 
-        RecordConstructorHelper(TypeSymbol owner, List<VarSymbol> recordFields) {
+        RecordConstructorHelper(TypeSymbol owner, List<JCVariableDecl> recordFieldDecls) {
             super(owner);
-            this.recordFields = recordFields;
+            this.recordFieldDecls = recordFieldDecls;
+            this.recordFieldSymbols = recordFieldDecls.map(vd -> vd.sym);
         }
 
         @Override
         public Type constructorType() {
             if (constructorType == null) {
-                List<Type> argtypes = recordFields.map(v -> v.type);
+                List<Type> argtypes = recordFieldSymbols.map(v -> v.type);
                 constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
@@ -1445,8 +1610,8 @@ public class TypeEnter implements Completer {
         public MethodSymbol constructorSymbol() {
             MethodSymbol csym = super.constructorSymbol();
             ListBuffer<VarSymbol> params = new ListBuffer<>();
-            for (VarSymbol p : recordFields) {
-                params.add(new VarSymbol(MANDATED | PARAMETER, p.name, p.type, csym));
+            for (VarSymbol p : recordFieldSymbols) {
+                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.ORIGINALLY_VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;
@@ -1455,7 +1620,17 @@ public class TypeEnter implements Completer {
 
         @Override
         public List<Name> inits() {
-            return recordFields.map(v -> v.name);
+            return recordFieldSymbols.map(v -> v.name);
+        }
+
+        @Override
+        public JCMethodDecl finalAdjustment(JCMethodDecl md) {
+            List<JCVariableDecl> tmpRecordFieldDecls = recordFieldDecls;
+            for (JCVariableDecl arg : md.params) {
+                arg.mods.annotations = tmpRecordFieldDecls.head.mods.annotations;
+                tmpRecordFieldDecls = tmpRecordFieldDecls.tail;
+            }
+            return md;
         }
     }
 
@@ -1478,8 +1653,8 @@ public class TypeEnter implements Completer {
         helper.inits().forEach((initName) -> {
             stats.add(make.Exec(make.Assign(make.Select(make.Ident(names._this), initName), make.Ident(initName))));
         });
-        JCTree result = make.MethodDef(initSym, make.Block(0, stats.toList()));
-        return result;
+        JCMethodDecl result = make.MethodDef(initSym, make.Block(0, stats.toList()));
+        return helper.finalAdjustment(result);
     }
 
     /**

@@ -1,52 +1,72 @@
 /*
  * @test /nodynamiccopyright/
  * @summary Verifying error recovery for broken record classes
- * @compile/fail/ref=BadRecord.out -XDrawDiagnostics BadRecord.java
+ * @compile/fail/ref=BadRecord.out --enable-preview -source 14 -XDrawDiagnostics BadRecord.java
  */
-record BadRecordb1 {}
+record BadRecord001 {}
 
-record BadRecordb2( {}
+record BadRecord0022( {}
 
-record BadRecordb3(int {}
+record BadRecord0033(int {}
 
-record BadRecordb4(int) {}
+record BadRecord0044(int) {}
 
-record BadRecordb5(int i {}
+record BadRecord005(int i {}
 
-record BadRecordb6(int i, {}
+record BadRecord006(int i, {}
 
-record BadRecordb7(int i,) {}
+record BadRecord007(int i,) {}
 
-record BadRecordb8(int i, int {}
+record BadRecord008(int i, int {}
 
-record BadRecordb9(int i, int) {}
+record BadRecord009(int i, int) {}
 
-record BadRecordba(int i, int j {}
+record BadRecord010(int i, int j {}
 
-record BadRecordbb(int i, int j, {}
+record BadRecord011(int i, int j, {}
 
-record BadRecordbc(int i, int j,) {}
+record BadRecord012(int i, int j,) {}
 
-record BadRecords1;
+record BadRecord013;
 
-record BadRecords2(;
+record BadRecord014(;
 
-record BadRecords3(int;
+record BadRecord015(int;
 
-record BadRecords4(int);
+record BadRecord016(int);
 
-record BadRecords5(int i;
+record BadRecord017(int i;
 
-record BadRecords6(int i,;
+record BadRecord018(int i,;
 
-record BadRecords7(int i,);
+record BadRecord019(int i,);
 
-record BadRecords8(int i, int;
+record BadRecord020(int i, int;
 
-record BadRecords9(int i, int);
+record BadRecord021(int i, int);
 
-record BadRecordsa(int i, int j;
+record BadRecord022(int i, int j;
 
-record BadRecordsb(int i, int j,;
+record BadRecord023(int i, int j,;
 
-record BadRecordsc(int i, int j,);
+record BadRecord024(int i, int j,);
+
+record BadRecord025(int x)
+
+record BadRecord026 {}
+
+record BadRecord027(final int x) { }
+
+record BadRecord028(private int x) { }
+
+record BadRecord029(public int x) { }
+
+record BadRecord030(volatile int x) { }
+
+record BadRecord030(int x) {
+    private int x() { return x; }
+}
+
+record R(int x) {
+    public int x;
+}

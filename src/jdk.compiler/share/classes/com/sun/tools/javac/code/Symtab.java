@@ -215,8 +215,13 @@ public class Symtab {
     public final Type documentedType;
     public final Type elementTypeType;
     public final Type functionalInterfaceType;
-    public final Type extractorType;
+    public final Type patternHandlesType;
+    public final Type patternHandleType;
     public final Type typeDescriptorType;
+    public final Type recordType;
+    public final Type objectStreamFieldType;
+    public final Type objectOutputStreamType;
+    public final Type objectInputStreamType;
 
     /** The symbol representing the length field of an array.
      */
@@ -574,8 +579,13 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
-        extractorType = enterClass("java.lang.runtime.Extractor");
+        patternHandlesType = enterClass("java.lang.runtime.PatternHandles");
+        patternHandleType = enterClass("java.lang.runtime.PatternHandle");
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
+        recordType = enterClass("java.lang.Record");
+        objectStreamFieldType = enterClass("java.io.ObjectStreamField");
+        objectOutputStreamType = enterClass("java.io.ObjectOutputStream");
+        objectInputStreamType = enterClass("java.io.ObjectInputStream");
 
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);

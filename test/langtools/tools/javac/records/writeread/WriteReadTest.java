@@ -4,9 +4,7 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -26,11 +24,9 @@
 /*
  * @test
  * @summary Verify javac can read record classfiles it writes
- * @compile Record.java
- * @compile WriteReadTest.java
+ * @compile --enable-preview -source 14 Record.java
+ * @compile --enable-preview -source 14 WriteReadTest.java
  */
 public class WriteReadTest {
-
     Record1 r1;
-
 }

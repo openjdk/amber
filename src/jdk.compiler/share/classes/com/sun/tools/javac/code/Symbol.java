@@ -414,6 +414,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & Flags.AccessFlags) == PRIVATE;
     }
 
+    public boolean isPublic() {
+        return (flags_field & Flags.AccessFlags) == PUBLIC;
+    }
+
     public boolean isEnum() {
         return (flags() & ENUM) != 0;
     }
@@ -1459,10 +1463,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public java.util.List<VariableElement> getStateComponents() {
+        public List<? extends VarSymbol> getStateComponents() {
             apiComplete();
-            // Inital implementation
-            return javax.lang.model.util.ElementFilter.stateComponentsIn(getEnclosedElements());
+            ListBuffer<VarSymbol> lb = new ListBuffer<>();
+            for (Symbol sym : getEnclosedElements()) {
+                if (sym.kind == Kind.VAR && ((sym.flags() & RECORD) != 0))
+                    lb.append((VarSymbol) sym);
+            }
+            return lb.toList();
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1632,15 +1640,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public Type erasure(Types types) {
             if (erasure_field == null) {
                 erasure_field = types.erasure(type);
-                if (!accessors.isEmpty()) {
-                    for (Pair<Accessors.Kind, MethodSymbol> accessorPair : accessors) {
-                        if (accessorPair.fst == Accessors.Kind.GET) {
-                            ((MethodType)accessorPair.snd.type).restype = erasure_field;
-                        } else {
-                            // set accessors are not yet generated
-                        }
-                    }
-                }
             }
             return erasure_field;
         }
@@ -1655,8 +1654,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                     return ElementKind.PARAMETER;
             } else if ((flags & ENUM) != 0) {
                 return ElementKind.ENUM_CONSTANT;
-            } else if ((flags & RECORD) != 0) {
-                return ElementKind.STATE_COMPONENT;
             } else if (owner.kind == TYP || owner.kind == ERR) {
                 return ElementKind.FIELD;
             } else if (isResourceVariable()) {

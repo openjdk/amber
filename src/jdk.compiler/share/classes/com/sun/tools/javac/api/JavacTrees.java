@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -409,10 +409,10 @@ public class JavacTrees extends DocTrees {
 
     @Override @DefinedBy(Api.COMPILER_TREE)
     public Element getElement(DocTreePath path) {
-        DocTree forTree = path.getLeaf();
-        if (forTree instanceof DCReference)
-            return attributeDocReference(path.getTreePath(), ((DCReference) forTree));
-        if (forTree instanceof DCIdentifier) {
+        DocTree tree = path.getLeaf();
+        if (tree instanceof DCReference)
+            return attributeDocReference(path.getTreePath(), ((DCReference) tree));
+        if (tree instanceof DCIdentifier) {
             if (path.getParentPath().getLeaf() instanceof DCParam) {
                 return attributeParamIdentifier(path.getTreePath(), (DCParam) path.getParentPath().getLeaf());
             }
@@ -525,7 +525,7 @@ public class JavacTrees extends DocTrees {
         }
     }
 
-    private Symbol attributeParamIdentifier(TreePath path, DCParam ptag) {
+    private Symbol attributeParamIdentifier(TreePath path, DCParam paramTag) {
         Symbol javadocSymbol = getElement(path);
         if (javadocSymbol == null)
             return null;
@@ -533,28 +533,28 @@ public class JavacTrees extends DocTrees {
         List<? extends Symbol> params = List.nil();
         if (kind == ElementKind.METHOD || kind == ElementKind.CONSTRUCTOR) {
             MethodSymbol ee = (MethodSymbol) javadocSymbol;
-            params = ptag.isTypeParameter()
+            params = paramTag.isTypeParameter()
                     ? ee.getTypeParameters()
                     : ee.getParameters();
         } else if (kind.isClass() || kind.isInterface()) {
             ClassSymbol te = (ClassSymbol) javadocSymbol;
-            params = te.getTypeParameters();
+            params = paramTag.isTypeParameter()
+                    ? te.getTypeParameters()
+                    : te.getStateComponents();
         }
 
         for (Symbol param : params) {
-            if (param.getSimpleName() == ptag.getName().getName()) {
+            if (param.getSimpleName() == paramTag.getName().getName()) {
                 return param;
             }
         }
         return null;
     }
 
-    /** @see com.sun.tools.javadoc.ClassDocImpl#findField */
     private VarSymbol findField(ClassSymbol tsym, Name fieldName) {
         return searchField(tsym, fieldName, new HashSet<>());
     }
 
-    /** @see com.sun.tools.javadoc.ClassDocImpl#searchField */
     private VarSymbol searchField(ClassSymbol tsym, Name fieldName, Set<ClassSymbol> searched) {
         if (searched.contains(tsym)) {
             return null;

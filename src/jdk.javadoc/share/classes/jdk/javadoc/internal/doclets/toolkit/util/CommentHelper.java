@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@ import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
@@ -547,7 +548,7 @@ public class CommentHelper {
         return new SimpleDocTreeVisitor<List<? extends DocTree>, Void>() {
             List<? extends DocTree> asList(String content) {
                 List<DocTree> out = new ArrayList<>();
-                out.add((TextTree)c.cmtUtils.makeTextTree(content));
+                out.add(c.cmtUtils.makeTextTree(content));
                 return out;
             }
 

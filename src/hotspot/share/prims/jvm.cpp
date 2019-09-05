@@ -50,10 +50,10 @@
 #include "oops/fieldStreams.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/method.hpp"
+#include "oops/recordComponent.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "oops/recordParamStreams.hpp"
 #include "prims/jvm_misc.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
@@ -1661,61 +1661,46 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
-JVM_ENTRY(jint, JVM_GetRecordParametersCount(JNIEnv *env, jclass ofClass))
+JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass))
 {
-  // current is not a primitive or array class
-  JVMWrapper("JVM_GetRecordParametersCount");
-  JvmtiVMObjectAllocEventCollector oam;
+  // ofClass is not a primitive or array class
+  JVMWrapper("JVM_GetRecordComponentNames");
+  Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass));
+  assert(c->is_instance_klass(), "must be");
+  InstanceKlass* ik = InstanceKlass::cast(c);
 
-  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
-  // Ensure class is linked
-  k->link_class(CHECK_0);
+  if (ik->is_record()) {
+    Array<RecordComponent*>* components = ik->record_components();
+    assert(components != NULL, "components should not be NULL");
+    {
+      JvmtiVMObjectAllocEventCollector oam;
+      constantPoolHandle cp(THREAD, ik->constants());
+      int length = components->length();
+      assert(length >= 0, "unexpected record_components length");
+      objArrayOop name_strings = oopFactory::new_objArray(SystemDictionary::String_klass(),
+                                                          length, CHECK_NULL);
+      objArrayHandle name_strings_h (THREAD, name_strings);
 
-  return k->record_params_count();
+      for (int x = 0; x < length; x++) {
+        RecordComponent* component = components->at(x);
+        assert(component != NULL, "unexpected NULL record component");
+        Symbol* component_name = cp->symbol_at(component->name_index()); // name_index is a utf8
+        Handle str = java_lang_String::create_from_symbol(component_name, CHECK_NULL);
+        name_strings_h->obj_at_put(x, str());
+      }
+      return (jobjectArray)JNIHandles::make_local(name_strings_h());
+    }
+  }
+  // TBD: return empty array or return NULL ?
+  objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
+  return (jobjectArray) JNIHandles::make_local(env, r);
 }
 JVM_END
 
-JVM_ENTRY(jobjectArray, JVM_GetRecordParameters(JNIEnv *env, jclass ofClass))
-{
-  // current is not a primitive or array class
-  JVMWrapper("JVM_GetRecordParameters");
-  JvmtiVMObjectAllocEventCollector oam;
-
-  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass)));
-  constantPoolHandle cp(THREAD, k->constants());
-
-  // Ensure class is linked
-  k->link_class(CHECK_NULL);
-
-  // Allocate result
-  int num_record_params = k->record_params_count();
-  Array<u2>* record_parameters = k->record_params();
-  // DEBUG
-  //tty->print_cr("num_record_params == %d", num_record_params);
-
-  if (num_record_params == 0) {
-    oop res = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), 0, CHECK_NULL);
-    return (jobjectArray) JNIHandles::make_local(env, res);
-  }
-
-  objArrayOop r = oopFactory::new_objArray(SystemDictionary::reflect_Field_klass(), num_record_params, CHECK_NULL);
-  objArrayHandle result (THREAD, r);
-
-  int out_idx = 0;
-  fieldDescriptor fd;
-  for (JavaRecordParameterStream recordParamsStream(k); !recordParamsStream.done(); recordParamsStream.next()) {
-    for (JavaFieldStream fileStream(k); !fileStream.done(); fileStream.next()) {
-      if (fileStream.name() == recordParamsStream.name()) {
-        fd.reinitialize(k, fileStream.index());
-        oop field = Reflection::new_field(&fd, CHECK_NULL);
-        result->obj_at_put(out_idx, field);
-        ++out_idx;
-      }
-    }
-  }
-  assert(out_idx == num_record_params, "just checking");
-  return (jobjectArray) JNIHandles::make_local(env, result());
-}
+JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
+  JVMWrapper("JVM_IsRecord");
+  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls)));
+  return k->is_record();
 JVM_END
 
 static bool select_method(const methodHandle& method, bool want_constructor) {
@@ -1924,35 +1909,30 @@ JVM_ENTRY(jobjectArray, JVM_GetPermittedSubtypes(JNIEnv* env, jclass current))
   JVMWrapper("JVM_GetPermittedSubtypes");
   Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
   assert(c->is_instance_klass(), "must be");
-  InstanceKlass* ck = InstanceKlass::cast(c);
-  Symbol* icce = vmSymbols::java_lang_IncompatibleClassChangeError();
+  InstanceKlass* ik = InstanceKlass::cast(c);
+
   {
     JvmtiVMObjectAllocEventCollector oam;
-    Array<u2>* subtypes = ck->permitted_subtypes();
+    Array<u2>* subtypes = ik->permitted_subtypes();
     int length = subtypes == NULL ? 0 : subtypes->length();
-    if (length == 0) {
-        return NULL;
-    }
-    objArrayOop r = oopFactory::new_objArray(SystemDictionary::Class_klass(), length, CHECK_NULL);
-    objArrayHandle result (THREAD, r);
-    int i;
-    for (i = 0; i < length; i++) {
-      int cp_index = subtypes->at(i);
-      Klass* k = ck->constants()->klass_at(cp_index, CHECK_NULL);
-      if (k->is_instance_klass()) {
-        result->obj_at_put(i, k->java_mirror());
-      } else {
-        ResourceMark rm(THREAD);
-        Exceptions::fthrow(THREAD_AND_LOCATION,
-                           icce,
-                           "Class %s can not be a permitted subtype of %s",
-                           k->external_name(),
-                           ck->external_name()
-                           );
-        return NULL;
+    if (length != 0) {
+      objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(),
+                                               length, CHECK_NULL);
+      objArrayHandle result (THREAD, r);
+      int i;
+      for (i = 0; i < length; i++) {
+        int cp_index = subtypes->at(i);
+        // This returns <package-name>/<class-name>.
+        Symbol* klass_name = ik->constants()->klass_name_at(cp_index);
+        assert(klass_name != NULL, "Unexpected null klass_name");
+        Handle perm_subtype_h = java_lang_String::create_from_symbol(klass_name, CHECK_NULL);
+        result->obj_at_put(i, perm_subtype_h());
       }
+      return (jobjectArray)JNIHandles::make_local(THREAD, result());
+    } else {
+      objArrayOop result = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
+      return (jobjectArray)JNIHandles::make_local(env, result);
     }
-    return (jobjectArray)JNIHandles::make_local(THREAD, result());
   }
 }
 JVM_END

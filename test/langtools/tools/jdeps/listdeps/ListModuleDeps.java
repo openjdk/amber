@@ -94,6 +94,7 @@ public class ListModuleDeps {
             {"jdk.compiler", new String[]{
                                 "java.base/jdk.internal.jmod",
                                 "java.base/jdk.internal.misc",
+                                "java.base/sun.invoke.util",
                                 "java.base/sun.reflect.annotation",
                                 "java.compiler",
                              }

@@ -116,6 +116,7 @@ public class TreeScanner extends Visitor {
         scan(tree.typarams);
         scan(tree.extending);
         scan(tree.implementing);
+        scan(tree.permitting);
         scan(tree.defs);
     }
 

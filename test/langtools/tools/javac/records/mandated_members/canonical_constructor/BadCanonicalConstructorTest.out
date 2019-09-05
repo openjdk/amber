@@ -1,4 +1,0 @@
-BadCanonicalConstructorTest.java:9:17: compiler.err.method.must.be.public: <init>
-BadCanonicalConstructorTest.java:13:19: compiler.err.method.must.be.public: <init>
-BadCanonicalConstructorTest.java:17:9: compiler.err.method.must.be.public: <init>
-3 errors

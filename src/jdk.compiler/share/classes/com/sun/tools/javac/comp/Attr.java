@@ -175,7 +175,7 @@ public class Attr extends JCTree.Visitor {
         allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
-        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
+        allowStaticMembersInInners = options.isSet("allowStaticMembersInInners");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -213,16 +213,14 @@ public class Attr extends JCTree.Visitor {
     boolean useBeforeDeclarationWarning;
 
     /**
-     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
-     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
-     * gets integrated
-     */
-    boolean dontErrorIfSealedExtended;
-
-    /**
      * Switch: name of source level; used for error reporting.
      */
     String sourceName;
+
+    /** Switch: allow static members in inner classes
+     *
+     */
+    boolean allowStaticMembersInInners;
 
     /** Check kind and type of given tree against protokind and prototype.
      *  If check succeeds, store type in tree and return it.
@@ -2855,6 +2853,10 @@ public class Attr extends JCTree.Visitor {
             Type currentTarget = targetInfo.target;
             Type lambdaType = targetInfo.descriptor;
 
+            if (currentTarget.tsym != null && ((ClassSymbol)currentTarget.tsym).isSealed()) {
+                log.error(that, Errors.CantInheritFromSealed(currentTarget.tsym));
+            }
+
             if (currentTarget.isErroneous()) {
                 result = that.type = currentTarget;
                 return;
@@ -5109,44 +5111,6 @@ public class Attr extends JCTree.Visitor {
             chk.validate(tree.implementing, env);
         }
 
-        Type st = types.supertype(c.type);
-        boolean anyParentIsSealed = false;
-        ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
-        if (st != Type.noType && (st.tsym.isSealed())) {
-            potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
-            anyParentIsSealed = true;
-        }
-
-        if (tree.implementing != null) {
-            for (JCExpression expr : tree.implementing) {
-                if (expr.type.tsym.isSealed()) {
-                    potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
-                    anyParentIsSealed = true;
-                }
-            }
-        }
-
-        for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
-            if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                boolean areNestmates = sealedParentPair.fst.tsym.outermostClass() == tree.sym.outermostClass();
-                boolean isSealed = sealedParentPair.fst.tsym.isSealed();
-                if (areNestmates) {
-                    if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
-                        sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.prepend(tree.sym.type);
-                    } else if (!dontErrorIfSealedExtended) {
-                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
-                    }
-                } else if (!dontErrorIfSealedExtended) {
-                    log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
-                }
-            }
-        }
-
-        if (anyParentIsSealed) {
-            // once we have the non-final keyword this will change
-            c.flags_field |= (c.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
-        }
-
         c.markAbstractIfNeeded(types);
 
         // If this is a non-abstract class, check that it has no abstract
@@ -5209,17 +5173,19 @@ public class Attr extends JCTree.Visitor {
         for (List<JCTree> l = tree.defs; l.nonEmpty(); l = l.tail) {
             // Attribute declaration
             attribStat(l.head, env);
-            // Check that declarations in inner classes are not static (JLS 8.1.2)
-            // Make an exception for static constants.
-            if (c.owner.kind != PCK &&
-                ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
-                (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
-                Symbol sym = null;
-                if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
-                if (sym == null ||
-                    sym.kind != VAR ||
-                    ((VarSymbol) sym).getConstValue() == null)
-                    log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+            if (!allowStaticMembersInInners) {
+                // Check that declarations in inner classes are not static (JLS 8.1.2)
+                // Make an exception for static constants.
+                if (c.owner.kind != PCK &&
+                        ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
+                        (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
+                    Symbol sym = null;
+                    if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
+                    if (sym == null ||
+                            sym.kind != VAR ||
+                            ((VarSymbol) sym).getConstValue() == null)
+                        log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                }
             }
         }
 

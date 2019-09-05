@@ -521,6 +521,7 @@ public class TagletManager {
             case INTERFACE:
             case CLASS:
             case ENUM:
+            case RECORD:
                 return blockTagletsBySite.get(Site.TYPE);
             case MODULE:
                 return blockTagletsBySite.get(Site.MODULE);

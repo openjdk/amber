@@ -61,7 +61,6 @@ import com.sun.tools.classfile.ModuleTarget_attribute;
 import com.sun.tools.classfile.NestHost_attribute;
 import com.sun.tools.classfile.NestMembers_attribute;
 import com.sun.tools.classfile.Record_attribute;
-import com.sun.tools.classfile.Record_attribute.Param_data;
 import com.sun.tools.classfile.RuntimeInvisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeInvisibleTypeAnnotations_attribute;
@@ -730,38 +729,52 @@ public class AttributeWriter extends BasicWriter
     public Void visitRecord(Record_attribute attr, Void p) {
         println("Record:");
         indent(+1);
-        for (int i = 0; i < attr.num_params; i++) {
-            writeParamData(attr.params[i]);
+        for (Record_attribute.ComponentInfo componentInfo : attr.component_info_arr) {
+            Signature_attribute sigAttr = (Signature_attribute) componentInfo.attributes.get(Attribute.Signature);
+
+            if (sigAttr == null)
+                print(getJavaFieldType(componentInfo.descriptor));
+            else {
+                try {
+                    Type t = sigAttr.getParsedSignature().getType(constant_pool);
+                    print(getJavaName(t.toString()));
+                } catch (ConstantPoolException e) {
+                    // report error?
+                    // fall back on non-generic descriptor
+                    print(getJavaFieldType(componentInfo.descriptor));
+                }
+            }
+
+            print(" ");
+            try {
+                print(componentInfo.getName(constant_pool));
+            } catch (ConstantPoolException e) {
+                report(e);
+                return null;
+            }
+            print(";");
+            println();
+            indent(+1);
+            if (options.showDescriptors) {
+                println("descriptor: " + getValue(componentInfo.descriptor));
+            }
+            if (options.showAllAttrs) {
+                for (Attribute componentAttr: componentInfo.attributes)
+                    write(componentInfo, componentAttr, constant_pool);
+                println();
+            }
+            indent(-1);
         }
-        write(attr, attr.attributes, constant_pool);
         indent(-1);
         return null;
     }
 
-    void writeParamData(Param_data pd) {
-        AccessFlags flags = new AccessFlags(pd.param_flags);
-        writeModifiers(flags.getFieldModifiers());
-        Descriptor descriptor = new Descriptor(pd.param_descriptor);
-        print(getJavaFieldType(descriptor));
-        print(" ");
+    String getValue(Descriptor d) {
         try {
-            print(pd.getName(constant_pool));
-        } catch (ConstantPoolException cpe) {
-            // ignore
+            return d.getValue(constant_pool);
+        } catch (ConstantPoolException e) {
+            return report(e);
         }
-        println(";");
-        try {
-            indent(+1);
-            println("descriptor: " + descriptor.getValue(constant_pool));
-            writeList(String.format("flags: (0x%04x) ", flags.flags), flags.getFieldFlags(), "\n");
-            Signature signature = new Signature(pd.param_signature);
-            Type t = signature.getType(constant_pool);
-            println("signature: " + getJavaName(t.toString()));
-            indent(-1);
-        } catch (ConstantPoolException cpe) {
-            // ignore
-        }
-        println();
     }
 
     void writeList(String prefix, Collection<?> items, String suffix) {

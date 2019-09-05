@@ -933,6 +933,24 @@ public class TreeInfo {
         }
     }
 
+    /** If this tree has a modifiers field, return it otherwise return null
+     */
+    public static JCModifiers getModifiers(JCTree tree) {
+        tree = skipParens(tree);
+        switch (tree.getTag()) {
+            case VARDEF:
+                return ((JCVariableDecl) tree).mods;
+            case METHODDEF:
+                return ((JCMethodDecl) tree).mods;
+            case CLASSDEF:
+                return ((JCClassDecl) tree).mods;
+            case MODULEDEF:
+                return ((JCModuleDecl) tree).mods;
+            default:
+                return null;
+        }
+    }
+
     /** Return true if this is a nonstatic selection. */
     public static boolean nonstaticSelect(JCTree tree) {
         tree = skipParens(tree);
