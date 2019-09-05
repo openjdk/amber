@@ -171,7 +171,7 @@ public final class PatternHandles {
      * target type are not compatible
      */
     public static PatternHandle ofConstant(Object o, Class<?> targetType) {
-        return adaptTarget(ofConstant(0), targetType);
+        return adaptTarget(ofConstant(o), targetType);
     }
 
     // @@@ Primitive constant patterns

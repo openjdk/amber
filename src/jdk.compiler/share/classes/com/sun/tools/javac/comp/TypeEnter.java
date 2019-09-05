@@ -1373,7 +1373,8 @@ public class TypeEnter implements Completer {
                     memberEnter.memberEnter(readResolve, env);
                 }
             }
-            List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
+            List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
+            List<Type> fieldTypes = recordFields.stream().map(f -> f.sym.type).collect(List.collector());
             String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
             String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
             Name extractorName = names.fromString(extractorStr);
@@ -1384,7 +1385,6 @@ public class TypeEnter implements Completer {
             tree.sym.members().enter(extractorSym);
 
             // lets remove a temporary flag used to mark if the record component was initially declared as a varargs
-            List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
             for (JCVariableDecl field: recordFields) {
                 field.mods.flags &= ~Flags.ORIGINALLY_VARARGS;
                 field.sym.flags_field &= ~Flags.ORIGINALLY_VARARGS;

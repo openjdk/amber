@@ -148,8 +148,7 @@ public class TransPatterns extends TreeTranslator {
     boolean debugTransPatterns;
 
     private JCClassDecl currentClass;
-    private MethodSymbol adaptBootstrap; //hack: we should be able to call Extractor.adapt directly, or something equivalent
-    private JCMethodDecl adaptBootstrapTree;
+    private List<JCTree> condyableMethods = List.nil();
     private MethodSymbol nullBootstrap; //hack: for ofConstant(null).
     private JCMethodDecl nullBootstrapTree;
     private MethodSymbol currentMethodSym = null;
@@ -191,7 +190,7 @@ public class TransPatterns extends TreeTranslator {
             qualifier.type = extractor.type;
             VarSymbol e = new VarSymbol(0,
                     names.fromString("$e$" + tree.pos),
-                    syms.extractorType,
+                    syms.patternHandleType,
                     currentMethodSym); //XXX: currentMethodSym may not exist!!!!
             statements.add(make.VarDef(e, qualifier));
             
@@ -199,7 +198,7 @@ public class TransPatterns extends TreeTranslator {
                     names.fromString("$tryMatch$" + tree.pos),
                     syms.methodHandleType,
                     currentMethodSym); //XXX: currentMethodSym may not exist!!!!
-            MethodSymbol tryMatchMethod = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType, names.fromString("tryMatch"), List.nil(), List.nil());
+            MethodSymbol tryMatchMethod = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandleType, names.fromString("tryMatch"), List.nil(), List.nil());
             statements.append(make.VarDef(tryMatch, makeApply(make.Ident(e), tryMatchMethod, List.nil())));
             VarSymbol carrierMatch = new VarSymbol(0,
                     names.fromString("$carrier$" + tree.pos),
@@ -216,7 +215,7 @@ public class TransPatterns extends TreeTranslator {
                             names.fromString("$component$" + tree.pos + "$" + idx),
                             syms.methodHandleType,
                             currentMethodSym); //XXX: currentMethodSym may not exist!!!!
-                    MethodSymbol componentMethod = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType, names.fromString("component"), List.of(syms.intType), List.nil());
+                    MethodSymbol componentMethod = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandleType, names.fromString("component"), List.of(syms.intType), List.nil());
                     statements.append(make.VarDef(component, makeApply(make.Ident(e), componentMethod, List.of(make.Literal(idx)))));
                     Type componentType = types.erasure(bindingVar.type.baseType());
                     JCTree oldNextTree = env.next.tree;
@@ -245,28 +244,26 @@ public class TransPatterns extends TreeTranslator {
     }
     
     private Symbol.DynamicVarSymbol preparePatternExtractor(JCPattern patt, Type target, ListBuffer<VarSymbol> bindingVars) {
+        if (target == syms.botType) {
+            target = syms.objectType;
+        }
         if (patt.hasTag(Tag.BINDINGPATTERN)) {
             Type tempType = patt.type.hasTag(BOT) ?
                     syms.objectType
                     : types.boxedTypeOrType(patt.type);
-            Type indyType = syms.objectType;
-            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
-                                                syms.stringType,
-                                                new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(syms.extractorType),
-                                                              syms.classType.tsym),
-                                                new ClassType(syms.classType.getEnclosingType(),
+            boolean adapt = types.boxedTypeOrType(target) == target;
+            List<Type> bsm_staticArgs = List.of(new ClassType(syms.classType.getEnclosingType(),
                                                               List.of(tempType),
                                                               syms.classType.tsym));
 
-            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
-                    names.fromString("ofType"), bsm_staticArgs, List.nil());
+            if (adapt) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
+            }
 
-            Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(names.fromString("ofType"),
-                    syms.noSymbol,
-                    new Symbol.MethodHandleSymbol(ofType),
-                    indyType,
-                    new LoadableConstant[] {(ClassType) tempType});
+            MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofType"), bsm_staticArgs, List.nil());
 
             VarSymbol binding = bindingContext.getBindingFor(((JCBindingPattern) patt).symbol);
             
@@ -274,7 +271,11 @@ public class TransPatterns extends TreeTranslator {
 
             bindingVars.append(binding);
 
-            return wrapWithAdapt(patt.pos(), dynSym, target);
+            if (adapt) {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (ClassType) target});
+            } else {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType});
+            }
         } else if (patt.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             JCDeconstructionPattern dpatt = (JCDeconstructionPattern) patt;
             Type tempType = patt.type.hasTag(BOT) ?
@@ -284,7 +285,7 @@ public class TransPatterns extends TreeTranslator {
             List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
                                                 syms.stringType,
                                                 new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(syms.extractorType),
+                                                              List.of(syms.patternHandleType),
                                                               syms.classType.tsym),
                                                 new ClassType(syms.classType.getEnclosingType(),
                                                               List.of(tempType),
@@ -293,10 +294,10 @@ public class TransPatterns extends TreeTranslator {
                                                 syms.stringType,
                                                 syms.intType);
             
-            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
-                    names.fromString("findExtractor"), bsm_staticArgs, List.nil());
+            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofNamed"), bsm_staticArgs, List.nil());
 
-            Symbol.DynamicVarSymbol outter = new Symbol.DynamicVarSymbol(names.fromString("findExtractor"),
+            Symbol.DynamicVarSymbol outter = new Symbol.DynamicVarSymbol(names.fromString("ofNamed"),
                     syms.noSymbol,
                     new Symbol.MethodHandleSymbol(ofType),
                     indyType,
@@ -327,36 +328,25 @@ public class TransPatterns extends TreeTranslator {
                 bindingVars.appendList(nested.toList());
             }
 
-            List<Type> bsm_staticArgsNested = List.of(syms.methodHandleLookupType,
-                                                      syms.stringType,
-                                                      new ClassType(syms.classType.getEnclosingType(),
-                                                                    List.of(syms.extractorType),
-                                                                    syms.classType.tsym),
-                                                      syms.extractorType,
-                                                      types.makeArrayType(syms.extractorType));
+            List<Type> bsm_staticArgsNested = List.of(syms.patternHandleType,
+                                                      types.makeArrayType(syms.patternHandleType));
 
-            Symbol ofNested = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
-                    names.fromString("ofNested"), bsm_staticArgsNested, List.nil());
+            MethodSymbol ofNested = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("nested"), bsm_staticArgsNested, List.nil());
             
-            Symbol.DynamicVarSymbol ofNestedSym = new Symbol.DynamicVarSymbol(ofNested.name,
-                    syms.noSymbol,
-                    new Symbol.MethodHandleSymbol(ofNested),
-                    indyType, //???
-                    params);
-
-            return wrapWithAdapt(patt.pos(), ofNestedSym, target);
+            return makeCondyable(patt.pos(), ofNested, params);
         } else if (patt.hasTag(Tag.LITERALPATTERN)) {
             JCLiteralPattern lpatt = (JCLiteralPattern) patt;
-            Type indyType = syms.objectType;
-
-            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
-                                                syms.stringType,
-                                                new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(syms.extractorType),
-                                                              syms.classType.tsym),
-                                                syms.objectType);
+            boolean adapt = types.boxedTypeOrType(target) == target;
+            List<Type> bsm_staticArgs = List.of(syms.objectType);
             
-            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
+            if (adapt) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
+            }
+
+            MethodSymbol ofConstant = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("ofConstant"), bsm_staticArgs, List.nil());
 
             LoadableConstant lc;
@@ -378,82 +368,61 @@ public class TransPatterns extends TreeTranslator {
                 throw new InternalError();
             }
 
-            Symbol.DynamicVarSymbol ofConstant =
-                    new Symbol.DynamicVarSymbol(names.fromString("ofConstant"),
-                                                syms.noSymbol,
-                                                new Symbol.MethodHandleSymbol(ofType),
-                                                indyType,
-                                                new LoadableConstant[] {lc});
-            return wrapWithAdapt(patt.pos(), ofConstant, target);
+            if (adapt) {
+                return makeCondyable(patt.pos(), ofConstant, new LoadableConstant[] {lc, (ClassType) target});
+            } else {
+                return makeCondyable(patt.pos(), ofConstant, new LoadableConstant[] {lc});
+            }
         } else if (patt.hasTag(Tag.ANYPATTERN)) {
             Type tempType = patt.type.hasTag(BOT) ?
                     syms.objectType
                     : types.boxedTypeOrType(patt.type);
-            Type indyType = syms.objectType;
-            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
-                                                syms.stringType,
-                                                new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(syms.extractorType),
+            List<Type> bsm_staticArgs = List.of(new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(tempType),
                                                               syms.classType.tsym),
                                                 new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(tempType),
+                                                              List.of(target),
                                                               syms.classType.tsym));
 
-            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.extractorType,
+            MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("ofType"), bsm_staticArgs, List.nil());
 
-            Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(names.fromString("ofType"),
-                    syms.noSymbol,
-                    new Symbol.MethodHandleSymbol(ofType),
-                    indyType,
-                    new LoadableConstant[] {(ClassType) tempType});
-
-            return wrapWithAdapt(patt.pos(), dynSym, target);
+            return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (ClassType) syms.objectType});
         } else {
             throw new IllegalStateException();
         }
     }
 
-    private Symbol.DynamicVarSymbol wrapWithAdapt(DiagnosticPosition pos, Symbol.DynamicVarSymbol extractor, Type target) {
-        if (types.boxedTypeOrType(target) != target) {
-            //XXX: cannot adapt primitive types
-            return extractor;
-        }
-
-        if (target == syms.botType) {
-            target = syms.objectType;
-        }
-
+    private Symbol.DynamicVarSymbol makeCondyable(DiagnosticPosition pos, MethodSymbol targetMethod, LoadableConstant[] parameters) {
         Assert.checkNonNull(currentClass);
 
-        if (adaptBootstrap == null) {
-            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
-                                                syms.stringType,
-                                                new ClassType(syms.classType.getEnclosingType(),
-                                                              List.of(syms.extractorType),
-                                                              syms.classType.tsym),
-                                                syms.extractorType,
-                                                syms.classType);
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                            syms.stringType,
+                                            new ClassType(syms.classType.getEnclosingType(),
+                                                          List.of(syms.patternHandlesType),
+                                                          syms.classType.tsym));
+        bsm_staticArgs = bsm_staticArgs.appendList(targetMethod.type.getParameterTypes());
 
-            MethodType indyType = new MethodType(bsm_staticArgs, syms.extractorType, List.nil(),syms.methodClass);
+        MethodType indyType = new MethodType(bsm_staticArgs, targetMethod.type.getReturnType(), List.nil(), syms.methodClass);
 
-            adaptBootstrap = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$adapt$bootstrap"), indyType, currentClass.sym);
+        MethodSymbol condyable = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$condyable$" + pos.getPreferredPosition()), indyType, currentClass.sym);
 
-            currentClass.sym.members().enter(adaptBootstrap);
-
-            Symbol adapt = rs.resolveInternalMethod(pos, env, syms.extractorType,
-                    names.fromString("adapt"), List.of(syms.extractorType, syms.classType), List.nil());
-
-            adaptBootstrapTree = make.MethodDef(adaptBootstrap,
-                                                adaptBootstrap.externalType(types),
-                                                make.Block(0, List.of(make.Return(make.Apply(List.nil(), make.QualIdent(adapt), List.of(make.Ident(adaptBootstrap.params().get(3)), make.Ident(adaptBootstrap.params().get(4)))).setType(syms.extractorType)))));
+        if ((targetMethod.flags() & Flags.VARARGS) != 0) {
+            condyable.flags_field |= Flags.VARARGS;
         }
 
-        return new Symbol.DynamicVarSymbol(adaptBootstrap.name,
+        currentClass.sym.members().enter(condyable);
+
+        condyableMethods = condyableMethods.prepend(
+                make.MethodDef(condyable,
+                               condyable.externalType(types),
+                               make.Block(0, List.of(make.Return(make.Apply(List.nil(), make.QualIdent(targetMethod), condyable.params().stream().skip(3).map(p -> make.Ident(p)).collect(List.collector())).setType(syms.patternHandleType))))));
+
+        return new Symbol.DynamicVarSymbol(condyable.name,
                                            syms.noSymbol,
-                                           new MethodHandleSymbol(adaptBootstrap),
-                                           syms.extractorType,
-                                           new LoadableConstant[] {extractor, (LoadableConstant) target});
+                                           new MethodHandleSymbol(condyable),
+                                           targetMethod.type.getReturnType(),
+                                           parameters);
     }
 
     private Symbol.DynamicVarSymbol nullBootstrap() {
@@ -688,27 +657,22 @@ public class TransPatterns extends TreeTranslator {
     @Override
     public void visitClassDef(JCTree.JCClassDecl tree) {
         JCClassDecl prevCurrentClass = currentClass;
-        MethodSymbol prevAdaptBootstrap = adaptBootstrap;
-        JCMethodDecl prevAdaptBootstrapTree = adaptBootstrapTree;
+        List<JCTree> prevCondyableMethods = condyableMethods;
         MethodSymbol prevNullBootstrap = nullBootstrap;
         JCMethodDecl prevNullBootstrapTree = nullBootstrapTree;
         try {
             currentClass = tree;
-            adaptBootstrap = null;
-            adaptBootstrapTree = null;
+            condyableMethods = List.nil();
             nullBootstrap = null;
             nullBootstrapTree = null;
             super.visitClassDef(tree);
         } finally {
-            if (adaptBootstrapTree != null) {
-                currentClass.defs = currentClass.defs.prepend(adaptBootstrapTree);
-            }
+            currentClass.defs = currentClass.defs.prependList(condyableMethods);
             if (nullBootstrapTree != null) {
                 currentClass.defs = currentClass.defs.prepend(nullBootstrapTree);
             }
             currentClass = prevCurrentClass;
-            adaptBootstrap = prevAdaptBootstrap;
-            adaptBootstrapTree = prevAdaptBootstrapTree;
+            condyableMethods = prevCondyableMethods;
             nullBootstrap = prevNullBootstrap;
             nullBootstrapTree = prevNullBootstrapTree;
         }
