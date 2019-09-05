@@ -23,6 +23,16 @@
  * questions.
  */
 
+/**
+ * SealedCompilationTests
+ *
+ * @test
+ * @summary Negative compilation tests, and positive compilation (smoke) tests for sealed types
+ * @library /lib/combo
+ * @modules jdk.compiler/com.sun.tools.javac.util
+ * @run testng SealedCompilationTests
+ */
+
 import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.util.EnumMap;
@@ -40,21 +50,11 @@ import static java.lang.annotation.ElementType.*;
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
 
-/**
- * SealedCompilationTests
- *
- * @test
- * @summary Negative compilation tests, and positive compilation (smoke) tests for sealed types
- * @library /lib/combo
- * @modules jdk.compiler/com.sun.tools.javac.util
- * @run testng SealedCompilationTests
- */
 @Test
 public class SealedCompilationTests extends JavacTemplateTestBase {
 
     // @@@ When sealed types become a permanent feature, we don't need these any more
-    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
-            Integer.toString(Runtime.version().feature())};
+    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source", "14"};
 
     // -- test framework code --
 

@@ -24,7 +24,7 @@
 /**
  * @test
  * @summary check that sealed cant be extended by non-permitted subtypes
- * @compile --enable-preview -source ${jdk.version} -XDdontErrorIfSealedExtended SealedExtensionNegTest.java
+ * @compile --enable-preview -source 14 -XDdontErrorIfSealedExtended SealedExtensionNegTest.java
  * @run main/othervm --enable-preview SealedExtensionNegTest
  */
 
