@@ -25,13 +25,16 @@
  * @test
  * @summary checking for permitted subtypes attribute at runtime
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @compile --enable-preview -source ${jdk.version} CheckingAttributeAtRuntimeTest.java
- * @run main/othervm --enable-preview CheckingAttributeAtRuntimeTest
+ * @compile --enable-preview -source 14 CheckingAttributeAtRuntimeTest.java
+ * @run testng/othervm --enable-preview CheckingAttributeAtRuntimeTest
  */
 
 import java.lang.constant.*;
-import com.sun.tools.javac.util.Assert;
 
+import org.testng.annotations.*;
+import static org.testng.Assert.*;
+
+@Test
 public class CheckingAttributeAtRuntimeTest {
 
     sealed class Sealed1 permits Sub1 {}
@@ -46,38 +49,38 @@ public class CheckingAttributeAtRuntimeTest {
 
     class Sub3 extends Sealed2 {}
 
-    public static void main(String... args) {
+    class Sub4 extends Sealed2 {}
+
+    sealed interface SealedI2 {}
+
+    class Sub5 implements SealedI2 {}
+
+    interface Int1 extends SealedI2 {}
+
+    non-sealed class Sub6 implements SealedI2 {}
+
+    public void testPermittedSubtypes() {
         Class<?> sealedClass1 = Sealed1.class;
-        Assert.check(sealedClass1.isSealed());
-        Assert.check(sealedClass1.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass1.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub1")));
+        assertTrue(sealedClass1.isSealed());
+        assertTrue(sealedClass1.getPermittedSubtypes().length == 1);
+        assertTrue(sealedClass1.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub1")));
 
         Class<?> sealedI = SealedI1.class;
-        Assert.check(sealedI.isSealed());
-        Assert.check(sealedI.getPermittedSubtypes().length == 1);
-        Assert.check(sealedI.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub2")));
+        assertTrue(sealedI.isSealed());
+        assertTrue(sealedI.getPermittedSubtypes().length == 1);
+        assertTrue(sealedI.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub2")));
 
         Class<?> sealedClass2 = Sealed2.class;
-        Assert.check(sealedClass2.isSealed());
-        Assert.check(sealedClass2.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass2.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub3")));
+        assertTrue(sealedClass2.isSealed());
+        assertTrue(sealedClass2.getPermittedSubtypes().length == 2);
+        assertTrue(sealedClass2.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub3")));
+        assertTrue(sealedClass2.getPermittedSubtypes()[1].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub4")));
 
-        Class<?> sealedClass3 = Sealed3.class;
-        Assert.check(sealedClass3.isSealed());
-        Assert.check(sealedClass3.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass3.getPermittedSubtypes()[0].equals(ClassDesc.of("Sub4")));
-
-        Class<?> sealedClass4 = Sealed4.class;
-        Assert.check(sealedClass4.isSealed());
-        Assert.check(sealedClass4.getPermittedSubtypes().length == 1);
-        Assert.check(sealedClass4.getPermittedSubtypes()[0].equals(ClassDesc.of("Sub5")));
+        Class<?> sealedI2 = SealedI2.class;
+        assertTrue(sealedI2.isSealed());
+        assertTrue(sealedI2.getPermittedSubtypes().length == 3);
+        assertTrue(sealedI2.getPermittedSubtypes()[0].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub5")));
+        assertTrue(sealedI2.getPermittedSubtypes()[1].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Int1")));
+        assertTrue(sealedI2.getPermittedSubtypes()[2].equals(ClassDesc.of("CheckingAttributeAtRuntimeTest").nested("Sub6")));
     }
 }
-
-sealed class Sealed3 {}
-
-class Sub4 extends Sealed3 {}
-
-sealed class Sealed4 permits Sub5 {}
-
-class Sub5 extends Sealed4 {}
