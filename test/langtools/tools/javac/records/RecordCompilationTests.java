@@ -418,4 +418,9 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x) { # }",
                 "public R { if (x < 0) { this.x = -x; } }");
     }
+
+    public void testReturnInCanonical() {
+        assertFail("compiler.err.canonical.cant.have.return.statement", "record R(int x) { # }",
+                "public R { return; }");
+    }
 }
