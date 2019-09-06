@@ -401,4 +401,21 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
                    "    }\n" +
                    "}");
     }
+
+    public void testCompactDADU() {
+        // trivial cases
+        assertOK("record R() { public R {} }");
+        assertOK("record R(int x) { public R {} }");
+
+        // cases with an instance initializers
+        assertOK("record R(int x) { { this.x = 0; } }");
+        assertOK("record R(int x) { { this.x = 0; } public R {} }");
+
+        // dead code
+        assertOK("record R(int x) { { this.x = 0; } public R { if (false) { this.x = x; }} }");
+
+        // x is not DA nor DU in the body of the constructor hence error
+        assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x) { # }",
+                "public R { if (x < 0) { this.x = -x; } }");
+    }
 }
