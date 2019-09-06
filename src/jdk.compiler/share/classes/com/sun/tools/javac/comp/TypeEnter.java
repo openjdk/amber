@@ -967,26 +967,12 @@ public class TypeEnter implements Completer {
                                     TreeInfo.getConstructorInvocationName(((JCMethodDecl)def).body.stats, names, true);
                             if (constructorInvocationName == names.empty ||
                                     constructorInvocationName == names._super) {
-                                RecordConstructorHelper helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                                 JCMethodDecl methDecl = (JCMethodDecl)def;
                                 if ((methDecl.mods.flags & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
                                     if (constructorInvocationName == names.empty) {
                                         JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
                                                 make.Ident(names._super), List.nil()));
                                         methDecl.body.stats = methDecl.body.stats.prepend(supCall);
-                                    }
-                                    ListBuffer<JCStatement> initializations = new ListBuffer<>();
-                                    List<Name> inits = helper.inits();
-                                    InitializationFinder initFinder = new InitializationFinder(inits);
-                                    initFinder.scan(methDecl.body.stats);
-                                    List<Name> found = initFinder.found.toList();
-                                    inits = inits.diff(found);
-                                    if (!inits.isEmpty()) {
-                                        for (Name initName : inits) {
-                                            initializations.add(make.Exec(make.Assign(make.Select(make.Ident(names._this),
-                                                    initName), make.Ident(initName))));
-                                        }
-                                        methDecl.body.stats = methDecl.body.stats.appendList(initializations.toList());
                                     }
                                 }
                             }
@@ -1020,29 +1006,6 @@ public class TypeEnter implements Completer {
             if (allowTypeAnnos) {
                 typeAnnotations.organizeTypeAnnotationsSignatures(env, (JCClassDecl)env.tree);
                 typeAnnotations.validateTypeAnnotationsSignatures(env, (JCClassDecl)env.tree);
-            }
-        }
-
-        class InitializationFinder extends TreeScanner {
-            List<Name> fieldNames;
-            ListBuffer<Name> found = new ListBuffer<>();
-
-            public InitializationFinder(List<Name> fieldNames) {
-                this.fieldNames = fieldNames;
-            }
-
-            @Override
-            public void visitAssign(JCAssign tree) {
-                super.visitAssign(tree);
-                if (tree.lhs.hasTag(SELECT)) {
-                    JCFieldAccess select = (JCFieldAccess)tree.lhs;
-                    if ((select.selected.hasTag(IDENT)) &&
-                            ((JCIdent)select.selected).name == names._this) {
-                        if (fieldNames.contains(select.name)) {
-                            found.add(select.name);
-                        }
-                    }
-                }
             }
         }
 
@@ -1409,7 +1372,6 @@ public class TypeEnter implements Completer {
        Type enclosingType();
        TypeSymbol owner();
        List<Name> superArgs();
-       List<Name> inits();
        default JCMethodDecl finalAdjustment(JCMethodDecl md) { return md; }
     }
 
@@ -1463,11 +1425,6 @@ public class TypeEnter implements Completer {
 
         @Override
         public List<Name> superArgs() {
-            return List.nil();
-        }
-
-        @Override
-        public List<Name> inits() {
             return List.nil();
         }
     }
@@ -1556,6 +1513,9 @@ public class TypeEnter implements Completer {
         @Override
         public MethodSymbol constructorSymbol() {
             MethodSymbol csym = super.constructorSymbol();
+            // if we have to generate a default constructor for records we will treat it as the compact one
+            // to trigger field initialization later on
+            csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
                 params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.ORIGINALLY_VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
@@ -1563,11 +1523,6 @@ public class TypeEnter implements Completer {
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;
             return csym;
-        }
-
-        @Override
-        public List<Name> inits() {
-            return recordFieldSymbols.map(v -> v.name);
         }
 
         @Override
@@ -1597,9 +1552,6 @@ public class TypeEnter implements Completer {
             JCStatement superCall = make.Exec(make.Apply(typeargs, meth, helper.superArgs().map(make::Ident)));
             stats.add(superCall);
         }
-        helper.inits().forEach((initName) -> {
-            stats.add(make.Exec(make.Assign(make.Select(make.Ident(names._this), initName), make.Ident(initName))));
-        });
         JCMethodDecl result = make.MethodDef(initSym, make.Block(0, stats.toList()));
         return helper.finalAdjustment(result);
     }
