@@ -862,6 +862,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCExpression defaultValue;
         /** method symbol */
         public MethodSymbol sym;
+        /** does this method completes normally */
+        public boolean completesNormally;
+
         protected JCMethodDecl(JCModifiers mods,
                             Name name,
                             JCExpression restype,

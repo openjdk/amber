@@ -414,6 +414,11 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
         // dead code
         assertOK("record R(int x) { { this.x = 0; } public R { if (false) { this.x = x; }} }");
 
+        // throwing an unchecked exception
+        assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");
+
+        assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");
+
         // x is not DA nor DU in the body of the constructor hence error
         assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x) { # }",
                 "public R { if (x < 0) { this.x = -x; } }");
