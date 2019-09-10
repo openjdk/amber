@@ -454,10 +454,11 @@ void JvmtiClassFileReconstituter::write_record_attribute() {
   Array<RecordComponent*>* components = ik()->record_components();
   int number_of_components = components->length();
 
-  int length = sizeof(u2) + (RecordComponent::size() * number_of_components);
+  // Each component has a u2 for name, descr, attribute count
+  int length = sizeof(u2) + (sizeof(u2) * 3 * number_of_components);
   for (int x = 0; x < number_of_components; x++) {
     RecordComponent* component = components->at(x);
-    if (component->descriptor_index() != 0) {
+    if (component->generic_signature_index() != 0) {
       length += 8; // Signature attribute size
       assert(component->attributes_count() > 0, "Bad component attributes count");
     }

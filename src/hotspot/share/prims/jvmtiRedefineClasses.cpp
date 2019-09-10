@@ -298,7 +298,7 @@ bool VM_RedefineClasses::is_modifiable_class(oop klass_mirror) {
 
   // Cannot redefine or retransform a record.
   if (InstanceKlass::cast(k)->is_record()) {
-    return false;
+    /* TBD: can we support redefining a record with annotations ? */  return false;
   }
   return true;
 }

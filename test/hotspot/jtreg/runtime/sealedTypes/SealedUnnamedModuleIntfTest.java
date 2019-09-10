@@ -24,7 +24,8 @@
 /*
  * @test
  * @compile otherPkg/wrongPackage.java Pkg/Permitted.java Pkg/notPermitted.jcod Pkg/sealedInterface.java
- * @run main/othervm SealedUnnamedModuleIntfTest
+ * @compile --enable-preview --source 14 Pkg/sealedInterface.java
+ * @run main/othervm --enable-preview SealedUnnamedModuleIntfTest
  */
 
 public class SealedUnnamedModuleIntfTest {
