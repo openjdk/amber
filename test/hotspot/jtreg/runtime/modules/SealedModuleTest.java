@@ -25,12 +25,12 @@
  * @test
  * @modules java.base/jdk.internal.misc
  * @library /test/lib ..
- * @compile sealedP1/superClass.java sealedP1/c1.java sealedP2/c2.java sealedP3/c3.java
+ * @compile --enable-preview --source 14 sealedP1/superClass.java sealedP1/c1.java sealedP2/c2.java sealedP3/c3.java
  * @build sun.hotspot.WhiteBox
  * @compile/module=java.base java/lang/ModuleHelper.java
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox
  *                              sun.hotspot.WhiteBox$WhiteBoxPermission
- * @run main/othervm -Xbootclasspath/a:. -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI SealedModuleTest
+ * @run main/othervm -Xbootclasspath/a:. --enable-preview -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI SealedModuleTest
  */
 
 public class SealedModuleTest {

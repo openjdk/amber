@@ -243,22 +243,11 @@ bool InstanceKlass::has_as_permitted_subtype(const InstanceKlass* k, TRAPS) cons
       return false;
   }
 
-  // Check that the class and its super are either in the same named module or
-  // in the same package.
-  ModuleEntry* k_module = k->module();
-  if (k_module->is_named()) {
-    if (k_module != this->module()) {
-      log_trace(class, sealed)("Check failed for same module of permitted subtype of %s and sealed class %s",
-                               k->external_name(), this->external_name());
-      return false;
-    }
-  } else {
-    // In unnamed module, check that the classes are in the same package.
-    if (k->package() != this->package()) {
-      log_trace(class, sealed)("Check failed for same package of permitted subtype of %s and sealed class %s",
-                               k->external_name(), this->external_name());
-      return false;
-    }
+  // Check that the class and its super are in the same module.
+  if (k->module() != this->module()) {
+    log_trace(class, sealed)("Check failed for same module of permitted subtype of %s and sealed class %s",
+                             k->external_name(), this->external_name());
+    return false;
   }
 
   // Check for a resolved cp entry, else fall back to a name check.

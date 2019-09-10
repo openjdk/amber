@@ -23,7 +23,8 @@
 
 /*
  * @test
- * @run main recordAccessorsTest
+ * @compile --enable-preview --source 14 recordAccessorsTest.java
+ * @run main/othervm --enable-preview recordAccessorsTest
  */
 
 
@@ -40,6 +41,18 @@ public class recordAccessorsTest {
     class notRecord {
         public Method[] getMethods() throws Throwable {
             return notRecord.class.getRecordAccessors();
+        }
+    }
+
+    record recordGeneric<T>(T xx, String yy) {
+        public Method[] getMethods() throws Throwable {
+            return recordGeneric.class.getRecordAccessors();
+        }
+    }
+
+    record recordEmpty() {
+        public Method[] getMethods() throws Throwable {
+            return recordEmpty.class.getRecordAccessors();
         }
     }
 
@@ -68,6 +81,19 @@ public class recordAccessorsTest {
         if (methods.length != 0) {
             throw new RuntimeException("Non-empty component accessors returned for notRecord");
         }
+
+        recordGeneric rg = new recordGeneric(35, "abcd");
+        methods = rg.getMethods();
+        if (methods.length != 2 ||
+            !hasMethod(methods, "java.lang.Object recordAccessorsTest$recordGeneric.xx()") ||
+            !hasMethod(methods, "java.lang.String recordAccessorsTest$recordGeneric.yy()")) {
+            throw new RuntimeException("Bad component accessors returned for recordGeneric");
+        }
+
+        recordEmpty re = new recordEmpty();
+        methods = re.getMethods();
+        if (methods.length != 0) {
+            throw new RuntimeException("Non-empty component accessors returned for recordEmpty");
+        }
     }
 }
-

@@ -3437,13 +3437,15 @@ void ClassFileParser::parse_classfile_bootstrap_methods_attribute(const ClassFil
 }
 
 bool ClassFileParser::supports_sealed_types() {
-  return _major_version == JAVA_14_VERSION;
-    // TBD: add: && _minor_version == JAVA_PREVIEW_MINOR_VERSION && Arguments::enable_preview()
+  return _major_version == JAVA_14_VERSION /* TBD &&
+    _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
+    Arguments::enable_preview() */ ;
 }
 
 bool ClassFileParser::supports_records() {
-  return _major_version == JAVA_14_VERSION;
-    // TBD: add: && _minor_version == JAVA_PREVIEW_MINOR_VERSION && Arguments::enable_preview()
+  return _major_version == JAVA_14_VERSION /* TBD &&
+    _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
+    Arguments::enable_preview() */ ;
 }
 
 void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cfs,
@@ -6526,10 +6528,9 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
-  bool is_sealed = _access_flags.is_final() &&
-                         _permitted_subtypes != NULL &&
-                         _permitted_subtypes != Universe::the_empty_short_array() &&
-                         _permitted_subtypes->length() > 0;
+  bool is_sealed = _permitted_subtypes != NULL &&
+                   _permitted_subtypes != Universe::the_empty_short_array() &&
+                   _permitted_subtypes->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,

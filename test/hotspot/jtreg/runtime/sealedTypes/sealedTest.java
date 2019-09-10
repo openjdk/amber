@@ -23,7 +23,8 @@
 
 /*
  * @test
- * @run main sealedTest
+ * compile --enable-preview --source 14 sealedTest.java
+ * @run main/othervm --enable-preview sealedTest
  */
 
 public class sealedTest {

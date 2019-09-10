@@ -23,7 +23,8 @@
 
 /*
  * @test
- * @run main overrideSealedTest
+ * compile --enable-preview --source 14 overrideSealedTest.java
+ * @run main/othervm --enable-preview overrideSealedTest
  */
 
 // Test that a method in a sealed class or interface can be overridden.
