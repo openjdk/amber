@@ -526,6 +526,7 @@ public class Flow {
             try {
                 alive = Liveness.ALIVE;
                 scanStat(tree.body);
+                tree.completesNormally = alive != Liveness.DEAD;
 
                 if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID))
                     log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingRetStmt);
@@ -2004,8 +2005,8 @@ public class Flow {
                                     checkInit(TreeInfo.diagnosticPositionFor(var, vardecl),
                                         var, Errors.VarNotInitializedInDefaultConstructor(var), isCompactConstructor);
                                 } else {
-                                    boolean wasInitialized = checkInit(TreeInfo.diagEndPos(tree.body), var, isCompactConstructor);
-                                    if (!wasInitialized && var.owner.kind == TYP && isCompactConstructor && uninits.isMember(var.adr)) {
+                                    boolean wasInitialized = checkInit(TreeInfo.diagEndPos(tree.body), var, isCompactConstructor && tree.completesNormally);
+                                    if (!wasInitialized && var.owner.kind == TYP && isCompactConstructor && uninits.isMember(var.adr) && tree.completesNormally) {
                                         /*  this way we indicate Lower that it should generate an initialization for this field
                                          *  in the compact constructor
                                          */
