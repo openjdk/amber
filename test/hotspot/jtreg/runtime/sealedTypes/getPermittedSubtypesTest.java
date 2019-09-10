@@ -24,7 +24,8 @@
 /*
  * @test
  * @compile getPermittedSubtypes.jcod
- * @run main getPermittedSubtypesTest
+ * @compile --enable-preview --source 14 getPermittedSubtypesTest.java
+ * @run main/othervm --enable-preview getPermittedSubtypesTest
  */
 
 import java.lang.constant.ClassDesc;
@@ -122,8 +123,8 @@ public class getPermittedSubtypesTest {
         testBadSealedType("badPermittedAttr",
                           "Permitted subtype class_info_index 15 has bad constant type");
 
-        // Test that loading a sealed final class with a non-empty PermitedSubtypes attribute
-        // causes a ClassFormatError.
+        // Test that loading a sealed final class with a non-empty PermittedSubtypes
+        // attribute causes a ClassFormatError.
         testBadSealedType("sealedButFinal", "PermittedSubtypes attribute in final class file");
     }
 }

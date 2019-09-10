@@ -23,10 +23,11 @@
 
 /*
  * @test
- * @run main abstractSealedTest
+ * @compile  --enable-preview --source 14 abstractSealedTest.java
+ * @run main/othervm --enable-preview abstractSealedTest
  */
 
-// Test that sealed class abstractShape can be both ACC_FINAL and ACC_ABSTRACT
+// Test that a sealed class can be abstract
 public class abstractSealedTest {
 
     abstract sealed class abstractShape permits Circle {

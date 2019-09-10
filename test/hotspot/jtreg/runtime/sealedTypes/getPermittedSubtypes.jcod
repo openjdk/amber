@@ -29,7 +29,7 @@
 //
 class noLoadSubtypes {
   0xCAFEBABE;
-  0; // minor version
+  65535; // minor version
   58; // version
   [18] { // Constant Pool
     ; // first element is empty
@@ -105,7 +105,7 @@ class noLoadSubtypes {
 // this does not cause an exception to get thrown.
 class noSubtypes {
   0xCAFEBABE;
-  0; // minor version
+  65535; // minor version
   58; // version
   [14] { // Constant Pool
     ; // first element is empty
@@ -256,7 +256,7 @@ class oldClassFile {
 // should throw ClassFormatError.
 class badPermittedAttr {
   0xCAFEBABE;
-  0; // minor version
+  65535; // minor version
   58; // version
   [18] { // Constant Pool
     ; // first element is empty
@@ -334,7 +334,7 @@ class badPermittedAttr {
 //
 class sealedButFinal {
   0xCAFEBABE;
-  0; // minor version
+  65535; // minor version
   58; // version
   [18] { // Constant Pool
     ; // first element is empty
@@ -403,4 +403,3 @@ class sealedButFinal {
     } // end PermittedSubtypes
   } // Attributes
 } // end class sealedButFinal
-

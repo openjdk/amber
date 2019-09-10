@@ -24,7 +24,7 @@
 /*
  * @test
  * @compile recordAttribute.jcod
- * @run main recordAttributeTest
+ * @run main/othervm --enable-preview recordAttributeTest
  */
 
 
