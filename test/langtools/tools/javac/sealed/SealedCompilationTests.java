@@ -184,6 +184,7 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
                 "class SealedTest {\n" +
                         "    non-sealed class NoSealedSuper {}\n" +
                         "}");
+        /*
         assertFail("compiler.err.illegal.combination.of.modifiers",
                 "class SealedTest {\n" +
                         "    final non-sealed class Super {}\n" +
@@ -205,6 +206,7 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
                 "class SealedTest {\n" +
                         "    sealed public void m() {}\n" +
                         "}");
+        */
     }
 
     public void testAnonymousAndLambdaCantExtendSealed() {

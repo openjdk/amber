@@ -25,9 +25,11 @@
 
 package com.sun.tools.javac.comp;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import javax.tools.JavaFileObject;
 
@@ -1039,52 +1041,133 @@ public class TypeEnter implements Completer {
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));
             }
 
-            Type st = types.supertype(tree.sym.type);
-            boolean anyParentIsSealed = false;
-            ListBuffer<Pair<ClassType, JCExpression>> potentiallySealedParents = new ListBuffer<>();
-            if (st != Type.noType && (st.tsym.isSealed())) {
-                potentiallySealedParents.add(new Pair<>((ClassType)st, tree.extending));
-                anyParentIsSealed = true;
-            }
+            List<Type> closureInSameCompilationUnit = types.closure(tree.sym.type).stream()
+                    .filter(supertype ->
+                            TreeInfo.declarationFor(supertype.tsym, env.toplevel) != null &&
+                                    TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null)
+                    .collect(List.collector());
+            Set<Type> explicitlySealedSuperTypesInCU = closureInSameCompilationUnit.stream()
+                    .filter(type -> type != tree.sym.type && type.tsym.isSealed()).collect(Collectors.toSet());
 
-            if (tree.implementing != null) {
-                for (JCExpression expr : tree.implementing) {
-                    if (expr.type.tsym.isSealed()) {
-                        potentiallySealedParents.add(new Pair<>((ClassType)expr.type, expr));
-                        anyParentIsSealed = true;
-                    }
-                }
-            }
-
-            for (Pair<ClassType, JCExpression> sealedParentPair: potentiallySealedParents) {
-                if (!sealedParentPair.fst.permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
-                    boolean areInSameCompilationUnit = TreeInfo.declarationFor(sealedParentPair.fst.tsym, env.toplevel) != null &&
-                            TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null;
-                    boolean isSealed = sealedParentPair.fst.tsym.isSealed();
-                    if (areInSameCompilationUnit) {
-                        if (sealedParentPair.fst.tsym.isSealed() && !((ClassType)sealedParentPair.fst.tsym.type).isPermittedExplicit) {
-                            if (tree.sym.isAnonymous()) {
-                                log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
-                            } else {
-                                sealedParentPair.fst.permitted = sealedParentPair.fst.permitted.append(tree.sym.type);
+            boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();
+            if (anySuperInSameCUIsSealed) {
+                java.util.List<JCExpression> potentiallySealedSuperTypes = superTypesInASealedHierarchy(tree, env, true);
+                if (!potentiallySealedSuperTypes.isEmpty()) {
+                    for (JCExpression supertypeExpr : potentiallySealedSuperTypes) {
+                        if (!((ClassType)supertypeExpr.type).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
+                            if (!((ClassType)supertypeExpr.type.tsym.type).isPermittedExplicit) {
+                                if (tree.sym.isAnonymous()) {
+                                    log.error(supertypeExpr, Errors.CantInheritFromSealed(supertypeExpr.type.tsym));
+                                } else {
+                                    ((ClassType)supertypeExpr.type).permitted = ((ClassType)supertypeExpr.type).permitted.append(tree.sym.type);
+                                    ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
+                                }
+                            } else if (!dontErrorIfSealedExtended) {
+                                log.error(supertypeExpr, Errors.CantInheritFromSealed(supertypeExpr.type.tsym));
                             }
-                        } else if (!dontErrorIfSealedExtended) {
-                            log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
+                        } else {
+                            ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
                         }
-                    } else if (!dontErrorIfSealedExtended) {
-                        log.error(sealedParentPair.snd, Errors.CantInheritFromSealed(sealedParentPair.fst.tsym));
                     }
                 }
             }
 
-            if (anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) == 0) ) {
-                // once we have the non-final keyword this will change
-                tree.sym.flags_field |= (tree.sym.flags_field & ABSTRACT) != 0 ? SEALED : FINAL;
-            }
-
-            if (!anyParentIsSealed && ((tree.sym.flags_field & Flags.NON_SEALED) != 0) ) {
+            java.util.List<JCExpression> allSealedSuperTypes = superTypesInASealedHierarchy(tree, env, false);
+            boolean hasSuperTypesInSealedHierarchy = !allSealedSuperTypes.isEmpty();
+            if ((tree.sym.flags_field & Flags.NON_SEALED) != 0 && !hasSuperTypesInSealedHierarchy) {
                 log.error(tree, Errors.NonSealedWithNoSealedSupertype);
             }
+
+            if (hasSuperTypesInSealedHierarchy && !anySuperInSameCUIsSealed) {
+                // that supertype most have a permits clause allowing this class to extend it
+                List<Type> closureOutsideOfSameCU = types.closure(tree.sym.type).stream()
+                        .filter(supertype ->
+                                TreeInfo.declarationFor(supertype.tsym, env.toplevel) == null ||
+                                        TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) == null)
+                        .collect(List.collector());
+                Set<Type> explicitlySealedSuperTypesOutsideOfCU = closureOutsideOfSameCU.stream()
+                        .filter(type -> type != tree.sym.type && type.tsym.isSealed()).collect(Collectors.toSet());
+                for (Type supertype : explicitlySealedSuperTypesOutsideOfCU) {
+                    if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
+                        log.error(tree, Errors.CantInheritFromSealed(supertype.tsym));
+                    }
+                }
+
+                if (!isNonSealed(tree.sym) && !isFinal(tree.sym) && !isSealed(tree.sym)) {
+                    log.error(tree, Errors.NonSealedSealedOrFinalExpected);
+                }
+            }
+        }
+
+        boolean areInSameCU(Symbol sym1, Symbol sym2, Env<AttrContext> env) {
+            return TreeInfo.declarationFor(sym1, env.toplevel) != null &&
+                    TreeInfo.declarationFor(sym2.outermostClass(), env.toplevel) != null;
+        }
+
+        boolean isNonSealed(Symbol sym) { return sym != null && (sym.flags_field & NON_SEALED) != 0; }
+        boolean isFinal(Symbol sym) { return sym != null && (sym.flags_field & FINAL) != 0; }
+        boolean isSealed(Symbol sym) { return sym != null && (sym.flags_field & SEALED) != 0; }
+
+        java.util.List<JCExpression> superTypesInASealedHierarchy(JCClassDecl tree, Env<AttrContext> env, boolean inSameCUOnly) {
+            Type supertype = types.supertype(tree.sym.type);
+            java.util.List<JCExpression> supertypes = new ArrayList<>();
+            if (supertype != null &&
+                    supertype.tsym != null &&
+                    tree.extending != null &&
+                    tree.extending.type != null &&
+                    tree.extending.type.tsym != null &&
+                    supertype != syms.objectType &&
+                    !isNonSealed(supertype.tsym) &&
+                    (inSameCUOnly && areInSameCU(tree.sym, supertype.tsym, env) || !inSameCUOnly)) {
+                supertypes.add(tree.extending);
+            }
+            if (tree.implementing != null) {
+                for (JCExpression intf : tree.implementing) {
+                    if (intf != null && intf.type != null &&
+                            intf.type.tsym != null && !isNonSealed(intf.type.tsym) &&
+                            (inSameCUOnly && areInSameCU(tree.sym, intf.type.tsym, env) || !inSameCUOnly)) {
+                        supertypes.add(intf);
+                    }
+                }
+            }
+            for (JCExpression sup : new ArrayList<>(supertypes)) {
+                java.util.List<Type> supers = superTypesInASealedHierarchyHelper((ClassSymbol)sup.type.tsym, env, inSameCUOnly);
+                if (supers == null || supers.isEmpty() && !sup.type.tsym.isSealed()) {
+                    supertypes.remove(sup);
+                }
+            }
+            return supertypes;
+        }
+
+        java.util.List<Type> superTypesInASealedHierarchyHelper(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
+            if (csym == null) {
+                return null;
+            }
+            Type supertype = csym != null && csym.type != null ?
+                    types.supertype(csym.type) : null;
+            java.util.List<Type> supertypesInSameCU = new ArrayList<>();
+            if (supertype != null &&
+                    supertype.tsym != null &&
+                    supertype != syms.objectType &&
+                    !isNonSealed(supertype.tsym) &&
+                    (inSameCUOnly && areInSameCU(csym, supertype.tsym, env) || !inSameCUOnly)) {
+                supertypesInSameCU.add(supertype);
+            }
+            if (csym.getInterfaces() != null) {
+                for (Type intf : csym.getInterfaces()) {
+                    if (intf != null && intf.tsym != null && !isNonSealed(intf.tsym) &&
+                            (inSameCUOnly && areInSameCU(csym, intf.tsym, env) || !inSameCUOnly)) {
+                        supertypesInSameCU.add(intf);
+                    }
+                }
+            }
+            for (Type sup : new ArrayList<>(supertypesInSameCU)) {
+                java.util.List<Type> supers = superTypesInASealedHierarchyHelper((ClassSymbol)sup.tsym, env, inSameCUOnly);
+                if ((supers == null || supers.isEmpty()) && !sup.tsym.isSealed()) {
+                    supertypesInSameCU.remove(sup);
+                }
+            }
+            return supertypesInSameCU;
         }
 
         /** Add the accessors for fields to the symbol table.

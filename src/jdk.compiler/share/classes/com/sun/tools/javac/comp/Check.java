@@ -1153,7 +1153,7 @@ public class Check {
                     mask = PRIVATE;
                 } else
                     mask = ConstructorFlags;
-            }  else if ((sym.owner.flags_field & INTERFACE) != 0) {
+            } else if ((sym.owner.flags_field & INTERFACE) != 0) {
                 if ((sym.owner.flags_field & ANNOTATION) != 0) {
                     mask = AnnotationTypeElementMask;
                     implicit = PUBLIC | ABSTRACT;

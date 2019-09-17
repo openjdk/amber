@@ -426,6 +426,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & SEALED) != 0;
     }
 
+    public boolean isNonSealed() {
+        return (flags_field & NON_SEALED) != 0;
+    }
+
     public boolean isFinal() {
         return (flags_field & FINAL) != 0;
     }

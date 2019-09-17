@@ -980,6 +980,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
         public boolean isPermittedExplicit = false;
 
+        public boolean hasSealedSuperInSameCU;
+
         public ClassType(Type outer, List<Type> typarams, TypeSymbol tsym) {
             this(outer, typarams, tsym, TypeMetadata.EMPTY);
         }
