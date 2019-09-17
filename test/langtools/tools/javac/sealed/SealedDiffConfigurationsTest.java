@@ -171,12 +171,12 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sub1,
                           "package pkg;\n" +
                           "\n" +
-                          "class Sub1 extends Sealed {\n" +
+                          "final class Sub1 extends Sealed {\n" +
                           "}");
         tb.writeJavaFiles(sub2,
                           "package pkg;\n" +
                           "\n" +
-                          "class Sub2 extends Sealed {\n" +
+                          "final class Sub2 extends Sealed {\n" +
                           "}");
 
         Path out = base.resolve("out");
@@ -212,12 +212,12 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sub1,
                           "package pkg2;\n" +
                           "import pkg1.*;\n" +
-                          "public class Sub1 extends pkg1.Sealed {\n" +
+                          "public final class Sub1 extends pkg1.Sealed {\n" +
                           "}");
         tb.writeJavaFiles(sub2,
                           "package pkg2;\n" +
                           "import pkg1.*;\n" +
-                          "public class Sub2 extends pkg1.Sealed {\n" +
+                          "public final class Sub2 extends pkg1.Sealed {\n" +
                           "}");
 
         Path out = base.resolve("out");
@@ -279,7 +279,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(sub1,
                           "package pkg;\n" +
                           "\n" +
-                          "class Sub1 extends Sealed {\n" +
+                          "final class Sub1 extends Sealed {\n" +
                           "}");
         tb.writeJavaFiles(sub2,
                           "package pkg;\n" +
@@ -295,7 +295,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sub2.java:3:20: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
+                "Sub2.java:3:1: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
@@ -329,6 +329,74 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         List<String> expected = List.of(
                 "Sub1.java:3:20: compiler.err.cant.inherit.from.final: pkg.Sealed",
+                "1 error");
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
+
+    @Test
+    public void testSamePackageNeg3(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path pkg = src.resolve("pkg");
+        Path sealed = pkg.resolve("Sealed");
+        Path sub1 = pkg.resolve("Sub1");
+
+        tb.writeJavaFiles(sealed,
+                "package pkg;\n" +
+                        "\n" +
+                        "sealed class Sealed permits Sub1{\n" +
+                        "}");
+        tb.writeJavaFiles(sub1,
+                "package pkg;\n" +
+                        "\n" +
+                        "class Sub1 extends Sealed {\n" +
+                        "}");
+
+        List<String> error = new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", "14")
+                .files(findJavaFiles(pkg))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+                "Sub1.java:3:1: compiler.err.non.sealed.sealed.or.final.expected",
+                "1 error");
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
+
+    @Test
+    public void testDiffPackageNeg(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path pkg1 = src.resolve("pkg1");
+        Path pkg2 = src.resolve("pkg2");
+        Path sealed = pkg1.resolve("Sealed");
+        Path sub1 = pkg2.resolve("Sub1");
+        Path sub2 = pkg2.resolve("Sub2");
+
+        tb.writeJavaFiles(sealed,
+                "package pkg1;\n" +
+                        "import pkg2.*;\n" +
+                        "public sealed class Sealed permits pkg2.Sub1 {\n" +
+                        "}");
+        tb.writeJavaFiles(sub1,
+                "package pkg2;\n" +
+                        "import pkg1.*;\n" +
+                        "public class Sub1 extends pkg1.Sealed {\n" +
+                        "}");
+
+        List<String> error = new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", "14")
+                .files(findJavaFiles(pkg1, pkg2))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+                "Sub1.java:3:8: compiler.err.non.sealed.sealed.or.final.expected",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
