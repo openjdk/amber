@@ -55,7 +55,7 @@ public class CheckingAttributeAtRuntimeTest {
 
     class Sub5 implements SealedI2 {}
 
-    interface Int1 extends SealedI2 {}
+    non-sealed interface Int1 extends SealedI2 {}
 
     non-sealed class Sub6 implements SealedI2 {}
 

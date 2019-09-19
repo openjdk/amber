@@ -114,7 +114,7 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
         assertOK("class SealedTest {\n" +
                 "    sealed interface SI permits C_SI, I_SI { }\n" +
                 "    class C_SI implements SI { }\n" +
-                "    interface I_SI extends SI { }\n" +
+                "    non-sealed interface I_SI extends SI { }\n" +
                 "}");
 
         // wo permits
@@ -129,7 +129,7 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
         assertOK("class SealedTest {\n" +
                 "    sealed interface SI { }\n" +
                 "    class C_SI implements SI { }\n" +
-                "    interface I_SI extends SI { }\n" +
+                "    non-sealed interface I_SI extends SI { }\n" +
                 "}");
     }
 
@@ -184,7 +184,6 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
                 "class SealedTest {\n" +
                         "    non-sealed class NoSealedSuper {}\n" +
                         "}");
-        /*
         assertFail("compiler.err.illegal.combination.of.modifiers",
                 "class SealedTest {\n" +
                         "    final non-sealed class Super {}\n" +
@@ -206,7 +205,6 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
                 "class SealedTest {\n" +
                         "    sealed public void m() {}\n" +
                         "}");
-        */
     }
 
     public void testAnonymousAndLambdaCantExtendSealed() {
