@@ -111,4 +111,19 @@ class RecordComponent implements AnnotatedElement {
     public Annotation[] getDeclaredAnnotations() {
         return new Annotation[0];
     }
+
+    /**
+     * Returns {@code true} if this record component was declared with
+     * variable arity; returns {@code false} otherwise.
+     *
+     * @return {@code true} if an only if this record component was declared
+     * with a variable arity.
+     */
+    public boolean isVarArgs()  {
+        /*
+          once we have the new Class::getRecordComponents, we can use it to retrieve the canonical constructor, if it is
+          varargs and this record component is the last in the record components array, then voila
+         */
+        return false;
+    }
 }
