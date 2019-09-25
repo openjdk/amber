@@ -24,10 +24,11 @@
 
 #include "precompiled.hpp"
 #include "logging/log.hpp"
-#include "oops/annotations.hpp"
-#include "oops/instanceKlass.hpp"
+#include "memory/metadataFactory.hpp"
 #include "memory/metaspace.hpp"
 #include "memory/metaspaceClosure.hpp"
+#include "oops/annotations.hpp"
+#include "oops/instanceKlass.hpp"
 #include "oops/recordComponent.hpp"
 #include "utilities/globalDefinitions.hpp"
 
@@ -35,21 +36,26 @@ RecordComponent* RecordComponent::allocate(ClassLoaderData* loader_data,
                                            u2 name_index, u2 descriptor_index,
                                            u2 attributes_count,
                                            u2 generic_signature_index,
-                                           Annotations* annotations, TRAPS) {
+                                           AnnotationArray* annotations,
+                                           AnnotationArray* type_annotations, TRAPS) {
   return new (loader_data, size(), MetaspaceObj::RecordComponentType, THREAD)
          RecordComponent(name_index, descriptor_index, attributes_count,
-                         generic_signature_index, annotations);
+                         generic_signature_index, annotations, type_annotations);
 }
 
 void RecordComponent::deallocate_contents(ClassLoaderData* loader_data) {
   if (annotations() != NULL) {
-    annotations()->deallocate_contents(loader_data);
+    MetadataFactory::free_array<u1>(loader_data, annotations());
+  }
+  if (type_annotations() != NULL) {
+    MetadataFactory::free_array<u1>(loader_data, type_annotations());
   }
 }
 
 void RecordComponent::metaspace_pointers_do(MetaspaceClosure* it) {
   log_trace(cds)("Iter(RecordComponent): %p", this);
   it->push(&_annotations);
+  it->push(&_type_annotations);
 }
 
 void RecordComponent::print_value_on(outputStream* st) const {
@@ -67,7 +73,11 @@ void RecordComponent::print_on(outputStream* st) const {
   st->cr();
   if (_annotations != NULL) {
     st->print_cr("record component annotations");
-    _annotations->print_on(st);
+    _annotations->print_value_on(st);
+  }
+  if (_type_annotations != NULL) {
+    st->print_cr("record component type annotations");
+    _type_annotations->print_value_on(st);
   }
 }
 #endif // PRODUCT

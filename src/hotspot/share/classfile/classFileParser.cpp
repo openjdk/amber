@@ -3292,7 +3292,17 @@ u2 ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* cons
 
     const u2 attributes_count = cfs->get_u2_fast();
     calculate_attr_size += 6;
-    u2 generic_signature_index = 0;
+    u2 generic_sig_index = 0;
+    const u1* runtime_visible_annotations = NULL;
+    int runtime_visible_annotations_length = 0;
+    const u1* runtime_invisible_annotations = NULL;
+    int runtime_invisible_annotations_length = 0;
+    bool runtime_invisible_annotations_exists = false;
+    const u1* runtime_visible_type_annotations = NULL;
+    int runtime_visible_type_annotations_length = 0;
+    const u1* runtime_invisible_type_annotations = NULL;
+    int runtime_invisible_type_annotations_length = 0;
+    bool runtime_invisible_type_annotations_exists = false;
 
     for (int y = 0; y < attributes_count; y++) {
       cfs->guarantee_more(6, CHECK_0);  // attribute_name_index, attribute_length
@@ -3306,33 +3316,92 @@ u2 ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* cons
 
       const Symbol* const attribute_name = cp->symbol_at(attribute_name_index);
       if (attribute_name == vmSymbols::tag_signature()) {
-        if (generic_signature_index != 0) {
+        if (generic_sig_index != 0) {
           classfile_parse_error(
             "Multiple Signature attributes for Record component in class file %s",
             CHECK_0);
         }
         if (attribute_length != 2) {
           classfile_parse_error(
-            "Invalid Signature attribute length %u in class file %s",
+            "Invalid Signature attribute length %u in Record component in class file %s",
             attribute_length, CHECK_0);
         }
-        generic_signature_index = parse_generic_signature_attribute(cfs, CHECK_0);
-        calculate_attr_size += 2;
+        generic_sig_index = parse_generic_signature_attribute(cfs, CHECK_0);
+
+      } else if (attribute_name == vmSymbols::tag_runtime_visible_annotations()) {
+        if (runtime_visible_annotations != NULL) {
+          classfile_parse_error(
+            "Multiple RuntimeVisibleAnnotations attributes for Record component in class file %s", CHECK_0);
+        }
+        runtime_visible_annotations_length = attribute_length;
+        runtime_visible_annotations = cfs->current();
+
+        assert(runtime_visible_annotations != NULL, "null record component visible annotation");
+        cfs->guarantee_more(runtime_visible_annotations_length, CHECK_0);
+        cfs->skip_u1_fast(runtime_visible_annotations_length);
+
+      } else if (attribute_name == vmSymbols::tag_runtime_invisible_annotations()) {
+        if (runtime_invisible_annotations_exists) {
+          classfile_parse_error(
+            "Multiple RuntimeInvisibleAnnotations attributes for Record component in class file %s", CHECK_0);
+        }
+        runtime_invisible_annotations_exists = true;
+        if (PreserveAllAnnotations) {
+          runtime_invisible_annotations_length = attribute_length;
+          runtime_invisible_annotations = cfs->current();
+          assert(runtime_invisible_annotations != NULL, "null record component invisible annotation");
+        }
+        cfs->skip_u1(attribute_length, CHECK_0);
+
+      } else if (attribute_name == vmSymbols::tag_runtime_visible_type_annotations()) {
+        if (runtime_visible_type_annotations != NULL) {
+          classfile_parse_error(
+            "Multiple RuntimeVisibleTypeAnnotations attributes for Record component in class file %s", CHECK_0);
+        }
+        runtime_visible_type_annotations_length = attribute_length;
+        runtime_visible_type_annotations = cfs->current();
+
+        assert(runtime_visible_type_annotations != NULL, "null record component visible type annotation");
+        cfs->guarantee_more(runtime_visible_type_annotations_length, CHECK_0);
+        cfs->skip_u1_fast(runtime_visible_type_annotations_length);
+
+      } else if (attribute_name == vmSymbols::tag_runtime_invisible_type_annotations()) {
+        if (runtime_invisible_type_annotations_exists) {
+          classfile_parse_error(
+            "Multiple RuntimeInvisibleTypeAnnotations attributes for Record component in class file %s", CHECK_0);
+        }
+        runtime_invisible_type_annotations_exists = true;
+        if (PreserveAllAnnotations) {
+          runtime_invisible_type_annotations_length = attribute_length;
+          runtime_invisible_type_annotations = cfs->current();
+          assert(runtime_invisible_type_annotations != NULL, "null record component invisible type annotation");
+        }
+        cfs->skip_u1(attribute_length, CHECK_0);
+
       } else {
         // Skip unknown attributes
         cfs->skip_u1(attribute_length, CHECK_0);
-        calculate_attr_size += attribute_length;
       }
-    }
+      calculate_attr_size += attribute_length;
+    } // End of attributes For loop
+
+    AnnotationArray* annotations = assemble_annotations(runtime_visible_annotations,
+                                                        runtime_visible_annotations_length,
+                                                        runtime_invisible_annotations,
+                                                        runtime_invisible_annotations_length,
+                                                        CHECK_0);
+    AnnotationArray* type_annotations = assemble_annotations(runtime_visible_type_annotations,
+                                                             runtime_visible_type_annotations_length,
+                                                             runtime_invisible_type_annotations,
+                                                             runtime_invisible_type_annotations_length,
+                                                             CHECK_0);
 
     RecordComponent* record_component =
       RecordComponent::allocate(_loader_data, name_index, descriptor_index,
-                                attributes_count, generic_signature_index,
-                                NULL /* TBD annotations */, CHECK_0);
+                                attributes_count, generic_sig_index,
+                                annotations, type_annotations, CHECK_0);
     record_components->at_put(x, record_component);
-
-    // TBD need to process possible annotation attributes
-  }
+  }  // End of component processing loop
 
   // Restore buffer's current position.
   cfs->set_current(current_mark);

@@ -447,8 +447,14 @@ void JvmtiClassFileReconstituter::write_permitted_subtypes_attribute() {
 //  Record {
 //    u2 attribute_name_index;
 //    u4 attribute_length;
-//    u2 number_of_classes;
-//    u2 classes[number_of_classes];
+//    u2 components_count;
+//    component_info components[components_count];
+//  }
+//  component_info {
+//    u2 name_index;
+//    u2 descriptor_index
+//    u2 attributs_count;
+//    attribute_info_attributes[attributes_count];
 //  }
 void JvmtiClassFileReconstituter::write_record_attribute() {
   Array<RecordComponent*>* components = ik()->record_components();
@@ -462,7 +468,12 @@ void JvmtiClassFileReconstituter::write_record_attribute() {
       length += 8; // Signature attribute size
       assert(component->attributes_count() > 0, "Bad component attributes count");
     }
-    // TBD check for annotation attributes and add their size.
+    if (component->annotations() != NULL) {
+      length += 6 + component->annotations()->length();
+    }
+    if (component->type_annotations() != NULL) {
+      length += 6 + component->type_annotations()->length();
+    }
   }
 
   write_attribute_name_index("Record");
@@ -476,7 +487,12 @@ void JvmtiClassFileReconstituter::write_record_attribute() {
     if (component->generic_signature_index() != 0) {
       write_signature_attribute(component->generic_signature_index());
     }
-    // TBD need to write annotation stuff here!
+    if (component->annotations() != NULL) {
+      write_annotations_attribute("RuntimeVisibleAnnotations", component->annotations());
+    }
+    if (component->type_annotations() != NULL) {
+      write_annotations_attribute("RuntimeVisibleTypeAnnotations", component->type_annotations());
+    }
   }
 }
 
