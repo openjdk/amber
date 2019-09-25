@@ -23,4 +23,4 @@
 
 package otherPkg;
 
-public class wrongPackage implements Pkg.sealedInterface { }
+public sealed class wrongPackage implements Pkg.sealedInterface { }

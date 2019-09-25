@@ -23,5 +23,5 @@
 
 package asteroids;
 
-public class Pluto extends planets.outerPlanets { }
+public sealed class Pluto extends planets.outerPlanets { }
 
