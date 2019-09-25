@@ -25,6 +25,7 @@
 #ifndef SHARE_OOPS_RECORDCOMPONENT_HPP
 #define SHARE_OOPS_RECORDCOMPONENT_HPP
 
+#include "memory/heapInspection.hpp"
 #include "oops/annotations.hpp"
 #include "oops/metadata.hpp"
 #include "utilities/globalDefinitions.hpp"
@@ -32,7 +33,8 @@
 // This class stores information extracted from the Record class attribute.
 class RecordComponent: public MetaspaceObj {
   private:
-    Annotations* _annotations;
+    AnnotationArray* _annotations;
+    AnnotationArray* _type_annotations;
     u2 _name_index;
     u2 _descriptor_index;
     u2 _attributes_count;
@@ -43,9 +45,10 @@ class RecordComponent: public MetaspaceObj {
 
   public:
     RecordComponent(u2 name_index, u2 descriptor_index, u2 attributes_count,
-                    u2 generic_signature_index, Annotations* annotations):
-                    _annotations(annotations), _name_index(name_index),
-                    _descriptor_index(descriptor_index),
+                    u2 generic_signature_index, AnnotationArray* annotations,
+                    AnnotationArray* type_annotations):
+                    _annotations(annotations), _type_annotations(type_annotations),
+                    _name_index(name_index), _descriptor_index(descriptor_index),
                     _attributes_count(attributes_count),
                     _generic_signature_index(generic_signature_index) { }
 
@@ -54,7 +57,8 @@ class RecordComponent: public MetaspaceObj {
                                      u2 name_index, u2 descriptor_index,
                                      u2 attributes_count,
                                      u2 generic_signature_index,
-                                     Annotations* annotations, TRAPS);
+                                     AnnotationArray* annotations,
+                                     AnnotationArray* type_annotations, TRAPS);
 
     void deallocate_contents(ClassLoaderData* loader_data);
 
@@ -66,7 +70,8 @@ class RecordComponent: public MetaspaceObj {
 
     u2 generic_signature_index() const { return _generic_signature_index; }
 
-    Annotations* annotations() const { return _annotations; }
+    AnnotationArray* annotations() const { return _annotations; }
+    AnnotationArray* type_annotations() const { return _type_annotations; }
 
     // Size of RecordComponent, not including size of any annotations.
     static int size() { return sizeof(RecordComponent) / wordSize; }
@@ -80,7 +85,15 @@ class RecordComponent: public MetaspaceObj {
 
 #if INCLUDE_SERVICES
     void collect_statistics(KlassSizeStats *sz) const {
-      if (_annotations != NULL) _annotations->collect_statistics(sz);
+      // TBD is this right?
+      if (_annotations != NULL) {
+        sz->_annotations_bytes += sz->count(_annotations);
+        sz->_ro_bytes += sz->count(_annotations);
+      }
+      if (_type_annotations != NULL) {
+        sz->_annotations_bytes += sz->count(_type_annotations);
+        sz->_ro_bytes += sz->count(_type_annotations);
+      }
     }
 #endif
 
