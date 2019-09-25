@@ -577,9 +577,15 @@ public class Enter extends JCTree.Visitor {
                     (tree.sym.flags_field & Flags.NON_SEALED) == 0 &&
                     (tree.sym.flags_field & Flags.SEALED) == 0 &&
                     ((ClassType)tree.sym.type).hasSealedSuperInSameCU) {
-                tree.sym.flags_field |= (((ClassType)tree.sym.type).permitted.isEmpty()) ? FINAL : SEALED;
                 // just checking we don't want final abstract classes
-                tree.sym.flags_field = chk.checkFlags(tree.pos(), tree.sym.flags_field, tree.sym, tree);
+                if ((((ClassType)tree.sym.type).permitted.isEmpty())) {
+                    if ((tree.sym.flags_field & ABSTRACT) != 0 || (tree.sym.flags_field & INTERFACE) != 0) {
+                        log.error(tree.pos(), Errors.ClassCantBeLeafInSealedHierarchy(tree.sym));
+                    } else {
+                        tree.sym.flags_field |= (((ClassType)tree.sym.type).permitted.isEmpty()) ? FINAL : SEALED;
+                    }
+                }
+                //tree.sym.flags_field = chk.checkFlags(tree.pos(), tree.sym.flags_field, tree.sym, tree);
             }
         }
     }
