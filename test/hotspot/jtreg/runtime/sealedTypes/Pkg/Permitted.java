@@ -23,4 +23,4 @@
 
 package Pkg;
 
-public class Permitted implements sealedInterface { }
+public sealed class Permitted implements sealedInterface { }
