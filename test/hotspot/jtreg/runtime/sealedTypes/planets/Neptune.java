@@ -23,4 +23,4 @@
 
 package planets;
 
-public class Neptune extends outerPlanets { }
+public sealed class Neptune extends outerPlanets { }

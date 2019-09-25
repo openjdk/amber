@@ -24,6 +24,6 @@
 // Small class used by SealedModuleTest
 package sealedP3;
 
-public class c3 extends sealedP1.superClass {
+public sealed class c3 extends sealedP1.superClass {
     public void method3() { }
 }
