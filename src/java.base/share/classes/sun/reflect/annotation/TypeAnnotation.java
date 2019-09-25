@@ -90,7 +90,8 @@ public final class TypeAnnotation {
         METHOD_RETURN,
         METHOD_RECEIVER,
         METHOD_FORMAL_PARAMETER,
-        THROWS;
+        THROWS,
+        RECORD_COMPONENT;
     }
 
     public static final class TypeAnnotationTargetInfo {
