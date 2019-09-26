@@ -113,10 +113,10 @@ class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns {@code true} if this record component was declared with
+     * Returns {@code true} if this {@code RecordComponent} was declared with
      * variable arity; returns {@code false} otherwise.
      *
-     * @return {@code true} if an only if this record component was declared
+     * @return {@code true} if an only if this {@code RecordComponent} was declared
      * with a variable arity.
      */
     public boolean isVarArgs()  {
@@ -125,5 +125,20 @@ class RecordComponent implements AnnotatedElement {
           varargs and this record component is the last in the record components array, then voila
          */
         return false;
+    }
+
+    /**
+     * Returns a string describing this {@code RecordComponent}, including
+     * its generic type.  The format is the access modifiers for the
+     * record component, always {@code private} and {@code final}, followed
+     * by the generic record component type, followed by a space, followed by
+     * the fully-qualified name of the class declaring the record component,
+     * followed by a period, followed by the name of the record component.
+     *
+     * @return a string describing this {@code RecordComponent}, including
+     * its generic type
+     */
+    public String toGenericString() {
+        return null;
     }
 }
