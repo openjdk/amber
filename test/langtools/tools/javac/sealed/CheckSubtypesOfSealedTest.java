@@ -24,106 +24,95 @@
 /*
  * @test
  * @summary check subtypes of sealed classes
- * @library /tools/lib
+ * @library /tools/lib /tools/javac/lib /tools/javac/classfiles/attributes/lib
  * @modules jdk.jdeps/com.sun.tools.classfile
  *          jdk.compiler/com.sun.tools.javac.code
  *          jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.main
  *          jdk.compiler/com.sun.tools.javac.util
- * @build toolbox.ToolBox toolbox.JavacTask
+ * @build toolbox.ToolBox toolbox.JavacTask InMemoryFileManager TestBase
  * @run main CheckSubtypesOfSealedTest
- * @ignore
  */
-
-import java.io.File;
-import java.nio.file.Paths;
 
 import com.sun.tools.classfile.*;
 import com.sun.tools.classfile.ConstantPool.CONSTANT_Utf8_info;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.util.Assert;
 
-import toolbox.JavacTask;
-import toolbox.ToolBox;
-
-public class CheckSubtypesOfSealedTest {
+public class CheckSubtypesOfSealedTest extends TestBase {
 
     static final String testSource =
-            "import java.lang.annotation.*;\n" +
             "public class SealedClasses {\n" +
-            "    @Sealed abstract class SAC {}\n" +
+            "    sealed abstract class SAC {}\n" +
             "    abstract class SAC2 extends SAC {}\n" +
             "    class SAC3 extends SAC {}\n" +
             "    class SAC4 extends SAC2 {}\n" +
-            "    SAC sac = new SAC() {};\n" +
-            "    @Sealed interface SI {}\n" +
+            "    sealed interface SI {}\n" +
             "    interface SSI extends SI {}\n" +
-            "    class SAC5 implements SI {}\n" +
-            "    @NotSealed abstract class SAC6 extends SAC {}\n" +
-            "    @NotSealed class SAC7 extends SAC {}\n" +
+            "    class SAC5 implements SI, SSI {}\n" +
+            "    non-sealed abstract class SAC6 extends SAC {}\n" +
+            "    non-sealed class SAC7 extends SAC {}\n" +
             "}";
 
     public static void main(String[] args) throws Exception {
         new CheckSubtypesOfSealedTest().run();
     }
 
-    ToolBox tb = new ToolBox();
-
     void run() throws Exception {
-        compileTestClass();
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC2.class").toUri()), CheckFor.SEALED);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC3.class").toUri()), CheckFor.FINAL);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC4.class").toUri()), CheckFor.FINAL);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$1.class").toUri()), CheckFor.FINAL);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SSI.class").toUri()), CheckFor.SEALED);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC5.class").toUri()), CheckFor.FINAL);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC6.class").toUri()), CheckFor.NOT_SEALED);
-        checkClassFile(new File(Paths.get(System.getProperty("user.dir"), "SealedClasses$SAC7.class").toUri()), CheckFor.NOT_SEALED, CheckFor.NON_FINAL);
-    }
-
-    void compileTestClass() throws Exception {
-        new JavacTask(tb)
-                .sources(testSource)
-                .run();
+        InMemoryFileManager fileManager = compile(testSource);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC2")), CheckFor.SEALED);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC3")), CheckFor.FINAL);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC4")), CheckFor.FINAL);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SSI")), CheckFor.SEALED);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC5")), CheckFor.FINAL);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC6")), CheckFor.NOT_SEALED);
+        checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC7")), CheckFor.NOT_SEALED);
     }
 
     enum CheckFor {
-        SEALED,
-        FINAL,
-        NON_FINAL,
-        NOT_SEALED
+        SEALED {
+            void check(ClassFile classFile) throws Exception {
+                boolean found = false;
+                for (Attribute attr: classFile.attributes) {
+                    if (attr.getName(classFile.constant_pool).equals("PermittedSubtypes")) {
+                        PermittedSubtypes_attribute permittedSubtypes = (PermittedSubtypes_attribute)attr;
+                        found = true;
+                        if (permittedSubtypes.subtypes == null || permittedSubtypes.subtypes.length == 0) {
+                            throw new AssertionError(classFile.getName() + " should be sealed");
+                        }
+                    }
+                }
+                if (!found) {
+                    throw new AssertionError(classFile.getName() + " should be sealed");
+                }
+            }
+        },
+        FINAL {
+            void check(ClassFile classFile) throws Exception {
+                if ((classFile.access_flags.flags & Flags.FINAL) == 0) {
+                    throw new AssertionError(classFile.getName() + " should be final");
+                }
+            }
+        },
+        NOT_SEALED {
+            void check(ClassFile classFile) throws Exception {
+                for (Attribute attr: classFile.attributes) {
+                    if (attr.getName(classFile.constant_pool).equals("PermittedSubtypes")) {
+                        throw new AssertionError(classFile.getName() + " should not be sealed");
+                    }
+                }
+                if ((classFile.access_flags.flags & Flags.FINAL) != 0) {
+                    throw new AssertionError(classFile.getName() + " should not be final");
+                }
+            }
+        };
+
+        abstract void check(ClassFile classFile) throws Exception;
     }
 
-    void checkClassFile(final File cfile, CheckFor... checkFor) throws Exception {
-        ClassFile classFile = ClassFile.read(cfile);
+    void checkClassFile(final ClassFile classFile, CheckFor... checkFor) throws Exception {
         for (CheckFor whatToCheckFor : checkFor) {
-            if (whatToCheckFor == CheckFor.SEALED) {
-                for (Attribute attr: classFile.attributes) {
-                    if (attr.getName(classFile.constant_pool).equals("RuntimeVisibleAnnotations")) {
-                        RuntimeVisibleAnnotations_attribute rtva = (RuntimeVisibleAnnotations_attribute)attr;
-                        Assert.check(rtva.annotations.length == 1, classFile.getName() + " should have only one runtime visible annotation");
-                        CONSTANT_Utf8_info utfInfo = (CONSTANT_Utf8_info)classFile.constant_pool.get(rtva.annotations[0].type_index);
-                        Assert.check(utfInfo.value.equals("Ljava/lang/annotation/Sealed;"), classFile.getName() + " should be sealed");
-                        return;
-                    }
-                }
-                throw new AssertionError(classFile.getName() + " should be sealed");
-            } else if (whatToCheckFor == CheckFor.FINAL && (classFile.access_flags.flags & Flags.FINAL) == 0) {
-                throw new AssertionError(classFile.getName() + " should be final");
-            } else if (whatToCheckFor == CheckFor.NON_FINAL && (classFile.access_flags.flags & Flags.FINAL) != 0) {
-                throw new AssertionError(classFile.getName() + " should not be final");
-            } else if (whatToCheckFor == CheckFor.NOT_SEALED) {
-                for (Attribute attr: classFile.attributes) {
-                    if (attr.getName(classFile.constant_pool).equals("RuntimeVisibleAnnotations")) {
-                        RuntimeVisibleAnnotations_attribute rtva = (RuntimeVisibleAnnotations_attribute)attr;
-                        Assert.check(rtva.annotations.length == 1, classFile.getName() + " should have only one runtime visible annotation");
-                        CONSTANT_Utf8_info utfInfo = (CONSTANT_Utf8_info)classFile.constant_pool.get(rtva.annotations[0].type_index);
-                        Assert.check(utfInfo.value.equals("Ljava/lang/annotation/NotSealed;"), classFile.getName() + " should not be sealed");
-                        return;
-                    }
-                }
-                throw new AssertionError(classFile.getName() + " should not be sealed");
-            }
+            whatToCheckFor.check(classFile);
         }
     }
 }
