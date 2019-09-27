@@ -452,7 +452,7 @@ public class ClassBuilder extends AbstractBuilder {
 
     private void setRecordDocumentation(TypeElement elem) {
         CommentUtils cmtUtils = configuration.cmtUtils;
-        Set<Name> componentNames = elem.getStateComponents().stream()
+        Set<Name> componentNames = elem.getRecordComponents().stream()
                 .map(Element::getSimpleName)
                 .collect(Collectors.toSet());
 
@@ -468,7 +468,7 @@ public class ClassBuilder extends AbstractBuilder {
         }
 
         for (VariableElement ve : utils.getFields(elem)) {
-            // The fields for the state component cannot be declared by the
+            // The fields for the record component cannot be declared by the
             // user and so cannot have any pre-existing comment.
             Name name = ve.getSimpleName();
             if (componentNames.contains(name)) {

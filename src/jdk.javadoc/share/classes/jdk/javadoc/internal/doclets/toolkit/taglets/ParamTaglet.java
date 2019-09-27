@@ -151,7 +151,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
             Content output = getTagletOutput(ParamKind.TYPE_PARAMETER, typeElement, writer,
                 typeElement.getTypeParameters(), utils.getTypeParamTrees(typeElement));
             output.add(getTagletOutput(ParamKind.STATE_COMPONENT, typeElement, writer,
-                    typeElement.getStateComponents(), utils.getParamTrees(typeElement)));
+                    typeElement.getRecordComponents(), utils.getParamTrees(typeElement)));
             return output;
         }
     }

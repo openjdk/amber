@@ -126,7 +126,7 @@ public class ElementKindVisitorRecord<R, P> extends ElementKindVisitor9<R, P> {
      * @since amber
      */
     @Override
-    public R visitVariableAsStateComponent(VariableElement e, P p) {
+    public R visitVariableAsRecordComponent(VariableElement e, P p) {
         return defaultAction(e, p);
     }
 }

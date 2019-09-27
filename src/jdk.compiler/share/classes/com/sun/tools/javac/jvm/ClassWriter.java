@@ -361,34 +361,12 @@ public class ClassWriter extends ClassFile {
             acount++;
         }
         if (!isRecordComponent) {
-            acount += writeJavaAnnotations(sym.getRawAttributes().diff(extractRecordComponentAnnos(sym, false)));
+            acount += writeJavaAnnotations(sym.getRawAttributes().diff(check.extractRecordComponentAnnos(sym, false)));
         } else {
-            acount += writeJavaAnnotations(extractRecordComponentAnnos(sym, true));
+            acount += writeJavaAnnotations(check.extractRecordComponentAnnos(sym, true));
         }
         acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
         return acount;
-    }
-
-    /** this method returns all the annotations that are applicable to record components.
-     * If the parameter {@code considerAnnosForAllTargets} is {@code true}, then the method will
-     * return also annotation that apply to all targets. If {@code false} it will return only
-     * those that apply to record components only. This is useful when writing annotations applicable
-     * fields for example.
-     *
-     * If an annotation is applicable to a field and to a record component, the annotation should
-     * appear in both.
-     */
-    private List<Attribute.Compound> extractRecordComponentAnnos(Symbol sym, boolean considerAnnosForAllTargets) {
-        List<Attribute.Compound> annos = sym.getRawAttributes();
-        ListBuffer<Attribute.Compound> recordCompAnnosBuffer = new ListBuffer<>();
-        for (Attribute.Compound compound : annos) {
-            Name[] targetNames = check.getTargetNames(compound.type.tsym);
-            if (considerAnnosForAllTargets || (!considerAnnosForAllTargets && targetNames.length == 1) &&
-                    Arrays.stream(targetNames).anyMatch(name -> name == names.RECORD_COMPONENT)) {
-                recordCompAnnosBuffer.add(compound);
-            }
-        }
-        return recordCompAnnosBuffer.toList();
     }
 
     /**

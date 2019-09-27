@@ -645,20 +645,6 @@ public interface Elements {
     }
 
     /**
-     * Returns the executable element for the setter associated with the given variable element.
-     *
-     * @implSpec The default implementation of this method returns
-     * {@code null}.
-     *
-     * @param variableElement the field for which the setter is to be found.
-     * @return the field's setter; otherwise {@code null} if there is no getter.
-     * @since amber
-     */
-    default ExecutableElement setterFor(VariableElement variableElement) {
-        return null;
-    }
-
-    /**
      * Return {@code true} if the type element is sealed, {@code
      * false} otherwise. This method takes into account non-sealing of
      * types.

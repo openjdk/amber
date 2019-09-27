@@ -814,11 +814,6 @@ public class JavacElements implements Elements {
         return accessorFor(Kind.GET, variableElement);
     }
 
-    @Override
-    public ExecutableElement setterFor(VariableElement variableElement) {
-        return accessorFor(Kind.SET, variableElement);
-    }
-
     private ExecutableElement accessorFor(Accessors.Kind kind, VariableElement variableElement) {
         for (Pair<Accessors.Kind, MethodSymbol> accessor : ((VarSymbol)variableElement).accessors) {
             if (accessor.fst == kind) {

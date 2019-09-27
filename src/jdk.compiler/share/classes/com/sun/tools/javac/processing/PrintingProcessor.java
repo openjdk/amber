@@ -219,11 +219,11 @@ public class PrintingProcessor extends AbstractProcessor {
                 printFormalTypeParameters(e, false);
 
                 if (kind == RECORD) {
-                    // Print out state components
+                    // Print out record components
                     writer.print("(");
-                    writer.print(e.getStateComponents()
+                    writer.print(e.getRecordComponents()
                                  .stream()
-                                 .map(stateDes -> stateDes.asType().toString() + " " + stateDes.getSimpleName())
+                                 .map(recordDes -> recordDes.asType().toString() + " " + recordDes.getSimpleName())
                                  .collect(Collectors.joining(", ")));
                     writer.print(")");
                 }
