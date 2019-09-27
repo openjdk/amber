@@ -171,10 +171,6 @@ class os: AllStatic {
     init_globals_ext();
   }
 
-  // File names are case-insensitive on windows only
-  // Override me as needed
-  static int    file_name_strncmp(const char* s1, const char* s2, size_t num);
-
   // unset environment variable
   static bool unsetenv(const char* name);
 
@@ -544,6 +540,8 @@ class os: AllStatic {
 
   static int compare_file_modified_times(const char* file1, const char* file2);
 
+  static bool same_files(const char* file1, const char* file2);
+
   //File i/o operations
 
   static ssize_t read(int fd, void *buf, unsigned int nBytes);
@@ -823,7 +821,10 @@ class os: AllStatic {
   // Amount beyond the callee frame size that we bang the stack.
   static int extra_bang_size_in_bytes();
 
-  static char** split_path(const char* path, int* n);
+  static char** split_path(const char* path, size_t* elements, size_t file_name_length);
+
+  // support for mapping non-volatile memory using MAP_SYNC
+  static bool supports_map_sync();
 
   // Extensions
 #include "runtime/os_ext.hpp"

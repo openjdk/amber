@@ -931,7 +931,7 @@ public class DocCommentParser {
                 skipWhitespace();
                 if (ch == '>') {
                     nextChar();
-                    return m.at(p).newEndElementTree(name);
+                    return m.at(p).newEndElementTree(name).setEndPos(bp);
                 }
             }
         } else if (ch == '!') {
