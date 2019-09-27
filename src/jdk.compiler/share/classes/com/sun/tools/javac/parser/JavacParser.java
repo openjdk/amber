@@ -38,6 +38,7 @@ import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.parser.Tokens.*;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
+import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
@@ -795,9 +796,9 @@ public class JavacParser implements Parser {
 
     public JCExpression unannotatedType(boolean allowVar) {
         JCExpression result = term(TYPE);
-        Name restrictedTypeName;
+        Name restrictedTypeName = restrictedTypeName(result, !allowVar);
 
-        if (!allowVar && (restrictedTypeName = restrictedTypeName(result, true)) != null) {
+        if (restrictedTypeName != null && (!allowVar || restrictedTypeName != names.var)) {
             syntaxError(result.pos, Errors.RestrictedTypeNotAllowedHere(restrictedTypeName));
         }
 
@@ -3952,23 +3953,59 @@ public class JavacParser implements Parser {
     List<JCTree> enumBody(Name enumName) {
         accept(LBRACE);
         ListBuffer<JCTree> defs = new ListBuffer<>();
+        boolean wasSemi = false;
+        boolean hasStructuralErrors = false;
+        boolean wasError = false;
         if (token.kind == COMMA) {
             nextToken();
-        } else if (token.kind != RBRACE && token.kind != SEMI) {
-            defs.append(enumeratorDeclaration(enumName));
-            while (token.kind == COMMA) {
+            if (token.kind == SEMI) {
+                wasSemi = true;
                 nextToken();
-                if (token.kind == RBRACE || token.kind == SEMI) break;
-                defs.append(enumeratorDeclaration(enumName));
-            }
-            if (token.kind != SEMI && token.kind != RBRACE) {
-                defs.append(syntaxError(token.pos, Errors.Expected3(COMMA, RBRACE, SEMI)));
-                nextToken();
+            } else if (token.kind != RBRACE) {
+                reportSyntaxError(S.prevToken().endPos,
+                                  Errors.Expected2(RBRACE, SEMI));
+                wasError = true;
             }
         }
-        if (token.kind == SEMI) {
-            nextToken();
-            while (token.kind != RBRACE && token.kind != EOF) {
+        while (token.kind != RBRACE && token.kind != EOF) {
+            if (token.kind == SEMI) {
+                accept(SEMI);
+                wasSemi = true;
+                if (token.kind == RBRACE || token.kind == EOF) break;
+            }
+            EnumeratorEstimate memberType = estimateEnumeratorOrMember(enumName);
+            if (memberType == EnumeratorEstimate.UNKNOWN) {
+                memberType = wasSemi ? EnumeratorEstimate.MEMBER
+                                     : EnumeratorEstimate.ENUMERATOR;
+            }
+            if (memberType == EnumeratorEstimate.ENUMERATOR) {
+                wasError = false;
+                if (wasSemi && !hasStructuralErrors) {
+                    reportSyntaxError(token.pos, Errors.EnumConstantNotExpected);
+                    hasStructuralErrors = true;
+                }
+                defs.append(enumeratorDeclaration(enumName));
+                if (token.pos <= endPosTable.errorEndPos) {
+                    // error recovery
+                   skip(false, true, true, false);
+                } else {
+                    if (token.kind != RBRACE && token.kind != SEMI && token.kind != EOF) {
+                        if (token.kind == COMMA) {
+                            nextToken();
+                        } else {
+                            setErrorEndPos(token.pos);
+                            reportSyntaxError(S.prevToken().endPos,
+                                              Errors.Expected3(COMMA, RBRACE, SEMI));
+                            wasError = true;
+                        }
+                    }
+                }
+            } else {
+                if (!wasSemi && !hasStructuralErrors && !wasError) {
+                    reportSyntaxError(token.pos, Errors.EnumConstantExpected);
+                    hasStructuralErrors = true;
+                }
+                wasError = false;
                 defs.appendList(classOrInterfaceOrRecordBodyDeclaration(enumName,
                                                                 false, false));
                 if (token.pos <= endPosTable.errorEndPos) {
@@ -3979,6 +4016,28 @@ public class JavacParser implements Parser {
         }
         accept(RBRACE);
         return defs.toList();
+    }
+
+    private EnumeratorEstimate estimateEnumeratorOrMember(Name enumName) {
+        if (token.kind == TokenKind.IDENTIFIER && token.name() != enumName) {
+            Token next = S.token(1);
+            switch (next.kind) {
+                case LPAREN: case LBRACE: case COMMA: case SEMI:
+                    return EnumeratorEstimate.ENUMERATOR;
+            }
+        }
+        switch (token.kind) {
+            case IDENTIFIER: case MONKEYS_AT: case LT:
+                return EnumeratorEstimate.UNKNOWN;
+            default:
+                return EnumeratorEstimate.MEMBER;
+        }
+    }
+
+    private enum EnumeratorEstimate {
+        ENUMERATOR,
+        MEMBER,
+        UNKNOWN;
     }
 
     /** EnumeratorDeclaration = AnnotationsOpt [TypeArguments] IDENTIFIER [ Arguments ] [ "{" ClassBody "}" ]
@@ -4153,13 +4212,13 @@ public class JavacParser implements Parser {
                             isInterface, isVoid, false, dc));
                     } else if (!isVoid && typarams.isEmpty()) {
                         if (!isRecord || (isRecord && (mods.flags & Flags.STATIC) != 0)) {
-                            List<JCTree> defs =
-                                    variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
-                                            new ListBuffer<JCTree>(), false).toList();
-                            accept(SEMI);
-                            storeEnd(defs.last(), S.prevToken().endPos);
-                            return defs;
-                        } else {
+                        List<JCTree> defs =
+                            variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
+                                                    new ListBuffer<JCTree>(), false).toList();
+                        accept(SEMI);
+                        storeEnd(defs.last(), S.prevToken().endPos);
+                        return defs;
+                    } else {
                             nextToken();
                             return List.of(syntaxError(pos, null, Errors.RecordFieldsMustBeInHeader));
                         }
@@ -4244,6 +4303,7 @@ public class JavacParser implements Parser {
                     }
                 }
             }
+
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
                                             receiverParam, params, thrown,

@@ -2392,7 +2392,7 @@ public class Resolve {
         if (kind.contains(KindSelector.TYP)) {
             RecoveryLoadClass recoveryLoadClass =
                     allowModules && !kind.contains(KindSelector.PCK) &&
-                    !pck.exists() && !env.info.isSpeculative ?
+                    !pck.exists() && !env.info.attributionMode.isSpeculative ?
                         doRecoveryLoadClass : noRecovery;
             Symbol sym = loadClass(env, fullname, recoveryLoadClass);
             if (sym.exists()) {

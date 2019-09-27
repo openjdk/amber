@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,6 +50,7 @@ import java.util.*;
 
 import javax.tools.*;
 
+import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -77,8 +78,8 @@ public class JavacTreeScannerTest extends AbstractTreeScannerTest {
         }
     }
 
-    int test(JCCompilationUnit tree) {
-        return new ScanTester().test(tree);
+    int test(Pair<JavacTask, JCCompilationUnit> taskAndTree) {
+        return new ScanTester().test(taskAndTree.snd);
     }
 
     /**

@@ -300,6 +300,8 @@ public class MemberEnter extends JCTree.Visitor {
                 chk.checkUnique(tree.pos(), v, enclScope)) {
             chk.checkTransparentVar(tree.pos(), v, enclScope);
             enclScope.enter(v);
+        } else if (v.owner.kind == MTH) {
+            enclScope.enter(v);
         }
 
         annotate.annotateLater(tree.mods.annotations, localEnv, v, tree.pos());
