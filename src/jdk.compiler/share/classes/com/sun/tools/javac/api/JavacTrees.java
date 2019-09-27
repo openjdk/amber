@@ -551,7 +551,7 @@ public class JavacTrees extends DocTrees {
             ClassSymbol te = (ClassSymbol) javadocSymbol;
             params = paramTag.isTypeParameter()
                     ? te.getTypeParameters()
-                    : te.getStateComponents();
+                    : te.getRecordComponents();
         }
 
         for (Symbol param : params) {

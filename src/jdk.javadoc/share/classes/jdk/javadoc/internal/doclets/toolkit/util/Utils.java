@@ -217,8 +217,6 @@ public class Utils {
         switch (kind) {
             case GETTER:
                 return elementUtils.getterFor(field);
-            case SETTER:
-                return elementUtils.setterFor(field);
             default:
                 throw new IllegalStateException("Cannot get here!");
         }
@@ -433,7 +431,7 @@ public class Utils {
 
     public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
         TypeElement te = (TypeElement) ee.getEnclosingElement();
-        List<? extends VariableElement> stateComps = te.getStateComponents();
+        List<? extends VariableElement> stateComps = te.getRecordComponents();
         List<? extends VariableElement> params = ee.getParameters();
         if (stateComps.size() != params.size()) {
             return false;

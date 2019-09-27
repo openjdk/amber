@@ -2863,8 +2863,10 @@ public class Check {
             System.out.println("validating annotations for tree " + declarationTree);
         }
 
-        if (isRecordMember &&
-                s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF)) {
+        boolean isRecordField = isRecordMember &&
+                s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF);
+
+        if (isRecordField) {
             // we are seeing a record field, which had the original annotations, now is the moment,
             // before stripping some of them just below, to check if the original annotations
             // applied to records at all, first version only cares about declaration annotations
@@ -2884,6 +2886,10 @@ public class Check {
             }
             if (!appliesToRecords) {
                 log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            } else {
+                ClassSymbol recordClass = (ClassSymbol) s.owner;
+                RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, true);
+                rc.appendAttributes(extractRecordComponentAnnos(s, true));
             }
         }
 
@@ -2918,6 +2924,28 @@ public class Check {
                 log.error(a.pos(), Errors.BadFunctionalIntfAnno1(Fragments.NotAFunctionalIntf(s)));
             }
         }
+    }
+
+    /** this method returns all the annotations that are applicable to record components.
+     * If the parameter {@code considerAnnosForAllTargets} is {@code true}, then the method will
+     * return also annotation that apply to all targets. If {@code false} it will return only
+     * those that apply to record components only. This is useful when writing annotations applicable
+     * fields for example.
+     *
+     * If an annotation is applicable to a field and to a record component, the annotation should
+     * appear in both.
+     */
+    public List<Attribute.Compound> extractRecordComponentAnnos(Symbol sym, boolean considerAnnosForAllTargets) {
+        List<Attribute.Compound> annos = sym.getRawAttributes();
+        ListBuffer<Attribute.Compound> recordCompAnnosBuffer = new ListBuffer<>();
+        for (Attribute.Compound compound : annos) {
+            Name[] targetNames = getTargetNames(compound.type.tsym);
+            if (considerAnnosForAllTargets || (!considerAnnosForAllTargets && targetNames.length == 1) &&
+                    Arrays.stream(targetNames).anyMatch(name -> name == names.RECORD_COMPONENT)) {
+                recordCompAnnosBuffer.add(compound);
+            }
+        }
+        return recordCompAnnosBuffer.toList();
     }
 
     public void validateTypeAnnotation(JCAnnotation a, boolean isTypeParameter) {

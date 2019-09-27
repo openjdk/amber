@@ -236,7 +236,7 @@ public class ElementKindVisitor6<R, P>
      * the specific {@linkplain ElementKind kind} of variable, {@code
      * ENUM_CONSTANT}, {@code EXCEPTION_PARAMETER}, {@code FIELD},
      * {@code LOCAL_VARIABLE}, {@code PARAMETER}, {@code RESOURCE_VARIABLE},
-     * or {@code STATE_COMPONENT}.
+     * or {@code RECORD_COMPONENT}.
      *
      * @param e {@inheritDoc}
      * @param p {@inheritDoc}
@@ -264,8 +264,8 @@ public class ElementKindVisitor6<R, P>
         case RESOURCE_VARIABLE:
             return visitVariableAsResourceVariable(e, p);
 
-        case STATE_COMPONENT:
-            return visitVariableAsStateComponent(e, p);
+        case RECORD_COMPONENT:
+            return visitVariableAsRecordComponent(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for VariableElement" + e);
@@ -353,7 +353,7 @@ public class ElementKindVisitor6<R, P>
     }
 
     /**
-     * Visits a {@code STATE_COMPONENT} variable element.
+     * Visits a {@code RECORD_COMPONENT} variable element.
      *
      * @implSpec This implementation calls {@code visitUnknown}.
      *
@@ -363,7 +363,7 @@ public class ElementKindVisitor6<R, P>
      *
      * @since amber
      */
-    public R visitVariableAsStateComponent(VariableElement e, P p) {
+    public R visitVariableAsRecordComponent(VariableElement e, P p) {
         return visitUnknown(e, p);
     }
 

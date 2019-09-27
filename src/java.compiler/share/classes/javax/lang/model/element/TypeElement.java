@@ -32,7 +32,7 @@ import javax.lang.model.util.*;
 /**
  * Represents a class or interface program element.  Provides access
  * to information about the type and its members.  Note that an enum
- * type and a record type are kinds of class esand an annotation type is a kind of
+ * type and a record type are kinds of classes and an annotation type is a kind of
  * interface.
  *
  * <p> While a {@code TypeElement} represents a class or interface
@@ -82,8 +82,9 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
     TypeMirror asType();
 
     /**
-     * Returns the fields, methods, constructors, state components, and member types
-     * that are directly declared in this class or interface.
+     * Returns the fields, methods, constructors, record components,
+     * and member types that are directly declared in this class or
+     * interface.
      *
      * This includes any {@linkplain Elements.Origin#MANDATED
      * mandated} elements such as the (implicit) default constructor
@@ -178,18 +179,18 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
     List<? extends TypeParameterElement> getTypeParameters();
 
     /**
-     * Returns the state components of this type element in
+     * Returns the record components of this type element in
      * declaration order.
      *
      * @implSpec The default implementations of this method returns an
      * empty and unmodifiable list.
      *
-     * @return the state components, or an empty list if there are
+     * @return the record components, or an empty list if there are
      * none
      *
-     * @since amber
+     * @since 14
      */
-    default List<? extends VariableElement> getStateComponents() {
+    default List<? extends VariableElement> getRecordComponents() {
         return List.of();
     }
 

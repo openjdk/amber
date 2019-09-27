@@ -27,10 +27,7 @@ package com.sun.tools.javac.code;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -61,17 +58,15 @@ import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.Tag;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
+import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Name;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import com.sun.tools.javac.code.MissingInfoHandler;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import com.sun.tools.javac.code.Scope.WriteableScope;
-import com.sun.tools.javac.code.Symbol;
-import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.FIRSTASGOP;
-import com.sun.tools.javac.code.Type;
+
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
@@ -80,7 +75,6 @@ import static com.sun.tools.javac.jvm.ByteCodes.ishll;
 import static com.sun.tools.javac.jvm.ByteCodes.lushrl;
 import static com.sun.tools.javac.jvm.ByteCodes.lxor;
 import static com.sun.tools.javac.jvm.ByteCodes.string_add;
-import com.sun.tools.javac.util.Name;
 
 /** Root class for Java symbols. It contains subclasses
  *  for specific sorts of symbols, such as variables, methods and operators,
@@ -1284,6 +1278,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /** the annotation metadata attached to this class */
         private AnnotationTypeMetadata annotationTypeMetadata;
 
+        private List<RecordComponent> recordComponents = List.nil();
+
         public ClassSymbol(long flags, Name name, Type type, Symbol owner) {
             super(TYP, flags, name, type, owner);
             this.members_field = null;
@@ -1350,6 +1346,15 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Name getQualifiedName() {
             return fullname;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public java.util.List<Symbol> getEnclosedElements() {
+            java.util.List<Symbol> result = super.getEnclosedElements();
+            if (!recordComponents.isEmpty()) {
+                result.addAll(recordComponents);
+            }
+            return result;
         }
 
         public Name flatName() {
@@ -1466,15 +1471,22 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return Flags.asModifierSet(flags & ~DEFAULT);
         }
 
-        @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public List<? extends VarSymbol> getStateComponents() {
-            apiComplete();
-            ListBuffer<VarSymbol> lb = new ListBuffer<>();
-            for (Symbol sym : getEnclosedElements()) {
-                if (sym.kind == Kind.VAR && ((sym.flags() & RECORD) != 0))
-                    lb.append((VarSymbol) sym);
+        public RecordComponent getRecordComponent(VarSymbol field, boolean addIfMissing) {
+            for (RecordComponent rc : recordComponents) {
+                if (rc.name == field.name) {
+                    return rc;
+                }
             }
-            return lb.toList();
+            RecordComponent rc = null;
+            if (addIfMissing) {
+                recordComponents = recordComponents.append(rc = new RecordComponent(PUBLIC, field.name, field.type, field.owner));
+            }
+            return rc;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<? extends VarSymbol> getRecordComponents() {
+            return recordComponents;
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1490,7 +1502,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return NestingKind.MEMBER;
         }
 
-
         @Override
         protected <A extends Annotation> Attribute.Compound getAttribute(final Class<A> annoType) {
 
@@ -1505,9 +1516,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return superType == null ? null
                                      : superType.getAttribute(annoType);
         }
-
-
-
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public <R, P> R accept(ElementVisitor<R, P> v, P p) {
@@ -1726,6 +1734,21 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public <R, P> R accept(Symbol.Visitor<R, P> v, P p) {
             return v.visitVarSymbol(this, p);
+        }
+    }
+
+    public static class RecordComponent extends VarSymbol {
+
+        /**
+         * Construct a record component, given its flags, name, type and owner.
+         */
+        public RecordComponent(long flags, Name name, Type type, Symbol owner) {
+            super(flags, name, type, owner);
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public ElementKind getKind() {
+            return ElementKind.RECORD_COMPONENT;
         }
     }
 

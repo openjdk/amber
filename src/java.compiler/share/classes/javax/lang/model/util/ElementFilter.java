@@ -86,8 +86,8 @@ public class ElementFilter {
                                                ElementKind.RECORD,
                                                ElementKind.ANNOTATION_TYPE));
 
-    private static final Set<ElementKind> STATE_COMPONENT_KIND =
-        Set.of(ElementKind.STATE_COMPONENT);
+    private static final Set<ElementKind> RECORD_COMPONENT_KIND =
+        Set.of(ElementKind.RECORD_COMPONENT);
 
     /**
      * Returns a list of fields in {@code elements}.
@@ -117,7 +117,7 @@ public class ElementFilter {
      */
     public static List<VariableElement>
         stateComponentsIn(List<? extends Element> elements) {
-        return listFilter(elements, STATE_COMPONENT_KIND, VariableElement.class);
+        return listFilter(elements, RECORD_COMPONENT_KIND, VariableElement.class);
     }
 
     /**

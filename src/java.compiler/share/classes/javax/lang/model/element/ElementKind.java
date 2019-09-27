@@ -115,12 +115,11 @@ public enum ElementKind {
      */
     RECORD,
 
-    // Neither fish nor fowl; necessary?
     /**
-     * A state component of a {@code record}.
-     * @since amber
+     * A record component of a {@code record}.
+     * @since 14
      */
-    STATE_COMPONENT;
+    RECORD_COMPONENT;
 
     /**
      * Returns {@code true} if this is a kind of class:
