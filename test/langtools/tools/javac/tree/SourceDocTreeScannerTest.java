@@ -179,8 +179,6 @@ public class SourceDocTreeScannerTest extends AbstractTreeScannerTest {
                 List<?> list = (List<?>) o;
                 for (Object item: list)
                     reflectiveScan(item);
-            } else if (o instanceof Pair) {
-                return;
             } else
                 error("unexpected item: " + o);
         }

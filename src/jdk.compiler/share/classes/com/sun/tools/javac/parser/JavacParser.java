@@ -3726,8 +3726,8 @@ public class JavacParser implements Parser {
                 if (allowRecords) {
                     erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, RECORD));
                 } else {
-                    erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
-                }
+                erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
+            }
             }
             return toP(F.Exec(erroneousTree));
         }
@@ -3989,14 +3989,14 @@ public class JavacParser implements Parser {
                 } else {
                     if (token.kind != RBRACE && token.kind != SEMI && token.kind != EOF) {
                         if (token.kind == COMMA) {
-                            nextToken();
+                nextToken();
                         } else {
                             setErrorEndPos(token.pos);
                             reportSyntaxError(S.prevToken().endPos,
                                               Errors.Expected3(COMMA, RBRACE, SEMI));
                             wasError = true;
-                        }
-                    }
+            }
+        }
                 }
             } else {
                 if (!wasSemi && !hasStructuralErrors && !wasError) {
@@ -4274,11 +4274,11 @@ public class JavacParser implements Parser {
             List<JCExpression> thrown = List.nil();
             if (!isRecord || name != names.init || token.kind == LPAREN) {
                 params = formalParameters();
-                if (!isVoid) type = bracketsOpt(type);
-                if (token.kind == THROWS) {
-                    nextToken();
-                    thrown = qualidentList(true);
-                }
+            if (!isVoid) type = bracketsOpt(type);
+            if (token.kind == THROWS) {
+                nextToken();
+                thrown = qualidentList(true);
+            }
             }
             JCBlock body = null;
             JCExpression defaultValue;
