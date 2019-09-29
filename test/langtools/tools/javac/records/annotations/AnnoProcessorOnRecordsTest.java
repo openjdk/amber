@@ -105,7 +105,7 @@ public class AnnoProcessorOnRecordsTest extends JavacTestingAbstractProcessor {
                         case "AnnoProcessorOnRecordsTest.All":
                             // debug
                             // System.out.println(s.getKind());
-                            Assert.check(s.getKind() == ElementKind.FIELD || s.getKind() == ElementKind.METHOD || s.getKind() == ElementKind.PARAMETER);
+                            Assert.check(s.getKind() == ElementKind.FIELD || s.getKind() == ElementKind.METHOD || s.getKind() == ElementKind.PARAMETER || s.getKind() == ElementKind.RECORD_COMPONENT);
                             break;
                         default:
                     }

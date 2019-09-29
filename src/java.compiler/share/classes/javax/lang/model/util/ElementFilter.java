@@ -111,13 +111,13 @@ public class ElementFilter {
 
     // Method below may only be temporary
     /**
-     * Returns a list of state descriptions in {@code elements}.
-     * @return a list of state descriptions in {@code elements}
+     * Returns a list of record components in {@code elements}.
+     * @return a list of record components in {@code elements}
      * @param elements the elements to filter
      */
-    public static List<VariableElement>
-        stateComponentsIn(List<? extends Element> elements) {
-        return listFilter(elements, RECORD_COMPONENT_KIND, VariableElement.class);
+    public static List<RecordComponentElement>
+        recordComponentsIn(List<? extends Element> elements) {
+        return listFilter(elements, RECORD_COMPONENT_KIND, RecordComponentElement.class);
     }
 
     /**
