@@ -39,12 +39,14 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
+import com.sun.tools.javac.code.Accessors;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.code.Type.*;
@@ -842,7 +844,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public java.util.List<Symbol> getEnclosedElements() {
+        public List<Symbol> getEnclosedElements() {
             List<Symbol> list = List.nil();
             if (kind == TYP && type.hasTag(TYPEVAR)) {
                 return list;
@@ -1349,10 +1351,13 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public java.util.List<Symbol> getEnclosedElements() {
-            java.util.List<Symbol> result = super.getEnclosedElements();
+        public List<Symbol> getEnclosedElements() {
+            List<Symbol> result = super.getEnclosedElements();
             if (!recordComponents.isEmpty()) {
-                result.addAll(recordComponents);
+                List<RecordComponent> reversed = recordComponents.reverse();
+                for (RecordComponent rc : reversed) {
+                    result = result.prepend(rc);
+                }
             }
             return result;
         }
@@ -1485,7 +1490,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public List<? extends VarSymbol> getRecordComponents() {
+        public List<? extends RecordComponent> getRecordComponents() {
             return recordComponents;
         }
 
@@ -1737,7 +1742,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
     }
 
-    public static class RecordComponent extends VarSymbol {
+    public static class RecordComponent extends VarSymbol implements RecordComponentElement {
 
         /**
          * Construct a record component, given its flags, name, type and owner.
@@ -1746,9 +1751,19 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             super(flags, name, type, owner);
         }
 
-        @DefinedBy(Api.LANGUAGE_MODEL)
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
         public ElementKind getKind() {
             return ElementKind.RECORD_COMPONENT;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public ExecutableElement getAccessor() {
+            for (Pair<Accessors.Kind, MethodSymbol> accessor : accessors) {
+                if (accessor.fst == Accessors.Kind.GET) {
+                    return accessor.snd;
+                }
+            }
+            throw new AssertionError("record component without accessor");
         }
     }
 

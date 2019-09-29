@@ -2940,7 +2940,7 @@ public class Check {
         ListBuffer<Attribute.Compound> recordCompAnnosBuffer = new ListBuffer<>();
         for (Attribute.Compound compound : annos) {
             Name[] targetNames = getTargetNames(compound.type.tsym);
-            if (considerAnnosForAllTargets || (!considerAnnosForAllTargets && targetNames.length == 1) &&
+            if ((considerAnnosForAllTargets && targetNames  == dfltTargetMeta) || (!considerAnnosForAllTargets && targetNames.length == 1) &&
                     Arrays.stream(targetNames).anyMatch(name -> name == names.RECORD_COMPONENT)) {
                 recordCompAnnosBuffer.add(compound);
             }

@@ -75,7 +75,8 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
                 Element element = processingEnv.getElementUtils().getTypeElement(key);
                 numberOfAnnotations = 0;
                 verifyReferredTypesAcceptable(element, recordNameExpectedAnnotationMap.get(key));
-                Assert.check(numberOfAnnotations == recordNameExpectedAnnotationNumberMap.get(key));
+                Assert.check(numberOfAnnotations == recordNameExpectedAnnotationNumberMap.get(key), "expected = " +
+                        recordNameExpectedAnnotationNumberMap.get(key) + " found = " + numberOfAnnotations);
             }
         }
         return true;

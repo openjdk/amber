@@ -190,7 +190,7 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      *
      * @since 14
      */
-    default List<? extends VariableElement> getRecordComponents() {
+    default List<? extends RecordComponentElement> getRecordComponents() {
         return List.of();
     }
 
