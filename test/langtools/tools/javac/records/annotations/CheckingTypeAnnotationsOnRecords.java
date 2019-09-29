@@ -51,7 +51,7 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
         recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R1", "@CheckingTypeAnnotationsOnRecords.TypeUse");
         recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R2", "@CheckingTypeAnnotationsOnRecords.TypeParameter");
 
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R1", 3);
+        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R1", 4);
         recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R2", 1);
     }
 
