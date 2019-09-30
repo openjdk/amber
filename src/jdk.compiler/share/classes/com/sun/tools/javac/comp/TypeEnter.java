@@ -1043,7 +1043,11 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             if ((sym.flags_field & RECORD) != 0) {
-                memberEnter.memberEnter(TreeInfo.recordFields(tree), env);
+                List<JCVariableDecl> fields = TreeInfo.recordFields(tree);
+                memberEnter.memberEnter(fields, env);
+                for (JCVariableDecl field : fields) {
+                    sym.getRecordComponent(field.sym, true);
+                }
             }
         }
     }
