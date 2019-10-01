@@ -44,12 +44,12 @@ public class CheckSubtypesOfSealedTest extends TestBase {
     static final String testSource =
             "public class SealedClasses {\n" +
             "    sealed abstract class SAC {}\n" +
-            "    abstract class SAC2 extends SAC {}\n" +
-            "    class SAC3 extends SAC {}\n" +
-            "    class SAC4 extends SAC2 {}\n" +
+            "    sealed abstract class SAC2 extends SAC {}\n" +
+            "    final class SAC3 extends SAC {}\n" +
+            "    final class SAC4 extends SAC2 {}\n" +
             "    sealed interface SI {}\n" +
-            "    interface SSI extends SI {}\n" +
-            "    class SAC5 implements SI, SSI {}\n" +
+            "    sealed interface SSI extends SI {}\n" +
+            "    final class SAC5 implements SI, SSI {}\n" +
             "    non-sealed abstract class SAC6 extends SAC {}\n" +
             "    non-sealed class SAC7 extends SAC {}\n" +
             "}";

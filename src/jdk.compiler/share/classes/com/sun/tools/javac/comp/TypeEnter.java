@@ -864,6 +864,10 @@ public class TypeEnter implements Completer {
                         }
                     }
                 }
+
+                if (!isNonSealed(tree.sym) && !isFinal(tree.sym) && !isSealed(tree.sym)) {
+                    log.error(tree, Errors.NonSealedSealedOrFinalExpected);
+                }
             }
 
             boolean hasSuperTypesInSealedHierarchy = !superTypesInASealedHierarchy(tree.sym, env, false).isEmpty();

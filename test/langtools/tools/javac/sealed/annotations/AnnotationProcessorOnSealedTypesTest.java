@@ -66,16 +66,16 @@ public class AnnotationProcessorOnSealedTypesTest extends JavacTestingAbstractPr
     sealed class Super1 {}
 
     @Final
-    class Sub1 extends Super1 {}
+    final class Sub1 extends Super1 {}
 
     @Sealed
     sealed class Super2 {}
 
     @Sealed
-    class Sub2 extends Super3 {}
+    sealed class Sub2 extends Super3 {}
 
     @Final
-    class Sub3 extends Sub2 {}
+    final class Sub3 extends Sub2 {}
 
     @Sealed
     sealed class Super3 {}

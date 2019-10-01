@@ -82,8 +82,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(test,
                           "class Test {\n" +
                            "    sealed class Sealed permits Sub1, Sub2 {}\n" +
-                           "    class Sub1 extends Sealed {}\n" +
-                           "    class Sub2 extends Sealed {}\n" +
+                           "    final class Sub1 extends Sealed {}\n" +
+                           "    final class Sub2 extends Sealed {}\n" +
                            "}");
 
         Path out = base.resolve("out");
@@ -110,8 +110,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(test,
                 "class Test {\n" +
                         "    sealed class Sealed {}\n" +
-                        "    class Sub1 extends Sealed {}\n" +
-                        "    class Sub2 extends Sealed {}\n" +
+                        "    final class Sub1 extends Sealed {}\n" +
+                        "    final class Sub2 extends Sealed {}\n" +
                         "}");
 
         Path out = base.resolve("out");
@@ -244,7 +244,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         tb.writeJavaFiles(test,
                           "class Test {\n" +
                            "    sealed class Sealed permits Sub1 {}\n" +
-                           "    class Sub1 extends Sealed {}\n" +
+                           "    final class Sub1 extends Sealed {}\n" +
                            "    class Sub2 extends Sealed {}\n" +
                            "}");
 
@@ -257,6 +257,33 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         List<String> expected = List.of(
                 "Test.java:4:24: compiler.err.cant.inherit.from.sealed: Test.Sealed",
+                "Test.java:4:5: compiler.err.non.sealed.sealed.or.final.expected",
+                "2 errors");
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
+
+    @Test
+    public void testSameCompilationUnitNeg2(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path test = src.resolve("Test");
+
+        tb.writeJavaFiles(test,
+                "class Test {\n" +
+                        "    sealed class Sealed permits Sub1 {}\n" +
+                        "    class Sub1 extends Sealed {}\n" +
+                        "}");
+
+        List<String> error = new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", "14")
+                .files(findJavaFiles(test))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+                "Test.java:3:5: compiler.err.non.sealed.sealed.or.final.expected",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
