@@ -105,30 +105,30 @@ public class SealedCompilationTests extends JavacTemplateTestBase {
         // with permits
         assertOK("class SealedTest {\n" +
                 "    sealed class SC permits C_SC { }\n" +
-                "    class C_SC extends SC { }\n" +
+                "    final class C_SC extends SC { }\n" +
                 "}");
         assertOK("class SealedTest {\n" +
                 "    sealed abstract class SAC permits C_SAC { }\n" +
-                "    class C_SAC extends SAC { }\n" +
+                "    final class C_SAC extends SAC { }\n" +
                 "}");
         assertOK("class SealedTest {\n" +
                 "    sealed interface SI permits C_SI, I_SI { }\n" +
-                "    class C_SI implements SI { }\n" +
+                "    final class C_SI implements SI { }\n" +
                 "    non-sealed interface I_SI extends SI { }\n" +
                 "}");
 
         // wo permits
         assertOK("class SealedTest {\n" +
                 "    sealed class SC { }\n" +
-                "    class C_SC extends SC { }\n" +
+                "    final class C_SC extends SC { }\n" +
                 "}");
         assertOK("class SealedTest {\n" +
                 "    sealed abstract class SAC { }\n" +
-                "    class C_SAC extends SAC { }\n" +
+                "    final class C_SAC extends SAC { }\n" +
                 "}");
         assertOK("class SealedTest {\n" +
                 "    sealed interface SI { }\n" +
-                "    class C_SI implements SI { }\n" +
+                "    final class C_SI implements SI { }\n" +
                 "    non-sealed interface I_SI extends SI { }\n" +
                 "}");
     }

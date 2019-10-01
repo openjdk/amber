@@ -39,21 +39,21 @@ public class CheckingAttributeAtRuntimeTest {
 
     sealed class Sealed1 permits Sub1 {}
 
-    class Sub1 extends Sealed1 {}
+    final class Sub1 extends Sealed1 {}
 
     sealed interface SealedI1 permits Sub2 {}
 
-    class Sub2 implements SealedI1 {}
+    final class Sub2 implements SealedI1 {}
 
     sealed class Sealed2 {}
 
-    class Sub3 extends Sealed2 {}
+    final class Sub3 extends Sealed2 {}
 
-    class Sub4 extends Sealed2 {}
+    final class Sub4 extends Sealed2 {}
 
     sealed interface SealedI2 {}
 
-    class Sub5 implements SealedI2 {}
+    final class Sub5 implements SealedI2 {}
 
     non-sealed interface Int1 extends SealedI2 {}
 
