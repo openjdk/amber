@@ -25,7 +25,9 @@ class RecordComponent implements AnnotatedElement {
     private String name;
     private Class<?> type;
     private Method accessor;
+    private String signature;
     private byte[] annotations;
+    private byte[] typeAnnotations;
 
     /**
      * Returns the name of the record component represented by this {@code RecordComponent} object.
@@ -46,6 +48,17 @@ class RecordComponent implements AnnotatedElement {
      */
     public Class<?> getType() {
         return type;
+    }
+
+    /**
+     * Returns a {@code String} object that identifies the
+     * generic type.
+     *
+     * @return a {@code String} object identifying the generic declared
+     * type of the record component represented by this object
+     */
+    public String getGenericSignature() {
+        return signature == null ? "Null" : signature;
     }
 
     /**
@@ -95,6 +108,7 @@ class RecordComponent implements AnnotatedElement {
     public Method getAccessor() {
         return accessor;
     }
+
 
     /**
      * @throws NullPointerException {@inheritDoc}

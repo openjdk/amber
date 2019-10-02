@@ -46,6 +46,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.constant.Constable;
@@ -3436,6 +3437,7 @@ public final class Class<T> implements java.io.Serializable,
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
     private native String[]     getRecordComponentNames0();
+    private native Object[]     getRecordComponents0();
     private native boolean      isRecord0();
 
     /**
