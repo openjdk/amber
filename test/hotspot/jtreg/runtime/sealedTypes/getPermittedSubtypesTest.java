@@ -36,13 +36,13 @@ public class getPermittedSubtypesTest {
 
     sealed class Sealed1 permits Sub1 {}
 
-    class Sub1 extends Sealed1 {}
+    sealed class Sub1 extends Sealed1 {}
 
     sealed interface SealedI1 permits notSealed, Sub1, Extender {}
 
     non-sealed interface Extender extends SealedI1 { }
 
-    class notSealed implements SealedI1 {}
+    non-sealed class notSealed implements SealedI1 {}
 
     sealed class noPermits {}
 

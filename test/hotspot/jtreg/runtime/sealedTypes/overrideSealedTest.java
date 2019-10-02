@@ -34,7 +34,7 @@ public class overrideSealedTest {
         public String draw() { return "rectangle"; }
     }
 
-    class Square extends Rectangle {
+    sealed class Square extends Rectangle {
         public String draw() { return "square"; }
     }
 
@@ -47,7 +47,7 @@ public class overrideSealedTest {
         default String name() { return "shape"; }
     }
 
-    class Circle implements Shape {
+    final class Circle implements Shape {
         public String name() { return "circle"; }
     }
 

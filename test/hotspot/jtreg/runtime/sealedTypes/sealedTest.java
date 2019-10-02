@@ -31,15 +31,15 @@ public class sealedTest {
 
     sealed class Sealed1 permits Sub1 {}
 
-    class Sub1 extends Sealed1 {}
+    non-sealed class Sub1 extends Sealed1 {}
 
     sealed interface SealedI1 permits Sub2 {}
 
-    class Sub2 implements SealedI1 {}
+    sealed class Sub2 implements SealedI1 {}
 
     sealed class Sealed2 {}
 
-    class Sub3 extends Sealed2 {}
+    sealed class Sub3 extends Sealed2 {}
 
     Sub1 sub1 = new Sub1();
     Sub2 sub2 = new Sub2();

@@ -34,7 +34,7 @@ public class abstractSealedTest {
         abstract void draw();
     }
 
-    class Circle extends abstractShape {
+    sealed class Circle extends abstractShape {
         void draw() {}
     }
 
