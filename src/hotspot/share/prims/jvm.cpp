@@ -1661,42 +1661,6 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
-JVM_ENTRY(jobjectArray, JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass))
-{
-  // ofClass is not a primitive or array class
-  JVMWrapper("JVM_GetRecordComponentNames");
-  Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass));
-  assert(c->is_instance_klass(), "must be");
-  InstanceKlass* ik = InstanceKlass::cast(c);
-
-  if (ik->is_record()) {
-    Array<RecordComponent*>* components = ik->record_components();
-    assert(components != NULL, "components should not be NULL");
-    {
-      JvmtiVMObjectAllocEventCollector oam;
-      constantPoolHandle cp(THREAD, ik->constants());
-      int length = components->length();
-      assert(length >= 0, "unexpected record_components length");
-      objArrayOop name_strings = oopFactory::new_objArray(SystemDictionary::String_klass(),
-                                                          length, CHECK_NULL);
-      objArrayHandle name_strings_h (THREAD, name_strings);
-
-      for (int x = 0; x < length; x++) {
-        RecordComponent* component = components->at(x);
-        assert(component != NULL, "unexpected NULL record component");
-        Symbol* component_name = cp->symbol_at(component->name_index()); // name_index is a utf8
-        Handle str = java_lang_String::create_from_symbol(component_name, CHECK_NULL);
-        name_strings_h->obj_at_put(x, str());
-      }
-      return (jobjectArray)JNIHandles::make_local(name_strings_h());
-    }
-  }
-  // TBD: return empty array or return NULL ?
-  objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
-  return (jobjectArray) JNIHandles::make_local(env, r);
-}
-JVM_END
-
 JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
   JVMWrapper("JVM_IsRecord");
   InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls)));

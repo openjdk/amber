@@ -544,9 +544,6 @@ JVM_GetPermittedSubtypes(JNIEnv *env, jclass current);
 
 /* Records - since JDK 14 */
 
-JNIEXPORT jobjectArray JNICALL
-JVM_GetRecordComponentNames(JNIEnv *env, jclass ofClass);
-
 JNIEXPORT jboolean JNICALL
 JVM_IsRecord(JNIEnv *env, jclass cls);
 

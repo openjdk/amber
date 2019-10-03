@@ -2266,15 +2266,15 @@ public final class Class<T> implements java.io.Serializable,
         if (isPrimitive() || isArray()) {
             return new Method[0];
         }
-        String[] componentNames = getRecordComponentNames0();
-        if (componentNames == null || componentNames.length == 0) {
+        Object[] recordComponents = getRecordComponents0();
+        if (recordComponents == null || recordComponents.length == 0) {
             return new Method[0];
         }
-        Method[] result = new Method[componentNames.length];
-        int i = 0;
-        for (String componentName : componentNames) {
-            result[i] = getMethod(componentName);
-            i++;
+        int len = recordComponents.length;
+        Method[] result = new Method[len];
+        for (int x = 0; x < len; x++) {
+            RecordComponent rc = (RecordComponent)recordComponents[x];
+            result[x] = rc.getAccessor();
         }
         return result;
     }
