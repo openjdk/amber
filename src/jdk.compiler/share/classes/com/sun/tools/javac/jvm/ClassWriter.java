@@ -360,11 +360,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        if (!isRecordComponent) {
-            acount += writeJavaAnnotations(sym.getRawAttributes().diff(check.extractRecordComponentAnnos(sym, false)));
-        } else {
-            acount += writeJavaAnnotations(check.extractRecordComponentAnnos(sym, true));
-        }
+        acount += writeJavaAnnotations(sym.getRawAttributes());
         acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
         return acount;
     }
@@ -839,30 +835,18 @@ public class ClassWriter extends ClassFile {
     int writeRecordAttribute(ClassSymbol csym) {
         int alenIdx = writeAttr(names.Record);
         Scope s = csym.members();
-        List<VarSymbol> vars = List.nil();
-        int numParams = 0;
-        for (Symbol sym : s.getSymbols(NON_RECURSIVE)) {
-            if (sym.kind == VAR && sym.isRecord()) {
-                vars = vars.prepend((VarSymbol)sym);
-                numParams++;
-            }
-        }
-        databuf.appendChar(numParams);
-        for (VarSymbol v: vars) {
+        databuf.appendChar(csym.getRecordComponents().size());
+        for (VarSymbol v: csym.getRecordComponents()) {
             //databuf.appendChar(poolWriter.putMember(v.accessors.head.snd));
-            writeComponentInfo(v);
+            databuf.appendChar(poolWriter.putName(v.name));
+            databuf.appendChar(poolWriter.putDescriptor(v));
+            int acountIdx = beginAttrs();
+            int acount = 0;
+            acount += writeMemberAttrs(v, true);
+            endAttrs(acountIdx, acount);
         }
         endAttr(alenIdx);
         return 1;
-    }
-
-    private void writeComponentInfo(VarSymbol v) {
-        databuf.appendChar(poolWriter.putName(v.name));
-        databuf.appendChar(poolWriter.putDescriptor(v));
-        int acountIdx = beginAttrs();
-        int acount = 0;
-        acount += writeMemberAttrs(v, true);
-        endAttrs(acountIdx, acount);
     }
 
     /**
