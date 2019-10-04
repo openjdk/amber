@@ -27,7 +27,9 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileManager;
 
 import com.sun.tools.javac.code.*;
@@ -2889,7 +2891,9 @@ public class Check {
             } else {
                 ClassSymbol recordClass = (ClassSymbol) s.owner;
                 RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, true);
-                rc.appendAttributes(extractRecordComponentAnnos(s, true));
+                rc.appendAttributes(s.getRawAttributes().stream().filter(anno ->
+                    Arrays.stream(getTargetNames(anno.type.tsym)).anyMatch(name -> name == names.RECORD_COMPONENT)
+                ).collect(List.collector()));
             }
         }
 
@@ -2924,28 +2928,6 @@ public class Check {
                 log.error(a.pos(), Errors.BadFunctionalIntfAnno1(Fragments.NotAFunctionalIntf(s)));
             }
         }
-    }
-
-    /** this method returns all the annotations that are applicable to record components.
-     * If the parameter {@code considerAnnosForAllTargets} is {@code true}, then the method will
-     * return also annotation that apply to all targets. If {@code false} it will return only
-     * those that apply to record components only. This is useful when writing annotations applicable
-     * fields for example.
-     *
-     * If an annotation is applicable to a field and to a record component, the annotation should
-     * appear in both.
-     */
-    public List<Attribute.Compound> extractRecordComponentAnnos(Symbol sym, boolean considerAnnosForAllTargets) {
-        List<Attribute.Compound> annos = sym.getRawAttributes();
-        ListBuffer<Attribute.Compound> recordCompAnnosBuffer = new ListBuffer<>();
-        for (Attribute.Compound compound : annos) {
-            Name[] targetNames = getTargetNames(compound.type.tsym);
-            if ((considerAnnosForAllTargets && targetNames  == dfltTargetMeta) || (!considerAnnosForAllTargets && targetNames.length == 1) &&
-                    Arrays.stream(targetNames).anyMatch(name -> name == names.RECORD_COMPONENT)) {
-                recordCompAnnosBuffer.add(compound);
-            }
-        }
-        return recordCompAnnosBuffer.toList();
     }
 
     public void validateTypeAnnotation(JCAnnotation a, boolean isTypeParameter) {
@@ -3222,9 +3204,13 @@ public class Check {
             if (target == names.TYPE) {
                 if (s.kind == TYP)
                     return true;
-            } else if (target == names.FIELD || target == names.RECORD_COMPONENT) {
+            } else if (target == names.FIELD) {
                 if (s.kind == VAR && s.owner.kind != MTH)
                     return true;
+            } else if (target == names.RECORD_COMPONENT) {
+                if (s.getKind() == ElementKind.RECORD_COMPONENT) {
+                    return true;
+                }
             } else if (target == names.METHOD) {
                 if (s.kind == MTH && !s.isConstructor())
                     return true;
@@ -3277,7 +3263,7 @@ public class Check {
         return (Attribute.Array) atValue;
     }
 
-    private final Name[] dfltTargetMeta;
+    public final Name[] dfltTargetMeta;
     private Name[] defaultTargetMetaInfo() {
         return dfltTargetMeta;
     }

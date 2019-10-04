@@ -69,7 +69,15 @@ public class AnnoProcessorOnRecordsTest extends JavacTestingAbstractProcessor {
     @interface Field {}
 
     @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.RECORD_COMPONENT })
+    @interface RecComponent {}
+
+    @Retention(RetentionPolicy.RUNTIME)
     @interface All {}
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.FIELD, ElementType.RECORD_COMPONENT })
+    @interface RecComponentAndField {}
 
     record R1(@Parameter int i) {}
 
@@ -79,42 +87,49 @@ public class AnnoProcessorOnRecordsTest extends JavacTestingAbstractProcessor {
 
     record R4(@All int i) {}
 
+    record R5(@RecComponent int i) {}
+
+    record R6(@RecComponentAndField int i) {}
+
     public boolean process(Set<? extends TypeElement> tes, RoundEnvironment renv) {
         for (TypeElement te : tes) {
-            for (Element e : renv.getElementsAnnotatedWith(te)) {
-                Symbol s = (Symbol)e;
-                if (s.isRecord() || s.owner.isRecord()) {
-                    // debug
-                    // System.out.println(te.toString());
-                    switch (te.toString()) {
-                        case "AnnoProcessorOnRecordsTest.Parameter" :
-                            // debug
-                            // System.out.println(s.getKind());
-                            Assert.check(s.getKind() == ElementKind.PARAMETER);
-                            break;
-                        case "AnnoProcessorOnRecordsTest.Method":
-                            // debug
-                            // System.out.println(s.getKind());
-                            Assert.check(s.getKind() == ElementKind.METHOD);
-                            break;
-                        case "AnnoProcessorOnRecordsTest.Field":
-                            // debug
-                            // System.out.println(s.getKind());
-                            Assert.check(s.getKind() == ElementKind.FIELD);
-                            break;
-                        case "AnnoProcessorOnRecordsTest.All":
-                            // debug
-                            // System.out.println(s.getKind());
-                            Assert.check(s.getKind() == ElementKind.FIELD ||
-                                    s.getKind() == ElementKind.METHOD ||
-                                    s.getKind() == ElementKind.PARAMETER ||
-                                    s.getKind() == ElementKind.RECORD_COMPONENT);
-                            break;
-                        default:
-                    }
-                }
+            // System.out.println(te.toString());
+            switch (te.toString()) {
+                case "AnnoProcessorOnRecordsTest.Parameter" :
+                    checkElements(te, renv, 1, Set.of(ElementKind.PARAMETER));
+                    break;
+                case "AnnoProcessorOnRecordsTest.Method":
+                    checkElements(te, renv, 1, Set.of(ElementKind.METHOD));
+                    break;
+                case "AnnoProcessorOnRecordsTest.Field":
+                    checkElements(te, renv, 1, Set.of(ElementKind.FIELD));
+                    break;
+                case "AnnoProcessorOnRecordsTest.All":
+                    checkElements(te, renv, 4,
+                            Set.of(ElementKind.FIELD,
+                                    ElementKind.METHOD,
+                                    ElementKind.PARAMETER,
+                                    ElementKind.RECORD_COMPONENT));
+                    break;
+                case "AnnoProcessorOnRecordsTest.RecComponent":
+                    checkElements(te, renv, 1, Set.of(ElementKind.RECORD_COMPONENT));
+                    break;
+                case "AnnoProcessorOnRecordsTest.RecComponentAndField":
+                    checkElements(te, renv, 2, Set.of(ElementKind.RECORD_COMPONENT, ElementKind.FIELD));
+                    break;
+                default:
+                    // ignore, just another annotation like Target, we don't care about
             }
         }
         return true;
+    }
+
+    void checkElements(TypeElement te, RoundEnvironment renv, int expectedNumberOfElements, Set<ElementKind> kinds) {
+        Set<? extends Element> annoElements = renv.getElementsAnnotatedWith(te);
+        Assert.check(annoElements.size() == expectedNumberOfElements);
+        for (Element e : annoElements) {
+            Symbol s = (Symbol) e;
+            Assert.check(kinds.contains(s.getKind()));
+        }
     }
 }
