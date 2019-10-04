@@ -28,6 +28,7 @@
  * @run testng/othervm --enable-preview RecordReflectionTest
  */
 
+import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.List;
 
@@ -53,7 +54,7 @@ public class RecordReflectionTest {
     }
 
     public void testGetComponentsNoRecord() throws ReflectiveOperationException {
-        assertTrue(NoRecord.class.getRecordAccessors().length == 0);
+        assertTrue(NoRecord.class.getRecordComponents().length == 0);
     }
 
     public void testRecordAccessors() throws ReflectiveOperationException {
@@ -62,18 +63,46 @@ public class RecordReflectionTest {
         checkRecordReflection(new R3(List.of("1")), 1, new Object[]{List.of("1")}, new String[]{"java.util.List<java.lang.String>"});
     }
 
-
     private void checkRecordReflection(Object recordOb, int numberOfComponents, Object[] values, String[] signatures) throws ReflectiveOperationException {
         Class<?> recordClass = recordOb.getClass();
         assertTrue(recordClass.isRecord());
-        Method[] accessors = recordClass.getRecordAccessors();
-        assertEquals(accessors.length, numberOfComponents);
+        RecordComponent[] recordComponents = recordClass.getRecordComponents();
+        assertEquals(recordComponents.length, numberOfComponents);
         int i = 0;
-        for (Method m : accessors) {
-            assertEquals(m.invoke(recordOb), values[i]);
-            assertEquals(m.getGenericReturnType().toString(), signatures[i],
-                         String.format("signature of method \"%s\" different from expected signature \"%s\"", m.getGenericReturnType(), signatures[i]));
+        for (RecordComponent rc : recordComponents) {
+            assertEquals(rc.getAccessor().invoke(recordOb), values[i]);
+            assertEquals(rc.getAccessor().getGenericReturnType().toString(), signatures[i],
+                         String.format("signature of method \"%s\" different from expected signature \"%s\"",
+                                 rc.getAccessor().getGenericReturnType(), signatures[i]));
             i++;
         }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD })
+    @interface RCA {}
+
+    record AnnotatedRec(@RCA int i) {}
+
+    public void testDeclAnnotationsInRecordComp() throws Throwable {
+        Class<?> recordClass = AnnotatedRec.class;
+        RecordComponent rc = recordClass.getRecordComponents()[0];
+        Annotation[] annos = rc.getAnnotations();
+        assertEquals(annos.length, 1);
+        assertEquals(annos[0].toString(), "@RecordReflectionTest$RCA()");
+
+        Field f = recordClass.getDeclaredField("i");
+        assertEquals(f.getAnnotations().length, 1);
+        assertEquals(f.getAnnotations()[0].toString(), annos[0].toString());
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE_USE})
+    @interface TYPE_USE {}
+
+    record TypeAnnotatedRec(@TYPE_USE int i) {}
+
+    public void testTypeAnnotationsInRecordComp() throws Throwable {
+        // there is a bug in type annotations, not getting to the record component
     }
 }

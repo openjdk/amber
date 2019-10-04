@@ -4,14 +4,20 @@ import jdk.internal.access.SharedSecrets;
 import sun.reflect.annotation.AnnotationParser;
 import sun.reflect.annotation.TypeAnnotation;
 import sun.reflect.annotation.TypeAnnotationParser;
+import sun.reflect.generics.factory.CoreReflectionFactory;
+import sun.reflect.generics.factory.GenericsFactory;
+import sun.reflect.generics.repository.FieldRepository;
+import sun.reflect.generics.scope.ClassScope;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
 /**
  * A {@code RecordComponent} provides information about, and dynamic access to, a
- * record component in a record class.
+ * record component in a record class. Record components can only be created by the VM
+ * runtime, thus no public constructor is provided.
  *
  * @see AnnotatedElement
  * @see java.lang.Class
@@ -26,8 +32,14 @@ class RecordComponent implements AnnotatedElement {
     private Class<?> type;
     private Method accessor;
     private String signature;
+    // generic info repository; lazily initialized
+    private transient FieldRepository genericInfo;
     private byte[] annotations;
     private byte[] typeAnnotations;
+    private RecordComponent root;
+
+    // only the JVM can create record components
+    private RecordComponent() {}
 
     /**
      * Returns the name of the record component represented by this {@code RecordComponent} object.
@@ -36,6 +48,10 @@ class RecordComponent implements AnnotatedElement {
      */
     public String getName() {
         return name;
+    }
+
+    private Class<?> getDeclaringClass() {
+        return clazz;
     }
 
     /**
@@ -58,7 +74,7 @@ class RecordComponent implements AnnotatedElement {
      * type of the record component represented by this object
      */
     public String getGenericSignature() {
-        return signature == null ? "Null" : signature;
+        return signature;
     }
 
     /**
@@ -85,7 +101,28 @@ class RecordComponent implements AnnotatedElement {
      *     that cannot be instantiated for any reason
      */
     public Type getGenericType() {
-        return null;
+        if (getGenericSignature() != null)
+            return getGenericInfo().getGenericType();
+        else
+            return getType();
+    }
+
+    // Accessor for generic info repository
+    private FieldRepository getGenericInfo() {
+        // lazily initialize repository if necessary
+        if (genericInfo == null) {
+            // create and cache generic info repository
+            genericInfo = FieldRepository.make(getGenericSignature(),
+                    getFactory());
+        }
+        return genericInfo; //return cached repository
+    }
+
+    // Accessor for factory
+    private GenericsFactory getFactory() {
+        Class<?> c = getDeclaringClass();
+        // create scope and factory
+        return CoreReflectionFactory.make(c, ClassScope.make(c));
     }
 
     /**
@@ -96,7 +133,19 @@ class RecordComponent implements AnnotatedElement {
      * @return an object representing the declared type of the record component
      * represented by this {@code RecordComponent}
      */
-    public AnnotatedType getAnnotatedType() { return null; }
+    public AnnotatedType getAnnotatedType() {
+        if (typeAnnotations != null) {
+            // debug
+            // System.out.println("length of type annotations " + typeAnnotations.length);
+        }
+        return TypeAnnotationParser.buildAnnotatedType(typeAnnotations,
+                SharedSecrets.getJavaLangAccess().
+                        getConstantPool(getDeclaringClass()),
+                this,
+                getDeclaringClass(),
+                getGenericType(),
+                TypeAnnotation.TypeAnnotationTarget.RECORD_COMPONENT);
+    }
 
     /**
      * Returns a {@code Method} object that represents the accessor for the
@@ -109,12 +158,38 @@ class RecordComponent implements AnnotatedElement {
         return accessor;
     }
 
-
     /**
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) { return null; }
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        Objects.requireNonNull(annotationClass);
+        return annotationClass.cast(declaredAnnotations().get(annotationClass));
+    }
+
+    private transient volatile Map<Class<? extends Annotation>, Annotation> declaredAnnotations;
+
+    private Map<Class<? extends Annotation>, Annotation> declaredAnnotations() {
+        Map<Class<? extends Annotation>, Annotation> declAnnos;
+        if ((declAnnos = declaredAnnotations) == null) {
+            synchronized (this) {
+                if ((declAnnos = declaredAnnotations) == null) {
+                    RecordComponent root = this.root;
+                    if (root != null) {
+                        declAnnos = root.declaredAnnotations();
+                    } else {
+                        declAnnos = AnnotationParser.parseAnnotations(
+                                annotations,
+                                SharedSecrets.getJavaLangAccess()
+                                        .getConstantPool(getDeclaringClass()),
+                                getDeclaringClass());
+                    }
+                    declaredAnnotations = declAnnos;
+                }
+            }
+        }
+        return declAnnos;
+    }
 
     @Override
     public Annotation[] getAnnotations() {
@@ -122,9 +197,7 @@ class RecordComponent implements AnnotatedElement {
     }
 
     @Override
-    public Annotation[] getDeclaredAnnotations() {
-        return new Annotation[0];
-    }
+    public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
 
     /**
      * Returns {@code true} if this {@code RecordComponent} was declared with
@@ -134,25 +207,40 @@ class RecordComponent implements AnnotatedElement {
      * with a variable arity.
      */
     public boolean isVarArgs()  {
-        /*
-          once we have the new Class::getRecordComponents, we can use it to retrieve the canonical constructor, if it is
-          varargs and this record component is the last in the record components array, then voila
-         */
-        return false;
+        RecordComponent[] recordComponents = getDeclaringClass().getRecordComponents();
+        if (recordComponents == null || recordComponents.length == 0) {
+            return false;
+        }
+        try {
+            Constructor<?> canonical = getDeclaringClass()
+                    .getConstructor(Arrays.stream(recordComponents).map(RecordComponent::getAccessor)
+                            .map(Method::getReturnType).toArray(Class<?>[]::new));
+            return canonical.isVarArgs() && this.getName().equals(recordComponents[recordComponents.length - 1].getName());
+        } catch (NoSuchMethodException nsme) {
+            throw new IncompatibleClassChangeError(
+                    String.format("a canonical constructor couldn't be found for record %s",
+                            getDeclaringClass().getCanonicalName()));
+        }
     }
 
     /**
      * Returns a string describing this {@code RecordComponent}, including
      * its generic type.  The format is the access modifiers for the
-     * record component, always {@code private} and {@code final}, followed
-     * by the generic record component type, followed by a space, followed by
-     * the fully-qualified name of the class declaring the record component,
-     * followed by a period, followed by the name of the record component.
+     * record component, always {@code private} and {@code final}, in that
+     * order, followed by the generic record component type, followed by a
+     * space, followed by the fully-qualified name of the class declaring
+     * the record component, followed by a period, followed by the name of
+     * the record component.
      *
      * @return a string describing this {@code RecordComponent}, including
      * its generic type
      */
     public String toGenericString() {
-        return null;
+        int mod = Modifier.PRIVATE | Modifier.FINAL;
+        Type type = getGenericType();
+        return (((mod == 0) ? "" : (Modifier.toString(mod) + " "))
+                + type.getTypeName() + " "
+                + getDeclaringClass().getTypeName() + "."
+                + getName());
     }
 }

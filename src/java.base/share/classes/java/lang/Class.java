@@ -2251,30 +2251,50 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * TBD
-     * @return TBD
-     * @throws SecurityException TBD
-     * @throws NoSuchMethodException TBD
-     * @since 1.14
+     * Returns an array containing {@code RecordComponent} objects reflecting all the
+     * declared record components of the record represented by this {@code Class} object
+     *
+     * @return  the array of {@code RecordComponent} objects representing all the
+     *          record components of this record
+     * @throws  SecurityException
+     *          If a security manager, <i>s</i>, is present and any of the
+     *          following conditions is met:
+     *
+     *          <ul>
+     *
+     *          <li> the caller's class loader is not the same as the
+     *          class loader of this class and invocation of
+     *          {@link SecurityManager#checkPermission
+     *          s.checkPermission} method with
+     *          {@code RuntimePermission("accessDeclaredMembers")}
+     *          denies access to the declared methods within this class
+     *
+     *          <li> the caller's class loader is not the same as or an
+     *          ancestor of the class loader for the current class and
+     *          invocation of {@link SecurityManager#checkPackageAccess
+     *          s.checkPackageAccess()} denies access to the package
+     *          of this class
+     *
+     *          </ul>
+     *
+     * @since 14
      */
     @CallerSensitive
-    public Method[] getRecordAccessors() throws SecurityException, NoSuchMethodException {
+    public RecordComponent[] getRecordComponents() throws SecurityException {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
         if (isPrimitive() || isArray()) {
-            return new Method[0];
+            return new RecordComponent[0];
         }
         Object[] recordComponents = getRecordComponents0();
         if (recordComponents == null || recordComponents.length == 0) {
-            return new Method[0];
+            return new RecordComponent[0];
         }
-        int len = recordComponents.length;
-        Method[] result = new Method[len];
-        for (int x = 0; x < len; x++) {
-            RecordComponent rc = (RecordComponent)recordComponents[x];
-            result[x] = rc.getAccessor();
+        RecordComponent[] result = new RecordComponent[recordComponents.length];
+        for (int i = 0; i < recordComponents.length; i++) {
+            result[i] = (RecordComponent)recordComponents[i];
         }
         return result;
     }
