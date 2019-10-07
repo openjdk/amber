@@ -47,7 +47,7 @@ import javax.lang.model.element.ModuleElement.RequiresDirective;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileManager.Location;
 import javax.tools.JavaFileObject;
@@ -985,7 +985,7 @@ public class ElementsTable {
         return (xclasses || toolEnv.getFileKind(te) == SOURCE) && isSelected(te);
     }
 
-    SimpleElementVisitor9<Boolean, Void> visibleElementVisitor = null;
+    SimpleElementVisitor14<Boolean, Void> visibleElementVisitor = null;
     /**
      * Returns true if the element is selected, by applying
      * the access filter checks. Special treatment is applied to
@@ -1001,7 +1001,7 @@ public class ElementsTable {
             return false;
         }
         if (visibleElementVisitor == null) {
-            visibleElementVisitor = new SimpleElementVisitor9<Boolean, Void>() {
+            visibleElementVisitor = new SimpleElementVisitor14<Boolean, Void>() {
                 @Override
                 public Boolean visitType(TypeElement e, Void p) {
                     if (!accessFilter.checkModifier(e)) {
@@ -1035,7 +1035,7 @@ public class ElementsTable {
         return visibleElementVisitor.visit(e);
     }
 
-    private class IncludedVisitor extends SimpleElementVisitor9<Boolean, Void> {
+    private class IncludedVisitor extends SimpleElementVisitor14<Boolean, Void> {
         final private Set<Element> includedCache;
 
         public IncludedVisitor() {

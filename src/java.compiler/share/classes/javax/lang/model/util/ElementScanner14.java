@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,11 +30,12 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import static javax.lang.model.SourceVersion.*;
 
-
 /**
  * A scanning visitor of program elements with default behavior
- * appropriate for the {@link SourceVersion#RELEASE_7 RELEASE_7}
- * source version.  The <code>visit<i>Xyz</i></code> methods in this
+ * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
+ * source version.
+ *
+ * The <code>visit<i>Xyz</i></code> methods in this
  * class scan their component elements by calling {@code scan} on
  * their {@linkplain Element#getEnclosedElements enclosed elements},
  * {@linkplain ExecutableElement#getParameters parameters}, etc., as
@@ -85,23 +86,19 @@ import static javax.lang.model.SourceVersion.*;
  *            additional parameter.
  *
  * @see ElementScanner6
+ * @see ElementScanner7
  * @see ElementScanner8
  * @see ElementScanner9
- * @see ElementScanner14
- * @since 1.7
+ * @since 14
  */
-@SupportedSourceVersion(RELEASE_7)
-public class ElementScanner7<R, P> extends ElementScanner6<R, P> {
+@SupportedSourceVersion(RELEASE_14)
+public class ElementScanner14<R, P> extends ElementScanner9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
      * default value.
-     *
-     * @deprecated Release 7 is obsolete; update to a visitor for a newer
-     * release level.
      */
-    @Deprecated(since="12")
-    protected ElementScanner7(){
-        super(null); // Superclass constructor deprecated too
+    protected ElementScanner14(){
+        super(null);
     }
 
     /**
@@ -109,13 +106,9 @@ public class ElementScanner7<R, P> extends ElementScanner6<R, P> {
      * default value.
      *
      * @param defaultValue the default value
-     *
-     * @deprecated Release 7 is obsolete; update to a visitor for a newer
-     * release level.
      */
-    @Deprecated(since="12")
-    protected ElementScanner7(R defaultValue){
-        super(defaultValue); // Superclass constructor deprecated too
+    protected ElementScanner14(R defaultValue){
+        super(defaultValue);
     }
 
     /**
@@ -123,12 +116,12 @@ public class ElementScanner7<R, P> extends ElementScanner6<R, P> {
      *
      * @implSpec This implementation scans the enclosed elements.
      *
-     * @param e  {@inheritDoc}
-     * @param p  {@inheritDoc}
-     * @return the result of scanning
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of the scan
      */
     @Override
-    public R visitVariable(VariableElement e, P p) {
+    public R visitRecordComponent(RecordComponentElement e, P p) {
         return scan(e.getEnclosedElements(), p);
     }
 }

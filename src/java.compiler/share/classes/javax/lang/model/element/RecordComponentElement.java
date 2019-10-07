@@ -31,7 +31,7 @@ package javax.lang.model.element;
  * @since 14
  */
 
-public interface RecordComponentElement extends VariableElement {
+public interface RecordComponentElement extends Element {
     /**
      * Returns the enclosing element of this record component.
      *
@@ -42,6 +42,19 @@ public interface RecordComponentElement extends VariableElement {
      */
     @Override
     Element getEnclosingElement();
+
+    /**
+     * Returns the simple name of this record component.
+     *
+     * <p>The name of each record component must be distinct from the
+     * names of all other record components.
+     *
+     * @return the simple name of this record component
+     *
+     * @jls 6.2 Names and Identifiers
+     */
+    @Override
+    Name getSimpleName();
 
     /**
      * Returns the executable element for the accessor associated with the

@@ -38,7 +38,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.Entity;
@@ -180,7 +180,7 @@ public class AbstractIndexWriter extends HtmlDocletWriter {
 
     protected void addDescription(Content dl, Element element) {
         SearchIndexItem si = new SearchIndexItem();
-        new SimpleElementVisitor9<Void, Void>() {
+        new SimpleElementVisitor14<Void, Void>() {
 
             @Override
             public Void visitModule(ModuleElement e, Void p) {

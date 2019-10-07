@@ -41,7 +41,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.lang.model.util.SimpleTypeVisitor9;
 import javax.lang.model.util.Types;
 
@@ -483,8 +483,8 @@ public class ClassUseMapper {
     private <T extends Element> void mapTypeParameters(final Map<TypeElement, List<T>> map,
             Element element, final T holder) {
 
-        SimpleElementVisitor9<Void, Void> elementVisitor
-                = new SimpleElementVisitor9<Void, Void>() {
+        SimpleElementVisitor14<Void, Void> elementVisitor
+                = new SimpleElementVisitor14<Void, Void>() {
 
                     private void addParameters(TypeParameterElement e) {
                         for (TypeMirror type : utils.getBounds(e)) {
@@ -562,7 +562,7 @@ public class ClassUseMapper {
      */
     private <T extends Element> void mapAnnotations(final Map<TypeElement, List<T>> map,
             Element e, final T holder) {
-        new SimpleElementVisitor9<Void, Void>() {
+        new SimpleElementVisitor14<Void, Void>() {
 
             void addAnnotations(Element e) {
                 for (AnnotationMirror a : e.getAnnotationMirrors()) {

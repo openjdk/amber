@@ -42,11 +42,12 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.ElementScanner9;
+import javax.lang.model.util.ElementScanner14;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.*;
 
@@ -135,7 +136,7 @@ public class JavaxLangModelForRecords extends TestRunner {
                 for (VariableElement field : ElementFilter.fieldsIn(clazz.getEnclosedElements())) {
                     messager.printMessage(Kind.NOTE, "field: " + field.getSimpleName());
                 }
-                for (VariableElement rc : ElementFilter.recordComponentsIn(clazz.getEnclosedElements())) {
+                for (RecordComponentElement rc : ElementFilter.recordComponentsIn(clazz.getEnclosedElements())) {
                     messager.printMessage(Kind.NOTE, "record component: " + rc.getSimpleName());
                 }
             }

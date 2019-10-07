@@ -109,15 +109,26 @@ public class ElementFilter {
         return setFilter(elements, FIELD_KINDS, VariableElement.class);
     }
 
-    // Method below may only be temporary
     /**
      * Returns a list of record components in {@code elements}.
      * @return a list of record components in {@code elements}
      * @param elements the elements to filter
+     * @since 14
      */
     public static List<RecordComponentElement>
-        recordComponentsIn(List<? extends Element> elements) {
+        recordComponentsIn(Iterable<? extends Element> elements) {
         return listFilter(elements, RECORD_COMPONENT_KIND, RecordComponentElement.class);
+    }
+
+    /**
+     * Returns a set of record components in {@code elements}.
+     * @return a set of record components in {@code elements}
+     * @param elements the elements to filter
+     * @since 14
+     */
+    public static Set<RecordComponentElement>
+    recordComponentsIn(Set<? extends Element> elements) {
+        return setFilter(elements, RECORD_COMPONENT_KIND, RecordComponentElement.class);
     }
 
     /**

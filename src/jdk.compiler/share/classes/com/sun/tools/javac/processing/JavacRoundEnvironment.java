@@ -109,9 +109,9 @@ public class JavacRoundEnvironment implements RoundEnvironment {
     /**
      * Returns the elements annotated with the given annotation type.
      * Only type elements <i>included</i> in this round of annotation
-     * processing, or declarations of members, parameters, or type
-     * parameters declared within those, are returned.  Included type
-     * elements are {@linkplain #getRootElements specified
+     * processing, or declarations of members, parameters, type
+     * parameters, or record components declared within those, are returned.
+     * Included type elements are {@linkplain #getRootElements specified
      * types} and any types nested within them.
      *
      * @param a  annotation type being requested
@@ -123,7 +123,7 @@ public class JavacRoundEnvironment implements RoundEnvironment {
         throwIfNotAnnotation(a);
 
         Set<Element> result = Collections.emptySet();
-        ElementScanner9<Set<Element>, TypeElement> scanner =
+        ElementScanner14<Set<Element>, TypeElement> scanner =
             new AnnotationSetScanner(result);
 
         for (Element element : rootElements)
@@ -144,7 +144,7 @@ public class JavacRoundEnvironment implements RoundEnvironment {
         }
 
         Set<Element> result = Collections.emptySet();
-        ElementScanner9<Set<Element>, Set<TypeElement>> scanner =
+        ElementScanner14<Set<Element>, Set<TypeElement>> scanner =
             new AnnotationSetMultiScanner(result);
 
         for (Element element : rootElements)
@@ -224,7 +224,7 @@ public class JavacRoundEnvironment implements RoundEnvironment {
     }
 
     private static abstract class ElementScanningIncludingTypeParameters<R, P>
-        extends ElementScanner9<R, P> {
+        extends ElementScanner14<R, P> {
 
         protected ElementScanningIncludingTypeParameters(R defaultValue) {
             super(defaultValue);

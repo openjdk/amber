@@ -32,8 +32,8 @@ import javax.lang.model.SourceVersion;
 
 /**
  * A visitor of program elements based on their {@linkplain
- * ElementKind kind} with default behavior appropriate for source
- * versions with records.
+ * ElementKind kind} with default behavior appropriate for the {@link
+ * SourceVersion#RELEASE_14 RELEASE_14} source version.
  *
  * For {@linkplain
  * Element elements} <code><i>Xyz</i></code> that may have more than one
@@ -76,15 +76,16 @@ import javax.lang.model.SourceVersion;
  * @see ElementKindVisitor6
  * @see ElementKindVisitor7
  * @see ElementKindVisitor8
- * @since amber
+ * @see ElementKindVisitor9
+ * @since 14
  */
-@SupportedSourceVersion(RELEASE_13)
-public class ElementKindVisitorRecord<R, P> extends ElementKindVisitor9<R, P> {
+@SupportedSourceVersion(RELEASE_14)
+public class ElementKindVisitor14<R, P> extends ElementKindVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
      * default value.
      */
-    protected ElementKindVisitorRecord() {
+    protected ElementKindVisitor14() {
         super(null);
     }
 
@@ -94,7 +95,7 @@ public class ElementKindVisitorRecord<R, P> extends ElementKindVisitor9<R, P> {
      *
      * @param defaultValue the value to assign to {@link #DEFAULT_VALUE}
      */
-    protected ElementKindVisitorRecord(R defaultValue) {
+    protected ElementKindVisitor14(R defaultValue) {
         super(defaultValue);
     }
 
@@ -102,15 +103,13 @@ public class ElementKindVisitorRecord<R, P> extends ElementKindVisitor9<R, P> {
      * {@inheritDoc}
      *
      * @implSpec This implementation calls {@code defaultAction}.
-     *.
+     *
      * @param e the element to visit
      * @param p a visitor-specified parameter
      * @return  the result of {@code defaultAction}
-     *
-     * @since amber
      */
     @Override
-    public R visitTypeAsRecord(TypeElement e, P p) {
+    public R visitRecordComponent(RecordComponentElement e, P p) {
         return defaultAction(e, p);
     }
 
@@ -122,11 +121,9 @@ public class ElementKindVisitorRecord<R, P> extends ElementKindVisitor9<R, P> {
      * @param e the element to visit
      * @param p a visitor-specified parameter
      * @return  the result of {@code defaultAction}
-     *
-     * @since amber
      */
     @Override
-    public R visitVariableAsRecordComponent(VariableElement e, P p) {
+    public R visitTypeAsRecord(TypeElement e, P p) {
         return defaultAction(e, p);
     }
 }

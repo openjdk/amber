@@ -36,7 +36,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
@@ -456,7 +456,7 @@ public class TagletWriterImpl extends TagletWriter {
                 si.setDescription(desc);
                 si.setUrl(htmlWriter.path.getPath() + "#" + anchorName);
                 DocPaths docPaths = configuration.docPaths;
-                new SimpleElementVisitor9<Void, Void>() {
+                new SimpleElementVisitor14<Void, Void>() {
                     @Override
                     public Void visitVariable(VariableElement e, Void p) {
                         TypeElement te = utils.getEnclosingTypeElement(e);

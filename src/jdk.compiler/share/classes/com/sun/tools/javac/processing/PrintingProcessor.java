@@ -91,7 +91,7 @@ public class PrintingProcessor extends AbstractProcessor {
      * Used for the -Xprint option and called by Elements.printElements
      */
     public static class PrintingElementVisitor
-        extends SimpleElementVisitor9<PrintingElementVisitor, Boolean> {
+        extends SimpleElementVisitor14<PrintingElementVisitor, Boolean> {
         int indentation; // Indentation level;
         final PrintWriter writer;
         final Elements elementUtils;
@@ -125,7 +125,7 @@ public class PrintingProcessor extends AbstractProcessor {
                     enclosing != null &&
                     NestingKind.ANONYMOUS ==
                     // Use an anonymous class to determine anonymity!
-                    (new SimpleElementVisitor9<NestingKind, Void>() {
+                    (new SimpleElementVisitor14<NestingKind, Void>() {
                         @Override @DefinedBy(Api.LANGUAGE_MODEL)
                         public NestingKind visitType(TypeElement e, Void p) {
                             return e.getNestingKind();
