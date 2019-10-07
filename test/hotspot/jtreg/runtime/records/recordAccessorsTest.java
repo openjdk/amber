@@ -29,38 +29,43 @@
 
 
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 
 public class recordAccessorsTest {
 
     record recordNames(int intX, String stringY) {
-        public Method[] getMethods() throws Throwable {
-            return recordNames.class.getRecordAccessors();
+        public RecordComponent[] getComponents() throws Throwable {
+            return recordNames.class.getRecordComponents();
         }
     }
 
     class notRecord {
-        public Method[] getMethods() throws Throwable {
-            return notRecord.class.getRecordAccessors();
+        public RecordComponent[] getComponents() throws Throwable {
+            return notRecord.class.getRecordComponents();
         }
     }
 
     record recordGeneric<T>(T xx, String yy) {
-        public Method[] getMethods() throws Throwable {
-            return recordGeneric.class.getRecordAccessors();
+        public RecordComponent[] getComponents() throws Throwable {
+            return recordGeneric.class.getRecordComponents();
         }
     }
 
     record recordEmpty() {
-        public Method[] getMethods() throws Throwable {
-            return recordEmpty.class.getRecordAccessors();
+        public RecordComponent[] getComponents() throws Throwable {
+            return recordEmpty.class.getRecordComponents();
         }
     }
 
     notRecord nr = new notRecord();
 
-    public static boolean hasMethod(Method[] methods, String method) {
-        for (int x = 0; x < methods.length; x++) {
-            if (methods[x].toString().contains(method)) {
+    public static boolean hasComponent(RecordComponent[] components, String name,
+                                       String type, String method) {
+        for (int x = 0; x < components.length; x++) {
+            RecordComponent component = components[x];
+            if (component.getName() == name &&
+                component.getType().toString().contains(type) &&
+                component.getAccessor().toString().contains(method)) {
                 return true;
             }
         }
@@ -69,30 +74,34 @@ public class recordAccessorsTest {
 
     public static void main(String... args) throws Throwable {
         recordNames rn = new recordNames(3, "abc");
-        Method[] methods = rn.getMethods();
-        if (methods.length != 2 ||
-            !hasMethod(methods, "int recordAccessorsTest$recordNames.intX()") ||
-            !hasMethod(methods, "java.lang.String recordAccessorsTest$recordNames.stringY()")) {
+        RecordComponent[] components = rn.getComponents();
+        if (components.length != 2 ||
+            !hasComponent(components, "intX", "int",
+                          "int recordAccessorsTest$recordNames.intX()") ||
+            !hasComponent(components, "stringY", "java.lang.String",
+                          "java.lang.String recordAccessorsTest$recordNames.stringY()")) {
             throw new RuntimeException("Bad component accessors returned for recordNames");
         }
 
         recordAccessorsTest rat = new recordAccessorsTest();
-        methods = rat.nr.getMethods();
-        if (methods.length != 0) {
+        components = rat.nr.getComponents();
+        if (components.length != 0) {
             throw new RuntimeException("Non-empty component accessors returned for notRecord");
         }
 
         recordGeneric rg = new recordGeneric(35, "abcd");
-        methods = rg.getMethods();
-        if (methods.length != 2 ||
-            !hasMethod(methods, "java.lang.Object recordAccessorsTest$recordGeneric.xx()") ||
-            !hasMethod(methods, "java.lang.String recordAccessorsTest$recordGeneric.yy()")) {
+        components = rg.getComponents();
+        if (components.length != 2 ||
+            !hasComponent(components, "xx", "java.lang.Object",
+                          "java.lang.Object recordAccessorsTest$recordGeneric.xx()") ||
+            !hasComponent(components, "yy", "java.lang.String",
+                          "java.lang.String recordAccessorsTest$recordGeneric.yy()")) {
             throw new RuntimeException("Bad component accessors returned for recordGeneric");
         }
 
         recordEmpty re = new recordEmpty();
-        methods = re.getMethods();
-        if (methods.length != 0) {
+        components = re.getComponents();
+        if (components.length != 0) {
             throw new RuntimeException("Non-empty component accessors returned for recordEmpty");
         }
     }
