@@ -34,7 +34,7 @@ import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.tools.JavaFileManager;
 import javax.tools.StandardJavaFileManager;
 
@@ -365,7 +365,7 @@ public class TagletManager {
                 if (element == null) {
                     return;
                 }
-                new SimpleElementVisitor9<Void, Void>() {
+                new SimpleElementVisitor14<Void, Void>() {
                     @Override
                     public Void visitModule(ModuleElement e, Void p) {
                         if (!taglet.inModule()) {

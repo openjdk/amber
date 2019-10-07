@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2019, Oacle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,13 @@ package javax.lang.model.util;
 
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
 
 /**
  * A skeletal visitor of program elements with default behavior
- * appropriate for the {@link SourceVersion#RELEASE_7 RELEASE_7}
+ * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
  * source version.
  *
  * <p> <b>WARNING:</b> The {@code ElementVisitor} interface
@@ -59,21 +60,30 @@ import static javax.lang.model.SourceVersion.*;
  *            additional parameter.
  *
  * @see AbstractElementVisitor6
+ * @see AbstractElementVisitor7
  * @see AbstractElementVisitor8
  * @see AbstractElementVisitor9
- * @see AbstractElementVisitor14
- * @since 1.7
+ * @since 14
  */
-@SupportedSourceVersion(RELEASE_7)
-public abstract class AbstractElementVisitor7<R, P> extends AbstractElementVisitor6<R, P> {
+@SupportedSourceVersion(RELEASE_14)
+public abstract class AbstractElementVisitor14<R, P> extends AbstractElementVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses to call.
-     *
-     * @deprecated Release 7 is obsolete; update to a visitor for a newer
-     * release level.
      */
-    @Deprecated(since="12")
-    protected AbstractElementVisitor7(){
-        super(); // Superclass constructor deprecated too
+    protected AbstractElementVisitor14(){
+        super();
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec Visits a {@code RecordComponentElement} in a manner defined by a
+     * subclass.
+     *
+     * @param t  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return   {@inheritDoc}
+     */
+    @Override
+    public abstract R visitRecordComponent(RecordComponentElement t, P p);
 }

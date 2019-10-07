@@ -122,7 +122,7 @@ public class TestSymtabItems {
 
     int errors;
 
-    class ElemPrinter extends ElementScanner9<Void, Void> {
+    class ElemPrinter extends ElementScanner14<Void, Void> {
         @Override
         public Void visitModule(ModuleElement e, Void p) {
             show("module", e);

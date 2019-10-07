@@ -118,6 +118,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * @see TypeElement#getSimpleName
      * @see VariableElement#getSimpleName
      * @see ModuleElement#getSimpleName
+     * @see RecordComponentElement#getSimpleName
      * @revised 9
      * @spec JPMS
      */
@@ -149,8 +150,8 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * element} which declares the parameter is returned.
      *
      * <li> If this is a {@linkplain
-     * VariableElement#getEnclosingElement record component},
-     * {@linkplain ExecutableElement the type} which declares the
+     * RecordComponentElement#getEnclosingElement record component},
+     * {@linkplain TypeElement the type} which declares the
      * record component is returned.
      *
      * <li> If this is a {@linkplain ModuleElement#getEnclosingElement

@@ -47,6 +47,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.ModuleElement.RequiresDirective;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
@@ -60,9 +61,9 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.ElementKindVisitor9;
+import javax.lang.model.util.ElementKindVisitor14;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.lang.model.util.SimpleTypeVisitor9;
 import javax.lang.model.util.TypeKindVisitor9;
 import javax.lang.model.util.Types;
@@ -311,7 +312,7 @@ public class Utils {
     }
 
     public boolean isAnnotationType(Element e) {
-        return new SimpleElementVisitor9<Boolean, Void>() {
+        return new SimpleElementVisitor14<Boolean, Void>() {
             @Override
             public Boolean visitExecutable(ExecutableElement e, Void p) {
                 return visit(e.getEnclosingElement());
@@ -431,17 +432,17 @@ public class Utils {
 
     public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
         TypeElement te = (TypeElement) ee.getEnclosingElement();
-        List<? extends VariableElement> stateComps = te.getRecordComponents();
+        List<? extends RecordComponentElement> stateComps = te.getRecordComponents();
         List<? extends VariableElement> params = ee.getParameters();
         if (stateComps.size() != params.size()) {
             return false;
         }
 
-        Iterator<? extends VariableElement> stateIter = stateComps.iterator();
+        Iterator<? extends RecordComponentElement> stateIter = stateComps.iterator();
         Iterator<? extends VariableElement> paramIter = params.iterator();
         while (paramIter.hasNext() && stateIter.hasNext()) {
             VariableElement param = paramIter.next();
-            VariableElement comp = stateIter.next();
+            RecordComponentElement comp = stateIter.next();
             if (!Objects.equals(param.getSimpleName(), comp.getSimpleName())
                     || !typeUtils.isSameType(param.asType(), comp.asType())) {
                 return false;
@@ -470,7 +471,7 @@ public class Utils {
         modifiers.remove(SYNCHRONIZED);
         modifiers.remove(SEALED);
 
-        return new ElementKindVisitor9<String, SortedSet<Modifier>>() {
+        return new ElementKindVisitor14<String, SortedSet<Modifier>>() {
             final StringBuilder sb = new StringBuilder();
 
             void addVisibilityModifier(Set<Modifier> modifiers) {
@@ -1968,7 +1969,7 @@ public class Utils {
     }
 
     public String getFullyQualifiedName(Element e, final boolean outer) {
-        return new SimpleElementVisitor9<String, Void>() {
+        return new SimpleElementVisitor14<String, Void>() {
             @Override
             public String visitModule(ModuleElement e, Void p) {
                 return e.getQualifiedName().toString();
@@ -2142,7 +2143,7 @@ public class Utils {
         }
 
         boolean hasParameters(Element e) {
-            return new SimpleElementVisitor9<Boolean, Void>() {
+            return new SimpleElementVisitor14<Boolean, Void>() {
                 @Override
                 public Boolean visitExecutable(ExecutableElement e, Void p) {
                     return true;
@@ -2163,7 +2164,7 @@ public class Utils {
          * than, equal to, or greater than the second.
          */
         private String getFullyQualifiedName(Element e) {
-            return new SimpleElementVisitor9<String, Void>() {
+            return new SimpleElementVisitor14<String, Void>() {
                 @Override
                 public String visitModule(ModuleElement e, Void p) {
                     return e.getQualifiedName().toString();
@@ -2526,7 +2527,7 @@ public class Utils {
 
     List<Element> getItems(Element e, boolean filter, ElementKind select) {
         List<Element> elements = new ArrayList<>();
-        return new SimpleElementVisitor9<List<Element>, Void>() {
+        return new SimpleElementVisitor14<List<Element>, Void>() {
 
             @Override
             public List<Element> visitPackage(PackageElement e, Void p) {
@@ -2571,11 +2572,11 @@ public class Utils {
         return elements;
     }
 
-    private SimpleElementVisitor9<Boolean, Void> shouldDocumentVisitor = null;
+    private SimpleElementVisitor14<Boolean, Void> shouldDocumentVisitor = null;
 
     public boolean shouldDocument(Element e) {
         if (shouldDocumentVisitor == null) {
-            shouldDocumentVisitor = new SimpleElementVisitor9<Boolean, Void>() {
+            shouldDocumentVisitor = new SimpleElementVisitor14<Boolean, Void>() {
                 private boolean hasSource(TypeElement e) {
                     return configuration.docEnv.getFileKind(e) ==
                             javax.tools.JavaFileObject.Kind.SOURCE;
@@ -2625,11 +2626,11 @@ public class Utils {
         return nameCache.computeIfAbsent(e, this::getSimpleName0);
     }
 
-    private SimpleElementVisitor9<String, Void> snvisitor = null;
+    private SimpleElementVisitor14<String, Void> snvisitor = null;
 
     private String getSimpleName0(Element e) {
         if (snvisitor == null) {
-            snvisitor = new SimpleElementVisitor9<String, Void>() {
+            snvisitor = new SimpleElementVisitor14<String, Void>() {
                 @Override
                 public String visitModule(ModuleElement e, Void p) {
                     return e.getQualifiedName().toString();  // temp fix for 8182736
@@ -2810,10 +2811,10 @@ public class Utils {
         return configuration.docEnv.isIncluded(e);
     }
 
-    private SimpleElementVisitor9<Boolean, Void> specifiedVisitor = null;
+    private SimpleElementVisitor14<Boolean, Void> specifiedVisitor = null;
     public boolean isSpecified(Element e) {
         if (specifiedVisitor == null) {
-            specifiedVisitor = new SimpleElementVisitor9<Boolean, Void>() {
+            specifiedVisitor = new SimpleElementVisitor14<Boolean, Void>() {
                 @Override
                 public Boolean visitModule(ModuleElement e, Void p) {
                     return configuration.getSpecifiedModuleElements().contains(e);

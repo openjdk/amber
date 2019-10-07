@@ -36,7 +36,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementScanner9;
+import javax.lang.model.util.ElementScanner14;
 
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.util.DefinedBy;
@@ -56,7 +56,7 @@ import com.sun.tools.sjavac.pubapi.TypeDesc;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-public class PubapiVisitor extends ElementScanner9<Void, Void> {
+public class PubapiVisitor extends ElementScanner14<Void, Void> {
 
     private PubApi collectedApi = new PubApi();
 

@@ -35,7 +35,7 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.util.ElementScanner9;
+import javax.lang.model.util.ElementScanner14;
 import javax.lang.model.util.Elements;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -108,7 +108,7 @@ public class OriginTest {
         public void started(TaskEvent e) {
             System.err.println("Started " + e);
             if (e.getKind() == TaskEvent.Kind.ANALYZE) {
-                ElementScanner9<Void, Void> scanner = new ElementScanner9<>() {
+                ElementScanner14<Void, Void> scanner = new ElementScanner14<>() {
                     public Void visitExecutable(ExecutableElement ee, Void p) {
                         Elements.Origin o = elements.getOrigin(ee);
                         if (o != expectedOrigin) {
