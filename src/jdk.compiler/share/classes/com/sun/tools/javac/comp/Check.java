@@ -2894,6 +2894,10 @@ public class Check {
                 rc.appendAttributes(s.getRawAttributes().stream().filter(anno ->
                     Arrays.stream(getTargetNames(anno.type.tsym)).anyMatch(name -> name == names.RECORD_COMPONENT)
                 ).collect(List.collector()));
+                rc.appendUniqueTypeAttributes(s.getRawTypeAttributes());
+                if (s.type.isAnnotated()) {
+                    rc.type = s.type.cloneWithMetadata(s.type.getMetadata());
+                }
             }
         }
 

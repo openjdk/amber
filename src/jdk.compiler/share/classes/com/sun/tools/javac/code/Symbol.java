@@ -1765,6 +1765,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             }
             throw new AssertionError("record component without accessor");
         }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+            return v.visitRecordComponent(this, p);
+        }
     }
 
     public static class ParamSymbol extends VarSymbol {

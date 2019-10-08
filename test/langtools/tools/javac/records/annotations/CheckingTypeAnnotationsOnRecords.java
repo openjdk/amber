@@ -114,6 +114,12 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
                 verifyAnnotations(e.getAnnotationMirrors(), expectedAnnotationName);
                 return null;
             }
+            @Override public Void visitRecordComponent(RecordComponentElement e, Void p) {
+                verifyTypeAcceptable(e.asType(), expectedAnnotationName);
+                scan(e.getEnclosedElements(), p);
+                verifyAnnotations(e.getAnnotationMirrors(), expectedAnnotationName);
+                return null;
+            }
         }.scan(rootElement, null);
     }
 
