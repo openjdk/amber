@@ -23,15 +23,15 @@
 
 /*
  * @test
- * @compile --enable-preview --source 14 recordAccessorsTest.java
- * @run main/othervm --enable-preview recordAccessorsTest
+ * @compile --enable-preview --source 14 recordReflectionTest.java
+ * @run main/othervm --enable-preview recordReflectionTest
  */
 
 
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 
-public class recordAccessorsTest {
+public class recordReflectionTest {
 
     record recordNames(int intX, String stringY) {
         public RecordComponent[] getComponents() throws Throwable {
@@ -59,13 +59,15 @@ public class recordAccessorsTest {
 
     notRecord nr = new notRecord();
 
-    public static boolean hasComponent(RecordComponent[] components, String name,
-                                       String type, String method) {
+    public static boolean hasComponent(RecordComponent[] components, String enclosingClass,
+                                       String name, String type, String method, String genericSig) {
         for (int x = 0; x < components.length; x++) {
             RecordComponent component = components[x];
             if (component.getName() == name &&
+                component.toGenericString().contains(enclosingClass) &&
                 component.getType().toString().contains(type) &&
-                component.getAccessor().toString().contains(method)) {
+                component.getAccessor().toString().contains(method) &&
+                component.getGenericSignature() == genericSig) {
                 return true;
             }
         }
@@ -76,15 +78,15 @@ public class recordAccessorsTest {
         recordNames rn = new recordNames(3, "abc");
         RecordComponent[] components = rn.getComponents();
         if (components.length != 2 ||
-            !hasComponent(components, "intX", "int",
-                          "int recordAccessorsTest$recordNames.intX()") ||
-            !hasComponent(components, "stringY", "java.lang.String",
-                          "java.lang.String recordAccessorsTest$recordNames.stringY()")) {
+            !hasComponent(components, "recordNames", "intX", "int",
+                          "int recordReflectionTest$recordNames.intX()", null) ||
+            !hasComponent(components, "recordNames", "stringY", "java.lang.String",
+                          "java.lang.String recordReflectionTest$recordNames.stringY()", null)) {
             throw new RuntimeException("Bad component accessors returned for recordNames");
         }
 
-        recordAccessorsTest rat = new recordAccessorsTest();
-        components = rat.nr.getComponents();
+        recordReflectionTest rft = new recordReflectionTest();
+        components = rft.nr.getComponents();
         if (components.length != 0) {
             throw new RuntimeException("Non-empty component accessors returned for notRecord");
         }
@@ -92,10 +94,10 @@ public class recordAccessorsTest {
         recordGeneric rg = new recordGeneric(35, "abcd");
         components = rg.getComponents();
         if (components.length != 2 ||
-            !hasComponent(components, "xx", "java.lang.Object",
-                          "java.lang.Object recordAccessorsTest$recordGeneric.xx()") ||
-            !hasComponent(components, "yy", "java.lang.String",
-                          "java.lang.String recordAccessorsTest$recordGeneric.yy()")) {
+            !hasComponent(components, "recordGeneric", "xx", "java.lang.Object",
+                          "java.lang.Object recordReflectionTest$recordGeneric.xx()", "TT;") ||
+            !hasComponent(components, "recordGeneric", "yy", "java.lang.String",
+                          "java.lang.String recordReflectionTest$recordGeneric.yy()", null)) {
             throw new RuntimeException("Bad component accessors returned for recordGeneric");
         }
 
