@@ -1198,6 +1198,8 @@ public class TypeEnter implements Completer {
                               null,
                               null);
                     memberEnter.memberEnter(getter, env);
+                    RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
+                    rec.accessors = rec.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
                 } else if (implSym != null) {
                     if ((implSym.flags() & Flags.PUBLIC) == 0) {

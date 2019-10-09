@@ -2866,7 +2866,9 @@ public class Check {
         }
 
         boolean isRecordField = isRecordMember &&
-                s.flags_field == (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD) && declarationTree.hasTag(VARDEF);
+                (s.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD)) != 0 &&
+                declarationTree.hasTag(VARDEF) &&
+                s.owner.kind == TYP;
 
         if (isRecordField) {
             // we are seeing a record field, which had the original annotations, now is the moment,
@@ -2890,7 +2892,7 @@ public class Check {
                 log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
             } else {
                 ClassSymbol recordClass = (ClassSymbol) s.owner;
-                RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, true);
+                RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, false);
                 rc.appendAttributes(s.getRawAttributes().stream().filter(anno ->
                     Arrays.stream(getTargetNames(anno.type.tsym)).anyMatch(name -> name == names.RECORD_COMPONENT)
                 ).collect(List.collector()));
