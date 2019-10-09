@@ -103,6 +103,15 @@ public class RecordReflectionTest {
     record TypeAnnotatedRec(@TYPE_USE int i) {}
 
     public void testTypeAnnotationsInRecordComp() throws Throwable {
-        // there is a bug in type annotations, not getting to the record component
+        Class<?> recordClass = TypeAnnotatedRec.class;
+        RecordComponent rc = recordClass.getRecordComponents()[0];
+        AnnotatedType at = rc.getAnnotatedType();
+        Annotation[] annos = at.getAnnotations();
+        assertEquals(annos.length, 1);
+        assertEquals(annos[0].toString(), "@RecordReflectionTest$TYPE_USE()");
+
+        Field f = recordClass.getDeclaredField("i");
+        assertEquals(f.getAnnotatedType().getAnnotations().length, 1);
+        assertEquals(f.getAnnotatedType().getAnnotations()[0].toString(), annos[0].toString());
     }
 }

@@ -144,7 +144,7 @@ class RecordComponent implements AnnotatedElement {
                 this,
                 getDeclaringClass(),
                 getGenericType(),
-                TypeAnnotation.TypeAnnotationTarget.RECORD_COMPONENT);
+                TypeAnnotation.TypeAnnotationTarget.FIELD);
     }
 
     /**
