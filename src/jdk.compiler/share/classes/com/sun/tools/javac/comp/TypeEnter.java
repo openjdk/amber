@@ -1631,6 +1631,7 @@ public class TypeEnter implements Completer {
             List<JCVariableDecl> tmpRecordFieldDecls = recordFieldDecls;
             for (JCVariableDecl arg : md.params) {
                 arg.mods.annotations = tmpRecordFieldDecls.head.mods.annotations;
+                arg.vartype = tmpRecordFieldDecls.head.vartype;
                 tmpRecordFieldDecls = tmpRecordFieldDecls.tail;
             }
             return md;

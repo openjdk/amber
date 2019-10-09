@@ -49,10 +49,12 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
     static private final Map<String, Integer> recordNameExpectedAnnotationNumberMap = new HashMap<>();
     static {
         recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R1", "@CheckingTypeAnnotationsOnRecords.TypeUse");
-        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R2", "@CheckingTypeAnnotationsOnRecords.TypeParameter");
+        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R2", "@CheckingTypeAnnotationsOnRecords.TypeUse");
+        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R3", "@CheckingTypeAnnotationsOnRecords.TypeParameter");
 
         recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R1", 4);
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R2", 1);
+        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R2", 4);
+        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R3", 1);
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -61,11 +63,13 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
 
     record R1(@TypeUse int annotated) {}
 
+    record R2(@TypeUse String annotated) {}
+
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.TYPE_PARAMETER })
     @interface TypeParameter {}
 
-    record R2<@TypeParameter T>(T t) {}
+    record R3<@TypeParameter T>(T t) {}
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations,
