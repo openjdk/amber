@@ -82,6 +82,10 @@ public class TreeInfo {
         }
     }
 
+    public static boolean isCanonicalConstructor(JCTree tree) {
+        return isConstructor(tree) && ((JCMethodDecl)tree).sym.isRecord();
+    }
+
     public static boolean isReceiverParam(JCTree tree) {
         if (tree.hasTag(VARDEF)) {
             return ((JCVariableDecl)tree).nameexpr != null;

@@ -1358,11 +1358,6 @@ public class TypeEnter implements Completer {
                     if (canonicalInit.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                         log.error(canonicalDecl, Errors.MethodCantThrowCheckedException);
                     }
-                    ReturnFinder initFinder = new ReturnFinder();
-                    initFinder.scan(canonicalDecl.body.stats);
-                    if (initFinder.hasReturn) {
-                        log.error(canonicalDecl, Errors.CanonicalCantHaveReturnStatement);
-                    }
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
                 }
@@ -1436,15 +1431,6 @@ public class TypeEnter implements Completer {
             }
         }
 
-    }
-
-    class ReturnFinder extends TreeScanner {
-        boolean hasReturn = false;
-
-        @Override
-        public void visitReturn(JCReturn tree) {
-            hasReturn = true;
-        }
     }
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
