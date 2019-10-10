@@ -2533,7 +2533,7 @@ public class Lower extends TreeTranslator {
                     syms.stringType,
                     new ArrayType(syms.methodHandleType, syms.arrayClass));
 
-            JCFieldAccess qualifier = makeIndyQualifier(syms.objectMethodBuildersType, tree, msym,
+            JCFieldAccess qualifier = makeIndyQualifier(syms.objectMethodsType, tree, msym,
                     List.of(syms.methodHandleLookupType,
                             syms.stringType,
                             syms.typeDescriptorType).appendList(staticArgTypes),

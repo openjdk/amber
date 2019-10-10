@@ -81,7 +81,7 @@ class twoRecordAttributes {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -407,7 +407,7 @@ class abstractRecord {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -728,7 +728,7 @@ class notFinalRecord {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -1049,7 +1049,7 @@ class badRecordAttribute {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -1370,7 +1370,7 @@ class shortRecordAttribute {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -1691,7 +1691,7 @@ class oldRecordAttribute {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A
@@ -2012,7 +2012,7 @@ class superNotJLRecord {
     Method #47 #48; // #46     at 0x0265
     class #49; // #47     at 0x026A
     NameAndType #50 #51; // #48     at 0x026D
-    Utf8 "java/lang/invoke/ObjectMethodBuilders"; // #49     at 0x0272
+    Utf8 "java/lang/runtime/ObjectMethods"; // #49     at 0x0272
     Utf8 "bootstrap"; // #50     at 0x029A
     Utf8 "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;"; // #51     at 0x02A6
     String #53; // #52     at 0x035A

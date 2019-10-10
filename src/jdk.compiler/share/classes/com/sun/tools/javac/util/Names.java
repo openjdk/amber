@@ -200,7 +200,7 @@ public class Names {
     public final Name makeConcatWithConstants;
 
     // record related
-    // members of java.lang.invoke.ObjectMethodBuilders
+    // members of java.lang.invoke.ObjectMethods
     public final Name bootstrap;
 
     public final Name record;

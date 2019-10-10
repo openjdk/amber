@@ -37,9 +37,9 @@ import java.util.Objects;
  * Java&trade; compiler implementations to implement the bodies of {@link Object}
  * methods for record clases.
  */
-public class ObjectMethodBuilders {
+public class ObjectMethods {
 
-    private ObjectMethodBuilders() { }
+    private ObjectMethods() { }
 
     private static final MethodType DESCRIPTOR_MT = MethodType.methodType(MethodType.class);
     private static final MethodType NAMES_MT = MethodType.methodType(List.class);
@@ -83,26 +83,26 @@ public class ObjectMethodBuilders {
             OBJECTS_TOSTRING = publicLookup.findStatic(Objects.class, "toString",
                                                        MethodType.methodType(String.class, Object.class));
 
-            OBJECT_EQ = lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            OBJECT_EQ = lookup.findStatic(ObjectMethods.class, "eq",
                                           MethodType.methodType(boolean.class, Object.class, Object.class));
-            HASH_COMBINER = lookup.findStatic(ObjectMethodBuilders.class, "hashCombiner",
+            HASH_COMBINER = lookup.findStatic(ObjectMethods.class, "hashCombiner",
                                               MethodType.fromMethodDescriptorString("(II)I", null));
 
-            primitiveEquals.put(byte.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(byte.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                               MethodType.fromMethodDescriptorString("(BB)Z", null)));
-            primitiveEquals.put(short.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(short.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                                MethodType.fromMethodDescriptorString("(SS)Z", null)));
-            primitiveEquals.put(char.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(char.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                               MethodType.fromMethodDescriptorString("(CC)Z", null)));
-            primitiveEquals.put(int.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(int.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                              MethodType.fromMethodDescriptorString("(II)Z", null)));
-            primitiveEquals.put(long.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(long.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                               MethodType.fromMethodDescriptorString("(JJ)Z", null)));
-            primitiveEquals.put(float.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(float.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                                MethodType.fromMethodDescriptorString("(FF)Z", null)));
-            primitiveEquals.put(double.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(double.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                                 MethodType.fromMethodDescriptorString("(DD)Z", null)));
-            primitiveEquals.put(boolean.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+            primitiveEquals.put(boolean.class, lookup.findStatic(ObjectMethods.class, "eq",
                                                                  MethodType.fromMethodDescriptorString("(ZZ)Z", null)));
 
             primitiveHashers.put(byte.class, lookup.findStatic(Byte.class, "hashCode",
