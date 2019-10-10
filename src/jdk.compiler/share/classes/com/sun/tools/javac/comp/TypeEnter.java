@@ -1198,6 +1198,8 @@ public class TypeEnter implements Completer {
                               null,
                               null);
                     memberEnter.memberEnter(getter, env);
+                    RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
+                    rec.accessors = rec.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
                     tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
                 } else if (implSym != null) {
                     if ((implSym.flags() & Flags.PUBLIC) == 0) {
@@ -1356,11 +1358,6 @@ public class TypeEnter implements Completer {
                     if (canonicalInit.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                         log.error(canonicalDecl, Errors.MethodCantThrowCheckedException);
                     }
-                    ReturnFinder initFinder = new ReturnFinder();
-                    initFinder.scan(canonicalDecl.body.stats);
-                    if (initFinder.hasReturn) {
-                        log.error(canonicalDecl, Errors.CanonicalCantHaveReturnStatement);
-                    }
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
                 }
@@ -1434,15 +1431,6 @@ public class TypeEnter implements Completer {
             }
         }
 
-    }
-
-    class ReturnFinder extends TreeScanner {
-        boolean hasReturn = false;
-
-        @Override
-        public void visitReturn(JCReturn tree) {
-            hasReturn = true;
-        }
     }
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {

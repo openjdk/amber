@@ -119,8 +119,6 @@ public class AttrContext {
      */
     JCTree preferredTreeForDiagnostics;
 
-    MethodSymbol recordImplicitConstructor;
-
     /** Duplicate this context, replacing scope field and copying all others.
      */
     AttrContext dup(WriteableScope scope) {
@@ -142,7 +140,6 @@ public class AttrContext {
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
-        info.recordImplicitConstructor = recordImplicitConstructor;
         return info;
     }
 

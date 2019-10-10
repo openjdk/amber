@@ -2004,6 +2004,11 @@ public class Attr extends JCTree.Visitor {
             log.error(tree.pos(), Errors.RetOutsideMeth);
         } else if (env.info.yieldResult != null) {
             log.error(tree.pos(), Errors.ReturnOutsideSwitchExpression);
+        } else if (!env.info.isLambda &&
+                !env.info.isNewClass &&
+                env.enclMethod != null &&
+                TreeInfo.isCanonicalConstructor(env.enclMethod)) {
+            log.error(tree, Errors.CanonicalCantHaveReturnStatement);
         } else {
             // Attribute return expression, if it exists, and check that
             // it conforms to result type of enclosing method.
@@ -2666,8 +2671,8 @@ public class Attr extends JCTree.Visitor {
         try {
             if (needsRecovery && isSerializable(pt())) {
                 localEnv.info.isSerializable = true;
-                localEnv.info.isLambda = true;
             }
+            localEnv.info.isLambda = true;
             List<Type> explicitParamTypes = null;
             if (that.paramKind == JCLambda.ParameterKind.EXPLICIT) {
                 //attribute lambda parameters
