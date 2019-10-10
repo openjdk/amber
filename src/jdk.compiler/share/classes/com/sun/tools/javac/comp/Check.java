@@ -1168,6 +1168,8 @@ public class Check {
                 } else {
                     mask = implicit = InterfaceMethodFlags;
                 }
+            } else if ((sym.owner.flags_field & RECORD) != 0) {
+                mask = RecordMethodFlags;
             } else {
                 mask = MethodFlags;
             }

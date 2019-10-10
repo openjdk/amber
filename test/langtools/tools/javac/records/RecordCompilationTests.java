@@ -383,5 +383,15 @@ public class RecordCompilationTests extends CompilationTestCase {
     public void testReturnInCanonical() {
         assertFail("compiler.err.canonical.cant.have.return.statement", "record R(int x) { # }",
                 "public R { return; }");
+        assertFail("compiler.err.canonical.cant.have.return.statement", "record R(int x) { # }",
+                "public R { if (i < 0) { return; }}");
+        assertOK("record R(int x) { public R { Runnable r = () -> {return;};} }");
+    }
+
+    public void testNoNativeMethods() {
+        assertFail("compiler.err.mod.not.allowed.here", "record R(int x) { # }",
+                "public native R {}");
+        assertFail("compiler.err.mod.not.allowed.here", "record R(int x) { # }",
+                "public native void m();");
     }
 }

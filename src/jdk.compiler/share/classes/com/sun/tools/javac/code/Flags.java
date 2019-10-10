@@ -366,7 +366,9 @@ public class Flags {
         ConstructorFlags                 = AccessFlags,
         InterfaceMethodFlags             = ABSTRACT | PUBLIC,
         MethodFlags                      = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                           SYNCHRONIZED | FINAL | STRICTFP;
+                                           SYNCHRONIZED | FINAL | STRICTFP,
+        RecordMethodFlags                = AccessFlags | ABSTRACT | STATIC |
+                                            SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags            = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
         ExtendedLocalClassFlags          = (long)LocalClassFlags | SEALED | NON_SEALED,
