@@ -56,8 +56,7 @@ package java.lang;
  * <p>The primary reasons to provide an explicit declaration for the
  * canonical constructor or accessor methods are to validate constructor
  * arguments, perform defensive copies on mutable components, or normalize groups
- * of components (such as reducing a rational number to lowest terms.)  If any
- * of these are provided explicitly.
+ * of components (such as reducing a rational number to lowest terms.)
  *
  * <p>For all record classes, the following invariant must hold: if a record R's
  * components are {@code c1, c2, ... cn}, then if a record instance is copied
@@ -76,8 +75,11 @@ public abstract class Record {
      * to the general contract of {@link Object#equals(Object)},
      * record classes must further participate in the invariant that when
      * a record instance is "copied" by passing the result of the record component
-     * accessor methods to the canonical constructor, the resulting copy is
-     * equal to the original instance.
+     * accessor methods to the canonical constructor, as follows:
+     * <pre>
+     *     R copy = new R(r.c1(), r.c2(), ..., r.cn());
+     * </pre>
+     * then it must be the case that {@code r.equals(copy)}.
      *
      * @implNote
      * The implicitly provided implementation returns {@code true} if and

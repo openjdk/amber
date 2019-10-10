@@ -31,11 +31,16 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * ObjectMethodBuilders
- *
- * @author Brian Goetz
+ * Bootstrap methods for state-driven implementations of core methods,
+ * including {@link Object#equals(Object)}, {@link Object#hashCode()}, and
+ * {@link Object#toString()}.  These methods may be used, for example, by
+ * Java&trade; compiler implementations to implement the bodies of {@link Object}
+ * methods for record clases.
  */
 public class ObjectMethodBuilders {
+
+    private ObjectMethodBuilders() { }
+
     private static final MethodType DESCRIPTOR_MT = MethodType.methodType(MethodType.class);
     private static final MethodType NAMES_MT = MethodType.methodType(List.class);
     private static final MethodHandle FALSE = MethodHandles.constant(boolean.class, false);
@@ -61,43 +66,78 @@ public class ObjectMethodBuilders {
             MethodHandles.Lookup publicLookup = MethodHandles.publicLookup();
             MethodHandles.Lookup lookup = MethodHandles.Lookup.IMPL_LOOKUP;
 
-            CLASS_IS_INSTANCE = publicLookup.findVirtual(Class.class, "isInstance", MethodType.methodType(boolean.class, Object.class));
-            OBJECT_EQUALS = publicLookup.findVirtual(Object.class, "equals", MethodType.methodType(boolean.class, Object.class));
-            OBJECT_HASHCODE = publicLookup.findVirtual(Object.class, "hashCode", MethodType.fromMethodDescriptorString("()I", null));
-            OBJECT_TO_STRING = publicLookup.findVirtual(Object.class, "toString", MethodType.methodType(String.class));
-            STRING_FORMAT = publicLookup.findStatic(String.class, "format", MethodType.methodType(String.class, String.class, Object[].class));
-            OBJECTS_EQUALS = publicLookup.findStatic(Objects.class, "equals", MethodType.methodType(boolean.class, Object.class, Object.class));
-            OBJECTS_HASHCODE = publicLookup.findStatic(Objects.class, "hashCode", MethodType.methodType(int.class, Object.class));
-            OBJECTS_TOSTRING = publicLookup.findStatic(Objects.class, "toString", MethodType.methodType(String.class, Object.class));
+            CLASS_IS_INSTANCE = publicLookup.findVirtual(Class.class, "isInstance",
+                                                         MethodType.methodType(boolean.class, Object.class));
+            OBJECT_EQUALS = publicLookup.findVirtual(Object.class, "equals",
+                                                     MethodType.methodType(boolean.class, Object.class));
+            OBJECT_HASHCODE = publicLookup.findVirtual(Object.class, "hashCode",
+                                                       MethodType.fromMethodDescriptorString("()I", null));
+            OBJECT_TO_STRING = publicLookup.findVirtual(Object.class, "toString",
+                                                        MethodType.methodType(String.class));
+            STRING_FORMAT = publicLookup.findStatic(String.class, "format",
+                                                    MethodType.methodType(String.class, String.class, Object[].class));
+            OBJECTS_EQUALS = publicLookup.findStatic(Objects.class, "equals",
+                                                     MethodType.methodType(boolean.class, Object.class, Object.class));
+            OBJECTS_HASHCODE = publicLookup.findStatic(Objects.class, "hashCode",
+                                                       MethodType.methodType(int.class, Object.class));
+            OBJECTS_TOSTRING = publicLookup.findStatic(Objects.class, "toString",
+                                                       MethodType.methodType(String.class, Object.class));
 
-            OBJECT_EQ = lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.methodType(boolean.class, Object.class, Object.class));
-            HASH_COMBINER = lookup.findStatic(ObjectMethodBuilders.class, "hashCombiner", MethodType.fromMethodDescriptorString("(II)I", null));
-            primitiveEquals.put(byte.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(BB)Z", null)));
-            primitiveEquals.put(short.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(SS)Z", null)));
-            primitiveEquals.put(char.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(CC)Z", null)));
-            primitiveEquals.put(int.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(II)Z", null)));
-            primitiveEquals.put(long.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(JJ)Z", null)));
-            primitiveEquals.put(float.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(FF)Z", null)));
-            primitiveEquals.put(double.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(DD)Z", null)));
-            primitiveEquals.put(boolean.class, lookup.findStatic(ObjectMethodBuilders.class, "eq", MethodType.fromMethodDescriptorString("(ZZ)Z", null)));
+            OBJECT_EQ = lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                          MethodType.methodType(boolean.class, Object.class, Object.class));
+            HASH_COMBINER = lookup.findStatic(ObjectMethodBuilders.class, "hashCombiner",
+                                              MethodType.fromMethodDescriptorString("(II)I", null));
 
-            primitiveHashers.put(byte.class, lookup.findStatic(Byte.class, "hashCode", MethodType.fromMethodDescriptorString("(B)I", null)));
-            primitiveHashers.put(short.class, lookup.findStatic(Short.class, "hashCode", MethodType.fromMethodDescriptorString("(S)I", null)));
-            primitiveHashers.put(char.class, lookup.findStatic(Character.class, "hashCode", MethodType.fromMethodDescriptorString("(C)I", null)));
-            primitiveHashers.put(int.class, lookup.findStatic(Integer.class, "hashCode", MethodType.fromMethodDescriptorString("(I)I", null)));
-            primitiveHashers.put(long.class, lookup.findStatic(Long.class, "hashCode", MethodType.fromMethodDescriptorString("(J)I", null)));
-            primitiveHashers.put(float.class, lookup.findStatic(Float.class, "hashCode", MethodType.fromMethodDescriptorString("(F)I", null)));
-            primitiveHashers.put(double.class, lookup.findStatic(Double.class, "hashCode", MethodType.fromMethodDescriptorString("(D)I", null)));
-            primitiveHashers.put(boolean.class, lookup.findStatic(Boolean.class, "hashCode", MethodType.fromMethodDescriptorString("(Z)I", null)));
+            primitiveEquals.put(byte.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                              MethodType.fromMethodDescriptorString("(BB)Z", null)));
+            primitiveEquals.put(short.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                               MethodType.fromMethodDescriptorString("(SS)Z", null)));
+            primitiveEquals.put(char.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                              MethodType.fromMethodDescriptorString("(CC)Z", null)));
+            primitiveEquals.put(int.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                             MethodType.fromMethodDescriptorString("(II)Z", null)));
+            primitiveEquals.put(long.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                              MethodType.fromMethodDescriptorString("(JJ)Z", null)));
+            primitiveEquals.put(float.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                               MethodType.fromMethodDescriptorString("(FF)Z", null)));
+            primitiveEquals.put(double.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                                MethodType.fromMethodDescriptorString("(DD)Z", null)));
+            primitiveEquals.put(boolean.class, lookup.findStatic(ObjectMethodBuilders.class, "eq",
+                                                                 MethodType.fromMethodDescriptorString("(ZZ)Z", null)));
 
-            primitiveToString.put(byte.class, lookup.findStatic(Byte.class, "toString", MethodType.methodType(String.class, byte.class)));
-            primitiveToString.put(short.class, lookup.findStatic(Short.class, "toString", MethodType.methodType(String.class, short.class)));
-            primitiveToString.put(char.class, lookup.findStatic(Character.class, "toString", MethodType.methodType(String.class, char.class)));
-            primitiveToString.put(int.class, lookup.findStatic(Integer.class, "toString", MethodType.methodType(String.class, int.class)));
-            primitiveToString.put(long.class, lookup.findStatic(Long.class, "toString", MethodType.methodType(String.class, long.class)));
-            primitiveToString.put(float.class, lookup.findStatic(Float.class, "toString", MethodType.methodType(String.class, float.class)));
-            primitiveToString.put(double.class, lookup.findStatic(Double.class, "toString", MethodType.methodType(String.class, double.class)));
-            primitiveToString.put(boolean.class, lookup.findStatic(Boolean.class, "toString", MethodType.methodType(String.class, boolean.class)));
+            primitiveHashers.put(byte.class, lookup.findStatic(Byte.class, "hashCode",
+                                                               MethodType.fromMethodDescriptorString("(B)I", null)));
+            primitiveHashers.put(short.class, lookup.findStatic(Short.class, "hashCode",
+                                                                MethodType.fromMethodDescriptorString("(S)I", null)));
+            primitiveHashers.put(char.class, lookup.findStatic(Character.class, "hashCode",
+                                                               MethodType.fromMethodDescriptorString("(C)I", null)));
+            primitiveHashers.put(int.class, lookup.findStatic(Integer.class, "hashCode",
+                                                              MethodType.fromMethodDescriptorString("(I)I", null)));
+            primitiveHashers.put(long.class, lookup.findStatic(Long.class, "hashCode",
+                                                               MethodType.fromMethodDescriptorString("(J)I", null)));
+            primitiveHashers.put(float.class, lookup.findStatic(Float.class, "hashCode",
+                                                                MethodType.fromMethodDescriptorString("(F)I", null)));
+            primitiveHashers.put(double.class, lookup.findStatic(Double.class, "hashCode",
+                                                                 MethodType.fromMethodDescriptorString("(D)I", null)));
+            primitiveHashers.put(boolean.class, lookup.findStatic(Boolean.class, "hashCode",
+                                                                  MethodType.fromMethodDescriptorString("(Z)I", null)));
+
+            primitiveToString.put(byte.class, lookup.findStatic(Byte.class, "toString",
+                                                                MethodType.methodType(String.class, byte.class)));
+            primitiveToString.put(short.class, lookup.findStatic(Short.class, "toString",
+                                                                 MethodType.methodType(String.class, short.class)));
+            primitiveToString.put(char.class, lookup.findStatic(Character.class, "toString",
+                                                                MethodType.methodType(String.class, char.class)));
+            primitiveToString.put(int.class, lookup.findStatic(Integer.class, "toString",
+                                                               MethodType.methodType(String.class, int.class)));
+            primitiveToString.put(long.class, lookup.findStatic(Long.class, "toString",
+                                                                MethodType.methodType(String.class, long.class)));
+            primitiveToString.put(float.class, lookup.findStatic(Float.class, "toString",
+                                                                 MethodType.methodType(String.class, float.class)));
+            primitiveToString.put(double.class, lookup.findStatic(Double.class, "toString",
+                                                                  MethodType.methodType(String.class, double.class)));
+            primitiveToString.put(boolean.class, lookup.findStatic(Boolean.class, "toString",
+                                                                   MethodType.methodType(String.class, boolean.class)));
         }
         catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
@@ -235,18 +275,33 @@ public class ObjectMethodBuilders {
     }
 
     /**
-     * Bootstrap method to generate the {@code equals}, {@code hashCode}, and {@code toString} methods for a given data class
+     * Bootstrap method to generate the {@link Object#equals(Object)},
+     * {@link Object#hashCode()}, and {@link Object#toString()} methods, based
+     * on a description of the component names and accessor methods, for either
+     * {@code invokedynamic} call sites or dynamic constant pool entries
+     *
      * @param lookup       the lookup
-     * @param methodName   the method name
-     * @param type         the descriptor type
-     * @param theClass     the data class
-     * @param names        the list of field names joined into a string, separated by ";"
-     * @param getters      the list of getters
-     * @return a call site if invoked by and indy or a method handle if invoked by a condy
+     * @param methodName   the name of the method to generate, which must be one of
+     *                     {@code "equals"}, {@code "hashCode"}, or {@code "toString"}
+     * @param type         a {@link MethodType} corresponding the descriptor type
+     *                     for the method, which must correspond to the descriptor
+     *                     for the corresponding {@link Object} method, if linking
+     *                     an {@code invokedynamic} call site, or the
+     *                     constant {@code MethodHandle.class}, if linking a
+     *                     dynamic constant
+     * @param theClass     the class hosting the components
+     * @param names        the list of component names, joined into a string separated by ";"
+     * @param getters      method handles for the accessor methods for the components
+     * @return             a call site if invoked by indy, or a method handle
+     *                     if invoked by a condy
+     * @throws IllegalArgumentException if the bootstrap arguments are invalid
+     *                                  or inconsistent
      * @throws Throwable if any exception is thrown during call site construction
      */
     public static Object bootstrap(MethodHandles.Lookup lookup, String methodName, TypeDescriptor type,
-                                   Class<?> theClass, String names, MethodHandle... getters) throws Throwable {
+                                   Class<?> theClass,
+                                   String names,
+                                   MethodHandle... getters) throws Throwable {
         MethodType methodType;
         if (type instanceof MethodType)
             methodType = (MethodType) type;
@@ -259,16 +314,22 @@ public class ObjectMethodBuilders {
         MethodHandle handle;
         switch (methodName) {
             case "equals":
-                // validate method type
+                if (methodType != null && !methodType.equals(MethodType.methodType(boolean.class, theClass, Object.class)))
+                    throw new IllegalArgumentException("Bad method type: " + methodType);
                 handle = makeEquals(theClass, getterList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             case "hashCode":
-                // validate method type
+                if (methodType != null && !methodType.equals(MethodType.methodType(int.class, theClass)))
+                    throw new IllegalArgumentException("Bad method type: " + methodType);
                 handle = makeHashCode(theClass, getterList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             case "toString":
-                // validate method type
-                handle = makeToString(theClass, getterList, List.of(names.split(";")));
+                if (methodType != null && !methodType.equals(MethodType.methodType(String.class, theClass)))
+                    throw new IllegalArgumentException("Bad method type: " + methodType);
+                List<String> nameList = List.of(names.split(";"));
+                if (nameList.size() != getterList.size())
+                    throw new IllegalArgumentException("Name list and accessor list do not match");
+                handle = makeToString(theClass, getterList, nameList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             default:
                 throw new IllegalArgumentException(methodName);
