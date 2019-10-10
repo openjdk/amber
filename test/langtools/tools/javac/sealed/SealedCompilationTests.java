@@ -166,4 +166,11 @@ public class SealedCompilationTests extends CompilationTestCase {
                         "    public static void foo() { new I2() { public void run() { } }; }\n" +
                         "}");
     }
+
+    public void testSealedInterfaceAndAbstracClasses() {
+        assertFail("compiler.err.sealed.interface.or.abstract.must.have.subtypes",
+                "sealed interface I1 {}");
+        assertFail("compiler.err.sealed.interface.or.abstract.must.have.subtypes",
+                "sealed abstract class AC {}");
+    }
 }

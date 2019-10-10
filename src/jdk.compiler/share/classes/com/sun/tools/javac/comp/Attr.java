@@ -4712,6 +4712,13 @@ public class Attr extends JCTree.Visitor {
             // Get environment current at the point of class definition.
             Env<AttrContext> env = typeEnvs.get(c);
 
+            if (c.isSealed() &&
+                    !((ClassType)c.type).isPermittedExplicit &&
+                    ((ClassType)c.type).permitted.isEmpty() &&
+                    (c.isInterface() || c.isAbstract())) {
+                log.error(env.tree, Errors.SealedInterfaceOrAbstractMustHaveSubtypes);
+            }
+
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
             // because the annotations were not available at the time the env was created. Therefore,
             // we look up the environment chain for the first enclosing environment for which the
