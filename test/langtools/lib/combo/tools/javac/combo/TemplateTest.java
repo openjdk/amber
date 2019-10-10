@@ -42,7 +42,7 @@ public class TemplateTest {
     void before() { vars.clear(); }
 
     private void assertTemplate(String expected, String template) {
-        String result = Template.Behavior.expandTemplate(template, vars);
+        String result = Template.expandTemplate(template, vars);
         assertEquals(result, expected, "for " + template);
     }
 

@@ -23,7 +23,6 @@
  * questions.
  */
 
-import java.io.IOException;
 import java.lang.annotation.ElementType;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -31,13 +30,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.testng.ITestResult;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
-import tools.javac.combo.JavacTemplateTestBase;
+import tools.javac.combo.CompilationTestCase;
 
 import static java.lang.annotation.ElementType.*;
-import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.assertEquals;
 
 /**
@@ -50,7 +46,11 @@ import static org.testng.Assert.assertEquals;
  * @run testng RecordCompilationTests
  */
 @Test
-public class RecordCompilationTests extends JavacTemplateTestBase {
+public class RecordCompilationTests extends CompilationTestCase {
+
+    // @@@ When records become a permanent feature, we don't need these any more
+    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
+                                               Integer.toString(Runtime.version().feature())};
 
     private static final List<String> BAD_COMPONENT_NAMES = List.of(
             "clone", "finalize", "getClass", "hashCode",
@@ -59,54 +59,10 @@ public class RecordCompilationTests extends JavacTemplateTestBase {
             "serialVersionUID", "toString", "wait",
             "writeReplace");
 
-    // @@@ When records become a permanent feature, we don't need these any more
-    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
-            Integer.toString(Runtime.version().feature())};
-
-    // -- test framework code --
-
-    @AfterMethod
-    public void dumpTemplateIfError(ITestResult result) {
-        // Make sure offending template ends up in log file on failure
-        if (!result.isSuccess()) {
-            System.err.printf("Diagnostics: %s%nTemplate: %s%n", diags.errorKeys(),
-                    sourceFiles.stream().map(p -> p.snd).collect(toList()));
-        }
+    {
+        setDefaultFilename("R.java");
+        setCompileOptions(PREVIEW_OPTIONS);
     }
-
-    private String expand(String... constructs) {
-        String s = "#";
-        for (String c : constructs)
-            s = s.replace("#", c);
-        return s;
-    }
-
-    private void assertCompile(String program, Runnable postTest) {
-        reset();
-        addCompileOptions(PREVIEW_OPTIONS);
-        addSourceFile("R.java", new StringTemplate(program));
-        try {
-            compile();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        postTest.run();
-    }
-
-    private void assertOK(String... constructs) {
-        assertCompile(expand(constructs), this::assertCompileSucceeded);
-    }
-
-    private void assertOKWithWarning(String warning, String... constructs) {
-        assertCompile(expand(constructs), () -> assertCompileSucceededWithWarning(warning));
-    }
-
-    private void assertFail(String expectedDiag, String... constructs) {
-        assertCompile(expand(constructs), () -> assertCompileFailed(expectedDiag));
-    }
-
-    // -- Actual test cases start here --
 
     public void testMalformedDeclarations() {
         assertFail("compiler.err.premature.eof", "record R()");
