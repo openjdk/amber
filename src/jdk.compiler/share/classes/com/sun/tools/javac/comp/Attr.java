@@ -27,7 +27,6 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -77,8 +76,6 @@ import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
-import com.sun.tools.javac.util.Log.DeferredDiagnosticHandler;
-import com.sun.tools.javac.util.Log.DiscardDiagnosticHandler;
 
 /** This is the main context-dependent analysis phase in GJC. It
  *  encompasses name resolution, type checking and constant folding as
@@ -2671,8 +2668,10 @@ public class Attr extends JCTree.Visitor {
         try {
             if (needsRecovery && isSerializable(pt())) {
                 localEnv.info.isSerializable = true;
-                localEnv.info.isLambda = true;
+                localEnv.info.isSerializableLambda = true;
+                localEnv.info.isSerializableLambda = true;
             }
+            localEnv.info.isLambda = true;
             List<Type> explicitParamTypes = null;
             if (that.paramKind == JCLambda.ParameterKind.EXPLICIT) {
                 //attribute lambda parameters
@@ -3723,7 +3722,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         if (env.info.isSerializable) {
-            chk.checkAccessFromSerializableElement(tree, env.info.isLambda);
+            chk.checkAccessFromSerializableElement(tree, env.info.isSerializableLambda);
         }
 
         result = checkId(tree, env1.enclClass.sym.type, sym, env, resultInfo);
@@ -3865,7 +3864,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         if (env.info.isSerializable) {
-            chk.checkAccessFromSerializableElement(tree, env.info.isLambda);
+            chk.checkAccessFromSerializableElement(tree, env.info.isSerializableLambda);
         }
 
         env.info.selectSuper = selectSuperPrev;
