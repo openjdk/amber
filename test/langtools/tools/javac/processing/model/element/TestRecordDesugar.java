@@ -95,7 +95,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
             System.out.println("\tChecking " + enclosedElement.getKind() + " " + enclosedElement);
             String key = enclosedElement.getKind().toString() + " " + enclosedElement.getSimpleName();
             ElementInfo expected = expectedInfoMap.get(key);
-            Objects.requireNonNull(expected, "Missing mapping for " + elementToString(enclosedElement));
+            Objects.requireNonNull(expected, "\t\tMissing mapping for " + elementToString(enclosedElement));
 
             expectedInfoMap.remove(key);
 
@@ -104,7 +104,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
             // Modifiers
             if (!enclosedElement.getModifiers().equals(Set.of(expected.modifiers()))) {
                 errors++;
-                System.out.println("Unexpected modifiers on " + enclosedElement + ":\t"
+                System.out.println("\t\tUnexpected modifiers on " + enclosedElement + ":\t"
                                    + enclosedElement.getModifiers());
             }
 
@@ -216,17 +216,23 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
      *}
      */
     @TypeElementInfo(elements =
-                     // For now, the desugared private fields are
-                     // marked as state components with a mandated
-                     // origin, but state components should get their
-                     // own representation.
-                     {@ElementInfo(kind = ElementKind.STATE_COMPONENT,
+                     {@ElementInfo(kind = ElementKind.RECORD_COMPONENT,
+                                   modifiers = {Modifier.PUBLIC},
+                                   name = "r",
+                                   type = TypeKind.DOUBLE),
+
+	              @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "r",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.MANDATED),
 
-                      @ElementInfo(kind = ElementKind.STATE_COMPONENT,
+                      @ElementInfo(kind = ElementKind.RECORD_COMPONENT,
+                                   modifiers = {Modifier.PUBLIC},
+                                   name = "theta",
+                                   type = TypeKind.DOUBLE),
+
+            	      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "theta",
                                    type = TypeKind.DOUBLE,
@@ -281,17 +287,23 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
      * Cartesian coordinate complex number.
      */
     @TypeElementInfo(elements =
-                     // For now, the desugared private fields are
-                     // marked as state components with a mandated
-                     // origin, but state components should get their
-                     // own representation.
-                     {@ElementInfo(kind = ElementKind.STATE_COMPONENT,
+                     {@ElementInfo(kind = ElementKind.RECORD_COMPONENT,
+                                   modifiers = {Modifier.PUBLIC},
+                                   name = "real",
+                                   type = TypeKind.DOUBLE),
+
+ 		      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "real",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.MANDATED),
 
-                      @ElementInfo(kind = ElementKind.STATE_COMPONENT,
+                      @ElementInfo(kind = ElementKind.RECORD_COMPONENT,
+                                   modifiers = {Modifier.PUBLIC},
+                                   name = "imag",
+                                   type = TypeKind.DOUBLE),
+
+		      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "imag",
                                    type = TypeKind.DOUBLE,
@@ -342,6 +354,8 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
      record ComplexCartesian(double real, double imag) implements ComplexNumber {
         // Explicit constructor declaration allowed
         public ComplexCartesian(double real, double imag) {
+	    this.real = real;
+	    this.imag = imag;
         }
 
         @Override
