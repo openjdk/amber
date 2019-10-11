@@ -1209,8 +1209,8 @@ public class Check {
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;
 
             if ((flags & ENUM) != 0) {
-                // enums can't be declared abstract or final
-                mask &= ~(ABSTRACT | FINAL);
+                // enums can't be declared abstract, final, sealed or non-sealed
+                mask &= ~(ABSTRACT | FINAL | SEALED | NON_SEALED);
                 implicit |= implicitEnumFinalFlag(tree);
             }
             if ((flags & RECORD) != 0) {

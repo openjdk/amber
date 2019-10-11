@@ -43,7 +43,7 @@ import tools.javac.combo.CompilationTestCase;
 @Test
 public class SealedCompilationTests extends CompilationTestCase {
 
-    // @@@ When records become a permanent feature, we don't need these any more
+    // @@@ When sealed types become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
                                                Integer.toString(Runtime.version().feature())};
 
@@ -107,12 +107,11 @@ public class SealedCompilationTests extends CompilationTestCase {
                     assertOK(shell, expandMarkers(I2, p, m, m));
 
         // Expect failure if there is no explicit final / sealed / non-sealed
-        // @@@ Currently failing
-//        for (String shell : SHELLS)
-//            for (String b : List.of(CC1, AC1, I1))
-//                for (String p : List.of("", "permits Sub"))
-//                    for (String m : List.of(""))
-//                        assertFail("", shell, expandMarkers(b, p, m));
+        for (String shell : SHELLS)
+            for (String b : List.of(CC1, AC1, I1))
+                for (String p : List.of("", "permits Sub"))
+                    for (String m : List.of(""))
+                        assertFail("compiler.err.non.sealed.sealed.or.final.expected", shell, expandMarkers(b, p, m));
     }
 
     public void testSealedAndRecords() {
@@ -251,5 +250,30 @@ public class SealedCompilationTests extends CompilationTestCase {
                 "sealed interface I1 {}");
         assertFail("compiler.err.sealed.interface.or.abstract.must.have.subtypes",
                 "sealed abstract class AC {}");
+    }
+
+    public void testEnumsCantBeSealedOrNonSealed() {
+        for (String s : List.of(
+                """
+                sealed interface I {}
+
+                sealed enum E implements I {E1}
+                """,
+                """
+                sealed interface I {}
+
+                non-sealed enum E implements I {E1}
+                """))
+            assertFail("compiler.err.mod.not.allowed.here", s);
+    }
+
+    public void testEnumsCanImplementSealedInterfaces() {
+        for (String s : List.of(
+                """
+                sealed interface I {}
+
+                enum E implements I {E1}
+                """))
+            assertOK(s);
     }
 }
