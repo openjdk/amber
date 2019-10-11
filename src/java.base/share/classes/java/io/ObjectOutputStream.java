@@ -139,6 +139,18 @@ import sun.reflect.misc.ReflectUtil;
  * serialVersionUID field declarations are also ignored--all enum types have a
  * fixed serialVersionUID of 0L.
  *
+ * @apiNote When Preview Features are enabled...
+ * Record objects are serialized differently than ordinary serializable or
+ * externalizable objects.  The serialized form of a record object is its state
+ * components ( in the same format as that of an ordinary object ). Like other
+ * serializable or externalizable objects, record objects can function as the
+ * targets of back references appearing subsequently in the serialization stream.
+ * The process by which record objects are serialized cannot be customized; any
+ * class-specific writeObject, writeReplace, and writeExternal, methods defined
+ * by record classes are ignored during serialization. Similarly, a
+ * serialPersistentFields field declaration is also ignored -- all record
+ * classes have a fixed serial form. The serialVersionUID may be set.
+ *
  * <p>Primitive data, excluding serializable fields and externalizable data, is
  * written to the ObjectOutputStream in block-data records. A block data record
  * is composed of a header and data. The block data header consists of a marker
@@ -1427,7 +1439,11 @@ public class ObjectOutputStream
             bout.writeByte(TC_OBJECT);
             writeClassDesc(desc, false);
             handles.assign(unshared ? null : obj);
-            if (desc.isExternalizable() && !desc.isProxy()) {
+
+            final boolean isRecord = obj.getClass().isRecord() ? true : false;
+            if (isRecord) {
+                writeRecordData(obj,desc);
+            } else if (desc.isExternalizable() && !desc.isProxy()) {
                 writeExternalData((Externalizable) obj);
             } else {
                 writeSerialData(obj, desc);
@@ -1469,6 +1485,18 @@ public class ObjectOutputStream
         }
 
         curPut = oldPut;
+    }
+
+    /** Writes the record component values for the given record object. */
+    private void writeRecordData(Object obj, ObjectStreamClass desc)
+        throws IOException
+    {
+        assert obj.getClass().isRecord();
+        ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
+        if (slots.length != 1)
+            throw new InternalError("expected slot length: " + slots.length);
+
+        defaultWriteFields(obj, desc);  // TODO: use record accessors
     }
 
     /**

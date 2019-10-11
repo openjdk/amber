@@ -1275,11 +1275,6 @@ public class TypeEnter implements Completer {
             if (ms != null) {
                 errorOnSerializationMember(tree, names.writeObject, ms, syms.voidType, false);
             }
-            // non-static Object writeReplace() {}
-            ms = lookupMethod(tree.sym, names.writeReplace, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.writeReplace, ms, syms.objectType, false);
-            }
             // non-static Object readResolve() {}
             ms = lookupMethod(tree.sym, names.readResolve, List.nil());
             if (ms != null) {
@@ -1411,22 +1406,6 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(equals, env);
             }
 
-            if (attr.isSerializable(tree.sym.type)) {
-                if (lookupMethod(tree.sym, names.readResolve, List.nil()) == null &&
-                    lookupMethod(tree.sym, names.readObject, List.nil()) == null) {
-                    // private Object readResolve() { return ???; }
-                    JCMethodDecl readResolve = make.
-                        MethodDef(make.Modifiers(Flags.PRIVATE | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
-                                  names.readResolve,
-                                  make.Type(syms.objectType),
-                                  List.nil(),
-                                  List.nil(),
-                                  List.nil(), // thrown
-                                  null,
-                                  null);
-                    memberEnter.memberEnter(readResolve, env);
-                }
-            }
             // lets remove a temporary flag used to mark if the record component was initially declared as a varargs
             List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
             for (JCVariableDecl field: recordFields) {

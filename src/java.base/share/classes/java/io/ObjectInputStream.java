@@ -26,7 +26,9 @@
 package java.io;
 
 import java.io.ObjectStreamClass.WeakClassKey;
+import java.io.ObjectStreamClass.RecordReflector;
 import java.lang.System.Logger;
+import java.lang.invoke.MethodHandle;
 import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
@@ -217,6 +219,27 @@ import sun.reflect.misc.ReflectUtil;
  * methods defined by enum types are ignored during deserialization.
  * Similarly, any serialPersistentFields or serialVersionUID field declarations
  * are also ignored--all enum types have a fixed serialVersionUID of 0L.
+ *
+ * @apiNote When Preview Features are enabled...
+ * Record objects are deserialized differently than ordinary serializable or
+ * externalizable objects. The serialized form of a record object is its state
+ * components ( in the same format as that of an ordinary object ). During
+ * deserialization, if the local class equivalent of the specified stream class
+ * descriptor {@linkplain Class#isRecord() is a record}, ObjectInputStream reads
+ * the record's state components from the stream; the record object is then
+ * constructed by invoking its <i>canonical constructor</i> passing the state
+ * components ( or the default value of the component's declared type if absent
+ * from the stream ).  Like other serializable or externalizable objects, record
+ * objects can function as the targets of back references appearing subsequently
+ * in the serialization stream ( but there are clearly some limitations on the
+ * nature of the structures that can be represented, by virtue of the fact that
+ * the state components are deserialized prior to the invocation of the record
+ * constructor).  The process by which record objects are deserialized cannot
+ * be customized: any class-specific readObject, readObjectNoData, readResolve,
+ * and readExternal, methods defined by record classes are ignored during
+ * deserialization. Similarly, a serialPersistentFields field declaration is
+ * also ignored -- all record classes have a fixed serial form, that is their
+ * state components. The serialVersionUID may be set.
  *
  * @author      Mike Warres
  * @author      Roger Riggs
@@ -2081,7 +2104,12 @@ public class ObjectInputStream
             handles.markException(passHandle, resolveEx);
         }
 
-        if (desc.isExternalizable()) {
+        final boolean isRecord = cl != null && cl.isRecord() ? true : false;
+        if (isRecord) {
+            assert obj == null;
+            obj = readRecord(desc);
+            handles.setObject(passHandle, obj);
+        } else if (desc.isExternalizable()) {
             readExternalData((Externalizable) obj, desc);
         } else {
             readSerialData(obj, desc);
@@ -2091,6 +2119,7 @@ public class ObjectInputStream
 
         if (obj != null &&
             handles.lookupException(passHandle) == null &&
+            !isRecord &&
             desc.hasReadResolveMethod())
         {
             Object rep = desc.invokeReadResolve(obj);
@@ -2165,6 +2194,43 @@ public class ObjectInputStream
          * externalizable data remains in the stream, a subsequent read will
          * most likely throw a StreamCorruptedException.
          */
+    }
+
+    /** Reads a record. */
+    private Object readRecord(ObjectStreamClass desc) throws IOException {
+        ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
+        if (slots.length != 1) {
+            // skip any superclass stream field values
+            for (int i = 0; i < slots.length-1; i++) {
+                ObjectStreamClass slotDesc = slots[i].desc;
+                if (slots[i].hasData) {
+                    defaultReadFields(null, slotDesc);
+                }
+            }
+        }
+
+        FieldValues fieldValues = defaultReadFields(null, desc);
+
+        // lookup the canonical constructor
+        MethodHandle ctrMH = RecordReflector.canonicalCtr(desc.forClass());
+
+        // bind the stream field values
+        ctrMH = RecordReflector.bindCtrValues(ctrMH, desc, fieldValues);
+
+        try {
+            return ctrMH.invoke();
+        } catch (Exception e) {
+            InvalidObjectException ioe = new InvalidObjectException(e.getMessage());
+            ioe.initCause(e);
+            throw ioe;
+        } catch (Error e) {
+            throw e;
+        } catch (Throwable t) {
+            ObjectStreamException ose = new InvalidObjectException(
+                    "ReflectiveOperationException during deserialization");
+            ose.initCause(t);
+            throw ose;
+        }
     }
 
     /**
@@ -2313,7 +2379,7 @@ public class ObjectInputStream
         }
     }
 
-    private class FieldValues {
+    /*package-private*/ class FieldValues {
         final byte[] primValues;
         final Object[] objValues;
 
