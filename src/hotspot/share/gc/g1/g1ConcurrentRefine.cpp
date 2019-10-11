@@ -198,10 +198,10 @@ inline size_t deactivation_level(const Thresholds& t) { return t.second; }
 
 static Thresholds calc_thresholds(size_t green_zone,
                                   size_t yellow_zone,
-                                  uint worker_i) {
+                                  uint worker_id) {
   double yellow_size = yellow_zone - green_zone;
   double step = yellow_size / G1ConcurrentRefine::max_num_threads();
-  if (worker_i == 0) {
+  if (worker_id == 0) {
     // Potentially activate worker 0 more aggressively, to keep
     // available buffers near green_zone value.  When yellow_size is
     // large we don't want to allow a full step to accumulate before
@@ -209,8 +209,8 @@ static Thresholds calc_thresholds(size_t green_zone,
     // than green_zone buffers to be processed during scanning.
     step = MIN2(step, ParallelGCThreads / 2.0);
   }
-  size_t activate_offset = static_cast<size_t>(ceil(step * (worker_i + 1)));
-  size_t deactivate_offset = static_cast<size_t>(floor(step * worker_i));
+  size_t activate_offset = static_cast<size_t>(ceil(step * (worker_id + 1)));
+  size_t deactivate_offset = static_cast<size_t>(floor(step * worker_id));
   return Thresholds(green_zone + activate_offset,
                     green_zone + deactivate_offset);
 }
@@ -412,6 +412,22 @@ void G1ConcurrentRefine::adjust(double logged_cards_scan_time,
   dcqs.notify_if_necessary();
 }
 
+G1ConcurrentRefine::RefinementStats G1ConcurrentRefine::total_refinement_stats() const {
+  struct CollectData : public ThreadClosure {
+    Tickspan _total_time;
+    size_t _total_cards;
+    CollectData() : _total_time(), _total_cards(0) {}
+    virtual void do_thread(Thread* t) {
+      G1ConcurrentRefineThread* crt = static_cast<G1ConcurrentRefineThread*>(t);
+      _total_time += crt->total_refinement_time();
+      _total_cards += crt->total_refined_cards();
+    }
+  } collector;
+  // Cast away const so we can call non-modifying closure on threads.
+  const_cast<G1ConcurrentRefine*>(this)->threads_do(&collector);
+  return RefinementStats(collector._total_time, collector._total_cards);
+}
+
 size_t G1ConcurrentRefine::activation_threshold(uint worker_id) const {
   Thresholds thresholds = calc_thresholds(_green_zone, _yellow_zone, worker_id);
   return activation_level(thresholds);
@@ -432,7 +448,8 @@ void G1ConcurrentRefine::maybe_activate_more_threads(uint worker_id, size_t num_
   }
 }
 
-bool G1ConcurrentRefine::do_refinement_step(uint worker_id) {
+bool G1ConcurrentRefine::do_refinement_step(uint worker_id,
+                                            size_t* total_refined_cards) {
   G1DirtyCardQueueSet& dcqs = G1BarrierSet::dirty_card_queue_set();
 
   size_t curr_cards = dcqs.num_cards();
@@ -448,5 +465,6 @@ bool G1ConcurrentRefine::do_refinement_step(uint worker_id) {
 
   // Process the next buffer, if there are enough left.
   return dcqs.refine_completed_buffer_concurrently(worker_id + worker_id_offset(),
-                                                   deactivation_threshold(worker_id));
+                                                   deactivation_threshold(worker_id),
+                                                   total_refined_cards);
 }

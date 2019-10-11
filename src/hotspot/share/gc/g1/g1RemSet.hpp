@@ -61,7 +61,6 @@ private:
   G1RemSetSummary _prev_period_summary;
 
   G1CollectedHeap* _g1h;
-  size_t _num_conc_refined_cards; // Number of cards refined concurrently to the mutator.
 
   G1CardTable*           _ct;
   G1Policy*              _g1p;
@@ -117,15 +116,13 @@ public:
   // Refine the card corresponding to "card_ptr". Safe to be called concurrently
   // to the mutator.
   void refine_card_concurrently(CardValue* card_ptr,
-                                uint worker_i);
+                                uint worker_id);
 
   // Print accumulated summary info from the start of the VM.
   void print_summary_info();
 
   // Print accumulated summary info from the last time called.
   void print_periodic_summary_info(const char* header, uint period_count);
-
-  size_t num_conc_refined_cards() const { return _num_conc_refined_cards; }
 
   // Rebuilds the remembered set by scanning from bottom to TARS for all regions
   // using the given work gang.

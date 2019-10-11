@@ -129,8 +129,8 @@ void ClassLoaderData::initialize_name(Handle class_loader) {
 
 ClassLoaderData::ClassLoaderData(Handle h_class_loader, bool is_unsafe_anonymous) :
   _metaspace(NULL),
-  _metaspace_lock(new Mutex(Monitor::leaf+1, "Metaspace allocation lock", true,
-                            Monitor::_safepoint_check_never)),
+  _metaspace_lock(new Mutex(Mutex::leaf+1, "Metaspace allocation lock", true,
+                            Mutex::_safepoint_check_never)),
   _unloading(false), _is_unsafe_anonymous(is_unsafe_anonymous),
   _modified_oops(true), _accumulated_modified_oops(false),
   // An unsafe anonymous class loader data doesn't have anything to keep
@@ -232,7 +232,7 @@ class VerifyContainsOopClosure : public OopClosure {
   VerifyContainsOopClosure(oop target) : _target(target), _found(false) {}
 
   void do_oop(oop* p) {
-    if (p != NULL && oopDesc::equals(NativeAccess<AS_NO_KEEPALIVE>::oop_load(p), _target)) {
+    if (p != NULL && NativeAccess<AS_NO_KEEPALIVE>::oop_load(p) == _target) {
       _found = true;
     }
   }
@@ -433,7 +433,7 @@ void ClassLoaderData::record_dependency(const Klass* k) {
 
     // Just return if this dependency is to a class with the same or a parent
     // class_loader.
-    if (oopDesc::equals(from, to) || java_lang_ClassLoader::isAncestor(from, to)) {
+    if (from == to || java_lang_ClassLoader::isAncestor(from, to)) {
       return; // this class loader is in the parent list, no need to add it.
     }
   }
