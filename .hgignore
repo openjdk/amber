@@ -15,3 +15,5 @@ NashornProfile.txt
 (^|/)JTwork/
 (^|/)\.git/
 ^src/utils/hsdis/build/
+^amber-records-and-sealed-types/
+

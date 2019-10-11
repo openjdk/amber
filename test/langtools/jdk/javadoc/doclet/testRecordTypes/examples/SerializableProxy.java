@@ -23,14 +23,40 @@
 
 package examples;
 
-/**
- * A cartesian point.
- *
- * <em>This example illustrates the use of implicitly provided methods
- *     and documentation comments.</em>
- *
- * @param x the x coordinate
- * @param y the y coordinate
- */
-public record Point(int x, int y) { }
+import java.io.Serializable;
 
+/**
+ * A class with a record for a serialization proxy.
+ */
+public class SerializableProxy implements Serializable {
+    private int p;
+    private int q;
+
+    /**
+     * The proxy.
+     *
+     * @param x the first item in the serialized form
+     * @param y the second item in the serialized form
+     *
+     * @serial include
+     */
+    private record Proxy(int x, int y) { 
+        /**
+         * Returns a deserialized object.
+         *
+         * @returns the deserialized object
+         */
+        public SerializableProxy readResolve() { 
+	    return new SerializableProxy(x, y); 
+        }
+    }
+
+    /**
+     * Returns the proxy object.
+     *
+     * @return the proxy object
+     */
+    public Object writeReplace() {
+        return new Proxy(p, q);
+    }
+}

@@ -23,14 +23,15 @@
 
 package examples;
 
+import java.io.Serializable;
+
 /**
  * A cartesian point.
  *
- * <em>This example illustrates the use of implicitly provided methods
- *     and documentation comments.</em>
+ * <em>This example illustrates the documentation of a serializable record.</em>
  *
  * @param x the x coordinate
  * @param y the y coordinate
  */
-public record Point(int x, int y) { }
+public record SerializablePoint(int x, int y) implements Serializable { }
 

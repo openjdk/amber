@@ -2436,6 +2436,7 @@ public class Utils {
         List<TypeElement> clist = getClassesUnfiltered(e);
         clist.addAll(getInterfacesUnfiltered(e));
         clist.addAll(getAnnotationTypesUnfiltered(e));
+        clist.addAll(getRecordsUnfiltered(e));
         SortedSet<TypeElement> oset = new TreeSet<>(makeGeneralPurposeComparator());
         oset.addAll(clist);
         return oset;
