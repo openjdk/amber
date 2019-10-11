@@ -385,7 +385,7 @@ const size_t minimumSymbolTableSize = 1024;
   notproduct(ccstrlist, DeoptimizeOnlyAt, "",                               \
           "A comma separated list of bcis to deoptimize at")                \
                                                                             \
-  product(bool, DeoptimizeRandom, false,                                    \
+  develop(bool, DeoptimizeRandom, false,                                    \
           "Deoptimize random frames on random exit from the runtime system")\
                                                                             \
   notproduct(bool, ZombieALot, false,                                       \
@@ -713,7 +713,7 @@ const size_t minimumSymbolTableSize = 1024;
           "Use LWP-based instead of libthread-based synchronization "       \
           "(SPARC only)")                                                   \
                                                                             \
-  product(intx, MonitorBound, 0, "Bound Monitor population")                \
+  product(intx, MonitorBound, 0, "(Deprecated) Bound Monitor population")   \
           range(0, max_jint)                                                \
                                                                             \
   experimental(intx, MonitorUsedDeflationThreshold, 90,                     \
@@ -1017,10 +1017,6 @@ const size_t minimumSymbolTableSize = 1024;
           "Inject thread creation failures for "                            \
           "UseDynamicNumberOfCompilerThreads")                              \
                                                                             \
-  product(intx, CompilationPolicyChoice, 0,                                 \
-          "which compilation policy (0-2)")                                 \
-          range(0, 2)                                                       \
-                                                                            \
   develop(bool, UseStackBanging, true,                                      \
           "use stack banging for stack overflow checks (required for "      \
           "proper StackOverflow handling; disable only to measure cost "    \
@@ -1050,6 +1046,9 @@ const size_t minimumSymbolTableSize = 1024;
                                                                             \
   diagnostic(bool, EnableThreadSMRStatistics, trueInDebug,                  \
              "Enable Thread SMR Statistics")                                \
+                                                                            \
+  product(bool, UseNotificationThread, true,                                \
+          "Use Notification Thread")                                        \
                                                                             \
   product(bool, Inline, true,                                               \
           "Enable inlining")                                                \
@@ -2143,14 +2142,6 @@ const size_t minimumSymbolTableSize = 1024;
           "% of CompileThreshold) before profiling in the interpreter")     \
           range(0, 100)                                                     \
                                                                             \
-  develop(intx, MaxRecompilationSearchLength,    10,                        \
-          "The maximum number of frames to inspect when searching for "     \
-          "recompilee")                                                     \
-                                                                            \
-  develop(intx, MaxInterpretedSearchLength,     3,                          \
-          "The maximum number of interpreted frames to skip when searching "\
-          "for recompilee")                                                 \
-                                                                            \
   develop(intx, DesiredMethodLimit,  8000,                                  \
           "The desired maximum method size (in bytecodes) after inlining")  \
                                                                             \
@@ -2163,6 +2154,9 @@ const size_t minimumSymbolTableSize = 1024;
   product(uint64_t, MaxDirectMemorySize, 0,                                 \
           "Maximum total size of NIO direct-buffer allocations")            \
           range(0, max_jlong)                                               \
+                                                                            \
+  product(bool, ClassForNameDeferLinking, false,                            \
+          "Revert to not linking in Class.forName()")                       \
                                                                             \
   /* Flags used for temporary code during development  */                   \
                                                                             \
@@ -2493,9 +2487,5 @@ ALL_FLAGS(DECLARE_DEVELOPER_FLAG,     \
           IGNORE_RANGE,               \
           IGNORE_CONSTRAINT,          \
           IGNORE_WRITEABLE)
-
-// Extensions
-
-#include "runtime/globals_ext.hpp"
 
 #endif // SHARE_RUNTIME_GLOBALS_HPP

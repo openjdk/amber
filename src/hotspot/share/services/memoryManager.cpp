@@ -143,8 +143,8 @@ void MemoryManager::oops_do(OopClosure* f) {
 
 GCStatInfo::GCStatInfo(int num_pools) {
   // initialize the arrays for memory usage
-  _before_gc_usage_array = (MemoryUsage*) NEW_C_HEAP_ARRAY(MemoryUsage, num_pools, mtInternal);
-  _after_gc_usage_array  = (MemoryUsage*) NEW_C_HEAP_ARRAY(MemoryUsage, num_pools, mtInternal);
+  _before_gc_usage_array = NEW_C_HEAP_ARRAY(MemoryUsage, num_pools, mtInternal);
+  _after_gc_usage_array  = NEW_C_HEAP_ARRAY(MemoryUsage, num_pools, mtInternal);
   _usage_array_size = num_pools;
   clear();
 }
@@ -178,7 +178,7 @@ GCMemoryManager::GCMemoryManager(const char* name, const char* gc_end_message) :
   _num_collections = 0;
   _last_gc_stat = NULL;
   _last_gc_lock = new Mutex(Mutex::leaf, "_last_gc_lock", true,
-                            Monitor::_safepoint_check_never);
+                            Mutex::_safepoint_check_never);
   _current_gc_stat = NULL;
   _num_gc_threads = 1;
   _notification_enabled = false;
