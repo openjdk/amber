@@ -57,7 +57,6 @@
 #include "oops/symbol.hpp"
 #include "prims/jvm_misc.hpp"
 #include "runtime/arguments.hpp"
-#include "runtime/compilationPolicy.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/init.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
@@ -383,10 +382,8 @@ ClassPathImageEntry::~ClassPathImageEntry() {
   assert(_singleton == this, "must be");
   DEBUG_ONLY(_singleton = NULL);
 
-  if (_name != NULL) {
-    FREE_C_HEAP_ARRAY(const char, _name);
-    _name = NULL;
-  }
+  FREE_C_HEAP_ARRAY(const char, _name);
+
   if (_jimage != NULL) {
     (*JImageClose)(_jimage);
     _jimage = NULL;
@@ -464,7 +461,7 @@ bool ClassPathImageEntry::is_modules_image() const {
 
 #if INCLUDE_CDS
 void ClassLoader::exit_with_path_failure(const char* error, const char* message) {
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "only called at dump time");
+  Arguments::assert_is_dumping_archive();
   tty->print_cr("Hint: enable -Xlog:class+path=info to diagnose the failure");
   vm_exit_during_initialization(error, message);
 }
@@ -534,7 +531,7 @@ void ClassLoader::setup_bootstrap_search_path() {
 
 #if INCLUDE_CDS
 void ClassLoader::setup_app_search_path(const char *class_path) {
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "Sanity");
+  Arguments::assert_is_dumping_archive();
 
   ResourceMark rm;
   ClasspathStream cp_stream(class_path);
@@ -548,7 +545,7 @@ void ClassLoader::setup_app_search_path(const char *class_path) {
 void ClassLoader::add_to_module_path_entries(const char* path,
                                              ClassPathEntry* entry) {
   assert(entry != NULL, "ClassPathEntry should not be NULL");
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "dump time only");
+  Arguments::assert_is_dumping_archive();
 
   // The entry does not exist, add to the list
   if (_module_path_entries == NULL) {
@@ -562,7 +559,7 @@ void ClassLoader::add_to_module_path_entries(const char* path,
 
 // Add a module path to the _module_path_entries list.
 void ClassLoader::update_module_path_entry_list(const char *path, TRAPS) {
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "dump time only");
+  Arguments::assert_is_dumping_archive();
   struct stat st;
   if (os::stat(path, &st) != 0) {
     tty->print_cr("os::stat error %d (%s). CDS dump aborted (path was \"%s\").",
@@ -658,7 +655,7 @@ void ClassLoader::setup_boot_search_path(const char *class_path) {
   bool set_base_piece = true;
 
 #if INCLUDE_CDS
-  if (DumpSharedSpaces || DynamicDumpSharedSpaces) {
+  if (Arguments::is_dumping_archive()) {
     if (!Arguments::has_jimage()) {
       vm_exit_during_initialization("CDS is not supported in exploded JDK build", NULL);
     }
@@ -1327,7 +1324,7 @@ InstanceKlass* ClassLoader::load_class(Symbol* name, bool search_append_only, TR
                                                            THREAD);
   if (HAS_PENDING_EXCEPTION) {
     if (DumpSharedSpaces) {
-      tty->print_cr("Preload Error: Failed to load %s", class_name);
+      log_error(cds)("Preload Error: Failed to load %s", class_name);
     }
     return NULL;
   }
@@ -1362,7 +1359,7 @@ char* ClassLoader::skip_uri_protocol(char* source) {
 // Record the shared classpath index and loader type for classes loaded
 // by the builtin loaders at dump time.
 void ClassLoader::record_result(InstanceKlass* ik, const ClassFileStream* stream, TRAPS) {
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "sanity");
+  Arguments::assert_is_dumping_archive();
   assert(stream != NULL, "sanity");
 
   if (ik->is_unsafe_anonymous()) {
@@ -1539,13 +1536,13 @@ void ClassLoader::initialize() {
 
 #if INCLUDE_CDS
 void ClassLoader::initialize_shared_path() {
-  if (DumpSharedSpaces || DynamicDumpSharedSpaces) {
+  if (Arguments::is_dumping_archive()) {
     ClassLoaderExt::setup_search_paths();
   }
 }
 
 void ClassLoader::initialize_module_path(TRAPS) {
-  if (DumpSharedSpaces || DynamicDumpSharedSpaces) {
+  if (Arguments::is_dumping_archive()) {
     ClassLoaderExt::setup_module_paths(THREAD);
     FileMapInfo::allocate_shared_path_table();
   }

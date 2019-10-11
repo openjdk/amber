@@ -38,6 +38,7 @@
 #include "opto/movenode.hpp"
 #include "opto/narrowptrnode.hpp"
 #include "opto/rootnode.hpp"
+#include "opto/runtime.hpp"
 
 ShenandoahBarrierSetC2* ShenandoahBarrierSetC2::bsc2() {
   return reinterpret_cast<ShenandoahBarrierSetC2*>(BarrierSet::barrier_set()->barrier_set_c2());
@@ -462,7 +463,7 @@ const TypeFunc* ShenandoahBarrierSetC2::write_ref_field_pre_entry_Type() {
 
 const TypeFunc* ShenandoahBarrierSetC2::shenandoah_clone_barrier_Type() {
   const Type **fields = TypeTuple::fields(1);
-  fields[TypeFunc::Parms+0] = TypeInstPtr::NOTNULL; // original field value
+  fields[TypeFunc::Parms+0] = TypeOopPtr::NOTNULL; // src oop
   const TypeTuple *domain = TypeTuple::make(TypeFunc::Parms+1, fields);
 
   // create result type (range)
@@ -473,9 +474,11 @@ const TypeFunc* ShenandoahBarrierSetC2::shenandoah_clone_barrier_Type() {
 }
 
 const TypeFunc* ShenandoahBarrierSetC2::shenandoah_load_reference_barrier_Type() {
-  const Type **fields = TypeTuple::fields(1);
+  const Type **fields = TypeTuple::fields(2);
   fields[TypeFunc::Parms+0] = TypeInstPtr::NOTNULL; // original field value
-  const TypeTuple *domain = TypeTuple::make(TypeFunc::Parms+1, fields);
+  fields[TypeFunc::Parms+1] = TypeRawPtr::BOTTOM;   // original load address
+
+  const TypeTuple *domain = TypeTuple::make(TypeFunc::Parms+2, fields);
 
   // create result type (range)
   fields = TypeTuple::fields(1);
@@ -705,11 +708,6 @@ Node* ShenandoahBarrierSetC2::atomic_xchg_at_resolved(C2AtomicParseAccess& acces
   return result;
 }
 
-void ShenandoahBarrierSetC2::clone(GraphKit* kit, Node* src, Node* dst, Node* size, bool is_array) const {
-  assert(!src->is_AddP(), "unexpected input");
-  BarrierSetC2::clone(kit, src, dst, size, is_array);
-}
-
 // Support for GC barriers emitted during parsing
 bool ShenandoahBarrierSetC2::is_gc_barrier_node(Node* node) const {
   if (node->Opcode() == Op_ShenandoahLoadReferenceBarrier) return true;
@@ -755,7 +753,7 @@ bool ShenandoahBarrierSetC2::optimize_loops(PhaseIdealLoop* phase, LoopOptsMode 
 }
 
 bool ShenandoahBarrierSetC2::array_copy_requires_gc_barriers(bool tightly_coupled_alloc, BasicType type, bool is_clone, ArrayCopyPhase phase) const {
-  bool is_oop = type == T_OBJECT || type == T_ARRAY;
+  bool is_oop = is_reference_type(type);
   if (!is_oop) {
     return false;
   }
@@ -771,9 +769,8 @@ bool ShenandoahBarrierSetC2::array_copy_requires_gc_barriers(bool tightly_couple
   return true;
 }
 
-bool ShenandoahBarrierSetC2::clone_needs_postbarrier(ArrayCopyNode *ac, PhaseIterGVN& igvn) {
-  Node* src = ac->in(ArrayCopyNode::Src);
-  const TypeOopPtr* src_type = igvn.type(src)->is_oopptr();
+bool ShenandoahBarrierSetC2::clone_needs_barrier(Node* src, PhaseGVN& gvn) {
+  const TypeOopPtr* src_type = gvn.type(src)->is_oopptr();
   if (src_type->isa_instptr() != NULL) {
     ciInstanceKlass* ik = src_type->klass()->as_instance_klass();
     if ((src_type->klass_is_exact() || (!ik->is_interface() && !ik->has_subklass())) && !ik->has_injected_fields()) {
@@ -781,7 +778,7 @@ bool ShenandoahBarrierSetC2::clone_needs_postbarrier(ArrayCopyNode *ac, PhaseIte
         return true;
       } else {
         if (!src_type->klass_is_exact()) {
-          igvn.C->dependencies()->assert_leaf_type(ik);
+          Compile::current()->dependencies()->assert_leaf_type(ik);
         }
       }
     } else {
@@ -789,7 +786,7 @@ bool ShenandoahBarrierSetC2::clone_needs_postbarrier(ArrayCopyNode *ac, PhaseIte
         }
   } else if (src_type->isa_aryptr()) {
     BasicType src_elem  = src_type->klass()->as_array_klass()->element_type()->basic_type();
-    if (src_elem == T_OBJECT || src_elem == T_ARRAY) {
+    if (is_reference_type(src_elem)) {
       return true;
     }
   } else {
@@ -798,42 +795,79 @@ bool ShenandoahBarrierSetC2::clone_needs_postbarrier(ArrayCopyNode *ac, PhaseIte
   return false;
 }
 
-void ShenandoahBarrierSetC2::clone_barrier_at_expansion(ArrayCopyNode* ac, Node* call, PhaseIterGVN& igvn) const {
-  assert(ac->is_clonebasic(), "no other kind of arraycopy here");
-
-  if (!clone_needs_postbarrier(ac, igvn)) {
-    BarrierSetC2::clone_barrier_at_expansion(ac, call, igvn);
-    return;
-  }
-
-  const TypePtr* raw_adr_type = TypeRawPtr::BOTTOM;
-  Node* c = new ProjNode(call,TypeFunc::Control);
-  c = igvn.transform(c);
-  Node* m = new ProjNode(call, TypeFunc::Memory);
-  m = igvn.transform(m);
-
+void ShenandoahBarrierSetC2::clone_at_expansion(PhaseMacroExpand* phase, ArrayCopyNode* ac) const {
+  Node* ctrl = ac->in(TypeFunc::Control);
+  Node* mem = ac->in(TypeFunc::Memory);
+  Node* src = ac->in(ArrayCopyNode::Src);
+  Node* src_offset = ac->in(ArrayCopyNode::SrcPos);
   Node* dest = ac->in(ArrayCopyNode::Dest);
-  assert(dest->is_AddP(), "bad input");
-  Node* barrier_call = new CallLeafNode(ShenandoahBarrierSetC2::shenandoah_clone_barrier_Type(),
-                                        CAST_FROM_FN_PTR(address, ShenandoahRuntime::shenandoah_clone_barrier),
-                                        "shenandoah_clone_barrier", raw_adr_type);
-  barrier_call->init_req(TypeFunc::Control, c);
-  barrier_call->init_req(TypeFunc::I_O    , igvn.C->top());
-  barrier_call->init_req(TypeFunc::Memory , m);
-  barrier_call->init_req(TypeFunc::ReturnAdr, igvn.C->top());
-  barrier_call->init_req(TypeFunc::FramePtr, igvn.C->top());
-  barrier_call->init_req(TypeFunc::Parms+0, dest->in(AddPNode::Base));
+  Node* dest_offset = ac->in(ArrayCopyNode::DestPos);
+  Node* length = ac->in(ArrayCopyNode::Length);
+  assert (src_offset == NULL && dest_offset == NULL, "for clone offsets should be null");
+  assert (src->is_AddP(), "for clone the src should be the interior ptr");
+  assert (dest->is_AddP(), "for clone the dst should be the interior ptr");
 
-  barrier_call = igvn.transform(barrier_call);
-  c = new ProjNode(barrier_call,TypeFunc::Control);
-  c = igvn.transform(c);
-  m = new ProjNode(barrier_call, TypeFunc::Memory);
-  m = igvn.transform(m);
+  if (ShenandoahCloneBarrier && clone_needs_barrier(src, phase->igvn())) {
+    // Check if heap is has forwarded objects. If it does, we need to call into the special
+    // routine that would fix up source references before we can continue.
 
-  Node* out_c = ac->proj_out(TypeFunc::Control);
-  Node* out_m = ac->proj_out(TypeFunc::Memory);
-  igvn.replace_node(out_c, c);
-  igvn.replace_node(out_m, m);
+    enum { _heap_stable = 1, _heap_unstable, PATH_LIMIT };
+    Node* region = new RegionNode(PATH_LIMIT);
+    Node* mem_phi = new PhiNode(region, Type::MEMORY, TypeRawPtr::BOTTOM);
+
+    Node* thread = phase->transform_later(new ThreadLocalNode());
+    Node* offset = phase->igvn().MakeConX(in_bytes(ShenandoahThreadLocalData::gc_state_offset()));
+    Node* gc_state_addr = phase->transform_later(new AddPNode(phase->C->top(), thread, offset));
+
+    uint gc_state_idx = Compile::AliasIdxRaw;
+    const TypePtr* gc_state_adr_type = NULL; // debug-mode-only argument
+    debug_only(gc_state_adr_type = phase->C->get_adr_type(gc_state_idx));
+
+    Node* gc_state    = phase->transform_later(new LoadBNode(ctrl, mem, gc_state_addr, gc_state_adr_type, TypeInt::BYTE, MemNode::unordered));
+    Node* stable_and  = phase->transform_later(new AndINode(gc_state, phase->igvn().intcon(ShenandoahHeap::HAS_FORWARDED)));
+    Node* stable_cmp  = phase->transform_later(new CmpINode(stable_and, phase->igvn().zerocon(T_INT)));
+    Node* stable_test = phase->transform_later(new BoolNode(stable_cmp, BoolTest::ne));
+
+    IfNode* stable_iff  = phase->transform_later(new IfNode(ctrl, stable_test, PROB_UNLIKELY(0.999), COUNT_UNKNOWN))->as_If();
+    Node* stable_ctrl   = phase->transform_later(new IfFalseNode(stable_iff));
+    Node* unstable_ctrl = phase->transform_later(new IfTrueNode(stable_iff));
+
+    // Heap is stable, no need to do anything additional
+    region->init_req(_heap_stable, stable_ctrl);
+    mem_phi->init_req(_heap_stable, mem);
+
+    // Heap is unstable, call into clone barrier stub
+    Node* call = phase->make_leaf_call(unstable_ctrl, mem,
+                    ShenandoahBarrierSetC2::shenandoah_clone_barrier_Type(),
+                    CAST_FROM_FN_PTR(address, ShenandoahRuntime::shenandoah_clone_barrier),
+                    "shenandoah_clone",
+                    TypeRawPtr::BOTTOM,
+                    src->in(AddPNode::Base));
+    call = phase->transform_later(call);
+
+    ctrl = phase->transform_later(new ProjNode(call, TypeFunc::Control));
+    mem = phase->transform_later(new ProjNode(call, TypeFunc::Memory));
+    region->init_req(_heap_unstable, ctrl);
+    mem_phi->init_req(_heap_unstable, mem);
+
+    // Wire up the actual arraycopy stub now
+    ctrl = phase->transform_later(region);
+    mem = phase->transform_later(mem_phi);
+
+    const char* name = "arraycopy";
+    call = phase->make_leaf_call(ctrl, mem,
+                                 OptoRuntime::fast_arraycopy_Type(),
+                                 phase->basictype2arraycopy(T_LONG, NULL, NULL, true, name, true),
+                                 name, TypeRawPtr::BOTTOM,
+                                 src, dest, length
+                                 LP64_ONLY(COMMA phase->top()));
+    call = phase->transform_later(call);
+
+    // Hook up the whole thing into the graph
+    phase->igvn().replace_node(ac, call);
+  } else {
+    BarrierSetC2::clone_at_expansion(phase, ac);
+  }
 }
 
 

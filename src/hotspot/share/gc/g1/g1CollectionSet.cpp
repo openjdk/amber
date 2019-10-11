@@ -72,9 +72,7 @@ G1CollectionSet::G1CollectionSet(G1CollectedHeap* g1h, G1Policy* policy) :
 }
 
 G1CollectionSet::~G1CollectionSet() {
-  if (_collection_set_regions != NULL) {
-    FREE_C_HEAP_ARRAY(uint, _collection_set_regions);
-  }
+  FREE_C_HEAP_ARRAY(uint, _collection_set_regions);
   free_optional_regions();
   clear_candidates();
 }
@@ -411,7 +409,7 @@ double G1CollectionSet::finalize_young_part(double target_pause_time_ms, G1Survi
   guarantee(target_pause_time_ms > 0.0,
             "target_pause_time_ms = %1.6lf should be positive", target_pause_time_ms);
 
-  size_t pending_cards = _policy->pending_cards();
+  size_t pending_cards = _policy->pending_cards_at_gc_start();
   double base_time_ms = _policy->predict_base_elapsed_time_ms(pending_cards);
   double time_remaining_ms = MAX2(target_pause_time_ms - base_time_ms, 0.0);
 

@@ -631,7 +631,7 @@ JRT_ENTRY(jboolean, JVMCIRuntime::thread_is_interrupted(JavaThread* thread, oopD
     // The other thread may exit during this process, which is ok so return false.
     return JNI_FALSE;
   } else {
-    return (jint) Thread::is_interrupted(receiverThread, clear_interrupted != 0);
+    return (jint) receiverThread->is_interrupted(clear_interrupted != 0);
   }
 JRT_END
 
@@ -941,10 +941,8 @@ void JVMCIRuntime::exit_on_pending_exception(JVMCIEnv* JVMCIENV, const char* mes
       describe_pending_hotspot_exception(THREAD, true);
     }
   } else {
-    // Allow error reporting thread to print the stack trace.  Windows
-    // doesn't allow uninterruptible wait for JavaThreads
-    const bool interruptible = true;
-    os::sleep(THREAD, 200, interruptible);
+    // Allow error reporting thread to print the stack trace.
+    THREAD->sleep(200);
   }
 
   before_exit(THREAD);
@@ -1522,7 +1520,10 @@ JVMCI::CodeInstallResult JVMCIRuntime::register_method(JVMCIEnv* JVMCIENV,
                         comp_level, method_name, nm->entry_point());
             }
             // Allow the code to be executed
-            method->set_code(method, nm);
+            MutexLocker ml(CompiledMethod_lock, Mutex::_no_safepoint_check_flag);
+            if (nm->make_in_use()) {
+              method->set_code(method, nm);
+            }
           } else {
             LogTarget(Info, nmethod, install) lt;
             if (lt.is_enabled()) {
@@ -1531,12 +1532,14 @@ JVMCI::CodeInstallResult JVMCIRuntime::register_method(JVMCIEnv* JVMCIENV,
               lt.print("Installing osr method (%d) %s @ %d",
                         comp_level, method_name, entry_bci);
             }
-            InstanceKlass::cast(method->method_holder())->add_osr_nmethod(nm);
+            MutexLocker ml(CompiledMethod_lock, Mutex::_no_safepoint_check_flag);
+            if (nm->make_in_use()) {
+              InstanceKlass::cast(method->method_holder())->add_osr_nmethod(nm);
+            }
           }
         } else {
           assert(!nmethod_mirror.is_hotspot() || data->get_nmethod_mirror(nm, /* phantom_ref */ false) == HotSpotJVMCI::resolve(nmethod_mirror), "must be");
         }
-        nm->make_in_use();
       }
       result = nm != NULL ? JVMCI::ok :JVMCI::cache_full;
     }
