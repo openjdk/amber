@@ -33,6 +33,7 @@
 #include "code/nmethod.hpp"
 #include "code/pcDesc.hpp"
 #include "code/scopeDesc.hpp"
+#include "compiler/compilationPolicy.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/gcLocker.hpp"
 #include "gc/shared/oopStorage.hpp"
@@ -47,7 +48,6 @@
 #include "oops/oop.inline.hpp"
 #include "oops/symbol.hpp"
 #include "runtime/atomic.hpp"
-#include "runtime/compilationPolicy.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
@@ -939,7 +939,7 @@ void SafepointSynchronize::print_safepoint_timeout() {
           break; // Could not send signal. Report fatal error.
         }
         // Give cur_thread a chance to report the error and terminate the VM.
-        os::sleep(Thread::current(), 3000, false);
+        os::naked_sleep(3000);
       }
     }
     fatal("Safepoint sync time longer than " INTX_FORMAT "ms detected when executing %s.",

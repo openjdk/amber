@@ -365,7 +365,7 @@ var getJibProfilesCommon = function (input, data) {
         };
     };
 
-    common.boot_jdk_version = "12";
+    common.boot_jdk_version = "13";
     common.boot_jdk_build_number = "33";
     common.boot_jdk_home = input.get("boot_jdk", "install_path") + "/jdk-"
         + common.boot_jdk_version
@@ -944,11 +944,11 @@ var getJibProfilesProfiles = function (input, common, data) {
 var getJibProfilesDependencies = function (input, common) {
 
     var devkit_platform_revisions = {
-        linux_x64: "gcc8.2.0-OL6.4+1.0",
+        linux_x64: "gcc8.3.0-OL6.4+1.0",
         macosx_x64: "Xcode10.1-MacOSX10.14+1.0",
         solaris_x64: "SS12u4-Solaris11u1+1.0",
         solaris_sparcv9: "SS12u6-Solaris11u3+1.0",
-        windows_x64: "VS2017-15.9.6+1.0",
+        windows_x64: "VS2017-15.9.16+1.0",
         linux_aarch64: "gcc8.2.0-Fedora27+1.0",
         linux_arm: "gcc8.2.0-Fedora27+1.0",
         linux_ppc64le: "gcc8.2.0-Fedora27+1.0",

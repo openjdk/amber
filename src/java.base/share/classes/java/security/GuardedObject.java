@@ -52,7 +52,9 @@ public class GuardedObject implements java.io.Serializable {
     @java.io.Serial
     private static final long serialVersionUID = -5240450096227834308L;
 
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private Object object; // the object we are guarding
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private Guard guard;   // the guard
 
     /**
@@ -77,7 +79,7 @@ public class GuardedObject implements java.io.Serializable {
      *
      * @return the guarded object.
      *
-     * @exception SecurityException if access to the guarded object is
+     * @throws    SecurityException if access to the guarded object is
      * denied.
      */
     public Object getObject()
