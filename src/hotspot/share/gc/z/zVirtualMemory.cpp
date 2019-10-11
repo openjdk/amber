@@ -27,26 +27,44 @@
 #include "logging/log.hpp"
 #include "services/memTracker.hpp"
 
-ZVirtualMemoryManager::ZVirtualMemoryManager() :
+ZVirtualMemoryManager::ZVirtualMemoryManager(size_t max_capacity) :
     _manager(),
     _initialized(false) {
 
-  log_info(gc, init)("Address Space: " PTR_FORMAT " - " PTR_FORMAT " (" SIZE_FORMAT "T)",
-                     ZAddressSpaceStart, ZAddressSpaceEnd, ZAddressSpaceSize / K / G);
-
-  // Reserve address space
-  if (!reserve(ZAddressSpaceStart, ZAddressSpaceSize)) {
+  // Check max supported heap size
+  if (max_capacity > ZAddressOffsetMax) {
+    log_error(gc)("Java heap too large (max supported heap size is " SIZE_FORMAT "G)",
+                  ZAddressOffsetMax / G);
     return;
   }
 
-  // Make the complete address view free
-  _manager.free(0, ZAddressOffsetMax);
+  log_info(gc, init)("Address Space: " SIZE_FORMAT "T", ZAddressOffsetMax / K / G);
 
-  // Register address space with native memory tracker
-  nmt_reserve(ZAddressSpaceStart, ZAddressSpaceSize);
+  // Reserve address space
+  if (reserve(0, ZAddressOffsetMax) < max_capacity) {
+    log_error(gc)("Failed to reserve address space for Java heap");
+    return;
+  }
 
   // Successfully initialized
   _initialized = true;
+}
+
+size_t ZVirtualMemoryManager::reserve(uintptr_t start, size_t size) {
+  if (size < ZGranuleSize) {
+    // Too small
+    return 0;
+  }
+
+  if (!reserve_platform(start, size)) {
+    const size_t half = size / 2;
+    return reserve(start, half) + reserve(start + half, half);
+  }
+
+  // Make the address range free
+  _manager.free(start, size);
+
+  return size;
 }
 
 void ZVirtualMemoryManager::nmt_reserve(uintptr_t start, size_t size) {

@@ -32,6 +32,7 @@
 #include "gc/shared/barrierSet.hpp"
 #include "jfr/support/jfrIntrinsics.hpp"
 #include "memory/resourceArea.hpp"
+#include "oops/klass.inline.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "opto/addnode.hpp"
 #include "opto/arraycopynode.hpp"
@@ -534,6 +535,9 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_identityHashCode:         return inline_native_hashcode(/*!virtual*/ false,         is_static);
   case vmIntrinsics::_getClass:                 return inline_native_getClass();
 
+  case vmIntrinsics::_ceil:
+  case vmIntrinsics::_floor:
+  case vmIntrinsics::_rint:
   case vmIntrinsics::_dsin:
   case vmIntrinsics::_dcos:
   case vmIntrinsics::_dtan:
@@ -1818,6 +1822,9 @@ bool LibraryCallKit::inline_double_math(vmIntrinsics::ID id) {
   switch (id) {
   case vmIntrinsics::_dabs:   n = new AbsDNode(                arg);  break;
   case vmIntrinsics::_dsqrt:  n = new SqrtDNode(C, control(),  arg);  break;
+  case vmIntrinsics::_ceil:   n = new RoundDoubleModeNode(arg, makecon(TypeInt::make(2))); break;
+  case vmIntrinsics::_floor:  n = new RoundDoubleModeNode(arg, makecon(TypeInt::make(1))); break;
+  case vmIntrinsics::_rint:   n = new RoundDoubleModeNode(arg, makecon(TypeInt::make(0))); break;
   default:  fatal_unexpected_iid(id);  break;
   }
   set_result(_gvn.transform(n));
@@ -1891,6 +1898,9 @@ bool LibraryCallKit::inline_math_native(vmIntrinsics::ID id) {
       runtime_math(OptoRuntime::Math_D_D_Type(), FN_PTR(SharedRuntime::dlog10), "LOG10");
 
     // These intrinsics are supported on all hardware
+  case vmIntrinsics::_ceil:
+  case vmIntrinsics::_floor:
+  case vmIntrinsics::_rint:   return Matcher::match_rule_supported(Op_RoundDoubleMode) ? inline_double_math(id) : false;
   case vmIntrinsics::_dsqrt:  return Matcher::match_rule_supported(Op_SqrtD) ? inline_double_math(id) : false;
   case vmIntrinsics::_dabs:   return Matcher::has_match_rule(Op_AbsD)   ? inline_double_math(id) : false;
   case vmIntrinsics::_fabs:   return Matcher::match_rule_supported(Op_AbsF)   ? inline_math(id) : false;
@@ -2382,7 +2392,7 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
   assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
 
-  if (type == T_OBJECT || type == T_ARRAY) {
+  if (is_reference_type(type)) {
     decorators |= ON_UNKNOWN_OOP_REF;
   }
 
@@ -2730,7 +2740,7 @@ bool LibraryCallKit::inline_unsafe_load_store(const BasicType type, const LoadSt
   Compile::AliasType* alias_type = C->alias_type(adr_type);
   BasicType bt = alias_type->basic_type();
   if (bt != T_ILLEGAL &&
-      ((bt == T_OBJECT || bt == T_ARRAY) != (type == T_OBJECT))) {
+      (is_reference_type(bt) != (type == T_OBJECT))) {
     // Don't intrinsify mismatched object accesses.
     return false;
   }
@@ -2767,7 +2777,7 @@ bool LibraryCallKit::inline_unsafe_load_store(const BasicType type, const LoadSt
 
   int alias_idx = C->get_alias_index(adr_type);
 
-  if (type == T_OBJECT || type == T_ARRAY) {
+  if (is_reference_type(type)) {
     decorators |= IN_HEAP | ON_UNKNOWN_OOP_REF;
 
     // Transformation of a value which could be NULL pointer (CastPP #NULL)
@@ -4817,8 +4827,8 @@ bool LibraryCallKit::inline_arraycopy() {
   if (has_src && has_dest && can_emit_guards) {
     BasicType src_elem  = top_src->klass()->as_array_klass()->element_type()->basic_type();
     BasicType dest_elem = top_dest->klass()->as_array_klass()->element_type()->basic_type();
-    if (src_elem  == T_ARRAY)  src_elem  = T_OBJECT;
-    if (dest_elem == T_ARRAY)  dest_elem = T_OBJECT;
+    if (is_reference_type(src_elem))   src_elem  = T_OBJECT;
+    if (is_reference_type(dest_elem))  dest_elem = T_OBJECT;
 
     if (src_elem == dest_elem && src_elem == T_OBJECT) {
       // If both arrays are object arrays then having the exact types

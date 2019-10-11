@@ -62,7 +62,6 @@ class InterfaceSupport: AllStatic {
 
   static void zombieAll();
   static void deoptimizeAll();
-  static void stress_derived_pointers();
   static void verify_stack();
   static void verify_last_frame();
 # endif
@@ -393,16 +392,6 @@ class RuntimeHistogramElement : public HistogramElement {
   /* begin of body */
 
 
-// QUICK_ENTRY routines behave like ENTRY but without a handle mark
-
-#define VM_QUICK_ENTRY_BASE(result_type, header, thread)             \
-  TRACE_CALL(result_type, header)                                    \
-  debug_only(NoHandleMark __hm;)                                     \
-  Thread* THREAD = thread;                                           \
-  os::verify_stack_alignment();                                      \
-  /* begin of body */
-
-
 #define JRT_ENTRY(result_type, header)                               \
   result_type header {                                               \
     ThreadInVMfromJava __tiv(thread);                                \
@@ -474,18 +463,6 @@ extern "C" {                                                         \
     VM_ENTRY_BASE(result_type, header, thread)
 
 
-// Ensure that the VMNativeEntryWrapper constructor, which can cause
-// a GC, is called outside the NoHandleMark (set via VM_QUICK_ENTRY_BASE).
-#define JNI_QUICK_ENTRY(result_type, header)                         \
-extern "C" {                                                         \
-  result_type JNICALL header {                                       \
-    JavaThread* thread=JavaThread::thread_from_jni_environment(env); \
-    assert( !VerifyJNIEnvThread || (thread == Thread::current()), "JNIEnv is only valid in same thread"); \
-    ThreadInVMfromNative __tiv(thread);                              \
-    debug_only(VMNativeEntryWrapper __vew;)                          \
-    VM_QUICK_ENTRY_BASE(result_type, header, thread)
-
-
 #define JNI_LEAF(result_type, header)                                \
 extern "C" {                                                         \
   result_type JNICALL header {                                       \
@@ -517,15 +494,6 @@ extern "C" {                                                         \
     ThreadInVMfromNative __tiv(thread);                              \
     debug_only(VMNativeEntryWrapper __vew;)                          \
     VM_ENTRY_BASE(result_type, header, thread)
-
-
-#define JVM_QUICK_ENTRY(result_type, header)                         \
-extern "C" {                                                         \
-  result_type JNICALL header {                                       \
-    JavaThread* thread=JavaThread::thread_from_jni_environment(env); \
-    ThreadInVMfromNative __tiv(thread);                              \
-    debug_only(VMNativeEntryWrapper __vew;)                          \
-    VM_QUICK_ENTRY_BASE(result_type, header, thread)
 
 
 #define JVM_LEAF(result_type, header)                                \

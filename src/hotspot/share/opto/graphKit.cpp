@@ -1412,7 +1412,7 @@ Node* GraphKit::must_be_not_null(Node* value, bool do_replace_in_map) {
   _gvn.set_type(iff, iff->Value(&_gvn));
   Node *if_f = _gvn.transform(new IfFalseNode(iff));
   Node *frame = _gvn.transform(new ParmNode(C->start(), TypeFunc::FramePtr));
-  Node *halt = _gvn.transform(new HaltNode(if_f, frame));
+  Node* halt = _gvn.transform(new HaltNode(if_f, frame, "unexpected null in intrinsic"));
   C->root()->add_req(halt);
   Node *if_t = _gvn.transform(new IfTrueNode(iff));
   set_control(if_t);
@@ -2116,7 +2116,7 @@ void GraphKit::uncommon_trap(int trap_request,
   // The debug info is the only real input to this call.
 
   // Halt-and-catch fire here.  The above call should never return!
-  HaltNode* halt = new HaltNode(control(), frameptr());
+  HaltNode* halt = new HaltNode(control(), frameptr(), "uncommon trap returned which should never happen");
   _gvn.set_type_bottom(halt);
   root()->add_req(halt);
 
@@ -2276,7 +2276,7 @@ void GraphKit::record_profiled_arguments_for_speculation(ciMethod* dest_method, 
   int skip = Bytecodes::has_receiver(bc) ? 1 : 0;
   for (int j = skip, i = 0; j < nargs && i < TypeProfileArgsLimit; j++) {
     const Type *targ = tf->domain()->field_at(j + TypeFunc::Parms);
-    if (targ->basic_type() == T_OBJECT || targ->basic_type() == T_ARRAY) {
+    if (is_reference_type(targ->basic_type())) {
       ProfilePtrKind ptr_kind = ProfileMaybeNull;
       ciKlass* better_type = NULL;
       if (method()->argument_profiled_type(bci(), i, better_type, ptr_kind)) {
