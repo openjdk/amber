@@ -1512,7 +1512,8 @@ public class HtmlDocletWriter {
                 @Override
                 public Boolean visitLink(LinkTree node, Content c) {
                     // we need to pass the DocTreeImpl here, so ignore node
-                    result.add(seeTagToContent(element, tag));
+                    Content content = seeTagToContent(element, tag);
+                    result.add(content);
                     return false;
                 }
 

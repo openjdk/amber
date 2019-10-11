@@ -38,11 +38,14 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
@@ -195,8 +198,22 @@ public class CommentUtils {
      * @param ee the {@code equals} method
      */
     public void setRecordEqualsTree(ExecutableElement ee) {
-        List<DocTree> fullBody = List.of(makeTextTreeForResource("doclet.record_equals_doc.fullbody"));
+        List<DocTree> fullBody = new ArrayList<>();
+        add(fullBody, "doclet.record_equals_doc.fullbody.head");
+        fullBody.add(treeFactory.newTextTree(" "));
 
+        List<? extends RecordComponentElement> comps = ((TypeElement) ee.getEnclosingElement()).getRecordComponents();
+        boolean hasPrimitiveComponents =
+                comps.stream().anyMatch(e -> e.asType().getKind().isPrimitive());
+        boolean hasReferenceComponents =
+                comps.stream().anyMatch(e -> !e.asType().getKind().isPrimitive());
+        if (hasPrimitiveComponents && hasReferenceComponents) {
+            add(fullBody, "doclet.record_equals_doc.fullbody.tail.both");
+        } else if (hasPrimitiveComponents) {
+            add(fullBody, "doclet.record_equals_doc.fullbody.tail.primitive");
+        } else if (hasReferenceComponents) {
+            add(fullBody, "doclet.record_equals_doc.fullbody.tail.reference");
+        }
         Name paramName = ee.getParameters().get(0).getSimpleName();
         IdentifierTree id = treeFactory.newIdentifierTree(paramName);
         List<DocTree> paramDesc =
@@ -206,8 +223,31 @@ public class CommentUtils {
         DocTree returnTree = treeFactory.newReturnTree(
                 makeDescriptionWithName("doclet.record_equals_doc.return", paramName));
 
+        TreePath treePath = utils.getTreePath(ee.getEnclosingElement());
         DocCommentTree docTree = treeFactory.newDocCommentTree(fullBody, List.of(paramTree, returnTree));
-        dcTreesMap.put(ee, new DocCommentDuo(null, docTree));
+        dcTreesMap.put(ee, new DocCommentDuo(treePath, docTree));
+    }
+
+    private void add(List<DocTree> contents, String resourceKey) {
+        // Special case to allow '{@link ...}' to appear in the string.
+        // A less general case would be to detect literal use of Object.equals
+        // A more general case would be to allow access to DocCommentParser somehow
+        String body = resources.getText(resourceKey);
+        Pattern p = Pattern.compile("\\{@link (\\S*)(.*)}");
+        Matcher m = p.matcher(body);
+        int start = 0;
+        while (m.find(start)) {
+            if (m.start() > start) {
+                contents.add(treeFactory.newTextTree(body.substring(start, m.start())));
+            }
+            ReferenceTree refTree = treeFactory.newReferenceTree(m.group(1));
+            List<DocTree> descr = List.of(treeFactory.newTextTree(m.group(2).trim())) ;
+            contents.add(treeFactory.newLinkTree(refTree, descr));
+            start = m.end();
+        }
+        if (start < body.length()) {
+            contents.add(treeFactory.newTextTree(body.substring(start)));
+        }
     }
 
     /**

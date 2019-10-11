@@ -39,13 +39,20 @@ import javadoc.tester.JavadocTester;
 import toolbox.ToolBox;
 
 public class TestRecordTypes extends JavadocTester {
-
     public static void main(String... args) throws Exception {
         TestRecordTypes tester = new TestRecordTypes();
         tester.runTests(m -> new Object[] { Path.of(m.getName()) });
     }
 
     private final ToolBox tb = new ToolBox();
+
+    // The following constants are set up for use with -linkoffline
+    // (but note: JDK 11 does not include java.lang.Record, so expect
+    // some 404 broken links until we can update this to a stable version.)
+    private static final String externalDocs = 
+	"https://docs.oracle.com/en/java/javase/11/docs/api";
+    private static final String localDocs =
+	Path.of(testSrc).resolve("jdk11").toUri().toString();
 
     @Test
     public void testRecordKeywordUnnamedPackage(Path base) throws IOException {
@@ -55,6 +62,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 src.resolve("R.java").toString());
         checkExit(Exit.OK);
 
@@ -72,6 +80,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -89,6 +98,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -109,6 +119,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -116,7 +127,7 @@ public class TestRecordTypes extends JavadocTester {
                 "<h1 title=\"Record R\" class=\"title\">Record R</h1>",
                 "public record <span class=\"typeNameLabel\">R</span>",
                 "<dl>\n"
-                + "<dt><span class=\"paramLabel\">State Components:</span></dt>\n"
+                + "<dt><span class=\"paramLabel\">Record Components:</span></dt>\n"
                 + "<dd><code><a id=\"param-r1\">r1</a></code> - This is a component.</dd>\n"
                 + "</dl>",
                 "<code><span class=\"memberNameLink\"><a href=\"#%3Cinit%3E(int)\">R</a></span>&#8203;(int&nbsp;r1)</code>");
@@ -134,6 +145,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -143,7 +155,7 @@ public class TestRecordTypes extends JavadocTester {
                 "<dl>\n"
                 + "<dt><span class=\"paramLabel\">Type Parameters:</span></dt>\n"
                 + "<dd><code>T</code> - This is a type parameter.</dd>\n"
-                + "<dt><span class=\"paramLabel\">State Components:</span></dt>\n"
+                + "<dt><span class=\"paramLabel\">Record Components:</span></dt>\n"
                 + "<dd><code><a id=\"param-r1\">r1</a></code> - This is a component.</dd>\n"
                 + "</dl>",
                 "<code><span class=\"memberNameLink\"><a href=\"#%3Cinit%3E(int)\">R</a></span>&#8203;(int&nbsp;r1)</code>");
@@ -160,6 +172,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -176,10 +189,112 @@ public class TestRecordTypes extends JavadocTester {
                 "<a href=\"#hashCode()\">hashCode</a>",
                 "Returns a hash code value for this object.",
                 "<a href=\"#r1()\">r1</a>",
-                "Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> state component.",
+                "Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> record component.",
                 "<a href=\"#toString()\">toString</a>",
-                "Returns a string representation of this object."
+                "Returns a string representation of this record.",
+		"Method Details",
+		"<span class=\"memberName\">toString</span>",
+		"Returns a string representation of this record. The representation "
+		+ "contains the name of the type, followed by the name and value of "
+		+ "each of the record components.",
+		"<span class=\"memberName\">hashCode</span>",
+		"Returns a hash code value for this object. The value is derived "
+		+ "from the hash code of each of the record components.",
+		"<span class=\"memberName\">equals</span>",
+		"Indicates whether some other object is \"equal to\" this one. "
+		+ "The objects are equal if the other object is of the same class "
+		+ "and if all the record components are equal. All components "
+		+ "are compared with '=='.",
+		"<span class=\"memberName\">r1</span>",
+		"Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> "
+		+ "record component."
         );
+    }
+
+    @Test
+    public void testGeneratedCommentsWithLinkOffline(Path base) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; /** This is record R. \n"
+                        + " * @param r1  This is a component.\n"
+                        + " */\n"
+                        + "public record R(int r1) { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "-sourcepath", src.toString(),
+                "-linkoffline", externalDocs, localDocs,
+                "--enable-preview", "--source", thisRelease,
+                "p");
+        checkExit(Exit.OK);
+
+        // While we don't normally test values that just come from resource files,
+        // in these cases, we want to verify that something non-empty was put into
+        // the documentation for the generated members.
+        checkOrder("p/R.html",
+                "<section class=\"constructorSummary\">",
+                "<a href=\"#%3Cinit%3E(int)\">R</a>",
+                "Creates an instance of a <code>R</code> record.",
+                "<section class=\"methodSummary\">",
+                "<a href=\"#equals(java.lang.Object)\">equals</a>",
+                "Indicates whether some other object is \"equal to\" this one.",
+                "<a href=\"#hashCode()\">hashCode</a>",
+                "Returns a hash code value for this object.",
+                "<a href=\"#r1()\">r1</a>",
+                "Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> record component.",
+                "<a href=\"#toString()\">toString</a>",
+                "Returns a string representation of this record.",
+		"Method Details",
+		"<span class=\"memberName\">toString</span>",
+		"Returns a string representation of this record. The representation "
+		+ "contains the name of the type, followed by the name and value of "
+		+ "each of the record components.",
+		"<span class=\"memberName\">hashCode</span>",
+		"Returns a hash code value for this object. The value is derived "
+		+ "from the hash code of each of the record components.",
+		"<span class=\"memberName\">equals</span>",
+		"Indicates whether some other object is \"equal to\" this one. "
+		+ "The objects are equal if the other object is of the same class "
+		+ "and if all the record components are equal. All components "
+		+ "are compared with '=='.",
+		"<span class=\"memberName\">r1</span>",
+		"Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> "
+		+ "record component."
+        );
+    }
+
+    @Test
+    public void testGeneratedEqualsPrimitive(Path base) throws IOException {
+	testGeneratedEquals(base, "int a, int b", 
+             "All components are compared with '=='.");
+    }
+
+    @Test
+    public void testGeneratedEqualsReference(Path base) throws IOException {
+	testGeneratedEquals(base, "Object a, Object b", 
+             "All components are compared with <code>Objects::equals(Object,Object)</code>");
+    }
+
+    @Test
+    public void testGeneratedEqualsMixed(Path base) throws IOException {
+	testGeneratedEquals(base, "int a, Object b", 
+             "Reference components are compared with <code>Objects::equals(Object,Object)</code>; "
+	     + "primitive components are compared with '=='.");
+    }
+
+    private void testGeneratedEquals(Path base, String comps, String expect) throws IOException {
+        Path src = base.resolve("src");
+        tb.writeJavaFiles(src,
+                "package p; /** This is record R. \n"
+                        + " */\n"
+                        + "public record R(" + comps + ") { }");
+
+        javadoc("-d", base.resolve("out").toString(),
+                "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
+                "p");
+        checkExit(Exit.OK);
+
+        checkOrder("p/R.html", expect);
     }
 
     @Test
@@ -199,6 +314,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -218,4 +334,21 @@ public class TestRecordTypes extends JavadocTester {
         );
     }
 
+    @Test
+    public void testExamples(Path base) throws IOException {
+        javadoc("-d", base.resolve("out-no-link").toString(),
+                "-sourcepath", testSrc.toString(),
+                "-linksource",
+                "--enable-preview", "--source", thisRelease,
+                "examples");
+
+        checkExit(Exit.OK);
+        javadoc("-d", base.resolve("out-with-link").toString(),
+                "-sourcepath", testSrc.toString(),
+                "-linksource",
+                "-linkoffline", externalDocs, localDocs,
+                "--enable-preview", "--source", thisRelease,
+                "examples");
+        checkExit(Exit.OK);
+    }
 }

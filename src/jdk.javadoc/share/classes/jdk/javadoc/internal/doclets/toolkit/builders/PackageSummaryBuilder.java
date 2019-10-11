@@ -227,7 +227,7 @@ public class PackageSummaryBuilder extends AbstractBuilder {
                 : configuration.typeElementCatalog.records(packageElement);
         SortedSet<TypeElement> records = utils.filterOutPrivateClasses(rlist, configuration.javafx);
         if (!records.isEmpty()) {
-            packageWriter.addEnumSummary(records, summaryContentTree);
+            packageWriter.addRecordSummary(records, summaryContentTree);
         }
     }
 

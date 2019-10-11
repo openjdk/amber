@@ -493,12 +493,12 @@ public class Utils {
             void addSealed(TypeElement e) {
                 if (elementUtils.isSealed(e)) {
                     append("sealed");
-                } else if (needsNonSealed(e)) {
+                } else if (anySupertypeSealed(e) && !e.getModifiers().contains(FINAL)) {
                     append("non-sealed");
                 }
             }
 
-            boolean needsNonSealed(TypeElement te) {
+            boolean anySupertypeSealed(TypeElement te) {
                 return isSealed(te.getSuperclass())
                         || te.getInterfaces().stream().anyMatch(this::isSealed);
             }

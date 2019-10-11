@@ -58,7 +58,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
         /** Parameter of an executable element. */
         PARAMETER,
         /** State components of a record. */
-        STATE_COMPONENT,
+        RECORD_COMPONENT,
         /** Type parameters of an executable element or type element. */
         TYPE_PARAMETER
     }
@@ -150,7 +150,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
             TypeElement typeElement = (TypeElement) holder;
             Content output = getTagletOutput(ParamKind.TYPE_PARAMETER, typeElement, writer,
                 typeElement.getTypeParameters(), utils.getTypeParamTrees(typeElement));
-            output.add(getTagletOutput(ParamKind.STATE_COMPONENT, typeElement, writer,
+            output.add(getTagletOutput(ParamKind.RECORD_COMPONENT, typeElement, writer,
                     typeElement.getRecordComponents(), utils.getParamTrees(typeElement)));
             return output;
         }
@@ -259,7 +259,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
                     switch (kind) {
                         case PARAMETER:       key = "doclet.Parameters_warn" ; break;
                         case TYPE_PARAMETER:  key = "doclet.TypeParameters_warn" ; break;
-                        case STATE_COMPONENT: key = "doclet.StateComponents_warn" ; break;
+                        case RECORD_COMPONENT: key = "doclet.RecordComponents_warn" ; break;
                         default: throw new IllegalArgumentException(kind.toString());
                     }
                     messages.warning(ch.getDocTreePath(dt), key, paramName);
@@ -270,7 +270,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
                     switch (kind) {
                         case PARAMETER:       key = "doclet.Parameters_dup_warn" ; break;
                         case TYPE_PARAMETER:  key = "doclet.TypeParameters_dup_warn" ; break;
-                        case STATE_COMPONENT: key = "doclet.StateComponents_dup_warn" ; break;
+                        case RECORD_COMPONENT: key = "doclet.RecordComponents_dup_warn" ; break;
                         default: throw new IllegalArgumentException(kind.toString());
                     }
                     messages.warning(ch.getDocTreePath(dt), key, paramName);
@@ -305,7 +305,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
             switch (kind) {
                 case PARAMETER:       key = "doclet.Parameters" ; break;
                 case TYPE_PARAMETER:  key = "doclet.TypeParameters" ; break;
-                case STATE_COMPONENT: key = "doclet.StateComponents" ; break;
+                case RECORD_COMPONENT: key = "doclet.RecordComponents" ; break;
                 default: throw new IllegalArgumentException(kind.toString());
             }
             String header = writer.configuration().getResources().getText(key);
