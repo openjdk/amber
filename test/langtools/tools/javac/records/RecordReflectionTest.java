@@ -46,6 +46,8 @@ public class RecordReflectionTest {
 
     record R3(List<String> ls) {}
 
+    record R4(R1 r1, R2 r2, R3 r3) {}
+
     public void testIsRecord() {
         assertFalse(NoRecord.class.isRecord());
 
@@ -53,29 +55,78 @@ public class RecordReflectionTest {
             assertTrue(c.isRecord());
     }
 
-    public void testGetComponentsNoRecord() throws ReflectiveOperationException {
+    public void testGetComponentsNoRecord() {
         assertTrue(NoRecord.class.getRecordComponents().length == 0);
     }
 
-    public void testRecordAccessors() throws ReflectiveOperationException {
-        checkRecordReflection(new R1(), 0, null, null);
-        checkRecordReflection(new R2(1, 2), 2, new Object[]{1, 2}, new String[]{"int", "int"});
-        checkRecordReflection(new R3(List.of("1")), 1, new Object[]{List.of("1")}, new String[]{"java.util.List<java.lang.String>"});
+    @DataProvider(name = "reflectionData")
+    public Object[][] reflectionData() {
+        return new Object[][] {
+            new Object[] { new R1(),
+                           0,
+                           null,
+                           null,
+                           null },
+            new Object[] { new R2(1, 2),
+                           2,
+                           new Object[]{ 1, 2 },
+                           new String[]{ "i", "j" },
+                           new String[]{ "int", "int"} },
+            new Object[] { new R3(List.of("1")),
+                           1,
+                           new Object[]{ List.of("1") },
+                           new String[]{ "ls" },
+                           new String[]{ "java.util.List<java.lang.String>"} },
+            new Object[] { new R4(new R1(), new R2(6, 7), new R3(List.of("s"))),
+                           3,
+                           new Object[]{ new R1(), new R2(6, 7), new R3(List.of("s")) } ,
+                           new String[]{ "r1", "r2", "r3" },
+                           new String[]{ R1.class.toString(), R2.class.toString(), R3.class.toString()} },
+        };
     }
 
-    private void checkRecordReflection(Object recordOb, int numberOfComponents, Object[] values, String[] signatures) throws ReflectiveOperationException {
+    @Test(dataProvider = "reflectionData")
+    public void testRecordReflection(Object recordOb,
+                                     int numberOfComponents,
+                                     Object[] values,
+                                     String[] names,
+                                     String[] signatures)
+        throws ReflectiveOperationException
+    {
         Class<?> recordClass = recordOb.getClass();
         assertTrue(recordClass.isRecord());
         RecordComponent[] recordComponents = recordClass.getRecordComponents();
         assertEquals(recordComponents.length, numberOfComponents);
         int i = 0;
         for (RecordComponent rc : recordComponents) {
+            assertEquals(rc.getName(), names[i]);
+            assertEquals(rc.getType(), rc.getAccessor().getReturnType());
             assertEquals(rc.getAccessor().invoke(recordOb), values[i]);
             assertEquals(rc.getAccessor().getGenericReturnType().toString(), signatures[i],
                          String.format("signature of method \"%s\" different from expected signature \"%s\"",
                                  rc.getAccessor().getGenericReturnType(), signatures[i]));
             i++;
         }
+    }
+
+    record R5(String... args) {}
+    record R6(long l, String... args) {}
+    record R7(String s1, String s2, String... args) {}
+
+    @DataProvider(name = "varArgsData")
+    public Object[][] varArgsData() {
+        return new Object[][] {
+                new Object[] { new R5("h", "e", "l", "l", "o"),     1 },
+                new Object[] { new R6(5L, "w", "o", "r", "l", "d"), 2 },
+                new Object[] { new R7("s1", "s2", "b", "y", "e") ,  3 },
+        };
+    }
+
+    @Test(dataProvider = "varArgsData")
+    public void testVarArgs(Object recordObj, int numberOfComponents) {
+        assertTrue(recordObj.getClass().isRecord());
+        assertEquals(recordObj.getClass().getRecordComponents().length, numberOfComponents);
+        assertTrue(recordObj.getClass().getRecordComponents()[numberOfComponents-1].isVarArgs());
     }
 
     @Retention(RetentionPolicy.RUNTIME)

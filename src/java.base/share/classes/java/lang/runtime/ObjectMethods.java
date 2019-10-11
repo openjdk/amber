@@ -326,7 +326,7 @@ public class ObjectMethods {
             case "toString":
                 if (methodType != null && !methodType.equals(MethodType.methodType(String.class, theClass)))
                     throw new IllegalArgumentException("Bad method type: " + methodType);
-                List<String> nameList = List.of(names.split(";"));
+                List<String> nameList = "".equals(names) ? List.of() : List.of(names.split(";"));
                 if (nameList.size() != getterList.size())
                     throw new IllegalArgumentException("Name list and accessor list do not match");
                 handle = makeToString(theClass, getterList, nameList);

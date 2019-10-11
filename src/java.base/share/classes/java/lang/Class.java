@@ -2252,10 +2252,13 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Returns an array containing {@code RecordComponent} objects reflecting all the
-     * declared record components of the record represented by this {@code Class} object
+     * declared record components of the record represented by this {@code Class} object.
+     * The components are returned in the same order that they are declared in the
+     * record header.
      *
-     * @return  the array of {@code RecordComponent} objects representing all the
-     *          record components of this record
+     * @return  The array of {@code RecordComponent} objects representing all the
+     *          record components of this record. The array is empty if this class
+     *          is not a record, or if this class is a record with no components.
      * @throws  SecurityException
      *          If a security manager, <i>s</i>, is present and any of the
      *          following conditions is met:
