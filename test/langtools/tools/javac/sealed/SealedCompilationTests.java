@@ -216,23 +216,22 @@ public class SealedCompilationTests extends CompilationTestCase {
     }
 
     public void testNoLocalSealedClasses() {
-        // @@@ Currently failing; probably wrong diag key as well
-//        for (String s : List.of(
-//                """
-//                sealed class C {
-//                    void m() {
-//                        sealed class C { }
-//                    }
-//                }
-//                """,
-//                """
-//                sealed class C {
-//                    void m() {
-//                        non-sealed class D { }
-//                    }
-//                }
-//                """))
-//            assertFail("compiler.err.cant.inherit.from.sealed", s);
+        for (String s : List.of(
+                """
+                sealed class C {
+                    void m() {
+                        sealed class D { }
+                    }
+                }
+                """,
+                """
+                sealed class C {
+                    void m() {
+                        non-sealed class D { }
+                    }
+                }
+                """))
+            assertFail("compiler.err.sealed.or.non.sealed.local.classes.not.allowed", s);
     }
 
     public void testLocalCantExtendSealed() {

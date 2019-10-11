@@ -2637,6 +2637,23 @@ public class JavacParser implements Parser {
                 }
 
                 //else intentional fall-through
+            } else if (allowSealedTypes) {
+                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
+                    Token tokenSub = S.token(1);
+                    Token tokenSealed = S.token(2);
+                    if (token.endPos == tokenSub.pos &&
+                            tokenSub.endPos == tokenSealed.pos &&
+                            tokenSealed.name() == names.sealed &&
+                            S.token(3).kind == TokenKind.CLASS) {
+                        log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
+                        nextToken();
+                        nextToken();
+                        nextToken();
+                    }
+                } else if (token.name() == names.sealed && S.token(1).kind == TokenKind.CLASS) {
+                    log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
+                    nextToken();
+                }
             }
         }
         if (isRecordToken() &&
