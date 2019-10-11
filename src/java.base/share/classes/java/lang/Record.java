@@ -85,11 +85,11 @@ public abstract class Record {
      * The implicitly provided implementation returns {@code true} if and
      * only if the argument is an instance of the same record type as this object,
      * and each component of this record is equal to the corresponding component
-     * of the argument, according to {@link Object#equals(Object)} for components
+     * of the argument, according to {@link java.util.Objects#equals(Object,Object)} for components
      * whose types are reference types, and the primitive wrapper equality
      * comparison for components whose types are primitive types.
      *
-     * @see Object#equals(Object)
+     * @see java.util.Objects#equals(Object,Object)
      *
      * @param   obj   the reference object with which to compare.
      * @return  {@code true} if this object is the same as the obj
