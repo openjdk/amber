@@ -90,14 +90,17 @@ public class TestRecord extends JavacTestingAbstractProcessor {
                 System.out.println("printing record " + e);
                 List<? extends Element> enclosedElements = e.getEnclosedElements();
                 for (Element elem : enclosedElements) {
+		    if (elem.getKind() == ElementKind.RECORD_COMPONENT)
+			continue; // "marathonTime" as a record component is Origin.EXPLICIT
                     System.out.println("name " + elem.getSimpleName());
                     System.out.println("origin " + elements.getOrigin(elem));
-                    switch (elem.getSimpleName().toString()) {
+		    String simpleName = elem.getSimpleName().toString();
+                    switch (simpleName) {
                         case "marathonTime": case "toString":
                         case "<init>": case "hashCode":
                         case "equals": case "readResolve":
                             if (elements.getOrigin(elem) != Elements.Origin.MANDATED) {
-                                throw new RuntimeException("MANDATED origin expected");
+                                throw new RuntimeException("MANDATED origin expected for " + simpleName);
                             }
                             break;
                         default:
