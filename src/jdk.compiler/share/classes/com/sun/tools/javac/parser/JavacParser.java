@@ -3837,8 +3837,8 @@ public class JavacParser implements Parser {
             JCVariableDecl field = fields.get(i);
             if ((field.mods.flags & Flags.VARARGS) != 0) {
                 if ((field.mods.flags & Flags.VARARGS) != 0) {
-                    JCModifiers newMods = F.Modifiers(field.mods.flags & ~Flags.VARARGS | Flags.ORIGINALLY_VARARGS);
-                    field = F.at(field).VarDef(newMods, field.name, field.vartype, null, field.accessors);
+                    field.mods.flags = field.mods.flags & ~Flags.VARARGS | Flags.ORIGINALLY_VARARGS;
+                    field = F.at(field).VarDef(field.mods, field.name, field.vartype, null, field.accessors);
                 }
             }
             defs = defs.prepend(field);
