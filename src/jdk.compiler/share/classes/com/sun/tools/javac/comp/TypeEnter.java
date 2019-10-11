@@ -875,6 +875,10 @@ public class TypeEnter implements Completer {
                 log.error(tree, Errors.NonSealedWithNoSealedSupertype);
             }
 
+            if (hasSuperTypesInSealedHierarchy && tree.sym.isLocal()) {
+                log.error(tree, Errors.LocalClassesCantExtendSealed);
+            }
+
             if (hasSuperTypesInSealedHierarchy && !anySuperInSameCUIsSealed) {
                 // that supertype most have a permits clause allowing this class to extend it
                 List<Type> closureOutsideOfSameCU = types.closure(tree.sym.type).stream()

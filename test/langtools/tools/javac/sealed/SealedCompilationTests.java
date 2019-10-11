@@ -235,16 +235,15 @@ public class SealedCompilationTests extends CompilationTestCase {
     }
 
     public void testLocalCantExtendSealed() {
-        // @@@ Currently failing
-//        for (String s : List.of(
-//                """
-//                sealed class C {
-//                    void m() {
-//                        final class D extends C { }
-//                    }
-//                }
-//                """))
-//            assertFail("compiler.err.cant.inherit.from.sealed", s);
+        for (String s : List.of(
+                """
+                sealed class C {
+                    void m() {
+                        final class D extends C { }
+                    }
+                }
+                """))
+            assertFail("compiler.err.local.classes.cant.extend.sealed", s);
     }
 
     public void testSealedInterfaceAndAbstracClasses() {
