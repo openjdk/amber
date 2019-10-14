@@ -204,7 +204,7 @@ public class TestRecordTypes extends JavadocTester {
 		"Indicates whether some other object is \"equal to\" this one. "
 		+ "The objects are equal if the other object is of the same class "
 		+ "and if all the record components are equal. All components "
-		+ "are compared with '=='.",
+		+ "in this record are compared with '=='.",
 		"<span class=\"memberName\">r1</span>",
 		"Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> "
 		+ "record component."
@@ -255,7 +255,7 @@ public class TestRecordTypes extends JavadocTester {
 		"Indicates whether some other object is \"equal to\" this one. "
 		+ "The objects are equal if the other object is of the same class "
 		+ "and if all the record components are equal. All components "
-		+ "are compared with '=='.",
+		+ "in this record are compared with '=='.",
 		"<span class=\"memberName\">r1</span>",
 		"Returns the value of the <a href=\"#param-r1\"><code>r1</code></a> "
 		+ "record component."
@@ -265,13 +265,13 @@ public class TestRecordTypes extends JavadocTester {
     @Test
     public void testGeneratedEqualsPrimitive(Path base) throws IOException {
 	testGeneratedEquals(base, "int a, int b", 
-             "All components are compared with '=='.");
+             "All components in this record are compared with '=='.");
     }
 
     @Test
     public void testGeneratedEqualsReference(Path base) throws IOException {
 	testGeneratedEquals(base, "Object a, Object b", 
-             "All components are compared with <code>Objects::equals(Object,Object)</code>");
+             "All components in this record are compared with <code>Objects::equals(Object,Object)</code>");
     }
 
     @Test
