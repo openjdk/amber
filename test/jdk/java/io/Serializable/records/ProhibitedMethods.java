@@ -98,8 +98,6 @@ public class ProhibitedMethods {
      *           fail("readObject should not be invoked");                }
      *       private void readObjectNoData()                              {
      *           fail("readObjectNoData should not be invoked");          }
-     *       private Object readResolve()                                 {
-     *           fail("readResolve should not be invoked"); return null; }
      *   }
      */
     @BeforeTest
@@ -110,7 +108,6 @@ public class ProhibitedMethods {
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);
-            byteCode = addReadResolve(byteCode);
             serializableRecordLoader = new ByteCodeLoader("Foo", byteCode, ProhibitedMethods.class.getClassLoader());
         }
         {
@@ -119,7 +116,6 @@ public class ProhibitedMethods {
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);
-            byteCode = addReadResolve(byteCode);
             serializableRecordLoader = new ByteCodeLoader("Bar", byteCode, serializableRecordLoader);
         }
         {
@@ -129,7 +125,6 @@ public class ProhibitedMethods {
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);
-            byteCode = addReadResolve(byteCode);
             serializableRecordLoader = new ByteCodeLoader("Baz", byteCode, serializableRecordLoader);
         }
     }
@@ -235,10 +230,6 @@ public class ProhibitedMethods {
         return addMethod(classBytes, cv -> new ReadObjectNoDataVisitor(cv));
     }
 
-    static byte[] addReadResolve(byte[] classBytes) {
-        return addMethod(classBytes, cv -> new ReadResolveVisitor(cv));
-    }
-
     static byte[] addMethod(byte[] classBytes,
                             Function<ClassVisitor,ClassVisitor> classVisitorCreator) {
         ClassReader reader = new ClassReader(classBytes);
@@ -326,26 +317,6 @@ public class ProhibitedMethods {
         }
     }
 
-    /** A visitor that generates and adds a readResolve method. */
-    static final class ReadResolveVisitor extends AbstractVisitor {
-        static final String READ_RESOLVE_NAME = "readResolve";
-        static final String READ_RESOLVE_DESC = "()Ljava/lang/Object;";
-        ReadResolveVisitor(ClassVisitor cv) { super(cv, READ_RESOLVE_NAME); }
-        @Override
-        public void visitEnd() {
-            MethodVisitor mv = cv.visitMethod(ACC_PRIVATE, READ_RESOLVE_NAME, READ_RESOLVE_DESC, null, null);
-            mv.visitCode();
-            mv.visitLdcInsn("readResolve should not be invoked");
-            mv.visitMethodInsn(INVOKESTATIC, "org/testng/Assert", "fail", "(Ljava/lang/String;)V", false);
-            mv.visitInsn(ACONST_NULL);
-            mv.visitInsn(ARETURN);
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-
-            cv.visitEnd();
-        }
-    }
-
     // -- infra sanity --
 
     static final Class<ReflectiveOperationException> ROE = ReflectiveOperationException.class;
@@ -391,17 +362,6 @@ public class ProhibitedMethods {
                 assertTrue(assertionError instanceof AssertionError,
                            "Expected AssertionError, got:" + assertionError);
                 assertEquals(assertionError.getMessage(), "readObjectNoData should not be invoked");
-            }
-            {   // readResolve
-                Method m = obj.getClass().getDeclaredMethod("readResolve");
-                assertTrue((m.getModifiers() & Modifier.PRIVATE) != 0);
-                m.setAccessible(true);
-                ReflectiveOperationException t = expectThrows(ROE, () -> m.invoke(obj));
-                Throwable assertionError = t.getCause();
-                out.println("caught expected AssertionError: " + assertionError);
-                assertTrue(assertionError instanceof AssertionError,
-                           "Expected AssertionError, got:" + assertionError);
-                assertEquals(assertionError.getMessage(), "readResolve should not be invoked");
             }
         }
     }

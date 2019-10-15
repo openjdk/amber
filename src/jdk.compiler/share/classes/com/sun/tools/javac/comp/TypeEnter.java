@@ -1275,11 +1275,6 @@ public class TypeEnter implements Completer {
             if (ms != null) {
                 errorOnSerializationMember(tree, names.writeObject, ms, syms.voidType, false);
             }
-            // non-static Object readResolve() {}
-            ms = lookupMethod(tree.sym, names.readResolve, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readResolve, ms, syms.objectType, false);
-            }
             // non-static void readObjectNoData() {}
             ms = lookupMethod(tree.sym, names.readObjectNoData, List.nil());
             if (ms != null) {

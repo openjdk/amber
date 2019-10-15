@@ -220,26 +220,33 @@ import sun.reflect.misc.ReflectUtil;
  * Similarly, any serialPersistentFields or serialVersionUID field declarations
  * are also ignored--all enum types have a fixed serialVersionUID of 0L.
  *
- * @apiNote When Preview Features are enabled...
- * Record objects are deserialized differently than ordinary serializable or
- * externalizable objects. The serialized form of a record object is its state
- * components ( in the same format as that of an ordinary object ). During
- * deserialization, if the local class equivalent of the specified stream class
- * descriptor {@linkplain Class#isRecord() is a record}, ObjectInputStream reads
- * the record's state components from the stream; the record object is then
- * constructed by invoking its <i>canonical constructor</i> passing the state
- * components ( or the default value of the component's declared type if absent
- * from the stream ).  Like other serializable or externalizable objects, record
- * objects can function as the targets of back references appearing subsequently
- * in the serialization stream ( but there are clearly some limitations on the
- * nature of the structures that can be represented, by virtue of the fact that
- * the state components are deserialized prior to the invocation of the record
- * constructor).  The process by which record objects are deserialized cannot
- * be customized: any class-specific readObject, readObjectNoData, readResolve,
- * and readExternal, methods defined by record classes are ignored during
- * deserialization. Similarly, a serialPersistentFields field declaration is
- * also ignored -- all record classes have a fixed serial form, that is their
- * state components. The serialVersionUID may be set.
+ * @apiNote
+ * Records are serialized differently than ordinary serializable or externalizable
+ * objects. The serialized form of a record object is a sequence of values derived
+ * from the record components. The stream format of a record object is the same as
+ * that of an ordinary object in the stream. During deserialization, if the local
+ * class equivalent of the specified stream class descriptor is a record class,
+ * then first the stream fields are read and reconstructed to serve as the record's
+ * component values; and second, a record object is created by invoking the
+ * record's <i>canonical</i> constructor with the component values as arguments (or the
+ * default value for component's type if a component value is absent from the
+ * stream).
+ * Like other serializable or externalizable objects, record objects can function
+ * as the target of back references appearing subsequently in the serialization
+ * stream. However, a cycle in the graph where the record object is referred to,
+ * either directly or transitively, by one of its components, is not preserved.
+ * The record components are deserialized prior to the invocation of the record
+ * constructor, hence this limitation (see
+ * <a href="{@docRoot}/../specs/serialization/serial-arch.html#cyclic-references">
+ * [Section 1.14, "Circular References"</a> for additional information).
+ * The process by which record objects are serialized cannot be customized; any
+ * class-specific writeObject, readObject, readObjectNoData, writeExternal,
+ * and readExternal methods defined by record classes are ignored during
+ * serialization and deserialization. However, a substitute object to be serialized
+ * or a designate replacement may be specified by the writeReplace and
+ * readResolve methods, respectively. Any serialPersistentFields or
+ * serialVersionUID field declarations are also ignored -- all record classes
+ * have a fixed serialVersionUID of 0L.
  *
  * @author      Mike Warres
  * @author      Roger Riggs
@@ -2123,7 +2130,6 @@ public class ObjectInputStream
 
         if (obj != null &&
             handles.lookupException(passHandle) == null &&
-            !isRecord &&
             desc.hasReadResolveMethod())
         {
             Object rep = desc.invokeReadResolve(obj);
