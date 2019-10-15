@@ -176,7 +176,10 @@ public class MemberEnter extends JCTree.Visitor {
     }
 
     public void visitMethodDef(JCMethodDecl tree) {
-        WriteableScope enclScope = enter.enterScope(env);
+        boolean isLocal = env.info.scope.owner.kind == MTH;
+        WriteableScope enclScope = isLocal ?
+                env.info.scope :
+                enter.enterScope(env);
         MethodSymbol m = new MethodSymbol(0, tree.name, null, enclScope.owner);
         m.flags_field = chk.checkFlags(tree.pos(), tree.mods.flags, m, tree);
         tree.sym = m;
@@ -186,7 +189,7 @@ public class MemberEnter extends JCTree.Visitor {
             m.owner.flags_field |= DEFAULT;
         }
 
-        Env<AttrContext> localEnv = methodEnv(tree, env);
+        Env<AttrContext> localEnv = isLocal ? attr.localMethodEnv(tree, env) : methodEnv(tree, env);
         DiagnosticPosition prevLintPos = deferredLintHandler.setPos(tree.pos());
         try {
             // Compute the method type
@@ -217,7 +220,10 @@ public class MemberEnter extends JCTree.Visitor {
 
         localEnv.info.scope.leave();
         if (chk.checkUnique(tree.pos(), m, enclScope)) {
-        enclScope.enter(m);
+            if (isLocal) {
+                chk.checkTransparent(tree.pos(), m, enclScope);
+            }
+            enclScope.enter(m);
         }
 
         annotate.annotateLater(tree.mods.annotations, localEnv, m, tree.pos());
@@ -297,7 +303,7 @@ public class MemberEnter extends JCTree.Visitor {
             }
         }
         if (chk.checkUnique(tree.pos(), v, enclScope)) {
-            chk.checkTransparentVar(tree.pos(), v, enclScope);
+            chk.checkTransparent(tree.pos(), v, enclScope);
             enclScope.enter(v);
         } else if (v.owner.kind == MTH) {
             enclScope.enter(v);

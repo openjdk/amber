@@ -197,3 +197,4 @@ compiler.warn.source.target.conflict
 compiler.warn.target.default.source.conflict
 compiler.err.preview.not.latest
 compiler.err.preview.without.source.or.release
+compiler.misc.local.meth

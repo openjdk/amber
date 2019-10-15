@@ -2570,6 +2570,28 @@ public class JavacParser implements Parser {
             log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
+        case LT:
+            if (isExplicitConstructorCall()) {
+                JCExpression t = term(EXPR | TYPE);
+                t = checkExprStat(t);
+                accept(SEMI);
+                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+                return List.<JCStatement>of(expr);
+            }
+        case VOID: {
+            List<JCTypeParameter> params = typeParametersOpt();
+            JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+            JCExpression returnType = null;
+            if (token.kind == VOID) {
+                accept(VOID);
+            } else {
+                returnType = term(EXPR | TYPE);
+            }
+            ListBuffer<JCStatement> stats = new ListBuffer<>();
+            stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
+            storeEnd(stats.last(), S.prevToken().endPos);
+            return stats.toList();
+        }
         case IDENTIFIER:
             if (token.name() == names.yield && allowYieldStatement) {
                 Token next = S.token(1);
@@ -2639,13 +2661,43 @@ public class JavacParser implements Parser {
     }
     //where
         private List<JCStatement> localVariableDeclarations(JCModifiers mods, JCExpression type) {
-            ListBuffer<JCStatement> stats =
-                    variableDeclarators(mods, type, new ListBuffer<>(), true);
-            // A "LocalVariableDeclarationStatement" subsumes the terminating semicolon
-            accept(SEMI);
+            ListBuffer<JCStatement> stats;
+            if (peekToken(LPAREN)) {
+                stats = new ListBuffer<>();
+                stats.add(methodDeclaratorRest(token.pos, mods, type, ident(), List.nil(), false, false, null));
+            } else {
+                stats = variableDeclarators(mods, type, new ListBuffer<JCStatement>(), true);
+                // A "LocalVariableDeclarationStatement" subsumes the terminating semicolon
+                accept(SEMI);
+            }
             storeEnd(stats.last(), S.prevToken().endPos);
             return stats.toList();
         }
+
+    boolean isExplicitConstructorCall() {
+        int depth = 0;
+        for (int lookahead = 0 ; ; lookahead++) {
+            TokenKind tk = S.token(lookahead).kind;
+            switch (tk) {
+                case LT:
+                    depth++;
+                    break;
+                case GT:
+                    depth--;
+                    break;
+                case GTGT:
+                    depth -= 2;
+                    break;
+                case GTGTGT:
+                    depth -= 3;
+                    break;
+            }
+            if (depth == 0) {
+                Token name = S.token(lookahead + 1);
+                return name.kind == SUPER || name.kind == THIS;
+            }
+        }
+    }
 
     /** Statement =
      *       Block
@@ -4038,7 +4090,7 @@ public class JavacParser implements Parser {
      *  ConstructorDeclaratorRest =
      *      "(" FormalParameterListOpt ")" [THROWS TypeList] MethodBody
      */
-    protected JCTree methodDeclaratorRest(int pos,
+    protected JCStatement methodDeclaratorRest(int pos,
                               JCModifiers mods,
                               JCExpression type,
                               Name name,

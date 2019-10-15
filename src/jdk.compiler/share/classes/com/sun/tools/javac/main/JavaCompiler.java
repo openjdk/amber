@@ -1474,7 +1474,8 @@ public class JavaCompiler {
          */
         class ScanNested extends TreeScanner {
             Set<Env<AttrContext>> dependencies = new LinkedHashSet<>();
-            protected boolean hasLambdas;
+            protected boolean needsLambdaToMethod;
+            protected boolean inMethod;
             @Override
             public void visitClassDef(JCClassDecl node) {
                 Type st = types.supertype(node.sym.type);
@@ -1484,17 +1485,17 @@ public class JavaCompiler {
                     Env<AttrContext> stEnv = enter.getEnv(c);
                     if (stEnv != null && env != stEnv) {
                         if (dependencies.add(stEnv)) {
-                            boolean prevHasLambdas = hasLambdas;
+                            boolean prevHasLambdas = needsLambdaToMethod;
                             try {
                                 scan(stEnv.tree);
                             } finally {
                                 /*
-                                 * ignore any updates to hasLambdas made during
+                                 * ignore any updates to needsLambdaToMethod made during
                                  * the nested scan, this ensures an initalized
                                  * LambdaToMethod is available only to those
                                  * classes that contain lambdas
                                  */
-                                hasLambdas = prevHasLambdas;
+                                needsLambdaToMethod = prevHasLambdas;
                             }
                         }
                         envForSuperTypeFound = true;
@@ -1505,12 +1506,27 @@ public class JavaCompiler {
             }
             @Override
             public void visitLambda(JCLambda tree) {
-                hasLambdas = true;
+                needsLambdaToMethod = true;
                 super.visitLambda(tree);
             }
+
+            @Override
+            public void visitMethodDef(JCMethodDecl tree) {
+                if (inMethod) {
+                    needsLambdaToMethod = true;
+                }
+                boolean prevInMethod = inMethod;
+                try {
+                    inMethod = true;
+                    super.visitMethodDef(tree);
+                } finally {
+                    inMethod = prevInMethod;
+                }
+            }
+
             @Override
             public void visitReference(JCMemberReference tree) {
-                hasLambdas = true;
+                needsLambdaToMethod = true;
                 super.visitReference(tree);
             }
         }
@@ -1558,7 +1574,7 @@ public class JavaCompiler {
             env.tree = transTypes.translateTopLevelClass(env.tree, localMake);
             compileStates.put(env, CompileState.TRANSTYPES);
 
-            if (Feature.LAMBDA.allowedInSource(source) && scanner.hasLambdas) {
+            if (Feature.LAMBDA.allowedInSource(source) && scanner.needsLambdaToMethod) {
                 if (shouldStop(CompileState.UNLAMBDA))
                     return;
 

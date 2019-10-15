@@ -2532,7 +2532,7 @@ public class Lower extends TreeTranslator {
                     lambdaTranslationMap;
             try {
                 lambdaTranslationMap = (tree.sym.flags() & SYNTHETIC) != 0 &&
-                        tree.sym.name.startsWith(names.lambda) ?
+                        (tree.sym.name.startsWith(names.lambda) || tree.sym.name.startsWith(names.local)) ?
                         makeTranslationMap(tree) : null;
                 super.visitMethodDef(tree);
             } finally {

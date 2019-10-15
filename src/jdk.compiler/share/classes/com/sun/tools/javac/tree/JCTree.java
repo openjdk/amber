@@ -827,7 +827,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * A method definition.
      */
-    public static class JCMethodDecl extends JCTree implements MethodTree {
+    public static class JCMethodDecl extends JCStatement implements MethodTree {
         /** method modifiers */
         public JCModifiers mods;
         /** method name */

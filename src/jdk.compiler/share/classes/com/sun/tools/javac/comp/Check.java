@@ -335,22 +335,39 @@ public class Check {
  * duplicate declaration checking
  *************************************************************************/
 
-    /** Check that variable does not hide variable with same name in
-     *  immediately enclosing local scope.
+    /** Check that variable (resp. local method) does not hide variable (resp. local method) with same
+     *  name in immediately enclosing local scope.
      *  @param pos           Position for error reporting.
-     *  @param v             The symbol.
+     *  @param byName        The symbol.
      *  @param s             The scope.
      */
-    void checkTransparentVar(DiagnosticPosition pos, VarSymbol v, Scope s) {
-        for (Symbol sym : s.getSymbolsByName(v.name)) {
-            if (sym.owner != v.owner) break;
-            if (sym.kind == VAR &&
-                sym.owner.kind.matches(KindSelector.VAL_MTH) &&
-                v.name != names.error) {
-                duplicateError(pos, sym);
-                return;
+    void checkTransparent(DiagnosticPosition pos, Symbol byName, Scope s) {
+        for (Symbol sym : s.getSymbolsByName(byName.name)) {
+            if (sym.owner != byName.owner) break;
+            checkDuplicateSymbol(pos, byName, sym);
+        }
+    }
+
+    private boolean checkDuplicateSymbol(DiagnosticPosition pos, Symbol s1, Symbol s2) {
+        if (s1 != s2 &&
+                (s2.flags() & CLASH) == 0 &&
+                s1.kind == s2.kind &&
+                s1.name != names.error &&
+                (s1.kind != MTH ||
+                        types.hasSameArgs(s1.type, s2.type) ||
+                        types.hasSameArgs(types.erasure(s1.type), types.erasure(s2.type)))) {
+            if (s1.kind == MTH && (s1.flags() & VARARGS) != (s2.flags() & VARARGS)) {
+                s1.flags_field |= CLASH;
+                varargsDuplicateError(pos, s1, s2);
+            } else if (s1.kind == MTH && !types.hasSameArgs(s1.type, s2.type, false)) {
+                duplicateErasureError(pos, s1, s2);
+                s1.flags_field |= CLASH;
+            } else {
+                duplicateError(pos, s2);
+                return false;
             }
         }
+        return true;
     }
 
     /** Check that a class or interface does not hide a class or
@@ -3435,26 +3452,8 @@ public class Check {
             return true;
         if (sym.owner.name == names.any) return false;
         for (Symbol byName : s.getSymbolsByName(sym.name, NON_RECURSIVE)) {
-            if (sym != byName &&
-                    (byName.flags() & CLASH) == 0 &&
-                    sym.kind == byName.kind &&
-                    sym.name != names.error &&
-                    (sym.kind != MTH ||
-                     types.hasSameArgs(sym.type, byName.type) ||
-                     types.hasSameArgs(types.erasure(sym.type), types.erasure(byName.type)))) {
-                if ((sym.flags() & VARARGS) != (byName.flags() & VARARGS)) {
-                    sym.flags_field |= CLASH;
-                    varargsDuplicateError(pos, sym, byName);
-                    return true;
-                } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
-                    duplicateErasureError(pos, sym, byName);
-                    sym.flags_field |= CLASH;
-                    return true;
-                } else {
-                    duplicateError(pos, byName);
-                    return false;
-                }
-            }
+            if (!checkDuplicateSymbol(pos, sym, byName))
+                return false;
         }
         return true;
     }

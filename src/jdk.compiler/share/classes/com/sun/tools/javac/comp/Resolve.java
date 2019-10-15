@@ -1553,8 +1553,9 @@ public class Resolve {
                       Symbol bestSoFar,
                       boolean allowBoxing,
                       boolean useVarargs) {
+        boolean isLocalMethod = sym.owner.kind == MTH;
         if (sym.kind == ERR ||
-                (site.tsym != sym.owner && !sym.isInheritedIn(site.tsym, types)) ||
+                (site.tsym != sym.owner && (!isLocalMethod && !sym.isInheritedIn(site.tsym, types))) ||
                 !notOverriddenIn(site, sym)) {
             return bestSoFar;
         } else if (useVarargs && (sym.flags() & VARARGS) == 0) {
@@ -1579,7 +1580,7 @@ public class Resolve {
                     return bestSoFar;
             }
         }
-        if (!isAccessible(env, site, sym)) {
+        if (!isLocalMethod && !isAccessible(env, site, sym)) {
             return (bestSoFar.kind == ABSENT_MTH)
                 ? new AccessError(env, site, sym)
                 : bestSoFar;
@@ -1612,6 +1613,9 @@ public class Resolve {
             boolean m2SignatureMoreSpecific =
                     signatureMoreSpecific(argtypes, env, site, m2, m1, useVarargs);
             if (m1SignatureMoreSpecific && m2SignatureMoreSpecific) {
+                if (m1.owner.kind == MTH || m2.owner.kind == MTH) {
+                    return ambiguityError(m1, m2);
+                }
                 Type mt1 = types.memberType(site, m1);
                 Type mt2 = types.memberType(site, m2);
                 if (!types.overrideEquivalent(mt1, mt2))
@@ -1935,8 +1939,13 @@ public class Resolve {
             Assert.check(env1.info.preferredTreeForDiagnostics == null);
             env1.info.preferredTreeForDiagnostics = env.tree;
             try {
-                Symbol sym = findMethod(
-                    env1, env1.enclClass.sym.type, name, argtypes, typeargtypes,
+                Symbol sym = findMethodInScope(env1, env1.enclClass.type, name, argtypes, typeargtypes,
+                        env1.info.scope, bestSoFar, allowBoxing, useVarargs, true);
+                if (sym.exists()) {
+                    return sym;
+                }
+                sym = findMethod(
+                        env1, env1.enclClass.sym.type, name, argtypes, typeargtypes,
                     allowBoxing, useVarargs);
                 if (sym.exists()) {
                     if (staticOnly &&

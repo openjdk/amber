@@ -972,6 +972,10 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitMethodDef(JCMethodDecl tree) {
+        boolean isLocal = env.info.scope.owner.kind == MTH;
+        if (isLocal) {
+            memberEnter.memberEnter(tree, env);
+        }
         MethodSymbol m = tree.sym;
         boolean isDefaultMethod = (m.flags() & DEFAULT) != 0;
 
@@ -985,22 +989,26 @@ public class Attr extends JCTree.Visitor {
 
             // Create a new environment with local scope
             // for attributing the method.
-            Env<AttrContext> localEnv = memberEnter.methodEnv(tree, env);
+            Env<AttrContext> localEnv = isLocal ?
+                    localMethodEnv(tree, env) :
+                    memberEnter.methodEnv(tree, env);
             localEnv.info.lint = lint;
 
             attribStats(tree.typarams, localEnv);
 
-            // If we override any other methods, check that we do so properly.
-            // JLS ???
-            if (m.isStatic()) {
-                chk.checkHideClashes(tree.pos(), env.enclClass.type, m);
-            } else {
-                chk.checkOverrideClashes(tree.pos(), env.enclClass.type, m);
-            }
-            chk.checkOverride(env, tree, m);
+            if (!isLocal) {
+                // If we override any other methods, check that we do so properly.
+                // JLS ???
+                if (m.isStatic()) {
+                    chk.checkHideClashes(tree.pos(), env.enclClass.type, m);
+                } else {
+                    chk.checkOverrideClashes(tree.pos(), env.enclClass.type, m);
+                }
+                chk.checkOverride(env, tree, m);
 
-            if (isDefaultMethod && types.overridesObjectMethod(m.enclClass(), m)) {
-                log.error(tree, Errors.DefaultOverridesObjectMember(m.name, Kinds.kindName(m.location()), m.location()));
+                if (isDefaultMethod && types.overridesObjectMethod(m.enclClass(), m)) {
+                    log.error(tree, Errors.DefaultOverridesObjectMember(m.name, Kinds.kindName(m.location()), m.location()));
+                }
             }
 
             // Enter all type parameters into the local method scope.
@@ -3058,7 +3066,7 @@ public class Attr extends JCTree.Visitor {
          * - an instance field, we use the first constructor.
          * - a static field, we create a fake clinit method.
          */
-        public Env<AttrContext> lambdaEnv(JCLambda that, Env<AttrContext> env) {
+        public Env<AttrContext> lambdaEnv(JCTree that, Env<AttrContext> env) {
             Env<AttrContext> lambdaEnv;
             Symbol owner = env.info.scope.owner;
             if (owner.kind == VAR && owner.owner.kind == TYP) {
@@ -3096,6 +3104,16 @@ public class Attr extends JCTree.Visitor {
             lambdaEnv.info.yieldResult = null;
             return lambdaEnv;
         }
+
+        public Env<AttrContext> localMethodEnv(JCMethodDecl that, Env<AttrContext> env) {
+            Env<AttrContext> localMethodEnv = lambdaEnv(that, env);
+            if (that.sym.type != null) {
+            //when this is called in the enter stage, there's no type to be set
+                localMethodEnv.info.returnResult = new ResultInfo(KindSelector.VAL, that.sym.type.getReturnType());
+            }
+            return localMethodEnv;
+        }
+
 
     @Override
     public void visitReference(final JCMemberReference that) {
