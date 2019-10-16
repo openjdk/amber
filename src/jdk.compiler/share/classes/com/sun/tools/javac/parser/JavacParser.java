@@ -2694,6 +2694,8 @@ public class JavacParser implements Parser {
                 case GTGTGT:
                     depth -= 3;
                     break;
+                case EOF:
+                    return false;
             }
             if (depth == 0) {
                 Token name = S.token(lookahead + 1);
