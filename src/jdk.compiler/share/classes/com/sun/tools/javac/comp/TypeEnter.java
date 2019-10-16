@@ -54,7 +54,8 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-
+import static com.sun.tools.javac.code.TypeTag.CLASS;
+import static com.sun.tools.javac.code.TypeTag.ERROR;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 import static com.sun.tools.javac.code.TypeTag.*;
@@ -144,8 +145,6 @@ public class TypeEnter implements Completer {
         Source source = Source.instance(context);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowDeprecationOnImport = Feature.DEPRECATION_ON_IMPORT.allowedInSource(source);
-        Options options = Options.instance(context);
-        dontErrorIfSealedExtended = options.isSet("dontErrorIfSealedExtended");
     }
 
     /** Switch: support type annotations.
@@ -162,13 +161,6 @@ public class TypeEnter implements Completer {
      *  unnecessarily deep recursion.
      */
     boolean completionEnabled = true;
-
-    /**
-     * Temporary switch, false by default but if set, allows generating classes that can extend a sealed class
-     * even if not listed as a permitted subtype. This allows testing the VM runtime. Should be removed before sealed types
-     * gets integrated
-     */
-    boolean dontErrorIfSealedExtended;
 
     /* Verify Imports:
      */
@@ -856,7 +848,7 @@ public class TypeEnter implements Completer {
                                     ((ClassType)supertype).permitted = ((ClassType)supertype).permitted.append(tree.sym.type);
                                     ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
                                 }
-                            } else if (!dontErrorIfSealedExtended) {
+                            } else {
                                 log.error(findTreeReferringSym(tree, supertype.tsym), Errors.CantInheritFromSealed(supertype.tsym));
                             }
                         } else {
@@ -1111,7 +1103,7 @@ public class TypeEnter implements Completer {
                                         JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
                                                 make.Ident(names._super), List.nil()));
                                         methDecl.body.stats = methDecl.body.stats.prepend(supCall);
-                                    }
+            }
                                 }
                             }
                         }
@@ -1466,24 +1458,24 @@ public class TypeEnter implements Completer {
                 long flags;
                 if ((owner().flags() & ENUM) != 0 &&
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
-                    // constructors of true enums are private
+            // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
                 } else if (owner().isRecord()) {
                     // record constructors are public
                     flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
-                }
+        }
                 constructorSymbol = new MethodSymbol(flags, names.init,
                     constructorType(), owner());
-            }
+        }
             return constructorSymbol;
         }
 
         @Override
         public Type enclosingType() {
             return Type.noType;
-        }
+    }
 
         @Override
         public TypeSymbol owner() {
@@ -1493,8 +1485,8 @@ public class TypeEnter implements Completer {
         @Override
         public List<Name> superArgs() {
             return List.nil();
+            }
         }
-    }
 
     class AnonClassConstructorHelper extends BasicConstructorHelper {
 
@@ -1506,7 +1498,7 @@ public class TypeEnter implements Completer {
             super(owner);
             this.constr = constr;
             this.encl = encl != null ? encl.type : Type.noType;
-        }
+    }
 
         @Override
         public Type constructorType() {
@@ -1609,12 +1601,12 @@ public class TypeEnter implements Completer {
         MethodSymbol initSym = helper.constructorSymbol();
         ListBuffer<JCStatement> stats = new ListBuffer<>();
         if (helper.owner().type != syms.objectType) {
-            JCExpression meth;
+        JCExpression meth;
             if (!helper.enclosingType().hasTag(NONE)) {
                 meth = make.Select(make.Ident(initSym.params.head), names._super);
-            } else {
-                meth = make.Ident(names._super);
-            }
+        } else {
+            meth = make.Ident(names._super);
+        }
             List<JCExpression> typeargs = initType.getTypeArguments().nonEmpty() ?
                     make.Types(initType.getTypeArguments()) : null;
             JCStatement superCall = make.Exec(make.Apply(typeargs, meth, helper.superArgs().map(make::Ident)));

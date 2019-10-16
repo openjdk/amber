@@ -261,7 +261,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
                         case TYPE_PARAMETER:  key = "doclet.TypeParameters_warn" ; break;
                         case RECORD_COMPONENT: key = "doclet.RecordComponents_warn" ; break;
                         default: throw new IllegalArgumentException(kind.toString());
-                    }
+                }
                     messages.warning(ch.getDocTreePath(dt), key, paramName);
                 }
                 String rank = rankMap.get(name);
@@ -272,7 +272,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
                         case TYPE_PARAMETER:  key = "doclet.TypeParameters_dup_warn" ; break;
                         case RECORD_COMPONENT: key = "doclet.RecordComponents_dup_warn" ; break;
                         default: throw new IllegalArgumentException(kind.toString());
-                    }
+                }
                     messages.warning(ch.getDocTreePath(dt), key, paramName);
                 }
                 result.add(processParamTag(e, kind, writer, dt,

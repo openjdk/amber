@@ -28,8 +28,12 @@ package com.sun.tools.javac.comp;
 import sun.invoke.util.BytecodeName;
 
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -57,7 +61,12 @@ import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
+import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
@@ -2501,8 +2510,7 @@ public class Lower extends TreeTranslator {
         tree.defs = tree.defs.appendList(List.of(
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
-                generateRecordMethod(tree, names.equals, vars, getterMethHandles),
-                recordExtractor(tree, getterMethHandlesForExtractor)
+                generateRecordMethod(tree, names.equals, vars, getterMethHandles)
         ));
         findUserDefinedAccessors(tree);
     }
@@ -2553,51 +2561,6 @@ public class Lower extends TreeTranslator {
         } else {
             return make.Block(SYNTHETIC, List.nil());
         }
-    }
-
-    JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
-        make_at(tree.pos());
-
-        // let's generate the name of the extractor method
-        List<Type> fieldTypes = TreeInfo.types(TreeInfo.recordFields(tree));
-        String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
-        String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
-        Name extractorName = names.fromString(extractorStr);
-
-        // let's create the condy now
-        Name bsmName = names.ofLazyProjection;
-        List<Type> staticArgTypes = List.of(syms.classType,
-                new ArrayType(syms.methodHandleType, syms.arrayClass));
-        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
-                syms.stringType,
-                syms.classType).appendList(staticArgTypes);
-
-        Symbol bsm = rs.resolveInternalMethod(tree, attrEnv, syms.patternHandlesType,
-                bsmName, bsm_staticArgs, List.nil());
-
-        LoadableConstant[] staticArgs = new LoadableConstant[1 + getterMethHandles.length];
-        staticArgs[0] = (ClassType)tree.sym.type;
-        int index = 1;
-        for (MethodHandleSymbol mho : getterMethHandles) {
-            staticArgs[index] = mho;
-            index++;
-        }
-
-        Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(extractorName,
-                syms.noSymbol,
-                ((MethodSymbol)bsm).asHandle(),
-                syms.patternHandleType,
-                staticArgs);
-        JCIdent ident = make.Ident(dynSym);
-        ident.type = syms.patternHandleType;
-
-        // public PatternHandle extractorName () { return ???; }
-        MethodType extractorMT = new MethodType(List.nil(), syms.patternHandleType, List.nil(), syms.methodClass);
-        MethodSymbol extractorSym = new MethodSymbol(
-                Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
-                extractorName, extractorMT, tree.sym);
-        tree.sym.members().enter(extractorSym);
-        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(ident))));
     }
 
     private String argsTypeSig(List<Type> typeList) {

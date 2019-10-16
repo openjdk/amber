@@ -1768,7 +1768,7 @@ public class Flow {
                 trackable(sym) &&
                 !inits.isMember(sym.adr)) {
                 if (sym.owner.kind != TYP || !compactConstructor || !uninits.isMember(sym.adr)) {
-                    log.error(pos, errkey);
+                log.error(pos, errkey);
                 }
                 inits.incl(sym.adr);
                 return false;

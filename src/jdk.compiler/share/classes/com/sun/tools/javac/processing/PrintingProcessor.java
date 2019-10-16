@@ -116,8 +116,8 @@ public class PrintingProcessor extends AbstractProcessor {
 	public PrintingElementVisitor visitRecordComponent(RecordComponentElement e, Boolean p) {
 	    // Do nothing; printing of component information done by
 	    // printing the record type itself
-	    return this;
-	}
+            return this;
+        }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
         public PrintingElementVisitor visitExecutable(ExecutableElement e, Boolean p) {

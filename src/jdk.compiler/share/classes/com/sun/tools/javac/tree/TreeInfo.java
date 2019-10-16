@@ -939,8 +939,8 @@ public class TreeInfo {
                 return ((JCClassDecl) tree).mods;
             case MODULEDEF:
                 return ((JCModuleDecl) tree).mods;
-            default:
-                return null;
+        default:
+            return null;
         }
     }
 

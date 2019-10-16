@@ -221,7 +221,6 @@ class CompletenessAnalyzer {
         LONG(TokenKind.LONG, XEXPR1|XDECL1),  //  long
         SHORT(TokenKind.SHORT, XEXPR1|XDECL1),  //  short
         VOID(TokenKind.VOID, XEXPR1|XDECL1),  //  void
-        VAR(TokenKind.VAR, XEXPR1|XDECL1|XTERM),  //  var
 
         // Modifiers keywords
         ABSTRACT(TokenKind.ABSTRACT, XDECL1 | XMODIFIER),  //  abstract
@@ -699,7 +698,6 @@ class CompletenessAnalyzer {
                         case BRACES:
                         case SEMI:
                             return Completeness.COMPLETE;
-                        case VAR:
                         case IDENTIFIER:
                             return isBracesNeeded
                                     ? Completeness.DEFINITELY_INCOMPLETE

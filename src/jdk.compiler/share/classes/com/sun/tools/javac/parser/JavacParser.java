@@ -2649,7 +2649,7 @@ public class JavacParser implements Parser {
                         nextToken();
                         nextToken();
                         nextToken();
-                    }
+            }
                 } else if (token.name() == names.sealed && S.token(1).kind == TokenKind.CLASS) {
                     log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
                     nextToken();
@@ -4008,14 +4008,14 @@ public class JavacParser implements Parser {
                 } else {
                     if (token.kind != RBRACE && token.kind != SEMI && token.kind != EOF) {
                         if (token.kind == COMMA) {
-                nextToken();
+                            nextToken();
                         } else {
                             setErrorEndPos(token.pos);
                             reportSyntaxError(S.prevToken().endPos,
                                               Errors.Expected3(COMMA, RBRACE, SEMI));
                             wasError = true;
-            }
-        }
+                        }
+                    }
                 }
             } else {
                 if (!wasSemi && !hasStructuralErrors && !wasError) {

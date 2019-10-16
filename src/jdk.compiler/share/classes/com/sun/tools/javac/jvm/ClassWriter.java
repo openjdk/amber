@@ -26,7 +26,10 @@
 package com.sun.tools.javac.jvm;
 
 import java.io.*;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 import javax.tools.JavaFileManager;
 import javax.tools.FileObject;
@@ -352,7 +355,7 @@ public class ClassWriter extends ClassFile {
         if ((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
             (flags & ANONCONSTR) == 0 &&
             (!types.isSameType(sym.type, sym.erasure(types)) ||
-            poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
+             poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);

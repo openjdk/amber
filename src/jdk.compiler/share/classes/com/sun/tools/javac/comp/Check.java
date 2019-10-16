@@ -96,8 +96,6 @@ public class Check {
     private final Target target;
     private final Profile profile;
     private final boolean warnOnAnyAccessToMembers;
-    private final boolean debug;
-    private final boolean allowStaticMembersInInners;
 
     // The set of lint options currently in effect. It is initialized
     // from the context, and then is set/reset as needed by Attr as it
@@ -138,7 +136,6 @@ public class Check {
         source = Source.instance(context);
         target = Target.instance(context);
         warnOnAnyAccessToMembers = options.isSet("warnOnAccessToMembers");
-        allowStaticMembersInInners = options.isSet("allowStaticMembersInInners");
 
         Target target = Target.instance(context);
         syntheticNameChar = target.syntheticNameChar();
@@ -160,7 +157,6 @@ public class Check {
                 enforceMandatoryWarnings, "sunapi", null);
 
         deferredLintHandler = DeferredLintHandler.instance(context);
-        debug = options.isSet("debug");
     }
 
     /** Character for synthetic names
@@ -1143,9 +1139,6 @@ public class Check {
                 mask = VarFlags;
             break;
         case MTH:
-            if (debug) {
-                System.out.println("checking method with flags " + Flags.toString(flags));
-            }
             if (sym.name == names.init) {
                 if ((sym.owner.flags_field & ENUM) != 0) {
                     // enum constructors cannot be declared public or
@@ -1155,7 +1148,7 @@ public class Check {
                     mask = PRIVATE;
                 } else
                     mask = ConstructorFlags;
-            } else if ((sym.owner.flags_field & INTERFACE) != 0) {
+            }  else if ((sym.owner.flags_field & INTERFACE) != 0) {
                 if ((sym.owner.flags_field & ANNOTATION) != 0) {
                     mask = AnnotationTypeElementMask;
                     implicit = PUBLIC | ABSTRACT;
@@ -1179,9 +1172,6 @@ public class Check {
                 implicit |= sym.owner.flags_field & STRICTFP;
             break;
         case TYP:
-            if (debug) {
-                System.out.println("checking type with flags " + Flags.toString(flags));
-            }
             if (sym.isLocal()) {
                 mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
@@ -1194,10 +1184,9 @@ public class Check {
             } else if (sym.owner.kind == TYP) {
                 mask = (flags & RECORD) != 0 ? ExtendedMemberRecordClassFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
-                    (sym.owner.flags_field & STATIC) != 0 ||
-                    allowStaticMembersInInners)
+                    (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0 && !allowStaticMembersInInners) {
+                else if ((flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
                 }
                 // Nested interfaces and enums are always STATIC (Spec ???)
@@ -1224,9 +1213,6 @@ public class Check {
             throw new AssertionError();
         }
         long illegal = flags & ExtendedStandardFlags & ~mask;
-        if (debug) {
-            System.out.println("illegal flags: " + Flags.toString(illegal));
-        }
         if (illegal != 0) {
             if ((illegal & INTERFACE) != 0) {
                 log.error(pos, ((flags & ANNOTATION) != 0) ? Errors.AnnotationDeclNotAllowedHere : Errors.IntfNotAllowedHere);
@@ -2863,9 +2849,6 @@ public class Check {
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
         boolean isRecordMember = s.isRecord() || s.enclClass() != null && s.enclClass().isRecord();
-        if (debug) {
-            System.out.println("validating annotations for tree " + declarationTree);
-        }
 
         boolean isRecordField = isRecordMember &&
                 (s.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD)) != 0 &&
@@ -2891,7 +2874,7 @@ public class Check {
                 }
             }
             if (!appliesToRecords) {
-                log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
             } else {
                 ClassSymbol recordClass = (ClassSymbol) s.owner;
                 RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, false);

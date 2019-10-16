@@ -87,7 +87,7 @@ public class JavadocMemberEnter extends MemberEnter {
         if ((env.enclClass.mods.flags & Flags.RECORD) != 0 && TreeInfo.isConstructor(tree)) {
             tree.body.stats = List.nil();
         } else {
-            tree.body = null;
+        tree.body = null;
         }
     }
 

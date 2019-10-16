@@ -507,7 +507,7 @@ public class ObjectStreamClass implements Serializable {
                     if (isRecord) {
                         suid = 0L;
                     } else {
-                        suid = getDeclaredSUID(cl);
+                    suid = getDeclaredSUID(cl);
                     }
                     try {
                         fields = getSerialFields(cl);
@@ -562,12 +562,12 @@ public class ObjectStreamClass implements Serializable {
             }
         }
         if (!isRecord) {
-            for (int i = 0; i < fields.length; i++) {
-                if (fields[i].getField() == null) {
-                    defaultSerializeEx = new ExceptionInfo(
-                            name, "unmatched serializable field(s) declared");
-                }
+        for (int i = 0; i < fields.length; i++) {
+            if (fields[i].getField() == null) {
+                defaultSerializeEx = new ExceptionInfo(
+                    name, "unmatched serializable field(s) declared");
             }
+        }
         }
         initialized = true;
     }
@@ -1671,7 +1671,7 @@ public class ObjectStreamClass implements Serializable {
             fields = getDefaultSerialFields(cl);
             Arrays.sort(fields);
         } else if (!Externalizable.class.isAssignableFrom(cl) &&
-                   !Proxy.isProxyClass(cl) &&
+            !Proxy.isProxyClass(cl) &&
                    !cl.isInterface()) {
             if ((fields = getDeclaredSerialFields(cl)) == null) {
                 fields = getDefaultSerialFields(cl);
