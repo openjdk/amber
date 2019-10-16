@@ -46,6 +46,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.constant.Constable;
@@ -2267,6 +2268,57 @@ public final class Class<T> implements java.io.Serializable,
         return copyFields(privateGetDeclaredFields(false));
     }
 
+    /**
+     * Returns an array containing {@code RecordComponent} objects reflecting all the
+     * declared record components of the record represented by this {@code Class} object.
+     * The components are returned in the same order that they are declared in the
+     * record header.
+     *
+     * @return  The array of {@code RecordComponent} objects representing all the
+     *          record components of this record. The array is empty if this class
+     *          is not a record, or if this class is a record with no components.
+     * @throws  SecurityException
+     *          If a security manager, <i>s</i>, is present and any of the
+     *          following conditions is met:
+     *
+     *          <ul>
+     *
+     *          <li> the caller's class loader is not the same as the
+     *          class loader of this class and invocation of
+     *          {@link SecurityManager#checkPermission
+     *          s.checkPermission} method with
+     *          {@code RuntimePermission("accessDeclaredMembers")}
+     *          denies access to the declared methods within this class
+     *
+     *          <li> the caller's class loader is not the same as or an
+     *          ancestor of the class loader for the current class and
+     *          invocation of {@link SecurityManager#checkPackageAccess
+     *          s.checkPackageAccess()} denies access to the package
+     *          of this class
+     *
+     *          </ul>
+     *
+     * @since 14
+     */
+    @CallerSensitive
+    public RecordComponent[] getRecordComponents() throws SecurityException {
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
+        }
+        if (isPrimitive() || isArray()) {
+            return new RecordComponent[0];
+        }
+        Object[] recordComponents = getRecordComponents0();
+        if (recordComponents == null || recordComponents.length == 0) {
+            return new RecordComponent[0];
+        }
+        RecordComponent[] result = new RecordComponent[recordComponents.length];
+        for (int i = 0; i < recordComponents.length; i++) {
+            result[i] = (RecordComponent)recordComponents[i];
+        }
+        return result;
+    }
 
     /**
      * Returns an array containing {@code Method} objects reflecting all the
@@ -3425,6 +3477,9 @@ public final class Class<T> implements java.io.Serializable,
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
+    private native String[]     getRecordComponentNames0();
+    private native Object[]     getRecordComponents0();
+    private native boolean      isRecord0();
 
     /**
      * Helper method to get the method name from arguments.
@@ -3529,6 +3584,18 @@ public final class Class<T> implements java.io.Serializable,
         // don't do the former.
         return (this.getModifiers() & ENUM) != 0 &&
         this.getSuperclass() == java.lang.Enum.class;
+    }
+
+    /**
+     * Returns true if and only if this class was declared as a record in the
+     * source code.
+     *
+     * @return true if and only if this class was declared as a record in the
+     *     source code
+     * @since 1.12
+     */
+    public boolean isRecord() {
+        return isRecord0();
     }
 
     // Fetches the factory for reflective objects

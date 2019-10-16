@@ -642,6 +642,20 @@ public class ClassWriter {
         }
 
         @Override
+        public Void visitRecord(Record_attribute attr, ClassOutputStream out) {
+            out.writeShort(attr.component_count);
+            for (Record_attribute.ComponentInfo info: attr.component_info_arr) {
+                out.writeShort(info.name_index);
+                out.writeShort(info.descriptor.index);
+                int size = info.attributes.size();
+                out.writeShort(size);
+                for (Attribute componentAttr: info.attributes)
+                    write(componentAttr, out);
+            }
+            return null;
+        }
+
+        @Override
         public Void visitRuntimeInvisibleAnnotations(RuntimeInvisibleAnnotations_attribute attr, ClassOutputStream out) {
             annotationWriter.write(attr.annotations, out);
             return null;

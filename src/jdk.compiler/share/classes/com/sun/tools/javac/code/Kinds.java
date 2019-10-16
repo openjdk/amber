@@ -277,6 +277,7 @@ public class Kinds {
 
         case ANNOTATION_TYPE:
         case CLASS:
+        case RECORD:
             return KindName.CLASS;
 
         case INTERFACE:

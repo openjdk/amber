@@ -51,7 +51,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleAnnotationValueVisitor9;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.lang.model.util.SimpleTypeVisitor9;
 
 import com.sun.source.doctree.AttributeTree;
@@ -1512,7 +1512,8 @@ public class HtmlDocletWriter {
                 @Override
                 public Boolean visitLink(LinkTree node, Content c) {
                     // we need to pass the DocTreeImpl here, so ignore node
-                    result.add(seeTagToContent(element, tag));
+                    Content content = seeTagToContent(element, tag);
+                    result.add(content);
                     return false;
                 }
 
@@ -1666,7 +1667,7 @@ public class HtmlDocletWriter {
             return text;
         }
 
-        DocPath redirectPathFromRoot = new SimpleElementVisitor9<DocPath, Void>() {
+        DocPath redirectPathFromRoot = new SimpleElementVisitor14<DocPath, Void>() {
             @Override
             public DocPath visitType(TypeElement e, Void p) {
                 return docPaths.forPackage(utils.containingPackage(e));

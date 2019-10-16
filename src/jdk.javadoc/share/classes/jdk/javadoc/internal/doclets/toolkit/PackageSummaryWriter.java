@@ -95,6 +95,15 @@ public interface PackageSummaryWriter {
             Content summaryContentTree);
 
     /**
+     * Adds the table of records to the documentation tree.
+     *
+     * @param records the records to document.
+     * @param summaryContentTree the content tree to which the summaries will be added
+     */
+    public abstract void addRecordSummary(SortedSet<TypeElement> records,
+                                        Content summaryContentTree);
+
+    /**
      * Adds the table of exceptions to the documentation tree.
      *
      * @param exceptions the exceptions to document.

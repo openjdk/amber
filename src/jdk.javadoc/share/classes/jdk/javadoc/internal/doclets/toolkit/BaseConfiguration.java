@@ -26,13 +26,14 @@
 package jdk.javadoc.internal.doclets.toolkit;
 
 import java.io.*;
+import java.lang.ref.*;
 import java.util.*;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
@@ -1235,7 +1236,7 @@ public abstract class BaseConfiguration {
                     : docEnv.getSpecifiedElements();
 
             for (Element e : inset) {
-                new SimpleElementVisitor9<Void, Void>() {
+                new SimpleElementVisitor14<Void, Void>() {
                     @Override
                     @DefinedBy(Api.LANGUAGE_MODEL)
                     public Void visitModule(ModuleElement e, Void p) {

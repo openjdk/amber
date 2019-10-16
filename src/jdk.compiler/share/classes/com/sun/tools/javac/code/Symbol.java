@@ -42,12 +42,14 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
+import com.sun.tools.javac.code.Accessors;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.code.Type.*;
@@ -61,6 +63,7 @@ import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.Tag;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
+import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Name;
 
 import static com.sun.tools.javac.code.Flags.*;
@@ -370,6 +373,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & DEPRECATED) != 0;
     }
 
+    public boolean isRecord() {
+        return (flags_field & RECORD) != 0;
+    }
+
     public boolean hasDeprecatedAnnotation() {
         return (flags_field & DEPRECATED_ANNOTATION) != 0;
     }
@@ -402,15 +409,27 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags() & INTERFACE) != 0;
     }
 
+    public boolean isAbstract() {
+        return (flags() & ABSTRACT) != 0;
+    }
+
     public boolean isPrivate() {
         return (flags_field & Flags.AccessFlags) == PRIVATE;
+    }
+
+    public boolean isPublic() {
+        return (flags_field & Flags.AccessFlags) == PUBLIC;
     }
 
     public boolean isEnum() {
         return (flags() & ENUM) != 0;
     }
 
-    /** Is this symbol declared (directly or indirectly) local
+    public boolean isFinal() {
+        return (flags_field & FINAL) != 0;
+    }
+ 
+   /** Is this symbol declared (directly or indirectly) local
      *  to a method or variable initializer?
      *  Also includes fields of inner classes which are in
      *  turn local to a method or variable initializer.
@@ -824,7 +843,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        public java.util.List<Symbol> getEnclosedElements() {
+        public List<Symbol> getEnclosedElements() {
             List<Symbol> list = List.nil();
             if (kind == TYP && type.hasTag(TYPEVAR)) {
                 return list;
@@ -1260,6 +1279,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /** the annotation metadata attached to this class */
         private AnnotationTypeMetadata annotationTypeMetadata;
 
+        private List<RecordComponent> recordComponents = List.nil();
+
         public ClassSymbol(long flags, Name name, Type type, Symbol owner) {
             super(TYP, flags, name, type, owner);
             this.members_field = null;
@@ -1326,6 +1347,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Name getQualifiedName() {
             return fullname;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Symbol> getEnclosedElements() {
+            List<Symbol> result = super.getEnclosedElements();
+            if (!recordComponents.isEmpty()) {
+                List<RecordComponent> reversed = recordComponents.reverse();
+                for (RecordComponent rc : reversed) {
+                    result = result.prepend(rc);
+                }
+            }
+            return result;
         }
 
         public Name flatName() {
@@ -1429,6 +1462,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return ElementKind.INTERFACE;
             else if ((flags & ENUM) != 0)
                 return ElementKind.ENUM;
+            else if ((flags & RECORD) != 0)
+                return ElementKind.RECORD;
             else
                 return ElementKind.CLASS;
         }
@@ -1438,6 +1473,24 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             apiComplete();
             long flags = flags();
             return Flags.asModifierSet(flags & ~DEFAULT);
+        }
+
+        public RecordComponent getRecordComponent(VarSymbol field, boolean addIfMissing) {
+            for (RecordComponent rc : recordComponents) {
+                if (rc.name == field.name) {
+                    return rc;
+                }
+            }
+            RecordComponent rc = null;
+            if (addIfMissing) {
+                recordComponents = recordComponents.append(rc = new RecordComponent(PUBLIC, field.name, field.type, field.owner));
+            }
+            return rc;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<? extends RecordComponent> getRecordComponents() {
+            return recordComponents;
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1453,7 +1506,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return NestingKind.MEMBER;
         }
 
-
         @Override
         protected <A extends Annotation> Attribute.Compound getAttribute(final Class<A> annoType) {
 
@@ -1468,9 +1520,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return superType == null ? null
                                      : superType.getAttribute(annoType);
         }
-
-
-
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public <R, P> R accept(ElementVisitor<R, P> v, P p) {
@@ -1552,6 +1601,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public int adr = -1;
 
+        public List<Pair<Accessors.Kind, MethodSymbol>> accessors = List.nil();
+
         /** Construct a variable symbol, given its flags, name, type and owner.
          */
         public VarSymbol(long flags, Name name, Type type, Symbol owner) {
@@ -1594,6 +1645,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public Symbol asMemberOf(Type site, Types types) {
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
+        }
+
+        @Override
+        public Type erasure(Types types) {
+            if (erasure_field == null) {
+                erasure_field = types.erasure(type);
+            }
+            return erasure_field;
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1674,6 +1733,36 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public <R, P> R accept(Symbol.Visitor<R, P> v, P p) {
             return v.visitVarSymbol(this, p);
+        }
+    }
+
+    public static class RecordComponent extends VarSymbol implements RecordComponentElement {
+
+        /**
+         * Construct a record component, given its flags, name, type and owner.
+         */
+        public RecordComponent(long flags, Name name, Type type, Symbol owner) {
+            super(flags, name, type, owner);
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public ElementKind getKind() {
+            return ElementKind.RECORD_COMPONENT;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public ExecutableElement getAccessor() {
+            for (Pair<Accessors.Kind, MethodSymbol> accessor : accessors) {
+                if (accessor.fst == Accessors.Kind.GET) {
+                    return accessor.snd;
+                }
+            }
+            throw new AssertionError("record component without accessor");
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+            return v.visitRecordComponent(this, p);
         }
     }
 
@@ -1778,6 +1867,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public int poolTag() {
             return owner.isInterface() ?
                     ClassFile.CONSTANT_InterfaceMethodref : ClassFile.CONSTANT_Methodref;
+        }
+
+        public boolean isDynamic() {
+            return false;
         }
 
         public boolean isHandle() {

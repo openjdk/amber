@@ -324,12 +324,31 @@ public class Flags {
      */
     public static final long NAME_FILLED = 1L<<58; //ParamSymbols only
 
+    /**
+     * Flag to indicate that a class is a record. The flag is also used to mark fields that are
+     * part of the state vector of a record.
+     */
+    public static final long RECORD = 1L<<61;
+
+    /**
+     * Flag to mark a record constructor as a compact one
+     */
+    public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51;
+
+    /**
+     * Flag that marks if a the implementation of a record component, a field,
+     * was originally declared as a varargs
+     */
+    public static final long ORIGINALLY_VARARGS = 1L<<49;
+
     /** Modifier masks.
      */
     public static final int
         AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
         LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
+        LocalRecordFlags                 = LocalClassFlags | STATIC,
         MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
+        MemberRecordClassFlags           = MemberClassFlags | STATIC,
         ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
         InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
         VarFlags              = AccessFlags | FINAL | STATIC |
@@ -337,10 +356,17 @@ public class Flags {
         ConstructorFlags      = AccessFlags,
         InterfaceMethodFlags  = ABSTRACT | PUBLIC,
         MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
+                                           SYNCHRONIZED | FINAL | STRICTFP,
+        RecordMethodFlags                = AccessFlags | ABSTRACT | STATIC |
                                 SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
-        ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
-        ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
+        ExtendedStandardFlags            = (long)StandardFlags | DEFAULT,
+        ExtendedLocalClassFlags          = (long)LocalClassFlags,
+        ExtendedLocalRecordFlags         = (long)LocalRecordFlags,
+        ExtendedMemberClassFlags         = (long)MemberClassFlags,
+        ExtendedMemberRecordClassFlags   = (long)MemberRecordClassFlags,
+        ExtendedClassFlags               = (long)ClassFlags,
+        ModifierFlags                    = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
         InterfaceMethodMask         = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
         AnnotationTypeElementMask   = ABSTRACT | PUBLIC,
         LocalVarFlags               = FINAL | PARAMETER,
@@ -441,7 +467,8 @@ public class Flags {
         HAS_RESOURCE(Flags.HAS_RESOURCE),
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
-        NAME_FILLED(Flags.NAME_FILLED);
+        NAME_FILLED(Flags.NAME_FILLED),
+        RECORD(Flags.RECORD);
 
         Flag(long flag) {
             this.value = flag;

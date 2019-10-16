@@ -115,7 +115,7 @@ public class CheckLocalElements extends Checker {
         return encl == null ? "" : encl.accept(qualNameVisitor, null);
     }
 
-    private ElementVisitor<String,Void> qualNameVisitor = new SimpleElementVisitor9<String,Void>() {
+    private ElementVisitor<String,Void> qualNameVisitor = new SimpleElementVisitor14<String,Void>() {
         protected String defaultAction(Element e, Void ignore) {
             return "";
         }

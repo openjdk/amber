@@ -27,7 +27,9 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileManager;
 
 import com.sun.tools.javac.code.*;
@@ -116,7 +118,7 @@ public class Check {
 
         names = Names.instance(context);
         dfltTargetMeta = new Name[] { names.PACKAGE, names.TYPE,
-            names.FIELD, names.METHOD, names.CONSTRUCTOR,
+            names.FIELD, names.RECORD_COMPONENT, names.METHOD, names.CONSTRUCTOR,
             names.ANNOTATION_TYPE, names.LOCAL_VARIABLE, names.PARAMETER};
         log = Log.instance(context);
         rs = Resolve.instance(context);
@@ -1159,6 +1161,8 @@ public class Check {
                 } else {
                     mask = implicit = InterfaceMethodFlags;
                 }
+            } else if ((sym.owner.flags_field & RECORD) != 0) {
+                mask = RecordMethodFlags;
             } else {
                 mask = MethodFlags;
             }
@@ -1169,12 +1173,16 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = LocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
-                    (flags & ENUM) != 0)
+                    (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
+                }
+                if ((flags & RECORD) != 0 && (flags & STATIC) == 0) {
+                    log.error(pos, Errors.NestedRecordsMustBeStatic);
+                }
             } else if (sym.owner.kind == TYP) {
-                mask = MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? ExtendedMemberRecordClassFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
@@ -1183,7 +1191,7 @@ public class Check {
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
             } else {
-                mask = ClassFlags;
+                mask = ExtendedClassFlags;
             }
             // Interfaces are always ABSTRACT
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;
@@ -1192,6 +1200,10 @@ public class Check {
                 // enums can't be declared abstract or final
                 mask &= ~(ABSTRACT | FINAL);
                 implicit |= implicitEnumFinalFlag(tree);
+            }
+            if ((flags & RECORD) != 0) {
+                // records can't be declared abstract
+                mask &= ~ABSTRACT;
             }
             // Imply STRICTFP if owner has STRICTFP set.
             implicit |= sym.owner.flags_field & STRICTFP;
@@ -2813,9 +2825,9 @@ public class Check {
 
     /** Check the annotations of a symbol.
      */
-    public void validateAnnotations(List<JCAnnotation> annotations, Symbol s) {
+    public void validateAnnotations(List<JCAnnotation> annotations, JCTree declarationTree, Symbol s) {
         for (JCAnnotation a : annotations)
-            validateAnnotation(a, s);
+            validateAnnotation(a, declarationTree, s);
     }
 
     /** Check the type annotations.
@@ -2827,11 +2839,70 @@ public class Check {
 
     /** Check an annotation of a symbol.
      */
-    private void validateAnnotation(JCAnnotation a, Symbol s) {
+    private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
+        boolean isRecordMember = s.isRecord() || s.enclClass() != null && s.enclClass().isRecord();
 
-        if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s))
+        boolean isRecordField = isRecordMember &&
+                (s.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD)) != 0 &&
+                declarationTree.hasTag(VARDEF) &&
+                s.owner.kind == TYP;
+
+        if (isRecordField) {
+            // we are seeing a record field, which had the original annotations, now is the moment,
+            // before stripping some of them just below, to check if the original annotations
+            // applied to records at all, first version only cares about declaration annotations
+            // we will add type annotations later on
+            Name[] targets = getTargetNames(a);
+            boolean appliesToRecords = false;
+            for (Name target : targets) {
+                appliesToRecords =
+                                target == names.FIELD ||
+                                target == names.PARAMETER ||
+                                target == names.METHOD ||
+                                target == names.TYPE_USE ||
+                                target == names.RECORD_COMPONENT;
+                if (appliesToRecords) {
+                    break;
+                }
+            }
+            if (!appliesToRecords) {
             log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            } else {
+                ClassSymbol recordClass = (ClassSymbol) s.owner;
+                RecordComponent rc = recordClass.getRecordComponent((VarSymbol)s, false);
+                rc.appendAttributes(s.getRawAttributes().stream().filter(anno ->
+                    Arrays.stream(getTargetNames(anno.type.tsym)).anyMatch(name -> name == names.RECORD_COMPONENT)
+                ).collect(List.collector()));
+                rc.appendUniqueTypeAttributes(s.getRawTypeAttributes());
+                // to get all the type annotations applied to the type
+                rc.type = s.type;
+            }
+        }
+
+        //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
+
+        if (a.type.tsym.isAnnotationType() && !annotationApplicable(a, s)) {
+            // debug
+            //System.out.println("at Check.validateAnnotation: flags: " + Flags.toString(s.flags_field) + ", declaration tree " + declarationTree);
+            if (isRecordMember && (s.flags_field & Flags.MANDATED) != 0) {
+                JCModifiers modifiers = TreeInfo.getModifiers(declarationTree);
+                // lets first remove the annotation from the modifier
+                if (modifiers != null) {
+                    ListBuffer<JCAnnotation> newAnnotations = new ListBuffer<>();
+                    for (JCAnnotation anno : modifiers.annotations) {
+                        if (anno != a) {
+                            newAnnotations.add(anno);
+                        }
+                    }
+                    modifiers.annotations = newAnnotations.toList();
+                }
+                // now lets remove it from the symbol
+                s.getMetadata().remove(a.attribute);
+            } else {
+                log.error(a.pos(), Errors.AnnotationTypeNotApplicable);
+            }
+        }
 
         if (a.annotationType.type.tsym == syms.functionalInterfaceType.tsym) {
             if (s.kind != TYP) {
@@ -2990,6 +3061,7 @@ public class Check {
             targets.add(names.ANNOTATION_TYPE);
             targets.add(names.CONSTRUCTOR);
             targets.add(names.FIELD);
+            targets.add(names.RECORD_COMPONENT);
             targets.add(names.LOCAL_VARIABLE);
             targets.add(names.METHOD);
             targets.add(names.PACKAGE);
@@ -3081,23 +3153,35 @@ public class Check {
         }
 
     /** Is the annotation applicable to the symbol? */
-    boolean annotationApplicable(JCAnnotation a, Symbol s) {
-        Attribute.Array arr = getAttributeTargetAttribute(a.annotationType.type.tsym);
-        Name[] targets;
+    Name[] getTargetNames(JCAnnotation a) {
+        return getTargetNames(a.annotationType.type.tsym);
+    }
 
+    public Name[] getTargetNames(TypeSymbol annoSym) {
+        Attribute.Array arr = getAttributeTargetAttribute(annoSym);
+        Name[] targets;
         if (arr == null) {
-            targets = defaultTargetMetaInfo(a, s);
+            targets = defaultTargetMetaInfo();
         } else {
             // TODO: can we optimize this?
             targets = new Name[arr.values.length];
             for (int i=0; i<arr.values.length; ++i) {
                 Attribute app = arr.values[i];
                 if (!(app instanceof Attribute.Enum)) {
-                    return true; // recovery
+                    return new Name[0];
                 }
                 Attribute.Enum e = (Attribute.Enum) app;
                 targets[i] = e.value.name;
             }
+        }
+        return targets;
+    }
+
+    boolean annotationApplicable(JCAnnotation a, Symbol s) {
+        Name[] targets = getTargetNames(a);
+        if (targets.length == 0) {
+            // recovery
+            return true;
         }
         for (Name target : targets) {
             if (target == names.TYPE) {
@@ -3106,12 +3190,16 @@ public class Check {
             } else if (target == names.FIELD) {
                 if (s.kind == VAR && s.owner.kind != MTH)
                     return true;
+            } else if (target == names.RECORD_COMPONENT) {
+                if (s.getKind() == ElementKind.RECORD_COMPONENT) {
+                    return true;
+                }
             } else if (target == names.METHOD) {
                 if (s.kind == MTH && !s.isConstructor())
                     return true;
             } else if (target == names.PARAMETER) {
-                if (s.kind == VAR && s.owner.kind == MTH &&
-                      (s.flags() & PARAMETER) != 0) {
+                if (s.kind == VAR &&
+                    (s.owner.kind == MTH && (s.flags() & PARAMETER) != 0)) {
                     return true;
                 }
             } else if (target == names.CONSTRUCTOR) {
@@ -3158,8 +3246,8 @@ public class Check {
         return (Attribute.Array) atValue;
     }
 
-    private final Name[] dfltTargetMeta;
-    private Name[] defaultTargetMetaInfo(JCAnnotation a, Symbol s) {
+    public final Name[] dfltTargetMeta;
+    private Name[] defaultTargetMetaInfo() {
         return dfltTargetMeta;
     }
 

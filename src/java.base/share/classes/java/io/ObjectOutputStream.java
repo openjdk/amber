@@ -150,6 +150,26 @@ import sun.reflect.misc.ReflectUtil;
  * defaultWriteObject and writeFields initially terminate any existing
  * block-data record.
  *
+ * @apiNote
+ * Records are serialized differently than ordinary serializable or externalizable
+ * objects. The serialized form of a record object is a sequence of values derived
+ * from the record components. The stream format of a record object is the same as
+ * that of an ordinary object in the stream. During deserialization, if the local
+ * class equivalent of the specified stream class descriptor is a record class,
+ * then first the stream fields are read and reconstructed to serve as the record's
+ * component values; and second, a record object is created by invoking the
+ * record's <i>canonical</i> constructor with the component values as arguments (or the
+ * default value for component's type if a component value is absent from the
+ * stream).
+ * The process by which record objects are serialized cannot be customized; any
+ * class-specific writeObject, readObject, readObjectNoData, writeExternal,
+ * and readExternal methods defined by record classes are ignored during
+ * serialization and deserialization. However, a substitute object to be serialized
+ * or a designate replacement may be specified by the writeReplace and
+ * readResolve methods, respectively. Any serialPersistentFields or
+ * serialVersionUID field declarations are also ignored -- all record classes
+ * have a fixed serialVersionUID of`0L.
+ *
  * @author      Mike Warres
  * @author      Roger Riggs
  * @see java.io.DataOutput
@@ -1431,7 +1451,11 @@ public class ObjectOutputStream
             bout.writeByte(TC_OBJECT);
             writeClassDesc(desc, false);
             handles.assign(unshared ? null : obj);
-            if (desc.isExternalizable() && !desc.isProxy()) {
+
+            final boolean isRecord = obj.getClass().isRecord() ? true : false;
+            if (isRecord) {
+                writeRecordData(obj,desc);
+            } else if (desc.isExternalizable() && !desc.isProxy()) {
                 writeExternalData((Externalizable) obj);
             } else {
                 writeSerialData(obj, desc);
@@ -1473,6 +1497,18 @@ public class ObjectOutputStream
         }
 
         curPut = oldPut;
+    }
+
+    /** Writes the record component values for the given record object. */
+    private void writeRecordData(Object obj, ObjectStreamClass desc)
+        throws IOException
+    {
+        assert obj.getClass().isRecord();
+        ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
+        if (slots.length != 1)
+            throw new InternalError("expected slot length: " + slots.length);
+
+        defaultWriteFields(obj, desc);  // TODO: use record accessors
     }
 
     /**

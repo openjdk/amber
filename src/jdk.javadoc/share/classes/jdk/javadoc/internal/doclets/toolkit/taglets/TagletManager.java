@@ -34,7 +34,7 @@ import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.SimpleElementVisitor9;
+import javax.lang.model.util.SimpleElementVisitor14;
 import javax.tools.JavaFileManager;
 import javax.tools.StandardJavaFileManager;
 
@@ -365,7 +365,7 @@ public class TagletManager {
                 if (element == null) {
                     return;
                 }
-                new SimpleElementVisitor9<Void, Void>() {
+                new SimpleElementVisitor14<Void, Void>() {
                     @Override
                     public Void visitModule(ModuleElement e, Void p) {
                         if (!taglet.inModule()) {
@@ -521,6 +521,7 @@ public class TagletManager {
             case INTERFACE:
             case CLASS:
             case ENUM:
+            case RECORD:
                 return blockTagletsBySite.get(Site.TYPE);
             case MODULE:
                 return blockTagletsBySite.get(Site.MODULE);
@@ -642,6 +643,8 @@ public class TagletManager {
         addStandardTaglet(new CodeTaglet());
         addStandardTaglet(new IndexTaglet());
         addStandardTaglet(new SummaryTaglet());
+        addStandardTaglet(new AccessorTaglet(GETTER));
+        addStandardTaglet(new AccessorTaglet(SETTER));
         addStandardTaglet(new SystemPropertyTaglet());
 
         // Keep track of the names of standard tags for error checking purposes.

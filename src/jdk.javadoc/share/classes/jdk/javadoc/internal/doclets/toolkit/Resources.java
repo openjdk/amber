@@ -49,6 +49,7 @@ public class Resources {
     public final String exceptionSummary;
     public final String interfaceSummary;
     public final String packageSummary;
+    public final String recordSummary;
 
     protected ResourceBundle commonBundle;
     protected ResourceBundle docletBundle;
@@ -76,6 +77,7 @@ public class Resources {
         this.exceptionSummary = getText("doclet.Exception_Summary");
         this.interfaceSummary = getText("doclet.Interface_Summary");
         this.packageSummary = getText("doclet.Package_Summary");
+        this.recordSummary = getText("doclet.Record_Summary");
     }
 
     /**

@@ -105,6 +105,10 @@ public class ClassReader {
      */
     boolean allowModules;
 
+    /** Switch: allow records
+     */
+    boolean allowRecords;
+
    /** Lint option: warn about classfile issues
      */
     boolean lintClassfile;
@@ -264,6 +268,7 @@ public class ClassReader {
         Source source = Source.instance(context);
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
+        allowRecords = Feature.RECORDS.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -1184,6 +1189,19 @@ public class ClassReader {
                     }
                 }
             },
+
+            new AttributeReader(names.Record, V57, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowRecords;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        sym.flags_field |= RECORD;
+                    }
+                    bp = bp + attrLen;
+                }
+            }
         };
 
         for (AttributeReader r: readers)

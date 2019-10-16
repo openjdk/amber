@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 
 import javax.lang.model.AnnotatedConstruct;
 import javax.lang.model.element.*;
@@ -629,4 +630,38 @@ public interface Elements {
      * @since 1.8
      */
     boolean isFunctionalInterface(TypeElement type);
+
+    /**
+     * TODO: needed? @see RecordComponentElement#getAccessor()
+     *
+     * Returns the executable element for the getter associated with the given variable element.
+     *
+     * @implSpec The default implementation of this method returns
+     * {@code null}.
+     *
+     * @param variableElement the field for which the getter is to be found.
+     * @return the field's getter; otherwise {@code null} if there is no getter.
+     * @since amber
+     */
+    default ExecutableElement getterFor(VariableElement variableElement) {
+        return null;
+    }
+
+    /**
+     * Returns the record component for the given accessor. Returns null if the
+     * given method is not a record component accessor.
+     *
+     * @param accessor the method for which the record component should be found.
+     * @return the record component, or null if the given method is not an record component accessor
+     */
+    default RecordComponentElement recordComponentFor(ExecutableElement accessor) {
+        if (accessor.getEnclosingElement().getKind() == ElementKind.RECORD) {
+            for (RecordComponentElement rec : ElementFilter.recordComponentsIn(accessor.getEnclosingElement().getEnclosedElements())) {
+                if (Objects.equals(rec.getAccessor(), accessor)) {
+                    return rec;
+                }
+            }
+        }
+        return null;
+    }
 }

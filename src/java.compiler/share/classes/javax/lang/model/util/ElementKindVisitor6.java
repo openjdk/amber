@@ -80,6 +80,7 @@ import javax.lang.model.SourceVersion;
  * @see ElementKindVisitor7
  * @see ElementKindVisitor8
  * @see ElementKindVisitor9
+ * @see ElementKindVisitor14
  * @since 1.6
  */
 @SupportedSourceVersion(RELEASE_6)
@@ -154,6 +155,9 @@ public class ElementKindVisitor6<R, P>
         case INTERFACE:
             return visitTypeAsInterface(e, p);
 
+        case RECORD:
+            return visitTypeAsRecord(e, p);
+
         default:
             throw new AssertionError("Bad kind " + k + " for TypeElement" + e);
         }
@@ -209,6 +213,21 @@ public class ElementKindVisitor6<R, P>
      */
     public R visitTypeAsInterface(TypeElement e, P p) {
         return defaultAction(e, p);
+    }
+
+    /**
+     * Visits a {@code RECORD} type element.
+     *
+     * @implSpec This implementation calls {@code visitUnknown}.
+     *.
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code visitUnknown}
+     *
+     * @since amber
+     */
+    public R visitTypeAsRecord(TypeElement e, P p) {
+        return visitUnknown(e, p);
     }
 
     /**
