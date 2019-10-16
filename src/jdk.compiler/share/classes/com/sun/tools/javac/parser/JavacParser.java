@@ -2579,18 +2579,21 @@ public class JavacParser implements Parser {
                 return List.<JCStatement>of(expr);
             }
         case VOID: {
-            List<JCTypeParameter> params = typeParametersOpt();
-            JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-            JCExpression returnType = null;
-            if (token.kind == VOID) {
-                accept(VOID);
-            } else {
-                returnType = term(EXPR | TYPE);
+            if (token.kind == LT || peekToken(IDENTIFIER)) {
+                List<JCTypeParameter> params = typeParametersOpt();
+                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+                JCExpression returnType = null;
+                if (token.kind == VOID) {
+                    accept(VOID);
+                } else {
+                    returnType = term(EXPR | TYPE);
+                }
+                ListBuffer<JCStatement> stats = new ListBuffer<>();
+                stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
+                storeEnd(stats.last(), S.prevToken().endPos);
+                return stats.toList();
             }
-            ListBuffer<JCStatement> stats = new ListBuffer<>();
-            stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
-            storeEnd(stats.last(), S.prevToken().endPos);
-            return stats.toList();
+            //else intentional fall-through
         }
         case IDENTIFIER:
             if (token.name() == names.yield && allowYieldStatement) {
