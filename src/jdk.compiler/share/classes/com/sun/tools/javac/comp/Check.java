@@ -1173,7 +1173,7 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
                 if ((sym.owner.flags_field & STATIC) == 0 &&
                     (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
@@ -1182,7 +1182,7 @@ public class Check {
                     log.error(pos, Errors.NestedRecordsMustBeStatic);
                 }
             } else if (sym.owner.kind == TYP) {
-                mask = (flags & RECORD) != 0 ? ExtendedMemberRecordClassFlags : ExtendedMemberClassFlags;
+                mask = (flags & RECORD) != 0 ? MemberRecordClassFlags : MemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
@@ -1191,7 +1191,7 @@ public class Check {
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
             } else {
-                mask = ExtendedClassFlags;
+                mask = ClassFlags;
             }
             // Interfaces are always ABSTRACT
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;

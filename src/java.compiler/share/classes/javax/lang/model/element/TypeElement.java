@@ -195,22 +195,6 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
     }
 
     /**
-     * Returns the permitted subtypes of this type element in
-     * declaration order.
-     *
-     * @implSpec The default implementations of this method returns an
-     * empty and unmodifiable list.
-     *
-     * @return the permitted subtypes, or an empty list
-     * if there are none
-     *
-     * @since amber
-     */
-    default List<? extends TypeMirror> getPermittedSubtypes() {
-        return List.of();
-    }
-
-    /**
      * Returns the package of a top-level type and returns the
      * immediately lexically enclosing element for a {@linkplain
      * NestingKind#isNested nested} type.

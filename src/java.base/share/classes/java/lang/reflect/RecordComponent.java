@@ -15,17 +15,15 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@code RecordComponent} provides information about, and dynamic access to, a
- * record component in a record class. Record components can only be created by the VM
- * runtime, thus no public constructor is provided.
+ * A {@linkplain RecordComponent} provides information about, and dynamic access to, a
+ * component of a record class.  
  *
- * @see AnnotatedElement
- * @see java.lang.Class
+ * @see Class#getRecordComponents() 
+ * @see java.lang.Record
  *
  * @since 14
  */
-public final
-class RecordComponent implements AnnotatedElement {
+public final class RecordComponent implements AnnotatedElement {
     // declaring class
     private Class<?> clazz;
     private String name;
@@ -42,9 +40,9 @@ class RecordComponent implements AnnotatedElement {
     private RecordComponent() {}
 
     /**
-     * Returns the name of the record component represented by this {@code RecordComponent} object.
+     * Returns the name of the component represented by this record component.
      *
-     * @return the name of the record component represented by this {@code RecordComponent} object.
+     * @return the name of the component represented by this record component.
      */
     public String getName() {
         return name;
@@ -55,41 +53,41 @@ class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@code Class} object that identifies the
-     * declared type for the record component represented by this
-     * {@code RecordComponent} object.
+     * Returns a {@link Class} that identifies the
+     * declared type for the component represented by this
+     * record component.
      *
-     * @return a {@code Class} object identifying the declared
-     * type of the record component represented by this object
+     * @return a {@link Class} identifying the declared
+     * type of the component represented by this record component
      */
     public Class<?> getType() {
         return type;
     }
 
     /**
-     * Returns a {@code String} object that identifies the
-     * generic type.
+     * Returns a {@linkplain String} that describes the
+     * generic type signature for this record component.
      *
-     * @return a {@code String} object identifying the generic declared
-     * type of the record component represented by this object
+     * @return a {@linkplain String} that describes the generic type signature
+     * for this record component.
      */
     public String getGenericSignature() {
         return signature;
     }
 
     /**
-     * Returns a {@code Type} object that represents the declared type for
-     * the record component represented by this {@code RecordComponent} object.
+     * Returns a {@link Type} object that represents the declared type for
+     * the record component represented by this {@linkplain RecordComponent}.
      *
      * <p>If the declared type of the record component is a parameterized type,
-     * the {@code Type} object returned must accurately reflect the
+     * the {@link Type} object returned reflects the
      * actual type arguments used in the source code.
      *
      * <p>If the type of the underlying record component is a type variable or a
      * parameterized type, it is created. Otherwise, it is resolved.
      *
-     * @return a {@code Type} object that represents the declared type for
-     *     the record component represented by this {@code RecordComponent} object
+     * @return a {@link Type} object that represents the declared type for
+     *     the record component represented by this {@linkplain RecordComponent}
      * @throws GenericSignatureFormatError if the generic record component
      *     signature does not conform to the format specified in
      *     <cite>The Java&trade; Virtual Machine Specification</cite>
@@ -126,12 +124,12 @@ class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns an {@code AnnotatedType} object that represents the use of a type to specify
+     * Returns an {@link AnnotatedType} that represents the use of a type to specify
      * the annotated type of the record component represented by this
-     * {@code RecordComponent}.
+     * {@linkplain RecordComponent}.
      *
      * @return an object representing the declared type of the record component
-     * represented by this {@code RecordComponent}
+     * represented by this {@linkplain RecordComponent}
      */
     public AnnotatedType getAnnotatedType() {
         if (typeAnnotations != null) {
@@ -148,11 +146,11 @@ class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@code Method} object that represents the accessor for the
-     * record component represented by this {@code RecordComponent} object.
+     * Returns a {@link Method} that represents the accessor for the
+     * record component represented by this {@linkplain RecordComponent}.
      *
-     * @return a {@code Method} object that represents the accessor for the
-     * record component represented by this {@code RecordComponent} object.
+     * @return a {@link Method} that represents the accessor for the
+     * record component represented by this {@linkplain RecordComponent}.
      */
     public Method getAccessor() {
         return accessor;
@@ -200,39 +198,15 @@ class RecordComponent implements AnnotatedElement {
     public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
 
     /**
-     * Returns {@code true} if this {@code RecordComponent} was declared with
-     * variable arity; returns {@code false} otherwise.
-     *
-     * @return {@code true} if an only if this {@code RecordComponent} was declared
-     * with a variable arity.
-     */
-    public boolean isVarArgs()  {
-        RecordComponent[] recordComponents = getDeclaringClass().getRecordComponents();
-        if (recordComponents == null || recordComponents.length == 0) {
-            return false;
-        }
-        try {
-            Constructor<?> canonical = getDeclaringClass()
-                    .getConstructor(Arrays.stream(recordComponents).map(RecordComponent::getAccessor)
-                            .map(Method::getReturnType).toArray(Class<?>[]::new));
-            return canonical.isVarArgs() && this.getName().equals(recordComponents[recordComponents.length - 1].getName());
-        } catch (NoSuchMethodException nsme) {
-            throw new IncompatibleClassChangeError(
-                    String.format("a canonical constructor couldn't be found for record %s",
-                            getDeclaringClass().getCanonicalName()));
-        }
-    }
-
-    /**
-     * Returns a string describing this {@code RecordComponent}, including
-     * its generic type.  The format is the access modifiers for the
+     * Returns a string describing this {@linkplain RecordComponent}, including
+     * its generic type.  The format is: the access modifiers for the
      * record component, always {@code private} and {@code final}, in that
      * order, followed by the generic record component type, followed by a
      * space, followed by the fully-qualified name of the class declaring
      * the record component, followed by a period, followed by the name of
      * the record component.
      *
-     * @return a string describing this {@code RecordComponent}, including
+     * @return a string describing this {@linkplain RecordComponent}, including
      * its generic type
      */
     public String toGenericString() {

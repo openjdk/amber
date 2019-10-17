@@ -803,18 +803,4 @@ public class JavacElements implements Elements {
     public void newRound() {
         resultCache.clear();
     }
-
-    @Override
-    public ExecutableElement getterFor(VariableElement variableElement) {
-        return accessorFor(Kind.GET, variableElement);
-    }
-
-    private ExecutableElement accessorFor(Accessors.Kind kind, VariableElement variableElement) {
-        for (Pair<Accessors.Kind, MethodSymbol> accessor : ((VarSymbol)variableElement).accessors) {
-            if (accessor.fst == kind) {
-                return accessor.snd;
-            }
-        }
-        return null;
-    }
 }

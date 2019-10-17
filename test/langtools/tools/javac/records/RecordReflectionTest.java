@@ -113,22 +113,6 @@ public class RecordReflectionTest {
     record R6(long l, String... args) {}
     record R7(String s1, String s2, String... args) {}
 
-    @DataProvider(name = "varArgsData")
-    public Object[][] varArgsData() {
-        return new Object[][] {
-                new Object[] { new R5("h", "e", "l", "l", "o"),     1 },
-                new Object[] { new R6(5L, "w", "o", "r", "l", "d"), 2 },
-                new Object[] { new R7("s1", "s2", "b", "y", "e") ,  3 },
-        };
-    }
-
-    @Test(dataProvider = "varArgsData")
-    public void testVarArgs(Object recordObj, int numberOfComponents) {
-        assertTrue(recordObj.getClass().isRecord());
-        assertEquals(recordObj.getClass().getRecordComponents().length, numberOfComponents);
-        assertTrue(recordObj.getClass().getRecordComponents()[numberOfComponents-1].isVarArgs());
-    }
-
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ ElementType.RECORD_COMPONENT, ElementType.FIELD })
     @interface RCA {}

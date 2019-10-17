@@ -106,8 +106,6 @@ public class JavacParser implements Parser {
     /** End position mappings container */
     protected final AbstractEndPosTable endPosTable;
 
-    private final boolean debug;
-
     // Because of javac's limited lookahead, some contexts are ambiguous in
     // the presence of type annotations even though they are not ambiguous
     // in the absence of type annotations.  Consider this code:
@@ -191,7 +189,6 @@ public class JavacParser implements Parser {
                 (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
                 */
-        debug = fac.options.isSet("debug");
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -4102,9 +4099,6 @@ public class JavacParser implements Parser {
             Comment dc = token.comment(CommentStyle.JAVADOC);
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
-            if (debug) {
-                System.out.println("read flags " + Flags.toString(mods.flags));
-            }
             if (token.kind == CLASS ||
                 isRecordToken() ||
                 token.kind == INTERFACE ||

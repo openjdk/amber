@@ -357,16 +357,11 @@ public class Flags {
         InterfaceMethodFlags  = ABSTRACT | PUBLIC,
         MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
                                            SYNCHRONIZED | FINAL | STRICTFP,
-        RecordMethodFlags                = AccessFlags | ABSTRACT | STATIC |
+        RecordMethodFlags     = AccessFlags | ABSTRACT | STATIC |
                                 SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
-        ExtendedStandardFlags            = (long)StandardFlags | DEFAULT,
-        ExtendedLocalClassFlags          = (long)LocalClassFlags,
-        ExtendedLocalRecordFlags         = (long)LocalRecordFlags,
-        ExtendedMemberClassFlags         = (long)MemberClassFlags,
-        ExtendedMemberRecordClassFlags   = (long)MemberRecordClassFlags,
-        ExtendedClassFlags               = (long)ClassFlags,
-        ModifierFlags                    = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
+        ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
+        ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
         InterfaceMethodMask         = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
         AnnotationTypeElementMask   = ABSTRACT | PUBLIC,
         LocalVarFlags               = FINAL | PARAMETER,

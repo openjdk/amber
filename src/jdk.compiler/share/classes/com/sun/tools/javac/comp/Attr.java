@@ -2664,7 +2664,6 @@ public class Attr extends JCTree.Visitor {
             if (needsRecovery && isSerializable(pt())) {
                 localEnv.info.isSerializable = true;
                 localEnv.info.isSerializableLambda = true;
-                localEnv.info.isSerializableLambda = true;
             }
             localEnv.info.isLambda = true;
             List<Type> explicitParamTypes = null;

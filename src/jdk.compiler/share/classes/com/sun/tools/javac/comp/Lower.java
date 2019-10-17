@@ -2295,12 +2295,6 @@ public class Lower extends TreeTranslator {
                                     buffer.add(make.MethodDef(accessorSym, make.Block(0,
                                             List.of(make.Return(make.Ident(vd.sym))))));
                                     break;
-                                case SET:
-                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
-                                            List.of(make.Exec(
-                                                    make.Assign(make.Ident(vd.sym), make.Ident(accessorSym.params.head))
-                                                            .setType(vd.sym.type))))));
-                                    break;
                                 default:
                                     Assert.error("Cannot get here!");
                             }
@@ -2482,10 +2476,23 @@ public class Lower extends TreeTranslator {
             prepend(makeLit(syms.stringType, var.name.toString()));
     }
 
+    private List<VarSymbol> recordVars(Type t) {
+        List<VarSymbol> vars = List.nil();
+        while (!t.hasTag(NONE)) {
+            if (t.hasTag(CLASS)) {
+                for (Symbol s : t.tsym.members().getSymbols(s -> s.kind == VAR && (s.flags() & RECORD) != 0)) {
+                    vars = vars.prepend((VarSymbol)s);
+                }
+            }
+            t = types.supertype(t);
+        }
+        return vars;
+    }
+
     /** Translate a record. */
     private void visitRecordDef(JCClassDecl tree) {
         make_at(tree.pos());
-        List<VarSymbol> vars = types.recordVars(tree.type);
+        List<VarSymbol> vars = recordVars(tree.type);
         MethodHandleSymbol[] getterMethHandles = new MethodHandleSymbol[vars.size()];
         // for the extractor we use the user provided getter, for the rest we access the field directly
         MethodHandleSymbol[] getterMethHandlesForExtractor = new MethodHandleSymbol[vars.size()];

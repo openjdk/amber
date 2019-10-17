@@ -632,22 +632,6 @@ public interface Elements {
     boolean isFunctionalInterface(TypeElement type);
 
     /**
-     * TODO: needed? @see RecordComponentElement#getAccessor()
-     *
-     * Returns the executable element for the getter associated with the given variable element.
-     *
-     * @implSpec The default implementation of this method returns
-     * {@code null}.
-     *
-     * @param variableElement the field for which the getter is to be found.
-     * @return the field's getter; otherwise {@code null} if there is no getter.
-     * @since amber
-     */
-    default ExecutableElement getterFor(VariableElement variableElement) {
-        return null;
-    }
-
-    /**
      * Returns the record component for the given accessor. Returns null if the
      * given method is not a record component accessor.
      *
