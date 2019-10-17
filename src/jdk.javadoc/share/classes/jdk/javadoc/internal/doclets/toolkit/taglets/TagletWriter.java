@@ -154,15 +154,6 @@ public abstract class TagletWriter {
     protected abstract Content seeTagOutput(Element holder, List<? extends DocTree> seeTags);
 
     /**
-     * Return the accessor tag output.
-     *
-     * @param holder
-     * @param tags the accessor tags
-     * @return the output of the accessor tag.
-     */
-    protected abstract Content accessorTagOutput(Element holder, List<? extends DocTree> tags);
-
-    /**
      * Return the output for a simple tag.
      *
      * @param element

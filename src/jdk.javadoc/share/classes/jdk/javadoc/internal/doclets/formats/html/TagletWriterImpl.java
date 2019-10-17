@@ -282,26 +282,6 @@ public class TagletWriterImpl extends TagletWriter {
 
     }
 
-    public Content accessorTagOutput(Element holder, List<? extends DocTree> tags) {
-        if (!tags.isEmpty()) {
-            //Todo: check that there's only one tag
-            DocTree.Kind kind = tags.get(0).getKind();
-            ExecutableElement accessor = utils.findAccessorFor((VariableElement)holder, kind);
-            //add reference to getter/setter
-            Content body = htmlWriter.getDocLink(LinkInfoImpl.Kind.SEE_TAG, (TypeElement)holder.getEnclosingElement(),
-                    accessor, accessor.getSimpleName() + utils.makeSignature(accessor, true), false, false);
-            ContentBuilder result = new ContentBuilder();
-            String key = kind == Kind.GETTER ?
-                    "doclet.getter" : "doclet.setter";
-            result.add(HtmlTree.DT(HtmlTree.SPAN(HtmlStyle.seeLabel,
-                    new StringContent(resources.getText(key)))));
-            result.add(HtmlTree.DD(body));
-            return result;
-        } else {
-            return new ContentBuilder();
-        }
-    }
-
     private void appendSeparatorIfNotEmpty(ContentBuilder body) {
         if (!body.isEmpty()) {
             body.add(", ");
