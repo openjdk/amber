@@ -517,6 +517,7 @@ public class Flow {
         public void visitMethodDef(JCMethodDecl tree) {
             if (tree.body == null) return;
             Lint lintPrev = lint;
+            Liveness prevAlive = alive;
 
             lint = lint.augment(tree.sym);
 
@@ -539,6 +540,7 @@ public class Flow {
                 }
             } finally {
                 lint = lintPrev;
+                alive = prevAlive;
             }
         }
 
