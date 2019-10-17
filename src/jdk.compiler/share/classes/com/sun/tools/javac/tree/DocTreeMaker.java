@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -55,7 +55,6 @@ import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.parser.ReferenceParser;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.Comment.CommentStyle;
-import com.sun.tools.javac.tree.DCTree.DCAccessor;
 import com.sun.tools.javac.tree.DCTree.DCAttribute;
 import com.sun.tools.javac.tree.DCTree.DCAuthor;
 import com.sun.tools.javac.tree.DCTree.DCComment;
@@ -357,13 +356,6 @@ public class DocTreeMaker implements DocTreeFactory {
     @Override @DefinedBy(Api.COMPILER_TREE)
     public DCLiteral newLiteralTree(TextTree text) {
         DCLiteral tree = new DCLiteral(Kind.LITERAL, (DCText) text);
-        tree.pos = pos;
-        return tree;
-    }
-
-    @Override @DefinedBy(Api.COMPILER_TREE)
-    public DCAccessor newAccessorTree(Kind kind, List<? extends DocTree> desc) {
-        DCAccessor tree = new DCAccessor(kind, desc);
         tree.pos = pos;
         return tree;
     }

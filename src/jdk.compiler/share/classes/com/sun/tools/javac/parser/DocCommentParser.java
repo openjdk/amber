@@ -1323,12 +1323,6 @@ public class DocCommentParser {
                 }
             },
 
-            // {@getter text}
-            new AccessorParser(DCTree.Kind.GETTER),
-
-            // {@getter text}
-            new AccessorParser(DCTree.Kind.SETTER),
-
             // @param parameter-name description
             new TagParser(Kind.BLOCK, DCTree.Kind.PARAM) {
                 public DCTree parse(int pos) throws ParseException {
@@ -1532,16 +1526,5 @@ public class DocCommentParser {
         for (TagParser p: parsers)
             tagParsers.put(names.fromString(p.getTreeKind().tagName), p);
 
-    }
-
-    class AccessorParser extends TagParser {
-        AccessorParser(DocTree.Kind kind) {
-            super(Kind.BLOCK, kind, true);
-        }
-
-        public DCTree parse(int pos) throws ParseException {
-            List<DCTree> desc = blockContent();
-            return m.at(pos).newAccessorTree(treeKind, desc);
-        }
     }
 }
