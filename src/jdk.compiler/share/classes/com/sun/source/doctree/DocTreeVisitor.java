@@ -57,14 +57,6 @@ package com.sun.source.doctree;
 public interface DocTreeVisitor<R,P> {
 
     /**
-     * Visits an AaccessorTree node.
-     * @param node the node being visited
-     * @param p a parameter value
-     * @return a result value
-     */
-    R visitAccessor(AccessorTree node, P p);
-
-    /**
      * Visits an AttributeTree node.
      * @param node the node being visited
      * @param p a parameter value

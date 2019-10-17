@@ -31,7 +31,6 @@ import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import com.sun.source.doctree.AccessorTree;
 import com.sun.source.doctree.AttributeTree;
 import com.sun.source.doctree.AttributeTree.ValueKind;
 import com.sun.source.doctree.AuthorTree;
