@@ -58,8 +58,8 @@ public class TestSealed extends JavacTestingAbstractProcessor {
 
     sealed interface SealedI permits Sub1, Sub2 {}
 
-    class Sub1 implements SealedI {}
-    class Sub2 implements SealedI {}
+    final class Sub1 implements SealedI {}
+    final class Sub2 implements SealedI {}
 
     class SealedScanner extends ElementScanner<Void, Void> {
 
