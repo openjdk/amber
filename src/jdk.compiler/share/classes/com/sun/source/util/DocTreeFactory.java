@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -235,13 +235,6 @@ public interface DocTreeFactory {
      * @return a {@code LiteralTree} object
      */
     LiteralTree newLiteralTree(TextTree text);
-
-    /**
-     * Create a new {@code AccessorTree} object, to represent a {@code @getter} tag.
-     * @param description the content of the tag
-     * @return a {@code AccessorTree} object
-     */
-    AccessorTree newAccessorTree(Kind kind, List<? extends DocTree> description);
 
     /**
      * Create a new {@code ParamTree} object, to represent a {@code @param } tag.
