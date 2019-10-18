@@ -34,14 +34,15 @@
  *          jdk.jartool/sun.tools.jar
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
- * @compile Host/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttr Host
- * @compile HostA/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttr HostA
- * @compile HostAB/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttr HostAB
- * @compile HostABC/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttr HostABC
+ * @compile --enable-preview -source 14 Host/Host.java
+ * @compile --enable-preview -source 14 TestRecordAttr.java
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr Host
+ * @compile --enable-preview -source 14 HostA/Host.java
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostA
+ * @compile --enable-preview -source 14 HostAB/Host.java
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostAB
+ * @compile --enable-preview -source 14 HostABC/Host.java
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostABC
  */
 
 /* Test Description
@@ -269,6 +270,7 @@ public class TestRecordAttr {
         CompilerUtils.compile(src.toPath(),
                               dst.toPath(),
                               false /* don't recurse */,
-                              new String[0]);
+                              "--enable-preview",
+                              "--source", "14");
     }
 }

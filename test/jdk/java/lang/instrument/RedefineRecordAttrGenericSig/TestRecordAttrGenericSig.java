@@ -34,10 +34,11 @@
  *          jdk.jartool/sun.tools.jar
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
- * @compile Host/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttrGenericSig Host
- * @compile HostA/Host.java
- * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace TestRecordAttrGenericSig HostA
+ * @compile --enable-preview --source 14 Host/Host.java
+ * @compile --enable-preview --source 14 TestRecordAttrGenericSig.java
+ * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace --enable-preview TestRecordAttrGenericSig Host
+ * @compile --enable-preview --source 14 HostA/Host.java
+ * @run main/othervm -javaagent:redefineagent.jar -Xlog:redefine+class+record=trace --enable-preview TestRecordAttrGenericSig HostA
  */
 
 /* Test Description
@@ -207,6 +208,7 @@ public class TestRecordAttrGenericSig {
         CompilerUtils.compile(src.toPath(),
                               dst.toPath(),
                               false /* don't recurse */,
-                              new String[0]);
+                              "--enable-preview",
+                              "--source", "14");
     }
 }

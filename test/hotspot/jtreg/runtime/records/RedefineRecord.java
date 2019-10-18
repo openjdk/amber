@@ -28,8 +28,9 @@
  * @modules java.base/jdk.internal.misc
  * @modules java.instrument
  *          jdk.jartool/sun.tools.jar
- * @run main RedefineRecord buildagent
- * @run main/othervm/timeout=6000  RedefineRecord runtest
+ * @compile --enable-preview -source 14 RedefineRecord.java
+ * @run main/othervm --enable-preview RedefineRecord buildagent
+ * @run main/othervm/timeout=6000 --enable-preview RedefineRecord runtest
  */
 
 import java.io.FileNotFoundException;
@@ -95,7 +96,8 @@ public class RedefineRecord {
         }
         if (argv.length == 1 && argv[0].equals("runtest")) {
             String[] javaArgs1 = { "-XX:MetaspaceSize=12m", "-XX:MaxMetaspaceSize=12m",
-                                   "-javaagent:redefineagent.jar", "RedefineRecord"};
+                                   "-javaagent:redefineagent.jar", "--enable-preview",
+                                   "RedefineRecord"};
             ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(javaArgs1);
             OutputAnalyzer output = new OutputAnalyzer(pb.start());
             output.shouldNotContain("processing of -javaagent failed");
