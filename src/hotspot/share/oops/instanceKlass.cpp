@@ -3245,8 +3245,9 @@ void InstanceKlass::print_on(outputStream* st) const {
   }
   st->print(BULLET"inner classes:     "); inner_classes()->print_value_on(st);     st->cr();
   st->print(BULLET"nest members:     "); nest_members()->print_value_on(st);     st->cr();
-  // TBD - need to check for NULL?
-  st->print(BULLET"record components:     "); record_components()->print_value_on(st);     st->cr();
+  if (record_components() != NULL) {
+    st->print(BULLET"record components:     "); record_components()->print_value_on(st);     st->cr();
+  }
   if (java_mirror() != NULL) {
     st->print(BULLET"java mirror:       ");
     java_mirror()->print_value_on(st);

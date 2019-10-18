@@ -3055,7 +3055,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
     accessor_method = holder->find_instance_method(name, full_sig);
   }
 
-  if (accessor_method != NULL) { // TBD should a null accessor method be an error?
+  if (accessor_method != NULL) {
     methodHandle method(THREAD, accessor_method);
     oop m = Reflection::new_method(method, false, CHECK_0);
     java_lang_reflect_RecordComponent::set_accessor(element(), m);
@@ -3065,7 +3065,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
 
   int sig_index = component->generic_signature_index();
   if (sig_index > 0) {
-    Symbol* sig = holder->constants()->symbol_at(sig_index); // name_index is a utf8
+    Symbol* sig = holder->constants()->symbol_at(sig_index); // sig_index is a utf8
     oop component_sig = StringTable::intern(sig, CHECK_0);
     java_lang_reflect_RecordComponent::set_signature(element(), component_sig);
   } else {

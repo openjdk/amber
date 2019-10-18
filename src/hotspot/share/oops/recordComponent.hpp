@@ -63,12 +63,19 @@ class RecordComponent: public MetaspaceObj {
     void deallocate_contents(ClassLoaderData* loader_data);
 
     u2 name_index() const { return _name_index; }
+    void set_name_index(u2 name_index) { _name_index = name_index; }
 
     u2 descriptor_index() const { return _descriptor_index; }
+    void set_descriptor_index(u2 descriptor_index) {
+      _descriptor_index = descriptor_index;
+    }
 
     u2 attributes_count() const { return _attributes_count; }
 
     u2 generic_signature_index() const { return _generic_signature_index; }
+    void set_generic_signature_index(u2 generic_signature_index) {
+      _generic_signature_index = generic_signature_index;
+    }
 
     AnnotationArray* annotations() const { return _annotations; }
     AnnotationArray* type_annotations() const { return _type_annotations; }

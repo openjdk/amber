@@ -1682,9 +1682,16 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 JVM_END
 
 JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
+{
   JVMWrapper("JVM_IsRecord");
-  InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls)));
-  return k->is_record();
+  Klass* k = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls));
+  if (k != NULL && k->is_instance_klass()) {
+    InstanceKlass* ik = InstanceKlass::cast(k);
+    return ik->is_record();
+  } else {
+    return false;
+  }
+}
 JVM_END
 
 JVM_ENTRY(jobjectArray, JVM_GetRecordComponents(JNIEnv* env, jclass ofClass))
