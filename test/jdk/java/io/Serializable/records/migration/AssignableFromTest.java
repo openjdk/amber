@@ -26,8 +26,9 @@
  * @summary Test for subtype stream field value assign-ability
  * @library /test/lib
  * @modules jdk.compiler
- * @compile AssignableFrom.java Point.java DefaultValues.java SuperStreamFields.java
- * @run testng AssignableFromTest
+ * @compile --enable-preview -source 14 AssignableFrom.java Point.java
+ *          DefaultValues.java SuperStreamFields.java AssignableFromTest.java
+ * @run testng/othervm --enable-preview AssignableFromTest
  */
 
 import java.math.BigDecimal;

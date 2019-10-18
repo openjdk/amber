@@ -23,9 +23,10 @@
 
 /*
  * @test
- * @summary Checks that the appropriate default value is given to the canonical ctr.
- * @run testng AbsentStreamValuesTest
- * @run testng/othervm/java.security.policy=empty_security.policy AbsentStreamValuesTest
+ * @summary Checks that the appropriate default value is given to the canonical ctr
+ * @compile --enable-preview -source 14 AbsentStreamValuesTest.java
+ * @run testng/othervm --enable-preview AbsentStreamValuesTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview AbsentStreamValuesTest
  */
 
 import java.io.ByteArrayInputStream;

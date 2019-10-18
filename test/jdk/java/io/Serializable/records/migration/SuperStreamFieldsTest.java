@@ -26,8 +26,9 @@
  * @summary superclass fields in the stream should be discarded
  * @library /test/lib
  * @modules jdk.compiler
- * @compile AssignableFrom.java Point.java DefaultValues.java SuperStreamFields.java
- * @run testng SuperStreamFieldsTest
+ * @compile --enable-preview -source 14 AssignableFrom.java Point.java
+ *          DefaultValues.java SuperStreamFields.java SuperStreamFieldsTest.java
+ * @run testng/othervm --enable-preview SuperStreamFieldsTest
  */
 
 import org.testng.annotations.DataProvider;

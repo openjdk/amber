@@ -24,8 +24,9 @@
 /*
  * @test
  * @summary Basic tests for writeReplace
- * @run testng WriteReplaceTest
- * @run testng/othervm/java.security.policy=empty_security.policy WriteReplaceTest
+ * @compile --enable-preview -source 14 StreamRefTest.java
+ * @run testng/othervm --enable-preview WriteReplaceTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview WriteReplaceTest
  */
 
 import java.io.ByteArrayInputStream;

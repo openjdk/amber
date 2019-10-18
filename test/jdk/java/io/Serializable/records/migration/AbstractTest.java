@@ -57,9 +57,11 @@ public class AbstractTest {
     @BeforeTest
     public void setup() throws IOException {
         assertTrue(CompilerUtils.compile(PLAIN_SRC_DIR, PLAIN_DEST_DIR,
+                   "--enable-preview", "-source", "14",
                    "--class-path", TEST_CLASSES_DIR.toString()));
 
         assertTrue(CompilerUtils.compile(RECORD_SRC_DIR, RECORD_DEST_DIR,
+                   "--enable-preview", "-source", "14",
                    "--class-path", TEST_CLASSES_DIR.toString()));
     }
 

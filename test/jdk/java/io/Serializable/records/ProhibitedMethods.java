@@ -26,7 +26,8 @@
  * @summary Basic tests for prohibited magic serialization methods
  * @library /test/lib
  * @modules java.base/jdk.internal.org.objectweb.asm
- * @run testng ProhibitedMethods
+ * @compile --enable-preview -source 14 ProhibitedMethods.java
+ * @run testng/othervm --enable-preview ProhibitedMethods
  */
 
 import java.io.ByteArrayInputStream;
@@ -104,7 +105,8 @@ public class ProhibitedMethods {
     public void setup() {
         {
             byte[] byteCode = InMemoryJavaCompiler.compile("Foo",
-                    "public record Foo () implements java.io.Serializable { }");
+                    "public record Foo () implements java.io.Serializable { }",
+                    "--enable-preview", "-source", "14");
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);
@@ -112,7 +114,8 @@ public class ProhibitedMethods {
         }
         {
             byte[] byteCode = InMemoryJavaCompiler.compile("Bar",
-                    "public record Bar (int x, int y) implements java.io.Serializable { }");
+                    "public record Bar (int x, int y) implements java.io.Serializable { }",
+                    "--enable-preview", "-source", "14");
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);
@@ -121,7 +124,8 @@ public class ProhibitedMethods {
         {
             byte[] byteCode = InMemoryJavaCompiler.compile("Baz",
                     "import java.io.Serializable;" +
-                    "public record Baz<U extends Serializable,V extends Serializable>(U u, V v) implements Serializable { }");
+                    "public record Baz<U extends Serializable,V extends Serializable>(U u, V v) implements Serializable { }",
+                    "--enable-preview", "-source", "14");
             byteCode = addWriteObject(byteCode);
             byteCode = addReadObject(byteCode);
             byteCode = addReadObjectNoData(byteCode);

@@ -23,9 +23,10 @@
 
 /*
  * @test
- * @summary Tests constructor invocation exceptions are handled appropriately.
- * @run testng ThrowingConstructorTest
- * @run testng/othervm/java.security.policy=empty_security.policy ThrowingConstructorTest
+ * @summary Tests constructor invocation exceptions are handled appropriately
+ * @compile --enable-preview -source 14 ThrowingConstructorTest.java
+ * @run testng/othervm --enable-preview ThrowingConstructorTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ThrowingConstructorTest
  */
 
 import java.io.ByteArrayInputStream;

@@ -24,9 +24,10 @@
 /*
  * @test
  * @summary Ensures that the serialization implementation can *always* access
- *          the record constructor.
- * @run testng ConstructorAccessTest
- * @run testng/othervm/java.security.policy=empty_security.policy ConstructorAccessTest
+ *          the record constructor
+ * @compile --enable-preview -source 14 ConstructorAccessTest.java
+ * @run testng/othervm --enable-preview ConstructorAccessTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ConstructorAccessTest
  */
 
 import java.io.ByteArrayInputStream;

@@ -24,8 +24,9 @@
 /*
  * @test
  * @summary Basic test that serializes and deserializes a number of records
- * @run testng BasicRecordSer
- * @run testng/othervm/java.security.policy=empty_security.policy BasicRecordSer
+ * @compile --enable-preview -source 14 BasicRecordSer.java
+ * @run testng/othervm --enable-preview BasicRecordSer
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview BasicRecordSer
  */
 
 import java.io.ByteArrayInputStream;

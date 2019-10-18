@@ -23,9 +23,10 @@
 
 /*
  * @test
- * @summary Basic tests for serializing and deserializing record classes.
- * @run testng RecordClassTest
- * @run testng/othervm/java.security.policy=empty_security.policy RecordClassTest
+ * @summary Basic tests for serializing and deserializing record classes
+ * @compile --enable-preview -source 14 RecordClassTest.java
+ * @run testng/othervm --enable-preview RecordClassTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview RecordClassTest
  */
 
 import java.io.ByteArrayInputStream;

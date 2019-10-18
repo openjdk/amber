@@ -23,11 +23,12 @@
 
 /*
  * @test
- * @summary Checks that the appropriate default value is given to the canonical ctr.
+ * @summary Checks that the appropriate default value is given to the canonical ctr
  * @library /test/lib
  * @modules jdk.compiler
- * @compile AssignableFrom.java Point.java DefaultValues.java SuperStreamFields.java
- * @run testng DefaultValuesTest
+ * @compile --enable-preview -source 14 AssignableFrom.java Point.java
+ *          DefaultValues.java SuperStreamFields.java DefaultValuesTest.java
+ * @run testng/othervm --enable-preview DefaultValuesTest
  */
 
 import java.io.ByteArrayOutputStream;

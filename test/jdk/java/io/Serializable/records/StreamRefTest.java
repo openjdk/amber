@@ -23,9 +23,10 @@
 
 /*
  * @test
- * @summary Tests for stream references.
- * @run testng StreamRefTest
-  * @run testng/othervm/java.security.policy=empty_security.policy StreamRefTest
+ * @summary Tests for stream references
+ * @compile --enable-preview -source 14 StreamRefTest.java
+ * @run testng/othervm --enable-preview StreamRefTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview StreamRefTest
  */
 
 import java.io.ByteArrayInputStream;

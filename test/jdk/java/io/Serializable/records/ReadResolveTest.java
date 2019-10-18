@@ -24,8 +24,9 @@
 /*
  * @test
  * @summary Basic tests for readResolve
- * @run testng ReadResolveTest
- * @run testng/othervm/java.security.policy=empty_security.policy ReadResolveTest
+ * @compile --enable-preview -source 14 ReadResolveTest.java
+ * @run testng/othervm --enable-preview ReadResolveTest
+ * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ReadResolveTest
  */
 
 import java.io.ByteArrayInputStream;
