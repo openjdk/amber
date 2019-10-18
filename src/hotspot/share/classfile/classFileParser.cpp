@@ -3474,9 +3474,9 @@ void ClassFileParser::parse_classfile_bootstrap_methods_attribute(const ClassFil
 }
 
 bool ClassFileParser::supports_records() {
-  return _major_version == JAVA_14_VERSION /* TBD &&
+  return _major_version == JAVA_14_VERSION &&
     _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
-    Arguments::enable_preview() */ ;
+    Arguments::enable_preview();
 }
 
 void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cfs,
