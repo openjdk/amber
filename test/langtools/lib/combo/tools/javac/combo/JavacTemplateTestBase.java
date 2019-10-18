@@ -286,7 +286,7 @@ public abstract class JavacTemplateTestBase {
     }
 
     /** An implementation of Template which is backed by a String */
-    private class StringTemplate implements Template {
+    protected class StringTemplate implements Template {
         protected final String template;
 
         public StringTemplate(String template) {

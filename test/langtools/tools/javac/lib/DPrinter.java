@@ -1210,12 +1210,6 @@ public class DPrinter {
         public Void visitTree(DocTree node, Void p) {
             return null;
         }
-
-        @Override
-        public Void visitAccessor(AccessorTree node, Void p) {
-            printList("desc", node.getDescription());
-            return visitTree(node, null);
-        }
     }
 
     // </editor-fold>

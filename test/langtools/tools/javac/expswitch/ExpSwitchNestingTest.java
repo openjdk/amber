@@ -83,7 +83,7 @@ public class ExpSwitchNestingTest extends JavacTemplateTestBase {
         String s = "class C { static boolean cond = false; static int x = 0; void m() { # } }";
         for (String c : constructs)
             s = s.replace("#", c);
-        addSourceFile("C.java", new StringTemplate(s));
+        addSourceFile("C.java", new StringTemplate(s).toString());
     }
 
     private void assertOK(String... constructs) {
