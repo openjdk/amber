@@ -111,7 +111,7 @@ public enum ElementKind {
 
     /**
      * A record type.
-     * @since amber
+     * @since 14
      * @deprecated This element kind is part of a preview feature and may be removed
      * if the preview feature is removed.
      */
