@@ -102,7 +102,7 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
     @Override
     public void doWork() throws Throwable {
         newCompilationTask()
-                //.withOptions(new String[]{"--enable-preview", "-source", Integer.toString(Runtime.version().feature())})
+                .withOptions(new String[]{"--enable-preview", "-source", Integer.toString(Runtime.version().feature())})
                 .withSourceFromTemplate("Data", sourceTemplate)
                 .generate(this::check);
     }

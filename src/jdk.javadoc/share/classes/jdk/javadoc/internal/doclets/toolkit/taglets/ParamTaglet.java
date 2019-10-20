@@ -137,6 +137,7 @@ public class ParamTaglet extends BaseTaglet implements InheritableTaglet {
     }
 
     @Override
+    @SuppressWarnings("removal")
     public Content getTagletOutput(Element holder, TagletWriter writer) {
         Utils utils = writer.configuration().utils;
         if (utils.isExecutableElement(holder)) {

@@ -478,6 +478,7 @@ public class ObjectStreamClass implements Serializable {
     /**
      * Creates local class descriptor representing given class.
      */
+    @SuppressWarnings("removal")
     private ObjectStreamClass(final Class<?> cl) {
         this.cl = cl;
         name = cl.getName();
@@ -678,6 +679,7 @@ public class ObjectStreamClass implements Serializable {
     /**
      * Initializes class descriptor representing a non-proxy class.
      */
+    @SuppressWarnings("removal")
     void initNonProxy(ObjectStreamClass model,
                       Class<?> cl,
                       ClassNotFoundException resolveEx,
@@ -1660,6 +1662,7 @@ public class ObjectStreamClass implements Serializable {
      * Field objects.  Throws InvalidClassException if the (explicitly
      * declared) serializable fields are invalid.
      */
+    @SuppressWarnings("removal")
     private static ObjectStreamField[] getSerialFields(Class<?> cl)
         throws InvalidClassException
     {
@@ -2466,6 +2469,7 @@ public class ObjectStreamClass implements Serializable {
     }
 
     /** A reflector implementation for record classes. */
+    @SuppressWarnings("removal")
     static final class RecordReflector {
 
         // TODO: add cache to avoid subsequent reflective calls for the same record class

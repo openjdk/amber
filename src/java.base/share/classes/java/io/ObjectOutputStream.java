@@ -1435,6 +1435,7 @@ public class ObjectOutputStream
      * ObjectStreamClass, array, or enum constant) serializable object to the
      * stream.
      */
+    @SuppressWarnings("removal")
     private void writeOrdinaryObject(Object obj,
                                      ObjectStreamClass desc,
                                      boolean unshared)
@@ -1500,6 +1501,7 @@ public class ObjectOutputStream
     }
 
     /** Writes the record component values for the given record object. */
+    @SuppressWarnings("removal")
     private void writeRecordData(Object obj, ObjectStreamClass desc)
         throws IOException
     {

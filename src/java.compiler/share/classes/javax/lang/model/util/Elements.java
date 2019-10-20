@@ -637,7 +637,12 @@ public interface Elements {
      *
      * @param accessor the method for which the record component should be found.
      * @return the record component, or null if the given method is not an record component accessor
+     * @since 14
+     * @deprecated This method is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     default RecordComponentElement recordComponentFor(ExecutableElement accessor) {
         if (accessor.getEnclosingElement().getKind() == ElementKind.RECORD) {
             for (RecordComponentElement rec : ElementFilter.recordComponentsIn(accessor.getEnclosingElement().getEnclosedElements())) {

@@ -189,7 +189,11 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      * none
      *
      * @since 14
+     * @deprecated This method is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     default List<? extends RecordComponentElement> getRecordComponents() {
         return List.of();
     }

@@ -1661,6 +1661,7 @@ public class HtmlDocletWriter {
      *
      * @return the text, with all the relative links redirected to work.
      */
+    @SuppressWarnings("removal")
     private String redirectRelativeLinks(Element element, TextTree tt) {
         String text = tt.getBody();
         if (element == null || utils.isOverviewElement(element) || shouldNotRedirectRelativeLinks()) {

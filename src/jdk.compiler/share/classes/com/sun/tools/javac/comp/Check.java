@@ -3177,6 +3177,7 @@ public class Check {
         return targets;
     }
 
+    @SuppressWarnings("removal")
     boolean annotationApplicable(JCAnnotation a, Symbol s) {
         Name[] targets = getTargetNames(a);
         if (targets.length == 0) {

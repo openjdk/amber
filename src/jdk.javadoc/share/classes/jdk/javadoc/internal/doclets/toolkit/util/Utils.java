@@ -302,6 +302,7 @@ public class Utils {
         return !e.getAnnotationMirrors().isEmpty();
     }
 
+    @SuppressWarnings("removal")
     public boolean isAnnotationType(Element e) {
         return new SimpleElementVisitor14<Boolean, Void>() {
             @Override
@@ -417,10 +418,12 @@ public class Utils {
         return typeUtils.isSubtype(e.asType(), getExternalizableType());
     }
 
+    @SuppressWarnings("removal")
     public boolean isRecord(TypeElement e) {
         return e.getKind() == ElementKind.RECORD;
     }
 
+    @SuppressWarnings("removal")
     public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
         TypeElement te = (TypeElement) ee.getEnclosingElement();
         List<? extends RecordComponentElement> stateComps = te.getRecordComponents();
@@ -455,6 +458,7 @@ public class Utils {
         return configuration.workArounds.definesSerializableFields(this, aclass);
     }
 
+    @SuppressWarnings("removal")
     public String modifiersToString(Element e, boolean trailingSpace) {
         SortedSet<Modifier> modifiers = new TreeSet<>(e.getModifiers());
         modifiers.remove(NATIVE);
@@ -527,6 +531,7 @@ public class Utils {
             }
 
             @Override
+            @SuppressWarnings("removal")
             public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> mods) {
                 Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
                 Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
@@ -1938,6 +1943,7 @@ public class Utils {
         return getFullyQualifiedName(e, true);
     }
 
+    @SuppressWarnings("removal")
     public String getFullyQualifiedName(Element e, final boolean outer) {
         return new SimpleElementVisitor14<String, Void>() {
             @Override
@@ -2112,6 +2118,7 @@ public class Utils {
             }
         }
 
+        @SuppressWarnings("removal")
         boolean hasParameters(Element e) {
             return new SimpleElementVisitor14<Boolean, Void>() {
                 @Override
@@ -2133,6 +2140,7 @@ public class Utils {
          * @return a negative integer, zero, or a positive integer as the first argument is less
          * than, equal to, or greater than the second.
          */
+        @SuppressWarnings("removal")
         private String getFullyQualifiedName(Element e) {
             return new SimpleElementVisitor14<String, Void>() {
                 @Override
@@ -2244,10 +2252,12 @@ public class Utils {
         return convertToTypeElement(getItems(e, false, ANNOTATION_TYPE));
     }
 
+    @SuppressWarnings("removal")
     public List<TypeElement> getRecords(Element e) {
         return convertToTypeElement(getItems(e, true, RECORD));
     }
 
+    @SuppressWarnings("removal")
     public List<TypeElement> getRecordsUnfiltered(Element e) {
         return convertToTypeElement(getItems(e, false, RECORD));
     }
@@ -2496,6 +2506,7 @@ public class Utils {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("removal")
     List<Element> getItems(Element e, boolean filter, ElementKind select) {
         List<Element> elements = new ArrayList<>();
         return new SimpleElementVisitor14<List<Element>, Void>() {
@@ -2543,8 +2554,10 @@ public class Utils {
         return elements;
     }
 
+    @SuppressWarnings("removal")
     private SimpleElementVisitor14<Boolean, Void> shouldDocumentVisitor = null;
 
+    @SuppressWarnings("removal")
     public boolean shouldDocument(Element e) {
         if (shouldDocumentVisitor == null) {
             shouldDocumentVisitor = new SimpleElementVisitor14<Boolean, Void>() {
@@ -2597,8 +2610,10 @@ public class Utils {
         return nameCache.computeIfAbsent(e, this::getSimpleName0);
     }
 
+    @SuppressWarnings("removal")
     private SimpleElementVisitor14<String, Void> snvisitor = null;
 
+    @SuppressWarnings("removal")
     private String getSimpleName0(Element e) {
         if (snvisitor == null) {
             snvisitor = new SimpleElementVisitor14<String, Void>() {
@@ -2782,7 +2797,9 @@ public class Utils {
         return configuration.docEnv.isIncluded(e);
     }
 
+    @SuppressWarnings("removal")
     private SimpleElementVisitor14<Boolean, Void> specifiedVisitor = null;
+    @SuppressWarnings("removal")
     public boolean isSpecified(Element e) {
         if (specifiedVisitor == null) {
             specifiedVisitor = new SimpleElementVisitor14<Boolean, Void>() {

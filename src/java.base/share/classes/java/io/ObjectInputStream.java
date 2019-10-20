@@ -2084,6 +2084,7 @@ public class ObjectInputStream
      * associated with object's handle).  Sets passHandle to object's assigned
      * handle.
      */
+    @SuppressWarnings("removal")
     private Object readOrdinaryObject(boolean unshared)
         throws IOException
     {

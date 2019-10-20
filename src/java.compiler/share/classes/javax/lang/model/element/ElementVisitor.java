@@ -175,7 +175,11 @@ public interface ElementVisitor<R, P> {
      * @param p  a visitor-specified parameter
      * @return a visitor-specified result
      * @since 14
+     * @deprecated This method is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     default R visitRecordComponent(RecordComponentElement e, P p) {
         return visitUnknown(e, p);
     }

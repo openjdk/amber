@@ -27,9 +27,12 @@
  * @summary Test basic modeling of a record type
  * @library /tools/javac/lib
  * @modules jdk.compiler
- * @build   JavacTestingAbstractProcessor TestRecord
- * @compile -processor TestRecord -proc:only TestRecord.java
+ * @build JavacTestingAbstractProcessor
+ * @compile -source 14 --enable-preview TestRecord.java
+ * @compile -J--enable-preview -source 14 --enable-preview -source 14 -processor TestRecord -proc:only --enable-preview -source 14 TestRecord.java
  */
+
+//@compile -processor TestRecord -proc:only -source 14 --enable-preview TestRecord.java
 
 import java.io.*;
 import javax.annotation.processing.*;
@@ -90,11 +93,11 @@ public class TestRecord extends JavacTestingAbstractProcessor {
                 System.out.println("printing record " + e);
                 List<? extends Element> enclosedElements = e.getEnclosedElements();
                 for (Element elem : enclosedElements) {
-		    if (elem.getKind() == ElementKind.RECORD_COMPONENT)
-			continue; // "marathonTime" as a record component is Origin.EXPLICIT
+                    if (elem.getKind() == ElementKind.RECORD_COMPONENT)
+                        continue; // "marathonTime" as a record component is Origin.EXPLICIT
                     System.out.println("name " + elem.getSimpleName());
                     System.out.println("origin " + elements.getOrigin(elem));
-		    String simpleName = elem.getSimpleName().toString();
+                    String simpleName = elem.getSimpleName().toString();
                     switch (simpleName) {
                         case "marathonTime": case "toString":
                         case "<init>": case "hashCode":

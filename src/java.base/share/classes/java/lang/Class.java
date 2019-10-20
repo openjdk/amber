@@ -2299,7 +2299,12 @@ public final class Class<T> implements java.io.Serializable,
      *          </ul>
      *
      * @since 14
+     * @deprecated This method is returning record components, which are part of
+     * a preview feature and may be removed if the preview feature
+     * is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     @CallerSensitive
     public RecordComponent[] getRecordComponents() throws SecurityException {
         SecurityManager sm = System.getSecurityManager();
@@ -3592,8 +3597,12 @@ public final class Class<T> implements java.io.Serializable,
      *
      * @return true if and only if this class was declared as a record in the
      *     source code
-     * @since 1.12
+     * @since 14
+     * @deprecated This method is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     public boolean isRecord() {
         return isRecord0();
     }

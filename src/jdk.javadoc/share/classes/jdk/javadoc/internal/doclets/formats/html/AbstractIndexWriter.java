@@ -178,6 +178,7 @@ public class AbstractIndexWriter extends HtmlDocletWriter {
         contentTree.add(heading);
     }
 
+    @SuppressWarnings("removal")
     protected void addDescription(Content dl, Element element) {
         SearchIndexItem si = new SearchIndexItem();
         new SimpleElementVisitor14<Void, Void>() {

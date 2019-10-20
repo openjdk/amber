@@ -68,7 +68,11 @@ package java.lang;
  *
  * @jls 8.10
  * @since 14
+ * @deprecated This class is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 public abstract class Record {
     /**
      * Indicates whether some other object is "equal to" this one.  In addition

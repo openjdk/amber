@@ -16,13 +16,17 @@ import java.util.Objects;
 
 /**
  * A {@linkplain RecordComponent} provides information about, and dynamic access to, a
- * component of a record class.  
+ * component of a record class.
  *
- * @see Class#getRecordComponents() 
+ * @see Class#getRecordComponents()
  * @see java.lang.Record
  *
  * @since 14
+ * @deprecated This class is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 public final class RecordComponent implements AnnotatedElement {
     // declaring class
     private Class<?> clazz;

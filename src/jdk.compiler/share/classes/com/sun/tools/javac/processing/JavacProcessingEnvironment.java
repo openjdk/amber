@@ -973,6 +973,7 @@ public class JavacProcessingEnvironment implements ProcessingEnvironment, Closea
      * Computes the set of annotations on the symbol in question.
      * Leave class public for external testing purposes.
      */
+    @SuppressWarnings("removal")
     public static class ComputeAnnotationSet extends
         ElementScanner14<Set<TypeElement>, Set<TypeElement>> {
         final Elements elements;

@@ -197,6 +197,7 @@ public class TagletWriterImpl extends TagletWriter {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("removal")
     public Content paramTagOutput(Element element, DocTree paramTag, String paramName) {
         ContentBuilder body = new ContentBuilder();
         CommentHelper ch = utils.getCommentHelper(element);
@@ -419,6 +420,7 @@ public class TagletWriterImpl extends TagletWriter {
         return configuration;
     }
 
+    @SuppressWarnings("removal")
     private Content createAnchorAndSearchIndex(Element element, String tagText, String desc){
         Content result = null;
         if (isFirstSentence && inSummary) {

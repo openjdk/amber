@@ -29,8 +29,11 @@ package javax.lang.model.element;
  * Represents a record component.
  *
  * @since 14
+ * @deprecated This interface is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
-
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 public interface RecordComponentElement extends Element {
     /**
      * Returns the enclosing element of this record component.

@@ -112,13 +112,21 @@ public enum ElementKind {
     /**
      * A record type.
      * @since amber
+     * @deprecated This element kind is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     RECORD,
 
     /**
      * A record component of a {@code record}.
      * @since 14
+     * @deprecated This element kind is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     RECORD_COMPONENT;
 
     /**

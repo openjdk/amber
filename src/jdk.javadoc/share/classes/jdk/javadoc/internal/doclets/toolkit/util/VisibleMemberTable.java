@@ -700,6 +700,7 @@ public class VisibleMemberTable {
             }
         }
 
+        @SuppressWarnings("removal")
         String getMemberKey(Element e) {
             return new SimpleElementVisitor14<String, Void>() {
                 @Override

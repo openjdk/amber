@@ -428,7 +428,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     public boolean isFinal() {
         return (flags_field & FINAL) != 0;
     }
- 
+
    /** Is this symbol declared (directly or indirectly) local
      *  to a method or variable initializer?
      *  Also includes fields of inner classes which are in
@@ -1453,6 +1453,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
 
         @DefinedBy(Api.LANGUAGE_MODEL)
+        @SuppressWarnings("removal")
         public ElementKind getKind() {
             apiComplete();
             long flags = flags();
@@ -1489,6 +1490,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        @SuppressWarnings("removal")
         public List<? extends RecordComponent> getRecordComponents() {
             return recordComponents;
         }
@@ -1736,6 +1738,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
     }
 
+    @SuppressWarnings("removal")
     public static class RecordComponent extends VarSymbol implements RecordComponentElement {
 
         /**
@@ -1746,6 +1749,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        @SuppressWarnings("removal")
         public ElementKind getKind() {
             return ElementKind.RECORD_COMPONENT;
         }
@@ -1761,6 +1765,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        @SuppressWarnings("removal")
         public <R, P> R accept(ElementVisitor<R, P> v, P p) {
             return v.visitRecordComponent(this, p);
         }

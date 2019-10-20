@@ -72,7 +72,11 @@ import static javax.lang.model.SourceVersion.*;
  * @see SimpleElementVisitor8
  * @see SimpleElementVisitor9
  * @since 14
+ * @deprecated This class is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 @SupportedSourceVersion(RELEASE_14)
 public class SimpleElementVisitor14<R, P> extends SimpleElementVisitor9<R, P> {
     /**

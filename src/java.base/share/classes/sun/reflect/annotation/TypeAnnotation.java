@@ -91,6 +91,12 @@ public final class TypeAnnotation {
         METHOD_RECEIVER,
         METHOD_FORMAL_PARAMETER,
         THROWS,
+        /**
+         * @deprecated This target is part of a preview feature and may be removed
+         * if the preview feature is removed.
+         */
+        @Deprecated(forRemoval=true, since="14")
+        @SuppressWarnings("removal")
         RECORD_COMPONENT;
     }
 

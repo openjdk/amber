@@ -184,11 +184,8 @@ public class JavacParser implements Parser {
         endPosTable = newEndPosTable(keepEndPositions);
         this.allowYieldStatement = (!preview.isPreview(Feature.SWITCH_EXPRESSION) || preview.isEnabled()) &&
                 Feature.SWITCH_EXPRESSION.allowedInSource(source);
-        this.allowRecords = true; // to speed up testing for now
-                /*
-                (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
+        this.allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
-                */
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {

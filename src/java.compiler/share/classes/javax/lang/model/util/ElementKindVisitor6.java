@@ -224,8 +224,12 @@ public class ElementKindVisitor6<R, P>
      * @param p a visitor-specified parameter
      * @return  the result of {@code visitUnknown}
      *
-     * @since amber
+     * @since 14
+     * @deprecated This method is part of a preview feature and may be removed
+     * if the preview feature is removed.
      */
+    @Deprecated(forRemoval=true, since="14")
+    @SuppressWarnings("removal")
     public R visitTypeAsRecord(TypeElement e, P p) {
         return visitUnknown(e, p);
     }

@@ -1223,6 +1223,7 @@ public abstract class BaseConfiguration {
      * Splits the elements in a collection to its individual
      * collection.
      */
+    @SuppressWarnings("removal")
     static private class Splitter {
 
         final Set<ModuleElement> mset = new LinkedHashSet<>();

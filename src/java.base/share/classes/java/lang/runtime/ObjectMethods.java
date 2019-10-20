@@ -38,7 +38,12 @@ import java.util.Objects;
  * {@link Object#toString()}.  These methods may be used, for example, by
  * Java&trade; compiler implementations to implement the bodies of {@link Object}
  * methods for record clases.
+ *
+ * @deprecated This class is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 public class ObjectMethods {
 
     private ObjectMethods() { }

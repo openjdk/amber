@@ -30,7 +30,6 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
-
 /**
  * A skeletal visitor of program elements with default behavior
  * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
@@ -64,8 +63,12 @@ import static javax.lang.model.SourceVersion.*;
  * @see AbstractElementVisitor8
  * @see AbstractElementVisitor9
  * @since 14
+ * @deprecated This visitor is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
 @SupportedSourceVersion(RELEASE_14)
+@SuppressWarnings("removal")
 public abstract class AbstractElementVisitor14<R, P> extends AbstractElementVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses to call.

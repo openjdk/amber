@@ -35,7 +35,6 @@ public interface DocTree {
      * Enumerates all kinds of trees.
      */
     enum Kind {
-
         /**
          * Used for instances of {@link AttributeTree}
          * representing an HTML attribute.

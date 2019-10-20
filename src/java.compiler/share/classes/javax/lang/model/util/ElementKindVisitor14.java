@@ -78,7 +78,11 @@ import javax.lang.model.SourceVersion;
  * @see ElementKindVisitor8
  * @see ElementKindVisitor9
  * @since 14
+ * @deprecated This class is part of a preview feature and may be removed
+ * if the preview feature is removed.
  */
+@Deprecated(forRemoval=true, since="14")
+@SuppressWarnings("removal")
 @SupportedSourceVersion(RELEASE_14)
 public class ElementKindVisitor14<R, P> extends ElementKindVisitor9<R, P> {
     /**
