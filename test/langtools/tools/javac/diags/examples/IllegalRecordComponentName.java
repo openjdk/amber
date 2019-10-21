@@ -22,5 +22,6 @@
  */
 
 // key: compiler.err.illegal.record.component.name
+// options: --enable-preview -source ${jdk.version}
 
 record R(int hashCode) {}

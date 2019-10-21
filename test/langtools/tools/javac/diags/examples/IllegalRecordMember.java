@@ -22,6 +22,7 @@
  */
 
 // key: compiler.err.illegal.record.member
+// options: --enable-preview -source ${jdk.version}
 
 record R() {
     private void readObjectNoData() { }

@@ -22,6 +22,7 @@
  */
 
 // key: compiler.err.canonical.cant.have.return.statement
+// options: --enable-preview -source ${jdk.version}
 
 record R() {
     public R {

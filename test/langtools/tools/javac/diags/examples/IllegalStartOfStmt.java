@@ -23,6 +23,7 @@
 
 // key: compiler.err.illegal.start.of.stmt
 // key: compiler.err.expected4
+// options: --enable-preview -source ${jdk.version}
 
 class IllegalStartOfStmt {
     void m() {

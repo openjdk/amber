@@ -1178,9 +1178,6 @@ public class Check {
                     (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
                 }
-                if ((flags & RECORD) != 0 && (flags & STATIC) == 0) {
-                    log.error(pos, Errors.NestedRecordsMustBeStatic);
-                }
             } else if (sym.owner.kind == TYP) {
                 mask = (flags & RECORD) != 0 ? MemberRecordClassFlags : MemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||

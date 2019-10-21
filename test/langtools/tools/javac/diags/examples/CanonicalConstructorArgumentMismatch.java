@@ -21,9 +21,9 @@
  * questions.
  */
 
-// key: compiler.err.canonical.constructor.must.be.public
+// key: compiler.err.canonical.with.name.mismatch
 // options: --enable-preview -source ${jdk.version}
 
-record R(int i) {
-    R(int i) { this.i = i; }
+record R(int x) {
+    public R(int _x) { this.x = _x; }
 }

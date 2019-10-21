@@ -21,9 +21,12 @@
  * questions.
  */
 
-// key: compiler.err.canonical.constructor.must.be.public
+// key: compiler.err.constructor.with.same.erasure.as.canonical
 // options: --enable-preview -source ${jdk.version}
 
-record R(int i) {
-    R(int i) { this.i = i; }
+import java.util.List;
+
+@SuppressWarnings("unchecked")
+record R(List<String> x) {
+    public R(List x) { this.x = x; }
 }

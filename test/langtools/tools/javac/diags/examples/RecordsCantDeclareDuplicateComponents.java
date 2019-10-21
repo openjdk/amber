@@ -21,9 +21,7 @@
  * questions.
  */
 
-// key: compiler.err.canonical.constructor.must.be.public
+// key: compiler.err.record.cant.declare.duplicate.fields
 // options: --enable-preview -source ${jdk.version}
 
-record R(int i) {
-    R(int i) { this.i = i; }
-}
+record R(int x, int x) {}

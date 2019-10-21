@@ -23,4 +23,5 @@
 
 // key: compiler.err.invalid.supertype.record
 
+@SuppressWarnings("removal")
 class R extends Record {}

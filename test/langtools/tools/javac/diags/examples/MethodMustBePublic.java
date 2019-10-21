@@ -21,9 +21,9 @@
  * questions.
  */
 
-// key: compiler.err.canonical.constructor.must.be.public
+// key: compiler.err.method.must.be.public
 // options: --enable-preview -source ${jdk.version}
 
-record R(int i) {
-    R(int i) { this.i = i; }
+record R(int x) {
+    private int x() { return x; }
 }

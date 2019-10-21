@@ -22,6 +22,7 @@
  */
 
 // key: compiler.err.method.cant.throw.checked.exception
+// options: --enable-preview -source ${jdk.version}
 
 record R(int x) {
     public int x() throws Exception { return 0; }

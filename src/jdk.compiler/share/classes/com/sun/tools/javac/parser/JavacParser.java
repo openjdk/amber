@@ -3792,12 +3792,11 @@ public class JavacParser implements Parser {
     Name typeName() {
         int pos = token.pos;
         Name name = ident();
+        /* if (isRestrictedRecordTypeName(name)) {
+            reportSyntaxError(pos, Errors.RecordNotAllowed(name));
+        }*/
         if (isRestrictedTypeName(name, pos, true)) {
             reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(name, name == names.var ? Source.JDK10 : Source.JDK13));
-        }
-
-        if (isRestrictedRecordTypeName(name)) {
-            reportSyntaxError(pos, Errors.RecordNotAllowed(name));
         }
         return name;
     }

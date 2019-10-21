@@ -1191,7 +1191,7 @@ public class ClassReader {
                 }
             },
 
-            new AttributeReader(names.Record, V57, CLASS_ATTRIBUTE) {
+            new AttributeReader(names.Record, V58, CLASS_ATTRIBUTE) {
                 @Override
                 protected boolean accepts(AttributeKind kind) {
                     return super.accepts(kind) && allowRecords;
