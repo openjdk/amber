@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic tests for writeReplace
- * @compile --enable-preview -source 14 StreamRefTest.java
+ * @compile --enable-preview -source 14 WriteReplaceTest.java
  * @run testng/othervm --enable-preview WriteReplaceTest
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview WriteReplaceTest
  */

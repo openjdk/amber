@@ -27,7 +27,6 @@ package java.io;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -192,6 +191,8 @@ public class ObjectStreamClass implements Serializable {
 
     /** serialization-appropriate constructor, or null if none */
     private Constructor<?> cons;
+    /** record canonical constructor, or null */
+    private MethodHandle canonicalCtr;
     /** protection domains that need to be checked when calling the constructor */
     private ProtectionDomain[] domains;
 
@@ -520,7 +521,7 @@ public class ObjectStreamClass implements Serializable {
                     }
 
                     if (isRecord) {
-                        cons = null;  // ctr will be found later
+                        canonicalCtr = canonicalRecordCtr(cl);
                     } else if (externalizable) {
                         cons = getExternalizableConstructor(cl);
                     } else {
@@ -562,13 +563,15 @@ public class ObjectStreamClass implements Serializable {
                 deserializeEx = new ExceptionInfo(name, "no valid constructor");
             }
         }
-        if (!isRecord) {
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].getField() == null) {
-                defaultSerializeEx = new ExceptionInfo(
-                    name, "unmatched serializable field(s) declared");
+        if (isRecord && canonicalCtr == null) {
+            new ExceptionInfo(name, "record canonical constructor not found");
+        } else {
+            for (int i = 0; i < fields.length; i++) {
+                if (fields[i].getField() == null) {
+                    defaultSerializeEx = new ExceptionInfo(
+                        name, "unmatched serializable field(s) declared");
+                }
             }
-        }
         }
         initialized = true;
     }
@@ -735,6 +738,7 @@ public class ObjectStreamClass implements Serializable {
         this.cl = cl;
         if (cl != null) {
             this.isRecord = cl.isRecord();
+            this.canonicalCtr = osc.canonicalCtr;
         }
         this.resolveEx = resolveEx;
         this.superDesc = superDesc;
@@ -1540,6 +1544,33 @@ public class ObjectStreamClass implements Serializable {
      */
     private static Constructor<?> getSerializableConstructor(Class<?> cl) {
         return reflFactory.newConstructorForSerialization(cl);
+    }
+
+    /** Determines the canonical constructor for the given record class. */
+    @SuppressWarnings("removal")
+    private static MethodHandle canonicalRecordCtr(Class<?> cls) {
+        assert cls.isRecord() : "Expected record, got: " + cls;
+        PrivilegedAction<MethodHandle> pa = () -> {
+            Class<?>[] paramTypes = Arrays.stream(cls.getRecordComponents())
+                                                     .map(RecordComponent::getType)
+                                                     .toArray(Class<?>[]::new);
+            try {
+                Constructor<?> ctr = cls.getConstructor(paramTypes);
+                ctr.setAccessible(true);
+                return MethodHandles.lookup().unreflectConstructor(ctr);
+            } catch (IllegalAccessException | NoSuchMethodException e) {
+                throw new InternalError("should not reach here",  e);
+            }
+        };
+        return AccessController.doPrivileged(pa);
+    }
+
+    /**
+     * Returns the canonical constructor, if the local class equivalent of this
+     * stream class descriptor is a record class, otherwise null.
+     */
+    MethodHandle getRecordConstructor() {
+        return canonicalCtr;
     }
 
     /**
@@ -2468,29 +2499,9 @@ public class ObjectStreamClass implements Serializable {
         }
     }
 
-    /** A reflector implementation for record classes. */
+    /** Record specific support for retrieving and binding stream field values. */
     @SuppressWarnings("removal")
-    static final class RecordReflector {
-
-        // TODO: add cache to avoid subsequent reflective calls for the same record class
-
-        /** Returns the canonical constructor for the given record class. */
-        static MethodHandle canonicalCtr(Class<?> cls) {
-            assert cls.isRecord() : "Expected record, got: " + cls;
-            PrivilegedAction<MethodHandle> pa = () -> {
-                Class<?>[] paramTypes = Arrays.stream(cls.getRecordComponents())
-                                               .map(RecordComponent::getType)
-                                               .toArray(Class<?>[]::new);
-                try {
-                    Constructor<?> ctr = cls.getConstructor(paramTypes);
-                    ctr.setAccessible(true);
-                    return MethodHandles.lookup().unreflectConstructor(ctr);
-                } catch (IllegalAccessException | NoSuchMethodException e) {
-                    throw new InternalError("should not reach here",  e);
-                }
-            };
-            return AccessController.doPrivileged(pa);
-        }
+    static final class RecordSupport {
 
         /** Binds the given stream field values to the given method handle. */
         static MethodHandle bindCtrValues(MethodHandle ctrMH,
@@ -2553,7 +2564,8 @@ public class ObjectStreamClass implements Serializable {
 
         /**
          * Returns the stream field value for the given name. The default value
-         * for the given type is returned if the field value is absent. */
+         * for the given type is returned if the field value is absent.
+         */
         private static Object streamFieldValue(String pName,
                                                Class<?> pType,
                                                ObjectStreamClass desc,

@@ -26,7 +26,7 @@
 package java.io;
 
 import java.io.ObjectStreamClass.WeakClassKey;
-import java.io.ObjectStreamClass.RecordReflector;
+import java.io.ObjectStreamClass.RecordSupport;
 import java.lang.System.Logger;
 import java.lang.invoke.MethodHandle;
 import java.lang.ref.ReferenceQueue;
@@ -2222,11 +2222,11 @@ public class ObjectInputStream
 
         FieldValues fieldValues = defaultReadFields(null, desc);
 
-        // lookup the canonical constructor
-        MethodHandle ctrMH = RecordReflector.canonicalCtr(desc.forClass());
+        // retrieve the canonical constructor
+        MethodHandle ctrMH = desc.getRecordConstructor();
 
         // bind the stream field values
-        ctrMH = RecordReflector.bindCtrValues(ctrMH, desc, fieldValues);
+        ctrMH = RecordSupport.bindCtrValues(ctrMH, desc, fieldValues);
 
         try {
             return ctrMH.invoke();
