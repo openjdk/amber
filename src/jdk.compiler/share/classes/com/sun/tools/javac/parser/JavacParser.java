@@ -2584,6 +2584,7 @@ public class JavacParser implements Parser {
                 JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
                 JCExpression returnType = null;
                 if (token.kind == VOID) {
+                    returnType = to(F.at(pos).TypeIdent(TypeTag.VOID));
                     accept(VOID);
                 } else {
                     returnType = term(EXPR | TYPE);

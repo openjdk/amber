@@ -564,6 +564,10 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
     }
 
     private TreePath pathFor(CompilationUnitTree topLevel, SourcePositions sp, GeneralWrap wrap, int snippetEndPos) {
+        return pathFor(topLevel, sp, wrap, snippetEndPos, false);
+    }
+
+    private TreePath pathFor(CompilationUnitTree topLevel, SourcePositions sp, GeneralWrap wrap, int snippetEndPos, boolean wantPathToId) {
         int wrapEndPos = snippetEndPos == 0
                 ? wrap.snippetIndexToWrapIndex(snippetEndPos)
                 : wrap.snippetIndexToWrapIndex(snippetEndPos - 1) + 1;
@@ -582,8 +586,15 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
                 if (start <= wrapEndPos && wrapEndPos <= end &&
                     (start != end || prevEnd != end || deepest[0] == null ||
                      deepest[0].getParentPath().getLeaf() != getCurrentPath().getLeaf())) {
-                    deepest[0] = new TreePath(getCurrentPath(), tree);
-                    return super.scan(tree, p);
+                    /* Hmmm, sometime we continue to scan after having found gold and toss it
+                       out for trash. Not entirely happy with this check, but it is really checking
+                       if we have found the identifier we are looking for at the cursor and if so
+                       not to trash it. FIXME (Srikanth)
+                    */
+                     if (!wantPathToId || prevEnd != wrapEndPos || deepest[0].getLeaf().getKind() != Kind.IDENTIFIER) {
+                        deepest[0] = new TreePath(getCurrentPath(), tree);
+                        return super.scan(tree, p);
+                     }
                 }
 
                 return null;
@@ -1529,7 +1540,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
         return proc.taskFactory.analyze(codeWrap, at -> {
             SourcePositions sp = at.trees().getSourcePositions();
             CompilationUnitTree topLevel = at.firstCuTree();
-            TreePath tp = pathFor(topLevel, sp, codeWrap, codeFin.length());
+            TreePath tp = pathFor(topLevel, sp, codeWrap, codeFin.length(), true);
             if (tp.getLeaf().getKind() != Kind.IDENTIFIER) {
                 return new QualifiedNames(Collections.emptyList(), -1, true, false);
             }

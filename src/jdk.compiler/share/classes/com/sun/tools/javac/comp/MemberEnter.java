@@ -199,6 +199,7 @@ public class MemberEnter extends JCTree.Visitor {
                                localEnv);
         } finally {
             deferredLintHandler.setPos(prevLintPos);
+            localEnv.info.scope.leave();
         }
 
         if (types.isSignaturePolymorphic(m)) {
@@ -218,7 +219,6 @@ public class MemberEnter extends JCTree.Visitor {
         if (lastParam != null && (lastParam.mods.flags & Flags.VARARGS) != 0)
             m.flags_field |= Flags.VARARGS;
 
-        localEnv.info.scope.leave();
         if (chk.checkUnique(tree.pos(), m, enclScope)) {
             if (isLocal) {
                 chk.checkTransparent(tree.pos(), m, enclScope);
