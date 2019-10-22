@@ -39,6 +39,7 @@ import java.util.Objects;
  * Java&trade; compiler implementations to implement the bodies of {@link Object}
  * methods for record clases.
  *
+ * @since 14
  * @deprecated This class is part of a preview feature and may be removed
  * if the preview feature is removed.
  */
