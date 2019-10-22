@@ -29,7 +29,7 @@
  * @library /tools/javac/lib
  * @build JavacTestingAbstractProcessor
  * @compile AnnoProcessorOnRecordsTest.java
- * @compile -XDaccessInternalAPI -processor AnnoProcessorOnRecordsTest -proc:only AnnoProcessorOnRecordsTest.java
+ * @compile -XDaccessInternalAPI -processor AnnoProcessorOnRecordsTest -proc:only --enable-preview -source ${jdk.version} AnnotatedRecords2.java
  */
 
 import java.lang.annotation.ElementType;
@@ -56,65 +56,30 @@ import com.sun.tools.javac.util.Assert;
 @SupportedAnnotationTypes("*")
 public class AnnoProcessorOnRecordsTest extends JavacTestingAbstractProcessor {
 
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.PARAMETER })
-    @interface Parameter {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.METHOD })
-    @interface Method {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.FIELD })
-    @interface Field {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.RECORD_COMPONENT })
-    @interface RecComponent {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @interface All {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.FIELD, ElementType.RECORD_COMPONENT })
-    @interface RecComponentAndField {}
-
-    record R1(@Parameter int i) {}
-
-    record R2(@Method int i) {}
-
-    record R3(@Field int i) {}
-
-    record R4(@All int i) {}
-
-    record R5(@RecComponent int i) {}
-
-    record R6(@RecComponentAndField int i) {}
-
     public boolean process(Set<? extends TypeElement> tes, RoundEnvironment renv) {
         for (TypeElement te : tes) {
             // System.out.println(te.toString());
             switch (te.toString()) {
-                case "AnnoProcessorOnRecordsTest.Parameter" :
+                case "Parameter" :
                     checkElements(te, renv, 1, Set.of(ElementKind.PARAMETER));
                     break;
-                case "AnnoProcessorOnRecordsTest.Method":
+                case "Method":
                     checkElements(te, renv, 1, Set.of(ElementKind.METHOD));
                     break;
-                case "AnnoProcessorOnRecordsTest.Field":
+                case "Field":
                     checkElements(te, renv, 1, Set.of(ElementKind.FIELD));
                     break;
-                case "AnnoProcessorOnRecordsTest.All":
+                case "All":
                     checkElements(te, renv, 4,
                             Set.of(ElementKind.FIELD,
                                     ElementKind.METHOD,
                                     ElementKind.PARAMETER,
                                     ElementKind.RECORD_COMPONENT));
                     break;
-                case "AnnoProcessorOnRecordsTest.RecComponent":
+                case "RecComponent":
                     checkElements(te, renv, 1, Set.of(ElementKind.RECORD_COMPONENT));
                     break;
-                case "AnnoProcessorOnRecordsTest.RecComponentAndField":
+                case "RecComponentAndField":
                     checkElements(te, renv, 2, Set.of(ElementKind.RECORD_COMPONENT, ElementKind.FIELD));
                     break;
                 default:

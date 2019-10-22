@@ -30,7 +30,7 @@
  * @modules jdk.compiler/com.sun.tools.javac.code
  *          jdk.compiler/com.sun.tools.javac.util
  * @build JavacTestingAbstractProcessor CheckingTypeAnnotationsOnRecords
- * @compile -XDaccessInternalAPI -processor CheckingTypeAnnotationsOnRecords -proc:only CheckingTypeAnnotationsOnRecords.java
+ * @compile -XDaccessInternalAPI -processor CheckingTypeAnnotationsOnRecords -proc:only --enable-preview -source ${jdk.version} AnnotatedRecords.java
  */
 
 import java.lang.annotation.*;
@@ -48,32 +48,16 @@ public class CheckingTypeAnnotationsOnRecords extends JavacTestingAbstractProces
     static private final Map<String, String> recordNameExpectedAnnotationMap = new HashMap<>();
     static private final Map<String, Integer> recordNameExpectedAnnotationNumberMap = new HashMap<>();
     static {
-        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R1", "@CheckingTypeAnnotationsOnRecords.TypeUse");
-        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R2", "@CheckingTypeAnnotationsOnRecords.TypeUse");
-        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R3", "@CheckingTypeAnnotationsOnRecords.TypeUse");
-        recordNameExpectedAnnotationMap.put("CheckingTypeAnnotationsOnRecords.R4", "@CheckingTypeAnnotationsOnRecords.TypeParameter");
+        recordNameExpectedAnnotationMap.put("R1", "@TypeUse");
+        recordNameExpectedAnnotationMap.put("R2", "@TypeUse");
+        recordNameExpectedAnnotationMap.put("R3", "@TypeUse");
+        recordNameExpectedAnnotationMap.put("R4", "@TypeParameter");
 
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R1", 4);
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R2", 4);
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R3", 4);
-        recordNameExpectedAnnotationNumberMap.put("CheckingTypeAnnotationsOnRecords.R4", 1);
+        recordNameExpectedAnnotationNumberMap.put("R1", 4);
+        recordNameExpectedAnnotationNumberMap.put("R2", 4);
+        recordNameExpectedAnnotationNumberMap.put("R3", 4);
+        recordNameExpectedAnnotationNumberMap.put("R4", 1);
     }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE_USE })
-    @interface TypeUse {}
-
-    record R1(@TypeUse int annotated) {}
-
-    record R2(@TypeUse String annotated) {}
-
-    record R3(@TypeUse String... annotated) {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE_PARAMETER })
-    @interface TypeParameter {}
-
-    record R4<@TypeParameter T>(T t) {}
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations,

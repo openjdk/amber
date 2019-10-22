@@ -109,7 +109,7 @@ public class JavaxLangModelForRecords extends TestRunner {
 
         for (Mode mode : new Mode[] {Mode.API}) {
             List<String> log = new JavacTask(tb, mode)
-                    .options("-processor", QualifiedClassForProcessing.class.getName())
+                    .options("-processor", QualifiedClassForProcessing.class.getName(), "--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
                     .files(findJavaFiles(src))
                     .outdir(classes)
                     .run()

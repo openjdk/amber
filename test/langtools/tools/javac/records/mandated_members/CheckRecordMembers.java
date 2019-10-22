@@ -32,7 +32,7 @@
  *          jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.util
  * @build combo.ComboTestHelper
- * @run main CheckRecordMembers
+ * @run main/othervm --enable-preview CheckRecordMembers
  */
 
 import java.lang.reflect.Constructor;
