@@ -78,18 +78,20 @@ public class RecordClassTest {
     @DataProvider(name = "recordClasses")
     public Object[][] recordClasses() {
         return new Object[][] {
-            new Object[] { Foo.class    },
-            new Object[] { Bar.class    },
-            new Object[] { Baz.class    },
-            new Object[] { Wibble.class },
-            new Object[] { Wobble.class },
-            new Object[] { Wubble.class },
+            new Object[] { Foo.class    , 0L         },
+            new Object[] { Bar.class    , 987654321L },
+            new Object[] { Baz.class    , 0L         },
+            new Object[] { Wibble.class , 12345678L  },
+            new Object[] { Wobble.class , 0L         },
+            new Object[] { Wubble.class , 0L         },
         };
     }
 
     /** Tests that the serialized and deserialized instances are equal. */
     @Test(dataProvider = "recordClasses")
-    public void testClassSerialization(Class<?> recordClass) throws Exception {
+    public void testClassSerialization(Class<?> recordClass, long unused)
+        throws Exception
+    {
         out.println("\n---");
         out.println("serializing : " + recordClass);
         var deserializedClass = serializeDeserialize(recordClass);
@@ -98,17 +100,17 @@ public class RecordClassTest {
         assertEquals(deserializedClass, recordClass);
     }
 
-    /** Tests that the generated SUID is always 0 for all Serializable record classes. */
+    /** Tests that the SUID is always 0 unless explicitly declared. */
     @Test(dataProvider = "recordClasses")
-    public void testSerialVersionUID(Class<?> recordClass) {
+    public void testSerialVersionUID(Class<?> recordClass, long expectedUID) {
         out.println("\n---");
         ObjectStreamClass osc = ObjectStreamClass.lookup(recordClass);
         out.println("ObjectStreamClass::lookup  : " + osc);
-        assertEquals(osc.getSerialVersionUID(), 0L);
+        assertEquals(osc.getSerialVersionUID(), expectedUID);
 
         osc = ObjectStreamClass.lookupAny(recordClass);
         out.println("ObjectStreamClass::lookupAny: " + osc);
-        assertEquals(osc.getSerialVersionUID(), 0L);
+        assertEquals(osc.getSerialVersionUID(), expectedUID);
     }
 
     // --- not Serializable

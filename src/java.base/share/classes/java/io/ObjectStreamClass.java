@@ -270,6 +270,9 @@ public class ObjectStreamClass implements Serializable {
     public long getSerialVersionUID() {
         // REMIND: synchronize instead of relying on volatile?
         if (suid == null) {
+            if (isRecord)
+                return 0L;
+
             suid = AccessController.doPrivileged(
                 new PrivilegedAction<Long>() {
                     public Long run() {
@@ -506,11 +509,7 @@ public class ObjectStreamClass implements Serializable {
                         return null;
                     }
 
-                    if (isRecord) {
-                        suid = 0L;
-                    } else {
                     suid = getDeclaredSUID(cl);
-                    }
                     try {
                         fields = getSerialFields(cl);
                         computeFieldOffsets();

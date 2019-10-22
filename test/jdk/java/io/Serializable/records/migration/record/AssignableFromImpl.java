@@ -24,5 +24,6 @@
 public record AssignableFromImpl (Number number)
     implements AssignableFrom, java.io.Serializable
 {
-    private static final long serialVersionUID = 1L;  // should be ignored
+    // ignored during record deserialization, but enforced for non-record deserialization
+    private static final long serialVersionUID = 1L;
 }
