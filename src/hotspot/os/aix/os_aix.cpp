@@ -1034,8 +1034,6 @@ jlong os::elapsed_frequency() {
 }
 
 bool os::supports_vtime() { return true; }
-bool os::enable_vtime()   { return false; }
-bool os::vtime_enabled()  { return false; }
 
 double os::elapsedVTime() {
   struct rusage usage;
@@ -2643,8 +2641,24 @@ int os::java_to_os_priority[CriticalPriority + 1] = {
   60              // 11 CriticalPriority
 };
 
+static int prio_init() {
+  if (ThreadPriorityPolicy == 1) {
+    if (geteuid() != 0) {
+      if (!FLAG_IS_DEFAULT(ThreadPriorityPolicy)) {
+        warning("-XX:ThreadPriorityPolicy=1 may require system level permission, " \
+                "e.g., being the root user. If the necessary permission is not " \
+                "possessed, changes to priority will be silently ignored.");
+      }
+    }
+  }
+  if (UseCriticalJavaThreadPriority) {
+    os::java_to_os_priority[MaxPriority] = os::java_to_os_priority[CriticalPriority];
+  }
+  return 0;
+}
+
 OSReturn os::set_native_priority(Thread* thread, int newpri) {
-  if (!UseThreadPriorities) return OS_OK;
+  if (!UseThreadPriorities || ThreadPriorityPolicy == 0) return OS_OK;
   pthread_t thr = thread->osthread()->pthread_id();
   int policy = SCHED_OTHER;
   struct sched_param param;
@@ -2659,7 +2673,7 @@ OSReturn os::set_native_priority(Thread* thread, int newpri) {
 }
 
 OSReturn os::get_native_priority(const Thread* const thread, int *priority_ptr) {
-  if (!UseThreadPriorities) {
+  if (!UseThreadPriorities || ThreadPriorityPolicy == 0) {
     *priority_ptr = java_to_os_priority[NormPriority];
     return OS_OK;
   }
@@ -3569,6 +3583,9 @@ jint os::init_2(void) {
     }
   }
 
+  // initialize thread priority policy
+  prio_init();
+
   return JNI_OK;
 }
 
@@ -3604,11 +3621,6 @@ int os::active_processor_count() {
 void os::set_native_thread_name(const char *name) {
   // Not yet implemented.
   return;
-}
-
-bool os::distribute_processes(uint length, uint* distribution) {
-  // Not yet implemented.
-  return false;
 }
 
 bool os::bind_to_processor(uint processor_id) {
