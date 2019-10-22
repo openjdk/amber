@@ -1,0 +1,6 @@
+[attribute LocalMethodsL2MTest]
+[flow LocalMethodsL2MTest]
+[desugar LocalMethodsL2MTest]
+[LambdaToMethod LocalMethodsL2MTest]
+[generate code Inner]
+[generate code LocalMethodsL2MTest]

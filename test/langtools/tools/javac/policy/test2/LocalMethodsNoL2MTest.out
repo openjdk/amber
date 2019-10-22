@@ -1,0 +1,5 @@
+[attribute LocalMethodsNoL2MTest]
+[flow LocalMethodsNoL2MTest]
+[desugar LocalMethodsNoL2MTest]
+[generate code Inner]
+[generate code LocalMethodsNoL2MTest]
