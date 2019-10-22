@@ -840,7 +840,7 @@ public class ClassWriter extends ClassFile {
         Scope s = csym.members();
         databuf.appendChar(csym.getRecordComponents().size());
         for (VarSymbol v: csym.getRecordComponents()) {
-            //databuf.appendChar(poolWriter.putMember(v.accessors.head.snd));
+            //databuf.appendChar(poolWriter.putMember(v.accessor.head.snd));
             databuf.appendChar(poolWriter.putName(v.name));
             databuf.appendChar(poolWriter.putDescriptor(v));
             int acountIdx = beginAttrs();

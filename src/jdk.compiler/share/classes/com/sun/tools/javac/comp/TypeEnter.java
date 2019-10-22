@@ -25,11 +25,9 @@
 
 package com.sun.tools.javac.comp;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.tools.JavaFileObject;
 
@@ -1013,7 +1011,7 @@ public class TypeEnter implements Completer {
             List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
-                addAccessorsIfNeeded(tree, env);
+                addAccessors(tree, env);
             }
             // now we need to enter any additional mandated member that could have been added in the previous step
             memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
@@ -1024,45 +1022,40 @@ public class TypeEnter implements Completer {
             }
         }
 
-        /** Add the accessors for fields to the symbol table.
+        /** Add the accessor for fields to the symbol table.
          */
-        private void addAccessorsIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+        private void addAccessors(JCClassDecl tree, Env<AttrContext> env) {
             tree.defs.stream()
                     .filter(t -> t.hasTag(VARDEF))
-                    .map(t -> (JCVariableDecl)t)
-                    .filter(vd -> vd.accessors != null && vd.accessors.nonEmpty())
-                    .forEach(vd -> addAccessors(vd, env));
+                    .map(t -> (JCVariableDecl) t)
+                    .filter(vd -> vd.sym.isRecord())
+                    .forEach(vd -> addAccessor(vd, env));
         }
 
-        private void addAccessors(JCVariableDecl tree, Env<AttrContext> env) {
-            for (Pair<Accessors.Kind, Name> accessor : tree.accessors) {
-                Type accessorType = accessor.fst.accessorType(syms, tree.sym.type);
-                MethodSymbol implSym = lookupMethod(env.enclClass.sym, accessor.snd, accessorType.getParameterTypes());
-                if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
-                    JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
-                              accessor.snd,
-                              make.Type(accessorType.getReturnType()),
-                              List.nil(),
-                              accessorType.getParameterTypes().stream()
-                                      .map(ptype -> make.Param(tree.name, tree.sym.type, env.enclClass.sym))
-                                      .collect(List.collector()),
-                              List.nil(), // thrown
-                              null,
-                              null);
-                    memberEnter.memberEnter(getter, env);
-                    RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
-                    rec.accessors = rec.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
-                    tree.sym.accessors = tree.sym.accessors.prepend(new Pair<>(accessor.fst, getter.sym));
-                } else if (implSym != null) {
-                    if ((implSym.flags() & Flags.PUBLIC) == 0) {
-                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
-                    }
-                    if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
-                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
-                    }
-                    if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
-                        log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
-                    }
+        private void addAccessor(JCVariableDecl tree, Env<AttrContext> env) {
+            MethodSymbol implSym = lookupMethod(env.enclClass.sym, tree.sym.name, tree.sym.type.getParameterTypes());
+            if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
+                JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
+                          tree.sym.name,
+                          make.Type(tree.sym.type),
+                          List.nil(),
+                          List.nil(),
+                          List.nil(), // thrown
+                          null,
+                          null);
+                memberEnter.memberEnter(getter, env);
+                RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
+                rec.accessor = getter.sym;
+                tree.sym.accessor = getter.sym;
+            } else if (implSym != null) {
+                if ((implSym.flags() & Flags.PUBLIC) == 0) {
+                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
+                }
+                if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
+                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
+                }
+                if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
+                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
                 }
             }
         }
@@ -1249,11 +1242,11 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(equals, env);
             }
 
-            // lets remove a temporary flag used to mark if the record component was initially declared as a varargs
+            // fields can't be varargs, lets remove the flag
             List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
             for (JCVariableDecl field: recordFields) {
-                field.mods.flags &= ~Flags.ORIGINALLY_VARARGS;
-                field.sym.flags_field &= ~Flags.ORIGINALLY_VARARGS;
+                field.mods.flags &= ~Flags.VARARGS;
+                field.sym.flags_field &= ~Flags.VARARGS;
             }
         }
 
@@ -1419,7 +1412,7 @@ public class TypeEnter implements Completer {
         @Override
         public Type constructorType() {
             if (constructorType == null) {
-                List<Type> argtypes = recordFieldSymbols.map(v -> v.type);
+                List<Type> argtypes = recordFieldSymbols.map(v -> (v.flags_field & Flags.VARARGS) != 0 ? types.elemtype(v.type) : v.type);
                 constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
@@ -1433,7 +1426,7 @@ public class TypeEnter implements Completer {
             csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
-                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.ORIGINALLY_VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
+                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;

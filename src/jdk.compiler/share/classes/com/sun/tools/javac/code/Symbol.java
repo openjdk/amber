@@ -49,7 +49,6 @@ import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
-import com.sun.tools.javac.code.Accessors;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
 import com.sun.tools.javac.code.Type.*;
@@ -1603,7 +1602,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public int adr = -1;
 
-        public List<Pair<Accessors.Kind, MethodSymbol>> accessors = List.nil();
+        public MethodSymbol accessor;
 
         /** Construct a variable symbol, given its flags, name, type and owner.
          */
@@ -1756,12 +1755,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
         public ExecutableElement getAccessor() {
-            for (Pair<Accessors.Kind, MethodSymbol> accessor : accessors) {
-                if (accessor.fst == Accessors.Kind.GET) {
-                    return accessor.snd;
-                }
-            }
-            throw new AssertionError("record component without accessor");
+            return accessor;
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)

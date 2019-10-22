@@ -211,11 +211,7 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init) {
-        return VarDef(mods, name, vartype, init, null);
-    }
-
-    public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init, List<Pair<Accessors.Kind, Name>> accessors) {
-        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null, accessors);
+        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null);
         tree.pos = pos;
         return tree;
     }
@@ -844,7 +840,7 @@ public class TreeMaker implements JCTree.Factory {
                 v.name,
                 Type(v.type),
                 init,
-                v, null).setPos(pos).setType(v.type);
+                v).setPos(pos).setType(v.type);
     }
 
     /** Create annotation trees from annotations.

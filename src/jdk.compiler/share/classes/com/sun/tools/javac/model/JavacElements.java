@@ -45,7 +45,6 @@ import static javax.lang.model.util.ElementFilter.methodsIn;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.code.Accessors.Kind;
 import com.sun.tools.javac.code.Attribute.Compound;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.ExportsFlag;

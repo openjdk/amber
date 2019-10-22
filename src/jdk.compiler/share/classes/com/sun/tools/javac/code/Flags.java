@@ -335,12 +335,6 @@ public class Flags {
      */
     public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51;
 
-    /**
-     * Flag that marks if a the implementation of a record component, a field,
-     * was originally declared as a varargs
-     */
-    public static final long ORIGINALLY_VARARGS = 1L<<49;
-
     /** Modifier masks.
      */
     public static final int

@@ -26,12 +26,8 @@
 package com.sun.tools.javac.comp;
 
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -59,7 +55,6 @@ import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import static com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode.DEREF;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase;
@@ -2284,40 +2279,31 @@ public class Lower extends TreeTranslator {
         tree.defs.stream()
                 .filter(t -> t.hasTag(VARDEF))
                 .map(t -> (JCVariableDecl)t)
-                .filter(vd -> vd.sym.accessors.nonEmpty())
+                .filter(vd -> vd.sym.accessor != null)
                 .forEach(vd -> {
-                    for (Pair<Accessors.Kind, MethodSymbol> accessor : vd.sym.accessors) {
-                        MethodSymbol accessorSym = accessor.snd;
-                        if ((accessorSym.flags() & Flags.MANDATED) != 0) {
-                            make_at(tree.pos());
-                            switch (accessor.fst) {
-                                case GET:
-                                    buffer.add(make.MethodDef(accessorSym, make.Block(0,
-                                            List.of(make.Return(make.Ident(vd.sym))))));
-                                    break;
-                                default:
-                                    Assert.error("Cannot get here!");
-                            }
-                        }
+                    if ((vd.sym.accessor.flags() & Flags.MANDATED) != 0) {
+                        make_at(tree.pos());
+                        buffer.add(make.MethodDef(vd.sym.accessor, make.Block(0,
+                                List.of(make.Return(make.Ident(vd.sym))))));
                     }
                 });
         return buffer.toList();
     }
 
-    /* this method looks for explicit accessors to add them to the corresponding field
+    /* this method looks for explicit accessor to add them to the corresponding field
      */
     void findUserDefinedAccessors(JCClassDecl tree) {
         tree.defs.stream()
                 .filter(t -> t.hasTag(VARDEF))
                 .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.sym.accessors.isEmpty() && !vd.sym.isStatic()))
+                .filter(vd -> (vd.sym.accessor != null && !vd.sym.isStatic()))
                 .forEach(vd -> {
                     MethodSymbol msym = lookupMethod(tree.pos(),
                             vd.name,
                             tree.sym.type,
                             List.nil());
                     Assert.check(msym != null, "there has to be a user defined accessor");
-                    vd.sym.accessors = List.of(new Pair<>(Accessors.Kind.GET, msym));
+                    vd.sym.accessor = msym;
                 });
     }
 
@@ -2502,7 +2488,7 @@ public class Lower extends TreeTranslator {
                 var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
             }
             getterMethHandles[index] = var.asMethodHandle(true);
-            if (!var.accessors.isEmpty()) {
+            if (var.accessor != null) {
                 getterMethHandlesForExtractor[index] = getterMethHandles[index];
             } else {
                 MethodSymbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());

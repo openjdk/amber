@@ -3383,15 +3383,11 @@ public class JavacParser implements Parser {
             log.error(token.pos, Errors.VarargsAndOldArraySyntax);
         }
         type = bracketsOpt(type);
-        List<Pair<Accessors.Kind, Name>> accessors = null;
-        if (recordComponent) {
-            if (forbiddenRecordComponentNames.contains(name.toString())) {
-                log.error(pos, Errors.IllegalRecordComponentName(name));
-            }
-            accessors = List.of(new Pair<>(Accessors.Kind.GET, name));
+        if (recordComponent && forbiddenRecordComponentNames.contains(name.toString())) {
+            log.error(pos, Errors.IllegalRecordComponentName(name));
         }
 
-        return toP(F.at(pos).VarDef(mods, name, type, null, accessors));
+        return toP(F.at(pos).VarDef(mods, name, type, null));
     }
 
     /** Resources = Resource { ";" Resources }
@@ -3776,12 +3772,6 @@ public class JavacParser implements Parser {
         }
         for (int i = fields.size() - 1; i >= 0; i--) {
             JCVariableDecl field = fields.get(i);
-            if ((field.mods.flags & Flags.VARARGS) != 0) {
-                if ((field.mods.flags & Flags.VARARGS) != 0) {
-                    field.mods.flags = field.mods.flags & ~Flags.VARARGS | Flags.ORIGINALLY_VARARGS;
-                    field = F.at(field).VarDef(field.mods, field.name, field.vartype, null, field.accessors);
-                }
-            }
             defs = defs.prepend(field);
         }
         JCClassDecl result = toP(F.at(pos).ClassDef(mods, name, typarams, null, implementing, defs));
@@ -3841,8 +3831,7 @@ public class JavacParser implements Parser {
         if (forbiddenRecordComponentNames.contains(id.toString())) {
             log.error(pos, Errors.IllegalRecordComponentName(id));
         }
-        List<Pair<Accessors.Kind, Name>> accessors = List.of(new Pair<>(Accessors.Kind.GET, id));
-        return toP(F.at(pos).VarDef(mods, id, type, null, accessors));
+        return toP(F.at(pos).VarDef(mods, id, type, null));
     }
 
     /** InterfaceDeclaration = INTERFACE Ident TypeParametersOpt
