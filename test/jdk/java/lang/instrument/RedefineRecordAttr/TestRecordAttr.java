@@ -47,7 +47,7 @@
 
 /* Test Description
 
-The basic test class is call Host and we have variants that have zero or more
+The basic test class is called Host and we have variants that have zero or more
 record components.  Each variant of Host is defined in source code in its own
 directory i.e.
 

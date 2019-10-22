@@ -43,8 +43,8 @@
 
 /* Test Description
 
-The basic test class is call Host and we have variants that have record components
-with no or different generic_signature attributes.  Each variant of Host is defined
+The basic test class is called Host and we have variants that have record components
+with different or no generic_signature attributes.  Each variant of Host is defined
 in source code in its own directory i.e.
 
 Host/Host.java has record components with no generic signature attributes.

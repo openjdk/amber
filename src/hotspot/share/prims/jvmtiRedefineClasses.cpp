@@ -294,7 +294,6 @@ bool VM_RedefineClasses::is_modifiable_class(oop klass_mirror) {
   if (InstanceKlass::cast(k)->is_unsafe_anonymous()) {
     return false;
   }
-
   return true;
 }
 
@@ -836,7 +835,7 @@ static jvmtiError check_record_attribute(InstanceKlass* the_class, InstanceKlass
         return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
       }
 
-      // It's okay of a record component's annotations were changed.
+      // It's okay if a record component's annotations were changed.
     }
 
   } else if (the_record_exists ^ scr_record_exists) {

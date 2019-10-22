@@ -3223,6 +3223,18 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
   return length;
 }
 
+//  Record {
+//    u2 attribute_name_index;
+//    u4 attribute_length;
+//    u2 components_count;
+//    component_info components[components_count];
+//  }
+//  component_info {
+//    u2 name_index;
+//    u2 descriptor_index
+//    u2 attributs_count;
+//    attribute_info_attributes[attributes_count];
+//  }
 u2 ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* const cfs,
                                                      const ConstantPool* cp,
                                                      const u1* const record_attribute_start,
@@ -3272,6 +3284,8 @@ u2 ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* cons
     int runtime_invisible_type_annotations_length = 0;
     bool runtime_invisible_type_annotations_exists = false;
 
+    // Expected attributes for record components are Signature, Runtime(In)VisibleAnnotations,
+    // and Runtime(In)VisibleTypeAnnotations.  Other attributes are ignored.
     for (int y = 0; y < attributes_count; y++) {
       cfs->guarantee_more(6, CHECK_0);  // attribute_name_index, attribute_length
       const u2 attribute_name_index = cfs->get_u2_fast();
@@ -4925,7 +4939,7 @@ void ClassFileParser::verify_legal_class_modifiers(jint flags, TRAPS) const {
   const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
   const bool major_gte_14  = _major_version >= JAVA_14_VERSION;
 
-  if ((is_abstract && is_final && !major_gte_14) ||
+  if ((is_abstract && is_final) ||
       (is_interface && !is_abstract) ||
       (is_interface && major_gte_1_5 && (is_super || is_enum)) ||
       (!is_interface && major_gte_1_5 && is_annotation)) {
@@ -5024,14 +5038,14 @@ void ClassFileParser::verify_legal_field_modifiers(jint flags,
   const bool is_volatile  = (flags & JVM_ACC_VOLATILE)  != 0;
   const bool is_transient = (flags & JVM_ACC_TRANSIENT) != 0;
   const bool is_enum      = (flags & JVM_ACC_ENUM)      != 0;
-  const bool major_gte_15 = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_1_5 = _major_version >= JAVA_1_5_VERSION;
 
   bool is_illegal = false;
 
   if (is_interface) {
     if (!is_public || !is_static || !is_final || is_private ||
         is_protected || is_volatile || is_transient ||
-        (major_gte_15 && is_enum)) {
+        (major_gte_1_5 && is_enum)) {
       is_illegal = true;
     }
   } else { // not interface
@@ -5067,7 +5081,7 @@ void ClassFileParser::verify_legal_method_modifiers(jint flags,
   const bool is_strict       = (flags & JVM_ACC_STRICT)       != 0;
   const bool is_synchronized = (flags & JVM_ACC_SYNCHRONIZED) != 0;
   const bool is_protected    = (flags & JVM_ACC_PROTECTED)    != 0;
-  const bool major_gte_15    = _major_version >= JAVA_1_5_VERSION;
+  const bool major_gte_1_5   = _major_version >= JAVA_1_5_VERSION;
   const bool major_gte_8     = _major_version >= JAVA_8_VERSION;
   const bool is_initializer  = (name == vmSymbols::object_initializer_name());
 
@@ -5090,7 +5104,7 @@ void ClassFileParser::verify_legal_method_modifiers(jint flags,
           (is_abstract && (is_private || is_static || is_strict))) {
         is_illegal = true;
       }
-    } else if (major_gte_15) {
+    } else if (major_gte_1_5) {
       // Class file version in the interval [JAVA_1_5_VERSION, JAVA_8_VERSION)
       if (!is_public || is_private || is_protected || is_static || is_final ||
           is_synchronized || is_native || !is_abstract || is_strict) {
@@ -5108,13 +5122,13 @@ void ClassFileParser::verify_legal_method_modifiers(jint flags,
     } else {
       if (is_initializer) {
         if (is_static || is_final || is_synchronized || is_native ||
-            is_abstract || (major_gte_15 && is_bridge)) {
+            is_abstract || (major_gte_1_5 && is_bridge)) {
           is_illegal = true;
         }
       } else { // not initializer
         if (is_abstract) {
           if ((is_final || is_native || is_private || is_static ||
-              (major_gte_15 && (is_synchronized || is_strict)))) {
+              (major_gte_1_5 && (is_synchronized || is_strict)))) {
             is_illegal = true;
           }
         }

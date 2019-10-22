@@ -1723,6 +1723,7 @@ JVM_ENTRY(jobjectArray, JVM_GetRecordComponents(JNIEnv* env, jclass ofClass))
     }
   }
 
+  // Return empty array if ofClass is not a record.
   objArrayOop result = oopFactory::new_objArray(SystemDictionary::RecordComponent_klass(), 0, CHECK_NULL);
   return (jobjectArray)JNIHandles::make_local(env, result);
 }

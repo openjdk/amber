@@ -92,7 +92,6 @@ class RecordComponent: public MetaspaceObj {
 
 #if INCLUDE_SERVICES
     void collect_statistics(KlassSizeStats *sz) const {
-      // TBD is this right?
       if (_annotations != NULL) {
         sz->_annotations_bytes += sz->count(_annotations);
         sz->_ro_bytes += sz->count(_annotations);

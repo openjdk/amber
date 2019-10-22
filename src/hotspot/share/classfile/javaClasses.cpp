@@ -3024,6 +3024,7 @@ void java_lang_reflect_Field::set_annotations(oop field, oop value) {
 
 oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordComponent* component, TRAPS) {
   // Allocate java.lang.reflect.RecordComponent instance
+  HandleMark hm(THREAD);
   InstanceKlass* ik = SystemDictionary::RecordComponent_klass();
   assert(ik != NULL, "must be loaded");
   if (ik->should_be_initialized()) {
