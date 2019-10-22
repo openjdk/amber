@@ -64,6 +64,7 @@ import com.sun.tools.javac.parser.*;
 import com.sun.tools.javac.platform.PlatformDescription;
 import com.sun.tools.javac.processing.*;
 import com.sun.tools.javac.tree.*;
+import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
@@ -1525,6 +1526,17 @@ public class JavaCompiler {
                 try {
                     inMethod = true;
                     super.visitMethodDef(tree);
+                } finally {
+                    inMethod = prevInMethod;
+                }
+            }
+
+            @Override
+            public void visitBlock(JCBlock tree) {
+                boolean prevInMethod = inMethod;
+                try {
+                    inMethod = true;
+                    super.visitBlock(tree);
                 } finally {
                     inMethod = prevInMethod;
                 }

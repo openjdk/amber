@@ -1729,7 +1729,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public MethodSymbol(long flags, Name name, Type type, Symbol owner) {
             super(MTH, flags, name, type, owner);
-            if (owner.type.hasTag(TYPEVAR)) Assert.error(owner + "." + name);
+            if (owner.type != null && owner.type.hasTag(TYPEVAR)) Assert.error(owner + "." + name);
         }
 
         /** Clone this symbol with new owner.
