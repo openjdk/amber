@@ -447,15 +447,15 @@ public class Utils {
     }
 
     public SortedSet<VariableElement> serializableFields(TypeElement aclass) {
-        return configuration.workArounds.getSerializableFields(this, aclass);
+        return configuration.workArounds.getSerializableFields(aclass);
     }
 
     public SortedSet<ExecutableElement> serializationMethods(TypeElement aclass) {
-        return configuration.workArounds.getSerializationMethods(this, aclass);
+        return configuration.workArounds.getSerializationMethods(aclass);
     }
 
     public boolean definesSerializableFields(TypeElement aclass) {
-        return configuration.workArounds.definesSerializableFields(this, aclass);
+        return configuration.workArounds.definesSerializableFields( aclass);
     }
 
     @SuppressWarnings("removal")

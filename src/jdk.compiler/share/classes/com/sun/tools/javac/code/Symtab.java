@@ -215,6 +215,7 @@ public class Symtab {
     public final Type documentedType;
     public final Type elementTypeType;
     public final Type functionalInterfaceType;
+    public final Type previewFeatureType;
     public final Type typeDescriptorType;
     public final Type recordType;
     public final Type objectStreamFieldType;
@@ -577,6 +578,7 @@ public class Symtab {
         lambdaMetafactory = enterClass("java.lang.invoke.LambdaMetafactory");
         stringConcatFactory = enterClass("java.lang.invoke.StringConcatFactory");
         functionalInterfaceType = enterClass("java.lang.FunctionalInterface");
+        previewFeatureType = enterClass("jdk.internal.PreviewFeature");
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
         recordType = enterClass("java.lang.Record");
         objectStreamFieldType = enterClass("java.io.ObjectStreamField");
