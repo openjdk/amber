@@ -226,7 +226,6 @@ public class Tokens {
         GTGTEQ(">>="),
         GTGTGTEQ(">>>="),
         MONKEYS_AT("@"),
-        RECORD("record", Tag.RESERVED),
         CUSTOM;
 
         public final String name;

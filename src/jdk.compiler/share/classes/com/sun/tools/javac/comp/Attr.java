@@ -1105,6 +1105,19 @@ public class Attr extends JCTree.Visitor {
                         log.error(tree.body.stats.head.pos(),
                                   Errors.CallToSuperNotAllowedInEnumCtor(env.enclClass.sym));
                     }
+                    if (env.enclClass.sym.isRecord() && tree.sym.isRecord()) { // we are seeing the canonical constructor
+                        List<Name> recordComponentNames = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.name);
+                        List<Name> initParamNames = tree.sym.params.map(p -> p.name);
+                        if (!initParamNames.equals(recordComponentNames)) {
+                            log.error(tree, Errors.CanonicalWithNameMismatch);
+                        }
+                        if (!tree.sym.isPublic()) {
+                            log.error(tree, Errors.CanonicalConstructorMustBePublic);
+                        }
+                        if (tree.sym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
+                            log.error(tree, Errors.MethodCantThrowCheckedException);
+                        }
+                    }
                 }
 
                 // Attribute all type annotations in the body
@@ -1122,6 +1135,18 @@ public class Attr extends JCTree.Visitor {
             chk.setMethod(prevMethod);
         }
     }
+    //where
+        private boolean isUnchecked(Type exc) {
+            return (exc.hasTag(TYPEVAR)) ? isUnchecked(types.supertype(exc)) :
+                    (exc.hasTag(CLASS)) ? isUnchecked((ClassSymbol)exc.tsym) :
+                            exc.hasTag(BOT);
+        }
+
+        boolean isUnchecked(ClassSymbol exc) {
+            return exc.kind == ERR ||
+                    exc.isSubClass(syms.errorType.tsym, types) ||
+                    exc.isSubClass(syms.runtimeExceptionType.tsym, types);
+        }
 
     public void visitVarDef(JCVariableDecl tree) {
         // Local variables have not been entered yet, so we need to do it now:
@@ -1200,6 +1225,9 @@ public class Attr extends JCTree.Visitor {
             }
             result = tree.type = v.type;
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP) {
+                if (forbiddenRecordComponentNames.contains(v.name.toString())) {
+                    log.error(env.enclClass, Errors.IllegalRecordComponentName(env.enclClass.sym, v));
+                }
                 chk.checkForSerializationMembers(env, tree, false);
             }
         }
@@ -1207,6 +1235,13 @@ public class Attr extends JCTree.Visitor {
             chk.setLint(prevLint);
         }
     }
+
+    private static final Set<String> forbiddenRecordComponentNames = Set.of(
+            "clone", "finalize", "getClass", "hashCode",
+            "notify", "notifyAll", "readObjectNoData",
+            "readResolve", "serialPersistentFields",
+            "serialVersionUID", "toString", "wait",
+            "writeReplace");
 
     Fragment canInferLocalVarType(JCVariableDecl tree) {
         LocalInitScanner lis = new LocalInitScanner();

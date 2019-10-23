@@ -85,7 +85,6 @@ public class Names {
     public final Name deserializeLambda;
     public final Name desiredAssertionStatus;
     public final Name equals;
-    public final Name oldEquals;
     public final Name error;
     public final Name finalize;
     public final Name forRemoval;
@@ -258,7 +257,6 @@ public class Names {
         deserializeLambda = fromString("$deserializeLambda$");
         desiredAssertionStatus = fromString("desiredAssertionStatus");
         equals = fromString("equals");
-        oldEquals = fromString("oldEquals");
         error = fromString("<error>");
         finalize = fromString("finalize");
         forRemoval = fromString("forRemoval");

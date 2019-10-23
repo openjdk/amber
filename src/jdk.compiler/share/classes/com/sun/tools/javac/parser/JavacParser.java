@@ -3383,9 +3383,6 @@ public class JavacParser implements Parser {
             log.error(token.pos, Errors.VarargsAndOldArraySyntax);
         }
         type = bracketsOpt(type);
-        if (recordComponent && forbiddenRecordComponentNames.contains(name.toString())) {
-            log.error(pos, Errors.IllegalRecordComponentName(name));
-        }
 
         return toP(F.at(pos).VarDef(mods, name, type, null));
     }
@@ -3688,7 +3685,7 @@ public class JavacParser implements Parser {
                 erroneousTree = syntaxError(pos, errs, Errors.ExpectedModuleOrOpen);
             } else {
                 if (allowRecords) {
-                    erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, RECORD));
+                    erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, "RECORD"));
                 } else {
                 erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
             }
@@ -3789,49 +3786,6 @@ public class JavacParser implements Parser {
             reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(name, name == names.var ? Source.JDK10 : Source.JDK13));
         }
         return name;
-    }
-
-    List<JCVariableDecl> headerFields() {
-        ListBuffer<JCVariableDecl> fields = new ListBuffer<>();
-        if (token.kind == LPAREN) {
-            nextToken();
-            // check for empty record
-            if (token.kind == RPAREN) {
-                nextToken();
-                return List.nil();
-            }
-            fields.add(headerField());
-            while (token.kind == COMMA) {
-                nextToken();
-                fields.add(headerField());
-            }
-            accept(RPAREN);
-        } else {
-            accept(LPAREN);
-        }
-        return fields.toList();
-    }
-
-    static final Set<String> forbiddenRecordComponentNames = Set.of(
-            "clone", "finalize", "getClass", "hashCode",
-            "notify", "notifyAll", "readObjectNoData",
-            "readResolve", "serialPersistentFields",
-            "serialVersionUID", "toString", "wait",
-            "writeReplace");
-
-    JCVariableDecl headerField() {
-        JCModifiers mods = modifiersOpt();
-        if (mods.flags != 0) {
-            log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
-        }
-        mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE | Flags.MANDATED;
-        JCExpression type = parseType();
-        int pos = token.pos;
-        Name id = ident();
-        if (forbiddenRecordComponentNames.contains(id.toString())) {
-            log.error(pos, Errors.IllegalRecordComponentName(id));
-        }
-        return toP(F.at(pos).VarDef(mods, id, type, null));
     }
 
     /** InterfaceDeclaration = INTERFACE Ident TypeParametersOpt

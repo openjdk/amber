@@ -1106,20 +1106,6 @@ public class TypeEnter implements Completer {
                     tree.defs = tree.defs.prepend(constrDef);
                     defaultConstructorGenerated = true;
                 } else {
-                    /* there is an explicit constructor that match the canonical constructor by type
-                       let's check that the match is also by name
-                    */
-                    List<Name> recordComponentNames = TreeInfo.recordFields(tree).map(vd -> vd.sym.name);
-                    List<Name> initParamNames = canonicalInit.params.map(p -> p.name);
-                    if (!initParamNames.equals(recordComponentNames)) {
-                        log.error(canonicalDecl, Errors.CanonicalWithNameMismatch);
-                    }
-                    if (!canonicalInit.isPublic()) {
-                        log.error(canonicalDecl, Errors.CanonicalConstructorMustBePublic);
-                    }
-                    if (canonicalInit.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
-                        log.error(canonicalDecl, Errors.MethodCantThrowCheckedException);
-                    }
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
                 }

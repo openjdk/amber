@@ -63,7 +63,9 @@ public class CompletenessTest extends KullaTesting {
         "foo: while (true) { printf(\"Innn\"); break foo; }",
         "class Case<E1 extends Enum<E1>, E2 extends Enum<E2>, E3 extends Enum<E3>> {}",
         ";",
-        "enum Tt { FOO, BAR, BAZ,; }"
+        "enum Tt { FOO, BAR, BAZ,; }",
+        "record D(int i) {}",
+        "static record D(int i) {}",
     };
 
     static final String[] expression = new String[] {
@@ -121,9 +123,7 @@ public class CompletenessTest extends KullaTesting {
         "int[] m = {1, 2}",
         "int[] m = {1, 2}, n = null",
         "int[] m = {1, 2}, n",
-        "int[] m = {1, 2}, n = {3, 4}",
-        "record D(int i)",
-        "static record D(int i)"
+        "int[] m = {1, 2}, n = {3, 4}"
     };
 
     static final String[] considered_incomplete = new String[] {

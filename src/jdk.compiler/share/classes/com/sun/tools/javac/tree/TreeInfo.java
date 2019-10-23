@@ -83,6 +83,7 @@ public class TreeInfo {
     }
 
     public static boolean isCanonicalConstructor(JCTree tree) {
+        // the record flag is only set to the canonical constructor
         return isConstructor(tree) && ((JCMethodDecl)tree).sym.isRecord();
     }
 
@@ -222,10 +223,7 @@ public class TreeInfo {
     }
 
     public static List<Type> recordFieldTypes(JCClassDecl tree) {
-        return tree.defs.stream()
-                .filter(t -> t.hasTag(VARDEF))
-                .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
+        return recordFields(tree).stream()
                 .map(vd -> vd.type)
                 .collect(List.collector());
     }
