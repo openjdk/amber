@@ -302,7 +302,10 @@ public class ObjectMethods {
      *                     constant {@code MethodHandle.class}, if linking a
      *                     dynamic constant
      * @param theClass     the class hosting the components
-     * @param names        the list of component names, joined into a string separated by ";"
+     * @param names        the list of component names, joined into a string
+     *                     separated by ";", or the empty string if there are no
+     *                     components. Maybe be null, if the {@code methodName}
+     *                     is {@code "equals"} or {@code "hashCode"}.
      * @param getters      method handles for the accessor methods for the components
      * @return             a call site if invoked by indy, or a method handle
      *                     if invoked by a condy
