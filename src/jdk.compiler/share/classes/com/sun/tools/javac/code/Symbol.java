@@ -1652,14 +1652,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return new VarSymbol(flags_field, name, types.memberType(site, this), owner);
         }
 
-        @Override
-        public Type erasure(Types types) {
-            if (erasure_field == null) {
-                erasure_field = types.erasure(type);
-            }
-            return erasure_field;
-        }
-
         @DefinedBy(Api.LANGUAGE_MODEL)
         public ElementKind getKind() {
             long flags = flags();

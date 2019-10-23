@@ -942,27 +942,6 @@ public class TypeEnter implements Completer {
                     tree.defs = tree.defs.prepend(constrDef);
                     defaultConstructorGenerated = true;
                 }
-            } else {
-                if ((sym.flags() & RECORD) != 0) {
-                    // there are constructors but they could be incomplete
-                    for (JCTree def : tree.defs) {
-                        if (TreeInfo.isConstructor(def)) {
-                            Name constructorInvocationName =
-                                    TreeInfo.getConstructorInvocationName(((JCMethodDecl)def).body.stats, names, true);
-                            if (constructorInvocationName == names.empty ||
-                                    constructorInvocationName == names._super) {
-                                JCMethodDecl methDecl = (JCMethodDecl)def;
-                                if ((methDecl.mods.flags & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
-                                    if (constructorInvocationName == names.empty) {
-                                        JCStatement supCall = make.at(methDecl.body.pos).Exec(make.Apply(List.nil(),
-                                                make.Ident(names._super), List.nil()));
-                                        methDecl.body.stats = methDecl.body.stats.prepend(supCall);
-            }
-                                }
-                            }
-                        }
-                    }
-                }
             }
             // enter symbols for 'this' into current scope.
             VarSymbol thisSym =
@@ -1005,13 +984,9 @@ public class TypeEnter implements Completer {
             List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            if (isRecord) {
-                checkForSerializationMembers(tree, env);
-            }
             List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
-                addAccessors(tree, env);
             }
             // now we need to enter any additional mandated member that could have been added in the previous step
             memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
@@ -1020,16 +995,6 @@ public class TypeEnter implements Completer {
                 Assert.check(tree.sym.isCompleted());
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));
             }
-        }
-
-        /** Add the accessor for fields to the symbol table.
-         */
-        private void addAccessors(JCClassDecl tree, Env<AttrContext> env) {
-            tree.defs.stream()
-                    .filter(t -> t.hasTag(VARDEF))
-                    .map(t -> (JCVariableDecl) t)
-                    .filter(vd -> vd.sym.isRecord())
-                    .forEach(vd -> addAccessor(vd, env));
         }
 
         private void addAccessor(JCVariableDecl tree, Env<AttrContext> env) {
@@ -1108,44 +1073,6 @@ public class TypeEnter implements Completer {
                           null, //make.Block(0, Tree.emptyList.prepend(make.Return(make.Ident(names._null)))),
                           null);
             memberEnter.memberEnter(valueOf, env);
-        }
-
-        private void checkForSerializationMembers(JCClassDecl tree, Env<AttrContext> env) {
-            // non-static void writeObject(java.io.ObjectOutputStream) {}
-            MethodSymbol ms = lookupMethod(tree.sym, names.writeObject, List.of(syms.objectOutputStreamType));
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.writeObject, ms, syms.voidType, false);
-            }
-            // non-static void readObjectNoData() {}
-            ms = lookupMethod(tree.sym, names.readObjectNoData, List.nil());
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readObjectNoData, ms, syms.voidType, false);
-            }
-            // non-static void readObject(java.io.ObjectInputStream stream) {}
-            ms = lookupMethod(tree.sym, names.readObject, List.of(syms.objectInputStreamType));
-            if (ms != null) {
-                errorOnSerializationMember(tree, names.readObject, ms, syms.voidType, false);
-            }
-            Type objectStreamFieldArr = new ArrayType(syms.objectStreamFieldType, syms.arrayClass);
-            Symbol fieldSym = lookupField(tree.sym, names.serialPersistentFields, objectStreamFieldArr);
-            if (fieldSym != null) {
-                errorOnSerializationMember(tree, names.serialPersistentFields, fieldSym, objectStreamFieldArr, true);
-            }
-        }
-
-        private void errorOnSerializationMember(JCClassDecl tree,
-                                                Name name, Symbol sym, Type expectedType, boolean shouldBeStatic) {
-            Type typeOrReturnType = sym.kind == MTH ? sym.type.asMethodType().getReturnType() : sym.type;
-            if (sym.isStatic() == shouldBeStatic && (typeOrReturnType == expectedType || types.isSameType(typeOrReturnType, expectedType))) {
-                for (JCTree def : tree.defs) {
-                    Symbol sym2 = TreeInfo.symbolFor(def);
-                    if (sym2 == sym) {
-                        log.error(def, Errors.IllegalRecordMember(name));
-                        return;
-                    }
-                }
-                log.error(tree, Errors.IllegalRecordMember(name));
-            }
         }
 
         /** Add the implicit members for a record
@@ -1248,6 +1175,12 @@ public class TypeEnter implements Completer {
                 field.mods.flags &= ~Flags.VARARGS;
                 field.sym.flags_field &= ~Flags.VARARGS;
             }
+            // now lets add the accessors
+            tree.defs.stream()
+                    .filter(t -> t.hasTag(VARDEF))
+                    .map(t -> (JCVariableDecl) t)
+                    .filter(vd -> vd.sym.isRecord())
+                    .forEach(vd -> addAccessor(vd, env));
         }
 
     }

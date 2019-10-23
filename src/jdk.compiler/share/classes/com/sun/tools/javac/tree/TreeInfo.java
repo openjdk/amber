@@ -104,7 +104,7 @@ public class TreeInfo {
 
     /** Is there a constructor invocation in the given list of trees?
      */
-    public static Name getConstructorInvocationName(List<? extends JCTree> trees, Names names, boolean isRecord) {
+    public static Name getConstructorInvocationName(List<? extends JCTree> trees, Names names) {
         for (JCTree tree : trees) {
             if (tree.hasTag(EXEC)) {
                 JCExpressionStatement stat = (JCExpressionStatement)tree;
