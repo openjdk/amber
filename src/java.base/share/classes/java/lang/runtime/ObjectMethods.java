@@ -37,7 +37,7 @@ import java.util.Objects;
  * including {@link Object#equals(Object)}, {@link Object#hashCode()}, and
  * {@link Object#toString()}.  These methods may be used, for example, by
  * Java&trade; compiler implementations to implement the bodies of {@link Object}
- * methods for record clases.
+ * methods for record classes.
  *
  * @since 14
  * @deprecated This class is part of a preview feature and may be removed
