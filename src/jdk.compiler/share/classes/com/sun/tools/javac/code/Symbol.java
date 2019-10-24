@@ -1606,8 +1606,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public int adr = -1;
 
-        public MethodSymbol accessor;
-
         /** Construct a variable symbol, given its flags, name, type and owner.
          */
         public VarSymbol(long flags, Name name, Type type, Symbol owner) {
@@ -1735,6 +1733,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
     @SuppressWarnings("removal")
     public static class RecordComponent extends VarSymbol implements RecordComponentElement {
+        public MethodSymbol accessor;
 
         /**
          * Construct a record component, given its flags, name, type and owner.

@@ -999,7 +999,12 @@ public class TypeEnter implements Completer {
 
         private void addAccessor(JCVariableDecl tree, Env<AttrContext> env) {
             MethodSymbol implSym = lookupMethod(env.enclClass.sym, tree.sym.name, tree.sym.type.getParameterTypes());
+            RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
             if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
+                /* here we are pushing the annotations present in the corresponding field down to the accessor
+                 * it could be that some of those annotations are not applicable to the accessor, they will be striped
+                 * away later at Check::validateAnnotation
+                 */
                 JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
                           tree.sym.name,
                           make.Type(tree.sym.type),
@@ -1009,9 +1014,7 @@ public class TypeEnter implements Completer {
                           null,
                           null);
                 memberEnter.memberEnter(getter, env);
-                RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
                 rec.accessor = getter.sym;
-                tree.sym.accessor = getter.sym;
             } else if (implSym != null) {
                 if ((implSym.flags() & Flags.PUBLIC) == 0) {
                     log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
@@ -1022,6 +1025,7 @@ public class TypeEnter implements Completer {
                 if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                     log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
                 }
+                rec.accessor = implSym;
             }
         }
 
@@ -1075,28 +1079,33 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(valueOf, env);
         }
 
+        JCMethodDecl getCanonicalInitDecl(JCClassDecl tree) {
+            // let's check if there is a constructor with exactly the same arguments as the record components
+            List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
+            List<Type> erasedTypes = types.erasure(recordComponentTypes);
+            JCMethodDecl canonicalDecl = null;
+            for (JCTree def : tree.defs) {
+                if (TreeInfo.isConstructor(def)) {
+                    JCMethodDecl mdecl = (JCMethodDecl)def;
+                    if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), erasedTypes)) {
+                        canonicalDecl = mdecl;
+                        break;
+                    }
+                }
+            }
+            if (canonicalDecl != null && !types.isSameTypes(erasedTypes, recordComponentTypes)) {
+                // error we found a constructor with the same erasure as the canonical constructor
+                log.error(canonicalDecl, Errors.ConstructorWithSameErasureAsCanonical);
+            }
+            return canonicalDecl;
+        }
+
         /** Add the implicit members for a record
          *  to the symbol table.
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
             if (!defaultConstructorGenerated) {
-                // let's check if there is a constructor with exactly the same arguments as the record components
-                List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
-                List<Type> erasedTypes = types.erasure(recordComponentTypes);
-                JCMethodDecl canonicalDecl = null;
-                for (JCTree def : tree.defs) {
-                    if (TreeInfo.isConstructor(def)) {
-                        JCMethodDecl mdecl = (JCMethodDecl)def;
-                        if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), erasedTypes)) {
-                            canonicalDecl = mdecl;
-                            break;
-                        }
-                    }
-                }
-                if (canonicalDecl != null && !types.isSameTypes(erasedTypes, recordComponentTypes)) {
-                    // error we found a constructor with the same erasure as the canonical constructor
-                    log.error(canonicalDecl, Errors.ConstructorWithSameErasureAsCanonical);
-                }
+                JCMethodDecl canonicalDecl = getCanonicalInitDecl(tree);
                 MethodSymbol canonicalInit = canonicalDecl == null ?
                         null :
                         canonicalDecl.sym;
@@ -1340,8 +1349,9 @@ public class TypeEnter implements Completer {
         @Override
         public MethodSymbol constructorSymbol() {
             MethodSymbol csym = super.constructorSymbol();
-            // if we have to generate a default constructor for records we will treat it as the compact one
-            // to trigger field initialization later on
+            /* if we have to generate a default constructor for records we will treat it as the compact one
+             * to trigger field initialization later on
+             */
             csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
@@ -1356,6 +1366,9 @@ public class TypeEnter implements Completer {
         public JCMethodDecl finalAdjustment(JCMethodDecl md) {
             List<JCVariableDecl> tmpRecordFieldDecls = recordFieldDecls;
             for (JCVariableDecl arg : md.params) {
+                /* at this point we are passing all the annotations in the field to the corresponding
+                 * parameter in the constructor.
+                 */
                 arg.mods.annotations = tmpRecordFieldDecls.head.mods.annotations;
                 arg.vartype = tmpRecordFieldDecls.head.vartype;
                 tmpRecordFieldDecls = tmpRecordFieldDecls.tail;

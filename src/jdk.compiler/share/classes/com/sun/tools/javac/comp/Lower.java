@@ -2276,35 +2276,15 @@ public class Lower extends TreeTranslator {
 
     List<JCTree> accessors(JCClassDecl tree) {
         ListBuffer<JCTree> buffer = new ListBuffer<>();
-        tree.defs.stream()
-                .filter(t -> t.hasTag(VARDEF))
-                .map(t -> (JCVariableDecl)t)
-                .filter(vd -> vd.sym.accessor != null)
-                .forEach(vd -> {
-                    if ((vd.sym.accessor.flags() & Flags.MANDATED) != 0) {
+        tree.sym.getRecordComponents().stream()
+                .forEach(rc -> {
+                    if ((rc.accessor.flags() & Flags.MANDATED) != 0) {
                         make_at(tree.pos());
-                        buffer.add(make.MethodDef(vd.sym.accessor, make.Block(0,
-                                List.of(make.Return(make.Ident(vd.sym))))));
+                        buffer.add(make.MethodDef(rc.accessor, make.Block(0,
+                                List.of(make.Return(make.Ident(rc))))));
                     }
                 });
         return buffer.toList();
-    }
-
-    /* this method looks for explicit accessor to add them to the corresponding field
-     */
-    void findUserDefinedAccessors(JCClassDecl tree) {
-        tree.defs.stream()
-                .filter(t -> t.hasTag(VARDEF))
-                .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.sym.accessor != null && !vd.sym.isStatic()))
-                .forEach(vd -> {
-                    MethodSymbol msym = lookupMethod(tree.pos(),
-                            vd.name,
-                            tree.sym.type,
-                            List.nil());
-                    Assert.check(msym != null, "there has to be a user defined accessor");
-                    vd.sym.accessor = msym;
-                });
     }
 
     /** Translate an enum class. */
@@ -2480,20 +2460,12 @@ public class Lower extends TreeTranslator {
         make_at(tree.pos());
         List<VarSymbol> vars = recordVars(tree.type);
         MethodHandleSymbol[] getterMethHandles = new MethodHandleSymbol[vars.size()];
-        // for the extractor we use the user provided getter, for the rest we access the field directly
-        MethodHandleSymbol[] getterMethHandlesForExtractor = new MethodHandleSymbol[vars.size()];
         int index = 0;
         for (VarSymbol var : vars) {
             if (var.owner != tree.sym) {
                 var = new VarSymbol(var.flags_field, var.name, var.type, tree.sym);
             }
             getterMethHandles[index] = var.asMethodHandle(true);
-            if (var.accessor != null) {
-                getterMethHandlesForExtractor[index] = getterMethHandles[index];
-            } else {
-                MethodSymbol msym = lookupMethod(tree, var.name, tree.sym.type, List.nil());
-                getterMethHandlesForExtractor[index] = msym.asHandle();
-            }
             index++;
         }
 
@@ -2503,7 +2475,6 @@ public class Lower extends TreeTranslator {
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
                 generateRecordMethod(tree, names.equals, vars, getterMethHandles)
         ));
-        findUserDefinedAccessors(tree);
     }
 
     JCTree generateRecordMethod(JCClassDecl tree, Name name, List<VarSymbol> vars, MethodHandleSymbol[] getterMethHandles) {
