@@ -166,9 +166,6 @@ compiler.err.locn.module-info.not.allowed.on.patch.path
 compiler.misc.cant.resolve.modules
 compiler.misc.file.does.not.contain.module
 
-# records related messages
-compiler.err.local.record
-
 # these keys were in javac.properties and examples are hard to be produced for them
 # basically because in most cases the compilation ends with an exception
 compiler.err.bad.value.for.option

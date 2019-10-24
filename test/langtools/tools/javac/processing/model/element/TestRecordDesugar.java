@@ -23,7 +23,6 @@
 
 /*
  * @test
- * @bug  8888888
  * @summary Test compiler desugaring of a record type
  * @library /tools/javac/lib
  * @modules jdk.compiler
@@ -217,7 +216,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "r",
                                    type = TypeKind.DOUBLE),
 
-	              @ElementInfo(kind = ElementKind.FIELD,
+                      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "r",
                                    type = TypeKind.DOUBLE,
@@ -228,7 +227,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "theta",
                                    type = TypeKind.DOUBLE),
 
-            	      @ElementInfo(kind = ElementKind.FIELD,
+                      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "theta",
                                    type = TypeKind.DOUBLE,
@@ -288,7 +287,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "real",
                                    type = TypeKind.DOUBLE),
 
- 		      @ElementInfo(kind = ElementKind.FIELD,
+                      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "real",
                                    type = TypeKind.DOUBLE,
@@ -299,7 +298,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "imag",
                                    type = TypeKind.DOUBLE),
 
-		      @ElementInfo(kind = ElementKind.FIELD,
+                      @ElementInfo(kind = ElementKind.FIELD,
                                    modifiers = {Modifier.PRIVATE, Modifier.FINAL},
                                    name = "imag",
                                    type = TypeKind.DOUBLE,
@@ -350,8 +349,8 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
      record ComplexCartesian(double real, double imag) implements ComplexNumber {
         // Explicit constructor declaration allowed
         public ComplexCartesian(double real, double imag) {
-	    this.real = real;
-	    this.imag = imag;
+            this.real = real;
+            this.imag = imag;
         }
 
         @Override

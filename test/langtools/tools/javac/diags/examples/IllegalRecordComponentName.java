@@ -22,6 +22,7 @@
  */
 
 // key: compiler.err.illegal.record.component.name
+// key: compiler.err.already.defined
 // options: --enable-preview -source ${jdk.version}
 
 record R(int hashCode) {}
