@@ -2860,20 +2860,11 @@ public class Check {
             validateTypeAnnotation(a, isTypeParameter);
     }
 
-    public void checkForSerializationMembers(Env<AttrContext> env, JCTree tree, boolean isMethod) {
-        if (isMethod) {
-            JCMethodDecl methodDecl = (JCMethodDecl)tree;
-            if (methodDecl.sym.name == names.writeObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectOutputStreamType ||
-                    methodDecl.sym.name == names.readObjectNoData && methodDecl.params.isEmpty() ||
-                    methodDecl.sym.name == names.readObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectInputStreamType) {
-                errorOnSerializationMember(env.enclClass, methodDecl.name, methodDecl.sym, syms.voidType, false);
-            }
-        } else {
-            JCVariableDecl variableDecl = (JCVariableDecl)tree;
-            Type objectStreamFieldArr = new ArrayType(syms.objectStreamFieldType, syms.arrayClass);
-            if (variableDecl.sym.name == names.serialPersistentFields && types.isSameType(variableDecl.type, objectStreamFieldArr)) {
-                errorOnSerializationMember(env.enclClass, variableDecl.name, variableDecl.sym, objectStreamFieldArr, true);
-            }
+    public void checkForSerializationMethods(Env<AttrContext> env, JCMethodDecl methodDecl) {
+        if (methodDecl.sym.name == names.writeObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectOutputStreamType ||
+                methodDecl.sym.name == names.readObjectNoData && methodDecl.params.isEmpty() ||
+                methodDecl.sym.name == names.readObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectInputStreamType) {
+            errorOnSerializationMember(env.enclClass, methodDecl.name, methodDecl.sym, syms.voidType, false);
         }
     }
 

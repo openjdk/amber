@@ -27,7 +27,6 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -77,8 +76,6 @@ import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
-import com.sun.tools.javac.util.Log.DeferredDiagnosticHandler;
-import com.sun.tools.javac.util.Log.DiscardDiagnosticHandler;
 
 /** This is the main context-dependent analysis phase in GJC. It
  *  encompasses name resolution, type checking and constant folding as
@@ -1041,7 +1038,7 @@ public class Attr extends JCTree.Visitor {
             }
 
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP) {
-                chk.checkForSerializationMembers(env, tree, true);
+                chk.checkForSerializationMethods(env, tree);
             }
 
             // annotation method checks
@@ -1224,11 +1221,10 @@ public class Attr extends JCTree.Visitor {
                 }
             }
             result = tree.type = v.type;
-            if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP) {
+            if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
                 if (forbiddenRecordComponentNames.contains(v.name.toString())) {
                     log.error(env.enclClass, Errors.IllegalRecordComponentName(env.enclClass.sym, v));
                 }
-                chk.checkForSerializationMembers(env, tree, false);
             }
         }
         finally {

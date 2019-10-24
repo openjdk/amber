@@ -299,8 +299,7 @@ public class RecordCompilationTests extends CompilationTestCase {
 
     public void testIllegalSerializationMembers() {
         String template = "record R(int x) { # }";
-        for (String s : List.of("private static final java.io.ObjectStreamField[] serialPersistentFields = {};",
-                                "private void writeObject(java.io.ObjectOutputStream stream) { }",
+        for (String s : List.of("private void writeObject(java.io.ObjectOutputStream stream) { }",
                                 "private void readObject(java.io.ObjectInputStream stream) { }",
                                 "private void readObjectNoData() { }"))
             assertFail("compiler.err.illegal.record.member", template, s);
