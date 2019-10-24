@@ -33,14 +33,12 @@ import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.FieldRepository;
 import sun.reflect.generics.scope.ClassScope;
-
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@linkplain RecordComponent} provides information about, and dynamic access to, a
+ * A {@code RecordComponent} provides information about, and dynamic access to, a
  * component of a record class.
  *
  * @see Class#getRecordComponents()
@@ -71,7 +69,7 @@ public final class RecordComponent implements AnnotatedElement {
     /**
      * Returns the name of the component represented by this record component.
      *
-     * @return the name of the component represented by this record component.
+     * @return the name of the component represented by this record component
      */
     public String getName() {
         return name;
@@ -82,50 +80,49 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@link Class} that identifies the
-     * declared type for the component represented by this
-     * record component.
+     * Returns a {@code Class} that identifies the declared type for the
+     * component represented by this record component.
      *
-     * @return a {@link Class} identifying the declared
-     * type of the component represented by this record component
+     * @return a {@code Class} identifying the declared type of the component
+     * represented by this record component
      */
     public Class<?> getType() {
         return type;
     }
 
     /**
-     * Returns a {@linkplain String} that describes the
-     * generic type signature for this record component.
+     * Returns a {@code String} that describes the  generic type signature for
+     * this record component.
      *
-     * @return a {@linkplain String} that describes the generic type signature
-     * for this record component.
+     * @return a {@code String} that describes the generic type signature for
+     * this record component
      */
     public String getGenericSignature() {
         return signature;
     }
 
     /**
-     * Returns a {@link Type} object that represents the declared type for
-     * the record component represented by this {@linkplain RecordComponent}.
+     * Returns a {@code Type} object that represents the declared type for
+     * the record component represented by this record component.
      *
      * <p>If the declared type of the record component is a parameterized type,
-     * the {@link Type} object returned reflects the
-     * actual type arguments used in the source code.
+     * the {@code Type} object returned reflects the actual type arguments used
+     * in the source code.
      *
      * <p>If the type of the underlying record component is a type variable or a
      * parameterized type, it is created. Otherwise, it is resolved.
      *
-     * @return a {@link Type} object that represents the declared type for
-     *     the record component represented by this {@linkplain RecordComponent}
+     * @return a {@code Type} object that represents the declared type for
+     *         the record component represented by this record component
      * @throws GenericSignatureFormatError if the generic record component
-     *     signature does not conform to the format specified in
-     *     <cite>The Java&trade; Virtual Machine Specification</cite>
+     *         signature does not conform to the format specified in
+     *         <cite>The Java&trade; Virtual Machine Specification</cite>
      * @throws TypeNotPresentException if the generic type
-     *     signature of the underlying record component refers to a non-existent
-     *     type declaration
+     *         signature of the underlying record component refers to a non-existent
+     *         type declaration
      * @throws MalformedParameterizedTypeException if the generic
-     *     signature of the underlying record component refers to a parameterized type
-     *     that cannot be instantiated for any reason
+     *         signature of the underlying record component refers to a parameterized
+     *         type that cannot be instantiated for any reason
      */
     public Type getGenericType() {
         if (getGenericSignature() != null)
@@ -139,8 +136,7 @@ public final class RecordComponent implements AnnotatedElement {
         // lazily initialize repository if necessary
         if (genericInfo == null) {
             // create and cache generic info repository
-            genericInfo = FieldRepository.make(getGenericSignature(),
-                    getFactory());
+            genericInfo = FieldRepository.make(getGenericSignature(), getFactory());
         }
         return genericInfo; //return cached repository
     }
@@ -153,12 +149,12 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns an {@link AnnotatedType} that represents the use of a type to specify
-     * the annotated type of the record component represented by this
-     * {@linkplain RecordComponent}.
+     * Returns an {@code AnnotatedType} that represents the use of a type to
+     * specify the annotated type of the record component represented by this
+     * record component.
      *
      * @return an object representing the declared type of the record component
-     * represented by this {@linkplain RecordComponent}
+     *         represented by this record component
      */
     public AnnotatedType getAnnotatedType() {
         if (typeAnnotations != null) {
@@ -175,11 +171,11 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@link Method} that represents the accessor for the
-     * record component represented by this {@linkplain RecordComponent}.
+     * Returns a {@code Method} that represents the accessor for the record
+     * component represented by this record component.
      *
-     * @return a {@link Method} that represents the accessor for the
-     * record component represented by this {@linkplain RecordComponent}.
+     * @return a {@code Method} that represents the accessor for the record
+     *         component represented by this record component
      */
     public Method getAccessor() {
         return accessor;
@@ -227,7 +223,7 @@ public final class RecordComponent implements AnnotatedElement {
     public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
 
     /**
-     * Returns a string describing this {@linkplain RecordComponent}, including
+     * Returns a string describing this record component, including
      * its generic type.  The format is: the access modifiers for the
      * record component, always {@code private} and {@code final}, in that
      * order, followed by the generic record component type, followed by a
@@ -235,8 +231,8 @@ public final class RecordComponent implements AnnotatedElement {
      * the record component, followed by a period, followed by the name of
      * the record component.
      *
-     * @return a string describing this {@linkplain RecordComponent}, including
-     * its generic type
+     * @return a string describing this record component, including its
+     *         generic type
      */
     public String toGenericString() {
         int mod = Modifier.PRIVATE | Modifier.FINAL;
