@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary reflection test for records
- * @compile --enable-preview -source ${jdk.version} RecordReflectionTest.java
+ * @compile --enable-preview -source 14 RecordReflectionTest.java
  * @run testng/othervm --enable-preview RecordReflectionTest
  */
 
