@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
  * @summary Verifying error recovery for broken record classes
- * @compile/fail/ref=BadRecord.out --enable-preview -source 14 -XDrawDiagnostics BadRecord.java
+ * @compile/fail/ref=BadRecord.out --enable-preview -source ${jdk.version} -XDrawDiagnostics BadRecord.java
  */
 record BadRecord001 {}
 

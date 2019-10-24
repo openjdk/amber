@@ -1016,15 +1016,6 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(getter, env);
                 rec.accessor = getter.sym;
             } else if (implSym != null) {
-                if ((implSym.flags() & Flags.PUBLIC) == 0) {
-                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodMustBePublic(implSym.name));
-                }
-                if (!types.isSameType(implSym.type.getReturnType(), tree.sym.type)) {
-                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.AccessorReturnTypeDoesntMatch(tree.sym.type, implSym.type.getReturnType()));
-                }
-                if (implSym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
-                    log.error(TreeInfo.declarationFor(implSym, env.enclClass), Errors.MethodCantThrowCheckedException);
-                }
                 rec.accessor = implSym;
             }
         }

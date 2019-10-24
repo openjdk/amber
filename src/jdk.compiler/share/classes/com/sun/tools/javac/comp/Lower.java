@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
-import com.sun.tools.javac.comp.Resolve.MethodResolutionContext;
 import com.sun.tools.javac.jvm.*;
 import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.main.Option.PkgInfo;
@@ -798,21 +797,6 @@ public class Lower extends TreeTranslator {
      */
     private MethodSymbol lookupMethod(DiagnosticPosition pos, Name name, Type qual, List<Type> args) {
         return rs.resolveInternalMethod(pos, attrEnv, qual, name, args, List.nil());
-    }
-
-    private Symbol findMethodOrFailSilently(
-            DiagnosticPosition pos,
-            Env<AttrContext> env,
-            Type site,
-            Name name,
-            List<Type> argtypes,
-            List<Type> typeargtypes) {
-        MethodResolutionContext resolveContext = rs.new MethodResolutionContext();
-        resolveContext.internalResolution = true;
-        resolveContext.silentFail = true;
-        Symbol sym = rs.resolveQualifiedMethod(resolveContext, pos, env, site.tsym,
-                site, name, argtypes, typeargtypes);
-        return sym;
     }
 
     /** Anon inner classes are used as access constructor tags.
@@ -2274,7 +2258,7 @@ public class Lower extends TreeTranslator {
         result = make_at(tree.pos()).Block(SYNTHETIC, List.nil());
     }
 
-    List<JCTree> accessors(JCClassDecl tree) {
+    List<JCTree> generateMandatedAccessors(JCClassDecl tree) {
         ListBuffer<JCTree> buffer = new ListBuffer<>();
         tree.sym.getRecordComponents().stream()
                 .forEach(rc -> {
@@ -2469,7 +2453,7 @@ public class Lower extends TreeTranslator {
             index++;
         }
 
-        tree.defs = tree.defs.appendList(accessors(tree));
+        tree.defs = tree.defs.appendList(generateMandatedAccessors(tree));
         tree.defs = tree.defs.appendList(List.of(
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
@@ -2484,7 +2468,13 @@ public class Lower extends TreeTranslator {
                 name,
                 tree.sym.type,
                 isEquals ? List.of(syms.objectType) : List.nil());
+        // compiler generated methods have the record flag set, user defined ones dont
         if ((msym.flags() & RECORD) != 0) {
+            /* class java.lang.runtime.ObjectMethods provides a common bootstrap that provides a customized implementation
+             * for methods: toString, hashCode and equals. Here we just need to generate and indy call to:
+             * java.lang.runtime.ObjectMethods::bootstrap and provide: the record class, the record component names and
+             * the accessors.
+             */
             Name bootstrapName = names.bootstrap;
             LoadableConstant[] staticArgsValues = new LoadableConstant[2 + getterMethHandles.length];
             staticArgsValues[0] = (ClassType)tree.sym.type;

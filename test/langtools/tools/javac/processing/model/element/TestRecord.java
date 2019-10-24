@@ -23,16 +23,13 @@
 
 /*
  * @test
- * @bug  8888888
  * @summary Test basic modeling of a record type
  * @library /tools/javac/lib
  * @modules jdk.compiler
  * @build JavacTestingAbstractProcessor
- * @compile -source 14 --enable-preview TestRecord.java
- * @compile -J--enable-preview -source 14 --enable-preview -source 14 -processor TestRecord -proc:only --enable-preview -source 14 TestRecord.java
+ * @compile TestRecord.java
+ * @compile -processor TestRecord -proc:only --enable-preview -source ${jdk.version} PersonalBest.java
  */
-
-//@compile -processor TestRecord -proc:only -source 14 --enable-preview TestRecord.java
 
 import java.io.*;
 import javax.annotation.processing.*;
@@ -62,13 +59,6 @@ public class TestRecord extends JavacTestingAbstractProcessor {
                                           recordCount);
        }
        return true;
-    }
-
-    static record PersonalBest(Duration marathonTime) implements Serializable {
-        private static final Duration MIN_QUAL_TIME = Duration.ofHours(3);
-        public boolean bostonQualified() {
-            return marathonTime.compareTo(MIN_QUAL_TIME) <= 0;
-        }
     }
 
     /**

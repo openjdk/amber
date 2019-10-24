@@ -21,12 +21,12 @@
  * questions.
  */
 
-/*
- * @test
- * @summary Verify javac can read record classfiles it writes
- * @compile --enable-preview -source ${jdk.version} Record.java
- * @compile --enable-preview -source ${jdk.version} WriteReadTest.java
- */
-public class WriteReadTest {
-    Record1 r1;
+import java.io.Serializable;
+import java.time.*;
+
+record PersonalBest(Duration marathonTime) implements Serializable {
+    private static final Duration MIN_QUAL_TIME = Duration.ofHours(3);
+    public boolean bostonQualified() {
+        return marathonTime.compareTo(MIN_QUAL_TIME) <= 0;
+    }
 }

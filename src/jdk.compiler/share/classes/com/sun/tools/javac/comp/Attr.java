@@ -1039,6 +1039,20 @@ public class Attr extends JCTree.Visitor {
 
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP) {
                 chk.checkForSerializationMethods(env, tree);
+                Optional<? extends RecordComponent> recordComponent = env.enclClass.sym.getRecordComponents().stream()
+                        .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & MANDATED) == 0).findFirst();
+                if (recordComponent.isPresent()) {
+                    // the method is a user defined accessor lets check that everything is fine
+                    if ((tree.sym.flags() & Flags.PUBLIC) == 0) {
+                        log.error(tree, Errors.MethodMustBePublic(tree.sym.name));
+                    }
+                    if (!types.isSameType(tree.sym.type.getReturnType(), recordComponent.get().type)) {
+                        log.error(tree, Errors.AccessorReturnTypeDoesntMatch(recordComponent.get().type, tree.sym.type));
+                    }
+                    if (tree.sym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
+                        log.error(tree, Errors.MethodCantThrowCheckedException);
+                    }
+                }
             }
 
             // annotation method checks
