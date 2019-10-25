@@ -3755,13 +3755,12 @@ public class JavacParser implements Parser {
         for (JCTree def : defs) {
             if (def.hasTag(METHODDEF)) {
                 JCMethodDecl methDef = (JCMethodDecl) def;
-                if (methDef.name == names.init && methDef.params.isEmpty()) {
-                    if ((methDef.mods.flags & Flags.PUBLIC) == 0) {
-                        log.error(methDef, Errors.MethodMustBePublic(names.init));
-                    }
+                if (methDef.name == names.init && methDef.params.isEmpty() && (methDef.mods.flags & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
                     ListBuffer<JCVariableDecl> tmpParams = new ListBuffer<>();
-                    for (JCVariableDecl param : fields) {
-                        tmpParams.add(F.at(param).VarDef(F.Modifiers(Flags.PARAMETER | param.mods.flags & Flags.VARARGS), param.name, param.vartype, null));
+                    for (JCVariableDecl param : headerFields) {
+                        tmpParams.add(F.at(param)
+                                .VarDef(F.Modifiers(Flags.PARAMETER | param.mods.flags & Flags.VARARGS | param.mods.flags & Flags.FINAL),
+                                param.name, param.vartype, null));
                     }
                     methDef.params = tmpParams.toList();
                 }
@@ -3779,9 +3778,6 @@ public class JavacParser implements Parser {
     Name typeName() {
         int pos = token.pos;
         Name name = ident();
-        /* if (isRestrictedRecordTypeName(name)) {
-            reportSyntaxError(pos, Errors.RecordNotAllowed(name));
-        }*/
         if (isRestrictedTypeName(name, pos, true)) {
             reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(name, name == names.var ? Source.JDK10 : Source.JDK13));
         }

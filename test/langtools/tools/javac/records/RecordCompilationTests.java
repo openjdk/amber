@@ -225,7 +225,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "public R(int x) { this(x, 0); }",
                 "public R(int x, int y) { this.x = x; this.y = y; }",
                 "public R { }",
-                "public R { x = 0; }"))
+                "public R { this.x = 0; }"))
             assertOK("record R(int x, int y) { # }", goodCtor);
 
         assertOK("import java.util.*; record R(String x, String y) {  public R { Objects.requireNonNull(x); Objects.requireNonNull(y); } }");
