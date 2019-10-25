@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           method when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * Bootstrap methods for state-driven implementations of core methods,
  * including {@link Object#equals(Object)}, {@link Object#hashCode()}, and
  * {@link Object#toString()}.  These methods may be used, for example, by
@@ -40,11 +48,9 @@ import java.util.Objects;
  * methods for record classes.
  *
  * @since 14
- * @deprecated This class is part of a preview feature and may be removed
- * if the preview feature is removed.
  */
-@Deprecated(forRemoval=true, since="14")
-@SuppressWarnings("removal")
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
 public class ObjectMethods {
 
     private ObjectMethods() { }
@@ -71,6 +77,8 @@ public class ObjectMethods {
 
     static {
         try {
+            @SuppressWarnings("preview")
+            Class<ObjectMethods> OBJECT_METHODS_CLASS = ObjectMethods.class;
             MethodHandles.Lookup publicLookup = MethodHandles.publicLookup();
             MethodHandles.Lookup lookup = MethodHandles.Lookup.IMPL_LOOKUP;
 
@@ -95,26 +103,26 @@ public class ObjectMethods {
             OBJECTS_TOSTRING = publicLookup.findStatic(Objects.class, "toString",
                                                        MethodType.methodType(String.class, Object.class));
 
-            OBJECT_EQ = lookup.findStatic(ObjectMethods.class, "eq",
+            OBJECT_EQ = lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                           MethodType.methodType(boolean.class, Object.class, Object.class));
-            HASH_COMBINER = lookup.findStatic(ObjectMethods.class, "hashCombiner",
+            HASH_COMBINER = lookup.findStatic(OBJECT_METHODS_CLASS, "hashCombiner",
                                               MethodType.fromMethodDescriptorString("(II)I", loader));
 
-            primitiveEquals.put(byte.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(byte.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                               MethodType.fromMethodDescriptorString("(BB)Z", loader)));
-            primitiveEquals.put(short.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(short.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                                MethodType.fromMethodDescriptorString("(SS)Z", loader)));
-            primitiveEquals.put(char.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(char.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                               MethodType.fromMethodDescriptorString("(CC)Z", loader)));
-            primitiveEquals.put(int.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(int.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                              MethodType.fromMethodDescriptorString("(II)Z", loader)));
-            primitiveEquals.put(long.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(long.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                               MethodType.fromMethodDescriptorString("(JJ)Z", loader)));
-            primitiveEquals.put(float.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(float.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                                MethodType.fromMethodDescriptorString("(FF)Z", loader)));
-            primitiveEquals.put(double.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(double.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                                 MethodType.fromMethodDescriptorString("(DD)Z", loader)));
-            primitiveEquals.put(boolean.class, lookup.findStatic(ObjectMethods.class, "eq",
+            primitiveEquals.put(boolean.class, lookup.findStatic(OBJECT_METHODS_CLASS, "eq",
                                                                  MethodType.fromMethodDescriptorString("(ZZ)Z", loader)));
 
             primitiveHashers.put(byte.class, lookup.findStatic(Byte.class, "hashCode",

@@ -2269,6 +2269,14 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns an array containing {@code RecordComponent} objects reflecting all the
      * declared record components of the record represented by this {@code Class} object.
      * The components are returned in the same order that they are declared in the
@@ -2299,12 +2307,10 @@ public final class Class<T> implements java.io.Serializable,
      *          </ul>
      *
      * @since 14
-     * @deprecated This method is returning record components, which are part of
-     * a preview feature and may be removed if the preview feature
-     * is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
     @CallerSensitive
     public RecordComponent[] getRecordComponents() throws SecurityException {
         SecurityManager sm = System.getSecurityManager();
@@ -3592,17 +3598,23 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns true if and only if this class was declared as a record in the
      * source code.
      *
      * @return true if and only if this class was declared as a record in the
      *     source code
      * @since 14
-     * @deprecated This method is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
     public boolean isRecord() {
         return isRecord0();
     }

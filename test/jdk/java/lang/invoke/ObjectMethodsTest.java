@@ -42,7 +42,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 @Test
-@SuppressWarnings("removal")
 public class ObjectMethodsTest {
 
     public static class C {

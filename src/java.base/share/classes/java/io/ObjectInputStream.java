@@ -2077,6 +2077,11 @@ public class ObjectInputStream
         return result;
     }
 
+    @SuppressWarnings("preview")
+    private static boolean isRecord(Class<?> cls) {
+        return cls.isRecord();
+    }
+
     /**
      * Reads and returns "ordinary" (i.e., not a String, Class,
      * ObjectStreamClass, array, or enum constant) object, or null if object's
@@ -2084,7 +2089,6 @@ public class ObjectInputStream
      * associated with object's handle).  Sets passHandle to object's assigned
      * handle.
      */
-    @SuppressWarnings("removal")
     private Object readOrdinaryObject(boolean unshared)
         throws IOException
     {
@@ -2116,7 +2120,7 @@ public class ObjectInputStream
             handles.markException(passHandle, resolveEx);
         }
 
-        final boolean isRecord = cl != null && cl.isRecord() ? true : false;
+        final boolean isRecord = cl != null && isRecord(cl) ? true : false;
         if (isRecord) {
             assert obj == null;
             obj = readRecord(desc);

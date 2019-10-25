@@ -55,6 +55,7 @@ public @interface PreviewFeature {
 
     public enum Feature {
         SWITCH_EXPRESSIONS,
-        TEXT_BLOCKS;
+        TEXT_BLOCKS,
+        RECORDS;
     }
 }

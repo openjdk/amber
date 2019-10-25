@@ -479,16 +479,20 @@ public class ObjectStreamClass implements Serializable {
         }
     }
 
+    @SuppressWarnings("preview")
+    private static boolean isRecord(Class<?> cls) {
+        return cls.isRecord();
+    }
+
     /**
      * Creates local class descriptor representing given class.
      */
-    @SuppressWarnings("removal")
     private ObjectStreamClass(final Class<?> cl) {
         this.cl = cl;
         name = cl.getName();
         isProxy = Proxy.isProxyClass(cl);
         isEnum = Enum.class.isAssignableFrom(cl);
-        isRecord = cl.isRecord();
+        isRecord = isRecord(cl);
         serializable = Serializable.class.isAssignableFrom(cl);
         externalizable = Externalizable.class.isAssignableFrom(cl);
 
@@ -681,7 +685,6 @@ public class ObjectStreamClass implements Serializable {
     /**
      * Initializes class descriptor representing a non-proxy class.
      */
-    @SuppressWarnings("removal")
     void initNonProxy(ObjectStreamClass model,
                       Class<?> cl,
                       ClassNotFoundException resolveEx,
@@ -703,7 +706,7 @@ public class ObjectStreamClass implements Serializable {
             }
 
             if (model.serializable == osc.serializable &&
-                    !cl.isArray() && !cl.isRecord() &&
+                    !cl.isArray() && isRecord(cl) &&
                     suid != osc.getSerialVersionUID()) {
                 throw new InvalidClassException(osc.name,
                         "local class incompatible: " +
@@ -736,7 +739,7 @@ public class ObjectStreamClass implements Serializable {
 
         this.cl = cl;
         if (cl != null) {
-            this.isRecord = cl.isRecord();
+            this.isRecord = isRecord(cl);
             this.canonicalCtr = osc.canonicalCtr;
         }
         this.resolveEx = resolveEx;
@@ -764,7 +767,7 @@ public class ObjectStreamClass implements Serializable {
                 deserializeEx = localDesc.deserializeEx;
             }
             domains = localDesc.domains;
-            assert cl.isRecord() ? localDesc.cons == null : true;
+            assert isRecord(cl) ? localDesc.cons == null : true;
             cons = localDesc.cons;
         }
 
@@ -1546,9 +1549,9 @@ public class ObjectStreamClass implements Serializable {
     }
 
     /** Determines the canonical constructor for the given record class. */
-    @SuppressWarnings("removal")
+    @SuppressWarnings("preview")
     private static MethodHandle canonicalRecordCtr(Class<?> cls) {
-        assert cls.isRecord() : "Expected record, got: " + cls;
+        assert isRecord(cls) : "Expected record, got: " + cls;
         PrivilegedAction<MethodHandle> pa = () -> {
             Class<?>[] paramTypes = Arrays.stream(cls.getRecordComponents())
                                                      .map(RecordComponent::getType)
@@ -1692,7 +1695,6 @@ public class ObjectStreamClass implements Serializable {
      * Field objects.  Throws InvalidClassException if the (explicitly
      * declared) serializable fields are invalid.
      */
-    @SuppressWarnings("removal")
     private static ObjectStreamField[] getSerialFields(Class<?> cl)
         throws InvalidClassException
     {
@@ -1700,7 +1702,7 @@ public class ObjectStreamClass implements Serializable {
             return NO_FIELDS;
 
         ObjectStreamField[] fields;
-        if (cl.isRecord()) {
+        if (isRecord(cl)) {
             fields = getDefaultSerialFields(cl);
             Arrays.sort(fields);
         } else if (!Externalizable.class.isAssignableFrom(cl) &&
@@ -2499,10 +2501,10 @@ public class ObjectStreamClass implements Serializable {
     }
 
     /** Record specific support for retrieving and binding stream field values. */
-    @SuppressWarnings("removal")
     static final class RecordSupport {
 
         /** Binds the given stream field values to the given method handle. */
+        @SuppressWarnings("preview")
         static MethodHandle bindCtrValues(MethodHandle ctrMH,
                                           ObjectStreamClass desc,
                                           ObjectInputStream.FieldValues fieldValues) {

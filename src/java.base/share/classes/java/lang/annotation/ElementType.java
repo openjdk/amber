@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -117,13 +117,19 @@ public enum ElementType {
     MODULE,
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This constant is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Record component
      *
      * @since 14
-     * @deprecated This element type is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=true)
     RECORD_COMPONENT;
 }

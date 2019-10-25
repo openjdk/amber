@@ -38,6 +38,14 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           method when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * A {@code RecordComponent} provides information about, and dynamic access to, a
  * component of a record class.
  *
@@ -45,11 +53,9 @@ import java.util.Objects;
  * @see java.lang.Record
  *
  * @since 14
- * @deprecated This class is part of a preview feature and may be removed
- * if the preview feature is removed.
  */
-@Deprecated(forRemoval=true, since="14")
-@SuppressWarnings("removal")
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
 public final class RecordComponent implements AnnotatedElement {
     // declaring class
     private Class<?> clazz;
@@ -61,6 +67,7 @@ public final class RecordComponent implements AnnotatedElement {
     private transient FieldRepository genericInfo;
     private byte[] annotations;
     private byte[] typeAnnotations;
+    @SuppressWarnings("preview")
     private RecordComponent root;
 
     // only the JVM can create record components
@@ -197,6 +204,7 @@ public final class RecordComponent implements AnnotatedElement {
         if ((declAnnos = declaredAnnotations) == null) {
             synchronized (this) {
                 if ((declAnnos = declaredAnnotations) == null) {
+                    @SuppressWarnings("preview")
                     RecordComponent root = this.root;
                     if (root != null) {
                         declAnnos = root.declaredAnnotations();
