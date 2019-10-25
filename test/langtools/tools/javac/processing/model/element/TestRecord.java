@@ -32,8 +32,8 @@
  *      jdk.compiler/com.sun.tools.javac.util
  * @build toolbox.ToolBox toolbox.JavacTask
  * @build JavacTestingAbstractProcessor
- * @compile --enable-preview -source ${jdk.version} TestRecord2.java
- * @run main/othervm --enable-preview TestRecord2
+ * @compile --enable-preview -source ${jdk.version} TestRecord.java
+ * @run main/othervm --enable-preview TestRecord
  */
 
 import java.io.*;
@@ -88,17 +88,17 @@ import toolbox.Task.OutputKind;
 import toolbox.TestRunner;
 import toolbox.ToolBox;
 
-public class TestRecord2 extends TestRunner {
+public class TestRecord extends TestRunner {
     protected ToolBox tb;
 
-    TestRecord2() {
+    TestRecord() {
         super(System.err);
         tb = new ToolBox();
     }
 
     public static void main(String... args) throws Exception {
         System.out.println(System.getProperties());
-        new TestRecord2().runTests();
+        new TestRecord().runTests();
     }
 
     protected void runTests() throws Exception {
@@ -122,7 +122,7 @@ public class TestRecord2 extends TestRunner {
             import java.io.Serializable;
             import java.time.*;
 
-                record PersonalBest(Duration marathonTime) implements Serializable {
+            record PersonalBest(Duration marathonTime) implements Serializable {
                     private static final Duration MIN_QUAL_TIME = Duration.ofHours(3);
                 public boolean bostonQualified() {
                     return marathonTime.compareTo(MIN_QUAL_TIME) <= 0;
