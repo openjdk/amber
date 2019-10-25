@@ -21,7 +21,7 @@
  * questions.
  */
 
-/**
+/*
  * @test
  * @summary Verify that annotation processing works for records
  * @library /tools/lib
@@ -148,6 +148,5 @@ public class JavaxLangModelForRecords extends TestRunner {
         public SourceVersion getSupportedSourceVersion() {
             return SourceVersion.latest();
         }
-
     }
 }

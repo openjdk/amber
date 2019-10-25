@@ -21,7 +21,7 @@
  * questions.
  */
 
-/**
+/*
  * CheckRecordMembers
  *
  * @test
