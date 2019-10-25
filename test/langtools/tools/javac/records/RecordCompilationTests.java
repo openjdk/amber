@@ -43,7 +43,8 @@ import static org.testng.Assert.assertEquals;
  * @summary Negative compilation tests, and positive compilation (smoke) tests for records
  * @library /lib/combo
  * @modules jdk.compiler/com.sun.tools.javac.util
- * @run testng RecordCompilationTests
+ * @compile --enable-preview -source ${jdk.version} RecordCompilationTests.java
+ * @run testng/othervm --enable-preview RecordCompilationTests
  */
 @Test
 public class RecordCompilationTests extends CompilationTestCase {
