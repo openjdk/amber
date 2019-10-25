@@ -166,6 +166,14 @@ public interface ElementVisitor<R, P> {
     }
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Visits a record component element.
      *
      * @implSpec The default implementation visits a {@code
@@ -175,11 +183,10 @@ public interface ElementVisitor<R, P> {
      * @param p  a visitor-specified parameter
      * @return a visitor-specified result
      * @since 14
-     * @deprecated This method is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
     default R visitRecordComponent(RecordComponentElement e, P p) {
         return visitUnknown(e, p);
     }

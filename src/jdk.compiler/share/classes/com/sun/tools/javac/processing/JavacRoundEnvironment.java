@@ -119,11 +119,11 @@ public class JavacRoundEnvironment implements RoundEnvironment {
      * or an empty set if there are none
      */
     @DefinedBy(Api.ANNOTATION_PROCESSING)
-    @SuppressWarnings("removal")
     public Set<? extends Element> getElementsAnnotatedWith(TypeElement a) {
         throwIfNotAnnotation(a);
 
         Set<Element> result = Collections.emptySet();
+        @SuppressWarnings("preview")
         ElementScanner14<Set<Element>, TypeElement> scanner =
             new AnnotationSetScanner(result);
 
@@ -134,7 +134,6 @@ public class JavacRoundEnvironment implements RoundEnvironment {
     }
 
     @DefinedBy(Api.ANNOTATION_PROCESSING)
-    @SuppressWarnings("removal")
     public Set<? extends Element> getElementsAnnotatedWithAny(TypeElement... annotations) {
         // Don't bother to special-case annotations.length == 1 as
         // return getElementsAnnotatedWith(annotations[0]);
@@ -146,6 +145,7 @@ public class JavacRoundEnvironment implements RoundEnvironment {
         }
 
         Set<Element> result = Collections.emptySet();
+        @SuppressWarnings("preview")
         ElementScanner14<Set<Element>, Set<TypeElement>> scanner =
             new AnnotationSetMultiScanner(result);
 
@@ -225,7 +225,7 @@ public class JavacRoundEnvironment implements RoundEnvironment {
         }
     }
 
-    @SuppressWarnings("removal")
+    @SuppressWarnings("preview")
     private static abstract class ElementScanningIncludingTypeParameters<R, P>
         extends ElementScanner14<R, P> {
 

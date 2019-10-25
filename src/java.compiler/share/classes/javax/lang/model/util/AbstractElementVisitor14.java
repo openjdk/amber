@@ -31,6 +31,14 @@ import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           method when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * A skeletal visitor of program elements with default behavior
  * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
  * source version.
@@ -63,12 +71,10 @@ import static javax.lang.model.SourceVersion.*;
  * @see AbstractElementVisitor8
  * @see AbstractElementVisitor9
  * @since 14
- * @deprecated This visitor is part of a preview feature and may be removed
- * if the preview feature is removed.
  */
-@Deprecated(forRemoval=true, since="14")
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
 @SupportedSourceVersion(RELEASE_14)
-@SuppressWarnings("removal")
 public abstract class AbstractElementVisitor14<R, P> extends AbstractElementVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses to call.
@@ -87,6 +93,7 @@ public abstract class AbstractElementVisitor14<R, P> extends AbstractElementVisi
      * @param p  {@inheritDoc}
      * @return   {@inheritDoc}
      */
+    @SuppressWarnings("preview")
     @Override
     public abstract R visitRecordComponent(RecordComponentElement t, P p);
 }

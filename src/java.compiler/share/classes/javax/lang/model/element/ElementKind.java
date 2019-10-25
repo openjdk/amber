@@ -110,23 +110,35 @@ public enum ElementKind {
      MODULE,
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This constant is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * A record type.
      * @since 14
-     * @deprecated This element kind is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
     RECORD,
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This constant is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * A record component of a {@code record}.
      * @since 14
-     * @deprecated This element kind is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
     RECORD_COMPONENT;
 
     /**
@@ -135,6 +147,7 @@ public enum ElementKind {
      *
      * @return {@code true} if this is a kind of class
      */
+    @SuppressWarnings("preview")
     public boolean isClass() {
         return this == CLASS || this == ENUM || this == RECORD;
     }

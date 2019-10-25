@@ -90,7 +90,7 @@ public class PrintingProcessor extends AbstractProcessor {
     /**
      * Used for the -Xprint option and called by Elements.printElements
      */
-    @SuppressWarnings("removal")
+    @SuppressWarnings("preview")
     public static class PrintingElementVisitor
         extends SimpleElementVisitor14<PrintingElementVisitor, Boolean> {
         int indentation; // Indentation level;
@@ -114,8 +114,7 @@ public class PrintingProcessor extends AbstractProcessor {
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
-        @SuppressWarnings("removal")
-            public PrintingElementVisitor visitRecordComponent(RecordComponentElement e, Boolean p) {
+        public PrintingElementVisitor visitRecordComponent(RecordComponentElement e, Boolean p) {
                 // Do nothing; printing of component information done by
                 // printing the record type itself
             return this;

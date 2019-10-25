@@ -79,7 +79,7 @@ public class ElementFilter {
     private static final Set<ElementKind> MODULE_KIND =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.MODULE));
 
-    @SuppressWarnings("removal")
+    @SuppressWarnings("preview")
     private static final Set<ElementKind> TYPE_KINDS =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.CLASS,
                                                ElementKind.ENUM,
@@ -87,7 +87,7 @@ public class ElementFilter {
                                                ElementKind.RECORD,
                                                ElementKind.ANNOTATION_TYPE));
 
-    @SuppressWarnings("removal")
+    @SuppressWarnings("preview")
     private static final Set<ElementKind> RECORD_COMPONENT_KIND =
         Set.of(ElementKind.RECORD_COMPONENT);
 
@@ -112,30 +112,44 @@ public class ElementFilter {
     }
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns a list of record components in {@code elements}.
      * @return a list of record components in {@code elements}
      * @param elements the elements to filter
      * @since 14
-     * @deprecated This method is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
     public static List<RecordComponentElement>
         recordComponentsIn(Iterable<? extends Element> elements) {
         return listFilter(elements, RECORD_COMPONENT_KIND, RecordComponentElement.class);
     }
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns a set of record components in {@code elements}.
      * @return a set of record components in {@code elements}
      * @param elements the elements to filter
      * @since 14
-     * @deprecated This method is part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
-    @Deprecated(forRemoval=true, since="14")
-    @SuppressWarnings("removal")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
     public static Set<RecordComponentElement>
     recordComponentsIn(Set<? extends Element> elements) {
         return setFilter(elements, RECORD_COMPONENT_KIND, RecordComponentElement.class);

@@ -26,14 +26,20 @@
 package javax.lang.model.element;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           method when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * Represents a record component.
  *
  * @since 14
- * @deprecated This interface is part of a preview feature and may be removed
- * if the preview feature is removed.
  */
-@Deprecated(forRemoval=true, since="14")
-@SuppressWarnings("removal")
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
 public interface RecordComponentElement extends Element {
     /**
      * Returns the enclosing element of this record component.

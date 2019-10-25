@@ -31,6 +31,14 @@ import static javax.lang.model.SourceVersion.*;
 import javax.lang.model.SourceVersion;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           method when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * A visitor of program elements based on their {@linkplain
  * ElementKind kind} with default behavior appropriate for the {@link
  * SourceVersion#RELEASE_14 RELEASE_14} source version.
@@ -78,11 +86,9 @@ import javax.lang.model.SourceVersion;
  * @see ElementKindVisitor8
  * @see ElementKindVisitor9
  * @since 14
- * @deprecated This class is part of a preview feature and may be removed
- * if the preview feature is removed.
  */
-@Deprecated(forRemoval=true, since="14")
-@SuppressWarnings("removal")
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
 @SupportedSourceVersion(RELEASE_14)
 public class ElementKindVisitor14<R, P> extends ElementKindVisitor9<R, P> {
     /**
@@ -112,6 +118,7 @@ public class ElementKindVisitor14<R, P> extends ElementKindVisitor9<R, P> {
      * @param p a visitor-specified parameter
      * @return  the result of {@code defaultAction}
      */
+    @SuppressWarnings("preview")
     @Override
     public R visitRecordComponent(RecordComponentElement e, P p) {
         return defaultAction(e, p);
