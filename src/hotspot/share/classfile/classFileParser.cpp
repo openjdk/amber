@@ -3715,23 +3715,28 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          "Nest-host class_info_index %u has bad constant type in class file %s",
                          class_info_index, CHECK);
           _nest_host = class_info_index;
-        } else if (tag == vmSymbols::tag_record()) {
-          // Skip over Record attribute if not supported or if super class is
-          // not java.lang.Record.
-          if (supports_records() &&
-              cp->klass_name_at(_super_class_index) == vmSymbols::java_lang_Record()) {
-            if (parsed_record_attribute) {
-              classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
+        } else if (_major_version >= JAVA_14_VERSION) {
+          if (tag == vmSymbols::tag_record()) {
+            // Skip over Record attribute if not supported or if super class is
+            // not java.lang.Record.
+            if (supports_records() &&
+                cp->klass_name_at(_super_class_index) == vmSymbols::java_lang_Record()) {
+              if (parsed_record_attribute) {
+                classfile_parse_error("Multiple Record attributes in class file %s", CHECK);
+              }
+              // Check that class is final and not abstract.
+              if (!_access_flags.is_final() || _access_flags.is_abstract()) {
+                classfile_parse_error("Record attribute in non-final or abstract class file %s", CHECK);
+              }
+              parsed_record_attribute = true;
+              record_attribute_start = cfs->current();
+              record_attribute_length = attribute_length;
             }
-            // Check that class is final and not abstract.
-            if (!_access_flags.is_final() || _access_flags.is_abstract()) {
-              classfile_parse_error("Record attribute in non-final or abstract class file %s", CHECK);
-            }
-            parsed_record_attribute = true;
-            record_attribute_start = cfs->current();
-            record_attribute_length = attribute_length;
+            cfs->skip_u1(attribute_length, CHECK);
+          } else {
+            // Unknown attribute
+            cfs->skip_u1(attribute_length, CHECK);
           }
-          cfs->skip_u1(attribute_length, CHECK);
         } else {
           // Unknown attribute
           cfs->skip_u1(attribute_length, CHECK);

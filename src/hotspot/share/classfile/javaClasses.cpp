@@ -3084,9 +3084,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
   HandleMark hm(THREAD);
   InstanceKlass* ik = SystemDictionary::RecordComponent_klass();
   assert(ik != NULL, "must be loaded");
-  if (ik->should_be_initialized()) {
-    ik->initialize(CHECK_0);
-  }
+  ik->initialize(CHECK_0);
 
   Handle element = ik->allocate_instance_handle(CHECK_0);
 
@@ -3108,7 +3106,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
     ResourceMark rm(THREAD);
     int sig_len = type->utf8_length() + 3; // "()" and null char
     char* sig = NEW_RESOURCE_ARRAY(char, sig_len);
-    jio_snprintf(sig, sig_len, "()%s", type->as_C_string());
+    jio_snprintf(sig, sig_len, "%c%c%s", JVM_SIGNATURE_FUNC, JVM_SIGNATURE_ENDFUNC, type->as_C_string());
     TempNewSymbol full_sig = SymbolTable::new_symbol(sig);
     accessor_method = holder->find_instance_method(name, full_sig);
   }

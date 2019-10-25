@@ -3545,7 +3545,7 @@ void InstanceKlass::collect_statistics(KlassSizeStats *sz) const {
   if (components != NULL) {
     for (int i = 0; i < components->length(); i++) {
       RecordComponent* component = components->at(i);
-      if (component) {
+      if (component != NULL) {
         component->collect_statistics(sz);
       }
     }
