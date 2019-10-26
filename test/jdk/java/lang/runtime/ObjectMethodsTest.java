@@ -26,7 +26,7 @@
  * @summary Basic tests for ObjectMethods
  * @compile --enable-preview -source 14 ObjectMethodsTest.java
  * @run testng/othervm --enable-preview ObjectMethodsTest
- * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ObjectMethodsTest
+ * @run testng/othervm/java.security.policy=empty.policy --enable-preview ObjectMethodsTest
  */
 
 import java.lang.invoke.CallSite;

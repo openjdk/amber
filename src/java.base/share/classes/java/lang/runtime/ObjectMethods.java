@@ -23,8 +23,13 @@
  * questions.
  */
 
-package java.lang.invoke;
+package java.lang.runtime;
 
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.TypeDescriptor;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
@@ -80,7 +85,7 @@ public class ObjectMethods {
             @SuppressWarnings("preview")
             Class<ObjectMethods> OBJECT_METHODS_CLASS = ObjectMethods.class;
             MethodHandles.Lookup publicLookup = MethodHandles.publicLookup();
-            MethodHandles.Lookup lookup = MethodHandles.Lookup.IMPL_LOOKUP;
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
 
             ClassLoader loader = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
                 @Override public ClassLoader run() { return ClassLoader.getPlatformClassLoader(); }
