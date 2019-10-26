@@ -2664,7 +2664,7 @@ public class Resolve {
                                   List<Type> typeargtypes) {
         return resolveQualifiedMethod(new MethodResolutionContext(), pos, env, location, site, name, argtypes, typeargtypes);
     }
-    public Symbol resolveQualifiedMethod(MethodResolutionContext resolveContext,
+    private Symbol resolveQualifiedMethod(MethodResolutionContext resolveContext,
                                   DiagnosticPosition pos, Env<AttrContext> env,
                                   Symbol location, Type site, Name name, List<Type> argtypes,
                                   List<Type> typeargtypes) {
@@ -2678,7 +2678,7 @@ public class Resolve {
             @Override
             Symbol access(Env<AttrContext> env, DiagnosticPosition pos, Symbol location, Symbol sym) {
                 if (sym.kind.isResolutionError()) {
-                    sym = resolveContext.silentFail ? sym : super.access(env, pos, location, sym);
+                    sym = super.access(env, pos, location, sym);
                 } else {
                     MethodSymbol msym = (MethodSymbol)sym;
                     if ((msym.flags() & SIGNATURE_POLYMORPHIC) != 0) {
@@ -4794,7 +4794,7 @@ public class Resolve {
      * can be nested - this means that when each overload resolution routine should
      * work within the resolution context it created.
      */
-    public class MethodResolutionContext {
+    class MethodResolutionContext {
 
         private List<Candidate> candidates = List.nil();
 
@@ -4802,9 +4802,7 @@ public class Resolve {
 
         MethodCheck methodCheck = resolveMethodCheck;
 
-        public boolean internalResolution = false;
-        // in case of failure, don't report the error
-        public boolean silentFail = false;
+        private boolean internalResolution = false;
         private DeferredAttr.AttrMode attrMode = DeferredAttr.AttrMode.SPECULATIVE;
 
         void addInapplicableCandidate(Symbol sym, JCDiagnostic details) {
