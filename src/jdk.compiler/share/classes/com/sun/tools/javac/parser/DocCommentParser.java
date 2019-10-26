@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.sun.source.doctree.AttributeTree.ValueKind;
-import com.sun.source.doctree.DocTree;
 import com.sun.tools.javac.parser.DocCommentParser.TagParser.Kind;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.TokenKind;
@@ -1527,4 +1526,5 @@ public class DocCommentParser {
             tagParsers.put(names.fromString(p.getTreeKind().tagName), p);
 
     }
+
 }
