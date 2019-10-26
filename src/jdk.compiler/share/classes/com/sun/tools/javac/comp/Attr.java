@@ -27,6 +27,7 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -1039,6 +1040,7 @@ public class Attr extends JCTree.Visitor {
 
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP) {
                 chk.checkForSerializationMethods(env, tree);
+                // lets find if this method is an accessor
                 Optional<? extends RecordComponent> recordComponent = env.enclClass.sym.getRecordComponents().stream()
                         .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & MANDATED) == 0).findFirst();
                 if (recordComponent.isPresent()) {
@@ -1052,6 +1054,20 @@ public class Attr extends JCTree.Visitor {
                     if (tree.sym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
                         log.error(tree, Errors.MethodCantThrowCheckedException);
                     }
+                }
+
+                // if this a constructor other than the canonical one
+                if (tree.name == names.init && !tree.sym.isRecord()) {
+                    JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
+                    if (app == null ||
+                            TreeInfo.name(app.meth) != names._this ||
+                            !checkFirstConstructorStat(app, tree, false)) {
+                        log.error(tree, Errors.FirstStatementMustBeCallToCanonical);
+                    }
+                    /* this is it for now we still have to verify that the invocation is actually pointing to
+                     * the canonical constructor as it could be pointing to another constructor, but we need to
+                     * attribute the arguments first in visitApply
+                     */
                 }
             }
 
@@ -2110,7 +2126,7 @@ public class Attr extends JCTree.Visitor {
         if (isConstructorCall) {
             // We are seeing a ...this(...) or ...super(...) call.
             // Check that this is the first statement in a constructor.
-            if (checkFirstConstructorStat(tree, env)) {
+            if (checkFirstConstructorStat(tree, env.enclMethod, true)) {
 
                 // Record the fact
                 // that this is a constructor call (using isSelfCall).
@@ -2184,6 +2200,14 @@ public class Attr extends JCTree.Visitor {
                     Type mpt = newMethodTemplate(resultInfo.pt, argtypes, typeargtypes);
                     checkId(tree.meth, site, sym, localEnv,
                             new ResultInfo(kind, mpt));
+                    if (site.tsym.isRecord() && !env.enclMethod.sym.isRecord()) {
+                        // this is a constructor invocation inside a non-canonical constructor in a record
+                        List<Type> recordComponentTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
+                        List<Type> erasedTypes = types.erasure(recordComponentTypes);
+                        if (!types.isSameTypes(erasedTypes, types.erasure(tree.args.stream().map(arg -> arg.type).collect(List.collector())))) {
+                            log.error(env.enclMethod, Errors.FirstStatementMustBeCallToCanonical);
+                        }
+                    }
                 }
                 // Otherwise, `site' is an error type and we do nothing
             }
@@ -2249,19 +2273,20 @@ public class Attr extends JCTree.Visitor {
 
         /** Check that given application node appears as first statement
          *  in a constructor call.
-         *  @param tree   The application node
-         *  @param env    The environment current at the application.
+         *  @param tree          The application node
+         *  @param enclMethod    The enclosing method of the application.
          */
-        boolean checkFirstConstructorStat(JCMethodInvocation tree, Env<AttrContext> env) {
-            JCMethodDecl enclMethod = env.enclMethod;
+        boolean checkFirstConstructorStat(JCMethodInvocation tree, JCMethodDecl enclMethod, boolean error) {
             if (enclMethod != null && enclMethod.name == names.init) {
                 JCBlock body = enclMethod.body;
                 if (body.stats.head.hasTag(EXEC) &&
                     ((JCExpressionStatement) body.stats.head).expr == tree)
                     return true;
             }
-            log.error(tree.pos(),
-                      Errors.CallMustBeFirstStmtInCtor(TreeInfo.name(tree.meth)));
+            if (error) {
+                log.error(tree.pos(),
+                        Errors.CallMustBeFirstStmtInCtor(TreeInfo.name(tree.meth)));
+            }
             return false;
         }
 

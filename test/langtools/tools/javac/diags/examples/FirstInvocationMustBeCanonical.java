@@ -21,8 +21,10 @@
  * questions.
  */
 
-// key: compiler.err.invalid.supertype.record
+// key: compiler.err.first.statement.must.be.call.to.canonical
 // options: --enable-preview -source ${jdk.version}
 
-@SuppressWarnings("preview")
-class R extends Record {}
+record R(int x) {
+    // this is not a canonical constructor
+    public R(int x, int y) { this.x = x; }
+}

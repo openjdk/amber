@@ -263,6 +263,10 @@ public class RecordCompilationTests extends CompilationTestCase {
         // If types match, names must match
         assertFail("compiler.err.canonical.with.name.mismatch",
                    "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
+
+        // first invocation should be one to the canonical
+        assertFail("compiler.err.first.statement.must.be.call.to.canonical",
+                "record R(int x, int y) { public R(int y, int x, int z) { this.x = this.y = 0; } }");
     }
 
     public void testAnnotationCriteria() {

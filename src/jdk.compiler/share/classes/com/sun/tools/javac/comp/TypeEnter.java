@@ -1073,20 +1073,15 @@ public class TypeEnter implements Completer {
         JCMethodDecl getCanonicalInitDecl(JCClassDecl tree) {
             // let's check if there is a constructor with exactly the same arguments as the record components
             List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
-            List<Type> erasedTypes = types.erasure(recordComponentTypes);
             JCMethodDecl canonicalDecl = null;
             for (JCTree def : tree.defs) {
                 if (TreeInfo.isConstructor(def)) {
                     JCMethodDecl mdecl = (JCMethodDecl)def;
-                    if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), erasedTypes)) {
+                    if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), recordComponentTypes)) {
                         canonicalDecl = mdecl;
                         break;
                     }
                 }
-            }
-            if (canonicalDecl != null && !types.isSameTypes(erasedTypes, recordComponentTypes)) {
-                // error we found a constructor with the same erasure as the canonical constructor
-                log.error(canonicalDecl, Errors.ConstructorWithSameErasureAsCanonical);
             }
             return canonicalDecl;
         }

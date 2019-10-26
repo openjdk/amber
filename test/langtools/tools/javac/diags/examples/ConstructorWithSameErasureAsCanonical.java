@@ -28,5 +28,5 @@ import java.util.List;
 
 @SuppressWarnings("unchecked")
 record R(List<String> x) {
-    public R(List x) { this.x = x; }
+    public R(List x) { this(x); }
 }

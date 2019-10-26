@@ -3592,7 +3592,11 @@ public class Check {
                     varargsDuplicateError(pos, sym, byName);
                     return true;
                 } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
-                    duplicateErasureError(pos, sym, byName);
+                    if (s.owner.isRecord() && sym.isConstructor() && (sym.isRecord() || byName.isRecord())) {
+                        log.error(pos, Errors.ConstructorWithSameErasureAsCanonical);
+                    } else {
+                        duplicateErasureError(pos, sym, byName);
+                    }
                     sym.flags_field |= CLASH;
                     return true;
                 } else {
