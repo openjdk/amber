@@ -1,0 +1,2 @@
+MostSpecificTest.java:15:9: compiler.err.ref.ambiguous: foo, kindname.method, foo(java.lang.String,java.lang.Object), main(java.lang.String[]), kindname.method, foo(java.lang.Object,java.lang.String), main(java.lang.String[])
+1 error

@@ -1,0 +1,6 @@
+NameClashTest.java:19:13: compiler.err.name.clash.same.erasure: foo(java.lang.Object), <T>foo(T)
+NameClashTest.java:24:17: compiler.err.name.clash.same.erasure: foo(java.lang.Object), <T>foo(T)
+NameClashTest.java:33:13: compiler.err.array.and.varargs: foo(java.lang.String[]), foo(java.lang.String...), main(java.lang.String[])
+NameClashTest.java:41:9: compiler.err.already.defined: kindname.method, foo(NameClashTest.X), kindname.method, main(java.lang.String[])
+NameClashTest.java:48:17: compiler.err.already.defined: kindname.method, goo(), kindname.method, goo()
+5 errors

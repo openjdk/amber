@@ -1,0 +1,2 @@
+NoAbstractLocalMethodTest2.java:10:9: compiler.err.missing.meth.body.or.decl.abstract
+1 error
