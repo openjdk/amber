@@ -902,6 +902,13 @@ public class TypeEnter implements Completer {
                 for (JCVariableDecl field : fields) {
                     sym.getRecordComponent(field.sym, true);
                 }
+                // lets enter all constructors
+                for (JCTree def : tree.defs) {
+                    if (TreeInfo.isConstructor(def)) {
+                        memberEnter.memberEnter(def, env);
+                    }
+                }
+                //tree.defs.stream().filter(t -> TreeInfo.isConstructor(t)).forEach(t -> memberEnter.memberEnter(t, env));
             }
         }
     }
@@ -919,29 +926,12 @@ public class TypeEnter implements Completer {
             JCClassDecl tree = env.enclClass;
             ClassSymbol sym = tree.sym;
             ClassType ct = (ClassType)sym.type;
-            boolean defaultConstructorGenerated = false;
 
             // Add default constructor if needed.
-            if ((sym.flags() & INTERFACE) == 0 &&
-                !TreeInfo.hasConstructors(tree.defs)) {
-                DefaultConstructorHelper helper = new BasicConstructorHelper(sym);
-                if (sym.name.isEmpty()) {
-                    JCNewClass nc = (JCNewClass)env.next.tree;
-                    if (nc.constructor != null) {
-                        if (nc.constructor.kind != ERR) {
-                            helper = new AnonClassConstructorHelper(sym, (MethodSymbol)nc.constructor, nc.encl);
-                        } else {
-                            helper = null;
-                        }
-                    }
-                } else if ((sym.flags() & RECORD) != 0) {
-                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
-                }
-                if (helper != null) {
-                    JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
-                    tree.defs = tree.defs.prepend(constrDef);
-                    defaultConstructorGenerated = true;
-                }
+            DefaultConstructorHelper helper = getDefaultConstructorHelper(env);
+            if (helper != null) {
+                JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
+                tree.defs = tree.defs.prepend(constrDef);
             }
             // enter symbols for 'this' into current scope.
             VarSymbol thisSym =
@@ -964,7 +954,7 @@ public class TypeEnter implements Completer {
                 }
             }
 
-            finishClass(tree, env, defaultConstructorGenerated);
+            finishClass(tree, env);
 
             if (allowTypeAnnos) {
                 typeAnnotations.organizeTypeAnnotationsSignatures(env, (JCClassDecl)env.tree);
@@ -972,21 +962,60 @@ public class TypeEnter implements Completer {
             }
         }
 
+        DefaultConstructorHelper getDefaultConstructorHelper(Env<AttrContext> env) {
+            JCClassDecl tree = env.enclClass;
+            ClassSymbol sym = tree.sym;
+            DefaultConstructorHelper helper = null;
+            boolean isClassWithoutInit = (sym.flags() & INTERFACE) == 0 && !TreeInfo.hasConstructors(tree.defs);
+            boolean isRecord = sym.isRecord();
+            if (isClassWithoutInit && !isRecord) {
+                helper = new BasicConstructorHelper(sym);
+                if (sym.name.isEmpty()) {
+                    JCNewClass nc = (JCNewClass)env.next.tree;
+                    if (nc.constructor != null) {
+                        if (nc.constructor.kind != ERR) {
+                            helper = new AnonClassConstructorHelper(sym, (MethodSymbol)nc.constructor, nc.encl);
+                        } else {
+                            helper = null;
+                        }
+                    }
+                }
+            }
+            if (isRecord) {
+                JCMethodDecl canonicalInit = null;
+                if (isClassWithoutInit || (canonicalInit = getCanonicalInitDecl(env.enclClass)) == null) {
+                    helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
+                }
+                if (canonicalInit != null) {
+                    canonicalInit.sym.flags_field |= Flags.RECORD;
+                }
+            }
+            return helper;
+        }
+
         /** Enter members for a class.
          */
-        void finishClass(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
+        void finishClass(JCClassDecl tree, Env<AttrContext> env) {
             if ((tree.mods.flags & Flags.ENUM) != 0 &&
                 !tree.sym.type.hasTag(ERROR) &&
                 (types.supertype(tree.sym.type).tsym.flags() & Flags.ENUM) == 0) {
                 addEnumMembers(tree, env);
             }
             boolean isRecord = (tree.sym.flags_field & RECORD) != 0;
+            List<JCTree> alreadyEntered = null;
+            if (isRecord) {
+                alreadyEntered = List.convert(JCTree.class, TreeInfo.recordFields(tree));
+                alreadyEntered = alreadyEntered.prependList(tree.defs.stream()
+                        .filter(t -> TreeInfo.isConstructor(t) &&
+                                ((JCMethodDecl)t).sym != null &&
+                                (((JCMethodDecl)t).sym.flags_field & Flags.GENERATEDCONSTR) == 0).collect(List.collector()));
+            }
             List<JCTree> defsToEnter = isRecord ?
-                    tree.defs.diff(List.convert(JCTree.class, TreeInfo.recordFields(tree))) : tree.defs;
+                    tree.defs.diff(alreadyEntered) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
             List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
-                addRecordMembersIfNeeded(tree, env, defaultConstructorGenerated);
+                addRecordMembersIfNeeded(tree, env);
             }
             // now we need to enter any additional mandated member that could have been added in the previous step
             memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
@@ -1077,7 +1106,7 @@ public class TypeEnter implements Completer {
             for (JCTree def : tree.defs) {
                 if (TreeInfo.isConstructor(def)) {
                     JCMethodDecl mdecl = (JCMethodDecl)def;
-                    if (types.isSameTypes(mdecl.sym.type.getParameterTypes(), recordComponentTypes)) {
+                    if (types.isSameTypes(mdecl.params.stream().map(v -> v.sym.type).collect(List.collector()), recordComponentTypes)) {
                         canonicalDecl = mdecl;
                         break;
                     }
@@ -1089,8 +1118,8 @@ public class TypeEnter implements Completer {
         /** Add the implicit members for a record
          *  to the symbol table.
          */
-        private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env, boolean defaultConstructorGenerated) {
-            if (!defaultConstructorGenerated) {
+        private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
+            /*if (!defaultConstructorGenerated) {
                 JCMethodDecl canonicalDecl = getCanonicalInitDecl(tree);
                 MethodSymbol canonicalInit = canonicalDecl == null ?
                         null :
@@ -1104,7 +1133,7 @@ public class TypeEnter implements Completer {
                     // let's use the RECORD flag to mark it as the canonical constructor
                     canonicalInit.flags_field |= Flags.RECORD;
                 }
-            }
+            }*/
 
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 // public String toString() { return ???; }
@@ -1338,7 +1367,7 @@ public class TypeEnter implements Completer {
             /* if we have to generate a default constructor for records we will treat it as the compact one
              * to trigger field initialization later on
              */
-            csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR;
+            csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR | GENERATEDCONSTR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
                 params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
