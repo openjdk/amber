@@ -49,19 +49,32 @@ import static org.testng.Assert.expectThrows;
  */
 public class ThrowingConstructorTest {
 
+    /** "big switch" that can be used to allow/disallow record construction
+     * set to true after the data provider has constructed all record objects */
+    private static volatile boolean firstDataSetCreated;
+
     record R1 () implements Serializable {
-        public R1() { throw new NullPointerException("thrown from R1"); } // canonical
-        public R1(String s) { }  // for test construction
+        public R1() {
+            if (firstDataSetCreated)
+                throw new NullPointerException("thrown from R1");
+        }
     }
 
     record R2 (int x) implements Serializable {
-        public R2(int x) { throw new IllegalArgumentException("thrown from R2"); } // canonical
-        public R2(String s) { x = 1;}  // for test construction
+        public R2(int x) {
+            if (firstDataSetCreated)
+                throw new IllegalArgumentException("thrown from R2");
+            this.x = x;
+        }
     }
 
     record R3 (int x, int y) implements Serializable {
-        public R3(int x, int y) { throw new NumberFormatException("thrown from R3"); } // canonical
-        public R3(String s) { x = 2; y = 3; }  // for test construction
+        public R3(int x, int y) {
+            if (firstDataSetCreated)
+                throw new NumberFormatException("thrown from R3");
+            this.x = x;
+            this.y = y;
+        }
     }
 
     static class C implements Serializable {
@@ -74,14 +87,16 @@ public class ThrowingConstructorTest {
 
     @DataProvider(name = "exceptionInstances")
     public Object[][] exceptionInstances() {
-        return new Object[][] {
-            new Object[] { new R1("s"),        NullPointerException.class,     "thrown from R1" },
-            new Object[] { new R2("s"),        IllegalArgumentException.class, "thrown from R2" },
-            new Object[] { new R3("s"),        NumberFormatException .class,   "thrown from R3" },
-            new Object[] { new C(new R1("s")), NullPointerException.class,     "thrown from R1" },
-            new Object[] { new C(new R2("s")), IllegalArgumentException.class, "thrown from R2" },
-            new Object[] { new C(new R3("s")), NumberFormatException .class,   "thrown from R3" },
+        Object[][] objs =  new Object[][] {
+            new Object[] { new R1(),            NullPointerException.class,     "thrown from R1" },
+            new Object[] { new R2(1),           IllegalArgumentException.class, "thrown from R2" },
+            new Object[] { new R3(2, 3),        NumberFormatException .class,   "thrown from R3" },
+            new Object[] { new C(new R1()),     NullPointerException.class,     "thrown from R1" },
+            new Object[] { new C(new R2(4)),    IllegalArgumentException.class, "thrown from R2" },
+            new Object[] { new C(new R3(5, 6)), NumberFormatException .class,   "thrown from R3" },
         };
+        firstDataSetCreated = true;
+        return  objs;
     }
 
     @Test(dataProvider = "exceptionInstances")
@@ -104,31 +119,43 @@ public class ThrowingConstructorTest {
 
     //  -- errors ( pass through unwrapped )
 
+    private static volatile boolean secondDataSetCreated;
+
     record R4 () implements Serializable {
-        public R4() { throw new OutOfMemoryError("thrown from R4"); } // canonical
-        public R4(String s) { }  // for test construction
+        public R4() {
+            if (secondDataSetCreated)
+                throw new OutOfMemoryError("thrown from R4"); }
     }
 
     record R5 (int x) implements Serializable {
-        public R5(int x) { throw new StackOverflowError("thrown from R5"); } // canonical
-        public R5(String s) { x = 1;}  // for test construction
+        public R5(int x) {
+            if (secondDataSetCreated)
+                throw new StackOverflowError("thrown from R5");
+            this.x = x;
+        }
     }
 
     record R6 (int x, int y) implements Serializable {
-        public R6(int x, int y) { throw new AssertionError("thrown from R6"); } // canonical
-        public R6(String s) { x = 2; y = 3; }  // for test construction
+        public R6(int x, int y) {
+            if (secondDataSetCreated)
+                throw new AssertionError("thrown from R6");
+            this.x = x;
+            this.y = y;
+        }
     }
 
     @DataProvider(name = "errorInstances")
     public Object[][] errorInstances() {
-        return new Object[][] {
-            new Object[] { new R4("s"),        OutOfMemoryError.class,   "thrown from R4" },
-            new Object[] { new R5("s"),        StackOverflowError.class, "thrown from R5" },
-            new Object[] { new R6("s"),        AssertionError .class,    "thrown from R6" },
-            new Object[] { new C(new R4("s")), OutOfMemoryError.class,   "thrown from R4" },
-            new Object[] { new C(new R5("s")), StackOverflowError.class, "thrown from R5" },
-            new Object[] { new C(new R6("s")), AssertionError .class,    "thrown from R6" },
+        Object[][] objs =  new Object[][] {
+            new Object[] { new R4(),              OutOfMemoryError.class,   "thrown from R4" },
+            new Object[] { new R5(11),            StackOverflowError.class, "thrown from R5" },
+            new Object[] { new R6(12, 13),        AssertionError .class,    "thrown from R6" },
+            new Object[] { new C(new R4()),       OutOfMemoryError.class,   "thrown from R4" },
+            new Object[] { new C(new R5(14)),     StackOverflowError.class, "thrown from R5" },
+            new Object[] { new C(new R6(15, 16)), AssertionError .class,    "thrown from R6" },
         };
+        secondDataSetCreated = true;
+        return objs;
     }
 
     @Test(dataProvider = "errorInstances")

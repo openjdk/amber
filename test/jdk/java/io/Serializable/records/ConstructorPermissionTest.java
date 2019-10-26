@@ -53,38 +53,48 @@ import static org.testng.Assert.expectThrows;
  */
 public class ConstructorPermissionTest {
 
+    /** "big switch" that can be used to allow/disallow record construction
+     * set to true after the data provider has constructed all record objects */
+    private static volatile boolean firstDataSetCreated;
+
     record R1 () implements Serializable {
-        public R1 {  // compact
-            try { Files.list(Path.of(".")); }
-            catch (IOException unexpected) { throw new AssertionError(unexpected); }
+        public R1 {
+            if (firstDataSetCreated) {
+                try { Files.list(Path.of(".")); }
+                catch (IOException unexpected) { throw new AssertionError(unexpected); }
+            }
         }
-        public R1(String unused) { }  // for test construction
     }
 
     record R2 (int x) implements Serializable {
-        public R2 {  // compact
-            try { new Socket("localhost", 8080); }
-            catch (IOException unexpected) { throw new AssertionError(unexpected); }
+        public R2 {
+            if (firstDataSetCreated) {
+                try { new Socket("localhost", 8080); }
+                catch (IOException unexpected) { throw new AssertionError(unexpected); }
+            }
+            this.x = x;
         }
-        public R2(String s) { x = 1;}  // for test construction
     }
 
     record R3 (String... args) implements Serializable {
-        public R3 {  // compact
-            ProcessHandle.current();
+        public R3 {
+            if (firstDataSetCreated)
+                ProcessHandle.current();
+            this.args = args;
         }
-        public R3(String s) { args = null; }  // for test construction
     }
 
     static final Class<InvalidObjectException> IOE = InvalidObjectException.class;
 
     @DataProvider(name = "exceptionInstances")
     public Object[][] exceptionInstances() {
-        return new Object[][] {
-            new Object[] { new R1("s"), AccessControlException.class, "FilePermission"   },
-            new Object[] { new R2("s"), AccessControlException.class, "SocketPermission" },
-            new Object[] { new R3("s"), AccessControlException.class, "manageProcess"    },
+        var objs = new Object[][] {
+            new Object[] { new R1(),     AccessControlException.class, "FilePermission"   },
+            new Object[] { new R2(1),    AccessControlException.class, "SocketPermission" },
+            new Object[] { new R3("s"),  AccessControlException.class, "manageProcess"    },
         };
+        firstDataSetCreated = true;
+        return objs;
     }
 
     @Test(dataProvider = "exceptionInstances")
