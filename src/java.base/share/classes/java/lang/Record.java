@@ -29,7 +29,7 @@ package java.lang;
  *
  *           This class is associated with <i>records</i>, a preview
  *           feature of the Java language. Programs can only use this
- *           method when preview features are enabled. Preview features
+ *           class when preview features are enabled. Preview features
  *           may be removed in a future release, or upgraded to permanent
  *           features of the Java language.}
  *
