@@ -26,7 +26,6 @@
  * @summary Tests for stream references
  * @compile --enable-preview -source 14 StreamRefTest.java
  * @run testng/othervm --enable-preview StreamRefTest
- * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview StreamRefTest
  */
 
 import java.io.ByteArrayInputStream;
@@ -36,6 +35,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import org.testng.annotations.Test;
 import static java.lang.System.out;
 import static org.testng.Assert.assertEquals;
@@ -48,12 +48,11 @@ import static org.testng.Assert.expectThrows;
 public class StreamRefTest {
 
     record A (int x) implements Serializable {
-        public A(int x) {  // canonical
+        public A(int x) {
             if (x < 0)
                 throw new IllegalArgumentException("negative value for x:" + x);
             this.x = x;
         }
-        public A(int x, String unused) { this.x = x;}  // for test construction
     }
 
     static class B implements Serializable {
@@ -116,7 +115,10 @@ public class StreamRefTest {
     @Test
     public void basicRefWithInvalidA() throws Exception {
         out.println("\n---");
-        var a = new A(-3, "unused");
+        var a = new A(3);
+        Field f = A.class.getDeclaredField("x");
+        f.setAccessible(true);
+        f.set(a, -3);  // a "bad" value
         var b = new B(a);
         assert a.x() == -3;
 
@@ -135,7 +137,10 @@ public class StreamRefTest {
     @Test
     public void reverseBasicRefWithInvalidA() throws Exception {
         out.println("\n---");
-        var a = new A(-3, "unused");
+        var a = new A(3);
+        Field f = A.class.getDeclaredField("x");
+        f.setAccessible(true);
+        f.set(a, -3);  // a "bad" value
         var b = new B(a);
         assert a.x() == -3;
 
