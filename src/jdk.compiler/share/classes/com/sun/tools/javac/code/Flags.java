@@ -338,12 +338,12 @@ public class Flags {
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
      * part of the state vector of a record.
      */
-    public static final long RECORD = 1L<<61;
+    public static final long RECORD = 1L<<61; // ClassSymbols, MethodSymbols and VarSymbols
 
     /**
      * Flag to mark a record constructor as a compact one
      */
-    public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51;
+    public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51; // MethodSymbols only
 
     /** Modifier masks.
      */
