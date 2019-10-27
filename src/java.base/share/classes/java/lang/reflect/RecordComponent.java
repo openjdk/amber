@@ -51,7 +51,7 @@ import java.util.Objects;
  *
  * @see Class#getRecordComponents()
  * @see java.lang.Record
- *
+ * @jls 8.10 Record Types
  * @since 14
  */
 @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
@@ -74,9 +74,9 @@ public final class RecordComponent implements AnnotatedElement {
     private RecordComponent() {}
 
     /**
-     * Returns the name of the component represented by this record component.
+     * Returns the name of this record component.
      *
-     * @return the name of the component represented by this record component
+     * @return the name of this record component
      */
     public String getName() {
         return name;
@@ -87,8 +87,8 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@code Class} that identifies the declared type for the
-     * component represented by this record component.
+     * Returns a {@code Class} that identifies the declared type for this
+     * record component.
      *
      * @return a {@code Class} identifying the declared type of the component
      * represented by this record component
@@ -103,6 +103,8 @@ public final class RecordComponent implements AnnotatedElement {
      *
      * @return a {@code String} that describes the generic type signature for
      * this record component
+     *
+     * @jvms 4.7.9.1 Signatures
      */
     public String getGenericSignature() {
         return signature;
@@ -110,7 +112,7 @@ public final class RecordComponent implements AnnotatedElement {
 
     /**
      * Returns a {@code Type} object that represents the declared type for
-     * the record component represented by this record component.
+     * this record component.
      *
      * <p>If the declared type of the record component is a parameterized type,
      * the {@code Type} object returned reflects the actual type arguments used
@@ -120,7 +122,7 @@ public final class RecordComponent implements AnnotatedElement {
      * parameterized type, it is created. Otherwise, it is resolved.
      *
      * @return a {@code Type} object that represents the declared type for
-     *         the record component represented by this record component
+     *         this record component
      * @throws GenericSignatureFormatError if the generic record component
      *         signature does not conform to the format specified in
      *         <cite>The Java&trade; Virtual Machine Specification</cite>
@@ -157,11 +159,9 @@ public final class RecordComponent implements AnnotatedElement {
 
     /**
      * Returns an {@code AnnotatedType} that represents the use of a type to
-     * specify the annotated type of the record component represented by this
-     * record component.
+     * specify the annotated type of this record component.
      *
-     * @return an object representing the declared type of the record component
-     *         represented by this record component
+     * @return an object representing the declared type of this record component
      */
     public AnnotatedType getAnnotatedType() {
         if (typeAnnotations != null) {
@@ -178,11 +178,11 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns a {@code Method} that represents the accessor for the record
-     * component represented by this record component.
+     * Returns a {@code Method} that represents the accessor for this record
+     * component.
      *
-     * @return a {@code Method} that represents the accessor for the record
-     *         component represented by this record component
+     * @return a {@code Method} that represents the accessor for this record
+     * component
      */
     public Method getAccessor() {
         return accessor;
@@ -222,11 +222,17 @@ public final class RecordComponent implements AnnotatedElement {
         return declAnnos;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Annotation[] getAnnotations() {
         return getDeclaredAnnotations();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
 

@@ -2306,6 +2306,7 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
+     * @jls 8.10 Record Types
      * @since 14
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
@@ -3488,7 +3489,6 @@ public final class Class<T> implements java.io.Serializable,
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
-    private native String[]     getRecordComponentNames0();
     private native Object[]     getRecordComponents0();
     private native boolean      isRecord0();
 
@@ -3606,11 +3606,10 @@ public final class Class<T> implements java.io.Serializable,
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
-     * Returns true if and only if this class was declared as a record in the
-     * source code.
+     * Returns true if and only if this class is a record class.
      *
-     * @return true if and only if this class was declared as a record in the
-     *     source code
+     * @return true if and only if this class is a record class
+     * @jls 8.10 Record Types
      * @since 14
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
