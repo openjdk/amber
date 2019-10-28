@@ -2590,6 +2590,7 @@ public class JavacParser implements Parser {
                     returnType = term(EXPR | TYPE);
                 }
                 ListBuffer<JCStatement> stats = new ListBuffer<>();
+                pos = token.pos;
                 stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
                 storeEnd(stats.last(), S.prevToken().endPos);
                 return stats.toList();
