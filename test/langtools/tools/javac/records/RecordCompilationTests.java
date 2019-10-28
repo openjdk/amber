@@ -207,7 +207,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                         "    private int x() { return 0; };" +
                         "}");
 
-        assertFail("compiler.err.method.cant.throw.checked.exception",
+        assertFail("compiler.err.method.cant.throw.exception",
                    "public record R(int x) {\n" +
                    "    public int x() throws Exception { return 0; };" +
                    "}");
@@ -252,12 +252,13 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "R(List list) { this.list = list; }");
 
         // ctor should not add checked exceptions
-        assertFail("compiler.err.method.cant.throw.checked.exception",
+        assertFail("compiler.err.method.cant.throw.exception",
                    "record R() { # }",
                    "public R() throws Exception { }");
 
-        // but unchecked exceptions are OK
-        assertOK("record R() { # }",
+        // not even checked exceptions
+        assertFail("compiler.err.method.cant.throw.exception",
+                "record R() { # }",
                  "public R() throws IllegalArgumentException { }");
 
         // If types match, names must match

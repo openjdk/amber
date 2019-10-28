@@ -21,9 +21,11 @@
  * questions.
  */
 
-// key: compiler.err.method.cant.throw.checked.exception
+// key: compiler.err.method.cant.throw.exception
 // options: --enable-preview -source ${jdk.version}
 
-record R(int x) {
-    public int x() throws Exception { return 0; }
+record R(int i) {
+    public int i() throws ArithmeticException {
+        return 1/i;
+    }
 }

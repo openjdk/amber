@@ -1051,8 +1051,8 @@ public class Attr extends JCTree.Visitor {
                     if (!types.isSameType(tree.sym.type.getReturnType(), recordComponent.get().type)) {
                         log.error(tree, Errors.AccessorReturnTypeDoesntMatch(recordComponent.get().type, tree.sym.type));
                     }
-                    if (tree.sym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
-                        log.error(tree, Errors.MethodCantThrowCheckedException);
+                    if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
+                        log.error(tree, Errors.MethodCantThrowException);
                     }
                 }
 
@@ -1141,8 +1141,8 @@ public class Attr extends JCTree.Visitor {
                         if (!tree.sym.isPublic()) {
                             log.error(tree, Errors.CanonicalConstructorMustBePublic);
                         }
-                        if (tree.sym.type.asMethodType().thrown.stream().anyMatch(exc -> !isUnchecked(exc))) {
-                            log.error(tree, Errors.MethodCantThrowCheckedException);
+                        if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
+                            log.error(tree, Errors.MethodCantThrowException);
                         }
                     }
                 }
@@ -1162,18 +1162,6 @@ public class Attr extends JCTree.Visitor {
             chk.setMethod(prevMethod);
         }
     }
-    //where
-        private boolean isUnchecked(Type exc) {
-            return (exc.hasTag(TYPEVAR)) ? isUnchecked(types.supertype(exc)) :
-                    (exc.hasTag(CLASS)) ? isUnchecked((ClassSymbol)exc.tsym) :
-                            exc.hasTag(BOT);
-        }
-
-        boolean isUnchecked(ClassSymbol exc) {
-            return exc.kind == ERR ||
-                    exc.isSubClass(syms.errorType.tsym, types) ||
-                    exc.isSubClass(syms.runtimeExceptionType.tsym, types);
-        }
 
     public void visitVarDef(JCVariableDecl tree) {
         // Local variables have not been entered yet, so we need to do it now:
