@@ -203,9 +203,6 @@ public class Names {
     public final Name bootstrap;
 
     public final Name record;
-    public final Name where;
-    public final Name non;
-    public final Name ofLazyProjection;
 
     // serialization members, used by records too
     public final Name serialPersistentFields;
@@ -372,9 +369,6 @@ public class Names {
 
         bootstrap = fromString("bootstrap");
         record = fromString("record");
-        where = fromString("where");
-        non = fromString("non");
-        ofLazyProjection = fromString("ofLazyProjection");
 
         serialPersistentFields = fromString("serialPersistentFields");
         writeObject = fromString("writeObject");

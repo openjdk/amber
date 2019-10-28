@@ -1241,7 +1241,7 @@ public class Attr extends JCTree.Visitor {
             result = tree.type = v.type;
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
                 if (forbiddenRecordComponentNames.contains(v.name.toString())) {
-                    log.error(env.enclClass, Errors.IllegalRecordComponentName(env.enclClass.sym, v));
+                    log.error(env.enclClass, Errors.IllegalRecordComponentName(v));
                 }
             }
         }

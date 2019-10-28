@@ -165,19 +165,19 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "}");
 
         // instance fields are not
-        assertFail("compiler.err.record.fields.must.be.in.header",
+        assertFail("compiler.err.record.cannot.declare.instance.fields",
                 "public record R(int x) {\n" +
                         "    private final int y = 0;" +
                         "}");
 
         // mutable instance fields definitely not
-        assertFail("compiler.err.record.fields.must.be.in.header",
+        assertFail("compiler.err.record.cannot.declare.instance.fields",
                 "public record R(int x) {\n" +
                         "    private int y = 0;" +
                         "}");
 
         // redeclaring components also not
-        assertFail("compiler.err.record.fields.must.be.in.header",
+        assertFail("compiler.err.record.cannot.declare.instance.fields",
                 "public record R(int x) {\n" +
                         "    private final int x;" +
                         "}");

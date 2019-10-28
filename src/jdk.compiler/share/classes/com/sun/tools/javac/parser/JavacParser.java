@@ -3729,7 +3729,7 @@ public class JavacParser implements Parser {
             log.error(mods.pos, Errors.RecordCantBeAbstract);
         }
         nextToken();
-        mods.flags |= Flags.RECORD | Flags.STATIC | Flags.FINAL;
+        mods.flags |= Flags.RECORD | Flags.FINAL;
         Name name = typeName();
 
         List<JCTypeParameter> typarams = typeParametersOpt();
@@ -4104,7 +4104,7 @@ public class JavacParser implements Parser {
                         return defs;
                     } else {
                             nextToken();
-                            return List.of(syntaxError(pos, null, Errors.RecordFieldsMustBeInHeader));
+                            return List.of(syntaxError(pos, null, Errors.RecordCannotDeclareInstanceFields));
                         }
                     } else {
                         pos = token.pos;

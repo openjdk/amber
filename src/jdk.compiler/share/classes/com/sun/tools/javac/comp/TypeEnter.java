@@ -983,7 +983,7 @@ public class TypeEnter implements Completer {
             }
             if (isRecord) {
                 JCMethodDecl canonicalInit = null;
-                if (isClassWithoutInit || (canonicalInit = getCanonicalInitDecl(env.enclClass)) == null) {
+                if (isClassWithoutInit || (canonicalInit = getCanonicalConstructorDecl(env.enclClass)) == null) {
                     helper = new RecordConstructorHelper(sym, TreeInfo.recordFields(tree));
                 }
                 if (canonicalInit != null) {
@@ -1049,22 +1049,6 @@ public class TypeEnter implements Completer {
             }
         }
 
-        /** Is exc an exception symbol that need not be declared?
-         */
-        boolean isUnchecked(ClassSymbol exc) {
-            return exc.kind == ERR ||
-                   exc.isSubClass(syms.errorType.tsym, types) ||
-                   exc.isSubClass(syms.runtimeExceptionType.tsym, types);
-        }
-
-        /** Is exc an exception type that need not be declared?
-         */
-        boolean isUnchecked(Type exc) {
-            return (exc.hasTag(TYPEVAR)) ? isUnchecked(types.supertype(exc)) :
-                   (exc.hasTag(CLASS)) ? isUnchecked((ClassSymbol)exc.tsym) :
-                   exc.hasTag(BOT);
-        }
-
         /** Add the implicit members for an enum type
          *  to the symbol table.
          */
@@ -1099,7 +1083,7 @@ public class TypeEnter implements Completer {
             memberEnter.memberEnter(valueOf, env);
         }
 
-        JCMethodDecl getCanonicalInitDecl(JCClassDecl tree) {
+        JCMethodDecl getCanonicalConstructorDecl(JCClassDecl tree) {
             // let's check if there is a constructor with exactly the same arguments as the record components
             List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
             JCMethodDecl canonicalDecl = null;
@@ -1120,7 +1104,7 @@ public class TypeEnter implements Completer {
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
             /*if (!defaultConstructorGenerated) {
-                JCMethodDecl canonicalDecl = getCanonicalInitDecl(tree);
+                JCMethodDecl canonicalDecl = getCanonicalConstructorDecl(tree);
                 MethodSymbol canonicalInit = canonicalDecl == null ?
                         null :
                         canonicalDecl.sym;

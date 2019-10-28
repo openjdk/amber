@@ -1200,6 +1200,9 @@ public class Check {
         case TYP:
             if (sym.isLocal()) {
                 mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
+                if ((flags & RECORD) != 0) {
+                    implicit = STATIC;
+                }
                 if ((sym.owner.flags_field & STATIC) == 0 &&
                     (flags & ENUM) != 0) {
                     log.error(pos, Errors.EnumsMustBeStatic);
@@ -1212,7 +1215,7 @@ public class Check {
                 else if ((flags & ENUM) != 0)
                     log.error(pos, Errors.EnumsMustBeStatic);
                 // Nested interfaces and enums are always STATIC (Spec ???)
-                if ((flags & (INTERFACE | ENUM)) != 0 ) implicit = STATIC;
+                if ((flags & (INTERFACE | ENUM | RECORD)) != 0 ) implicit = STATIC;
             } else {
                 mask = ClassFlags;
             }
