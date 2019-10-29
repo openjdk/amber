@@ -26,7 +26,7 @@ import java.lang.annotation.*;
 /**
  * @test
  * @bug 8006547
- * @compile NoTargetOnContainer2.java
+ * @compile --enable-preview -source ${jdk.version} NoTargetOnContainer2.java
  */
 
 @interface FooContainer {

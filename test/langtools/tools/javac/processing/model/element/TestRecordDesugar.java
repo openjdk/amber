@@ -26,26 +26,54 @@
  * @summary Test compiler desugaring of a record type
  * @library /tools/javac/lib
  * @modules jdk.compiler
- * @build   JavacTestingAbstractProcessor TestRecordDesugar
- * @compile -processor TestRecordDesugar -proc:only TestRecordDesugar.java
+ * @build   JavacTestingAbstractProcessor
+ * @compile --enable-preview -source ${jdk.version} TestRecordDesugar.java
+ * @run main/othervm --enable-preview TestRecordDesugar
  */
+
+// These are the original lines:
+// * @build   JavacTestingAbstractProcessor TestRecordDesugar
+// * @compile -processor TestRecordDesugar -proc:only TestRecordDesugar.java
 
 // For now, just do compile-time testing of the model. Class file
 // based testing could be added subsequently.
 
 import java.io.*;
 import java.lang.annotation.*;
+import java.nio.file.*;
 import javax.annotation.processing.*;
 import javax.lang.model.*;
 import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.*;
 import java.util.*;
+import java.util.spi.ToolProvider;
 
 /**
  * Tests of the desugaring of record types.
  */
 public class TestRecordDesugar extends JavacTestingAbstractProcessor {
+    public static void main(String... args) {
+        String testSrc = System.getProperty("test.src");
+        String testClasspath = System.getProperty("test.class.path");
+        List<String> options = List.of(
+                "--enable-preview",
+                "-source", Integer.toString(Runtime.version().feature()),
+                "-classpath", testClasspath,
+                "-processor", "TestRecordDesugar",
+                "-proc:only",
+                Path.of(testSrc).resolve("TestRecordDesugar.java").toString()
+        );
+
+        System.out.println("Options: " + options);
+        ToolProvider javac = ToolProvider.findFirst("javac").orElseThrow();
+        int rc = javac.run(System.out, System.err, options.toArray(new String[0]));
+        System.out.println("Return code: " + rc);
+        if (rc != 0) {
+            throw new AssertionError("unexpected return code: " + rc);
+        }
+    }
+
     int typeCount = 0;
     int failures = 0;
 
