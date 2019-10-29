@@ -3228,10 +3228,22 @@ public class Check {
 
     @SuppressWarnings("preview")
     boolean annotationApplicable(JCAnnotation a, Symbol s) {
-        Name[] targets = getTargetNames(a);
-        if (targets.length == 0) {
-            // recovery
-            return true;
+        Attribute.Array arr = getAttributeTargetAttribute(a.annotationType.type.tsym);
+        Name[] targets;
+
+        if (arr == null) {
+            targets = defaultTargetMetaInfo();
+        } else {
+            // TODO: can we optimize this?
+            targets = new Name[arr.values.length];
+            for (int i=0; i<arr.values.length; ++i) {
+                Attribute app = arr.values[i];
+                if (!(app instanceof Attribute.Enum)) {
+                    return true; // recovery
+                }
+                Attribute.Enum e = (Attribute.Enum) app;
+                targets[i] = e.value.name;
+            }
         }
         for (Name target : targets) {
             if (target == names.TYPE) {
@@ -3286,7 +3298,6 @@ public class Check {
         }
         return false;
     }
-
 
     Attribute.Array getAttributeTargetAttribute(TypeSymbol s) {
         Attribute.Compound atTarget = s.getAnnotationTypeMetadata().getTarget();
