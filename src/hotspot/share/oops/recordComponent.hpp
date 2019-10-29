@@ -25,10 +25,11 @@
 #ifndef SHARE_OOPS_RECORDCOMPONENT_HPP
 #define SHARE_OOPS_RECORDCOMPONENT_HPP
 
-#include "memory/heapInspection.hpp"
 #include "oops/annotations.hpp"
 #include "oops/metadata.hpp"
 #include "utilities/globalDefinitions.hpp"
+
+class KlassSizeStats;
 
 // This class stores information extracted from the Record class attribute.
 class RecordComponent: public MetaspaceObj {
@@ -91,16 +92,7 @@ class RecordComponent: public MetaspaceObj {
     DEBUG_ONLY(bool on_stack() { return false; })  // for template
 
 #if INCLUDE_SERVICES
-    void collect_statistics(KlassSizeStats *sz) const {
-      if (_annotations != NULL) {
-        sz->_annotations_bytes += sz->count(_annotations);
-        sz->_ro_bytes += sz->count(_annotations);
-      }
-      if (_type_annotations != NULL) {
-        sz->_annotations_bytes += sz->count(_type_annotations);
-        sz->_ro_bytes += sz->count(_type_annotations);
-      }
-    }
+    void collect_statistics(KlassSizeStats *sz) const;
 #endif
 
     bool is_klass() const { return false; }
