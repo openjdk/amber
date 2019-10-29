@@ -28,8 +28,9 @@
 #include "classfile/systemDictionary.hpp"
 #include "jvmtifiles/jvmti.h"
 #include "oops/oop.hpp"
-#include "oops/recordComponent.hpp"
 #include "runtime/os.hpp"
+
+class RecordComponent;
 
 // Interface for manipulating the basic Java classes.
 //

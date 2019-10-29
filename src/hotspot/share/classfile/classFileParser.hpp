@@ -28,7 +28,6 @@
 #include "memory/referenceType.hpp"
 #include "oops/annotations.hpp"
 #include "oops/constantPool.hpp"
-#include "oops/recordComponent.hpp"
 #include "oops/typeArrayOop.hpp"
 #include "utilities/accessFlags.hpp"
 
@@ -43,6 +42,7 @@ class FieldInfo;
 template <typename T>
 class GrowableArray;
 class InstanceKlass;
+class RecordComponent;
 class Symbol;
 class TempNewSymbol;
 

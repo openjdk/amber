@@ -32,7 +32,6 @@
 #include "oops/fieldInfo.hpp"
 #include "oops/instanceOop.hpp"
 #include "oops/klassVtable.hpp"
-#include "oops/recordComponent.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/os.hpp"
 #include "utilities/accessFlags.hpp"
@@ -42,6 +41,7 @@
 #include "jfr/support/jfrKlassExtension.hpp"
 #endif
 
+class RecordComponent;
 
 // An InstanceKlass is the VM level representation of a Java class.
 // It contains all information needed for at class at execution runtime.
