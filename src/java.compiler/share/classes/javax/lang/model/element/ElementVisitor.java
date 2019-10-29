@@ -169,8 +169,7 @@ public interface ElementVisitor<R, P> {
      * {@preview Associated with records, a preview feature of the Java language.
      *
      *           This method is associated with <i>records</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
+     *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
