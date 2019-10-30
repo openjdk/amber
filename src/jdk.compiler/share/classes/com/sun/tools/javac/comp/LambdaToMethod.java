@@ -579,8 +579,7 @@ public class LambdaToMethod extends TreeTranslator {
                 syntheticInits.append((JCExpression)captured_local);
             }
 
-            //then, determine the arguments to the indy call
-            List<JCExpression> args = translate(tree.args.prependList(syntheticInits.toList()), localContext.prev);
+            List<JCExpression> args = translate(tree.args.prependList(syntheticInits.toList()));
             result = make.Apply(List.nil(), make.Ident(sym), args).setType(tree.type);
         } else {
             super.visitApply(tree);
