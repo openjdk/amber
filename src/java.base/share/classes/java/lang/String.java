@@ -3124,6 +3124,9 @@ public final class String
                 case 'r':
                     ch = '\r';
                     break;
+                case 's':
+                    ch = ' ';
+                    break;
                 case 't':
                     ch = '\t';
                     break;
@@ -3146,6 +3149,13 @@ public final class String
                     }
                     ch = (char)code;
                     break;
+                case '\n':
+                    continue;
+                case '\r':
+                    if (from < length && chars[from] == '\n') {
+                        from++;
+                    }
+                    continue;
                 default: {
                     String msg = String.format(
                         "Invalid escape sequence: \\%c \\\\u%04X",

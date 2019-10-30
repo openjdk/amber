@@ -182,90 +182,66 @@ public class JavaTokenizer {
 
     /** Read next character in character or string literal and copy into sbuf.
      */
-    private void scanLitChar(int pos) {
+    private void scanLitChar(int pos, boolean translate, boolean multiline) {
         if (reader.ch == '\\') {
             if (reader.peekChar() == '\\' && !reader.isUnicode()) {
                 reader.skipChar();
-                reader.putChar('\\', true);
+                if (!translate) {
+                    reader.putChar(false);
+                }
+                reader.putChar(true);
             } else {
-                reader.scanChar();
+                reader.nextChar(translate);
                 switch (reader.ch) {
                 case '0': case '1': case '2': case '3':
                 case '4': case '5': case '6': case '7':
                     char leadch = reader.ch;
                     int oct = reader.digit(pos, 8);
-                    reader.scanChar();
+                    reader.nextChar(translate);
                     if ('0' <= reader.ch && reader.ch <= '7') {
                         oct = oct * 8 + reader.digit(pos, 8);
-                        reader.scanChar();
+                        reader.nextChar(translate);
                         if (leadch <= '3' && '0' <= reader.ch && reader.ch <= '7') {
                             oct = oct * 8 + reader.digit(pos, 8);
-                            reader.scanChar();
+                            reader.nextChar(translate);
                         }
                     }
-                    reader.putChar((char)oct);
-                    break;
-                case 'b':
-                    reader.putChar('\b', true); break;
-                case 't':
-                    reader.putChar('\t', true); break;
-                case 'n':
-                    reader.putChar('\n', true); break;
-                case 'f':
-                    reader.putChar('\f', true); break;
-                case 'r':
-                    reader.putChar('\r', true); break;
-                case '\'':
-                    reader.putChar('\'', true); break;
-                case '\"':
-                    reader.putChar('\"', true); break;
-                case '\\':
-                    reader.putChar('\\', true); break;
-                default:
-                    lexError(reader.bp, Errors.IllegalEscChar);
-                }
-            }
-        } else if (reader.bp != reader.buflen) {
-            reader.putChar(true);
-        }
-    }
-
-    /** Read next character in character or string literal and copy into sbuf
-     *  without translating escapes. Used by text blocks to preflight verify
-     *  escapes sequences.
-     */
-    private void scanLitCharRaw(int pos) {
-        if (reader.ch == '\\') {
-            if (reader.peekChar() == '\\' && !reader.isUnicode()) {
-                reader.skipChar();
-                reader.putChar('\\', false);
-                reader.putChar('\\', true);
-            } else {
-                reader.putChar('\\', true);
-                switch (reader.ch) {
-                case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7':
-                    char leadch = reader.ch;
-                    reader.putChar(true);
-                    if ('0' <= reader.ch && reader.ch <= '7') {
-                        reader.putChar(true);
-                        if (leadch <= '3' && '0' <= reader.ch && reader.ch <= '7') {
-                            reader.putChar(true);
-                        }
+                    if (translate) {
+                        reader.putChar((char)oct);
                     }
                     break;
-                // Effectively list of valid escape sequences.
                 case 'b':
+                    reader.putChar(translate ? '\b' : 'b', true); break;
                 case 't':
+                    reader.putChar(translate ? '\t' : 't', true); break;
                 case 'n':
+                    reader.putChar(translate ? '\n' : 'n', true); break;
                 case 'f':
+                    reader.putChar(translate ? '\f' : 'f', true); break;
                 case 'r':
+                    reader.putChar(translate ? '\r' : 'r', true); break;
                 case '\'':
                 case '\"':
                 case '\\':
                     reader.putChar(true); break;
+                case 's':
+                    checkSourceLevel(reader.bp, Feature.TEXT_BLOCKS);
+                    reader.putChar(translate ? ' ' : 's', true); break;
+                case '\n':
+                case '\r':
+                    if (!multiline) {
+                        lexError(reader.bp, Errors.IllegalEscChar);
+                    } else {
+                        int start = reader.bp;
+                        checkSourceLevel(reader.bp, Feature.TEXT_BLOCKS);
+                        if (reader.ch == '\r' && reader.peekChar() == '\n') {
+                           reader.nextChar(translate);
+                        }
+                        reader.nextChar(translate);
+                        processLineTerminator(start, reader.bp);
+                    }
+                    break;
                 default:
-                    hasBrokenEscapes = true;
                     lexError(reader.bp, Errors.IllegalEscChar);
                 }
             }
@@ -514,14 +490,10 @@ public class JavaTokenizer {
             } else if (reader.ch == '\\') {
                 // Handle escape sequences.
                 if (hasTextBlockSupport) {
-                    // Indicate that the final string should have escapes translated.
                     shouldTranslateEscapes = true;
-                    // Validate escape sequence and add to string buffer.
-                    scanLitCharRaw(pos);
-                } else {
-                    // Translate escape sequence and add result to string buffer.
-                    scanLitChar(pos);
                 }
+                // Conditionally translate escape sequence and add result to string buffer.
+                scanLitChar(pos, !shouldTranslateEscapes, openCount != 1);
             } else {
                 // Add character to string buffer.
                 reader.putChar(true);
@@ -961,7 +933,7 @@ public class JavaTokenizer {
                     } else {
                         if (isEOLN())
                             lexError(pos, Errors.IllegalLineEndInCharLit);
-                        scanLitChar(pos);
+                        scanLitChar(pos, true, false);
                         if (reader.ch == '\'') {
                             reader.scanChar();
                             tk = TokenKind.CHARLITERAL;
