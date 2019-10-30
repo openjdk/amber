@@ -83,6 +83,7 @@ public class RecordCompilationTests extends CompilationTestCase {
         for (String s : List.of("public", "private", "volatile", "final"))
             assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(# String foo) { }", s);
         assertFail("compiler.err.varargs.must.be.last", "record R(int... x, int... y) {}");
+        assertFail("compiler.err.instance.initializer.not.allowed.in.records", "record R(int i) { {} }");
     }
 
     public void testGoodDeclarations() {
@@ -129,7 +130,6 @@ public class RecordCompilationTests extends CompilationTestCase {
         for (String s : List.of("record X(int j) { }",
                 "interface I { }",
                 "static { }",
-                "{}",
                 "enum E { A, B }",
                 "class C { }"
         )) {
@@ -381,13 +381,6 @@ public class RecordCompilationTests extends CompilationTestCase {
         // trivial cases
         assertOK("record R() { public R {} }");
         assertOK("record R(int x) { public R {} }");
-
-        // cases with an instance initializers
-        assertOK("record R(int x) { { this.x = 0; } }");
-        assertOK("record R(int x) { { this.x = 0; } public R {} }");
-
-        // dead code
-        assertOK("record R(int x) { { this.x = 0; } public R { if (false) { this.x = x; }} }");
 
         // throwing an unchecked exception
         assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");

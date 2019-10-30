@@ -4031,6 +4031,8 @@ public class JavacParser implements Parser {
                        mods.annotations.isEmpty()) {
                 if (isInterface) {
                     log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.InitializerNotAllowed);
+                } else if (isRecord && (mods.flags & Flags.STATIC) == 0) {
+                    log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.InstanceInitializerNotAllowedInRecords);
                 }
                 return List.of(block(pos, mods.flags));
             } else {
