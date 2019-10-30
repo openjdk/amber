@@ -266,8 +266,17 @@ public class RecordCompilationTests extends CompilationTestCase {
                    "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
 
         // first invocation should be one to the canonical
-        assertFail("compiler.err.first.statement.must.be.call.to.canonical",
+        assertFail("compiler.err.first.statement.must.be.call.to.another.constructor",
                 "record R(int x, int y) { public R(int y, int x, int z) { this.x = this.y = 0; } }");
+
+        assertOK("record R(int x, int y) { " +
+                 "    public R(int x, int y, int z) { this(x, y); } " +
+                 "}");
+
+        assertOK("record R(int x) { " +
+                "    public R(int x, int y) { this(x, y, 0); } " +
+                "    public R(int x, int y, int z) { this(x); } " +
+                "}");
     }
 
     public void testAnnotationCriteria() {

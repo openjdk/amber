@@ -21,10 +21,9 @@
  * questions.
  */
 
-// key: compiler.err.first.statement.must.be.call.to.canonical
+// key: compiler.err.first.statement.must.be.call.to.another.constructor
 // options: --enable-preview -source ${jdk.version}
 
 record R(int x) {
-    // this is not a canonical constructor
     public R(int x, int y) { this.x = x; }
 }
