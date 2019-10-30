@@ -3736,13 +3736,8 @@ public class JavacParser implements Parser {
         }
         List<JCTree> defs = classInterfaceOrRecordBody(name, false, true);
         java.util.List<JCVariableDecl> fields = new ArrayList<>();
-        Set<Name> seenNames = new HashSet<>();
         for (JCVariableDecl field : headerFields) {
-            if (seenNames.add(field.name)) {
-                fields.add(field);
-            } else {
-                log.error(field.pos(), Errors.RecordCantDeclareDuplicateFields);
-            }
+            fields.add(field);
         }
         for (JCTree def : defs) {
             if (def.hasTag(METHODDEF)) {
