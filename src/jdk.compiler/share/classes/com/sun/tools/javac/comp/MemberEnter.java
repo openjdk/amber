@@ -301,6 +301,7 @@ public class MemberEnter extends JCTree.Visitor {
             chk.checkTransparentVar(tree.pos(), v, enclScope);
             enclScope.enter(v);
         } else if (v.owner.kind == MTH || (v.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD)) != 0) {
+            // if this is a parameter or a field obtained from a record component, enter it
             enclScope.enter(v);
         }
 

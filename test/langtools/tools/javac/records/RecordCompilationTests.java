@@ -345,6 +345,13 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "    }\n" +
                 "}");
 
+        // local records can also be final
+        assertOK("class R { \n" +
+                "    void m() { \n" +
+                "        final record RR(int x) { };\n" +
+                "    }\n" +
+                "}");
+
         // Capture locals from local record
         assertOK("class R { \n" +
                 "    void m(int y) { \n" +

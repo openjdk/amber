@@ -1045,7 +1045,7 @@ public class Attr extends JCTree.Visitor {
                         .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & MANDATED) == 0).findFirst();
                 if (recordComponent.isPresent()) {
                     // the method is a user defined accessor lets check that everything is fine
-                    if ((tree.sym.flags() & Flags.PUBLIC) == 0) {
+                    if (!tree.sym.isPublic()) {
                         log.error(tree, Errors.MethodMustBePublic(tree.sym.name));
                     }
                     if (!types.isSameType(tree.sym.type.getReturnType(), recordComponent.get().type)) {
@@ -2263,6 +2263,7 @@ public class Attr extends JCTree.Visitor {
          *  in a constructor call.
          *  @param tree          The application node
          *  @param enclMethod    The enclosing method of the application.
+         *  @param error         Should an error be issued?
          */
         boolean checkFirstConstructorStat(JCMethodInvocation tree, JCMethodDecl enclMethod, boolean error) {
             if (enclMethod != null && enclMethod.name == names.init) {

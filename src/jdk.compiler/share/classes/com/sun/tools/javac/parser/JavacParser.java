@@ -101,7 +101,7 @@ public class JavacParser implements Parser {
     private Preview preview;
 
     /** The name table. */
-    protected Names names;
+    private Names names;
 
     /** End position mappings container */
     protected final AbstractEndPosTable endPosTable;
@@ -2557,7 +2557,8 @@ public class JavacParser implements Parser {
             JCModifiers mods = modifiersOpt();
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
-                token.kind == ENUM) {
+                token.kind == ENUM ||
+                (token.kind == IDENTIFIER && token.name() == names.record) ) {
                 return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
             } else {
                 JCExpression t = parseType(true);
@@ -2627,9 +2628,8 @@ public class JavacParser implements Parser {
         if (isRecordToken() &&
             (peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN) ||
              peekToken(TokenKind.IDENTIFIER, TokenKind.LT))) {
-            JCModifiers mods = modifiersOpt();
             dc = token.comment(CommentStyle.JAVADOC);
-            return List.of(recordDeclaration(mods, dc));
+            return List.of(recordDeclaration(F.at(pos).Modifiers(0), dc));
         } else {
             Token prevToken = token;
             JCExpression t = term(EXPR | TYPE);
@@ -3327,10 +3327,6 @@ public class JavacParser implements Parser {
         return false;
     }
 
-    boolean isRestrictedRecordTypeName(Name name) {
-        return allowRecords && name == names.record;
-    }
-
     /** VariableDeclaratorId = Ident BracketsOpt
      */
     JCVariableDecl variableDeclaratorId(JCModifiers mods, JCExpression type) {
@@ -3725,9 +3721,6 @@ public class JavacParser implements Parser {
 
     protected JCClassDecl recordDeclaration(JCModifiers mods, Comment dc) {
         int pos = token.pos;
-        if ((mods.flags & Flags.ABSTRACT) != 0) {
-            log.error(mods.pos, Errors.RecordCantBeAbstract);
-        }
         nextToken();
         mods.flags |= Flags.RECORD | Flags.FINAL;
         Name name = typeName();
@@ -3741,8 +3734,7 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
-        List<JCTree> defs = List.nil();
-        defs = classInterfaceOrRecordBody(name, false, true);
+        List<JCTree> defs = classInterfaceOrRecordBody(name, false, true);
         java.util.List<JCVariableDecl> fields = new ArrayList<>();
         Set<Name> seenNames = new HashSet<>();
         for (JCVariableDecl field : headerFields) {
@@ -4407,10 +4399,6 @@ public class JavacParser implements Parser {
     /** FormalParameter = { FINAL | '@' Annotation } Type VariableDeclaratorId
      *  LastFormalParameter = { FINAL | '@' Annotation } Type '...' Ident | FormalParameter
      */
-    protected JCVariableDecl formalParameter() {
-        return formalParameter(false, false);
-    }
-
     protected JCVariableDecl formalParameter(boolean lambdaParameter, boolean recordComponent) {
         JCModifiers mods = !recordComponent ? optFinal(Flags.PARAMETER) : modifiersOpt();
         if (recordComponent && mods.flags != 0) {

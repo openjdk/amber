@@ -336,9 +336,9 @@ public class Flags {
 
     /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
-     * part of the state vector of a record.
+     * part of the state vector of a record and to mark the canonical constructor
      */
-    public static final long RECORD = 1L<<61; // ClassSymbols, MethodSymbols and VarSymbols
+    public static final long RECORD = 1L<<59; // ClassSymbols, MethodSymbols and VarSymbols
 
     /**
      * Flag to mark a record constructor as a compact one
@@ -352,7 +352,7 @@ public class Flags {
         LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
         LocalRecordFlags                 = LocalClassFlags | STATIC,
         MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
-        MemberRecordClassFlags           = MemberClassFlags | STATIC,
+        MemberRecordFlags     = MemberClassFlags | STATIC,
         ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
         InterfaceVarFlags     = FINAL | STATIC | PUBLIC,
         VarFlags              = AccessFlags | FINAL | STATIC |
