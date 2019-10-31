@@ -1062,7 +1062,7 @@ public class Attr extends JCTree.Visitor {
                     if (app == null ||
                             TreeInfo.name(app.meth) != names._this ||
                             !checkFirstConstructorStat(app, tree, false)) {
-                        log.error(tree, Errors.FirstStatementMustBeCallToCanonical);
+                        log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
                     }
                     /* this is it for now we still have to verify that the invocation is actually pointing to
                      * the canonical constructor as it could be pointing to another constructor, but we need to
@@ -2188,14 +2188,6 @@ public class Attr extends JCTree.Visitor {
                     Type mpt = newMethodTemplate(resultInfo.pt, argtypes, typeargtypes);
                     checkId(tree.meth, site, sym, localEnv,
                             new ResultInfo(kind, mpt));
-                    if (site.tsym.isRecord() && !env.enclMethod.sym.isRecord()) {
-                        // this is a constructor invocation inside a non-canonical constructor in a record
-                        List<Type> recordComponentTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
-                        List<Type> erasedTypes = types.erasure(recordComponentTypes);
-                        if (!types.isSameTypes(erasedTypes, types.erasure(tree.args.stream().map(arg -> arg.type).collect(List.collector())))) {
-                            log.error(env.enclMethod, Errors.FirstStatementMustBeCallToCanonical);
-                        }
-                    }
                 }
                 // Otherwise, `site' is an error type and we do nothing
             }

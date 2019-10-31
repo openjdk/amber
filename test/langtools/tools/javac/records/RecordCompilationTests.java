@@ -77,12 +77,13 @@ public class RecordCompilationTests extends CompilationTestCase {
         //assertFail("compiler.err.illegal.combination.of.modifiers", "non-sealed record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "public public record R(String foo) { }");
         assertFail("compiler.err.repeated.modifier", "private private record R(String foo) { }");
-        assertFail("compiler.err.record.cant.declare.duplicate.fields", "record R(int x, int x) {}");
+        assertFail("compiler.err.already.defined", "record R(int x, int x) {}");
         for (String s : List.of("var", "record"))
             assertFail("compiler.err.restricted.type.not.allowed.here", "record R(# x) { }", s);
         for (String s : List.of("public", "private", "volatile", "final"))
             assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(# String foo) { }", s);
         assertFail("compiler.err.varargs.must.be.last", "record R(int... x, int... y) {}");
+        assertFail("compiler.err.instance.initializer.not.allowed.in.records", "record R(int i) { {} }");
     }
 
     public void testGoodDeclarations() {
@@ -129,7 +130,6 @@ public class RecordCompilationTests extends CompilationTestCase {
         for (String s : List.of("record X(int j) { }",
                 "interface I { }",
                 "static { }",
-                "{}",
                 "enum E { A, B }",
                 "class C { }"
         )) {
@@ -266,8 +266,17 @@ public class RecordCompilationTests extends CompilationTestCase {
                    "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
 
         // first invocation should be one to the canonical
-        assertFail("compiler.err.first.statement.must.be.call.to.canonical",
+        assertFail("compiler.err.first.statement.must.be.call.to.another.constructor",
                 "record R(int x, int y) { public R(int y, int x, int z) { this.x = this.y = 0; } }");
+
+        assertOK("record R(int x, int y) { " +
+                 "    public R(int x, int y, int z) { this(x, y); } " +
+                 "}");
+
+        assertOK("record R(int x) { " +
+                "    public R(int x, int y) { this(x, y, 0); } " +
+                "    public R(int x, int y, int z) { this(x); } " +
+                "}");
     }
 
     public void testAnnotationCriteria() {
@@ -372,13 +381,6 @@ public class RecordCompilationTests extends CompilationTestCase {
         // trivial cases
         assertOK("record R() { public R {} }");
         assertOK("record R(int x) { public R {} }");
-
-        // cases with an instance initializers
-        assertOK("record R(int x) { { this.x = 0; } }");
-        assertOK("record R(int x) { { this.x = 0; } public R {} }");
-
-        // dead code
-        assertOK("record R(int x) { { this.x = 0; } public R { if (false) { this.x = x; }} }");
 
         // throwing an unchecked exception
         assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");

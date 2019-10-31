@@ -21,7 +21,9 @@
  * questions.
  */
 
-// key: compiler.err.record.cant.declare.duplicate.fields
+// key: compiler.err.first.statement.must.be.call.to.another.constructor
 // options: --enable-preview -source ${jdk.version}
 
-record R(int x, int x) {}
+record R(int x) {
+    public R(int x, int y) { this.x = x; }
+}
