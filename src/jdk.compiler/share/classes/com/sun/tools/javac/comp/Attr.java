@@ -1142,7 +1142,7 @@ public class Attr extends JCTree.Visitor {
                             log.error(tree, Errors.CanonicalConstructorMustBePublic);
                         }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
-                            log.error(tree, Errors.MethodCantThrowException);
+                            log.error(tree.thrown.head, Errors.MethodCantThrowException);
                         }
                     }
                 }

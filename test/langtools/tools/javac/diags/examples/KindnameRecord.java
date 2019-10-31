@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,7 +21,12 @@
  * questions.
  */
 
-// key: compiler.err.illegal.record.component.name
+// key: compiler.misc.kindname.record.component
+// key: compiler.misc.kindname.record
+// key: compiler.misc.count.error
+// key: compiler.err.already.defined
+// key: compiler.err.error
+// run: backdoor
 // options: --enable-preview -source ${jdk.version}
 
-record R(int hashCode) {}
+record R(int i, int i) {}

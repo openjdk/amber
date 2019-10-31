@@ -1103,23 +1103,8 @@ public class TypeEnter implements Completer {
          *  to the symbol table.
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
-            /*if (!defaultConstructorGenerated) {
-                JCMethodDecl canonicalDecl = getCanonicalConstructorDecl(tree);
-                MethodSymbol canonicalInit = canonicalDecl == null ?
-                        null :
-                        canonicalDecl.sym;
-                if (canonicalInit == null) {
-                    RecordConstructorHelper helper = new RecordConstructorHelper(tree.sym, TreeInfo.recordFields(tree));
-                    JCTree constrDef = defaultConstructor(make.at(tree.pos), helper);
-                    tree.defs = tree.defs.prepend(constrDef);
-                    defaultConstructorGenerated = true;
-                } else {
-                    // let's use the RECORD flag to mark it as the canonical constructor
-                    canonicalInit.flags_field |= Flags.RECORD;
-                }
-            }*/
-
-            if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
+            if (lookupMethod(tree.sym, names.toString, List.nil()) == null &&
+                    !tree.sym.members().getSymbolsByName(names.toString).iterator().hasNext()) {
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.MANDATED),
@@ -1133,7 +1118,8 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(toString, env);
             }
 
-            if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
+            if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null &&
+                    !tree.sym.members().getSymbolsByName(names.hashCode).iterator().hasNext()) {
                 // public int hashCode() { return ???; }
                 JCMethodDecl hashCode = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
@@ -1147,7 +1133,8 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(hashCode, env);
             }
 
-            if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
+            if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null &&
+                    !tree.sym.members().getSymbolsByName(names.equals).iterator().hasNext()) {
                 // public boolean equals(Object o) { return ???; }
                 JCMethodDecl equals = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
@@ -1173,11 +1160,19 @@ public class TypeEnter implements Completer {
             tree.defs.stream()
                     .filter(t -> t.hasTag(VARDEF))
                     .map(t -> (JCVariableDecl) t)
-                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0)
+                    // lets stay clear of adding a forbidden name, javac will fail later anyway
+                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && !forbiddenRecordComponentNames.contains(vd.name.toString()))
                     .forEach(vd -> addAccessor(vd, env));
         }
 
     }
+
+    private static final Set<String> forbiddenRecordComponentNames = Set.of(
+                        "clone", "finalize", "getClass", "hashCode",
+                        "notify", "notifyAll", "readObjectNoData",
+                        "readResolve", "serialPersistentFields",
+                        "serialVersionUID", "toString", "wait",
+                        "writeReplace");
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
         for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
@@ -1188,13 +1183,8 @@ public class TypeEnter implements Completer {
         return null;
     }
 
-    private Symbol lookupField(TypeSymbol tsym, Name name, Type type) {
-        for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == VAR)) {
-            if (types.isSameType(s.type, type)) {
-                return s;
-            }
-        }
-        return null;
+    private boolean isInScope(TypeSymbol tsym, Name name) {
+        return tsym.members().getSymbolsByName(name).iterator().hasNext();
     }
 
 /* ***************************************************************************
