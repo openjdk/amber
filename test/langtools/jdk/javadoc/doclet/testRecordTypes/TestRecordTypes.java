@@ -28,12 +28,18 @@
  * @library  /tools/lib ../../lib
  * @modules jdk.javadoc/jdk.javadoc.internal.tool
  * @build    toolbox.ToolBox javadoc.tester.*
- * @run main TestRecordTypes
+ * @compile --enable-preview --source ${jdk.version} TestRecordTypes.java
+ * @run main/othervm --enable-preview TestRecordTypes
  */
 
 
 import java.io.IOException;
+import java.lang.annotation.ElementType;
 import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javadoc.tester.JavadocTester;
 import toolbox.ToolBox;
@@ -61,6 +67,7 @@ public class TestRecordTypes extends JavadocTester {
                 "public record R(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 src.resolve("R.java").toString());
@@ -79,6 +86,7 @@ public class TestRecordTypes extends JavadocTester {
                 "package p; public record R(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -97,6 +105,7 @@ public class TestRecordTypes extends JavadocTester {
                 "package p; public record R() { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -118,6 +127,7 @@ public class TestRecordTypes extends JavadocTester {
                 + "public record R(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -144,6 +154,7 @@ public class TestRecordTypes extends JavadocTester {
                 + "public record R<T>(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -171,6 +182,7 @@ public class TestRecordTypes extends JavadocTester {
                         + "public record R(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -221,6 +233,7 @@ public class TestRecordTypes extends JavadocTester {
                         + "public record R(int r1) { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "-linkoffline", externalDocs, localDocs,
                 "--enable-preview", "--source", thisRelease,
@@ -289,6 +302,7 @@ public class TestRecordTypes extends JavadocTester {
                         + "public record R(" + comps + ") { }");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -313,6 +327,7 @@ public class TestRecordTypes extends JavadocTester {
                 + "}");
 
         javadoc("-d", base.resolve("out").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", src.toString(),
                 "--enable-preview", "--source", thisRelease,
                 "p");
@@ -337,6 +352,7 @@ public class TestRecordTypes extends JavadocTester {
     @Test
     public void testExamples(Path base) throws IOException {
         javadoc("-d", base.resolve("out-no-link").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", testSrc.toString(),
                 "-linksource",
                 "--enable-preview", "--source", thisRelease,
@@ -344,11 +360,89 @@ public class TestRecordTypes extends JavadocTester {
 
         checkExit(Exit.OK);
         javadoc("-d", base.resolve("out-with-link").toString(),
+                "-quiet", "-noindex",
                 "-sourcepath", testSrc.toString(),
                 "-linksource",
                 "-linkoffline", externalDocs, localDocs,
                 "--enable-preview", "--source", thisRelease,
                 "examples");
         checkExit(Exit.OK);
+    }
+
+    @Test
+    @SuppressWarnings("preview")
+    public void testAnnotations(Path base) throws IOException {
+        ElementType[] types = {
+                ElementType.FIELD,
+                ElementType.METHOD,
+                ElementType.PARAMETER,
+                ElementType.RECORD_COMPONENT
+        };
+        for (int i = 0; i < (1 << types.length); i++) {
+            Set<ElementType> set = EnumSet.noneOf(ElementType.class);
+            for (int b = 0; b < types.length; b++) {
+                if ((i & (1 << b)) != 0) {
+                    set.add(types[b]);
+                }
+            }
+            testAnnotations(base, set);
+        }
+    }
+
+    void testAnnotations(Path base, Set<ElementType> types) throws IOException {
+        out.println("test " + types);
+        String name = types.isEmpty() ? "none" : types.stream()
+                .map(k -> k.name().toLowerCase(Locale.US))
+                .collect(Collectors.joining("-"));
+        Path dir = base.resolve(name);
+        Path src = dir.resolve("src");
+        String target = types.isEmpty() ? "" : types.stream()
+                .map(s -> "ElementType." + s)
+                .collect(Collectors.joining(", ", "@Target({", "})"));
+        tb.writeJavaFiles(src,
+                "package p;\n"
+                    + "import java.lang.annotation.*;\n"
+                    + "@Documented\n"
+                    + target + "\n"
+                    + " public @interface Anno { }\n",
+                "package p; public @interface UndocAnno { }",
+                "package p; public record R(@Anno int i) { }\n");
+
+        javadoc("-d", dir.resolve("out").toString(),
+                "-quiet", "-noindex",
+                "-sourcepath", src.toString(),
+                "-private",
+                "--enable-preview", "--source", thisRelease,
+                "p");
+        checkExit(Exit.OK);
+
+        checkOutput("p/R.html", false,
+                "UndocAnno");
+
+        Set<ElementType> t = types.isEmpty() ? EnumSet.allOf(ElementType.class) : types;
+        String anno = "<a href=\"Anno.html\" title=\"annotation in p\">@Anno</a>";
+        String rcAnno = t.contains(ElementType.RECORD_COMPONENT) ? anno + " " : "";
+        String fAnno = t.contains(ElementType.FIELD) ? "<span class=\"annotations\">" + anno + "\n</span>" : "";
+        String pAnno = t.contains(ElementType.PARAMETER) ? anno + "\n" : "";
+        String mAnno= t.contains(ElementType.METHOD) ? "<span class=\"annotations\">" + anno + "\n</span>" : "";
+
+        checkOutput("p/R.html", true,
+                "<pre>public record <span class=\"typeNameLabel\">R</span>("
+                        + rcAnno
+                        + "int&nbsp;i)\n" +
+                        "extends java.lang.Record</pre>",
+                "<div class=\"memberSignature\">"
+                        + fAnno
+                        + "<span class=\"modifiers\">private final</span>&nbsp;<span class=\"returnType\">int</span>"
+                        + "&nbsp;<span class=\"memberName\">i</span></div>",
+                "<div class=\"memberSignature\"><span class=\"modifiers\">public</span>&nbsp;<span class=\"memberName\">R</span>"
+                        + "&#8203;(<span class=\"arguments\">"
+                        + pAnno
+                        + "int&nbsp;i)</span></div>",
+                "<div class=\"memberSignature\">"
+                        + mAnno
+                        + "<span class=\"modifiers\">public</span>&nbsp;<span class=\"returnType\">int</span>"
+                        + "&nbsp;<span class=\"memberName\">i</span>()</div>");
+
     }
 }

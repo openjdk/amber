@@ -23,15 +23,15 @@
 
 package examples;
 
-import java.io.Serializable;
 
 /**
- * A serializable cartesian point.
+ * An annotated binary node.
  *
- * <em>This example illustrates the documentation of a serializable record.</em>
+ * <em>This example illustrates the use of simple annotations on 
+ * record components.</em>
  *
- * @param x the x coordinate
- * @param y the y coordinate
+ * @param left  the left node
+ * @param right the right node
  */
-public record SerializablePoint(int x, int y) implements Serializable { }
+public record AnnotatedBinaryNode(@NonNull Node left, @NonNull Node right) { }
 

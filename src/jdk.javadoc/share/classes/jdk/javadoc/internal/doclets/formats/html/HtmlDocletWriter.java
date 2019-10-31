@@ -1751,22 +1751,22 @@ public class HtmlDocletWriter {
     }
 
     /**
-     * Add the annotatation types for the given element and parameter.
+     * Add the annotation types for the given element and parameter.
      *
      * @param param the parameter to write annotations for.
      * @param tree the content tree to which the annotation types will be added
      */
     public boolean addAnnotationInfo(VariableElement param, Content tree) {
-        Content annotaionInfo = getAnnotationInfo(param.getAnnotationMirrors(), false);
-        if (annotaionInfo.isEmpty()) {
+        Content annotationInfo = getAnnotationInfo(param.getAnnotationMirrors(), false);
+        if (annotationInfo.isEmpty()) {
             return false;
         }
-        tree.add(annotaionInfo);
+        tree.add(annotationInfo);
         return true;
     }
 
     /**
-     * Adds the annotatation types for the given Element.
+     * Adds the annotation types for the given Element.
      *
      * @param descList a list of annotation mirrors.
      * @param htmltree the documentation tree to which the annotation info will be

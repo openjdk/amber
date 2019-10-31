@@ -33,9 +33,9 @@ import java.util.TreeSet;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleElementVisitor8;
@@ -211,7 +211,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     /**
      * {@inheritDoc}
      */
-    @Override
+    @Override @SuppressWarnings("preview")
     public void addClassSignature(String modifiers, Content classInfoTree) {
         Content hr = new HtmlTree(HtmlTag.HR);
         classInfoTree.add(hr);
@@ -231,6 +231,9 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             Content span = HtmlTree.SPAN(HtmlStyle.typeNameLabel, className);
             span.add(parameterLinks);
             pre.add(span);
+        }
+        if (utils.isRecord(typeElement)) {
+            pre.add(getRecordComponents(typeElement));
         }
         if (!utils.isInterface(typeElement)) {
             TypeMirror superclass = utils.getFirstVisibleSuperClass(typeElement);
@@ -265,6 +268,26 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             }
         }
         classInfoTree.add(pre);
+    }
+
+    @SuppressWarnings("preview")
+    private Content getRecordComponents(TypeElement typeElem) {
+        Content content = new ContentBuilder();
+        content.add("(");
+        String sep = "";
+        for (RecordComponentElement e : typeElement.getRecordComponents()) {
+            content.add(sep);
+            getAnnotations(e.getAnnotationMirrors(), false).stream()
+                    .forEach(a -> { content.add(a); content.add(" "); });
+            Content link = getLink(new LinkInfoImpl(configuration, LinkInfoImpl.Kind.RECORD_COMPONENT,
+                    e.asType()));
+            content.add(link);
+            content.add(Entity.NO_BREAK_SPACE);
+            content.add(e.getSimpleName());
+            sep = ", ";
+        }
+        content.add(")");
+        return content;
     }
 
     /**

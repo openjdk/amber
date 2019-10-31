@@ -23,15 +23,11 @@
 
 package examples;
 
-import java.io.Serializable;
+import java.lang.annotation.*;
 
 /**
- * A serializable cartesian point.
- *
- * <em>This example illustrates the documentation of a serializable record.</em>
- *
- * @param x the x coordinate
- * @param y the y coordinate
+ * A simple annotation for demo use on record components.
  */
-public record SerializablePoint(int x, int y) implements Serializable { }
+@Documented
+public @interface NonNull { }
 
