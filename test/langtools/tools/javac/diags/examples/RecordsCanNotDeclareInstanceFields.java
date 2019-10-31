@@ -22,7 +22,6 @@
  */
 
 // key: compiler.err.record.cannot.declare.instance.fields
-// key: compiler.err.illegal.start.of.type
 // options: --enable-preview -source ${jdk.version}
 
 record R(int i) {

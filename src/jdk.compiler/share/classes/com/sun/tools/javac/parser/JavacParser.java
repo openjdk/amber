@@ -4092,8 +4092,11 @@ public class JavacParser implements Parser {
                         storeEnd(defs.last(), S.prevToken().endPos);
                         return defs;
                     } else {
-                            nextToken();
-                            return List.of(syntaxError(pos, null, Errors.RecordCannotDeclareInstanceFields));
+                            int errPos = token.pos;
+                            variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
+                                    new ListBuffer<JCTree>(), false).toList();
+                            accept(SEMI);
+                            return List.of(syntaxError(errPos, null, Errors.RecordCannotDeclareInstanceFields));
                         }
                     } else {
                         pos = token.pos;
