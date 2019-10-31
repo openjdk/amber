@@ -252,12 +252,12 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "R(List list) { this.list = list; }");
 
         // ctor should not add checked exceptions
-        assertFail("compiler.err.invalid.accessor.method.in.record",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
                    "record R() { # }",
                    "public R() throws Exception { }");
 
         // not even checked exceptions
-        assertFail("compiler.err.invalid.accessor.method.in.record",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
                 "record R() { # }",
                  "public R() throws IllegalArgumentException { }");
 

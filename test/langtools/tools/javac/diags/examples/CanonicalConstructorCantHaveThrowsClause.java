@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,10 +21,12 @@
  * questions.
  */
 
-public class AccessorsTest {
-    /**
-     * @getter This is a getter.
-     * @setter This is a setter.
-     */
-    int x;
+// key: compiler.err.invalid.canonical.constructor.in.record
+// key: compiler.misc.throws.clause.not.allowed.for.canonical.constructor
+// options: --enable-preview -source ${jdk.version}
+
+record R(int i) {
+    public R(int i) throws Exception {
+        this.i = i;
+    }
 }

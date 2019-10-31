@@ -1138,14 +1138,14 @@ public class Attr extends JCTree.Visitor {
                         List<Name> recordComponentNames = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.name);
                         List<Name> initParamNames = tree.sym.params.map(p -> p.name);
                         if (!initParamNames.equals(recordComponentNames)) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalWithNameMismatch));
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.CanonicalWithNameMismatch));
                         }
                         if (!tree.sym.isPublic()) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalConstructorMustBePublic));
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.CanonicalConstructorMustBePublic));
                         }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
                             log.error(tree.thrown.head,
-                                    Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodCantThrowException));
+                                    Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.ThrowsClauseNotAllowedForCanonicalConstructor));
                         }
                     }
                 }
@@ -1244,7 +1244,7 @@ public class Attr extends JCTree.Visitor {
             result = tree.type = v.type;
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
                 if (forbiddenRecordComponentNames.contains(v.name.toString())) {
-                    log.error(env.enclClass, Errors.IllegalRecordComponentName(v));
+                    log.error(tree, Errors.IllegalRecordComponentName(v));
                 }
             }
         }
@@ -2058,7 +2058,8 @@ public class Attr extends JCTree.Visitor {
                 !env.info.isNewClass &&
                 env.enclMethod != null &&
                 TreeInfo.isCanonicalConstructor(env.enclMethod)) {
-            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
+            log.error(env.enclMethod,
+                    Errors.InvalidCanonicalConstructorInRecord(env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
         } else {
             // Attribute return expression, if it exists, and check that
             // it conforms to result type of enclosing method.

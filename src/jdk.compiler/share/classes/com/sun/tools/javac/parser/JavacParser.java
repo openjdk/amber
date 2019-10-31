@@ -4092,7 +4092,7 @@ public class JavacParser implements Parser {
                         storeEnd(defs.last(), S.prevToken().endPos);
                         return defs;
                     } else {
-                            int errPos = token.pos;
+                            int errPos = pos;
                             variableDeclaratorsRest(pos, mods, type, name, isInterface, dc,
                                     new ListBuffer<JCTree>(), false).toList();
                             accept(SEMI);
