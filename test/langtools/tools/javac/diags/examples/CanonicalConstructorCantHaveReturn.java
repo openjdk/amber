@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.canonical.cant.have.return.statement
+// key: compiler.err.invalid.canonical.constructor.in.record
+// key: compiler.misc.canonical.cant.have.return.statement
 // options: --enable-preview -source ${jdk.version}
 
 record R() {

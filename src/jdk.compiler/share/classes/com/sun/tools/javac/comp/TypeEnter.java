@@ -682,7 +682,7 @@ public class TypeEnter implements Completer {
                 extending = clearTypeParams(tree.extending);
                 supertype = attr.attribBase(extending, baseEnv, true, false, true);
                 if (supertype == syms.recordType) {
-                    log.error(tree, Errors.InvalidSupertypeRecord);
+                    log.error(tree, Errors.InvalidSupertypeRecord(supertype.tsym));
                 }
             } else {
                 extending = null;

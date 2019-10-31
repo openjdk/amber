@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.method.cant.throw.exception
+// key: compiler.err.invalid.accessor.method.in.record
+// key: compiler.misc.accessor.method.cant.throw.exception
 // options: --enable-preview -source ${jdk.version}
 
 record R(int i) {

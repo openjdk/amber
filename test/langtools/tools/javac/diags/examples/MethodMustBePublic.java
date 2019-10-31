@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.method.must.be.public
+// key: compiler.err.invalid.accessor.method.in.record
+// key: compiler.misc.method.must.be.public
 // options: --enable-preview -source ${jdk.version}
 
 record R(int x) {

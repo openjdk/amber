@@ -1046,13 +1046,15 @@ public class Attr extends JCTree.Visitor {
                 if (recordComponent.isPresent()) {
                     // the method is a user defined accessor lets check that everything is fine
                     if (!tree.sym.isPublic()) {
-                        log.error(tree, Errors.MethodMustBePublic(tree.sym.name));
+                        log.error(tree, Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.MethodMustBePublic));
                     }
                     if (!types.isSameType(tree.sym.type.getReturnType(), recordComponent.get().type)) {
-                        log.error(tree, Errors.AccessorReturnTypeDoesntMatch(recordComponent.get().type, tree.sym.type));
+                        log.error(tree, Errors.InvalidAccessorMethodInRecord(env.enclClass.sym,
+                                Fragments.AccessorReturnTypeDoesntMatch(tree.sym, recordComponent.get())));
                     }
                     if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
-                        log.error(tree, Errors.MethodCantThrowException);
+                        log.error(tree,
+                                Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodCantThrowException));
                     }
                 }
 
@@ -1136,13 +1138,14 @@ public class Attr extends JCTree.Visitor {
                         List<Name> recordComponentNames = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.name);
                         List<Name> initParamNames = tree.sym.params.map(p -> p.name);
                         if (!initParamNames.equals(recordComponentNames)) {
-                            log.error(tree, Errors.CanonicalWithNameMismatch);
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalWithNameMismatch));
                         }
                         if (!tree.sym.isPublic()) {
-                            log.error(tree, Errors.CanonicalConstructorMustBePublic);
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalConstructorMustBePublic));
                         }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
-                            log.error(tree.thrown.head, Errors.MethodCantThrowException);
+                            log.error(tree.thrown.head,
+                                    Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodCantThrowException));
                         }
                     }
                 }
@@ -2055,7 +2058,7 @@ public class Attr extends JCTree.Visitor {
                 !env.info.isNewClass &&
                 env.enclMethod != null &&
                 TreeInfo.isCanonicalConstructor(env.enclMethod)) {
-            log.error(tree, Errors.CanonicalCantHaveReturnStatement);
+            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
         } else {
             // Attribute return expression, if it exists, and check that
             // it conforms to result type of enclosing method.

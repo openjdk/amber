@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.accessor.return.type.doesnt.match
+// key: compiler.err.invalid.accessor.method.in.record
+// key: compiler.misc.accessor.return.type.doesnt.match
 // options: --enable-preview -source ${jdk.version}
 
 import java.util.List;

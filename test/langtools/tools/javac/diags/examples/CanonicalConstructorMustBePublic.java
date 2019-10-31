@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.canonical.constructor.must.be.public
+// key: compiler.err.invalid.canonical.constructor.in.record
+// key: compiler.misc.canonical.constructor.must.be.public
 // options: --enable-preview -source ${jdk.version}
 
 record R(int i) {

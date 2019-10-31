@@ -192,28 +192,28 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "    public final int x() { return 0; };" +
                 "}");
 
-        assertFail("compiler.err.method.must.be.public",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                 "public record R(int x) {\n" +
                         "    final int x() { return 0; };" +
                         "}");
 
-        assertFail("compiler.err.method.must.be.public",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                 "public record R(int x) {\n" +
                         "    int x() { return 0; };" +
                         "}");
 
-        assertFail("compiler.err.method.must.be.public",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                 "public record R(int x) {\n" +
                         "    private int x() { return 0; };" +
                         "}");
 
-        assertFail("compiler.err.method.cant.throw.exception",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                    "public record R(int x) {\n" +
                    "    public int x() throws Exception { return 0; };" +
                    "}");
 
         for (String s : List.of("List", "List<?>", "Object", "ArrayList<String>", "int"))
-            assertFail("compiler.err.accessor.return.type.doesnt.match",
+            assertFail("compiler.err.invalid.accessor.method.in.record",
                     "import java.util.*;\n" +
                             "public record R(List<String> x) {\n" +
                             "    public # x() { return null; };" +
@@ -237,11 +237,11 @@ public class RecordCompilationTests extends CompilationTestCase {
         // Not OK to rearrange or change names
         for (String s : List.of("public R(int y, int x) { this.x = x; this.y = y; }",
                                 "public R(int _x, int _y) { this.x = _x; this.y = _y; }"))
-            assertFail("compiler.err.canonical.with.name.mismatch", "record R(int x, int y) { # }", s);
+            assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x, int y) { # }", s);
 
         // canonical ctor must be public
         for (String s : List.of("", "protected", "private"))
-            assertFail("compiler.err.canonical.constructor.must.be.public", "record R(int x, int y) { # }",
+            assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x, int y) { # }",
                        "# R(int x, int y) { this.x = x; this.y = y; }",
                        s);
 
@@ -252,17 +252,17 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "R(List list) { this.list = list; }");
 
         // ctor should not add checked exceptions
-        assertFail("compiler.err.method.cant.throw.exception",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                    "record R() { # }",
                    "public R() throws Exception { }");
 
         // not even checked exceptions
-        assertFail("compiler.err.method.cant.throw.exception",
+        assertFail("compiler.err.invalid.accessor.method.in.record",
                 "record R() { # }",
                  "public R() throws IllegalArgumentException { }");
 
         // If types match, names must match
-        assertFail("compiler.err.canonical.with.name.mismatch",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
                    "record R(int x, int y) { public R(int y, int x) { this.x = this.y = 0; }}");
 
         // first invocation should be one to the canonical
@@ -393,9 +393,9 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testReturnInCanonical() {
-        assertFail("compiler.err.canonical.cant.have.return.statement", "record R(int x) { # }",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x) { # }",
                 "public R { return; }");
-        assertFail("compiler.err.canonical.cant.have.return.statement", "record R(int x) { # }",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x) { # }",
                 "public R { if (i < 0) { return; }}");
         assertOK("record R(int x) { public R { Runnable r = () -> {return;};} }");
     }
