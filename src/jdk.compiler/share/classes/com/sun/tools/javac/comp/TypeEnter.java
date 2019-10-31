@@ -1173,7 +1173,7 @@ public class TypeEnter implements Completer {
             tree.defs.stream()
                     .filter(t -> t.hasTag(VARDEF))
                     .map(t -> (JCVariableDecl) t)
-                    .filter(vd -> vd.sym.isRecord())
+                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0)
                     .forEach(vd -> addAccessor(vd, env));
         }
 
@@ -1236,7 +1236,7 @@ public class TypeEnter implements Completer {
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
             // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
-                } else if (owner().isRecord()) {
+                } else if ((owner().flags_field & RECORD) != 0) {
                     // record constructors are public
                     flags = PUBLIC | GENERATEDCONSTR;
                 } else {

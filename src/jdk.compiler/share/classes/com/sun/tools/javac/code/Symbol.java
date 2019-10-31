@@ -367,10 +367,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & DEPRECATED) != 0;
     }
 
-    public boolean isRecord() {
-        return (flags_field & RECORD) != 0;
-    }
-
     public boolean hasDeprecatedAnnotation() {
         return (flags_field & DEPRECATED_ANNOTATION) != 0;
     }
@@ -1578,6 +1574,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             Assert.checkNonNull(a);
             Assert.check(!annotationTypeMetadata.isMetadataForAnnotationType());
             this.annotationTypeMetadata = a;
+        }
+
+        public boolean isRecord() {
+            return (flags_field & RECORD) != 0;
         }
     }
 

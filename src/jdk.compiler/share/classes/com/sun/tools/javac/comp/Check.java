@@ -2895,7 +2895,7 @@ public class Check {
      */
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
         validateAnnotationTree(a);
-        boolean isRecordMember = s.isRecord() || s.enclClass() != null && s.enclClass().isRecord();
+        boolean isRecordMember = (s.flags_field & RECORD) != 0 || s.enclClass() != null && s.enclClass().isRecord();
 
         boolean isRecordField = isRecordMember &&
                 (s.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.MANDATED | Flags.RECORD)) != 0 &&
@@ -3611,7 +3611,9 @@ public class Check {
                     varargsDuplicateError(pos, sym, byName);
                     return true;
                 } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
-                    if (s.owner.isRecord() && sym.isConstructor() && (sym.isRecord() || byName.isRecord())) {
+                    if ((s.owner.flags_field & RECORD) != 0 && sym.isConstructor() &&
+                            ((sym.flags_field & RECORD) != 0 ||
+                            (byName.flags_field & RECORD) != 0)) {
                         log.error(pos, Errors.ConstructorWithSameErasureAsCanonical);
                     } else {
                         duplicateErasureError(pos, sym, byName);

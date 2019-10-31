@@ -84,7 +84,7 @@ public class TreeInfo {
 
     public static boolean isCanonicalConstructor(JCTree tree) {
         // the record flag is only set to the canonical constructor
-        return isConstructor(tree) && ((JCMethodDecl)tree).sym.isRecord();
+        return isConstructor(tree) && (((JCMethodDecl)tree).sym.flags_field & RECORD) != 0;
     }
 
     public static boolean isReceiverParam(JCTree tree) {

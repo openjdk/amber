@@ -3681,7 +3681,7 @@ public class JavacParser implements Parser {
                 erroneousTree = syntaxError(pos, errs, Errors.ExpectedModuleOrOpen);
             } else {
                 if (allowRecords) {
-                    erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, "RECORD"));
+                    erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, "record"));
                 } else {
                 erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
             }

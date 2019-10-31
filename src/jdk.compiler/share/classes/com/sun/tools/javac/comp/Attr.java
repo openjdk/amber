@@ -1057,7 +1057,7 @@ public class Attr extends JCTree.Visitor {
                 }
 
                 // if this a constructor other than the canonical one
-                if (tree.name == names.init && !tree.sym.isRecord()) {
+                if (tree.name == names.init && (tree.sym.flags_field & RECORD) == 0) {
                     JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
                     if (app == null ||
                             TreeInfo.name(app.meth) != names._this ||
@@ -1132,7 +1132,7 @@ public class Attr extends JCTree.Visitor {
                         log.error(tree.body.stats.head.pos(),
                                   Errors.CallToSuperNotAllowedInEnumCtor(env.enclClass.sym));
                     }
-                    if (env.enclClass.sym.isRecord() && tree.sym.isRecord()) { // we are seeing the canonical constructor
+                    if (env.enclClass.sym.isRecord() && (tree.sym.flags_field & RECORD) != 0) { // we are seeing the canonical constructor
                         List<Name> recordComponentNames = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.name);
                         List<Name> initParamNames = tree.sym.params.map(p -> p.name);
                         if (!initParamNames.equals(recordComponentNames)) {
