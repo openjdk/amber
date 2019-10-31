@@ -333,11 +333,18 @@ public class Check {
                                                         kindName(sym.location().enclClass()),
                                                         sym.location().enclClass()));
             } else {
-                log.error(pos,
-                          Errors.AlreadyDefined(kindName(sym),
-                                                sym,
-                                                kindName(sym.location()),
-                                                sym.location()));
+                /* dont error if this is a duplicated parameter of a generated canonical constructor
+                 * as we should have issued an error for the duplicated fields
+                 */
+                if (location.kind != MTH ||
+                        ((sym.owner.flags_field & GENERATEDCONSTR) == 0) ||
+                        ((sym.owner.flags_field & RECORD) == 0)) {
+                    log.error(pos,
+                            Errors.AlreadyDefined(kindName(sym),
+                                    sym,
+                                    kindName(sym.location()),
+                                    sym.location()));
+                }
             }
         }
     }
