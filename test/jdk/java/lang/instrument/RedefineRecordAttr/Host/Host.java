@@ -27,5 +27,6 @@ public record Host() {
         return 1; // original class
     }
     public Host(int A, long B, char C) {
+        this();
     }
 }

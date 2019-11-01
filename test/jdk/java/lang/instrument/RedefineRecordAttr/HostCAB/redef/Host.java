@@ -27,8 +27,6 @@ public record Host(char C, int A, long B) {
         return 2; // redefined class
     }
     public Host(int A, long B, char C) {
-        this.C = C;
-        this.A = A;
-        this.B = B;
+        this(C, A, B);
     }
 }
