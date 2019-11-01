@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.util;
 
+import java.util.Set;
+
 /**
  * Access to the compiler's name table.  STandard names are defined,
  * as well as methods to create new names.
@@ -210,6 +212,11 @@ public class Names {
     public final Name writeReplace;
     public final Name readObjectNoData;
 
+    // additional forbidden record component names
+    public final Name notify;
+    public final Name notifyAll;
+    public final Name wait;
+
     public final Name.Table table;
 
     public Names(Context context) {
@@ -374,6 +381,17 @@ public class Names {
         writeObject = fromString("writeObject");
         writeReplace = fromString("writeReplace");
         readObjectNoData = fromString("readObjectNoData");
+
+        notify = fromString("notify");
+        notifyAll = fromString("notifyAll");
+        wait = fromString("wait");
+
+        forbiddenRecordComponentNames = Set.of(
+                clone, finalize, getClass, hashCode,
+                notify, notifyAll, readObjectNoData,
+                readResolve, serialPersistentFields,
+                serialVersionUID, toString, wait,
+                writeReplace);
     }
 
     protected Name.Table createTable(Options options) {
@@ -402,5 +420,11 @@ public class Names {
 
     public Name fromUtf(byte[] cs, int start, int len) {
         return table.fromUtf(cs, start, len);
+    }
+
+    private final Set<Name> forbiddenRecordComponentNames;
+
+    public boolean isForbiddenComponentName(Name name) {
+        return forbiddenRecordComponentNames.contains(name);
     }
 }

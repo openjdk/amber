@@ -1104,35 +1104,32 @@ public class TypeEnter implements Completer {
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
-                // public String toString() { return ???; }
                 JCMethodDecl toString = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.MANDATED),
                               names.toString,
                               make.Type(syms.stringType),
                               List.nil(),
                               List.nil(),
-                              List.nil(), // thrown
+                              List.nil(),
                               null,
                               null);
                 memberEnter.memberEnter(toString, env);
             }
 
             if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
-                // public int hashCode() { return ???; }
                 JCMethodDecl hashCode = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
                               names.hashCode,
                               make.Type(syms.intType),
                               List.nil(),
                               List.nil(),
-                              List.nil(), // thrown
+                              List.nil(),
                               null,
                               null);
                 memberEnter.memberEnter(hashCode, env);
             }
 
             if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
-                // public boolean equals(Object o) { return ???; }
                 JCMethodDecl equals = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
                               names.equals,
@@ -1141,7 +1138,7 @@ public class TypeEnter implements Completer {
                               List.of(make.VarDef(make.Modifiers(Flags.PARAMETER),
                                                 names.fromString("o"),
                                                 make.Type(syms.objectType), null)),
-                              List.nil(), // thrown
+                              List.nil(),
                               null,
                               null);
                 memberEnter.memberEnter(equals, env);
@@ -1158,18 +1155,11 @@ public class TypeEnter implements Completer {
                     .filter(t -> t.hasTag(VARDEF))
                     .map(t -> (JCVariableDecl) t)
                     // lets stay clear of adding a forbidden name, javac will fail later anyway
-                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && !forbiddenRecordComponentNames.contains(vd.name.toString()))
+                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && !names.isForbiddenComponentName(vd.name))
                     .forEach(vd -> addAccessor(vd, env));
         }
 
     }
-
-    private static final Set<String> forbiddenRecordComponentNames = Set.of(
-                        "clone", "finalize", "getClass", "hashCode",
-                        "notify", "notifyAll", "readObjectNoData",
-                        "readResolve", "serialPersistentFields",
-                        "serialVersionUID", "toString", "wait",
-                        "writeReplace");
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
         for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
@@ -1221,17 +1211,17 @@ public class TypeEnter implements Completer {
                 long flags;
                 if ((owner().flags() & ENUM) != 0 &&
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
-            // constructors of true enums are private
+                    // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
                 } else if ((owner().flags_field & RECORD) != 0) {
                     // record constructors are public
                     flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
-        }
+                }
                 constructorSymbol = new MethodSymbol(flags, names.init,
                     constructorType(), owner());
-        }
+            }
             return constructorSymbol;
         }
 
@@ -1249,7 +1239,7 @@ public class TypeEnter implements Completer {
         public List<Name> superArgs() {
             return List.nil();
             }
-        }
+    }
 
     class AnonClassConstructorHelper extends BasicConstructorHelper {
 

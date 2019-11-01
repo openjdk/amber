@@ -1066,10 +1066,6 @@ public class Attr extends JCTree.Visitor {
                             !checkFirstConstructorStat(app, tree, false)) {
                         log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
                     }
-                    /* this is it for now we still have to verify that the invocation is actually pointing to
-                     * the canonical constructor as it could be pointing to another constructor, but we need to
-                     * attribute the arguments first in visitApply
-                     */
                 }
             }
 
@@ -1243,7 +1239,7 @@ public class Attr extends JCTree.Visitor {
             }
             result = tree.type = v.type;
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
-                if (forbiddenRecordComponentNames.contains(v.name.toString())) {
+                if (names.isForbiddenComponentName(v.name)) {
                     log.error(tree, Errors.IllegalRecordComponentName(v));
                 }
             }
@@ -1252,13 +1248,6 @@ public class Attr extends JCTree.Visitor {
             chk.setLint(prevLint);
         }
     }
-
-    private static final Set<String> forbiddenRecordComponentNames = Set.of(
-            "clone", "finalize", "getClass", "hashCode",
-            "notify", "notifyAll", "readObjectNoData",
-            "readResolve", "serialPersistentFields",
-            "serialVersionUID", "toString", "wait",
-            "writeReplace");
 
     Fragment canInferLocalVarType(JCVariableDecl tree) {
         LocalInitScanner lis = new LocalInitScanner();
