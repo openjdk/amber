@@ -2196,7 +2196,7 @@ public class Check {
          * named a record component with a namesake, to the compiler will fail anyway with a more
          * meaningful message
          */
-        if (undef != null && !c.isRecord()) {
+        if (undef != null) {
             MethodSymbol undef1 =
                 new MethodSymbol(undef.flags(), undef.name,
                                  types.memberType(c.type, undef), undef.owner);

@@ -1144,7 +1144,7 @@ public class Attr extends JCTree.Visitor {
                             log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.CanonicalConstructorMustBePublic));
                         }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
-                            log.error(tree.thrown.head,
+                            log.error(tree,
                                     Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.ThrowsClauseNotAllowedForCanonicalConstructor));
                         }
                     }

@@ -1103,8 +1103,7 @@ public class TypeEnter implements Completer {
          *  to the symbol table.
          */
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
-            if (lookupMethod(tree.sym, names.toString, List.nil()) == null &&
-                    !tree.sym.members().getSymbolsByName(names.toString).iterator().hasNext()) {
+            if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 // public String toString() { return ???; }
                 JCMethodDecl toString = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.MANDATED),
@@ -1118,8 +1117,7 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(toString, env);
             }
 
-            if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null &&
-                    !tree.sym.members().getSymbolsByName(names.hashCode).iterator().hasNext()) {
+            if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
                 // public int hashCode() { return ???; }
                 JCMethodDecl hashCode = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
@@ -1133,8 +1131,7 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(hashCode, env);
             }
 
-            if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null &&
-                    !tree.sym.members().getSymbolsByName(names.equals).iterator().hasNext()) {
+            if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
                 // public boolean equals(Object o) { return ???; }
                 JCMethodDecl equals = make.
                     MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
