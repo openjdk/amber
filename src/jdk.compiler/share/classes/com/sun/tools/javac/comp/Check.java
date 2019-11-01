@@ -3599,7 +3599,7 @@ public class Check {
      *  @param sym           The symbol.
      *  @param s             The scope.
      */
-    boolean checkUnique(DiagnosticPosition pos, Symbol sym, Scope s) {
+    boolean checkUnique(DiagnosticPosition pos, Symbol sym, Scope s, Env<AttrContext> env) {
         if (sym.type.isErroneous())
             return true;
         if (sym.owner.name == names.any) return false;
@@ -3619,7 +3619,11 @@ public class Check {
                     if ((s.owner.flags_field & RECORD) != 0 && sym.isConstructor() &&
                             ((sym.flags_field & RECORD) != 0 ||
                             (byName.flags_field & RECORD) != 0)) {
-                        log.error(pos, Errors.ConstructorWithSameErasureAsCanonical);
+                        Symbol canonical = (sym.flags_field & RECORD) != 0 ? sym : byName;
+                        Symbol other = (sym.flags_field & RECORD) == 0 ? sym : byName;
+                        JCTree clashingMethod = TreeInfo.declarationFor(other, env.enclClass);
+                        log.error(clashingMethod,
+                                Errors.ConstructorWithSameErasureAsCanonical(other, canonical));
                     } else {
                         duplicateErasureError(pos, sym, byName);
                     }

@@ -532,7 +532,7 @@ public class Enter extends JCTree.Visitor {
             ? (TypeVar)tree.type
             : new TypeVar(tree.name, env.info.scope.owner, syms.botType);
         tree.type = a;
-        if (chk.checkUnique(tree.pos(), a.tsym, env.info.scope)) {
+        if (chk.checkUnique(tree.pos(), a.tsym, env.info.scope, env)) {
             env.info.scope.enter(a.tsym);
         }
         result = a;
