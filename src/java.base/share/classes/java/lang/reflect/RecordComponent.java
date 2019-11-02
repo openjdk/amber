@@ -237,21 +237,37 @@ public final class RecordComponent implements AnnotatedElement {
 
     /**
      * Returns a string describing this record component, including
-     * its generic type.  The format is: the access modifiers for the
-     * record component, always {@code private} and {@code final}, in that
-     * order, followed by the generic record component type, followed by a
-     * space, followed by the fully-qualified name of the class declaring
-     * the record component, followed by a period, followed by the name of
-     * the record component.
+     * its generic type.  The format is: the generic record component type,
+     * followed by a space, followed by the fully-qualified name of the
+     * record class declaring the record component, followed by a period,
+     * followed by the name of the record component.
      *
      * @return a string describing this record component, including its
      *         generic type
      */
     public String toGenericString() {
-        int mod = Modifier.PRIVATE | Modifier.FINAL;
         Type type = getGenericType();
-        return (((mod == 0) ? "" : (Modifier.toString(mod) + " "))
-                + type.getTypeName() + " "
+        return (type.getTypeName() + " "
+                + getDeclaringClass().getTypeName() + "."
+                + getName());
+    }
+
+    /**
+     * Returns a string describing this record component. The format is
+     * the record component type, followed by a space, followed by
+     * the fully-qualified name of the class declaring the record
+     * component, followed by a period, followed by the name of the
+     * record component.
+     * For example:
+     * <pre>
+     *    String Person.name
+     *    int Person.age
+     * </pre>
+     *
+     * @return a string describing this record component
+     */
+    public String toString() {
+        return (getType().getTypeName() + " "
                 + getDeclaringClass().getTypeName() + "."
                 + getName());
     }

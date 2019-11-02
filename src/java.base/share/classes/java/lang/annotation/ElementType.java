@@ -127,6 +127,9 @@ public enum ElementType {
      *
      * Record component
      *
+     * @jls 8.10.3 Record Members
+     * @jls 9.7.4 Where Annotations May Appear
+     *
      * @since 14
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,

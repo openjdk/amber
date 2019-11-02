@@ -304,7 +304,8 @@ public class ObjectMethods {
      * on a description of the component names and accessor methods, for either
      * {@code invokedynamic} call sites or dynamic constant pool entries
      *
-     * @param lookup       the lookup
+     * @param lookup       Represents a lookup context with the accessibility
+     *                     privileges of the caller.
      * @param methodName   the name of the method to generate, which must be one of
      *                     {@code "equals"}, {@code "hashCode"}, or {@code "toString"}
      * @param type         a {@link MethodType} corresponding the descriptor type
@@ -313,7 +314,7 @@ public class ObjectMethods {
      *                     an {@code invokedynamic} call site, or the
      *                     constant {@code MethodHandle.class}, if linking a
      *                     dynamic constant
-     * @param theClass     the class hosting the components
+     * @param recordClass  the record class hosting the record components
      * @param names        the list of component names, joined into a string
      *                     separated by ";", or the empty string if there are no
      *                     components. Maybe be null, if the {@code methodName}
@@ -326,7 +327,7 @@ public class ObjectMethods {
      * @throws Throwable if any exception is thrown during call site construction
      */
     public static Object bootstrap(MethodHandles.Lookup lookup, String methodName, TypeDescriptor type,
-                                   Class<?> theClass,
+                                   Class<?> recordClass,
                                    String names,
                                    MethodHandle... getters) throws Throwable {
         MethodType methodType;
@@ -341,22 +342,22 @@ public class ObjectMethods {
         MethodHandle handle;
         switch (methodName) {
             case "equals":
-                if (methodType != null && !methodType.equals(MethodType.methodType(boolean.class, theClass, Object.class)))
+                if (methodType != null && !methodType.equals(MethodType.methodType(boolean.class, recordClass, Object.class)))
                     throw new IllegalArgumentException("Bad method type: " + methodType);
-                handle = makeEquals(theClass, getterList);
+                handle = makeEquals(recordClass, getterList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             case "hashCode":
-                if (methodType != null && !methodType.equals(MethodType.methodType(int.class, theClass)))
+                if (methodType != null && !methodType.equals(MethodType.methodType(int.class, recordClass)))
                     throw new IllegalArgumentException("Bad method type: " + methodType);
-                handle = makeHashCode(theClass, getterList);
+                handle = makeHashCode(recordClass, getterList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             case "toString":
-                if (methodType != null && !methodType.equals(MethodType.methodType(String.class, theClass)))
+                if (methodType != null && !methodType.equals(MethodType.methodType(String.class, recordClass)))
                     throw new IllegalArgumentException("Bad method type: " + methodType);
                 List<String> nameList = "".equals(names) ? List.of() : List.of(names.split(";"));
                 if (nameList.size() != getterList.size())
                     throw new IllegalArgumentException("Name list and accessor list do not match");
-                handle = makeToString(theClass, getterList, nameList);
+                handle = makeToString(recordClass, getterList, nameList);
                 return methodType != null ? new ConstantCallSite(handle) : handle;
             default:
                 throw new IllegalArgumentException(methodName);
