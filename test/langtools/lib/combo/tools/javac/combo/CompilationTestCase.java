@@ -34,8 +34,6 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Base class for negative and positive compilation tests.
- *
- * @author Brian Goetz
  */
 @Test
 public class CompilationTestCase extends JavacTemplateTestBase {
