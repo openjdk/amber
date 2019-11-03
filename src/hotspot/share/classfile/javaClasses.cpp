@@ -387,14 +387,20 @@ Handle java_lang_String::create_from_symbol(Symbol* symbol, TRAPS) {
 Handle java_lang_String::create_from_platform_dependent_str(const char* str, TRAPS) {
   assert(str != NULL, "bad arguments");
 
-  typedef jstring (*to_java_string_fn_t)(JNIEnv*, const char *);
+  typedef jstring (JNICALL *to_java_string_fn_t)(JNIEnv*, const char *);
   static to_java_string_fn_t _to_java_string_fn = NULL;
 
   if (_to_java_string_fn == NULL) {
     void *lib_handle = os::native_java_library();
-    _to_java_string_fn = CAST_TO_FN_PTR(to_java_string_fn_t, os::dll_lookup(lib_handle, "NewStringPlatform"));
+    _to_java_string_fn = CAST_TO_FN_PTR(to_java_string_fn_t, os::dll_lookup(lib_handle, "JNU_NewStringPlatform"));
+#if defined(_WIN32) && !defined(_WIN64)
     if (_to_java_string_fn == NULL) {
-      fatal("NewStringPlatform missing");
+      // On 32 bit Windows, also try __stdcall decorated name
+      _to_java_string_fn = CAST_TO_FN_PTR(to_java_string_fn_t, os::dll_lookup(lib_handle, "_JNU_NewStringPlatform@8"));
+    }
+#endif
+    if (_to_java_string_fn == NULL) {
+      fatal("JNU_NewStringPlatform missing");
     }
   }
 
@@ -1956,6 +1962,8 @@ static inline bool version_matches(Method* method, int version) {
 // This class provides a simple wrapper over the internal structure of
 // exception backtrace to insulate users of the backtrace from needing
 // to know what it looks like.
+// The code of this class is not GC safe. Allocations can only happen
+// in expand().
 class BacktraceBuilder: public StackObj {
  friend class BacktraceIterator;
  private:
@@ -2104,10 +2112,14 @@ class BacktraceBuilder: public StackObj {
 
   void set_has_hidden_top_frame(TRAPS) {
     if (_has_hidden_top_frame == NULL) {
-      jvalue prim;
-      prim.z = 1;
-      PauseNoSafepointVerifier pnsv(&_nsv);
-      _has_hidden_top_frame = java_lang_boxing_object::create(T_BOOLEAN, &prim, CHECK);
+      // It would be nice to add java/lang/Boolean::TRUE here
+      // to indicate that this backtrace has a hidden top frame.
+      // But this code is used before TRUE is allocated.
+      // Therefor let's just use an arbitrary legal oop
+      // available right here. We only test for != null
+      // anyways. _methods is a short[].
+      assert(_methods != NULL, "we need a legal oop");
+      _has_hidden_top_frame = _methods;
       _head->obj_at_put(trace_hidden_offset, _has_hidden_top_frame);
     }
   }
