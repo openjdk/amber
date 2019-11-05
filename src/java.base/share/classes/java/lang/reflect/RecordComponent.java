@@ -81,10 +81,6 @@ public final class RecordComponent implements AnnotatedElement {
         return name;
     }
 
-    private Class<?> getDeclaringClass() {
-        return clazz;
-    }
-
     /**
      * Returns a {@code Class} that identifies the declared type for this
      * record component.
@@ -151,7 +147,7 @@ public final class RecordComponent implements AnnotatedElement {
 
     // Accessor for factory
     private GenericsFactory getFactory() {
-        Class<?> c = getDeclaringClass();
+        Class<?> c = getDeclaringRecord();
         // create scope and factory
         return CoreReflectionFactory.make(c, ClassScope.make(c));
     }
@@ -169,9 +165,9 @@ public final class RecordComponent implements AnnotatedElement {
         }
         return TypeAnnotationParser.buildAnnotatedType(typeAnnotations,
                 SharedSecrets.getJavaLangAccess().
-                        getConstantPool(getDeclaringClass()),
+                        getConstantPool(getDeclaringRecord()),
                 this,
-                getDeclaringClass(),
+                getDeclaringRecord(),
                 getGenericType(),
                 TypeAnnotation.TypeAnnotationTarget.FIELD);
     }
@@ -211,8 +207,8 @@ public final class RecordComponent implements AnnotatedElement {
                         declAnnos = AnnotationParser.parseAnnotations(
                                 annotations,
                                 SharedSecrets.getJavaLangAccess()
-                                        .getConstantPool(getDeclaringClass()),
-                                getDeclaringClass());
+                                        .getConstantPool(getDeclaringRecord()),
+                                getDeclaringRecord());
                     }
                     declaredAnnotations = declAnnos;
                 }
@@ -236,39 +232,27 @@ public final class RecordComponent implements AnnotatedElement {
     public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
 
     /**
-     * Returns a string describing this record component, including
-     * its generic type.  The format is: the generic record component type,
-     * followed by a space, followed by the fully-qualified name of the
-     * record class declaring the record component, followed by a period,
-     * followed by the name of the record component.
-     *
-     * @return a string describing this record component, including its
-     *         generic type
-     */
-    public String toGenericString() {
-        Type type = getGenericType();
-        return (type.getTypeName() + " "
-                + getDeclaringClass().getTypeName() + "."
-                + getName());
-    }
-
-    /**
      * Returns a string describing this record component. The format is
-     * the record component type, followed by a space, followed by
-     * the fully-qualified name of the class declaring the record
-     * component, followed by a period, followed by the name of the
-     * record component.
+     * the record component type, followed by a space, followed by the name
+     * of the record component.
      * For example:
      * <pre>
-     *    String Person.name
-     *    int Person.age
+     *    String name
+     *    int age
      * </pre>
      *
      * @return a string describing this record component
      */
     public String toString() {
-        return (getType().getTypeName() + " "
-                + getDeclaringClass().getTypeName() + "."
-                + getName());
+        return (getType().getTypeName() + " " + getName());
+    }
+
+    /**
+     * Return the record class which declares this record component.
+     *
+     * @return The record class declaring this record component.
+     */
+    public Class<?> getDeclaringRecord() {
+        return clazz;
     }
 }

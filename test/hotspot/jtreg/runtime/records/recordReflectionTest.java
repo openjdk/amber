@@ -64,7 +64,7 @@ public class recordReflectionTest {
         for (int x = 0; x < components.length; x++) {
             RecordComponent component = components[x];
             if (component.getName() == name &&
-                component.toGenericString().contains(enclosingClass) &&
+                component.getDeclaringRecord().toString().contains(enclosingClass) &&
                 component.getType().toString().contains(type) &&
                 component.getAccessor().toString().contains(method) &&
                 component.getGenericSignature() == genericSig) {
