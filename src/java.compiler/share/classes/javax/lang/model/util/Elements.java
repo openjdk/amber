@@ -642,8 +642,13 @@ public interface Elements {
      * Returns the record component for the given accessor. Returns null if the
      * given method is not a record component accessor.
      *
+     * @implSpec The default implementation of this method returns the record
+     * component associated to the given accessor. If the parameter is not an
+     * accessor, {@code null} is returned.
+     *
      * @param accessor the method for which the record component should be found.
-     * @return the record component, or null if the given method is not an record component accessor
+     * @return the record component, or null if the given method is not an record
+     * component accessor
      * @since 14
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,

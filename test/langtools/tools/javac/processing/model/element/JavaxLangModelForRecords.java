@@ -24,11 +24,11 @@
 /*
  * @test
  * @summary Verify that annotation processing works for records
- * @library /tools/lib
+ * @library /tools/lib /tools/javac/lib
  * @modules
  *      jdk.compiler/com.sun.tools.javac.api
  *      jdk.compiler/com.sun.tools.javac.main
- * @build toolbox.ToolBox toolbox.JavacTask
+ * @build toolbox.ToolBox toolbox.JavacTask JavacTestingAbstractProcessor
  * @run main JavaxLangModelForRecords
  */
 
@@ -109,7 +109,10 @@ public class JavaxLangModelForRecords extends TestRunner {
 
         for (Mode mode : new Mode[] {Mode.API}) {
             List<String> log = new JavacTask(tb, mode)
-                    .options("-processor", QualifiedClassForProcessing.class.getName(), "--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
+                    .options(
+                            "-processor", QualifiedClassForProcessing.class.getName(),
+                            "--enable-preview",
+                            "-source", Integer.toString(Runtime.version().feature()))
                     .files(findJavaFiles(src))
                     .outdir(classes)
                     .run()
@@ -122,7 +125,7 @@ public class JavaxLangModelForRecords extends TestRunner {
     }
 
     @SupportedAnnotationTypes("*")
-    public static final class QualifiedClassForProcessing extends AbstractProcessor {
+    public static final class QualifiedClassForProcessing extends JavacTestingAbstractProcessor {
 
         @Override
         public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {

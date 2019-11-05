@@ -24,13 +24,14 @@
 /*
  * @test
  * @summary Verify that annotation processing works for records
- * @library /tools/lib
+ * @library /tools/lib /tools/javac/lib
  * @modules
  *      jdk.compiler/com.sun.tools.javac.api
  *      jdk.compiler/com.sun.tools.javac.main
  *      jdk.compiler/com.sun.tools.javac.code
  *      jdk.compiler/com.sun.tools.javac.util
  * @build toolbox.ToolBox toolbox.JavacTask
+ * @build JavacTestingAbstractProcessor
  * @compile --enable-preview -source ${jdk.version} AnnoProcessorOnRecordsTest.java
  * @run main/othervm --enable-preview AnnoProcessorOnRecordsTest
  */
@@ -148,7 +149,10 @@ public class AnnoProcessorOnRecordsTest extends TestRunner {
 
         for (Mode mode : new Mode[] {Mode.API}) {
             new JavacTask(tb, mode)
-                    .options("-nowarn", "-processor", Processor.class.getName(), "--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
+                    .options("-nowarn",
+                            "-processor", Processor.class.getName(),
+                            "--enable-preview",
+                            "-source", Integer.toString(Runtime.version().feature()))
                     .files(findJavaFiles(src))
                     .outdir(classes)
                     .run()
@@ -158,7 +162,7 @@ public class AnnoProcessorOnRecordsTest extends TestRunner {
     }
 
     @SupportedAnnotationTypes("*")
-    public static final class Processor extends AbstractProcessor {
+    public static final class Processor extends JavacTestingAbstractProcessor {
         public boolean process(Set<? extends TypeElement> tes, RoundEnvironment renv) {
             for (TypeElement te : tes) {
                 switch (te.toString()) {

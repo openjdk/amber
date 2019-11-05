@@ -31,13 +31,6 @@
  * @run main/othervm --enable-preview TestRecordDesugar
  */
 
-// These are the original lines:
-// * @build   JavacTestingAbstractProcessor TestRecordDesugar
-// * @compile -processor TestRecordDesugar -proc:only TestRecordDesugar.java
-
-// For now, just do compile-time testing of the model. Class file
-// based testing could be added subsequently.
-
 import java.io.*;
 import java.lang.annotation.*;
 import java.nio.file.*;

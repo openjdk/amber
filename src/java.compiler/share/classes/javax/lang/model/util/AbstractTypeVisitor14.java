@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,14 +26,12 @@
 package javax.lang.model.util;
 
 import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.type.*;
-
+import javax.lang.model.SourceVersion;
 import static javax.lang.model.SourceVersion.*;
 
 /**
- * A skeletal visitor of types with default behavior appropriate for
- * the {@link javax.lang.model.SourceVersion#RELEASE_8 RELEASE_8}
- * source version.
+ * A skeletal visitor of types with default behavior appropriate for the
+ * {@link SourceVersion#RELEASE_14 RELEASE_14} source version.
  *
  * <p> <b>WARNING:</b> The {@code TypeVisitor} interface implemented
  * by this class may have methods added to it in the future to
@@ -60,27 +58,16 @@ import static javax.lang.model.SourceVersion.*;
  *
  * @see AbstractTypeVisitor6
  * @see AbstractTypeVisitor7
+ * @see AbstractTypeVisitor8
  * @see AbstractTypeVisitor9
- * @see AbstractTypeVisitor14
- * @since 1.8
+ * @since 14
  */
-@SupportedSourceVersion(RELEASE_8)
-public abstract class AbstractTypeVisitor8<R, P> extends AbstractTypeVisitor7<R, P> {
+@SupportedSourceVersion(RELEASE_14)
+public abstract class AbstractTypeVisitor14<R, P> extends AbstractTypeVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses to call.
      */
-    @SuppressWarnings("deprecation") // Superclass constructor deprecated
-    protected AbstractTypeVisitor8() {
+    protected AbstractTypeVisitor14() {
         super();
     }
-
-    /**
-     * Visits an {@code IntersectionType} in a manner defined by a subclass.
-     *
-     * @param t  {@inheritDoc}
-     * @param p  {@inheritDoc}
-     * @return the result of the visit as defined by a subclass
-     */
-    @Override
-    public abstract R visitIntersection(IntersectionType t, P p);
 }

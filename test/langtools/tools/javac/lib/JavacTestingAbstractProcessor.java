@@ -132,7 +132,7 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
     }
 
     @SupportedSourceVersion(RELEASE_14)
-    public static abstract class AbstractTypeVisitor<R, P> extends AbstractTypeVisitor9<R, P> {
+    public static abstract class AbstractTypeVisitor<R, P> extends AbstractTypeVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses to call.
          */

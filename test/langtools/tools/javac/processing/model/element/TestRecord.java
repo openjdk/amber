@@ -143,7 +143,10 @@ public class TestRecord extends TestRunner {
 
         for (Mode mode : new Mode[] {Mode.API}) {
             new JavacTask(tb, mode)
-                    .options("-nowarn", "-processor", Processor.class.getName(), "--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
+                    .options("-nowarn",
+                        "-processor", Processor.class.getName(),
+                        "--enable-preview",
+                        "-source", Integer.toString(Runtime.version().feature()))
                     .files(findJavaFiles(src))
                     .outdir(classes)
                     .run()
