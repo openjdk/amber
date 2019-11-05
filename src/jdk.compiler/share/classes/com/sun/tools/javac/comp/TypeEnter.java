@@ -908,7 +908,6 @@ public class TypeEnter implements Completer {
                         memberEnter.memberEnter(def, env);
                     }
                 }
-                //tree.defs.stream().filter(t -> TreeInfo.isConstructor(t)).forEach(t -> memberEnter.memberEnter(t, env));
             }
         }
     }
@@ -1055,19 +1054,17 @@ public class TypeEnter implements Completer {
         private void addEnumMembers(JCClassDecl tree, Env<AttrContext> env) {
             JCExpression valuesType = make.Type(new ArrayType(tree.sym.type, syms.arrayClass));
 
-            // public static T[] values() { return ???; }
             JCMethodDecl values = make.
                 MethodDef(make.Modifiers(Flags.PUBLIC|Flags.STATIC),
                           names.values,
                           valuesType,
                           List.nil(),
                           List.nil(),
-                          List.nil(), // thrown
-                          null, //make.Block(0, Tree.emptyList.prepend(make.Return(make.Ident(names._null)))),
+                          List.nil(),
+                          null,
                           null);
             memberEnter.memberEnter(values, env);
 
-            // public static T valueOf(String name) { return ???; }
             JCMethodDecl valueOf = make.
                 MethodDef(make.Modifiers(Flags.PUBLIC|Flags.STATIC),
                           names.valueOf,
@@ -1077,8 +1074,8 @@ public class TypeEnter implements Completer {
                                                              Flags.MANDATED),
                                                 names.fromString("name"),
                                                 make.Type(syms.stringType), null)),
-                          List.nil(), // thrown
-                          null, //make.Block(0, Tree.emptyList.prepend(make.Return(make.Ident(names._null)))),
+                          List.nil(),
+                          null,
                           null);
             memberEnter.memberEnter(valueOf, env);
         }
@@ -1158,7 +1155,6 @@ public class TypeEnter implements Completer {
                     .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && !names.isForbiddenComponentName(vd.name))
                     .forEach(vd -> addAccessor(vd, env));
         }
-
     }
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
@@ -1251,7 +1247,7 @@ public class TypeEnter implements Completer {
             super(owner);
             this.constr = constr;
             this.encl = encl != null ? encl.type : Type.noType;
-    }
+        }
 
         @Override
         public Type constructorType() {
@@ -1296,7 +1292,7 @@ public class TypeEnter implements Completer {
         public List<Name> superArgs() {
             List<JCVariableDecl> params = make.Params(constructorType().getParameterTypes(), constructorSymbol());
             if (!enclosingType().hasTag(NONE)) {
-            params = params.tail;
+                params = params.tail;
             }
             return params.map(vd -> vd.name);
         }
@@ -1361,9 +1357,9 @@ public class TypeEnter implements Completer {
             JCExpression meth;
             if (!helper.enclosingType().hasTag(NONE)) {
                 meth = make.Select(make.Ident(initSym.params.head), names._super);
-        } else {
-            meth = make.Ident(names._super);
-        }
+            } else {
+                meth = make.Ident(names._super);
+            }
             List<JCExpression> typeargs = initType.getTypeArguments().nonEmpty() ?
                     make.Types(initType.getTypeArguments()) : null;
             JCStatement superCall = make.Exec(make.Apply(typeargs, meth, helper.superArgs().map(make::Ident)));

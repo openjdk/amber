@@ -3604,7 +3604,8 @@ public final class Class<T> implements java.io.Serializable,
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
-     * Returns true if and only if this class is a record class.
+     * Returns {@code true} if and only if this class is a record class.
+     * It returns {@code false} otherwise.
      *
      * @return true if and only if this class is a record class
      * @jls 8.10 Record Types
