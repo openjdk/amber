@@ -372,7 +372,7 @@ public class CommentUtils {
     /**
      * Creates a description that contains the simple name of a program element
      * The description is looked up as a resource, and should contain {@code {0}} where the
-     * name is to be inserted. T
+     * name is to be inserted.
      * @param key the resource key for the description
      * @param name the name
      * @return the description

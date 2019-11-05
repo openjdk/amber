@@ -533,16 +533,7 @@ public class Utils {
             @Override
             @SuppressWarnings("preview")
             public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> mods) {
-                Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
-                Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
-                Set<Modifier> set = beforeSealed;
-                for (Modifier m : Modifier.values()) {
-                    if (mods.contains(m)) {
-                        set.add(m);
-                    }
-                }
-                addModifiers(beforeSealed);
-                addModifiers(afterSealed);
+                addModifiers(mods);
                 String keyword = e.getKind() == ElementKind.RECORD ? "record" : "class";
                 return finalString(keyword);
             }

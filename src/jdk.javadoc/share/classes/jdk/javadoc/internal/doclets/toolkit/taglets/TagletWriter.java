@@ -25,11 +25,8 @@
 
 package jdk.javadoc.internal.doclets.toolkit.taglets;
 
-import java.util.EnumSet;
 import java.util.List;
-
 import javax.lang.model.element.Element;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 

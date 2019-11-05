@@ -25,9 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit.builders;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,10 +36,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
 
-import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.toolkit.ClassWriter;
 import jdk.javadoc.internal.doclets.toolkit.CommentUtils;
@@ -85,7 +80,7 @@ public class ClassBuilder extends AbstractBuilder {
     private final boolean isEnum;
 
     /**
-     * Keep track of whether or not this typeElement is an record.
+     * Keep track of whether or not this typeElement is a record.
      */
     private final boolean isRecord;
 
@@ -466,7 +461,7 @@ public class ClassBuilder extends AbstractBuilder {
                     utils.removeCommentHelper(ee); // purge previous entry
                     cmtUtils.setRecordConstructorTree(ee);
                 }
-                // only one canonical constructor; no longer need to keep looking
+                // only one canonical constructor; no need to keep looking
                 break;
             }
         }
@@ -481,7 +476,7 @@ public class ClassBuilder extends AbstractBuilder {
             }
         }
 
-        TypeMirror objectType = utils.elementUtils.getTypeElement("java.lang.Object").asType();
+        TypeMirror objectType = utils.getObjectType();
 
         for (ExecutableElement ee : utils.getMethods(elem)) {
             if (!utils.getFullBody(ee).isEmpty()) {
