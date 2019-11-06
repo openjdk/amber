@@ -243,10 +243,13 @@ import sun.reflect.misc.ReflectUtil;
  * class-specific writeObject, readObject, readObjectNoData, writeExternal,
  * and readExternal methods defined by record classes are ignored during
  * serialization and deserialization. However, a substitute object to be serialized
- * or a designate replacement may be specified by the writeReplace and
- * readResolve methods, respectively. Any serialPersistentFields or
- * serialVersionUID field declarations are also ignored -- all record classes
- * have a fixed serialVersionUID of 0L.
+ * or a designate replacement may be specified, by the writeReplace and
+ * readResolve methods, respectively.  Any serialPersistentFields field
+ * declaration is ignored. Documenting serializable fields and data for record
+ * classes is unnecessary, since there is no variation in the serial form, other
+ * than whether a substitute or replacement object is used. The serialVersionUID
+ * of a record class is 0L unless explicitly declared. The requirement for
+ * matching serialVersionUID values is waived for record classes.
  *
  * @author      Mike Warres
  * @author      Roger Riggs
