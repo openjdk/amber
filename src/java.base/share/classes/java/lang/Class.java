@@ -2312,7 +2312,7 @@ public final class Class<T> implements java.io.Serializable,
                                  essentialAPI=false)
     @SuppressWarnings("preview")
     @CallerSensitive
-    public RecordComponent[] getRecordComponents() throws SecurityException {
+    public RecordComponent[] getRecordComponents() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
