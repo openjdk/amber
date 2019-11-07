@@ -59,6 +59,7 @@ public class PubApi implements Serializable {
     public final Map<String, PubType> types = new HashMap<>();
     public final Map<String, PubVar> variables = new HashMap<>();
     public final Map<String, PubMethod> methods = new HashMap<>();
+    public final Map<String, PubVar> recordComponents = new HashMap<>();
 
     public PubApi() {
     }

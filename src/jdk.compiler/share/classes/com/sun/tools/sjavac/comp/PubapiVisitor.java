@@ -30,11 +30,7 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementScanner14;
 
@@ -125,6 +121,17 @@ public class PubapiVisitor extends ElementScanner14<Void, Void> {
         // If it happens to contain an anonymous inner class (which it might)
         // then this class is never visible outside of the package anyway, so
         // we are allowed to ignore it here.
+        return null;
+    }
+
+    @SuppressWarnings("preview")
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public Void visitRecordComponent(RecordComponentElement e, Void p) {
+        PubVar v = new PubVar(e.getModifiers(),
+                TypeDesc.fromType(e.asType()),
+                e.toString(),
+                null);
+        collectedApi.recordComponents.put(v.identifier, v);
         return null;
     }
 
