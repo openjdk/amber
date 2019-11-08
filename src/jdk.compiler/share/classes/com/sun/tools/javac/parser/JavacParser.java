@@ -2579,21 +2579,23 @@ public class JavacParser implements Parser {
                 return List.<JCStatement>of(expr);
             }
         case VOID: {
-            if (token.kind == LT || peekToken(IDENTIFIER)) {
-                List<JCTypeParameter> params = typeParametersOpt();
-                JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
-                JCExpression returnType = null;
-                if (token.kind == VOID) {
-                    returnType = to(F.at(pos).TypeIdent(TypeTag.VOID));
-                    accept(VOID);
-                } else {
-                    returnType = term(EXPR | TYPE);
+            if (Feature.LOCAL_METHODS.allowedInSource(source)) {
+                if (token.kind == LT || peekToken(IDENTIFIER)) {
+                    List<JCTypeParameter> params = typeParametersOpt();
+                    JCModifiers mods = F.at(Position.NOPOS).Modifiers(0);
+                    JCExpression returnType = null;
+                    if (token.kind == VOID) {
+                        returnType = to(F.at(pos).TypeIdent(TypeTag.VOID));
+                        accept(VOID);
+                    } else {
+                        returnType = term(EXPR | TYPE);
+                    }
+                    ListBuffer<JCStatement> stats = new ListBuffer<>();
+                    pos = token.pos;
+                    stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
+                    storeEnd(stats.last(), S.prevToken().endPos);
+                    return stats.toList();
                 }
-                ListBuffer<JCStatement> stats = new ListBuffer<>();
-                pos = token.pos;
-                stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
-                storeEnd(stats.last(), S.prevToken().endPos);
-                return stats.toList();
             }
             //else intentional fall-through
         }
@@ -2667,7 +2669,7 @@ public class JavacParser implements Parser {
     //where
         private List<JCStatement> localVariableDeclarations(JCModifiers mods, JCExpression type) {
             ListBuffer<JCStatement> stats;
-            if (peekToken(LPAREN)) {
+            if (Feature.LOCAL_METHODS.allowedInSource(source) && peekToken(LPAREN)) {
                 stats = new ListBuffer<>();
                 stats.add(methodDeclaratorRest(token.pos, mods, type, ident(), List.nil(), false, false, null));
             } else {

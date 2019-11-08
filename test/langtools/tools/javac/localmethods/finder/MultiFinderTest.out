@@ -1,0 +1,4 @@
+RecursionTest.java:9:25: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, RecursionTest
+- compiler.err.warnings.and.werror
+1 error
+1 warning

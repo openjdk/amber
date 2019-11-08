@@ -26,11 +26,14 @@
 package com.sun.tools.javac.comp;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.sun.source.tree.LambdaExpressionTree;
@@ -39,7 +42,9 @@ import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Source.Feature;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
+import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.comp.ArgumentAttr.LocalCacheContext;
@@ -54,6 +59,7 @@ import com.sun.tools.javac.tree.JCTree.JCForLoop;
 import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCLambda.ParameterKind;
+import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
@@ -78,12 +84,20 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticType;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Log;
+import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 import com.sun.tools.javac.util.Position;
 
+import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Flags.GENERATEDCONSTR;
+import static com.sun.tools.javac.code.Flags.STATIC;
+import static com.sun.tools.javac.code.Kinds.Kind.MTH;
+import static com.sun.tools.javac.code.Kinds.Kind.PCK;
+import static com.sun.tools.javac.code.Kinds.Kind.TYP;
+import static com.sun.tools.javac.code.Kinds.kindName;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.tree.JCTree.Tag.APPLY;
+import static com.sun.tools.javac.tree.JCTree.Tag.CLASSDEF;
 import static com.sun.tools.javac.tree.JCTree.Tag.FOREACHLOOP;
 import static com.sun.tools.javac.tree.JCTree.Tag.LABELLED;
 import static com.sun.tools.javac.tree.JCTree.Tag.METHODDEF;
@@ -101,6 +115,7 @@ public class Analyzer {
 
     final Types types;
     final Log log;
+    final Names names;
     final Attr attr;
     final DeferredAttr deferredAttr;
     final ArgumentAttr argumentAttr;
@@ -119,6 +134,7 @@ public class Analyzer {
 
     protected Analyzer(Context context) {
         context.put(analyzerKey, this);
+        names = Names.instance(context);
         types = Types.instance(context);
         log = Log.instance(context);
         attr = Attr.instance(context);
@@ -142,7 +158,8 @@ public class Analyzer {
         DIAMOND("diamond", Feature.DIAMOND),
         LAMBDA("lambda", Feature.LAMBDA),
         METHOD("method", Feature.GRAPH_INFERENCE),
-        LOCAL("local", Feature.LOCAL_VARIABLE_TYPE_INFERENCE);
+        LOCAL("local", Feature.LOCAL_VARIABLE_TYPE_INFERENCE),
+        LOCAL_METHODS("local-methods", Feature.LOCAL_METHODS);
 
         final String opt;
         final Feature feature;
@@ -321,6 +338,131 @@ public class Analyzer {
     }
 
     /**
+     * This analyzer checks if private methods can be local to a method.
+     */
+    class LocalMethodsAnalyzer extends StatementAnalyzer<JCClassDecl, JCClassDecl> {
+
+        LocalMethodsAnalyzer() {
+            super(AnalyzerMode.LOCAL_METHODS, CLASSDEF);
+        }
+
+        // Always returns false, so does not particupate in the rewrite/process protocol
+        @Override
+        boolean match (JCClassDecl tree) {
+            if (tree != null && tree.sym != null &&
+                    (tree.sym.owner.kind == MTH || tree.sym.owner.kind == PCK)) {
+                HashMap<Symbol, Set<Symbol>> candidates = new HashMap<>();
+                for (Symbol s : privateMethods(tree.sym)) {
+                    candidates.put(s, new HashSet<>());
+                }
+                if (candidates.size() > 0) {
+                    ArrayList<JCMethodDecl> decls = new ArrayList<>();
+                    new TreeScanner() {
+                        MethodSymbol cursor;
+                        JCClassDecl currentClass;
+
+                        @Override
+                        public void visitClassDef(JCClassDecl tree) {
+                            JCClassDecl prevClass = currentClass;
+                            currentClass = tree;
+                            try {
+                                super.visitClassDef(tree);
+                            } finally {
+                                currentClass = prevClass;
+                            }
+                        }
+
+                        @Override
+                        public void visitMethodDef(JCMethodDecl tree) {
+                            if (!tree.sym.isConstructor() && tree.sym.isPrivate())
+                                decls.add(tree);
+                            MethodSymbol prev = cursor;
+                            cursor = tree.sym;
+                            try {
+                                super.visitMethodDef(tree);
+                            } finally {
+                                cursor = prev;
+                            }
+                        }
+
+                        @Override
+                        public void visitBlock(JCBlock tree) {
+                            MethodSymbol prev = cursor;
+                            if (cursor == null) {
+                                cursor = new MethodSymbol(tree.flags | BLOCK, names.empty, null,
+                                                currentClass.sym);
+                            }
+                            try {
+                                super.visitBlock(tree);
+                            } finally {
+                                cursor = prev;
+                            }
+                        }
+
+                        @Override
+                        public void visitApply(JCMethodInvocation tree) {
+                            MethodSymbol msym = (MethodSymbol)TreeInfo.symbol(tree.meth);
+                            if (tree.typeargs.size() > 0 && candidates.keySet().contains(msym)) {
+                                // cannot be localized since there is no syntax to spell type witnesses
+                                candidates.remove(msym);
+                            } else if (msym != cursor) {  // ignore recursive calls
+                                Set<Symbol> symbols = candidates.get(msym);
+                                if (symbols != null && symbols.size() <= 1)
+                                    symbols.add(cursor);
+                            }
+                            super.visitApply(tree);
+                        }
+
+                        @Override
+                        public void visitReference(JCMemberReference tree) {
+                            MethodSymbol msym = (MethodSymbol)TreeInfo.symbol(tree);
+                            if (candidates.keySet().contains(msym)) {
+                                candidates.remove(msym);
+                            }
+                            super.visitReference(tree);
+                        }
+                    }.scan(tree);
+
+                    for (JCMethodDecl decl : decls) {
+                        Set<Symbol> callers = candidates.get(decl.sym);
+                        if (callers != null && callers.size() == 1) {
+                            final Symbol caller = callers.stream().findFirst().get();
+                            if ((caller.flags() & BLOCK) == 0) {
+                                log.warning(decl, Warnings.MethodCouldBeDeclaredLocal(caller, kindName(caller.location()), caller.location()));
+                            } else {
+                                if ((caller.flags() & STATIC) != 0) {
+                                    log.warning(decl, Warnings.MethodCouldBeDeclaredLocalToStaticInitializer(kindName(caller.location()), caller.location()));
+                                } else {
+                                    log.warning(decl, Warnings.MethodCouldBeDeclaredLocalToInstanceInitializer(kindName(caller.location()), caller.location()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+            // where
+            List<Symbol> privateMethods(ClassSymbol c) {
+                List<Symbol> meths = List.from(c.members().getSymbols(s -> s.kind == MTH && !s.isConstructor() && s.isPrivate()));
+                for (Symbol s : c.members().getSymbols(s -> s.kind == TYP)) {
+                    meths = meths.appendList(privateMethods((ClassSymbol)s));
+                }
+                return meths;
+            }
+
+        @Override
+        List<JCClassDecl> rewrite(JCClassDecl oldTree){
+            throw new AssertionError("Unexpected invocation of rewrite()");
+        }
+
+        @Override
+        void process (JCClassDecl oldTree, JCClassDecl newTree, boolean hasErrors){
+            throw new AssertionError("Unexpected invocation of process()");
+        }
+    }
+
+    /**
      * This analyzer checks if generic method call has redundant type arguments.
      */
     class RedundantTypeArgAnalyzer extends StatementAnalyzer<JCMethodInvocation, JCMethodInvocation> {
@@ -440,7 +582,8 @@ public class Analyzer {
             new LambdaAnalyzer(),
             new RedundantTypeArgAnalyzer(),
             new RedundantLocalVarTypeAnalyzer(),
-            new RedundantLocalVarTypeAnalyzerForEach()
+            new RedundantLocalVarTypeAnalyzerForEach(),
+            new LocalMethodsAnalyzer()
     };
 
     /**

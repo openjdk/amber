@@ -1,0 +1,5 @@
+CtorTest.java:9:24: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, CtorTest
+CtorTest.java:13:18: compiler.warn.method.could.be.declared.local: CtorTest(int), kindname.class, CtorTest
+- compiler.err.warnings.and.werror
+1 error
+2 warnings

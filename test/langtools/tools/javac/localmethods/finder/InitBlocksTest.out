@@ -1,0 +1,5 @@
+InitBlocksTest.java:12:25: compiler.warn.method.could.be.declared.local.to.static.initializer: kindname.class, InitBlocksTest
+InitBlocksTest.java:16:18: compiler.warn.method.could.be.declared.local.to.instance.initializer: kindname.class, InitBlocksTest
+- compiler.err.warnings.and.werror
+1 error
+2 warnings

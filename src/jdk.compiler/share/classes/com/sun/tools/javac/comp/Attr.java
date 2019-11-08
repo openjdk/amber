@@ -4894,6 +4894,10 @@ public class Attr extends JCTree.Visitor {
             // Check type annotations applicability rules
             validateTypeAnnotations(tree, false);
         }
+        if (!c.isAnonymous()) {
+            // anonymous classes get analyzed as part of instance creation expression statement
+            analyzer.analyzeIfNeeded(tree, env);
+        }
     }
         // where
         /** get a diagnostic position for an attribute of Type t, or null if attribute missing */

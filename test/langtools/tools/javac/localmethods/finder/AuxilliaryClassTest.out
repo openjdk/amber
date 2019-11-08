@@ -1,0 +1,5 @@
+AuxilliaryClassTest.java:9:25: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, AuxilliaryClassTest
+- compiler.err.warnings.and.werror
+AuxilliaryClassTest.java:26:25: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, AuxilliaryClassTest01
+1 error
+2 warnings
