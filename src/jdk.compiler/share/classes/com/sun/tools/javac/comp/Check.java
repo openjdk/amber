@@ -2191,11 +2191,6 @@ public class Check {
      */
     void checkAllDefined(DiagnosticPosition pos, ClassSymbol c) {
         MethodSymbol undef = types.firstUnimplementedAbstract(c);
-        /* if `c` is record just ignore, the only abstract methods in a record superclass are:
-         * equals, hashCode and toString, if they are not defined it is because the user has
-         * named a record component with a namesake, to the compiler will fail anyway with a more
-         * meaningful message
-         */
         if (undef != null) {
             MethodSymbol undef1 =
                 new MethodSymbol(undef.flags(), undef.name,
