@@ -2558,7 +2558,7 @@ public class JavacParser implements Parser {
             if (token.kind == INTERFACE ||
                 token.kind == CLASS ||
                 token.kind == ENUM ||
-                (token.kind == IDENTIFIER && token.name() == names.record) ) {
+                isRecordStart()) {
                 return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
             } else {
                 JCExpression t = parseType(true);
@@ -2625,9 +2625,7 @@ public class JavacParser implements Parser {
                 //else intentional fall-through
             }
         }
-        if (isRecordToken() &&
-            (peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN) ||
-             peekToken(TokenKind.IDENTIFIER, TokenKind.LT))) {
+        if (isRecordStart() && allowRecords) {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(recordDeclaration(F.at(pos).Modifiers(0), dc));
         } else {
@@ -3661,7 +3659,7 @@ public class JavacParser implements Parser {
     protected JCStatement classOrRecordOrInterfaceOrEnumDeclaration(JCModifiers mods, Comment dc) {
         if (token.kind == CLASS) {
             return classDeclaration(mods, dc);
-        } if (isRecordToken()) {
+        } if (isRecordStart()) {
             return recordDeclaration(mods, dc);
         } else if (token.kind == INTERFACE) {
             return interfaceDeclaration(mods, dc);
@@ -4022,7 +4020,7 @@ public class JavacParser implements Parser {
             int pos = token.pos;
             JCModifiers mods = modifiersOpt();
             if (token.kind == CLASS ||
-                isRecordToken() ||
+                isRecordStart() ||
                 token.kind == INTERFACE ||
                 token.kind == ENUM) {
                 return List.of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));
@@ -4117,9 +4115,16 @@ public class JavacParser implements Parser {
         }
     }
 
-    boolean isRecordToken() {
-        return allowRecords && token.kind == IDENTIFIER && token.name() == names.record;
-    }
+    boolean isRecordStart() {
+     if (token.kind == IDENTIFIER && token.name() == names.record &&
+            (peekToken(TokenKind.IDENTIFIER, TokenKind.LPAREN) ||
+             peekToken(TokenKind.IDENTIFIER, TokenKind.LT))) {
+          checkSourceLevel(Feature.RECORDS);
+          return true;
+    } else {
+       return false;
+   }
+}
 
     /** MethodDeclaratorRest =
      *      FormalParameters BracketsOpt [THROWS TypeList] ( MethodBody | [DEFAULT AnnotationValue] ";")
