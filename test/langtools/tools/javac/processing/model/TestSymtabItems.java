@@ -222,7 +222,7 @@ public class TestSymtabItems {
         int indent;
     };
 
-    class TypePrinter extends SimpleTypeVisitor9<Void, Types> {
+    class TypePrinter extends SimpleTypeVisitor14<Void, Types> {
         @Override
         public Void defaultAction(TypeMirror m, Types types) {
             System.err.println(m.getKind() + " " + m + " " + types.asElement(m));

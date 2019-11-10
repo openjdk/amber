@@ -36,7 +36,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.TypeVisitor;
-import javax.lang.model.util.SimpleTypeVisitor9;
+import javax.lang.model.util.SimpleTypeVisitor14;
 
 import com.sun.tools.javac.code.Type.ClassType;
 import com.sun.tools.javac.util.DefinedBy;
@@ -88,7 +88,7 @@ public abstract class TypeDesc implements Serializable {
     }
 
     public static TypeDesc fromType(TypeMirror type) {
-        TypeVisitor<TypeDesc, Void> v = new SimpleTypeVisitor9<TypeDesc, Void>() {
+        TypeVisitor<TypeDesc, Void> v = new SimpleTypeVisitor14<TypeDesc, Void>() {
             @Override @DefinedBy(Api.LANGUAGE_MODEL)
             public TypeDesc visitArray(ArrayType t, Void p) {
                 return new ArrayTypeDesc(t.getComponentType().accept(this, p));

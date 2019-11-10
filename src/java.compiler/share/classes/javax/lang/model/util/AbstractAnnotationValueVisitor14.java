@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,23 +25,13 @@
 
 package javax.lang.model.util;
 
-import javax.annotation.processing.SupportedSourceVersion;
-import javax.lang.model.SourceVersion;
 import static javax.lang.model.SourceVersion.*;
+import javax.lang.model.SourceVersion;
+import javax.annotation.processing.SupportedSourceVersion;
 
 /**
- * A simple visitor for annotation values with default behavior
- * appropriate for source versions {@link SourceVersion#RELEASE_9
- * RELEASE_9} through {@link SourceVersion#RELEASE_14 RELEASE_14}.
- *
- * Visit methods call {@link #defaultAction
- * defaultAction} passing their arguments to {@code defaultAction}'s
- * corresponding parameters.
- *
- * <p> Methods in this class may be overridden subject to their
- * general contract.  Note that annotating methods in concrete
- * subclasses with {@link java.lang.Override @Override} will help
- * ensure that methods are overridden as intended.
+ * A skeletal visitor for annotation values with default behavior
+ * appropriate for source version {@link SourceVersion#RELEASE_14 RELEASE_14}.
  *
  * <p> <b>WARNING:</b> The {@code AnnotationValueVisitor} interface
  * implemented by this class may have methods added to it in the
@@ -54,7 +44,7 @@ import static javax.lang.model.SourceVersion.*;
  *
  * <p>When such a new visit method is added, the default
  * implementation in this class will be to call the {@link
- * #visitUnknown visitUnknown} method.  A new simple annotation
+ * #visitUnknown visitUnknown} method.  A new abstract annotation
  * value visitor class will also be introduced to correspond to the
  * new language level; this visitor will have different default
  * behavior for the visit method in question.  When the new visitor is
@@ -63,29 +53,19 @@ import static javax.lang.model.SourceVersion.*;
  * @param <R> the return type of this visitor's methods
  * @param <P> the type of the additional parameter to this visitor's methods.
  *
- * @see SimpleAnnotationValueVisitor6
- * @see SimpleAnnotationValueVisitor7
- * @see SimpleAnnotationValueVisitor8
- * @see SimpleAnnotationValueVisitor14
- * @since 9
+ * @see AbstractAnnotationValueVisitor6
+ * @see AbstractAnnotationValueVisitor7
+ * @see AbstractAnnotationValueVisitor8
+ * @see AbstractAnnotationValueVisitor9
+ * @since 14
  */
 @SupportedSourceVersion(RELEASE_14)
-public class SimpleAnnotationValueVisitor9<R, P> extends SimpleAnnotationValueVisitor8<R, P> {
-    /**
-     * Constructor for concrete subclasses; uses {@code null} for the
-     * default value.
-     */
-    protected SimpleAnnotationValueVisitor9() {
-        super(null);
-    }
+public abstract class AbstractAnnotationValueVisitor14<R, P> extends AbstractAnnotationValueVisitor9<R, P> {
 
     /**
-     * Constructor for concrete subclasses; uses the argument for the
-     * default value.
-     *
-     * @param defaultValue the value to assign to {@link #DEFAULT_VALUE}
+     * Constructor for concrete subclasses to call.
      */
-    protected SimpleAnnotationValueVisitor9(R defaultValue) {
-        super(defaultValue);
+    protected AbstractAnnotationValueVisitor14() {
+        super();
     }
 }

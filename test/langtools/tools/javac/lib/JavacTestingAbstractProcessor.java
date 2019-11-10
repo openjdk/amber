@@ -111,7 +111,7 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
      */
 
     @SupportedSourceVersion(RELEASE_14)
-    public static abstract class AbstractAnnotationValueVisitor<R, P> extends AbstractAnnotationValueVisitor9<R, P> {
+    public static abstract class AbstractAnnotationValueVisitor<R, P> extends AbstractAnnotationValueVisitor14<R, P> {
 
         /**
          * Constructor for concrete subclasses to call.
@@ -182,7 +182,7 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
     }
 
     @SupportedSourceVersion(RELEASE_14)
-    public static class SimpleAnnotationValueVisitor<R, P> extends SimpleAnnotationValueVisitor9<R, P> {
+    public static class SimpleAnnotationValueVisitor<R, P> extends SimpleAnnotationValueVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -224,7 +224,7 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
     }
 
     @SupportedSourceVersion(RELEASE_14)
-    public static class SimpleTypeVisitor<R, P> extends SimpleTypeVisitor9<R, P> {
+    public static class SimpleTypeVisitor<R, P> extends SimpleTypeVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses; uses {@code null} for the
          * default value.
@@ -245,7 +245,7 @@ public abstract class JavacTestingAbstractProcessor extends AbstractProcessor {
     }
 
     @SupportedSourceVersion(RELEASE_14)
-    public static class TypeKindVisitor<R, P> extends TypeKindVisitor9<R, P> {
+    public static class TypeKindVisitor<R, P> extends TypeKindVisitor14<R, P> {
         /**
          * Constructor for concrete subclasses to call; uses {@code null}
          * for the default value.

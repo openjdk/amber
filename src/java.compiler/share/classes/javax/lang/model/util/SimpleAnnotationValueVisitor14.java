@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,7 @@ import static javax.lang.model.SourceVersion.*;
 
 /**
  * A simple visitor for annotation values with default behavior
- * appropriate for source versions {@link SourceVersion#RELEASE_9
- * RELEASE_9} through {@link SourceVersion#RELEASE_14 RELEASE_14}.
+ * appropriate for source version {@link SourceVersion#RELEASE_14 RELEASE_14}.
  *
  * Visit methods call {@link #defaultAction
  * defaultAction} passing their arguments to {@code defaultAction}'s
@@ -66,16 +65,16 @@ import static javax.lang.model.SourceVersion.*;
  * @see SimpleAnnotationValueVisitor6
  * @see SimpleAnnotationValueVisitor7
  * @see SimpleAnnotationValueVisitor8
- * @see SimpleAnnotationValueVisitor14
- * @since 9
+ * @see SimpleAnnotationValueVisitor9
+ * @since 14
  */
 @SupportedSourceVersion(RELEASE_14)
-public class SimpleAnnotationValueVisitor9<R, P> extends SimpleAnnotationValueVisitor8<R, P> {
+public class SimpleAnnotationValueVisitor14<R, P> extends SimpleAnnotationValueVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
      * default value.
      */
-    protected SimpleAnnotationValueVisitor9() {
+    protected SimpleAnnotationValueVisitor14() {
         super(null);
     }
 
@@ -85,7 +84,7 @@ public class SimpleAnnotationValueVisitor9<R, P> extends SimpleAnnotationValueVi
      *
      * @param defaultValue the value to assign to {@link #DEFAULT_VALUE}
      */
-    protected SimpleAnnotationValueVisitor9(R defaultValue) {
+    protected SimpleAnnotationValueVisitor14(R defaultValue) {
         super(defaultValue);
     }
 }

@@ -191,6 +191,35 @@ public class TestTypeKindVisitors extends JavacTestingAbstractProcessor {
                            public TypeKind visitNoTypeAsModule(NoType t, String p) {
                                return t.getKind();
                            }
-                       });
+                       },
+
+                        new TypeKindVisitor14<>(null){
+                           @Override
+                           protected TypeKind defaultAction(TypeMirror e, String p) {
+                               throw new AssertionError("Should not reach");
+                           }
+
+                           @Override
+                           public TypeKind visitNoTypeAsVoid(NoType t, String p) {
+                               return t.getKind();
+                           }
+
+                           @Override
+                           public TypeKind visitNoTypeAsNone(NoType t, String p) {
+                               return t.getKind();
+                           }
+
+                           @Override
+                           public TypeKind visitNoTypeAsPackage(NoType t, String p) {
+                               return t.getKind();
+                           }
+
+                           @Override
+                           public TypeKind visitNoTypeAsModule(NoType t, String p) {
+                               return t.getKind();
+                           }
+                       },
+
+        );
     }
 }

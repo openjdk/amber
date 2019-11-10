@@ -105,12 +105,14 @@ public class JavaxLangModelForRecords extends TestRunner {
         tb.writeJavaFiles(r,
                 "record R(int i) {}");
 
-        List<String> expected = List.of("Note: field: i", "Note: record component: i");
+        List<String> expected = List.of("Note: field: i",
+                "Note: record component: i",
+                "Note: testQualifiedClassForProcessing/src/R/R.java uses preview language features.",
+                "Note: Recompile with -Xlint:preview for details.");
 
         for (Mode mode : new Mode[] {Mode.API}) {
             List<String> log = new JavacTask(tb, mode)
-                    .options(
-                            "-processor", QualifiedClassForProcessing.class.getName(),
+                    .options("-processor", QualifiedClassForProcessing.class.getName(),
                             "--enable-preview",
                             "-source", Integer.toString(Runtime.version().feature()))
                     .files(findJavaFiles(src))

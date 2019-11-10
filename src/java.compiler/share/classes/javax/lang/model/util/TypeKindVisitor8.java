@@ -71,6 +71,8 @@ import static javax.lang.model.SourceVersion.*;
  *
  * @see TypeKindVisitor6
  * @see TypeKindVisitor7
+ * @see TypeKindVisitor9
+ * @see TypeKindVisitor14
  * @since 1.8
  */
 @SupportedSourceVersion(RELEASE_8)

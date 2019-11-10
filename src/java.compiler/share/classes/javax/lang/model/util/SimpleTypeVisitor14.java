@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,23 +30,23 @@ import javax.lang.model.SourceVersion;
 import static javax.lang.model.SourceVersion.*;
 
 /**
- * A simple visitor for annotation values with default behavior
- * appropriate for source versions {@link SourceVersion#RELEASE_9
- * RELEASE_9} through {@link SourceVersion#RELEASE_14 RELEASE_14}.
+ * A simple visitor of types with default behavior appropriate for
+ * source version {@link SourceVersion#RELEASE_14 RELEASE_14}.
  *
- * Visit methods call {@link #defaultAction
- * defaultAction} passing their arguments to {@code defaultAction}'s
- * corresponding parameters.
+ * Visit methods corresponding to {@code RELEASE_14} and earlier
+ * language constructs call {@link #defaultAction defaultAction},
+ * passing their arguments to {@code defaultAction}'s corresponding
+ * parameters.
  *
  * <p> Methods in this class may be overridden subject to their
  * general contract.  Note that annotating methods in concrete
  * subclasses with {@link java.lang.Override @Override} will help
  * ensure that methods are overridden as intended.
  *
- * <p> <b>WARNING:</b> The {@code AnnotationValueVisitor} interface
- * implemented by this class may have methods added to it in the
- * future to accommodate new, currently unknown, language structures
- * added to future versions of the Java&trade; programming language.
+ * <p> <b>WARNING:</b> The {@code TypeVisitor} interface implemented
+ * by this class may have methods added to it in the future to
+ * accommodate new, currently unknown, language structures added to
+ * future versions of the Java&trade; programming language.
  * Therefore, methods whose names begin with {@code "visit"} may be
  * added to this class in the future; to avoid incompatibilities,
  * classes which extend this class should not declare any instance
@@ -54,28 +54,31 @@ import static javax.lang.model.SourceVersion.*;
  *
  * <p>When such a new visit method is added, the default
  * implementation in this class will be to call the {@link
- * #visitUnknown visitUnknown} method.  A new simple annotation
- * value visitor class will also be introduced to correspond to the
- * new language level; this visitor will have different default
- * behavior for the visit method in question.  When the new visitor is
- * introduced, all or portions of this visitor may be deprecated.
+ * #visitUnknown visitUnknown} method.  A new simple type visitor
+ * class will also be introduced to correspond to the new language
+ * level; this visitor will have different default behavior for the
+ * visit method in question.  When the new visitor is introduced, all
+ * or portions of this visitor may be deprecated.
  *
- * @param <R> the return type of this visitor's methods
- * @param <P> the type of the additional parameter to this visitor's methods.
+ * @param <R> the return type of this visitor's methods.  Use {@link
+ *            Void} for visitors that do not need to return results.
+ * @param <P> the type of the additional parameter to this visitor's
+ *            methods.  Use {@code Void} for visitors that do not need an
+ *            additional parameter.
  *
- * @see SimpleAnnotationValueVisitor6
- * @see SimpleAnnotationValueVisitor7
- * @see SimpleAnnotationValueVisitor8
- * @see SimpleAnnotationValueVisitor14
- * @since 9
+ * @see SimpleTypeVisitor6
+ * @see SimpleTypeVisitor7
+ * @see SimpleTypeVisitor8
+ * @see SimpleTypeVisitor9
+ * @since 14
  */
 @SupportedSourceVersion(RELEASE_14)
-public class SimpleAnnotationValueVisitor9<R, P> extends SimpleAnnotationValueVisitor8<R, P> {
+public class SimpleTypeVisitor14<R, P> extends SimpleTypeVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
      * default value.
      */
-    protected SimpleAnnotationValueVisitor9() {
+    protected SimpleTypeVisitor14(){
         super(null);
     }
 
@@ -85,7 +88,7 @@ public class SimpleAnnotationValueVisitor9<R, P> extends SimpleAnnotationValueVi
      *
      * @param defaultValue the value to assign to {@link #DEFAULT_VALUE}
      */
-    protected SimpleAnnotationValueVisitor9(R defaultValue) {
+    protected SimpleTypeVisitor14(R defaultValue){
         super(defaultValue);
     }
 }
