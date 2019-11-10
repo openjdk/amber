@@ -22,6 +22,8 @@
  */
 
 // key: compiler.err.constructor.with.same.erasure.as.canonical
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 import java.util.List;

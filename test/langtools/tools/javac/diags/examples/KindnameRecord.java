@@ -26,6 +26,9 @@
 // key: compiler.misc.count.error
 // key: compiler.err.already.defined
 // key: compiler.err.error
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
+// key: compiler.note.note
 // run: backdoor
 // options: --enable-preview -source ${jdk.version}
 

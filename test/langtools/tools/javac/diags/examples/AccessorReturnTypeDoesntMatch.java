@@ -23,6 +23,8 @@
 
 // key: compiler.err.invalid.accessor.method.in.record
 // key: compiler.misc.accessor.return.type.doesnt.match
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 import java.util.List;

@@ -22,6 +22,8 @@
  */
 
 // key: compiler.err.illegal.record.member
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 record R() {

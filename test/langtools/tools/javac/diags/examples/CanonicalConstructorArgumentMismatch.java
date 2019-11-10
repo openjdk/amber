@@ -23,6 +23,8 @@
 
 // key: compiler.err.invalid.canonical.constructor.in.record
 // key: compiler.misc.canonical.with.name.mismatch
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 record R(int x) {
