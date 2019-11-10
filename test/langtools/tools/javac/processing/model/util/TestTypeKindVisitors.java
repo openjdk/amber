@@ -218,8 +218,7 @@ public class TestTypeKindVisitors extends JavacTestingAbstractProcessor {
                            public TypeKind visitNoTypeAsModule(NoType t, String p) {
                                return t.getKind();
                            }
-                       },
-
+                       }
         );
     }
 }
