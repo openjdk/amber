@@ -75,7 +75,7 @@ public class T8193717 {
         new T8193717().run();
     }
 
-    private static final int CLASSES = 500000;
+    private static final int CLASSES = 50000;
 
     private void run() throws IOException {
         StringBuilder imports = new StringBuilder();
