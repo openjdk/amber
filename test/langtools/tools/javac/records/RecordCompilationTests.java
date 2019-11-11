@@ -406,4 +406,13 @@ public class RecordCompilationTests extends CompilationTestCase {
         assertFail("compiler.err.mod.not.allowed.here", "record R(int x) { # }",
                 "public native void m();");
     }
+
+    public void testRecordsInsideInner() {
+        assertFail("compiler.err.record.declaration.not.allowed.in.inner.classes",
+                "class Outer {\n" +
+                "    class Inner {\n" +
+                "        record R(int a) {}\n" +
+                "    }\n" +
+                "}");
+    }
 }
