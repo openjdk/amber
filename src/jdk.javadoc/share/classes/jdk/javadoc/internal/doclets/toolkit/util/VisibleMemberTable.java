@@ -666,6 +666,7 @@ public class VisibleMemberTable {
                     case INTERFACE:
                     case ENUM:
                     case ANNOTATION_TYPE:
+                    case RECORD:
                         addMember(e, Kind.INNER_CLASSES);
                         break;
                     case FIELD:
