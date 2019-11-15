@@ -50,7 +50,7 @@ public class CycleTest {
 
     /**
      * Deserialization of a record object, r, does not support references to r,
-     * from any of r’s components. All references will be null.
+     * from any of r's components. All references will be null.
      */
     @Test
     public void testCycle1() throws Exception  {
