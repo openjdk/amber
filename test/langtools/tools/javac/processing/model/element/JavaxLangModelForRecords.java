@@ -107,7 +107,8 @@ public class JavaxLangModelForRecords extends TestRunner {
 
         List<String> expected = List.of("Note: field: i",
                 "Note: record component: i",
-                "Note: testQualifiedClassForProcessing/src/R/R.java uses preview language features.",
+                "Note: testQualifiedClassForProcessing" + File.separator + "src" + File.separator
+                     + "R" + File.separator + "R.java uses preview language features.",
                 "Note: Recompile with -Xlint:preview for details.");
 
         for (Mode mode : new Mode[] {Mode.API}) {
