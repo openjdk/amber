@@ -74,7 +74,7 @@ package java.lang;
  * </pre>
  * then it must be the case that {@code r.equals(copy)}.
  *
- * @jls 8.10
+ * @jls 8.10 Record Types
  * @since 14
  */
 @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
@@ -91,7 +91,7 @@ public abstract class Record {
      * </pre>
      * then it must be the case that {@code r.equals(copy)}.
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns {@code true} if and
      * only if the argument is an instance of the same record type as this object,
      * and each component of this record is equal to the corresponding component
@@ -111,7 +111,7 @@ public abstract class Record {
     /**
      * {@inheritDoc}
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns a hash code value derived
      * by combining the hash code value for all the components, according to
      * {@link Object#hashCode()} for components whose types are reference types,
@@ -128,14 +128,14 @@ public abstract class Record {
     /**
      * {@inheritDoc}
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns a string that is derived
      * from the name of the record class and the names and string representations
      * of all the components, according to {@link Object#toString()} for components
      * whose types are reference types, and the primitive wrapper {@code toString}
      * method for components whose types are primitive types.
      *
-     * @see     Object#toString() ()
+     * @see     Object#toString()
      *
      * @return  a string representation of the object.
      */

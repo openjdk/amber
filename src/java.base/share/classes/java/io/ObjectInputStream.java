@@ -220,7 +220,7 @@ import sun.reflect.misc.ReflectUtil;
  * Similarly, any serialPersistentFields or serialVersionUID field declarations
  * are also ignored--all enum types have a fixed serialVersionUID of 0L.
  *
- * @apiNote
+ * @implSpec
  * Records are serialized differently than ordinary serializable or externalizable
  * objects. The serialized form of a record object is a sequence of values derived
  * from the record components. The stream format of a record object is the same as
