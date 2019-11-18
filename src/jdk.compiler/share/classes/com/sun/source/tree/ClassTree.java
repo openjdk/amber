@@ -29,7 +29,7 @@ import java.util.List;
 import javax.lang.model.element.Name;
 
 /**
- * A tree node for a class, interface, enum, or annotation
+ * A tree node for a class, interface, enum, record, or annotation
  * type declaration.
  *
  * For example:
@@ -44,6 +44,7 @@ import javax.lang.model.element.Name;
  *
  * @jls 8.1 Class Declarations
  * @jls 8.9 Enum Types
+ * @jls 8.10 Record Types
  * @jls 9.1 Interface Declarations
  * @jls 9.6 Annotation Types
  *

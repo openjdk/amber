@@ -766,6 +766,7 @@ public class TypeAnnotations {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (((JCClassDecl)frame).extending == tree) {
                         return TypeAnnotationPosition
                             .classExtends(location.toList(), currentLambda,
