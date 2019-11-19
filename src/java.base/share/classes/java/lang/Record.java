@@ -74,6 +74,15 @@ package java.lang;
  * </pre>
  * then it must be the case that {@code r.equals(copy)}.
  *
+ * @apiNote
+ * A record class that {@code implements} {@link java.io.Serializable} is said to
+ * be a <i>serializable record</i>. Serializable records are serialized and
+ * deserialized differently than ordinary serializable objects. For example,
+ * during deserialization the record's canonical constructor is invoked to
+ * construct the record object. More information about serializable records ca
+ * be found in <a href="../io/ObjectInputStream.html#record-serialization">
+ * record serialization</a>.
+ *
  * @jls 8.10 Record Types
  * @since 14
  */
