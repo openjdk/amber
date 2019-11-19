@@ -152,23 +152,7 @@ import sun.reflect.misc.ReflectUtil;
  *
  * @implSpec
  * Records are serialized differently than ordinary serializable or externalizable
- * objects. The serialized form of a record object is a sequence of values derived
- * from the record components. The stream format of a record object is the same as
- * that of an ordinary object in the stream. During deserialization, if the local
- * class equivalent of the specified stream class descriptor is a record class,
- * then first the stream fields are read and reconstructed to serve as the record's
- * component values; and second, a record object is created by invoking the
- * record's <i>canonical</i> constructor with the component values as arguments (or the
- * default value for component's type if a component value is absent from the
- * stream).
- * The process by which record objects are serialized cannot be customized; any
- * class-specific writeObject, readObject, readObjectNoData, writeExternal,
- * and readExternal methods defined by record classes are ignored during
- * serialization and deserialization. However, a substitute object to be serialized
- * or a designate replacement may be specified by the writeReplace and
- * readResolve methods, respectively. Any serialPersistentFields or
- * serialVersionUID field declarations are also ignored -- all record classes
- * have a fixed serialVersionUID of`0L.
+ * objects, see <a href="ObjectInputStream.html#record-serialization">record serialization</a>.
  *
  * @author      Mike Warres
  * @author      Roger Riggs
