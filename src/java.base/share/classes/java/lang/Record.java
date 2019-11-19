@@ -79,7 +79,7 @@ package java.lang;
  * be a <i>serializable record</i>. Serializable records are serialized and
  * deserialized differently than ordinary serializable objects. For example,
  * during deserialization the record's canonical constructor is invoked to
- * construct the record object. More information about serializable records ca
+ * construct the record object. More information about serializable records can
  * be found in <a href="../io/ObjectInputStream.html#record-serialization">
  * record serialization</a>.
  *
