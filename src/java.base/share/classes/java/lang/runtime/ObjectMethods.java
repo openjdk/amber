@@ -302,7 +302,12 @@ public class ObjectMethods {
      * Bootstrap method to generate the {@link Object#equals(Object)},
      * {@link Object#hashCode()}, and {@link Object#toString()} methods, based
      * on a description of the component names and accessor methods, for either
-     * {@code invokedynamic} call sites or dynamic constant pool entries
+     * {@code invokedynamic} call sites or dynamic constant pool entries.
+     *
+     * For more detail on the semantics of the generated methods see the specification
+     * of {@link java.lang.Record#equals(Object)}, {@link java.lang.Record#hashCode()} and
+     * {@link java.lang.Record#toString()}.
+     *
      *
      * @param lookup       Represents a lookup context with the accessibility
      *                     privileges of the caller.
