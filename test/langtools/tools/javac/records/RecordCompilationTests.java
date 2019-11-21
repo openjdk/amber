@@ -277,6 +277,18 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "    public R(int x, int y) { this(x, y, 0); } " +
                 "    public R(int x, int y, int z) { this(x); } " +
                 "}");
+
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
+                "record R<T>(T a) { # }",
+                "public <T> R {}");
+
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
+                "record R(int i) { # }",
+                "public <T> R(int i) { this.i = i; }");
+
+        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
+                "record R<T>(T a) { # }",
+                "public <T> R(T a) { this.a = a; }");
     }
 
     public void testAnnotationCriteria() {

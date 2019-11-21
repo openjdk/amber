@@ -1058,13 +1058,21 @@ public class Attr extends JCTree.Visitor {
                     }
                 }
 
-                // if this a constructor other than the canonical one
-                if (tree.name == names.init && (tree.sym.flags_field & RECORD) == 0) {
-                    JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
-                    if (app == null ||
-                            TreeInfo.name(app.meth) != names._this ||
-                            !checkFirstConstructorStat(app, tree, false)) {
-                        log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
+                if (tree.name == names.init) {
+                    // if this a constructor other than the canonical one
+                    if ((tree.sym.flags_field & RECORD) == 0) {
+                        JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
+                        if (app == null ||
+                                TreeInfo.name(app.meth) != names._this ||
+                                !checkFirstConstructorStat(app, tree, false)) {
+                            log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
+                        }
+                    } else {
+                        // but if it is the canonical we want to check that no type variables have been defined
+                        if (!tree.typarams.isEmpty()) {
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalMustNotDeclareTypeVariables));
+                        }
+
                     }
                 }
             }
