@@ -153,16 +153,12 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
-     * Returns an {@code AnnotatedType} that represents the use of a type to
-     * specify the annotated type of this record component.
+     * Returns an {@code AnnotatedType} object that represents the use of a type to specify
+     * the declared type of this record component.
      *
      * @return an object representing the declared type of this record component
      */
     public AnnotatedType getAnnotatedType() {
-        if (typeAnnotations != null) {
-            // debug
-            // System.out.println("length of type annotations " + typeAnnotations.length);
-        }
         return TypeAnnotationParser.buildAnnotatedType(typeAnnotations,
                 SharedSecrets.getJavaLangAccess().
                         getConstantPool(getDeclaringRecord()),

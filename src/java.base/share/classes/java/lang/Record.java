@@ -105,9 +105,9 @@ public abstract class Record {
      * The implicitly provided implementation returns {@code true} if and
      * only if the argument is an instance of the same record type as this object,
      * and each component of this record is equal to the corresponding component
-     * of the argument, according to {@link java.util.Objects#equals(Object,Object)} for components
-     * whose types are reference types, and the primitive wrapper equality
-     * comparison for components whose types are primitive types.
+     * of the argument, according to {@link java.util.Objects#equals(Object,Object)}
+     * for components whose types are reference types, and according to the semantics
+     * of the {@code equals} method on the corresponding primitive wrapper type.
      *
      * @see java.util.Objects#equals(Object,Object)
      *
@@ -119,7 +119,7 @@ public abstract class Record {
     public abstract boolean equals(Object obj);
 
     /**
-     * {@inheritDoc}
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
      *
      * @implSpec
      * The implicitly provided implementation returns a hash code value derived
@@ -136,7 +136,7 @@ public abstract class Record {
     public abstract int hashCode();
 
     /**
-     * {@inheritDoc}
+     * Obeys the general contract of {@link Object#toString Object.toString}.
      *
      * @implSpec
      * The implicitly provided implementation returns a string that is derived

@@ -309,8 +309,12 @@ public class ObjectMethods {
      * {@link java.lang.Record#toString()}.
      *
      *
-     * @param lookup       Represents a lookup context with the accessibility
-     *                     privileges of the caller.
+     * @param lookup       Every bootstrap method is expected to have a {@code lookup}
+     *                     which usually represents a lookup context with the
+     *                     accessibility privileges of the caller. This is because
+     *                     {@code invokedynamic} call sites always provide a {@code lookup}
+     *                     to the corresponding bootstrap method, but this method just
+     *                     ignores the {@code lookup} parameter
      * @param methodName   the name of the method to generate, which must be one of
      *                     {@code "equals"}, {@code "hashCode"}, or {@code "toString"}
      * @param type         a {@link MethodType} corresponding the descriptor type
