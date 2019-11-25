@@ -567,7 +567,7 @@ public class ObjectStreamClass implements Serializable {
             }
         }
         if (isRecord && canonicalCtr == null) {
-            new ExceptionInfo(name, "record canonical constructor not found");
+            deserializeEx = new ExceptionInfo(name, "record canonical constructor not found");
         } else {
             for (int i = 0; i < fields.length; i++) {
                 if (fields[i].getField() == null) {
@@ -1548,20 +1548,24 @@ public class ObjectStreamClass implements Serializable {
         return reflFactory.newConstructorForSerialization(cl);
     }
 
-    /** Determines the canonical constructor for the given record class. */
+    /**
+     * Returns the canonical constructor for the given record class, or null if
+     * the not found ( which should never happen for correctly generated record
+     * classes ).
+     */
     @SuppressWarnings("preview")
     private static MethodHandle canonicalRecordCtr(Class<?> cls) {
         assert isRecord(cls) : "Expected record, got: " + cls;
         PrivilegedAction<MethodHandle> pa = () -> {
             Class<?>[] paramTypes = Arrays.stream(cls.getRecordComponents())
-                                                     .map(RecordComponent::getType)
-                                                     .toArray(Class<?>[]::new);
+                                          .map(RecordComponent::getType)
+                                          .toArray(Class<?>[]::new);
             try {
                 Constructor<?> ctr = cls.getConstructor(paramTypes);
                 ctr.setAccessible(true);
                 return MethodHandles.lookup().unreflectConstructor(ctr);
             } catch (IllegalAccessException | NoSuchMethodException e) {
-                throw new InternalError("should not reach here",  e);
+                return null;
             }
         };
         return AccessController.doPrivileged(pa);
