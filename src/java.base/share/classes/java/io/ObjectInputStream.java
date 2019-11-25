@@ -240,7 +240,7 @@ import sun.reflect.misc.ReflectUtil;
  * constructor, hence this limitation (see
  * <a href="{@docRoot}/../specs/serialization/serial-arch.html#cyclic-references">
  * [Section 1.14, "Circular References"</a> for additional information).
- * The process by which record objects are serialized and externalized cannot be
+ * The process by which record objects are serialized or externalized cannot be
  * customized; any class-specific writeObject, readObject, readObjectNoData,
  * writeExternal, and readExternal methods defined by record classes are
  * ignored during serialization and deserialization. However, a substitute object
