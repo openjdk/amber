@@ -240,17 +240,18 @@ import sun.reflect.misc.ReflectUtil;
  * constructor, hence this limitation (see
  * <a href="{@docRoot}/../specs/serialization/serial-arch.html#cyclic-references">
  * [Section 1.14, "Circular References"</a> for additional information).
- * The process by which record objects are serialized cannot be customized; any
- * class-specific writeObject, readObject, readObjectNoData, writeExternal,
- * and readExternal methods defined by record classes are ignored during
- * serialization and deserialization. However, a substitute object to be serialized
- * or a designate replacement may be specified, by the writeReplace and
- * readResolve methods, respectively.  Any serialPersistentFields field
- * declaration is ignored. Documenting serializable fields and data for record
- * classes is unnecessary, since there is no variation in the serial form, other
- * than whether a substitute or replacement object is used. The serialVersionUID
- * of a record class is 0L unless explicitly declared. The requirement for
- * matching serialVersionUID values is waived for record classes.
+ * The process by which record objects are serialized and externalized cannot be
+ * customized; any class-specific writeObject, readObject, readObjectNoData,
+ * writeExternal, and readExternal methods defined by record classes are
+ * ignored during serialization and deserialization. However, a substitute object
+ * to be serialized or a designate replacement may be specified, by the
+ * writeReplace and readResolve methods, respectively.  Any
+ * serialPersistentFields field declaration is ignored. Documenting serializable
+ * fields and data for record classes is unnecessary, since there is no variation
+ * in the serial form, other than whether a substitute or replacement object is
+ * used. The serialVersionUID of a record class is 0L unless explicitly
+ * declared. The requirement for matching serialVersionUID values is waived for
+ * record classes.
  *
  * @author      Mike Warres
  * @author      Roger Riggs
