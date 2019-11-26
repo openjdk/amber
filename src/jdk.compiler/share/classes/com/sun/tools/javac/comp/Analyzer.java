@@ -402,13 +402,20 @@ public class Analyzer {
                         @Override
                         public void visitApply(JCMethodInvocation tree) {
                             MethodSymbol msym = (MethodSymbol)TreeInfo.symbol(tree.meth);
-                            if (tree.typeargs.size() > 0 && candidates.keySet().contains(msym)) {
-                                // cannot be localized since there is no syntax to spell type witnesses
-                                candidates.remove(msym);
-                            } else if (msym != cursor) {  // ignore recursive calls
-                                Set<Symbol> symbols = candidates.get(msym);
-                                if (symbols != null && symbols.size() <= 1)
-                                    symbols.add(cursor);
+                            if (candidates.keySet().contains(msym)) {
+                                if (cursor == null) {
+                                    /* We are seeing a private method call in a field initializer.
+                                       The call cannot be localized since there is no block to host it.
+                                    */
+                                    candidates.remove(msym);
+                                } else if (tree.typeargs.size() > 0) {
+                                    // cannot be localized since there is no syntax to spell type witnesses
+                                    candidates.remove(msym);
+                                } else if (msym != cursor) {  // ignore recursive calls
+                                    Set<Symbol> symbols = candidates.get(msym);
+                                    if (symbols != null && symbols.size() <= 1)
+                                        symbols.add(cursor);
+                                }
                             }
                             super.visitApply(tree);
                         }
@@ -444,7 +451,7 @@ public class Analyzer {
         }
             // where
             List<Symbol> privateMethods(ClassSymbol c) {
-                List<Symbol> meths = List.from(c.members().getSymbols(s -> s.kind == MTH && !s.isConstructor() && s.isPrivate()));
+                List<Symbol> meths = List.from(c.members().getSymbols(s -> s.kind == MTH && !s.isConstructor() && !s.isNative() && s.isPrivate()));
                 for (Symbol s : c.members().getSymbols(s -> s.kind == TYP)) {
                     meths = meths.appendList(privateMethods((ClassSymbol)s));
                 }
