@@ -3720,6 +3720,16 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
               parsed_record_attribute = true;
               record_attribute_start = cfs->current();
               record_attribute_length = attribute_length;
+            } else if (log_is_enabled(Info, class, record)) {
+              // Log why the Record attribute was ignored.  Note that if the
+              // class file version is 58.65535 and --enable-preview wasn't
+              // specified then a java.lang.UnsupportedClassVersionError
+              // exception would have been thrown.
+              ResourceMark rm(THREAD);
+              log_info(class, record)("Ignoring Record attribute in class %s because %s",
+                _class_name->as_C_string(),
+                supports_records() ? "super type is not java.lang.Record" :
+                                     "class file version is not 58.65535");
             }
             cfs->skip_u1(attribute_length, CHECK);
           } else {
