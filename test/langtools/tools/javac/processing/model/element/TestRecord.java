@@ -201,9 +201,8 @@ public class TestRecord extends TestRunner {
                                 System.out.println("origin " + elements.getOrigin(elem));
                                 String simpleName = elem.getSimpleName().toString();
                                 switch (simpleName) {
-                                    case "marathonTime": case "toString":
-                                    case "<init>": case "hashCode":
-                                    case "equals": case "readResolve":
+                                    case "<init>":
+                                    case "readResolve":
                                         if (elements.getOrigin(elem) != Elements.Origin.MANDATED) {
                                             throw new RuntimeException("MANDATED origin expected for " + simpleName);
                                         }

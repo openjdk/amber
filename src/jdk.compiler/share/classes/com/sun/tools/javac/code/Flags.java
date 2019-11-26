@@ -345,6 +345,11 @@ public class Flags {
      */
     public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51; // MethodSymbols only
 
+    /** Flag is set for compiler-generated record members, it could be appplied to
+     *  accessors and fields
+     */
+    public static final int GENERATED_MEMBER = 1<<24; // MethodSymbols and VarSymbols
+
     /** Modifier masks.
      */
     public static final int

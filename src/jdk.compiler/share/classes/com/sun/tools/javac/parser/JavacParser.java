@@ -4410,7 +4410,7 @@ public class JavacParser implements Parser {
             log.error(mods.pos, Errors.RecordCantDeclareFieldModifiers);
         }
         if (recordComponent) {
-            mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE | Flags.MANDATED;
+            mods.flags |= Flags.RECORD | Flags.FINAL | Flags.PRIVATE | Flags.GENERATED_MEMBER;
         }
         // need to distinguish between vararg annos and array annos
         // look at typeAnnotationsPushedBack comment

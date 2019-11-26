@@ -1028,12 +1028,12 @@ public class TypeEnter implements Completer {
         private void addAccessor(JCVariableDecl tree, Env<AttrContext> env) {
             MethodSymbol implSym = lookupMethod(env.enclClass.sym, tree.sym.name, tree.sym.type.getParameterTypes());
             RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
-            if (implSym == null || (implSym.flags_field & MANDATED) != 0) {
+            if (implSym == null || (implSym.flags_field & GENERATED_MEMBER) != 0) {
                 /* here we are pushing the annotations present in the corresponding field down to the accessor
                  * it could be that some of those annotations are not applicable to the accessor, they will be striped
                  * away later at Check::validateAnnotation
                  */
-                JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.MANDATED, tree.mods.annotations),
+                JCMethodDecl getter = make.at(tree.pos).MethodDef(make.Modifiers(Flags.PUBLIC | Flags.GENERATED_MEMBER, tree.mods.annotations),
                           tree.sym.name,
                           make.Type(tree.sym.type),
                           List.nil(),
@@ -1102,7 +1102,7 @@ public class TypeEnter implements Completer {
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 JCMethodDecl toString = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.MANDATED),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.GENERATED_MEMBER),
                               names.toString,
                               make.Type(syms.stringType),
                               List.nil(),
@@ -1115,7 +1115,7 @@ public class TypeEnter implements Completer {
 
             if (lookupMethod(tree.sym, names.hashCode, List.nil()) == null) {
                 JCMethodDecl hashCode = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.GENERATED_MEMBER),
                               names.hashCode,
                               make.Type(syms.intType),
                               List.nil(),
@@ -1128,7 +1128,7 @@ public class TypeEnter implements Completer {
 
             if (lookupMethod(tree.sym, names.equals, List.of(syms.objectType)) == null) {
                 JCMethodDecl equals = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.MANDATED),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.GENERATED_MEMBER),
                               names.equals,
                               make.Type(syms.booleanType),
                               List.nil(),
@@ -1327,7 +1327,7 @@ public class TypeEnter implements Completer {
             csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR | GENERATEDCONSTR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
             for (VarSymbol p : recordFieldSymbols) {
-                params.add(new VarSymbol(MANDATED | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
+                params.add(new VarSymbol(GENERATED_MEMBER | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD | PUBLIC;

@@ -2262,7 +2262,7 @@ public class Lower extends TreeTranslator {
         ListBuffer<JCTree> buffer = new ListBuffer<>();
         tree.sym.getRecordComponents().stream()
                 .forEach(rc -> {
-                    if ((rc.accessor.flags() & Flags.MANDATED) != 0) {
+                    if ((rc.accessor.flags() & Flags.GENERATED_MEMBER) != 0) {
                         make_at(tree.pos());
                         buffer.add(make.MethodDef(rc.accessor, make.Block(0,
                                 List.of(make.Return(make.Ident(rc))))));

@@ -1042,7 +1042,7 @@ public class Attr extends JCTree.Visitor {
                 chk.checkForSerializationMethods(env, tree);
                 // lets find if this method is an accessor
                 Optional<? extends RecordComponent> recordComponent = env.enclClass.sym.getRecordComponents().stream()
-                        .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & MANDATED) == 0).findFirst();
+                        .filter(rc -> rc.accessor == tree.sym && (rc.accessor.flags_field & GENERATED_MEMBER) == 0).findFirst();
                 if (recordComponent.isPresent()) {
                     // the method is a user defined accessor lets check that everything is fine
                     if (!tree.sym.isPublic()) {
