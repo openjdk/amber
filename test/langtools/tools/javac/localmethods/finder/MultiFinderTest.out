@@ -1,4 +1,7 @@
-RecursionTest.java:9:25: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, RecursionTest
-- compiler.err.warnings.and.werror
-1 error
-1 warning
+MultiFinderTest.java:19:25: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, MultiFinderTest
+MultiFinderTest.java:9:53: compiler.warn.diamond.redundant.args
+MultiFinderTest.java:15:23: compiler.warn.potential.lambda.found
+MultiFinderTest.java:20:16: compiler.warn.local.redundant.type
+MultiFinderTest.java:20:46: compiler.warn.method.redundant.typeargs
+MultiFinderTest.java:24:21: compiler.warn.local.redundant.type
+6 warnings

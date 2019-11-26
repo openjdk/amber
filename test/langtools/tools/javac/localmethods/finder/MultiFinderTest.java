@@ -1,7 +1,7 @@
 /**
  * @test /nodynamiccopyright/
  * @bug 8233754
- * @compile/fail/ref=MultiFinderTest.out -Werror -XDrawDiagnostics -XDfind=all MultiFinderTest.java
+ * @compile/ref=MultiFinderTest.out -XDrawDiagnostics -XDfind=all MultiFinderTest.java
  */
 
 public class MultiFinderTest<X> {
