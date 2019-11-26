@@ -374,7 +374,7 @@ public class Analyzer {
 
                         @Override
                         public void visitMethodDef(JCMethodDecl tree) {
-                            if (!tree.sym.isConstructor() && tree.sym.isPrivate())
+                            if (!tree.sym.isConstructor() && !tree.sym.isNative() && tree.sym.isPrivate())
                                 decls.add(tree);
                             MethodSymbol prev = cursor;
                             cursor = tree.sym;

@@ -410,6 +410,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags_field & Flags.AccessFlags) == PRIVATE;
     }
 
+    public boolean isNative() {
+        return (flags() & NATIVE) != 0;
+    }
+
     public boolean isEnum() {
         return (flags() & ENUM) != 0;
     }
