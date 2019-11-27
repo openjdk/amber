@@ -315,7 +315,7 @@ ExceptionCache* ExceptionCache::next() {
 }
 
 void ExceptionCache::set_next(ExceptionCache *ec) {
-  Atomic::store(ec, &_next);
+  Atomic::store(&_next, ec);
 }
 
 //-----------------------------------------------------------------------------
@@ -964,15 +964,16 @@ void nmethod::print_nmethod(bool printmethod) {
 
 #if defined(SUPPORT_DATA_STRUCTS)
   if (AbstractDisassembler::show_structs()) {
-    if (printmethod || PrintDebugInfo || CompilerOracle::has_option_string(_method, "PrintDebugInfo")) {
+    methodHandle mh(Thread::current(), _method);
+    if (printmethod || PrintDebugInfo || CompilerOracle::has_option_string(mh, "PrintDebugInfo")) {
       print_scopes();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
-    if (printmethod || PrintRelocations || CompilerOracle::has_option_string(_method, "PrintRelocations")) {
+    if (printmethod || PrintRelocations || CompilerOracle::has_option_string(mh, "PrintRelocations")) {
       print_relocations();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
-    if (printmethod || PrintDependencies || CompilerOracle::has_option_string(_method, "PrintDependencies")) {
+    if (printmethod || PrintDependencies || CompilerOracle::has_option_string(mh, "PrintDependencies")) {
       print_dependencies();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
@@ -1149,7 +1150,7 @@ bool nmethod::try_transition(int new_state_int) {
       // Ensure monotonicity of transitions.
       return false;
     }
-    if (Atomic::cmpxchg(new_state, &_state, old_state) == old_state) {
+    if (Atomic::cmpxchg(&_state, old_state, new_state) == old_state) {
       return true;
     }
   }
@@ -1302,9 +1303,8 @@ bool nmethod::make_not_entrant_or_zombie(int state) {
     return false;
   }
 
-  // Make sure neither the nmethod nor the method is flushed in case of a safepoint in code below.
+  // Make sure the nmethod is not flushed.
   nmethodLocker nml(this);
-  methodHandle the_method(method());
   // This can be called while the system is already at a safepoint which is ok
   NoSafepointVerifier nsv;
 
@@ -1849,7 +1849,7 @@ bool nmethod::oops_do_try_claim_weak_request() {
   assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
 
   if ((_oops_do_mark_link == NULL) &&
-      (Atomic::replace_if_null(mark_link(this, claim_weak_request_tag), &_oops_do_mark_link))) {
+      (Atomic::replace_if_null(&_oops_do_mark_link, mark_link(this, claim_weak_request_tag)))) {
     oops_do_log_change("oops_do, mark weak request");
     return true;
   }
@@ -1863,7 +1863,7 @@ void nmethod::oops_do_set_strong_done(nmethod* old_head) {
 nmethod::oops_do_mark_link* nmethod::oops_do_try_claim_strong_done() {
   assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
 
-  oops_do_mark_link* old_next = Atomic::cmpxchg(mark_link(this, claim_strong_done_tag), &_oops_do_mark_link, mark_link(NULL, claim_weak_request_tag));
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, mark_link(NULL, claim_weak_request_tag), mark_link(this, claim_strong_done_tag));
   if (old_next == NULL) {
     oops_do_log_change("oops_do, mark strong done");
   }
@@ -1874,7 +1874,7 @@ nmethod::oops_do_mark_link* nmethod::oops_do_try_add_strong_request(nmethod::oop
   assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
   assert(next == mark_link(this, claim_weak_request_tag), "Should be claimed as weak");
 
-  oops_do_mark_link* old_next = Atomic::cmpxchg(mark_link(this, claim_strong_request_tag), &_oops_do_mark_link, next);
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, next, mark_link(this, claim_strong_request_tag));
   if (old_next == next) {
     oops_do_log_change("oops_do, mark strong request");
   }
@@ -1885,7 +1885,7 @@ bool nmethod::oops_do_try_claim_weak_done_as_strong_done(nmethod::oops_do_mark_l
   assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
   assert(extract_state(next) == claim_weak_done_tag, "Should be claimed as weak done");
 
-  oops_do_mark_link* old_next = Atomic::cmpxchg(mark_link(extract_nmethod(next), claim_strong_done_tag), &_oops_do_mark_link, next);
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, next, mark_link(extract_nmethod(next), claim_strong_done_tag));
   if (old_next == next) {
     oops_do_log_change("oops_do, mark weak done -> mark strong done");
     return true;
@@ -1900,13 +1900,13 @@ nmethod* nmethod::oops_do_try_add_to_list_as_weak_done() {
          extract_state(_oops_do_mark_link) == claim_strong_request_tag,
          "must be but is nmethod " PTR_FORMAT " %u", p2i(extract_nmethod(_oops_do_mark_link)), extract_state(_oops_do_mark_link));
 
-  nmethod* old_head = Atomic::xchg(this, &_oops_do_mark_nmethods);
+  nmethod* old_head = Atomic::xchg(&_oops_do_mark_nmethods, this);
   // Self-loop if needed.
   if (old_head == NULL) {
     old_head = this;
   }
   // Try to install end of list and weak done tag.
-  if (Atomic::cmpxchg(mark_link(old_head, claim_weak_done_tag), &_oops_do_mark_link, mark_link(this, claim_weak_request_tag)) == mark_link(this, claim_weak_request_tag)) {
+  if (Atomic::cmpxchg(&_oops_do_mark_link, mark_link(this, claim_weak_request_tag), mark_link(old_head, claim_weak_done_tag)) == mark_link(this, claim_weak_request_tag)) {
     oops_do_log_change("oops_do, mark weak done");
     return NULL;
   } else {
@@ -1917,7 +1917,7 @@ nmethod* nmethod::oops_do_try_add_to_list_as_weak_done() {
 void nmethod::oops_do_add_to_list_as_strong_done() {
   assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
 
-  nmethod* old_head = Atomic::xchg(this, &_oops_do_mark_nmethods);
+  nmethod* old_head = Atomic::xchg(&_oops_do_mark_nmethods, this);
   // Self-loop if needed.
   if (old_head == NULL) {
     old_head = this;
@@ -3079,13 +3079,13 @@ void nmethod::print_nmethod_labels(outputStream* stream, address block_begin, bo
   }
 
   if (block_begin == entry_point()) {
-    methodHandle m = method();
-    if (m.not_null()) {
+    Method* m = method();
+    if (m != NULL) {
       stream->print("  # ");
       m->print_value_on(stream);
       stream->cr();
     }
-    if (m.not_null() && !is_osr_method()) {
+    if (m != NULL && !is_osr_method()) {
       ResourceMark rm;
       int sizeargs = m->size_of_parameters();
       BasicType* sig_bt = NEW_RESOURCE_ARRAY(BasicType, sizeargs);
@@ -3237,6 +3237,8 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
   }
   assert(!oop_map_required, "missed oopmap");
 
+  Thread* thread = Thread::current();
+
   // Print any debug info present at this pc.
   ScopeDesc* sd  = scope_desc_in(begin, end);
   if (sd != NULL) {
@@ -3267,7 +3269,7 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
         case Bytecodes::_invokestatic:
         case Bytecodes::_invokeinterface:
           {
-            Bytecode_invoke invoke(sd->method(), sd->bci());
+            Bytecode_invoke invoke(methodHandle(thread, sd->method()), sd->bci());
             st->print(" ");
             if (invoke.name() != NULL)
               invoke.name()->print_symbol_on(st);
@@ -3280,7 +3282,7 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
         case Bytecodes::_getstatic:
         case Bytecodes::_putstatic:
           {
-            Bytecode_field field(sd->method(), sd->bci());
+            Bytecode_field field(methodHandle(thread, sd->method()), sd->bci());
             st->print(" ");
             if (field.name() != NULL)
               field.name()->print_symbol_on(st);
@@ -3356,7 +3358,7 @@ public:
       if (cm != NULL && cm->is_far_code()) {
         // Temporary fix, see JDK-8143106
         CompiledDirectStaticCall* csc = CompiledDirectStaticCall::at(instruction_address());
-        csc->set_to_far(methodHandle(cm->method()), dest);
+        csc->set_to_far(methodHandle(Thread::current(), cm->method()), dest);
         return;
       }
     }
