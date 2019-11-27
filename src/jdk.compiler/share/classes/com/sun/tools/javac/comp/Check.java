@@ -3614,17 +3614,7 @@ public class Check {
                     varargsDuplicateError(pos, sym, byName);
                     return true;
                 } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
-                    if ((s.owner.flags_field & RECORD) != 0 && sym.isConstructor() &&
-                            ((sym.flags_field & RECORD) != 0 ||
-                            (byName.flags_field & RECORD) != 0)) {
-                        Symbol canonical = (sym.flags_field & RECORD) != 0 ? sym : byName;
-                        Symbol other = (sym.flags_field & RECORD) == 0 ? sym : byName;
-                        JCTree clashingMethod = TreeInfo.declarationFor(other, env.enclClass);
-                        log.error(clashingMethod,
-                                Errors.ConstructorWithSameErasureAsCanonical(other, canonical));
-                    } else {
-                        duplicateErasureError(pos, sym, byName);
-                    }
+                    duplicateErasureError(pos, sym, byName);
                     sym.flags_field |= CLASH;
                     return true;
                 } else {

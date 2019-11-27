@@ -1056,6 +1056,10 @@ public class Attr extends JCTree.Visitor {
                         log.error(tree,
                                 Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodCantThrowException));
                     }
+                    if (!tree.typarams.isEmpty()) {
+                        log.error(tree,
+                                Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodMustNotBeGeneric));
+                    }
                 }
 
                 if (tree.name == names.init) {
@@ -1068,11 +1072,35 @@ public class Attr extends JCTree.Visitor {
                             log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
                         }
                     } else {
-                        // but if it is the canonical we want to check that no type variables have been defined
+                        // but if it is the canonical:
+
+                        // if user generated, then it shouldn't explicitly invoke any other constructor
+                        if ((tree.sym.flags_field & GENERATEDCONSTR) == 0) {
+                            JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
+                            if (app != null &&
+                                    (TreeInfo.name(app.meth) == names._this ||
+                                            TreeInfo.name(app.meth) == names._super) &&
+                                    checkFirstConstructorStat(app, tree, false)) {
+                                log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym,
+                                        Fragments.CanonicalMustNotContainExplicitConstructorInvocation));
+                            }
+                        }
+
+                        // also we want to check that no type variables have been defined
                         if (!tree.typarams.isEmpty()) {
                             log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalMustNotDeclareTypeVariables));
                         }
 
+                        /* and now we need to check that the constructor's arguments are exactly the same as those of the
+                         * record components
+                         */
+                        List<Type> recordComponentTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
+                        for (JCVariableDecl param: tree.params) {
+                            if (!types.isSameType(param.type, recordComponentTypes.head)) {
+                                log.error(param, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.TypeMustBeIdenticalToCorrespondingRecordComponentType));
+                            }
+                            recordComponentTypes = recordComponentTypes.tail;
+                        }
                     }
                 }
             }

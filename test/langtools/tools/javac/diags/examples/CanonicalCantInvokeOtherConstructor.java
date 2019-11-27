@@ -22,14 +22,11 @@
  */
 
 // key: compiler.err.invalid.canonical.constructor.in.record
-// key: compiler.misc.type.must.be.identical.to.corresponding.record.component.type
+// key: compiler.misc.canonical.must.not.contain.explicit.constructor.invocation
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
-import java.util.List;
-
-@SuppressWarnings("unchecked")
-record R(List<String> x) {
-    public R(List x) { this.x = x; }
+record R(int x) {
+    public R(int x) { super(); this.x = x; }
 }

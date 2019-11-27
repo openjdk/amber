@@ -21,15 +21,14 @@
  * questions.
  */
 
-// key: compiler.err.invalid.canonical.constructor.in.record
-// key: compiler.misc.type.must.be.identical.to.corresponding.record.component.type
+// key: compiler.err.invalid.accessor.method.in.record
+// key: compiler.misc.accessor.method.must.not.be.generic
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
-import java.util.List;
-
-@SuppressWarnings("unchecked")
-record R(List<String> x) {
-    public R(List x) { this.x = x; }
+record R(int i) {
+    public <T> int i() {
+        return i;
+    }
 }

@@ -215,6 +215,11 @@ public class RecordCompilationTests extends CompilationTestCase {
                             "public record R(List<String> x) {\n" +
                             "    public # x() { return null; };" +
                             "}", s);
+
+        assertFail("compiler.err.invalid.accessor.method.in.record",
+                "public record R(int x) {\n" +
+                        "    public <T> int x() { return x; };" +
+                        "}");
     }
 
     public void testConstructorRedeclaration() {
@@ -243,7 +248,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                        s);
 
         // ctor args must match types
-        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
                 "import java.util.*;\n" +
                         "record R(List<String> list) { # }",
                 "R(List list) { this.list = list; }");
@@ -283,9 +288,13 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "record R(int i) { # }",
                 "public <T> R(int i) { this.i = i; }");
 
-        assertFail("compiler.err.constructor.with.same.erasure.as.canonical",
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
                 "record R<T>(T a) { # }",
                 "public <T> R(T a) { this.a = a; }");
+
+        assertFail("compiler.err.invalid.canonical.constructor.in.record",
+                "record R(int a) { # }",
+                "public R(int a) { super(); this.a = a; }");
     }
 
     public void testAnnotationCriteria() {

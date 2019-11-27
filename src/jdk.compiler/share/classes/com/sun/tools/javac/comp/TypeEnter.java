@@ -1026,7 +1026,7 @@ public class TypeEnter implements Completer {
         }
 
         private void addAccessor(JCVariableDecl tree, Env<AttrContext> env) {
-            MethodSymbol implSym = lookupMethod(env.enclClass.sym, tree.sym.name, tree.sym.type.getParameterTypes());
+            MethodSymbol implSym = lookupMethod(env.enclClass.sym, tree.sym.name, List.nil());
             RecordComponent rec = ((ClassSymbol) tree.sym.owner).getRecordComponent(tree.sym, false);
             if (implSym == null || (implSym.flags_field & GENERATED_MEMBER) != 0) {
                 /* here we are pushing the annotations present in the corresponding field down to the accessor
@@ -1082,12 +1082,12 @@ public class TypeEnter implements Completer {
 
         JCMethodDecl getCanonicalConstructorDecl(JCClassDecl tree) {
             // let's check if there is a constructor with exactly the same arguments as the record components
-            List<Type> recordComponentTypes = TreeInfo.recordFields(tree).map(vd -> vd.sym.type);
+            List<Type> recordComponentErasedTypes = types.erasure(TreeInfo.recordFields(tree).map(vd -> vd.sym.type));
             JCMethodDecl canonicalDecl = null;
             for (JCTree def : tree.defs) {
                 if (TreeInfo.isConstructor(def)) {
                     JCMethodDecl mdecl = (JCMethodDecl)def;
-                    if (types.isSameTypes(mdecl.params.stream().map(v -> v.sym.type).collect(List.collector()), recordComponentTypes)) {
+                    if (types.isSameTypes(types.erasure(mdecl.params.stream().map(v -> v.sym.type).collect(List.collector())), recordComponentErasedTypes)) {
                         canonicalDecl = mdecl;
                         break;
                     }
