@@ -30,6 +30,7 @@
 #include "nativeInst_aarch64.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/handles.hpp"
+#include "runtime/orderAccess.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubRoutines.hpp"
 #include "utilities/ostream.hpp"
@@ -286,8 +287,6 @@ void NativeMovConstReg::print() {
 }
 
 //-------------------------------------------------------------------
-
-address NativeMovRegMem::instruction_address() const      { return addr_at(instruction_offset); }
 
 int NativeMovRegMem::offset() const  {
   address pc = instruction_address();
