@@ -1,3 +1,5 @@
+
+
 /*
  * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -44,10 +46,11 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "oops/fieldStreams.hpp"
+#include "oops/fieldStreams.inline.hpp"
 #include "oops/typeArrayOop.inline.hpp"
 #include "oops/verifyOopClosure.hpp"
 #include "prims/jvmtiThreadState.hpp"
+#include "runtime/atomic.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/fieldDescriptor.hpp"
@@ -428,7 +431,7 @@ Deoptimization::UnrollBlock* Deoptimization::fetch_unroll_info_helper(JavaThread
   // frame.
   bool caller_was_method_handle = false;
   if (deopt_sender.is_interpreted_frame()) {
-    methodHandle method = deopt_sender.interpreter_frame_method();
+    methodHandle method(thread, deopt_sender.interpreter_frame_method());
     Bytecode_invoke cur = Bytecode_invoke_check(method, deopt_sender.interpreter_frame_bci());
     if (cur.is_invokedynamic() || cur.is_invokehandle()) {
       // Method handle invokes may involve fairly arbitrary chains of
@@ -869,7 +872,7 @@ public:
   static BoxCache<PrimitiveType, CacheType, BoxType>* singleton(Thread* thread) {
     if (_singleton == NULL) {
       BoxCache<PrimitiveType, CacheType, BoxType>* s = new BoxCache<PrimitiveType, CacheType, BoxType>(thread);
-      if (!Atomic::replace_if_null(s, &_singleton)) {
+      if (!Atomic::replace_if_null(&_singleton, s)) {
         delete s;
       }
     }
@@ -923,7 +926,7 @@ public:
   static BooleanBoxCache* singleton(Thread* thread) {
     if (_singleton == NULL) {
       BooleanBoxCache* s = new BooleanBoxCache(thread);
-      if (!Atomic::replace_if_null(s, &_singleton)) {
+      if (!Atomic::replace_if_null(&_singleton, s)) {
         delete s;
       }
     }
@@ -1536,7 +1539,7 @@ address Deoptimization::deoptimize_for_missing_exception_handler(CompiledMethod*
   assert(caller_frame.cb()->as_compiled_method_or_null() == cm, "expect top frame compiled method");
   Deoptimization::deoptimize(thread, caller_frame, &reg_map, Deoptimization::Reason_not_compiled_exception_handler);
 
-  MethodData* trap_mdo = get_method_data(thread, cm->method(), true);
+  MethodData* trap_mdo = get_method_data(thread, methodHandle(thread, cm->method()), true);
   if (trap_mdo != NULL) {
     trap_mdo->inc_trap_count(Deoptimization::Reason_not_compiled_exception_handler);
   }
@@ -1701,7 +1704,7 @@ JRT_ENTRY(void, Deoptimization::uncommon_trap_inner(JavaThread* thread, jint tra
           );
     }
 
-    methodHandle    trap_method = trap_scope->method();
+    methodHandle    trap_method(THREAD, trap_scope->method());
     int             trap_bci    = trap_scope->bci();
 #if INCLUDE_JVMCI
     jlong           speculation = thread->pending_failed_speculation();
@@ -1732,7 +1735,7 @@ JRT_ENTRY(void, Deoptimization::uncommon_trap_inner(JavaThread* thread, jint tra
     methodHandle profiled_method;
 #if INCLUDE_JVMCI
     if (nm->is_compiled_by_jvmci()) {
-      profiled_method = nm->method();
+      profiled_method = methodHandle(THREAD, nm->method());
     } else {
       profiled_method = trap_method;
     }

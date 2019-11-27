@@ -39,7 +39,6 @@
 #include "jfr/writers/jfrNativeEventWriter.hpp"
 #include "logging/log.hpp"
 #include "runtime/mutexLocker.hpp"
-#include "runtime/orderAccess.hpp"
 #include "runtime/os.inline.hpp"
 #include "runtime/safepoint.hpp"
 #include "runtime/thread.hpp"
@@ -432,18 +431,17 @@ void JfrStorage::discard_oldest(Thread* thread) {
       assert(oldest_age_node->identity() == NULL, "invariant");
       BufferPtr const buffer = oldest_age_node->retired_buffer();
       assert(buffer->retired(), "invariant");
-      discarded_size += buffer->unflushed_size();
+      discarded_size += buffer->discard();
+      assert(buffer->unflushed_size() == 0, "invariant");
       num_full_post_discard = control().decrement_full();
+      mspace_release_full(oldest_age_node, _age_mspace);
       if (buffer->transient()) {
         mspace_release_full(buffer, _transient_mspace);
-        mspace_release_full(oldest_age_node, _age_mspace);
         continue;
-      } else {
-        mspace_release_full(oldest_age_node, _age_mspace);
-        buffer->reinitialize();
-        buffer->release(); // publish
-        break;
       }
+      buffer->reinitialize();
+      buffer->release(); // publish
+      break;
     }
     JfrBuffer_lock->unlock();
     const size_t number_of_discards = num_full_pre_discard - num_full_post_discard;
