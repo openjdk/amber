@@ -388,10 +388,7 @@ public class Names {
 
         forbiddenRecordComponentNames = Set.of(
                 clone, finalize, getClass, hashCode,
-                notify, notifyAll, readObjectNoData,
-                readResolve, serialPersistentFields,
-                serialVersionUID, toString, wait,
-                writeReplace);
+                notify, notifyAll, toString, wait);
     }
 
     protected Name.Table createTable(Options options) {

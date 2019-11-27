@@ -55,10 +55,7 @@ public class RecordCompilationTests extends CompilationTestCase {
 
     private static final List<String> BAD_COMPONENT_NAMES = List.of(
             "clone", "finalize", "getClass", "hashCode",
-            "notify", "notifyAll", "readObjectNoData",
-            "readResolve", "serialPersistentFields",
-            "serialVersionUID", "toString", "wait",
-            "writeReplace");
+            "notify", "notifyAll", "toString", "wait");
 
     {
         setDefaultFilename("R.java");
