@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -528,6 +528,10 @@ public class TreeInfo {
                     return getStartPos(node.vartype);
                 }
             }
+            case BINDINGPATTERN: {
+                JCBindingPattern node = (JCBindingPattern)tree;
+                return getStartPos(node.vartype);
+            }
             case ERRONEOUS: {
                 JCErroneous node = (JCErroneous)tree;
                 if (node.errs != null && node.errs.nonEmpty())
@@ -612,7 +616,7 @@ public class TreeInfo {
             case TYPECAST:
                 return getEndPos(((JCTypeCast) tree).expr, endPosTable);
             case TYPETEST:
-                return getEndPos(((JCInstanceOf) tree).clazz, endPosTable);
+                return getEndPos(((JCInstanceOf) tree).pattern, endPosTable);
             case WHILELOOP:
                 return getEndPos(((JCWhileLoop) tree).body, endPosTable);
             case ANNOTATED_TYPE:
@@ -885,6 +889,8 @@ public class TreeInfo {
             if (node.type != null)
                 return node.type.tsym;
             return null;
+        case BINDINGPATTERN:
+            return ((JCBindingPattern) node).symbol;
         default:
             return null;
         }
@@ -1281,4 +1287,5 @@ public class TreeInfo {
     public static boolean isPackageInfo(JCCompilationUnit tree) {
         return tree.sourcefile.isNameCompatible("package-info", JavaFileObject.Kind.SOURCE);
     }
+
 }

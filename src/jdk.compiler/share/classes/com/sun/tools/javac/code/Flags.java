@@ -335,10 +335,20 @@ public class Flags {
     public static final long PREVIEW_ESSENTIAL_API = 1L<<58; //any Symbol kind
 
     /**
+     * Flag to indicate the given variable is a match binding variable.
+     */
+    public static final long MATCH_BINDING = 1L<<59;
+
+    /**
+     * A flag to indicate a match binding variable whose scope extends after the current statement.
+     */
+    public static final long MATCH_BINDING_TO_OUTER = 1L<<60;
+
+    /**
      * Flag to indicate that a class is a record. The flag is also used to mark fields that are
      * part of the state vector of a record and to mark the canonical constructor
      */
-    public static final long RECORD = 1L<<59; // ClassSymbols, MethodSymbols and VarSymbols
+    public static final long RECORD = 1L<<61; // ClassSymbols, MethodSymbols and VarSymbols
 
     /**
      * Flag to mark a record constructor as a compact one
@@ -474,6 +484,8 @@ public class Flags {
         NAME_FILLED(Flags.NAME_FILLED),
         PREVIEW_API(Flags.PREVIEW_API),
         PREVIEW_ESSENTIAL_API(Flags.PREVIEW_ESSENTIAL_API),
+        MATCH_BINDING(Flags.MATCH_BINDING),
+        MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER),
         RECORD(Flags.RECORD);
 
         Flag(long flag) {

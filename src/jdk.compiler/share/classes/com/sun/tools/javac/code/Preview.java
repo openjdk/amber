@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -165,9 +165,8 @@ public class Preview {
      * @return true, if given feature is a preview feature.
      */
     public boolean isPreview(Feature feature) {
-        if (feature == Feature.SWITCH_EXPRESSION ||
-            feature == Feature.SWITCH_MULTIPLE_CASE_LABELS ||
-            feature == Feature.SWITCH_RULE ||
+        if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
+            feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
             feature == Feature.TEXT_BLOCKS ||
             feature == Feature.RECORDS)
             return true;

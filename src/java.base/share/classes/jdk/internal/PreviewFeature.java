@@ -54,8 +54,9 @@ public @interface PreviewFeature {
     public boolean essentialAPI() default false;
 
     public enum Feature {
-        SWITCH_EXPRESSIONS,
+        PATTERN_MATCHING_IN_INSTANCEOF,
         TEXT_BLOCKS,
-        RECORDS;
+        RECORDS,
+        ;
     }
 }

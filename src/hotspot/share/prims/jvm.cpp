@@ -48,7 +48,7 @@
 #include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
 #include "oops/constantPool.hpp"
-#include "oops/fieldStreams.hpp"
+#include "oops/fieldStreams.inline.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/method.hpp"
 #include "oops/recordComponent.hpp"
@@ -71,7 +71,6 @@
 #include "runtime/javaCalls.hpp"
 #include "runtime/jfieldIDWorkaround.hpp"
 #include "runtime/jniHandles.inline.hpp"
-#include "runtime/orderAccess.hpp"
 #include "runtime/os.inline.hpp"
 #include "runtime/perfData.hpp"
 #include "runtime/reflection.hpp"
@@ -234,8 +233,8 @@ void trace_class_resolution(Klass* to_class) {
     _name = elementName;
     uintx count = 0;
 
-    while (Atomic::cmpxchg(1, &JVMHistogram_lock, 0) != 0) {
-      while (OrderAccess::load_acquire(&JVMHistogram_lock) != 0) {
+    while (Atomic::cmpxchg(&JVMHistogram_lock, 0, 1) != 0) {
+      while (Atomic::load_acquire(&JVMHistogram_lock) != 0) {
         count +=1;
         if ( (WarnOnStalledSpinLock > 0)
           && (count % WarnOnStalledSpinLock == 0)) {
@@ -743,17 +742,6 @@ JVM_END
 // Misc. class handling ///////////////////////////////////////////////////////////
 
 
-JVM_ENTRY(void, JVM_LinkClass(JNIEnv* env, jclass classClass, jclass arg))
-  JVMWrapper("JVM_LinkClass");
-
-  oop r = JNIHandles::resolve(arg);
-  Klass* klass = java_lang_Class::as_Klass(r);
-
-  if (!ClassForNameDeferLinking && klass->is_instance_klass()) {
-    InstanceKlass::cast(klass)->link_class(CHECK);
-  }
-JVM_END
-
 JVM_ENTRY(jclass, JVM_GetCallerClass(JNIEnv* env))
   JVMWrapper("JVM_GetCallerClass");
 
@@ -864,10 +852,9 @@ JVM_ENTRY(jclass, JVM_FindClassFromCaller(JNIEnv* env, const char* name,
 
   Handle h_loader(THREAD, loader_oop);
   Handle h_prot(THREAD, protection_domain);
-
-  jboolean link = !ClassForNameDeferLinking;
-  jclass result = find_class_from_class_loader(env, h_name, init, link, h_loader,
+  jclass result = find_class_from_class_loader(env, h_name, init, h_loader,
                                                h_prot, false, THREAD);
+
   if (log_is_enabled(Debug, class, resolve) && result != NULL) {
     trace_class_resolution(java_lang_Class::as_Klass(JNIHandles::resolve_non_null(result)));
   }
@@ -904,7 +891,7 @@ JVM_ENTRY(jclass, JVM_FindClassFromClass(JNIEnv *env, const char *name,
   }
   Handle h_loader(THREAD, class_loader);
   Handle h_prot  (THREAD, protection_domain);
-  jclass result = find_class_from_class_loader(env, h_name, init, false, h_loader,
+  jclass result = find_class_from_class_loader(env, h_name, init, h_loader,
                                                h_prot, true, thread);
 
   if (log_is_enabled(Debug, class, resolve) && result != NULL) {
@@ -1628,7 +1615,8 @@ JVM_ENTRY(jobjectArray, JVM_GetMethodParameters(JNIEnv *env, jobject method))
     for (int i = 0; i < num_params; i++) {
       MethodParametersElement* params = mh->method_parameters_start();
       int index = params[i].name_cp_index;
-      bounds_check(mh->constants(), index, CHECK_NULL);
+      constantPoolHandle cp(THREAD, mh->constants());
+      bounds_check(cp, index, CHECK_NULL);
 
       if (0 != index && !mh->constants()->tag_at(index).is_utf8()) {
         THROW_MSG_0(vmSymbols::java_lang_IllegalArgumentException(),
@@ -3114,21 +3102,6 @@ JVM_ENTRY(void, JVM_Interrupt(JNIEnv* env, jobject jthread))
 JVM_END
 
 
-JVM_ENTRY(jboolean, JVM_IsInterrupted(JNIEnv* env, jobject jthread, jboolean clear_interrupted))
-  JVMWrapper("JVM_IsInterrupted");
-
-  ThreadsListHandle tlh(thread);
-  JavaThread* receiver = NULL;
-  bool is_alive = tlh.cv_internal_thread_to_JavaThread(jthread, &receiver, NULL);
-  if (is_alive) {
-    // jthread refers to a live JavaThread.
-    return (jboolean) receiver->is_interrupted(clear_interrupted != 0);
-  } else {
-    return JNI_FALSE;
-  }
-JVM_END
-
-
 // Return true iff the current thread has locked the object passed in
 
 JVM_ENTRY(jboolean, JVM_HoldsLock(JNIEnv* env, jclass threadClass, jobject obj))
@@ -3474,12 +3447,9 @@ JNIEXPORT void JNICALL JVM_RawMonitorExit(void *mon) {
 
 // Shared JNI/JVM entry points //////////////////////////////////////////////////////////////
 
-jclass find_class_from_class_loader(JNIEnv* env, Symbol* name, jboolean init, jboolean link,
+jclass find_class_from_class_loader(JNIEnv* env, Symbol* name, jboolean init,
                                     Handle loader, Handle protection_domain,
                                     jboolean throwError, TRAPS) {
-  // Initialization also implies linking - check for coherent args
-  assert((init && link) || !init, "incorrect use of init/link arguments");
-
   // Security Note:
   //   The Java level wrapper will perform the necessary security check allowing
   //   us to pass the NULL as the initiating class loader.  The VM is responsible for
@@ -3488,11 +3458,9 @@ jclass find_class_from_class_loader(JNIEnv* env, Symbol* name, jboolean init, jb
   //   if there is no security manager in 3-arg Class.forName().
   Klass* klass = SystemDictionary::resolve_or_fail(name, loader, protection_domain, throwError != 0, CHECK_NULL);
 
-  // Check if we should initialize the class (which implies linking), or just link it
+  // Check if we should initialize the class
   if (init && klass->is_instance_klass()) {
     klass->initialize(CHECK_NULL);
-  } else if (link && klass->is_instance_klass()) {
-    InstanceKlass::cast(klass)->link_class(CHECK_NULL);
   }
   return (jclass) JNIHandles::make_local(env, klass->java_mirror());
 }
