@@ -1494,8 +1494,10 @@ public class ObjectOutputStream
     {
         assert isRecord(obj.getClass());
         ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
-        if (slots.length != 1)
-            throw new InternalError("expected slot length: " + slots.length);
+        if (slots.length != 1) {
+            throw new InvalidClassException(
+                    "expected a single record slot length, but found: " + slots.length);
+        }
 
         defaultWriteFields(obj, desc);  // #### seems unnecessary to use the accessors
     }
