@@ -1497,7 +1497,7 @@ public class ObjectOutputStream
         if (slots.length != 1)
             throw new InternalError("expected slot length: " + slots.length);
 
-        defaultWriteFields(obj, desc);  // TODO: use record accessors
+        defaultWriteFields(obj, desc);  // #### seems unnecessary to use the accessors
     }
 
     /**
