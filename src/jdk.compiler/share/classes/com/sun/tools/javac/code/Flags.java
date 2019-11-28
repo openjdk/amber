@@ -365,7 +365,7 @@ public class Flags {
     public static final int
         AccessFlags           = PUBLIC | PROTECTED | PRIVATE,
         LocalClassFlags       = FINAL | ABSTRACT | STRICTFP | ENUM | SYNTHETIC,
-        LocalRecordFlags                 = LocalClassFlags | STATIC,
+        LocalRecordFlags      = LocalClassFlags | STATIC,
         MemberClassFlags      = LocalClassFlags | INTERFACE | AccessFlags,
         MemberRecordFlags     = MemberClassFlags | STATIC,
         ClassFlags            = LocalClassFlags | INTERFACE | PUBLIC | ANNOTATION,
@@ -375,7 +375,7 @@ public class Flags {
         ConstructorFlags      = AccessFlags,
         InterfaceMethodFlags  = ABSTRACT | PUBLIC,
         MethodFlags           = AccessFlags | ABSTRACT | STATIC | NATIVE |
-                                           SYNCHRONIZED | FINAL | STRICTFP,
+                                SYNCHRONIZED | FINAL | STRICTFP,
         RecordMethodFlags     = AccessFlags | ABSTRACT | STATIC |
                                 SYNCHRONIZED | FINAL | STRICTFP;
     public static final long

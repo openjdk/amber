@@ -2871,29 +2871,6 @@ public class Check {
             validateTypeAnnotation(a, isTypeParameter);
     }
 
-    public void checkForSerializationMethods(Env<AttrContext> env, JCMethodDecl methodDecl) {
-        if (methodDecl.sym.name == names.writeObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectOutputStreamType ||
-                methodDecl.sym.name == names.readObjectNoData && methodDecl.params.isEmpty() ||
-                methodDecl.sym.name == names.readObject && methodDecl.params.size() == 1 && methodDecl.params.head.sym.type == syms.objectInputStreamType) {
-            errorOnSerializationMember(env.enclClass, methodDecl.name, methodDecl.sym, syms.voidType, false);
-        }
-    }
-
-    private void errorOnSerializationMember(JCClassDecl tree,
-                                            Name name, Symbol sym, Type expectedType, boolean shouldBeStatic) {
-        Type typeOrReturnType = sym.kind == MTH ? sym.type.asMethodType().getReturnType() : sym.type;
-        if (sym.isStatic() == shouldBeStatic && (typeOrReturnType == expectedType || types.isSameType(typeOrReturnType, expectedType))) {
-            for (JCTree def : tree.defs) {
-                Symbol sym2 = TreeInfo.symbolFor(def);
-                if (sym2 == sym) {
-                    log.error(def, Errors.IllegalRecordMember(name));
-                    return;
-                }
-            }
-            log.error(tree, Errors.IllegalRecordMember(name));
-        }
-    }
-
     /** Check an annotation of a symbol.
      */
     private void validateAnnotation(JCAnnotation a, JCTree declarationTree, Symbol s) {
