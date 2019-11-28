@@ -3677,8 +3677,8 @@ public class JavacParser implements Parser {
                 if (allowRecords) {
                     erroneousTree = syntaxError(pos, errs, Errors.Expected4(CLASS, INTERFACE, ENUM, "record"));
                 } else {
-                erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
-            }
+                    erroneousTree = syntaxError(pos, errs, Errors.Expected3(CLASS, INTERFACE, ENUM));
+                }
             }
             return toP(F.Exec(erroneousTree));
         }
@@ -4153,11 +4153,11 @@ public class JavacParser implements Parser {
             List<JCExpression> thrown = List.nil();
             if (!isRecord || name != names.init || token.kind == LPAREN) {
                 params = formalParameters();
-            if (!isVoid) type = bracketsOpt(type);
-            if (token.kind == THROWS) {
-                nextToken();
-                thrown = qualidentList(true);
-            }
+                if (!isVoid) type = bracketsOpt(type);
+                if (token.kind == THROWS) {
+                    nextToken();
+                    thrown = qualidentList(true);
+                }
             }
             JCBlock body = null;
             JCExpression defaultValue;
