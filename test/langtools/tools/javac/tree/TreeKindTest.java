@@ -106,6 +106,7 @@ public class TreeKindTest {
             case ANNOTATION_TYPE:
             case ENUM:
             case CLASS:
+            case RECORD:
                 ok = ok & verify(k, i, i == ClassTree.class);
                 break;
 
