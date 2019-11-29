@@ -2201,7 +2201,7 @@ public class Attr extends JCTree.Visitor {
         } else if (!env.info.isLambda &&
                 !env.info.isNewClass &&
                 env.enclMethod != null &&
-                TreeInfo.isCanonicalConstructor(env.enclMethod)) {
+                TreeInfo.isCompactConstructor(env.enclMethod)) {
             log.error(env.enclMethod,
                     Errors.InvalidCanonicalConstructorInRecord(env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
         } else {

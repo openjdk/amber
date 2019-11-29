@@ -402,12 +402,13 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "public R { if (x < 0) { this.x = -x; } }");
     }
 
-    public void testReturnInCanonical() {
+    public void testReturnInCanonical_Compact() {
         assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x) { # }",
                 "public R { return; }");
         assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x) { # }",
                 "public R { if (i < 0) { return; }}");
-        assertOK("record R(int x) { public R { Runnable r = () -> {return;};} }");
+        assertOK("record R(int x) { public R(int x) { this.x = x; return; } }");
+        assertOK("record R(int x) { public R { Runnable r = () -> { return; };} }");
     }
 
     public void testNoNativeMethods() {

@@ -87,6 +87,11 @@ public class TreeInfo {
         return isConstructor(tree) && (((JCMethodDecl)tree).sym.flags_field & RECORD) != 0;
     }
 
+    public static boolean isCompactConstructor(JCTree tree) {
+        // the record flag is only set to the canonical constructor
+        return isCanonicalConstructor(tree) && (((JCMethodDecl)tree).sym.flags_field & COMPACT_RECORD_CONSTRUCTOR) != 0;
+    }
+
     public static boolean isReceiverParam(JCTree tree) {
         if (tree.hasTag(VARDEF)) {
             return ((JCVariableDecl)tree).nameexpr != null;
