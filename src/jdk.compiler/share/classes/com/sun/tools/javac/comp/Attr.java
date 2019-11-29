@@ -87,7 +87,7 @@ import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
  *  @see Infer
  *
  *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
+ *  If you write code that depends on this, you do so at your own risk.ca
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
@@ -1077,14 +1077,16 @@ public class Attr extends JCTree.Visitor {
                                     (TreeInfo.name(app.meth) == names._this ||
                                             TreeInfo.name(app.meth) == names._super) &&
                                     checkFirstConstructorStat(app, tree, false)) {
-                                log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym,
+                                log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
+                                        "canonical", tree.sym,
                                         Fragments.CanonicalMustNotContainExplicitConstructorInvocation));
                             }
                         }
 
                         // also we want to check that no type variables have been defined
                         if (!tree.typarams.isEmpty()) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.CanonicalMustNotDeclareTypeVariables));
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
+                                    "canonical", tree.sym, Fragments.CanonicalMustNotDeclareTypeVariables));
                         }
 
                         /* and now we need to check that the constructor's arguments are exactly the same as those of the
@@ -1093,7 +1095,8 @@ public class Attr extends JCTree.Visitor {
                         List<Type> recordComponentTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
                         for (JCVariableDecl param: tree.params) {
                             if (!types.isSameType(param.type, recordComponentTypes.head)) {
-                                log.error(param, Errors.InvalidCanonicalConstructorInRecord(tree.sym, Fragments.TypeMustBeIdenticalToCorrespondingRecordComponentType));
+                                log.error(param, Errors.InvalidCanonicalConstructorInRecord(
+                                        "canonical", tree.sym, Fragments.TypeMustBeIdenticalToCorrespondingRecordComponentType));
                             }
                             recordComponentTypes = recordComponentTypes.tail;
                         }
@@ -1166,14 +1169,19 @@ public class Attr extends JCTree.Visitor {
                         List<Name> recordComponentNames = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.name);
                         List<Name> initParamNames = tree.sym.params.map(p -> p.name);
                         if (!initParamNames.equals(recordComponentNames)) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.CanonicalWithNameMismatch));
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
+                                    "canonical", env.enclClass.sym, Fragments.CanonicalWithNameMismatch));
                         }
                         if (!tree.sym.isPublic()) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.CanonicalConstructorMustBePublic));
+                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
+                                    TreeInfo.isCompactConstructor(tree) ? "compact" : "canonical",
+                                    env.enclClass.sym, Fragments.CanonicalConstructorMustBePublic));
                         }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
                             log.error(tree,
-                                    Errors.InvalidCanonicalConstructorInRecord(env.enclClass.sym, Fragments.ThrowsClauseNotAllowedForCanonicalConstructor));
+                                    Errors.InvalidCanonicalConstructorInRecord(
+                                            TreeInfo.isCompactConstructor(tree) ? "compact" : "canonical",
+                                            env.enclClass.sym, Fragments.ThrowsClauseNotAllowedForCanonicalConstructor));
                         }
                     }
                 }
@@ -2203,7 +2211,7 @@ public class Attr extends JCTree.Visitor {
                 env.enclMethod != null &&
                 TreeInfo.isCompactConstructor(env.enclMethod)) {
             log.error(env.enclMethod,
-                    Errors.InvalidCanonicalConstructorInRecord(env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
+                    Errors.InvalidCanonicalConstructorInRecord("compact", env.enclMethod.sym, Fragments.CanonicalCantHaveReturnStatement));
         } else {
             // Attribute return expression, if it exists, and check that
             // it conforms to result type of enclosing method.
@@ -3891,7 +3899,7 @@ public class Attr extends JCTree.Visitor {
         ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
         tree.type = attribTree(tree.vartype, env, varInfo);
         VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype.type, env.info.scope.owner);
-        if (chk.checkUnique(tree.pos(), v, env.info.scope, env)) {
+        if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
             chk.checkTransparentVar(tree.pos(), v, env.info.scope);
         }
         annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());

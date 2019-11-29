@@ -3574,7 +3574,7 @@ public class Check {
      *  @param sym           The symbol.
      *  @param s             The scope.
      */
-    boolean checkUnique(DiagnosticPosition pos, Symbol sym, Scope s, Env<AttrContext> env) {
+    boolean checkUnique(DiagnosticPosition pos, Symbol sym, Scope s) {
         if (sym.type.isErroneous())
             return true;
         if (sym.owner.name == names.any) return false;

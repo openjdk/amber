@@ -217,7 +217,7 @@ public class MemberEnter extends JCTree.Visitor {
             m.flags_field |= Flags.VARARGS;
 
         localEnv.info.scope.leave();
-        if (chk.checkUnique(tree.pos(), m, enclScope, localEnv)) {
+        if (chk.checkUnique(tree.pos(), m, enclScope)) {
         enclScope.enter(m);
         }
 
@@ -297,7 +297,7 @@ public class MemberEnter extends JCTree.Visitor {
                 v.setLazyConstValue(initEnv(tree, initEnv), attr, tree);
             }
         }
-        if (chk.checkUnique(tree.pos(), v, enclScope, env)) {
+        if (chk.checkUnique(tree.pos(), v, enclScope)) {
             chk.checkTransparentVar(tree.pos(), v, enclScope);
             enclScope.enter(v);
         } else if (v.owner.kind == MTH || (v.flags_field & (Flags.PRIVATE | Flags.FINAL | Flags.GENERATED_MEMBER | Flags.RECORD)) != 0) {

@@ -84,8 +84,8 @@ public class Tokens {
         key = new TokenKind[maxKey+1];
         for (int i = 0; i <= maxKey; i++) key[i] = TokenKind.IDENTIFIER;
         for (TokenKind t : TokenKind.values()) {
-            if (t.name != null && !t.reserved())
-            key[tokenName[t.ordinal()].getIndex()] = t;
+            if (t.name != null)
+                key[tokenName[t.ordinal()].getIndex()] = t;
         }
     }
 
@@ -276,10 +276,6 @@ public class Tokens {
             }
         }
 
-        public boolean reserved() {
-            return tag == Tag.RESERVED;
-        }
-
         public String getKind() {
             return "Token";
         }
@@ -319,8 +315,7 @@ public class Tokens {
             DEFAULT,
             NAMED,
             STRING,
-            NUMERIC,
-            RESERVED;
+            NUMERIC;
         }
 
         /** The token kind */
