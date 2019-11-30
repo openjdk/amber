@@ -1152,7 +1152,7 @@ public class TypeEnter implements Completer {
                     .filter(t -> t.hasTag(VARDEF))
                     .map(t -> (JCVariableDecl) t)
                     // lets stay clear of adding a forbidden name, javac will fail later anyway
-                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && !names.isForbiddenComponentName(vd.name))
+                    .filter(vd -> (vd.sym.flags_field & RECORD) != 0 && lookupMethod(syms.objectType.tsym, vd.name, List.nil()) == null)
                     .forEach(vd -> addAccessor(vd, env));
         }
     }
@@ -1164,10 +1164,6 @@ public class TypeEnter implements Completer {
             }
         }
         return null;
-    }
-
-    private boolean isInScope(TypeSymbol tsym, Name name) {
-        return tsym.members().getSymbolsByName(name).iterator().hasNext();
     }
 
 /* ***************************************************************************

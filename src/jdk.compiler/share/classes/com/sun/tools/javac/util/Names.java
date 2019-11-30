@@ -72,8 +72,6 @@ public class Names {
     public final Name uses;
     public final Name open;
     public final Name with;
-    public final Name get;
-    public final Name set;
     public final Name yield;
 
     // field and method names
@@ -212,11 +210,6 @@ public class Names {
     public final Name writeReplace;
     public final Name readObjectNoData;
 
-    // additional forbidden record component names
-    public final Name notify;
-    public final Name notifyAll;
-    public final Name wait;
-
     public final Name.Table table;
 
     public Names(Context context) {
@@ -246,8 +239,6 @@ public class Names {
         uses = fromString("uses");
         open = fromString("open");
         with = fromString("with");
-        get = fromString("get");
-        set = fromString("set");
         yield = fromString("yield");
 
         // field and method names
@@ -381,14 +372,6 @@ public class Names {
         writeObject = fromString("writeObject");
         writeReplace = fromString("writeReplace");
         readObjectNoData = fromString("readObjectNoData");
-
-        notify = fromString("notify");
-        notifyAll = fromString("notifyAll");
-        wait = fromString("wait");
-
-        forbiddenRecordComponentNames = Set.of(
-                clone, finalize, getClass, hashCode,
-                notify, notifyAll, toString, wait);
     }
 
     protected Name.Table createTable(Options options) {
@@ -417,11 +400,5 @@ public class Names {
 
     public Name fromUtf(byte[] cs, int start, int len) {
         return table.fromUtf(cs, start, len);
-    }
-
-    private final Set<Name> forbiddenRecordComponentNames;
-
-    public boolean isForbiddenComponentName(Name name) {
-        return forbiddenRecordComponentNames.contains(name);
     }
 }

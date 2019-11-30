@@ -1279,7 +1279,7 @@ public class Attr extends JCTree.Visitor {
             }
             result = tree.type = v.type;
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
-                if (names.isForbiddenComponentName(v.name)) {
+                if (isNonArgsMethodInObject(v.name)) {
                     log.error(tree, Errors.IllegalRecordComponentName(v));
                 }
             }
@@ -1287,6 +1287,15 @@ public class Attr extends JCTree.Visitor {
         finally {
             chk.setLint(prevLint);
         }
+    }
+
+    private boolean isNonArgsMethodInObject(Name name) {
+        for (Symbol s : syms.objectType.tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {
+            if (s.type.getParameterTypes().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     Fragment canInferLocalVarType(JCVariableDecl tree) {
