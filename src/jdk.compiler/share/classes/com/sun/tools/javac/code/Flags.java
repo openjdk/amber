@@ -355,6 +355,11 @@ public class Flags {
      */
     public static final long COMPACT_RECORD_CONSTRUCTOR = 1L<<51; // MethodSymbols only
 
+    /**
+     * Flag to mark a record field that was not initialized in the compact constructor
+     */
+    public static final long UNINITIALIZED_FIELD= 1L<<51; // VarSymbols only
+
     /** Flag is set for compiler-generated record members, it could be appplied to
      *  accessors and fields
      */

@@ -137,13 +137,13 @@ public class AttrContext {
         info.yieldResult = yieldResult;
         info.defaultSuperCallSite = defaultSuperCallSite;
         info.isSerializable = isSerializable;
+        info.isLambda = isLambda;
         info.isSerializableLambda = isSerializableLambda;
         info.attributionMode = attributionMode;
         info.isAnonymousDiamond = isAnonymousDiamond;
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
-        info.isLambda = isLambda;
         return info;
     }
 

@@ -2077,7 +2077,7 @@ public class Flow {
                                         /*  this way we indicate Lower that it should generate an initialization for this field
                                          *  in the compact constructor
                                          */
-                                        var.flags_field |= COMPACT_RECORD_CONSTRUCTOR;
+                                        var.flags_field |= UNINITIALIZED_FIELD;
                                     }
                                 }
                             }

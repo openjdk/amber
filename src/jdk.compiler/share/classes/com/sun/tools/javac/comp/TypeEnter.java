@@ -1016,9 +1016,6 @@ public class TypeEnter implements Completer {
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env);
             }
-            // now we need to enter any additional mandated member that could have been added in the previous step
-            memberEnter.memberEnter(tree.defs.diff(List.convert(JCTree.class, defsBeforeAddingNewMembers)), env);
-
             if (tree.sym.isAnnotationType()) {
                 Assert.check(tree.sym.isCompleted());
                 tree.sym.setAnnotationTypeMetadata(new AnnotationTypeMetadata(tree.sym, annotate.annotationTypeSourceCompleter()));

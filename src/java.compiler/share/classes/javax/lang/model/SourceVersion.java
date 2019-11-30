@@ -63,12 +63,6 @@ public enum SourceVersion {
      *  14: switch expressions
      */
 
-    // TOOD: The textual specs of isIdentifier, isName, and isKeyword
-    // may or may not need to be explicitly updated for "record" 
-    // depending on how this token is formally handled in
-    // the JLS. If it is treated as restricted keyword, a spec
-    // update may not be strictly needed.
-
     /**
      * The original version.
      *

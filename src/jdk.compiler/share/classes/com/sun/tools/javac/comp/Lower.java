@@ -2259,16 +2259,13 @@ public class Lower extends TreeTranslator {
     }
 
     List<JCTree> generateMandatedAccessors(JCClassDecl tree) {
-        ListBuffer<JCTree> buffer = new ListBuffer<>();
-        tree.sym.getRecordComponents().stream()
-                .forEach(rc -> {
-                    if ((rc.accessor.flags() & Flags.GENERATED_MEMBER) != 0) {
-                        make_at(tree.pos());
-                        buffer.add(make.MethodDef(rc.accessor, make.Block(0,
-                                List.of(make.Return(make.Ident(rc))))));
-                    }
-                });
-        return buffer.toList();
+        return tree.sym.getRecordComponents().stream()
+                .filter(rc -> (rc.accessor.flags() & Flags.GENERATED_MEMBER) != 0)
+                .map(rc -> {
+                    make_at(tree.pos());
+                    return make.MethodDef(rc.accessor, make.Block(0,
+                            List.of(make.Return(make.Ident(rc)))));
+                }).collect(List.collector());
     }
 
     /** Translate an enum class. */
@@ -2734,7 +2731,7 @@ public class Lower extends TreeTranslator {
                     fields.append((VarSymbol) sym);
             }
             for (VarSymbol field: fields) {
-                if ((field.flags_field & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0) {
+                if ((field.flags_field & Flags.UNINITIALIZED_FIELD) != 0) {
                     VarSymbol param = tree.params.stream().filter(p -> p.name == field.name).findFirst().get().sym;
                     make.at(tree.pos);
                     tree.body.stats = tree.body.stats.append(
@@ -2743,7 +2740,7 @@ public class Lower extends TreeTranslator {
                                             make.Select(make.This(field.owner.erasure(types)), field),
                                             make.Ident(param)).setType(field.erasure(types))));
                     // we don't need the flag at the field anymore
-                    field.flags_field &= ~Flags.COMPACT_RECORD_CONSTRUCTOR;
+                    field.flags_field &= ~Flags.UNINITIALIZED_FIELD;
                 }
             }
         }
