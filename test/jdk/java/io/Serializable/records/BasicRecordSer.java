@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic test that serializes and deserializes a number of records
- * @compile --enable-preview -source 14 BasicRecordSer.java
+ * @compile --enable-preview -source ${jdk.version} BasicRecordSer.java
  * @run testng/othervm --enable-preview BasicRecordSer
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview BasicRecordSer
  */

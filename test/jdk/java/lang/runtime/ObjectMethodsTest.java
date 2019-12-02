@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic tests for ObjectMethods
- * @compile --enable-preview -source 14 ObjectMethodsTest.java
+ * @compile --enable-preview -source ${jdk.version} ObjectMethodsTest.java
  * @run testng/othervm --enable-preview ObjectMethodsTest
  * @run testng/othervm/java.security.policy=empty.policy --enable-preview ObjectMethodsTest
  */

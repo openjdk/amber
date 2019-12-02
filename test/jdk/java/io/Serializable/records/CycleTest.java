@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Ensures basic behavior of cycles from record components
- * @compile --enable-preview -source 14 CycleTest.java
+ * @compile --enable-preview -source ${jdk.version} CycleTest.java
  * @run testng/othervm --enable-preview CycleTest
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview CycleTest
  */

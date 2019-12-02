@@ -34,14 +34,14 @@
  *          jdk.jartool/sun.tools.jar
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
- * @compile --enable-preview -source 14 Host/Host.java
- * @compile --enable-preview -source 14 TestRecordAttr.java
+ * @compile --enable-preview -source ${jdk.version} Host/Host.java
+ * @compile --enable-preview -source ${jdk.version} TestRecordAttr.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr Host
- * @compile --enable-preview -source 14 HostA/Host.java
+ * @compile --enable-preview -source ${jdk.version} HostA/Host.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostA
- * @compile --enable-preview -source 14 HostAB/Host.java
+ * @compile --enable-preview -source ${jdk.version} HostAB/Host.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostAB
- * @compile --enable-preview -source 14 HostABC/Host.java
+ * @compile --enable-preview -source ${jdk.version} HostABC/Host.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+record=trace TestRecordAttr HostABC
  */
 

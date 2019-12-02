@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic tests for SUID in the serial stream
- * @compile --enable-preview -source 14 SerialVersionUIDTest.java
+ * @compile --enable-preview -source ${jdk.version} SerialVersionUIDTest.java
  * @run testng/othervm --enable-preview SerialVersionUIDTest
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview SerialVersionUIDTest
  */

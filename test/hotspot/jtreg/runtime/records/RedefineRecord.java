@@ -28,7 +28,7 @@
  * @modules java.base/jdk.internal.misc
  * @modules java.instrument
  *          jdk.jartool/sun.tools.jar
- * @compile --enable-preview -source 14 RedefineRecord.java
+ * @compile --enable-preview -source ${jdk.version} RedefineRecord.java
  * @run main/othervm --enable-preview RedefineRecord buildagent
  * @run main/othervm/timeout=6000 --enable-preview RedefineRecord runtest
  */

@@ -27,7 +27,7 @@
  *          cannot be found during deserialization.
  * @library /test/lib
  * @modules java.base/jdk.internal.org.objectweb.asm
- * @compile --enable-preview -source 14 BadCanonicalCtrTest.java
+ * @compile --enable-preview -source ${jdk.version} BadCanonicalCtrTest.java
  * @run testng/othervm --enable-preview BadCanonicalCtrTest
  */
 

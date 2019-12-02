@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Tests for stream references
- * @compile --enable-preview -source 14 StreamRefTest.java
+ * @compile --enable-preview -source ${jdk.version} StreamRefTest.java
  * @run testng/othervm --enable-preview StreamRefTest
  */
 

@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Basic tests for readResolve
- * @compile --enable-preview -source 14 ReadResolveTest.java
+ * @compile --enable-preview -source ${jdk.version} ReadResolveTest.java
  * @run testng/othervm --enable-preview ReadResolveTest
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ReadResolveTest
  */

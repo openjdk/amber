@@ -25,7 +25,7 @@
  * @test
  * @summary Ensures that the serialization implementation can *always* access
  *          the record constructor
- * @compile --enable-preview -source 14 ConstructorAccessTest.java
+ * @compile --enable-preview -source ${jdk.version} ConstructorAccessTest.java
  * @run testng/othervm --enable-preview ConstructorAccessTest
  * @run testng/othervm/java.security.policy=empty_security.policy --enable-preview ConstructorAccessTest
  */

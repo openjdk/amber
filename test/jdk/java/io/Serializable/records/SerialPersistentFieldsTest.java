@@ -26,7 +26,7 @@
  * @summary Basic tests for prohibited magic serialPersistentFields
  * @library /test/lib
  * @modules java.base/jdk.internal.org.objectweb.asm
- * @compile --enable-preview -source 14 SerialPersistentFieldsTest.java
+ * @compile --enable-preview -source ${jdk.version} SerialPersistentFieldsTest.java
  * @run testng/othervm --enable-preview SerialPersistentFieldsTest
  */
 
