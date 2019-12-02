@@ -997,6 +997,15 @@ public class ObjectStreamClass implements Serializable {
     }
 
     /**
+     * Returns true if class descriptor represents a record type, false
+     * otherwise.
+     */
+    boolean isRecord() {
+        requireInitialized();
+        return isRecord;
+    }
+
+    /**
      * Returns true if represented class implements Externalizable, false
      * otherwise.
      */

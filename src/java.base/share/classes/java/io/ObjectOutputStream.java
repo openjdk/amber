@@ -1414,11 +1414,6 @@ public class ObjectOutputStream
         writeString(en.name(), false);
     }
 
-    @SuppressWarnings("preview")
-    private static boolean isRecord(Class<?> cls) {
-        return cls.isRecord();
-    }
-
     /**
      * Writes representation of a "ordinary" (i.e., not a String, Class,
      * ObjectStreamClass, array, or enum constant) serializable object to the
@@ -1441,9 +1436,8 @@ public class ObjectOutputStream
             writeClassDesc(desc, false);
             handles.assign(unshared ? null : obj);
 
-            final boolean isRecord = isRecord(obj.getClass()) ? true : false;
-            if (isRecord) {
-                writeRecordData(obj,desc);
+            if (desc.isRecord()) {
+                writeRecordData(obj, desc);
             } else if (desc.isExternalizable() && !desc.isProxy()) {
                 writeExternalData((Externalizable) obj);
             } else {
@@ -1489,10 +1483,11 @@ public class ObjectOutputStream
     }
 
     /** Writes the record component values for the given record object. */
+    @SuppressWarnings("preview")
     private void writeRecordData(Object obj, ObjectStreamClass desc)
         throws IOException
     {
-        assert isRecord(obj.getClass());
+        assert obj.getClass().isRecord();
         ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
         if (slots.length != 1) {
             throw new InvalidClassException(
