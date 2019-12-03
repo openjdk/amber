@@ -433,7 +433,7 @@ void JvmtiClassFileReconstituter::write_nest_members_attribute() {
 //  component_info {
 //    u2 name_index;
 //    u2 descriptor_index
-//    u2 attributs_count;
+//    u2 attributes_count;
 //    attribute_info_attributes[attributes_count];
 //  }
 void JvmtiClassFileReconstituter::write_record_attribute() {

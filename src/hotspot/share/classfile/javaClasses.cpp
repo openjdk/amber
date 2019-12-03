@@ -3154,20 +3154,20 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
   HandleMark hm(THREAD);
   InstanceKlass* ik = SystemDictionary::RecordComponent_klass();
   assert(ik != NULL, "must be loaded");
-  ik->initialize(CHECK_0);
+  ik->initialize(CHECK_NULL);
 
-  Handle element = ik->allocate_instance_handle(CHECK_0);
+  Handle element = ik->allocate_instance_handle(CHECK_NULL);
 
   Handle decl_class(THREAD, holder->java_mirror());
   java_lang_reflect_RecordComponent::set_clazz(element(), decl_class());
 
   Symbol* name = holder->constants()->symbol_at(component->name_index()); // name_index is a utf8
-  oop component_name = StringTable::intern(name, CHECK_0);
+  oop component_name = StringTable::intern(name, CHECK_NULL);
   java_lang_reflect_RecordComponent::set_name(element(), component_name);
 
   Symbol* type = holder->constants()->symbol_at(component->descriptor_index());
   Handle component_type_h =
-    SystemDictionary::find_java_mirror_for_type(type, holder, SignatureStream::NCDFError, CHECK_0);
+    SystemDictionary::find_java_mirror_for_type(type, holder, SignatureStream::NCDFError, CHECK_NULL);
   java_lang_reflect_RecordComponent::set_type(element(), component_type_h());
 
   Method* accessor_method = NULL;
@@ -3183,7 +3183,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
 
   if (accessor_method != NULL) {
     methodHandle method(THREAD, accessor_method);
-    oop m = Reflection::new_method(method, false, CHECK_0);
+    oop m = Reflection::new_method(method, false, CHECK_NULL);
     java_lang_reflect_RecordComponent::set_accessor(element(), m);
   } else {
     java_lang_reflect_RecordComponent::set_accessor(element(), NULL);
@@ -3192,16 +3192,16 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
   int sig_index = component->generic_signature_index();
   if (sig_index > 0) {
     Symbol* sig = holder->constants()->symbol_at(sig_index); // sig_index is a utf8
-    oop component_sig = StringTable::intern(sig, CHECK_0);
+    oop component_sig = StringTable::intern(sig, CHECK_NULL);
     java_lang_reflect_RecordComponent::set_signature(element(), component_sig);
   } else {
     java_lang_reflect_RecordComponent::set_signature(element(), NULL);
   }
 
-  typeArrayOop annotation_oop = Annotations::make_java_array(component->annotations(), CHECK_0);
+  typeArrayOop annotation_oop = Annotations::make_java_array(component->annotations(), CHECK_NULL);
   java_lang_reflect_RecordComponent::set_annotations(element(), annotation_oop);
 
-  typeArrayOop type_annotation_oop = Annotations::make_java_array(component->type_annotations(), CHECK_0);
+  typeArrayOop type_annotation_oop = Annotations::make_java_array(component->type_annotations(), CHECK_NULL);
   java_lang_reflect_RecordComponent::set_typeAnnotations(element(), type_annotation_oop);
 
   return element();

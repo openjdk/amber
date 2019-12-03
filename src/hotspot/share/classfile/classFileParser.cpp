@@ -3221,7 +3221,7 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
 //  component_info {
 //    u2 name_index;
 //    u2 descriptor_index
-//    u2 attributs_count;
+//    u2 attributes_count;
 //    attribute_info_attributes[attributes_count];
 //  }
 u2 ClassFileParser::parse_classfile_record_attribute(const ClassFileStream* const cfs,

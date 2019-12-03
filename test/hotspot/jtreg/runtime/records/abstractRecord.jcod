@@ -24,7 +24,7 @@
 // This test was generated from this source and then modified:
 //    record recordNames(int x, String y) {}
 
-// This test is an Record marked as abstract.  It should result in a
+// This test is a Record marked as abstract.  It should result in a
 // ClassFormatError exception.
 class abstractRecord {
   0xCAFEBABE;
