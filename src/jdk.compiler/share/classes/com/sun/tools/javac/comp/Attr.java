@@ -1056,6 +1056,10 @@ public class Attr extends JCTree.Visitor {
                         log.error(tree,
                                 Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodMustNotBeGeneric));
                     }
+                    if (tree.sym.isStatic()) {
+                        log.error(tree,
+                                Errors.InvalidAccessorMethodInRecord(env.enclClass.sym, Fragments.AccessorMethodMustNotBeStatic));
+                    }
                 }
 
                 if (tree.name == names.init) {

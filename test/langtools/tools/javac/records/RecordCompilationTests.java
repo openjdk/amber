@@ -220,6 +220,12 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "public record R(int x) {\n" +
                         "    public <T> int x() { return x; };" +
                         "}");
+
+        assertFail("compiler.err.invalid.accessor.method.in.record",
+                "public record R(int x) {\n" +
+                        "    static private final j = 0;" +
+                        "    static public int x() { return j; };" +
+                        "}");
     }
 
     public void testConstructorRedeclaration() {
