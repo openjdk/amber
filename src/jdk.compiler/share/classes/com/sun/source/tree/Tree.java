@@ -660,6 +660,8 @@ public interface Tree {
          *
          * @since 14
          */
+        @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                     essentialAPI=false)
         RECORD(ClassTree.class),
 
         /**

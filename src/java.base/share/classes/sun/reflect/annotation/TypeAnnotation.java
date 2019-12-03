@@ -92,11 +92,16 @@ public final class TypeAnnotation {
         METHOD_FORMAL_PARAMETER,
         THROWS,
         /**
-         * @deprecated This target is part of a preview feature and may be removed
-         * if the preview feature is removed.
+         * {@preview Associated with records, a preview feature of the Java language.
+         *
+         *           This enum constant is associated with <i>records</i>, a preview
+         *           feature of the Java language. Preview features
+         *           may be removed in a future release, or upgraded to permanent
+         *           features of the Java language.}
+         * @since 14
          */
-        @Deprecated(forRemoval=true, since="14")
-        @SuppressWarnings("removal")
+        @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                     essentialAPI=false)
         RECORD_COMPONENT;
     }
 
