@@ -25,6 +25,7 @@
 // key: compiler.misc.canonical.must.not.contain.explicit.constructor.invocation
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
+// key: compiler.misc.canonical
 // options: --enable-preview -source ${jdk.version}
 
 record R(int x) {
