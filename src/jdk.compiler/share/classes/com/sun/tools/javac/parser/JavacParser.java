@@ -186,6 +186,8 @@ public class JavacParser implements Parser {
                 Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
+        this.allowSealedTypes = (!preview.isPreview(Feature.SEALED_TYPES) || preview.isEnabled()) &&
+                Feature.SEALED_TYPES.allowedInSource(source);
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -222,6 +224,10 @@ public class JavacParser implements Parser {
     /** Switch: are records allowed in this source level?
      */
     boolean allowRecords;
+
+    /** Switch: are sealed types allowed in this source level?
+     */
+    boolean allowSealedTypes;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -2621,6 +2627,23 @@ public class JavacParser implements Parser {
                 }
 
                 //else intentional fall-through
+            } else if (allowSealedTypes) {
+                if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
+                    Token tokenSub = S.token(1);
+                    Token tokenSealed = S.token(2);
+                    if (token.endPos == tokenSub.pos &&
+                            tokenSub.endPos == tokenSealed.pos &&
+                            tokenSealed.name() == names.sealed &&
+                            S.token(3).kind == TokenKind.CLASS) {
+                            log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
+                            nextToken();
+                            nextToken();
+                            nextToken();
+                    }
+                } else if (token.name() == names.sealed && S.token(1).kind == TokenKind.CLASS) {
+                    log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
+                    nextToken();
+                }
             }
         }
         if (isRecordStart() && allowRecords) {
@@ -3070,6 +3093,25 @@ public class JavacParser implements Parser {
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
             case DEFAULT     : checkSourceLevel(Feature.DEFAULT_METHODS); flag = Flags.DEFAULT; break;
             case ERROR       : flag = 0; nextToken(); break;
+            case IDENTIFIER  : {
+                if (allowSealedTypes) {
+                    if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
+                        Token tokenSub = S.token(1);
+                        Token tokenSealed = S.token(2);
+                        if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenSealed.pos && tokenSealed.name() == names.sealed) {
+                            flag = Flags.NON_SEALED;
+                            nextToken();
+                            nextToken();
+                            break;
+                        }
+                    }
+                    if (token.name() == names.sealed) {
+                        flag = Flags.SEALED;
+                        break;
+                    }
+                }
+                break loop;
+            }
             default: break loop;
             }
             if ((flags & flag) != 0) log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.RepeatedModifier);
@@ -3712,9 +3754,17 @@ public class JavacParser implements Parser {
             nextToken();
             implementing = typeList();
         }
+        List<JCExpression> permitting = List.nil();
+        if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
+            if ((mods.flags & Flags.SEALED) == 0) {
+                log.error(token.pos, Errors.PermitsInNoSealedClass);
+            }
+            nextToken();
+            permitting = typeList();
+        }
         List<JCTree> defs = classInterfaceOrRecordBody(name, false, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
-            mods, name, typarams, extending, implementing, defs));
+            mods, name, typarams, extending, implementing, permitting, defs));
         attach(result, dc);
         return result;
     }
@@ -3789,9 +3839,18 @@ public class JavacParser implements Parser {
             nextToken();
             extending = typeList();
         }
-        List<JCTree> defs = classInterfaceOrRecordBody(name, true, false);
+        List<JCExpression> permitting = List.nil();
+        if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
+            if ((mods.flags & Flags.SEALED) == 0) {
+                log.error(token.pos, Errors.PermitsInNoSealedClass);
+            }
+            nextToken();
+            permitting = typeList();
+        }
+        List<JCTree> defs;
+        defs = classInterfaceOrRecordBody(name, true, false);
         JCClassDecl result = toP(F.at(pos).ClassDef(
-            mods, name, typarams, null, extending, defs));
+            mods, name, typarams, null, extending, permitting, defs));
         attach(result, dc);
         return result;
     }

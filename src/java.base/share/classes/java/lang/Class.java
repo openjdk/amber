@@ -4223,4 +4223,37 @@ public final class Class<T> implements java.io.Serializable,
     public Optional<ClassDesc> describeConstable() {
         return Optional.of(ClassDesc.ofDescriptor(descriptorString()));
     }
+
+    /**
+     * Returns an array containing {@code ClassDesc} objects representing all the
+     * permitted subtypes of this class if it is sealed. Returns an empty array if this
+     * class is not sealed.
+     * @return an array of class descriptors of all the permitted subtypes of this class
+     * @throws IllegalArgumentException if a class descriptor is not in the correct format
+     * @since 14
+     */
+    public ClassDesc[] getPermittedSubtypes() {
+        String[] descriptors = getPermittedSubtypes0();
+        if (descriptors == null || descriptors.length == 0) {
+            return new ClassDesc[0];
+        }
+        ClassDesc[] constants = new ClassDesc[descriptors.length];
+        int i = 0;
+        for (String descriptor : descriptors) {
+            ClassDesc cd = ClassDesc.of(descriptor.replace('/', '.'));
+            constants[i++] = cd;
+        }
+        return constants;
+    }
+
+    /**
+     * Returns true if this class or interface is sealed.
+     * @return returns true if the class or interface is sealed
+     * @since 14
+     */
+    public boolean isSealed() {
+        return getPermittedSubtypes().length != 0;
+    }
+
+    private native String[] getPermittedSubtypes0();
 }

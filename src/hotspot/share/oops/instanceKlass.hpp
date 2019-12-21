@@ -183,6 +183,10 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
+  // The PermittedSubtypes attribute. An array of shorts, where each is a
+  // class info index for the class that is a permitted subtype.
+  Array<jushort>* _permitted_subtypes;
+
   // The contents of the Record attribute.
   Array<RecordComponent*>* _record_components;
 
@@ -452,6 +456,10 @@ class InstanceKlass: public Klass {
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
 
+  // permitted subtypes
+  Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
+  void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
+
   // record components
   Array<RecordComponent*>* record_components() const { return _record_components; }
   void set_record_components(Array<RecordComponent*>* record_components) {
@@ -464,6 +472,9 @@ private:
   bool has_nest_member(InstanceKlass* k, TRAPS) const;
 
 public:
+  // Called to verify that k is a permitted subtype of this class
+  bool has_as_permitted_subtype(const InstanceKlass* k, TRAPS) const;
+
   // Returns nest-host class, resolving and validating it if needed
   // Returns NULL if an exception occurs during loading, or validation fails
   InstanceKlass* nest_host(Symbol* validationException, TRAPS);
@@ -519,6 +530,9 @@ public:
   bool is_reentrant_initialization(Thread *thread)  { return thread == _init_thread; }
   ClassState  init_state()                 { return (ClassState)_init_state; }
   bool is_rewritten() const                { return (_misc_flags & _misc_rewritten) != 0; }
+
+  // is this a sealed class
+  bool is_sealed() const;
 
   // defineClass specified verification
   bool should_verify_class() const         {

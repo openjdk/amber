@@ -68,6 +68,7 @@ import com.sun.tools.classfile.RuntimeParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleParameterAnnotations_attribute;
 import com.sun.tools.classfile.RuntimeVisibleTypeAnnotations_attribute;
+import com.sun.tools.classfile.PermittedSubtypes_attribute;
 import com.sun.tools.classfile.Signature;
 import com.sun.tools.classfile.Signature_attribute;
 import com.sun.tools.classfile.SourceDebugExtension_attribute;
@@ -882,6 +883,22 @@ public class AttributeWriter extends BasicWriter
     @Override
     public Void visitRuntimeInvisibleParameterAnnotations(RuntimeInvisibleParameterAnnotations_attribute attr, Void ignore) {
         visitParameterAnnotations("RuntimeInvisibleParameterAnnotations:", (RuntimeParameterAnnotations_attribute) attr);
+        return null;
+    }
+
+    @Override
+    public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, Void ignore) {
+        println("PermittedSubtypes:");
+        indent(+1);
+        try {
+            CONSTANT_Class_info[] subtypes = attr.getSubtypes(constant_pool);
+            for (int i = 0; i < subtypes.length; i++) {
+                println(constantWriter.stringValue(subtypes[i]));
+            }
+            indent(-1);
+        } catch (ConstantPoolException ex) {
+            throw new AssertionError(ex);
+        }
         return null;
     }
 

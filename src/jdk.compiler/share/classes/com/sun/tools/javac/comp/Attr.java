@@ -27,7 +27,6 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -171,6 +170,7 @@ public class Attr extends JCTree.Visitor {
                 (!preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF) || preview.isEnabled());
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
+        allowStaticMembersInInners = options.isSet("allowStaticMembersInInners");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -215,6 +215,11 @@ public class Attr extends JCTree.Visitor {
      * Switch: name of source level; used for error reporting.
      */
     String sourceName;
+
+    /** Switch: allow static members in inner classes
+     *
+     */
+    boolean allowStaticMembersInInners;
 
     /** Check kind and type of given tree against protokind and prototype.
      *  If check succeeds, store type in tree and return it.
@@ -865,6 +870,7 @@ public class Attr extends JCTree.Visitor {
      *  @param interfaceExpected true if only an interface is expected here.
      */
     Type attribBase(JCTree tree,
+                    ClassSymbol subType,
                     Env<AttrContext> env,
                     boolean classExpected,
                     boolean interfaceExpected,
@@ -872,9 +878,10 @@ public class Attr extends JCTree.Visitor {
         Type t = tree.type != null ?
             tree.type :
             attribType(tree, env);
-        return checkBase(t, tree, env, classExpected, interfaceExpected, checkExtensible);
+        return checkBase(t, subType, tree, env, classExpected, interfaceExpected, checkExtensible);
     }
     Type checkBase(Type t,
+                   ClassSymbol subType,
                    JCTree tree,
                    Env<AttrContext> env,
                    boolean classExpected,
@@ -2903,6 +2910,10 @@ public class Attr extends JCTree.Visitor {
             Type currentTarget = targetInfo.target;
             Type lambdaType = targetInfo.descriptor;
 
+            if (currentTarget.tsym != null && ((ClassSymbol)currentTarget.tsym).isSealed()) {
+                log.error(that, Errors.CantInheritFromSealed(currentTarget.tsym));
+            }
+
             if (currentTarget.isErroneous()) {
                 result = that.type = currentTarget;
                 return;
@@ -4788,7 +4799,7 @@ public class Attr extends JCTree.Visitor {
         Set<Type> boundSet = new HashSet<>();
         if (bounds.nonEmpty()) {
             // accept class or interface or typevar as first bound.
-            bounds.head.type = checkBase(bounds.head.type, bounds.head, env, false, false, false);
+            bounds.head.type = checkBase(bounds.head.type, syms.unknownSymbol, bounds.head, env, false, false, false);
             boundSet.add(types.erasure(bounds.head.type));
             if (bounds.head.type.isErroneous()) {
                 return bounds.head.type;
@@ -4804,7 +4815,7 @@ public class Attr extends JCTree.Visitor {
                 // if first bound was a class or interface, accept only interfaces
                 // as further bounds.
                 for (JCExpression bound : bounds.tail) {
-                    bound.type = checkBase(bound.type, bound, env, false, true, false);
+                    bound.type = checkBase(bound.type, syms.unknownSymbol, bound, env, false, true, false);
                     if (bound.type.isErroneous()) {
                         bounds = List.of(bound);
                     }
@@ -4997,6 +5008,13 @@ public class Attr extends JCTree.Visitor {
             // Get environment current at the point of class definition.
             Env<AttrContext> env = typeEnvs.get(c);
 
+            if (c.isSealed() &&
+                    !((ClassType)c.type).isPermittedExplicit &&
+                    ((ClassType)c.type).permitted.isEmpty() &&
+                    (c.isInterface() || c.isAbstract())) {
+                log.error(env.tree, Errors.SealedInterfaceOrAbstractMustHaveSubtypes);
+            }
+
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
             // because the annotations were not available at the time the env was created. Therefore,
             // we look up the environment chain for the first enclosing environment for which the
@@ -5142,17 +5160,19 @@ public class Attr extends JCTree.Visitor {
         for (List<JCTree> l = tree.defs; l.nonEmpty(); l = l.tail) {
             // Attribute declaration
             attribStat(l.head, env);
-            // Check that declarations in inner classes are not static (JLS 8.1.2)
-            // Make an exception for static constants.
-            if (c.owner.kind != PCK &&
-                ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
-                (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
-                Symbol sym = null;
-                if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
-                if (sym == null ||
-                    sym.kind != VAR ||
-                    ((VarSymbol) sym).getConstValue() == null)
-                    log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+            if (!allowStaticMembersInInners) {
+                // Check that declarations in inner classes are not static (JLS 8.1.2)
+                // Make an exception for static constants.
+                if (c.owner.kind != PCK &&
+                        ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
+                        (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
+                    Symbol sym = null;
+                    if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
+                    if (sym == null ||
+                            sym.kind != VAR ||
+                            ((VarSymbol) sym).getConstValue() == null)
+                        log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
+                }
             }
         }
 

@@ -25,6 +25,7 @@
 
 package com.sun.source.tree;
 
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Name;
 
@@ -84,6 +85,26 @@ public interface ClassTree extends StatementTree {
      * @return the interfaces
      */
     List<? extends Tree> getImplementsClause();
+
+    /**
+     * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns the subtypes permitted by this type declaration.
+     * @implSpec this implementation returns an empty list
+     * @return the subtypes
+     * @since amber
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+                                             essentialAPI=false)
+    @SuppressWarnings("preview")
+    default List<? extends Tree> getPermitsClause() {
+        return Collections.emptyList();
+    }
 
     /**
      * Returns the members declared in this type declaration.

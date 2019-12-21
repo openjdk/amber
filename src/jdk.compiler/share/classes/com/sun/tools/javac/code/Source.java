@@ -209,6 +209,7 @@ public enum Source {
         PATTERN_MATCHING_IN_INSTANCEOF(JDK15, Fragments.FeaturePatternMatchingInstanceof, DiagKind.NORMAL),
         REIFIABLE_TYPES_INSTANCEOF(JDK15, Fragments.FeatureReifiableTypesInstanceof, DiagKind.PLURAL),
         RECORDS(JDK15, Fragments.FeatureRecords, DiagKind.PLURAL),
+        SEALED_TYPES(JDK15, Fragments.FeatureSealedTypes, DiagKind.PLURAL),
         ;
 
         enum DiagKind {

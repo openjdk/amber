@@ -909,6 +909,22 @@ public class ClassWriter extends ClassFile {
         }
     }
 
+    /** Write "PermittedSubtypes" attribute.
+     */
+    int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
+        ClassType ct = (ClassType)csym.type;
+        if (ct.permitted.nonEmpty()) {
+            int alenIdx = writeAttr(names.PermittedSubtypes);
+            databuf.appendChar(ct.permitted.size());
+            for (Type t : ct.permitted) {
+                databuf.appendChar(poolWriter.putClass((ClassSymbol)t.tsym));
+            }
+            endAttr(alenIdx);
+            return 1;
+        }
+        return 0;
+    }
+
     /** Write "bootstrapMethods" attribute.
      */
     void writeBootstrapMethods() {
@@ -1521,6 +1537,12 @@ public class ClassWriter extends ClassFile {
             flags = ACC_MODULE;
         } else {
             flags = adjustFlags(c.flags() & ~DEFAULT);
+            if (c.isSealed()) {
+                flags &= ~SEALED;
+                if (((ClassType)c.type).permitted.isEmpty()) {
+                    flags |= FINAL;
+                }
+            }
             if ((flags & PROTECTED) != 0) flags |= PUBLIC;
             flags = flags & ClassFlags & ~STRICTFP;
             if ((flags & INTERFACE) == 0) flags |= ACC_SUPER;
@@ -1633,6 +1655,10 @@ public class ClassWriter extends ClassFile {
 
         if (c.isRecord()) {
             acount += writeRecordAttribute(c);
+        }
+
+        if (target.hasSealedTypes()) {
+            acount += writePermittedSubtypesIfNeeded(c);
         }
 
         if (!poolWriter.bootstrapMethods.isEmpty()) {

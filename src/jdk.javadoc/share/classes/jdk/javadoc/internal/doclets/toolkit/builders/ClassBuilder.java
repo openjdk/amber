@@ -86,8 +86,6 @@ public class ClassBuilder extends AbstractBuilder {
      */
     private Content contentTree;
 
-    private final Utils utils;
-
     /**
      * Construct a new ClassBuilder.
      *
@@ -99,7 +97,6 @@ public class ClassBuilder extends AbstractBuilder {
         super(context);
         this.typeElement = typeElement;
         this.writer = writer;
-        this.utils = configuration.utils;
         if (utils.isInterface(typeElement)) {
             isInterface = true;
             isEnum = false;

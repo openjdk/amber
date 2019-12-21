@@ -151,8 +151,8 @@ public class WorkArounds {
 
     /*
      * TODO: This method exists because of a bug in javac which does not
-     * handle "@deprecated tag in package-info.java", when this issue
-     * is fixed this method and its uses must be jettisoned.
+     *       handle "@deprecated tag in package-info.java", when this issue
+     *       is fixed this method and its uses must be jettisoned.
      */
     public boolean isDeprecated0(Element e) {
         if (!utils.getDeprecatedTrees(e).isEmpty()) {
@@ -183,7 +183,7 @@ public class WorkArounds {
     }
 
     // TODO: we need ElementUtils.getPackage to cope with input strings
-    // to return the proper unnamedPackage for all supported releases.
+    //       to return the proper unnamedPackage for all supported releases.
     PackageElement getUnnamedPackage() {
         return (Feature.MODULES.allowedInSource(toolEnv.source))
                 ? toolEnv.syms.unnamedModule.unnamedPackage

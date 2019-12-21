@@ -168,7 +168,8 @@ public class Preview {
         if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
             feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
             feature == Feature.TEXT_BLOCKS ||
-            feature == Feature.RECORDS)
+            feature == Feature.RECORDS ||
+            feature == Feature.SEALED_TYPES)
             return true;
         //Note: this is a backdoor which allows to optionally treat all features as 'preview' (for testing).
         //When real preview features will be added, this method can be implemented to return 'true'

@@ -1363,6 +1363,11 @@ public class ClassfileInspector {
         }
 
         @Override
+        public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, T p) {
+            return null;
+        }
+
+        @Override
         public Void visitRecord(Record_attribute attr, T p) {
             return null;
         }

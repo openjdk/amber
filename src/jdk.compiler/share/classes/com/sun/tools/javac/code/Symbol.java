@@ -419,6 +419,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return (flags() & ENUM) != 0;
     }
 
+    public boolean isSealed() {
+        return (flags_field & SEALED) != 0;
+    }
+
+    public boolean isNonSealed() {
+        return (flags_field & NON_SEALED) != 0;
+    }
+
     public boolean isFinal() {
         return (flags_field & FINAL) != 0;
     }
@@ -1578,6 +1586,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public boolean isRecord() {
             return (flags_field & RECORD) != 0;
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type> getPermittedSubtypes() {
+            return ((ClassType)type).permitted;
         }
     }
 

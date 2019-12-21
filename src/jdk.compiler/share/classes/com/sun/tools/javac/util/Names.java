@@ -161,6 +161,7 @@ public class Names {
     public final Name Synthetic;
     public final Name Value;
     public final Name Varargs;
+    public final Name PermittedSubtypes;
 
     // members of java.lang.annotation.ElementType
     public final Name ANNOTATION_TYPE;
@@ -203,12 +204,17 @@ public class Names {
     public final Name bootstrap;
 
     public final Name record;
+    public final Name non;
 
     // serialization members, used by records too
     public final Name serialPersistentFields;
     public final Name writeObject;
     public final Name writeReplace;
     public final Name readObjectNoData;
+
+    // sealed types
+    public final Name permits;
+    public final Name sealed;
 
     public final Name.Table table;
 
@@ -329,6 +335,7 @@ public class Names {
         Synthetic = fromString("Synthetic");
         Value = fromString("Value");
         Varargs = fromString("Varargs");
+        PermittedSubtypes = fromString("PermittedSubtypes");
 
         // members of java.lang.annotation.ElementType
         ANNOTATION_TYPE = fromString("ANNOTATION_TYPE");
@@ -367,11 +374,16 @@ public class Names {
 
         bootstrap = fromString("bootstrap");
         record = fromString("record");
+        non = fromString("non");
 
         serialPersistentFields = fromString("serialPersistentFields");
         writeObject = fromString("writeObject");
         writeReplace = fromString("writeReplace");
         readObjectNoData = fromString("readObjectNoData");
+
+        // sealed types
+        permits = fromString("permits");
+        sealed = fromString("sealed");
     }
 
     protected Name.Table createTable(Options options) {

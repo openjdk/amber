@@ -72,6 +72,7 @@ class klassVtable {
                                                    const Klass* super,
                                                    Array<Method*>* methods,
                                                    AccessFlags class_flags,
+                                                   bool is_class_sealed,
                                                    u2 major_version,
                                                    Handle classloader,
                                                    Symbol* classname,
@@ -114,6 +115,7 @@ class klassVtable {
                                      Handle classloader,
                                      Symbol* classname,
                                      AccessFlags access_flags,
+                                     bool is_sealed,
                                      u2 major_version,
                                      TRAPS);
 

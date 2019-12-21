@@ -80,6 +80,7 @@ static JNINativeMethod methods[] = {
     {"getNestMembers0",      "()[" CLS,     (void *)&JVM_GetNestMembers},
     {"getRecordComponents0", "()[" RC,      (void *)&JVM_GetRecordComponents},
     {"isRecord0",            "()Z",         (void *)&JVM_IsRecord},
+    {"getPermittedSubtypes0", "()[" STR,    (void *)&JVM_GetPermittedSubtypes},
 };
 
 #undef OBJ

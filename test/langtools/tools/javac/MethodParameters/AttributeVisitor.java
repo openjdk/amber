@@ -64,5 +64,6 @@ class AttributeVisitor<R, P> implements Attribute.Visitor<R, P> {
     public R visitStackMap(StackMap_attribute attr, P p) { return null; }
     public R visitStackMapTable(StackMapTable_attribute attr, P p) { return null; }
     public R visitSynthetic(Synthetic_attribute attr, P p) { return null; }
+    public R visitPermittedSubtypes(PermittedSubtypes_attribute attr, P p) { return null; }
     public R visitRecord(Record_attribute attr, P p) { return null; }
 }

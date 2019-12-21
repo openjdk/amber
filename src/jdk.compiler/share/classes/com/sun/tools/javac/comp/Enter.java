@@ -559,6 +559,32 @@ public class Enter extends JCTree.Visitor {
      */
     public void main(List<JCCompilationUnit> trees) {
         complete(trees, null);
+        sealedClassVisitor.scan(trees);
+    }
+
+    SealedClassVisitor sealedClassVisitor = new SealedClassVisitor();
+
+    class SealedClassVisitor extends TreeScanner {
+        @Override
+        public void visitClassDef(JCClassDecl tree) {
+            super.visitClassDef(tree);
+            if (tree != null &&
+                    tree.sym != null &&
+                    tree.sym.type != null &&
+                    (tree.sym.flags_field & Flags.NON_SEALED) == 0 &&
+                    (tree.sym.flags_field & Flags.SEALED) == 0 &&
+                    ((ClassType)tree.sym.type).hasSealedSuperInSameCU) {
+                // just checking we don't want final abstract classes
+                if ((((ClassType)tree.sym.type).permitted.isEmpty())) {
+                    if ((tree.sym.flags_field & ABSTRACT) != 0 || (tree.sym.flags_field & INTERFACE) != 0) {
+                        log.error(tree.pos(), Errors.ClassCantBeLeafInSealedHierarchy(tree.sym));
+                    } else {
+                        tree.sym.flags_field |= (((ClassType)tree.sym.type).permitted.isEmpty()) ? FINAL : SEALED;
+                    }
+                }
+                //tree.sym.flags_field = chk.checkFlags(tree.pos(), tree.sym.flags_field, tree.sym, tree);
+            }
+        }
     }
 
     /** Main method: enter classes from the list of toplevel trees, possibly
