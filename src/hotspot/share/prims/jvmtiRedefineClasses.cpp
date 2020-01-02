@@ -852,7 +852,7 @@ static jvmtiError check_record_attribute(InstanceKlass* the_class, InstanceKlass
 
 static jvmtiError check_permitted_subtypes_attribute(InstanceKlass* the_class,
                                                      InstanceKlass* scratch_class) {
-  // Check whether the class NestMembers attribute has been changed.
+  // Check whether the class PermittedSubtypes attribute has been changed.
   Array<u2>* the_permitted_subtypes = the_class->permitted_subtypes();
   Array<u2>* scr_permitted_subtypes = scratch_class->permitted_subtypes();
   bool the_subtypes_exists = the_permitted_subtypes != Universe::the_empty_short_array();
@@ -1851,6 +1851,12 @@ bool VM_RedefineClasses::rewrite_cp_refs(InstanceKlass* scratch_class,
     return false;
   }
 
+  // rewrite constant pool references in the PermittedSubtypes attribute:
+  if (!rewrite_cp_refs_in_permitted_subtypes_attribute(scratch_class)) {
+    // propagate failure back to caller
+    return false;
+  }
+
   // rewrite constant pool references in the methods:
   if (!rewrite_cp_refs_in_methods(scratch_class, THREAD)) {
     // propagate failure back to caller
@@ -1984,6 +1990,20 @@ bool VM_RedefineClasses::rewrite_cp_refs_in_record_attribute(
           return false;
         }
       }
+    }
+  }
+  return true;
+}
+
+// Rewrite constant pool references in the PermittedSubtypes attribute.
+bool VM_RedefineClasses::rewrite_cp_refs_in_permitted_subtypes_attribute(
+       InstanceKlass* scratch_class) {
+
+  Array<u2>* permitted_subtypes = scratch_class->permitted_subtypes();
+  if (permitted_subtypes != NULL) {
+    for (int i = 0; i < permitted_subtypes->length(); i++) {
+      u2 cp_index = permitted_subtypes->at(i);
+      permitted_subtypes->at_put(i, find_new_index(cp_index));
     }
   }
   return true;

@@ -21,24 +21,9 @@
  * questions.
  */
 
-/*
- * @test
- * @compile --enable-preview -source ${jdk.version} abstractSealedTest.java
- * @run main/othervm --enable-preview abstractSealedTest
- */
-
-// Test that a sealed class can be abstract
-public class abstractSealedTest {
-
-    abstract sealed class abstractShape permits Circle {
-        abstract void draw();
+public class Host {
+    public static String getID() { return "Host/redef/Host.java";}
+    public int m() {
+        return 2; // redefined class
     }
-
-    sealed class Circle extends abstractShape {
-        void draw() {}
-    }
-
-    Circle circle = new Circle();
-
-    public static void main(String... args) { }
 }

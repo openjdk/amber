@@ -551,6 +551,11 @@ JVM_IsRecord(JNIEnv *env, jclass cls);
 JNIEXPORT jobjectArray JNICALL
 JVM_GetRecordComponents(JNIEnv *env, jclass ofClass);
 
+/* Sealed types - since JDK 15 */
+
+JNIEXPORT jobjectArray JNICALL
+JVM_GetPermittedSubtypes(JNIEnv *env, jclass current);
+
 /* The following two reflection routines are still needed due to startup time issues */
 /*
  * java.lang.reflect.Method

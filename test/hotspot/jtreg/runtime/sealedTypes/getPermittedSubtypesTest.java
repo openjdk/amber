@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 /*
  * @test
  * @compile getPermittedSubtypes.jcod
- * @compile --enable-preview --source 14 getPermittedSubtypesTest.java
+ * @compile --enable-preview -source ${jdk.version} getPermittedSubtypesTest.java
  * @run main/othervm --enable-preview getPermittedSubtypesTest
  */
 

@@ -223,7 +223,7 @@ public interface VirtualMachine extends Mirror {
      *   <LI>deleting a method
      *   <LI>changing class modifiers
      *   <LI>changing method modifiers
-     *   <LI>changing the {@code NestHost}, {@code NestMembers}, or {@code Record} class attributes
+     *   <LI>changing the {@code NestHost}, {@code NestMembers}, {@code PermittedSubtypes}, or {@code Record} class attributes
      *   </UL>
      * </UL>
      *

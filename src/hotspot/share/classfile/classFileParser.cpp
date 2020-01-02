@@ -3782,22 +3782,27 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
               }
             }
             cfs->skip_u1(attribute_length, CHECK);
-          } else if (tag == vmSymbols::tag_permitted_subtypes()) {
-            if (supports_sealed_types()) {
-              // Check for PermittedSubtypes tag
-              // Classes with empty PermittedSubtype attributes are marked ACC_FINAL.
-              if (_access_flags.is_final() && attribute_length > 2) {
-                classfile_parse_error("PermittedSubtypes attribute in final class file %s", CHECK);
+          } else if (_major_version >= JAVA_15_VERSION) {
+            if (tag == vmSymbols::tag_permitted_subtypes()) {
+              if (supports_sealed_types()) {
+                // Check for PermittedSubtypes tag
+                // Classes with empty PermittedSubtype attributes are marked ACC_FINAL.
+                if (_access_flags.is_final() && attribute_length > 2) {
+                  classfile_parse_error("PermittedSubtypes attribute in final class file %s", CHECK);
+                }
+                if (parsed_permitted_subtypes_attribute) {
+                  classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
+                } else {
+                  parsed_permitted_subtypes_attribute = true;
+                }
+                permitted_subtypes_attribute_start = cfs->current();
+                permitted_subtypes_attribute_length = attribute_length;
               }
-              if (parsed_permitted_subtypes_attribute) {
-                classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
-              } else {
-                parsed_permitted_subtypes_attribute = true;
-              }
-              permitted_subtypes_attribute_start = cfs->current();
-              permitted_subtypes_attribute_length = attribute_length;
+              cfs->skip_u1(attribute_length, CHECK);
+            } else {
+              // Unknown attribute
+              cfs->skip_u1(attribute_length, CHECK);
             }
-            cfs->skip_u1(attribute_length, CHECK);
           } else {
             // Unknown attribute
             cfs->skip_u1(attribute_length, CHECK);
