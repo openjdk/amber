@@ -305,6 +305,15 @@ public:
   }
 
   void prepare() {
+    // Reset the claim and clear scan top for all regions, including
+    // regions currently not available or free. Since regions might
+    // become used during the collection these values must be valid
+    // for those regions as well.
+    for (size_t i = 0; i < _max_regions; i++) {
+      reset_region_claim((uint)i);
+      clear_scan_top((uint)i);
+    }
+
     _all_dirty_regions = new G1DirtyRegions(_max_regions);
     _next_dirty_regions = new G1DirtyRegions(_max_regions);
   }
@@ -885,7 +894,6 @@ void G1RemSet::scan_collection_set_regions(G1ParScanThreadState* pss,
 void G1RemSet::prepare_region_for_scan(HeapRegion* region) {
   uint hrm_index = region->hrm_index();
 
-  _scan_state->reset_region_claim(hrm_index);
   if (region->in_collection_set()) {
     // Young regions had their card table marked as young at their allocation;
     // we need to make sure that these marks are cleared at the end of GC, *but*
@@ -893,7 +901,6 @@ void G1RemSet::prepare_region_for_scan(HeapRegion* region) {
     // So directly add them to the "all_dirty_regions".
     // Same for regions in the (initial) collection set: they may contain cards from
     // the log buffers, make sure they are cleaned.
-    _scan_state->clear_scan_top(hrm_index);
     _scan_state->add_all_dirty_region(hrm_index);
   } else if (region->is_old_or_humongous_or_archive()) {
     _scan_state->set_scan_top(hrm_index, region->top());
@@ -920,6 +927,8 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
     uint _merged_fine;
     uint _merged_coarse;
 
+    size_t _cards_dirty;
+
     // Returns if the region contains cards we need to scan. If so, remember that
     // region in the current set of dirty regions.
     bool remember_if_interesting(uint const region_idx) {
@@ -935,7 +944,8 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
       _ct(G1CollectedHeap::heap()->card_table()),
       _merged_sparse(0),
       _merged_fine(0),
-      _merged_coarse(0) { }
+      _merged_coarse(0),
+      _cards_dirty(0) { }
 
     void next_coarse_prt(uint const region_idx) {
       if (!remember_if_interesting(region_idx)) {
@@ -945,7 +955,7 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
       _merged_coarse++;
 
       size_t region_base_idx = (size_t)region_idx << HeapRegion::LogCardsPerRegion;
-      _ct->mark_region_dirty(region_base_idx, HeapRegion::CardsPerRegion);
+      _cards_dirty += _ct->mark_region_dirty(region_base_idx, HeapRegion::CardsPerRegion);
       _scan_state->set_chunk_region_dirty(region_base_idx);
     }
 
@@ -959,7 +969,7 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
       size_t const region_base_idx = (size_t)region_idx << HeapRegion::LogCardsPerRegion;
       BitMap::idx_t cur = bm->get_next_one_offset(0);
       while (cur != bm->size()) {
-        _ct->mark_clean_as_dirty(region_base_idx + cur);
+        _cards_dirty += _ct->mark_clean_as_dirty(region_base_idx + cur);
         _scan_state->set_chunk_dirty(region_base_idx + cur);
         cur = bm->get_next_one_offset(cur + 1);
       }
@@ -975,7 +985,7 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
       size_t const region_base_idx = (size_t)region_idx << HeapRegion::LogCardsPerRegion;
       for (uint i = 0; i < num_cards; i++) {
         size_t card_idx = region_base_idx + cards[i];
-        _ct->mark_clean_as_dirty(card_idx);
+        _cards_dirty += _ct->mark_clean_as_dirty(card_idx);
         _scan_state->set_chunk_dirty(card_idx);
       }
     }
@@ -994,6 +1004,8 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
     size_t merged_sparse() const { return _merged_sparse; }
     size_t merged_fine() const { return _merged_fine; }
     size_t merged_coarse() const { return _merged_coarse; }
+
+    size_t cards_dirty() const { return _cards_dirty; }
   };
 
   // Visitor for the remembered sets of humongous candidate regions to merge their
@@ -1039,6 +1051,8 @@ class G1MergeHeapRootsTask : public AbstractGangTask {
     size_t merged_sparse() const { return _cl.merged_sparse(); }
     size_t merged_fine() const { return _cl.merged_fine(); }
     size_t merged_coarse() const { return _cl.merged_coarse(); }
+
+    size_t cards_dirty() const { return _cl.cards_dirty(); }
   };
 
   // Visitor for the log buffer entries to merge them into the card table.
@@ -1140,6 +1154,7 @@ public:
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_sparse(), G1GCPhaseTimes::MergeRSMergedSparse);
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_fine(), G1GCPhaseTimes::MergeRSMergedFine);
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_coarse(), G1GCPhaseTimes::MergeRSMergedCoarse);
+      p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.cards_dirty(), G1GCPhaseTimes::MergeRSDirtyCards);
     }
 
     // Merge remembered sets of current candidates.
@@ -1151,6 +1166,7 @@ public:
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_sparse(), G1GCPhaseTimes::MergeRSMergedSparse);
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_fine(), G1GCPhaseTimes::MergeRSMergedFine);
       p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.merged_coarse(), G1GCPhaseTimes::MergeRSMergedCoarse);
+      p->record_or_add_thread_work_item(merge_remset_phase, worker_id, cl.cards_dirty(), G1GCPhaseTimes::MergeRSDirtyCards);
     }
 
     // Apply closure to log entries in the HCC.
