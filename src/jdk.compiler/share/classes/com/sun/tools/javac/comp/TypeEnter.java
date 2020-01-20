@@ -64,6 +64,8 @@ import com.sun.tools.javac.util.Dependencies.CompletionCause;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 
+import sun.invoke.util.BytecodeName;
+
 /** This is the second phase of Enter, in which classes are completed
  *  by resolving their headers and entering their members in the into
  *  the class scope. See Enter for an overall overview.
@@ -1148,8 +1150,18 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(equals, env);
             }
 
-            // fields can't be varargs, lets remove the flag
             List<JCVariableDecl> recordFields = TreeInfo.recordFields(tree);
+            List<Type> fieldTypes = recordFields.stream().map(f -> f.sym.type).collect(List.collector());
+            String argsTypeSig = '(' + argsTypeSig(fieldTypes) + ')';
+            String extractorStr = BytecodeName.toBytecodeName("$pattern$" + tree.sym.name + "$" + argsTypeSig);
+            Name extractorName = names.fromString(extractorStr);
+            MethodType extractorMT = new MethodType(List.nil(), syms.patternHandleType, List.nil(), syms.methodClass);
+            MethodSymbol extractorSym = new MethodSymbol(
+                    Flags.PUBLIC | Flags.RECORD | Flags.STATIC,
+                    extractorName, extractorMT, tree.sym);
+            tree.sym.members().enter(extractorSym);
+
+            // fields can't be varargs, lets remove the flag
             for (JCVariableDecl field: recordFields) {
                 field.mods.flags &= ~Flags.VARARGS;
                 field.sym.flags_field &= ~Flags.VARARGS;
@@ -1163,6 +1175,47 @@ public class TypeEnter implements Completer {
                     .forEach(vd -> addAccessor(vd, env));
         }
     }
+        //where:
+            private String argsTypeSig(List<Type> typeList) {
+                LowerSignatureGenerator sg = new LowerSignatureGenerator();
+                sg.assembleSig(typeList);
+                return sg.toString();
+        }
+
+            /**
+             * Signature Generation
+             */
+            private class LowerSignatureGenerator extends Types.SignatureGenerator {
+
+                /**
+                 * An output buffer for type signatures.
+                 */
+                StringBuilder sb = new StringBuilder();
+
+                LowerSignatureGenerator() {
+                    super(types);
+                }
+
+                @Override
+                protected void append(char ch) {
+                    sb.append(ch);
+                }
+
+                @Override
+                protected void append(byte[] ba) {
+                    sb.append(new String(ba));
+                }
+
+                @Override
+                protected void append(Name name) {
+                    sb.append(name.toString());
+                }
+
+                @Override
+                public String toString() {
+                    return sb.toString();
+                }
+            }
 
     private MethodSymbol lookupMethod(TypeSymbol tsym, Name name, List<Type> argtypes) {
         for (Symbol s : tsym.members().getSymbolsByName(name, s -> s.kind == MTH)) {

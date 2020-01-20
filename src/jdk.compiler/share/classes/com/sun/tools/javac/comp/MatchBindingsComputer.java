@@ -36,6 +36,8 @@ import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
+import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
+import com.sun.tools.javac.tree.JCTree.JCPattern;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
@@ -73,6 +75,16 @@ public class MatchBindingsComputer extends TreeScanner {
     @Override
     public void visitBindingPattern(JCBindingPattern tree) {
         bindings = whenTrue ? List.of(tree.symbol) : List.nil();
+    }
+
+     @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        List<BindingSymbol> outBindings = List.nil();
+        for (JCPattern nested : tree.nested) {
+            scan(nested);
+           outBindings = union(tree, outBindings, bindings);
+        }
+        bindings = outBindings;
     }
 
     @Override

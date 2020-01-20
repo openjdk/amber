@@ -27,6 +27,7 @@ package com.sun.tools.javac.tree;
 
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 
 /** A subclass of Tree.Visitor, this class defines
  *  a general tree translator pattern. Translation proceeds recursively in
@@ -358,6 +359,11 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
+        result = tree;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         tree.vartype = translate(tree.vartype);
         result = tree;
@@ -454,6 +460,13 @@ public class TreeTranslator extends JCTree.Visitor {
     public void visitAnnotatedType(JCAnnotatedType tree) {
         tree.annotations = translate(tree.annotations);
         tree.underlyingType = translate(tree.underlyingType);
+        result = tree;
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        tree.deconstructor = translate(tree.deconstructor);
+        tree.nested = translate(tree.nested);
         result = tree;
     }
 

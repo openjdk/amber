@@ -55,6 +55,7 @@ public class BindingsTest1 {
         }
 
         // Test for (e1 || e2).F = union(e1.F, e2.F)
+        //XXX:
         if (!(o1 instanceof String s) || !(o3 instanceof Integer in)){
         } else {
             s.length();

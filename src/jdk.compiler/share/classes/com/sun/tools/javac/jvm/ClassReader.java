@@ -402,6 +402,20 @@ public class ClassReader {
  * Reading Types
  ***********************************************************************/
 
+    public Type decodeType(ModuleSymbol msym, byte[] sig, int[] idx) {
+        signature = sig;
+        sigp = idx[0];
+        siglimit = sig.length;
+        ModuleSymbol prevModule = currentModule;
+        currentModule = msym;
+        try {
+            return sigToType();
+        } finally {
+            idx[0] = sigp;
+            currentModule = prevModule;
+        }
+    }
+
     /** The unread portion of the currently read type is
      *  signature[sigp..siglimit-1].
      */

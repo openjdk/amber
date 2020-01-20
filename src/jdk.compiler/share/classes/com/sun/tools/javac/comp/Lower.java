@@ -51,6 +51,7 @@ import com.sun.tools.javac.tree.EndPosTable;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
+import com.sun.tools.javac.code.Kinds.Kind;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
@@ -2454,7 +2455,8 @@ public class Lower extends TreeTranslator {
         tree.defs = tree.defs.appendList(List.of(
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
-                generateRecordMethod(tree, names.equals, vars, getterMethHandles)
+                generateRecordMethod(tree, names.equals, vars, getterMethHandles),
+                recordExtractor(tree, getterMethHandles)
         ));
     }
 
@@ -2512,45 +2514,41 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    private String argsTypeSig(List<Type> typeList) {
-        LowerSignatureGenerator sg = new LowerSignatureGenerator();
-        sg.assembleSig(typeList);
-        return sg.toString();
-    }
+    JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
+        make_at(tree.pos());
 
-    /**
-     * Signature Generation
-     */
-    private class LowerSignatureGenerator extends Types.SignatureGenerator {
+        MethodSymbol extractorSym =
+                (MethodSymbol) tree.sym.members().getSymbols(sym -> sym.kind == Kind.MTH && (sym.flags() & Flags.RECORD) != 0).iterator().next();
 
-        /**
-         * An output buffer for type signatures.
-         */
-        StringBuilder sb = new StringBuilder();
+        // let's create the condy now
+        Name bsmName = names.ofLazyProjection;
+        List<Type> staticArgTypes = List.of(syms.classType,
+                new ArrayType(syms.methodHandleType, syms.arrayClass));
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                syms.classType).appendList(staticArgTypes);
 
-        LowerSignatureGenerator() {
-            super(types);
+        Symbol bsm = rs.resolveInternalMethod(tree, attrEnv, syms.patternHandlesType,
+                bsmName, bsm_staticArgs, List.nil());
+
+        LoadableConstant[] staticArgs = new LoadableConstant[1 + getterMethHandles.length];
+        staticArgs[0] = (ClassType)tree.sym.type;
+        int index = 1;
+        for (MethodHandleSymbol mho : getterMethHandles) {
+            staticArgs[index] = mho;
+            index++;
         }
 
-        @Override
-        protected void append(char ch) {
-            sb.append(ch);
-        }
+        Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(extractorSym.name,
+                syms.noSymbol,
+                ((MethodSymbol)bsm).asHandle(),
+                syms.patternHandleType,
+                staticArgs);
+        JCIdent ident = make.Ident(dynSym);
+        ident.type = syms.patternHandleType;
 
-        @Override
-        protected void append(byte[] ba) {
-            sb.append(new String(ba));
-        }
-
-        @Override
-        protected void append(Name name) {
-            sb.append(name.toString());
-        }
-
-        @Override
-        public String toString() {
-            return sb.toString();
-        }
+        // public PatternHandle extractorName () { return ???; }
+        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(ident))));
     }
 
     /**

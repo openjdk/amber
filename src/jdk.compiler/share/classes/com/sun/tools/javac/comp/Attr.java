@@ -25,6 +25,8 @@
 
 package com.sun.tools.javac.comp;
 
+import sun.invoke.util.BytecodeName;
+
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -119,6 +121,7 @@ public class Attr extends JCTree.Visitor {
     final Dependencies dependencies;
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
+    final ClassReader reader;
     final MatchBindingsComputer matchBindingsComputer;
 
     public static Attr instance(Context context) {
@@ -156,6 +159,7 @@ public class Attr extends JCTree.Visitor {
         typeEnvs = TypeEnvs.instance(context);
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
+        reader = ClassReader.instance(context);
         matchBindingsComputer = MatchBindingsComputer.instance(context);
 
         Options options = Options.instance(context);
@@ -3908,16 +3912,83 @@ public class Attr extends JCTree.Visitor {
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
     }
 
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
+        tree.type = resultInfo.pt;
+        result = tree.type;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
-        ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
-        tree.type = attribTree(tree.vartype, env, varInfo);
-        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype.type, env.info.scope.owner);
+        if (tree.vartype != null) {
+            ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
+            tree.type = attribTree(tree.vartype, env, varInfo);
+        } else {
+            tree.type = resultInfo.pt;
+        }
+        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype != null ? tree.vartype.type : (tree.type.hasTag(BOT) ? syms.objectType : tree.type), env.info.scope.owner);
         if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
             chk.checkTransparentVar(tree.pos(), v, env.info.scope);
         }
-        annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
-        annotate.flush();
+        if (tree.vartype != null) {
+            annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
+            annotate.flush();
+        }
         result = tree.type;
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        Type site = tree.type = attribType(tree.deconstructor, env);
+        ListBuffer<Type> components = new ListBuffer<>();
+        for (JCPattern n : tree.nested) {
+            if ((n.hasTag(BINDINGPATTERN) && ((JCBindingPattern) n).vartype == null) || n.hasTag(ANYPATTERN)) {
+                components.append(Type.noType);
+            } else {
+                components.append(attribExpr(n, env));
+            }
+        }
+        Iterable<Symbol> patterns = site.tsym.members().getSymbols(sym -> sym.kind == Kind.MTH && sym.name.startsWith(names.fromString("\\%pattern\\%")));
+        List<Pair<MethodSymbol, List<Type>>> foundPatterns = List.nil();
+        for (Symbol pattern : patterns) {
+            String[] parts = BytecodeName.toSourceName(pattern.name.toString()).split("\\$", 4);
+            if (!parts[2].contentEquals(site.tsym.name))
+                continue;
+            ListBuffer<Type> patternComponents = new ListBuffer<>();
+            byte[] sig = Convert.string2utf(parts[3]);
+            int[] idx = {1};
+            while (sig[idx[0]] != ')') {//TODO: handle errors
+                patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
+            }
+            if (isSubTypesIgnoreNone(components.toList(), patternComponents.toList())) {
+                //found a pattern:
+                foundPatterns = foundPatterns.prepend(Pair.of((MethodSymbol) pattern, patternComponents.toList()));
+            }
+        }
+        if (foundPatterns.size() == 1) {
+            tree.extractorResolver = foundPatterns.head.fst;
+            List<Type> currentTypes;
+            tree.innerTypes = currentTypes = foundPatterns.head.snd;
+            //fix var/any patterns:
+            for (JCPattern nestedPattern : tree.nested) {
+                if (nestedPattern.type == null) {
+                    attribExpr(nestedPattern, env, currentTypes.head);
+                }
+                currentTypes = currentTypes.tail;
+            }
+        } else {
+            //TODO: error:
+        }
+//        //TODO: some checks....
+        result = tree.type;
+    }
+
+    private boolean isSubTypesIgnoreNone(List<Type> ts, List<Type> ss) {
+        while (ts.tail != null && ss.tail != null &&
+               (ts.head == Type.noType || types.isSubtype(ts.head, ss.head))) {
+            ts = ts.tail;
+            ss = ss.tail;
+        }
+        return ts.tail == null && ss.tail == null;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -5580,7 +5651,7 @@ public class Attr extends JCTree.Visitor {
             }
             super.visitBindingPattern(that);
         }
-
+        //XXX: DeconstructionPattern!!!!
         @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {

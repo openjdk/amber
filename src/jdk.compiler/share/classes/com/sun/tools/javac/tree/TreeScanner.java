@@ -27,6 +27,7 @@ package com.sun.tools.javac.tree;
 
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 
 /** A subclass of Tree.Visitor, this class defines
  *  a general tree scanner pattern. Translation proceeds recursively in
@@ -302,9 +303,19 @@ public class TreeScanner extends Visitor {
         scan(tree.pattern);
     }
 
+    @Override
+    public void visitAnyPattern(JCTree.JCAnyPattern that) {
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null)
             scan(tree.vartype);
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern that) {
+        scan(that.deconstructor);
+        scan(that.nested);
     }
 
     public void visitIndexed(JCArrayAccess tree) {

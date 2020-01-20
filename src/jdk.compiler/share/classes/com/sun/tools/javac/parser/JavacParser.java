@@ -240,12 +240,15 @@ public class JavacParser implements Parser {
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
     protected static final int NOLAMBDA = 0x20;
+    protected static final int NOINVOCATION = 0x20;
 
     protected void selectExprMode() {
+        //TODO: copy NOINVOCATION
         mode = (mode & NOLAMBDA) | EXPR;
     }
 
     protected void selectTypeMode() {
+        //TODO: copy NOINVOCATION
         mode = (mode & NOLAMBDA) | TYPE;
     }
 
@@ -748,6 +751,37 @@ public class JavacParser implements Parser {
         return term(EXPR);
     }
 
+    /** parses patterns.
+     */
+
+    public JCPattern parsePattern() {
+        int pos = token.pos;
+        if (token.kind == UNDERSCORE) {
+            nextToken();
+            return toP(F.at(pos).AnyPattern());
+        } else if (token.kind == IDENTIFIER && token.name() == names.var) {
+            nextToken();
+            return toP(F.at(pos).BindingPattern(ident(), null));
+        } else {
+            JCExpression e = term(EXPR | TYPE | NOLAMBDA | NOINVOCATION);
+            if (token.kind == LPAREN) {
+                ListBuffer<JCPattern> nested = new ListBuffer<>();
+                do {
+                    nextToken();
+                    nested.append(parsePattern());
+                } while (token.kind == COMMA);
+                Name name = null;
+                if (token.kind == IDENTIFIER) {
+                    name = ident();
+                }
+                accept(RPAREN);
+                return toP(F.at(pos).DeconstructionPattern(name, e, nested.toList()));
+            } else {
+                return toP(F.at(pos).BindingPattern(ident(), e));
+            }
+        }
+    }
+
     /**
      * parses (optional) type annotations followed by a type. If the
      * annotations are present before the type and are not consumed during array
@@ -930,6 +964,18 @@ public class JavacParser implements Parser {
                 if (token.kind == IDENTIFIER) {
                     checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
                     pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
+                } else if (token.kind == LPAREN) {
+                    ListBuffer<JCPattern> nested = new ListBuffer<>();
+                    do {
+                        nextToken();
+                        nested.append(parsePattern());
+                    } while (token.kind == COMMA);
+                    Name name = null;
+                    if (token.kind == IDENTIFIER) {
+                        name = ident();
+                    }
+                    accept(RPAREN);
+                    pattern = toP(F.at(pos).DeconstructionPattern(name, (JCExpression) pattern, nested.toList()));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
@@ -1259,7 +1305,7 @@ public class JavacParser implements Parser {
                         }
                         break loop;
                     case LPAREN:
-                        if ((mode & EXPR) != 0) {
+                        if ((mode & EXPR) != 0 && (mode & NOINVOCATION) == 0) {
                             selectExprMode();
                             t = arguments(typeArgs, t);
                             if (!annos.isEmpty()) t = illegal(annos.head.pos);

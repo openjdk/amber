@@ -82,6 +82,7 @@ define SetupInterimModule
           --patch-module java.base=$(BUILDTOOLS_OUTPUTDIR)/gensrc/java.base.interim \
           --add-exports java.base/jdk.internal=java.compiler.interim \
           --add-exports java.base/jdk.internal=jdk.compiler.interim \
+          --add-exports java.base/sun.invoke.util=jdk.compiler.interim \
           -Xlint:-module, \
   ))
 

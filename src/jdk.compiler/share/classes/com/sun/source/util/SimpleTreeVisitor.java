@@ -560,7 +560,31 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @since 14
      */
     @Override
+    public R visitAnyPattern(AnyPatternTree node, P p) {
+        return defaultAction(node, p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation calls {@code defaultAction}.
+     *
+     * @param node {@inheritDoc}
+     * @param p {@inheritDoc}
+     * @return  the result of {@code defaultAction}
+     */
+    @Override
     public R visitBindingPattern(BindingPatternTree node, P p) {
+        return defaultAction(node, p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation calls {@code defaultAction}.
+     *
+     * @param node {@inheritDoc}
+     * @param p {@inheritDoc}
+     * @return  the result of {@code defaultAction}
+     */
+    @Override
+    public R visitDeconstructionPattern(DeconstructionPatternTree node, P p) {
         return defaultAction(node, p);
     }
 

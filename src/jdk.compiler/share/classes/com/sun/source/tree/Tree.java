@@ -219,6 +219,11 @@ public interface Tree {
          */
         PARENTHESIZED(ParenthesizedTree.class),
 
+         /**
+         * Used for instances of {@link AnyPatternTree}.
+         */
+        ANY_PATTERN(AnyPatternTree.class),
+
         /**
          * {@preview Associated with pattern matching for instanceof, a preview feature of
          *           the Java language.
@@ -233,6 +238,11 @@ public interface Tree {
          * @since 14
          */
         BINDING_PATTERN(BindingPatternTree.class),
+
+        /**
+         * Used for instances of {@link DeconstructionPatternTree}.
+         */
+        DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
 
         /**
          * Used for instances of {@link PrimitiveTypeTree}.
