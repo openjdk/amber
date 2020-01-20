@@ -254,6 +254,12 @@ public class TransPatterns extends TreeTranslator {
                                                               List.of(tempType),
                                                               syms.classType.tsym));
 
+            if (!tempType.isPrimitive()) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
+            }
+
             MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("ofType"), bsm_staticArgs, List.nil());
 
@@ -266,7 +272,7 @@ public class TransPatterns extends TreeTranslator {
             if (tempType.isPrimitive()) {
                 return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {loadPrimitiveClass(patt.pos(), tempType)});
             } else {
-                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType});
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (ClassType) target});
             }
         } else if (patt.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             JCDeconstructionPattern dpatt = (JCDeconstructionPattern) patt;
