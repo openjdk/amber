@@ -254,24 +254,15 @@ public class TransPatterns extends TreeTranslator {
                                                               List.of(tempType),
                                                               syms.classType.tsym));
 
-//            if (adapt) {
-//                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
-//                                                                     List.of(target),
-//                                                                     syms.classType.tsym));
-//            }
-
             MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("ofType"), bsm_staticArgs, List.nil());
 
             VarSymbol binding = bindingContext.getBindingFor(((JCBindingPattern) patt).symbol);
             
-            Assert.checkNonNull(binding);
+            if (binding != null) {
+                bindingVars.append(binding);
+            }
 
-            bindingVars.append(binding);
-
-//            if (adapt) {
-//                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (Type.JCPrimitiveType) target});
-//            } else {
             if (tempType.isPrimitive()) {
                 return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {loadPrimitiveClass(patt.pos(), tempType)});
             } else {
