@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@ import jdk.test.lib.Utils;
 import jdk.test.lib.containers.docker.Common;
 import jdk.test.lib.containers.docker.DockerRunOptions;
 import jdk.test.lib.containers.docker.DockerTestUtils;
+import jdk.test.lib.process.OutputAnalyzer;
 
 /*
  * @test
@@ -63,7 +64,7 @@ public class TestDockerMemoryMetrics {
             testOomKillFlag("100m", false);
             testOomKillFlag("100m", true);
 
-            testMemoryFailCount("20m");
+            testMemoryFailCount("64m");
 
             testMemorySoftLimit("500m","200m");
 
@@ -119,7 +120,19 @@ public class TestDockerMemoryMetrics {
                 .addJavaOpts("-cp", "/test-classes/")
                 .addJavaOpts("--add-exports", "java.base/jdk.internal.platform=ALL-UNNAMED")
                 .addClassOptions("kernelmem", value);
-        DockerTestUtils.dockerRunJava(opts).shouldHaveExitValue(0).shouldContain("TEST PASSED!!!");
+        OutputAnalyzer oa = DockerTestUtils.dockerRunJava(opts);
+
+        // Some container runtimes (e.g. runc, docker 18.09)
+        // have been built without kernel memory accounting. In
+        // that case, the runtime issues a message on stderr saying
+        // so. Skip the test in that case.
+        if (oa.getStderr().contains("kernel memory accounting disabled")) {
+            System.out.println("Kernel memory accounting disabled, " +
+                                       "skipping the test case");
+            return;
+        }
+
+        oa.shouldHaveExitValue(0).shouldContain("TEST PASSED!!!");
     }
 
     private static void testOomKillFlag(String value, boolean oomKillFlag) throws Exception {

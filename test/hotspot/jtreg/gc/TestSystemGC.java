@@ -37,7 +37,6 @@ package gc;
  * @requires vm.gc.Parallel
  * @summary Runs System.gc() with different flags.
  * @run main/othervm -XX:+UseParallelGC gc.TestSystemGC
- * @run main/othervm -XX:+UseParallelGC -XX:-UseParallelOldGC gc.TestSystemGC
  */
 
 /*
@@ -49,15 +48,6 @@ package gc;
  * @run main/othervm -XX:+UseG1GC -XX:+ExplicitGCInvokesConcurrent gc.TestSystemGC
  * @run main/othervm -XX:+UseLargePages gc.TestSystemGC
  * @run main/othervm -XX:+UseLargePages -XX:+UseLargePagesInMetaspace gc.TestSystemGC
- */
-
-/*
- * @test TestSystemGCCMS
- * @key gc
- * @comment Graal does not support CMS
- * @requires vm.gc.ConcMarkSweep & !vm.graal.enabled
- * @run main/othervm -XX:+UseConcMarkSweepGC gc.TestSystemGC
- * @run main/othervm -XX:+UseConcMarkSweepGC -XX:+ExplicitGCInvokesConcurrent gc.TestSystemGC
  */
 
 /*

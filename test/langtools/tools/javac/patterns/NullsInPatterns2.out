@@ -1,4 +1,6 @@
 NullsInPatterns2.java:33:18: compiler.err.restricted.type.not.allowed: var, 10
 NullsInPatterns2.java:35:29: compiler.err.illegal.start.of.type
 NullsInPatterns2.java:35:33: compiler.err.expected: ';'
+- compiler.note.preview.filename: NullsInPatterns2.java
+- compiler.note.preview.recompile
 3 errors

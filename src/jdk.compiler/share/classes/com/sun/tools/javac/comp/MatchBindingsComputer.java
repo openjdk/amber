@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,9 +34,10 @@ import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
-import com.sun.tools.javac.tree.JCTree.JCLiteralPattern;
 import com.sun.tools.javac.tree.JCTree.JCUnary;
 import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
+import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
+import com.sun.tools.javac.tree.JCTree.JCPattern;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
@@ -71,11 +72,13 @@ public class MatchBindingsComputer extends TreeScanner {
         return bindings;
     }
 
+
     public List<BindingSymbol> getMatchBindings(JCTree expression, boolean whenTrue, List<BindingSymbol> intersectWith) {
         List<BindingSymbol> bindings = getMatchBindings(expression, whenTrue);
         if (intersectWith != null) {
             bindings = intersection(expression, intersectWith, bindings);
         }
+
         return bindings;
     }
 
@@ -84,9 +87,14 @@ public class MatchBindingsComputer extends TreeScanner {
         bindings = whenTrue ? List.of(tree.symbol) : List.nil();
     }
 
-    @Override
-    public void visitLiteralPattern(JCLiteralPattern tree) {
-        //noop
+     @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        List<BindingSymbol> outBindings = List.nil();
+        for (JCPattern nested : tree.nested) {
+            scan(nested);
+           outBindings = union(tree, outBindings, bindings);
+        }
+        bindings = outBindings;
     }
 
     @Override
@@ -167,6 +175,12 @@ public class MatchBindingsComputer extends TreeScanner {
         }
     }
 
+    @Override
+    public void scan(JCTree tree) {
+        bindings = List.nil();
+        super.scan(tree);
+    }
+
     private List<BindingSymbol> intersection(JCTree tree, List<BindingSymbol> lhsBindings, List<BindingSymbol> rhsBindings) {
         // It is an error if, for intersection(a,b), if a and b contain the same variable name but with different types.
         List<BindingSymbol> list = List.nil();
@@ -200,12 +214,6 @@ public class MatchBindingsComputer extends TreeScanner {
             }
         }
         return list;
-    }
-
-    @Override
-    public void scan(JCTree tree) {
-        bindings = List.nil();
-        super.scan(tree);
     }
 
     public static class BindingSymbol extends VarSymbol {

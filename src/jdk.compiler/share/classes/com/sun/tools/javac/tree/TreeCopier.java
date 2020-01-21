@@ -143,7 +143,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    @SuppressWarnings("removal")
     public JCTree visitYield(YieldTree node, P p) {
         JCYield t = (JCYield) node;
         JCExpression value = copy(t.value, p);
@@ -379,7 +378,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    @SuppressWarnings("removal")
     public JCTree visitSwitchExpression(SwitchExpressionTree node, P p) {
         JCSwitchExpression t = (JCSwitchExpression) node;
         JCExpression selector = copy(t.selector, p);
@@ -487,10 +485,24 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitAnyPattern(AnyPatternTree node, P p) {
+        JCAnyPattern t = (JCAnyPattern) node;
+        return M.at(t.pos).AnyPattern();
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitBindingPattern(BindingPatternTree node, P p) {
         JCBindingPattern t = (JCBindingPattern) node;
         JCTree vartype = copy(t.vartype, p);
         return M.at(t.pos).BindingPattern(t.name, vartype);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitDeconstructionPattern(DeconstructionPatternTree node, P p) {
+        JCDeconstructionPattern t = (JCDeconstructionPattern) node;
+        JCExpression deconstructor = copy(t.deconstructor, p);
+        List<JCPattern> nested = copy(t.nested, p);
+        return M.at(t.pos).DeconstructionPattern(t.name, deconstructor, nested);
     }
 
     @DefinedBy(Api.COMPILER_TREE)
@@ -590,7 +602,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         switch (tree.getTag()) {
             case LETEXPR: {
                 LetExpr t = (LetExpr) node;
-                List<JCStatement> defs = copy(t.defs, p);
+                List<? extends JCStatement> defs = copy(t.defs, p);
                 JCExpression expr = copy(t.expr, p);
                 return M.at(t.pos).LetExpr(defs, expr);
             }

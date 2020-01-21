@@ -1,7 +1,8 @@
 /*
  * @test /nodynamiccopyright/
+ * @bug 8231827
  * @summary Ensure that in type test patterns, the predicate is not trivially provable false.
- * @compile/fail/ref=ImpossibleTypeTest.out -XDrawDiagnostics ImpossibleTypeTest.java
+ * @compile/fail/ref=ImpossibleTypeTest.out -XDrawDiagnostics --enable-preview -source ${jdk.version} ImpossibleTypeTest.java
  */
 public class ImpossibleTypeTest {
 

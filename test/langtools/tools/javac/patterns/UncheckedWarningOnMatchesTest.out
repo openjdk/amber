@@ -1,5 +1,6 @@
-UncheckedWarningOnMatchesTest.java:14:13: compiler.warn.prob.found.req: (compiler.misc.unchecked.cast.to.type), java.lang.Object, java.util.ArrayList<java.lang.Integer>
+UncheckedWarningOnMatchesTest.java:14:13: compiler.err.instanceof.reifiable.not.safe: java.lang.Object, java.util.ArrayList<java.lang.Integer>
 UncheckedWarningOnMatchesTest.java:17:16: compiler.warn.prob.found.req: (compiler.misc.unchecked.cast.to.type), java.lang.Object, java.util.ArrayList<java.lang.Integer>
-- compiler.err.warnings.and.werror
+- compiler.note.preview.filename: UncheckedWarningOnMatchesTest.java
+- compiler.note.preview.recompile
 1 error
-2 warnings
+1 warning

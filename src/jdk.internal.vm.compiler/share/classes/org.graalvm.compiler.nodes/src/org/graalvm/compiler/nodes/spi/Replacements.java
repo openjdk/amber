@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ import org.graalvm.compiler.bytecode.BytecodeProvider;
 import org.graalvm.compiler.core.common.CompilationIdentifier;
 import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.graph.NodeSourcePosition;
+import org.graalvm.compiler.nodes.Cancellable;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderPlugin;
@@ -86,16 +87,24 @@ public interface Replacements {
      * @param original the method being substituted
      * @param context the kind of inlining to be performed for the substitution
      * @param allowAssumptions
+     * @param cancellable
      * @param options
      * @return the method substitution graph, if any, that is derived from {@code method}
      */
     StructuredGraph getMethodSubstitution(MethodSubstitutionPlugin plugin, ResolvedJavaMethod original, IntrinsicContext.CompilationContext context,
-                    StructuredGraph.AllowAssumptions allowAssumptions, OptionValues options);
+                    StructuredGraph.AllowAssumptions allowAssumptions, Cancellable cancellable, OptionValues options);
 
     /**
      * Registers a plugin as a substitution.
      */
-    void registerMethodSubstitution(MethodSubstitutionPlugin plugin, ResolvedJavaMethod original, IntrinsicContext.CompilationContext context, OptionValues options);
+    void registerMethodSubstitution(MethodSubstitutionPlugin plugin);
+
+    /**
+     * Marks a plugin as conditionally applied. In the contenxt of libgraal conditional plugins
+     * can't be used in during graph encoding for snippets and method substitutions and this is used
+     * to detect violations of this restriction.
+     */
+    void registerConditionalPlugin(InvocationPlugin plugin);
 
     /**
      * Gets a graph that is a substitution for a given method.
@@ -115,9 +124,10 @@ public interface Replacements {
      * @param method
      * @param compilationId
      * @param debug
+     * @param cancellable
      * @return an intrinsic graph that can be compiled and installed for {@code method} or null
      */
-    StructuredGraph getIntrinsicGraph(ResolvedJavaMethod method, CompilationIdentifier compilationId, DebugContext debug);
+    StructuredGraph getIntrinsicGraph(ResolvedJavaMethod method, CompilationIdentifier compilationId, DebugContext debug, Cancellable cancellable);
 
     /**
      * Determines if there may be a

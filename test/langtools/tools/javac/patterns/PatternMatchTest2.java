@@ -24,7 +24,8 @@
 /*
  * @test
  * @summary Basic pattern switch test
- * @run main PatternMatchTest2
+ * @compile --enable-preview -source ${jdk.version} PatternMatchTest2.java
+ * @run main/othervm --enable-preview PatternMatchTest2
  */
 public class PatternMatchTest2 {
 

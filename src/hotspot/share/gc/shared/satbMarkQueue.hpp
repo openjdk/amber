@@ -27,6 +27,7 @@
 
 #include "gc/shared/ptrQueue.hpp"
 #include "memory/allocation.hpp"
+#include "memory/padded.hpp"
 
 class Thread;
 class Monitor;
@@ -93,7 +94,17 @@ public:
 };
 
 class SATBMarkQueueSet: public PtrQueueSet {
+
+  DEFINE_PAD_MINUS_SIZE(1, DEFAULT_CACHE_LINE_SIZE, 0);
+  PaddedEnd<BufferNode::Stack> _list;
+  volatile size_t _count_and_process_flag;
+  // These are rarely (if ever) changed, so same cache line as count.
+  size_t _process_completed_buffers_threshold;
   size_t _buffer_enqueue_threshold;
+  DEFINE_PAD_MINUS_SIZE(2, DEFAULT_CACHE_LINE_SIZE, 3 * sizeof(size_t));
+
+  BufferNode* get_completed_buffer();
+  void abandon_completed_buffers();
 
 #ifdef ASSERT
   void dump_active_states(bool expected_active);
@@ -101,18 +112,13 @@ class SATBMarkQueueSet: public PtrQueueSet {
 #endif // ASSERT
 
 protected:
-  SATBMarkQueueSet();
-  ~SATBMarkQueueSet() {}
+  SATBMarkQueueSet(BufferNode::Allocator* allocator);
+  ~SATBMarkQueueSet();
 
   template<typename Filter>
   void apply_filter(Filter filter, SATBMarkQueue* queue) {
     queue->apply_filter(filter);
   }
-
-  void initialize(Monitor* cbl_mon,
-                  BufferNode::Allocator* allocator,
-                  size_t process_completed_buffers_threshold,
-                  uint buffer_enqueue_threshold_percentage);
 
 public:
   virtual SATBMarkQueue& satb_queue_for_thread(Thread* const t) const = 0;
@@ -123,7 +129,11 @@ public:
   // set itself, has an active value same as expected_active.
   void set_active_all_threads(bool active, bool expected_active);
 
+  void set_process_completed_buffers_threshold(size_t value);
+
   size_t buffer_enqueue_threshold() const { return _buffer_enqueue_threshold; }
+  void set_buffer_enqueue_threshold_percentage(uint value);
+
   virtual void filter(SATBMarkQueue* queue) = 0;
 
   // If there exists some completed buffer, pop and process it, and
@@ -131,6 +141,19 @@ public:
   // consists of applying the closure to the active range of the
   // buffer; the leading entries may be excluded due to filtering.
   bool apply_closure_to_completed_buffer(SATBBufferClosure* cl);
+
+  virtual void enqueue_completed_buffer(BufferNode* node);
+
+  // The number of buffers in the list.  Racy and not updated atomically
+  // with the set of completed buffers.
+  size_t completed_buffers_num() const {
+    return _count_and_process_flag >> 1;
+  }
+
+  // Return true if completed buffers should be processed.
+  bool process_completed_buffers() const {
+    return (_count_and_process_flag & 1) != 0;
+  }
 
 #ifndef PRODUCT
   // Helpful for debugging

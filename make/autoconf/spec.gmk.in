@@ -51,6 +51,9 @@ COMMA:=,
 # What make to use for main processing, after bootstrapping top-level Makefile.
 MAKE := @MAKE@
 
+# Make sure all shell commands are executed with the C locale
+export LC_ALL := C
+
 # The default make arguments
 MAKE_ARGS = $(MAKE_LOG_FLAGS) -r -R -I $(TOPDIR)/make/common SPEC=$(SPEC) \
     MAKE_LOG_FLAGS="$(MAKE_LOG_FLAGS)" $(MAKE_LOG_VARS)
@@ -286,7 +289,7 @@ JVM_FEATURES_custom := @JVM_FEATURES_custom@
 VALID_JVM_FEATURES := @VALID_JVM_FEATURES@
 VALID_JVM_VARIANTS := @VALID_JVM_VARIANTS@
 
-# Control wether Hotspot builds gtest tests
+# Control whether Hotspot builds gtest tests
 BUILD_GTEST := @BUILD_GTEST@
 
 # Allow overriding the default hotspot library path
@@ -373,6 +376,8 @@ ENABLE_LIBFFI_BUNDLING:=@ENABLE_LIBFFI_BUNDLING@
 LIBFFI_LIB_FILE:=@LIBFFI_LIB_FILE@
 GRAALUNIT_LIB := @GRAALUNIT_LIB@
 
+STATIC_LIBS_CFLAGS := @STATIC_LIBS_CFLAGS@
+
 JMH_CORE_JAR := @JMH_CORE_JAR@
 JMH_GENERATOR_JAR := @JMH_GENERATOR_JAR@
 JMH_JOPT_SIMPLE_JAR := @JMH_JOPT_SIMPLE_JAR@
@@ -409,6 +414,9 @@ X_LIBS:=@X_LIBS@
 MACOSX_VERSION_MIN=@MACOSX_VERSION_MIN@
 # The highest allowed version of macosx
 MACOSX_VERSION_MAX=@MACOSX_VERSION_MAX@
+
+# The macosx code signing identity to use
+MACOSX_CODESIGN_IDENTITY=@MACOSX_CODESIGN_IDENTITY@
 
 # Toolchain type: gcc, clang, solstudio, lxc, microsoft...
 TOOLCHAIN_TYPE:=@TOOLCHAIN_TYPE@
@@ -489,6 +497,7 @@ JVM_RCFLAGS := @JVM_RCFLAGS@
 EXTRA_CFLAGS = @EXTRA_CFLAGS@
 EXTRA_CXXFLAGS = @EXTRA_CXXFLAGS@
 EXTRA_LDFLAGS = @EXTRA_LDFLAGS@
+EXTRA_ASFLAGS = @EXTRA_ASFLAGS@
 
 CXX:=@FIXPATH@ @CCACHE@ @ICECC@ @CXX@
 
@@ -761,6 +770,7 @@ JIB_HOME:=@JIB_HOME@
 XCODEBUILD=@XCODEBUILD@
 DTRACE := @DTRACE@
 FIXPATH:=@FIXPATH@
+ULIMIT:=@ULIMIT@
 
 TAR_TYPE:=@TAR_TYPE@
 TAR_CREATE_EXTRA_PARAM:=@TAR_CREATE_EXTRA_PARAM@
@@ -888,6 +898,10 @@ DOCS_IMAGE_DIR = $(IMAGES_OUTPUTDIR)/$(DOCS_IMAGE_SUBDIR)
 # Output docs directly into image
 DOCS_OUTPUTDIR := $(DOCS_IMAGE_DIR)
 
+# Static libs image
+STATIC_LIBS_IMAGE_SUBDIR := static-libs
+STATIC_LIBS_IMAGE_DIR := $(IMAGES_OUTPUTDIR)/$(STATIC_LIBS_IMAGE_SUBDIR)
+
 # Macosx bundles directory definitions
 JDK_MACOSX_BUNDLE_SUBDIR=jdk-bundle
 JRE_MACOSX_BUNDLE_SUBDIR=jre-bundle
@@ -916,6 +930,7 @@ JDK_SYMBOLS_BUNDLE_NAME := jdk-$(BASE_NAME)_bin$(DEBUG_PART)-symbols.tar.gz
 TEST_DEMOS_BUNDLE_NAME := jdk-$(BASE_NAME)_bin-tests-demos$(DEBUG_PART).tar.gz
 TEST_BUNDLE_NAME := jdk-$(BASE_NAME)_bin-tests$(DEBUG_PART).tar.gz
 DOCS_BUNDLE_NAME := jdk-$(BASE_NAME)_doc-api-spec$(DEBUG_PART).tar.gz
+STATIC_LIBS_BUNDLE_NAME := jdk-$(BASE_NAME)_bin-static-libs$(DEBUG_PART).tar.gz
 JCOV_BUNDLE_NAME := jdk-jcov-$(BASE_NAME)_bin$(DEBUG_PART).$(JDK_BUNDLE_EXTENSION)
 
 JDK_BUNDLE := $(BUNDLES_OUTPUTDIR)/$(JDK_BUNDLE_NAME)

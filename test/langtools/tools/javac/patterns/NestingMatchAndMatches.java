@@ -1,8 +1,8 @@
 /*
  * @test
  * @summary testing various permutations of matches insides match etc.
- * @compile NestingMatchAndMatches.java
- * @run main NestingMatchAndMatches
+ * @compile --enable-preview -source ${jdk.version} NestingMatchAndMatches.java
+ * @run main/othervm --enable-preview NestingMatchAndMatches
  */
 public class NestingMatchAndMatches {
 

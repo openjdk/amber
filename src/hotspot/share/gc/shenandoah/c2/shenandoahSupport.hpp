@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2015, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -60,7 +60,7 @@ private:
   static void test_null(Node*& ctrl, Node* val, Node*& null_ctrl, PhaseIdealLoop* phase);
   static void test_heap_stable(Node*& ctrl, Node* raw_mem, Node*& heap_stable_ctrl,
                                PhaseIdealLoop* phase);
-  static void call_lrb_stub(Node*& ctrl, Node*& val, Node*& result_mem, Node* raw_mem, PhaseIdealLoop* phase);
+  static void call_lrb_stub(Node*& ctrl, Node*& val, Node* load_addr, Node*& result_mem, Node* raw_mem, bool is_native, PhaseIdealLoop* phase);
   static Node* clone_null_check(Node*& c, Node* val, Node* unc_ctrl, PhaseIdealLoop* phase);
   static void fix_null_check(Node* unc, Node* unc_ctrl, Node* new_unc_ctrl, Unique_Node_List& uses,
                              PhaseIdealLoop* phase);
@@ -71,6 +71,7 @@ private:
   static void fix_ctrl(Node* barrier, Node* region, const MemoryGraphFixer& fixer, Unique_Node_List& uses, Unique_Node_List& uses_to_ignore, uint last, PhaseIdealLoop* phase);
   static IfNode* find_unswitching_candidate(const IdealLoopTree *loop, PhaseIdealLoop* phase);
 
+  static Node* get_load_addr(PhaseIdealLoop* phase, VectorSet& visited, Node* lrb);
 public:
   static bool is_dominator(Node* d_c, Node* n_c, Node* d, Node* n, PhaseIdealLoop* phase);
   static bool is_dominator_same_ctrl(Node* c, Node* d, Node* n, PhaseIdealLoop* phase);
@@ -231,11 +232,16 @@ public:
   };
 
   enum Strength {
-    NONE, WEAK, STRONG, NA
+    NONE, STRONG
   };
 
-  ShenandoahLoadReferenceBarrierNode(Node* ctrl, Node* val);
+private:
+  bool _native;
 
+public:
+  ShenandoahLoadReferenceBarrierNode(Node* ctrl, Node* val, bool native);
+
+  bool is_native() const;
   virtual int Opcode() const;
   virtual const Type* bottom_type() const;
   virtual const Type* Value(PhaseGVN* phase) const;
@@ -247,9 +253,9 @@ public:
 
   virtual Node* Identity(PhaseGVN* phase);
 
-  uint size_of() const {
-    return sizeof(*this);
-  }
+  virtual uint size_of() const;
+  virtual uint hash() const;
+  virtual bool cmp( const Node &n ) const;
 
   Strength get_barrier_strength();
   CallStaticJavaNode* pin_and_expand_null_check(PhaseIterGVN& igvn);

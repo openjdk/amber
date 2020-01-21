@@ -37,8 +37,6 @@
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/method.hpp"
-#include "runtime/atomic.hpp"
-#include "runtime/compilationPolicy.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/handshake.hpp"
 #include "runtime/mutexLocker.hpp"
@@ -199,11 +197,11 @@ bool NMethodSweeper::wait_for_stack_scanning() {
   return _current.end();
 }
 
-class NMethodMarkingThreadClosure : public ThreadClosure {
+class NMethodMarkingClosure : public HandshakeClosure {
 private:
   CodeBlobClosure* _cl;
 public:
-  NMethodMarkingThreadClosure(CodeBlobClosure* cl) : _cl(cl) {}
+  NMethodMarkingClosure(CodeBlobClosure* cl) : HandshakeClosure("NMethodMarking"), _cl(cl) {}
   void do_thread(Thread* thread) {
     if (thread->is_Java_thread() && ! thread->is_Code_cache_sweeper_thread()) {
       JavaThread* jt = (JavaThread*) thread;
@@ -214,9 +212,9 @@ public:
 
 class NMethodMarkingTask : public AbstractGangTask {
 private:
-  NMethodMarkingThreadClosure* _cl;
+  NMethodMarkingClosure* _cl;
 public:
-  NMethodMarkingTask(NMethodMarkingThreadClosure* cl) :
+  NMethodMarkingTask(NMethodMarkingClosure* cl) :
     AbstractGangTask("Parallel NMethod Marking"),
     _cl(cl) {
     Threads::change_thread_claim_token();
@@ -241,7 +239,7 @@ void NMethodSweeper::mark_active_nmethods() {
   if (cl != NULL) {
     WorkGang* workers = Universe::heap()->get_safepoint_workers();
     if (workers != NULL) {
-      NMethodMarkingThreadClosure tcl(cl);
+      NMethodMarkingClosure tcl(cl);
       NMethodMarkingTask task(&tcl);
       workers->run_task(&task);
     } else {
@@ -252,7 +250,7 @@ void NMethodSweeper::mark_active_nmethods() {
 
 CodeBlobClosure* NMethodSweeper::prepare_mark_active_nmethods() {
 #ifdef ASSERT
-  if (ThreadLocalHandshakes) {
+  if (SafepointMechanism::uses_thread_local_poll()) {
     assert(Thread::current()->is_Code_cache_sweeper_thread(), "must be executed under CodeCache_lock and in sweeper thread");
     assert_lock_strong(CodeCache_lock);
   } else {
@@ -319,15 +317,15 @@ CodeBlobClosure* NMethodSweeper::prepare_reset_hotness_counters() {
 void NMethodSweeper::do_stack_scanning() {
   assert(!CodeCache_lock->owned_by_self(), "just checking");
   if (wait_for_stack_scanning()) {
-    if (ThreadLocalHandshakes) {
+    if (SafepointMechanism::uses_thread_local_poll()) {
       CodeBlobClosure* code_cl;
       {
         MutexLocker ccl(CodeCache_lock, Mutex::_no_safepoint_check_flag);
         code_cl = prepare_mark_active_nmethods();
       }
       if (code_cl != NULL) {
-        NMethodMarkingThreadClosure tcl(code_cl);
-        Handshake::execute(&tcl);
+        NMethodMarkingClosure nm_cl(code_cl);
+        Handshake::execute(&nm_cl);
       }
     } else {
       VM_MarkActiveNMethods op;
@@ -699,22 +697,9 @@ NMethodSweeper::MethodStateChange NMethodSweeper::process_compiled_method(Compil
       // Code cache state change is tracked in make_zombie()
       cm->make_zombie();
       SWEEP(cm);
-      // The nmethod may have been locked by JVMTI after being made zombie (see
-      // JvmtiDeferredEvent::compiled_method_unload_event()). If so, we cannot
-      // flush the osr nmethod directly but have to wait for a later sweeper cycle.
-      if (cm->is_osr_method() && !cm->is_locked_by_vm()) {
-        // No inline caches will ever point to osr methods, so we can just remove it.
-        // Make sure that we unregistered the nmethod with the heap and flushed all
-        // dependencies before removing the nmethod (done in make_zombie()).
-        assert(cm->is_zombie(), "nmethod must be unregistered");
-        cm->flush();
-        assert(result == None, "sanity");
-        result = Flushed;
-      } else {
-        assert(result == None, "sanity");
-        result = MadeZombie;
-        assert(cm->is_zombie(), "nmethod must be zombie");
-      }
+      assert(result == None, "sanity");
+      result = MadeZombie;
+      assert(cm->is_zombie(), "nmethod must be zombie");
     } else {
       // Still alive, clean up its inline caches
       cm->cleanup_inline_caches(false);
@@ -722,20 +707,12 @@ NMethodSweeper::MethodStateChange NMethodSweeper::process_compiled_method(Compil
     }
   } else if (cm->is_unloaded()) {
     // Code is unloaded, so there are no activations on the stack.
-    // Convert the nmethod to zombie or flush it directly in the OSR case.
-    if (cm->is_osr_method()) {
-      SWEEP(cm);
-      // No inline caches will ever point to osr methods, so we can just remove it
-      cm->flush();
-      assert(result == None, "sanity");
-      result = Flushed;
-    } else {
-      // Code cache state change is tracked in make_zombie()
-      cm->make_zombie();
-      SWEEP(cm);
-      assert(result == None, "sanity");
-      result = MadeZombie;
-    }
+    // Convert the nmethod to zombie.
+    // Code cache state change is tracked in make_zombie()
+    cm->make_zombie();
+    SWEEP(cm);
+    assert(result == None, "sanity");
+    result = MadeZombie;
   } else {
     if (cm->is_nmethod()) {
       possibly_flush((nmethod*)cm);

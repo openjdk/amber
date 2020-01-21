@@ -55,8 +55,18 @@ bool JVMCIGlobals::check_jvmci_flags_are_consistent() {
     return false;                                      \
   }
 
+  if (EnableJVMCIProduct) {
+    if (FLAG_IS_DEFAULT(EnableJVMCI)) {
+      FLAG_SET_DEFAULT(EnableJVMCI, true);
+    }
+    if (EnableJVMCI && FLAG_IS_DEFAULT(UseJVMCICompiler)) {
+      FLAG_SET_DEFAULT(UseJVMCICompiler, true);
+    }
+  }
+
   JVMCI_FLAG_CHECKED(UseJVMCICompiler)
   JVMCI_FLAG_CHECKED(EnableJVMCI)
+  JVMCI_FLAG_CHECKED(EnableJVMCIProduct)
 
   CHECK_NOT_SET(BootstrapJVMCI,   UseJVMCICompiler)
   CHECK_NOT_SET(PrintBootstrap,   UseJVMCICompiler)
@@ -64,6 +74,14 @@ bool JVMCIGlobals::check_jvmci_flags_are_consistent() {
   CHECK_NOT_SET(JVMCIHostThreads, UseJVMCICompiler)
 
   if (UseJVMCICompiler) {
+    if (FLAG_IS_DEFAULT(UseJVMCINativeLibrary) && !UseJVMCINativeLibrary) {
+      char path[JVM_MAXPATHLEN];
+      if (os::dll_locate_lib(path, sizeof(path), Arguments::get_dll_dir(), JVMCI_SHARED_LIBRARY_NAME)) {
+        // If a JVMCI native library is present,
+        // we enable UseJVMCINativeLibrary by default.
+        FLAG_SET_DEFAULT(UseJVMCINativeLibrary, true);
+      }
+    }
     if (!FLAG_IS_DEFAULT(EnableJVMCI) && !EnableJVMCI) {
       jio_fprintf(defaultStream::error_stream(),
           "Improperly specified VM option UseJVMCICompiler: EnableJVMCI cannot be disabled\n");
@@ -96,6 +114,16 @@ bool JVMCIGlobals::check_jvmci_flags_are_consistent() {
   CHECK_NOT_SET(JVMCILibPath,                 EnableJVMCI)
   CHECK_NOT_SET(JVMCILibDumpJNIConfig,        EnableJVMCI)
 
+#ifndef COMPILER2
+  JVMCI_FLAG_CHECKED(MaxVectorSize)
+  JVMCI_FLAG_CHECKED(ReduceInitialCardMarks)
+  JVMCI_FLAG_CHECKED(UseMultiplyToLenIntrinsic)
+  JVMCI_FLAG_CHECKED(UseSquareToLenIntrinsic)
+  JVMCI_FLAG_CHECKED(UseMulAddIntrinsic)
+  JVMCI_FLAG_CHECKED(UseMontgomeryMultiplyIntrinsic)
+  JVMCI_FLAG_CHECKED(UseMontgomerySquareIntrinsic)
+#endif // !COMPILER2
+
 #ifndef PRODUCT
 #define JVMCI_CHECK4(type, name, value, doc) assert(name##checked, #name " flag not checked");
 #define JVMCI_CHECK3(type, name, doc)        assert(name##checked, #name " flag not checked");
@@ -118,6 +146,47 @@ bool JVMCIGlobals::check_jvmci_flags_are_consistent() {
       return false;
     }
   }
+
+  return true;
+}
+
+// Convert JVMCI flags from experimental to product
+bool JVMCIGlobals::enable_jvmci_product_mode(JVMFlag::Flags origin) {
+  const char *JVMCIFlags[] = {
+    "EnableJVMCI",
+    "EnableJVMCIProduct",
+    "UseJVMCICompiler",
+    "JVMCIPrintProperties",
+    "EagerJVMCI",
+    "JVMCIThreads",
+    "JVMCICounterSize",
+    "JVMCICountersExcludeCompiler",
+    "JVMCINMethodSizeLimit",
+    "JVMCILibPath",
+    "JVMCILibDumpJNIConfig",
+    "UseJVMCINativeLibrary",
+    NULL
+  };
+
+  for (int i = 0; JVMCIFlags[i] != NULL; i++) {
+    JVMFlag *jvmciFlag = (JVMFlag *)JVMFlag::find_declared_flag(JVMCIFlags[i]);
+    if (jvmciFlag == NULL) {
+      return false;
+    }
+    jvmciFlag->clear_experimental();
+    jvmciFlag->set_product();
+  }
+
+  bool value = true;
+  JVMFlag *jvmciEnableFlag = JVMFlag::find_flag("EnableJVMCIProduct");
+  if (JVMFlag::boolAtPut(jvmciEnableFlag, &value, origin) != JVMFlag::SUCCESS) {
+    return false;
+  }
+
+  // Effect of EnableJVMCIProduct on changing defaults of EnableJVMCI
+  // and UseJVMCICompiler is deferred to check_jvmci_flags_are_consistent
+  // so that setting these flags explicitly (e.g. on the command line)
+  // takes precedence.
 
   return true;
 }

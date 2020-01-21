@@ -107,6 +107,16 @@ public class Net {
     }
 
     /**
+     * Tells whether both IPV6_XXX and IP_XXX socket options should be set on
+     * IPv6 sockets. On some kernels, both IPV6_XXX and IP_XXX socket options
+     * need to be set so that the settings are effective for IPv4 multicast
+     * datagrams sent using the socket.
+     */
+    static boolean shouldSetBothIPv4AndIPv6Options() {
+        return shouldSetBothIPv4AndIPv6Options0();
+    }
+
+    /**
      * Tells whether IPv6 sockets can join IPv4 multicast groups
      */
     static boolean canIPv6SocketJoinIPv4Group() {
@@ -119,6 +129,14 @@ public class Net {
      */
     static boolean canJoin6WithIPv4Group() {
         return canJoin6WithIPv4Group0();
+    }
+
+    /**
+     * Tells whether IPV6_XXX socket options should be used on an IPv6 socket
+     * that is bound to an IPv4 address.
+     */
+    static boolean canUseIPv6OptionsWithIPv4LocalAddress() {
+        return canUseIPv6OptionsWithIPv4LocalAddress0();
     }
 
     public static InetSocketAddress checkAddress(SocketAddress sa) {
@@ -430,9 +448,13 @@ public class Net {
      */
     private static native int isExclusiveBindAvailable();
 
+    private static native boolean shouldSetBothIPv4AndIPv6Options0();
+
     private static native boolean canIPv6SocketJoinIPv4Group0();
 
     private static native boolean canJoin6WithIPv4Group0();
+
+    private static native boolean canUseIPv6OptionsWithIPv4LocalAddress0();
 
     static FileDescriptor socket(boolean stream) throws IOException {
         return socket(UNSPEC, stream);

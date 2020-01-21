@@ -45,10 +45,8 @@
 // and not set it too short before we decide to resize,
 // to match previous startup behavior
 const double PREF_AVG_LIST_LEN = 8.0;
-// 2^17 (131,072) is max size, which is about 6.5 times as large
-// as the previous table size (used to be 20,011),
-// which never resized
-const size_t END_SIZE = 17;
+// 2^24 is max size, like StringTable.
+const size_t END_SIZE = 24;
 // If a chain gets to 100 something might be wrong
 const size_t REHASH_LEN = 100;
 
@@ -77,8 +75,7 @@ static OffsetCompactHashtable<
 
 // --------------------------------------------------------------------------
 
-typedef ConcurrentHashTable<Symbol*,
-                            SymbolTableConfig, mtSymbol> SymbolTableHash;
+typedef ConcurrentHashTable<SymbolTableConfig, mtSymbol> SymbolTableHash;
 static SymbolTableHash* _local_table = NULL;
 
 volatile bool SymbolTable::_has_work = 0;
@@ -121,10 +118,12 @@ static uintx hash_shared_symbol(const char* s, int len) {
 }
 #endif
 
-class SymbolTableConfig : public SymbolTableHash::BaseConfig {
+class SymbolTableConfig : public AllStatic {
 private:
 public:
-  static uintx get_hash(Symbol* const& value, bool* is_dead) {
+  typedef Symbol* Value;  // value of the Node in the hashtable
+
+  static uintx get_hash(Value const& value, bool* is_dead) {
     *is_dead = (value->refcount() == 0);
     if (*is_dead) {
       return 0;
@@ -133,11 +132,11 @@ public:
     }
   }
   // We use default allocation/deallocation but counted
-  static void* allocate_node(size_t size, Symbol* const& value) {
+  static void* allocate_node(size_t size, Value const& value) {
     SymbolTable::item_added();
-    return SymbolTableHash::BaseConfig::allocate_node(size, value);
+    return AllocateHeap(size, mtSymbol);
   }
-  static void free_node(void* memory, Symbol* const& value) {
+  static void free_node(void* memory, Value const& value) {
     // We get here because #1 some threads lost a race to insert a newly created Symbol
     // or #2 we're cleaning up unused symbol.
     // If #1, then the symbol can be either permanent (refcount==PERM_REFCOUNT),
@@ -150,7 +149,7 @@ public:
       assert(value->refcount() == 0, "expected dead symbol");
     }
     SymbolTable::delete_symbol(value);
-    SymbolTableHash::BaseConfig::free_node(memory, value);
+    FreeHeap(memory);
     SymbolTable::item_removed();
   }
 };
@@ -190,8 +189,8 @@ void SymbolTable::delete_symbol(Symbol* sym) {
   }
 }
 
-void SymbolTable::reset_has_items_to_clean() { Atomic::store(false, &_has_items_to_clean); }
-void SymbolTable::mark_has_items_to_clean()  { Atomic::store(true, &_has_items_to_clean); }
+void SymbolTable::reset_has_items_to_clean() { Atomic::store(&_has_items_to_clean, false); }
+void SymbolTable::mark_has_items_to_clean()  { Atomic::store(&_has_items_to_clean, true); }
 bool SymbolTable::has_items_to_clean()       { return Atomic::load(&_has_items_to_clean); }
 
 void SymbolTable::item_added() {
@@ -221,7 +220,7 @@ Symbol* SymbolTable::allocate_symbol(const char* name, int len, bool c_heap) {
   assert (len <= Symbol::max_length(), "should be checked by caller");
 
   Symbol* sym;
-  if (DumpSharedSpaces || DynamicDumpSharedSpaces) {
+  if (Arguments::is_dumping_archive()) {
     c_heap = false;
   }
   if (c_heap) {
@@ -284,7 +283,7 @@ public:
 };
 
 void SymbolTable::metaspace_pointers_do(MetaspaceClosure* it) {
-  assert(DumpSharedSpaces || DynamicDumpSharedSpaces, "called only during dump time");
+  Arguments::assert_is_dumping_archive();
   MetaspacePointersDo mpd(it);
   _local_table->do_safepoint_scan(mpd);
 }
@@ -725,7 +724,7 @@ void SymbolTable::clean_dead_entries(JavaThread* jt) {
     bdt.done(jt);
   }
 
-  Atomic::add(stdc._processed, &_symbols_counted);
+  Atomic::add(&_symbols_counted, stdc._processed);
 
   log_debug(symboltable)("Cleaned " SIZE_FORMAT " of " SIZE_FORMAT,
                          stdd._deleted, stdc._processed);

@@ -46,6 +46,7 @@ import sun.hotspot.cpuinfo.CPUInfo;
 import sun.hotspot.gc.GC;
 import sun.hotspot.WhiteBox;
 import jdk.test.lib.Platform;
+import jdk.test.lib.Container;
 
 /**
  * The Class to be invoked by jtreg prior Test Suite execution to
@@ -234,7 +235,22 @@ public class VMProps implements Callable<Map<String, String>> {
      */
     protected String vmJvmci() {
         // builds with jvmci have this flag
-        return "" + (WB.getBooleanVMFlag("EnableJVMCI") != null);
+        if (WB.getBooleanVMFlag("EnableJVMCI") == null) {
+            return "false";
+        }
+
+        switch (GC.selected()) {
+            case Serial:
+            case Parallel:
+            case G1:
+                // These GCs are supported with JVMCI
+                return "true";
+            default:
+                break;
+        }
+
+        // Every other GC is not supported
+        return "false";
     }
 
     /**
@@ -289,6 +305,7 @@ public class VMProps implements Callable<Map<String, String>> {
      */
     protected void vmOptFinalFlags(SafeMap map) {
         vmOptFinalFlag(map, "ClassUnloading");
+        vmOptFinalFlag(map, "ClassUnloadingWithConcurrentMark");
         vmOptFinalFlag(map, "UseCompressedOops");
         vmOptFinalFlag(map, "EnableJVMCI");
         vmOptFinalFlag(map, "EliminateAllocations");
@@ -355,7 +372,24 @@ public class VMProps implements Callable<Map<String, String>> {
         } else {
             jaotc = bin.resolve("jaotc");
         }
-        return "" + Files.exists(jaotc);
+
+        if (!Files.exists(jaotc)) {
+            // No jaotc => no AOT
+            return "false";
+        }
+
+        switch (GC.selected()) {
+            case Serial:
+            case Parallel:
+            case G1:
+                // These GCs are supported with AOT
+                return "true";
+            default:
+                break;
+        }
+
+        // Every other GC is not supported
+        return "false";
     }
 
     /*
@@ -455,7 +489,7 @@ public class VMProps implements Callable<Map<String, String>> {
     }
 
     private boolean checkDockerSupport() throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder("docker", "ps");
+        ProcessBuilder pb = new ProcessBuilder(Container.ENGINE_COMMAND, "ps");
         Process p = pb.start();
         p.waitFor(10, TimeUnit.SECONDS);
 

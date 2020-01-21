@@ -1,7 +1,7 @@
 /*
  * @test
  * @summary Basic tests for constant patterns
- * @compile/fail/ref=ConstantPatternTest2.out -XDrawDiagnostics ConstantPatternTest2.java
+ * @compile/fail/ref=ConstantPatternTest2.out -XDrawDiagnostics --enable-preview -source ${jdk.version} ConstantPatternTest2.java
  */
 
 public class ConstantPatternTest2 {

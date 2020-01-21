@@ -190,6 +190,9 @@ class IndexSet : public ResourceObj {
   // The number of elements in the set
   uint      _count;
 
+  // The current upper limit of blocks that has been allocated and might be in use
+  uint      _current_block_limit;
+
   // Our top level array of bitvector segments
   BitBlock **_blocks;
 
@@ -211,20 +214,10 @@ class IndexSet : public ResourceObj {
   // Individual IndexSets can be placed on a free list.  This is done in PhaseLive.
 
   IndexSet *next() {
-#ifdef ASSERT
-    if( VerifyOpto ) {
-      check_watch("removed from free list?", ((_next == NULL) ? 0 : _next->_serial_number));
-    }
-#endif
     return _next;
   }
 
   void set_next(IndexSet *next) {
-#ifdef ASSERT
-    if( VerifyOpto ) {
-      check_watch("put on free list?", ((next == NULL) ? 0 : next->_serial_number));
-    }
-#endif
     _next = next;
   }
 
@@ -239,10 +232,6 @@ class IndexSet : public ResourceObj {
 
   // Set a block in the top level array
   void set_block(uint index, BitBlock *block) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("set block", index);
-#endif
     _blocks[index] = block;
   }
 
@@ -259,17 +248,14 @@ class IndexSet : public ResourceObj {
   //-------------------------- Primitive set operations --------------------------
 
   void clear() {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("clear");
-#endif
     _count = 0;
-    for (uint i = 0; i < _max_blocks; i++) {
+    for (uint i = 0; i < _current_block_limit; i++) {
       BitBlock *block = _blocks[i];
       if (block != &_empty_block) {
         free_block(i);
       }
     }
+    _current_block_limit = 0;
   }
 
   uint count() const { return _count; }
@@ -281,10 +267,6 @@ class IndexSet : public ResourceObj {
   }
 
   bool insert(uint element) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("insert", element);
-#endif
     if (element == 0) {
       return 0;
     }
@@ -300,11 +282,6 @@ class IndexSet : public ResourceObj {
   }
 
   bool remove(uint element) {
-#ifdef ASSERT
-    if( VerifyOpto )
-      check_watch("remove", element);
-#endif
-
     BitBlock *block = get_block_containing(element);
     bool present = block->remove(element);
     if (present) {
@@ -407,17 +384,17 @@ class IndexSetIterator {
   // The index of the next word we will inspect
   uint                  _next_word;
 
-  // A pointer to the contents of the current block
-  uint32_t             *_words;
-
   // The index of the next block we will inspect
   uint                  _next_block;
 
-  // A pointer to the blocks in our set
-  IndexSet::BitBlock **_blocks;
-
   // The number of blocks in the set
   uint                  _max_blocks;
+
+  // A pointer to the contents of the current block
+  uint32_t             *_words;
+
+  // A pointer to the blocks in our set
+  IndexSet::BitBlock **_blocks;
 
   // If the iterator was created from a non-const set, we replace
   // non-canonical empty blocks with the _empty_block pointer.  If
@@ -432,22 +409,64 @@ class IndexSetIterator {
 
   // If an iterator is built from a constant set then empty blocks
   // are not canonicalized.
-  IndexSetIterator(IndexSet *set);
-  IndexSetIterator(const IndexSet *set);
+  IndexSetIterator(IndexSet *set) :
+    _current(0),
+    _value(0),
+    _next_word(IndexSet::words_per_block),
+    _next_block(0),
+    _max_blocks(set->is_empty() ? 0 : set->_current_block_limit),
+    _words(NULL),
+    _blocks(set->_blocks),
+    _set(set) {
+  #ifdef ASSERT
+    if (CollectIndexSetStatistics) {
+      set->tally_iteration_statistics();
+    }
+    set->check_watch("traversed", set->count());
+  #endif
+  }
+
+  IndexSetIterator(const IndexSet *set) :
+    _current(0),
+    _value(0),
+    _next_word(IndexSet::words_per_block),
+    _next_block(0),
+    _max_blocks(set->is_empty() ? 0 : set->_current_block_limit),
+    _words(NULL),
+    _blocks(set->_blocks),
+    _set(NULL)
+  {
+  #ifdef ASSERT
+    if (CollectIndexSetStatistics) {
+      set->tally_iteration_statistics();
+    }
+    // We don't call check_watch from here to avoid bad recursion.
+    //   set->check_watch("traversed const", set->count());
+  #endif
+  }
+
+  // Return the next element of the set.
+  uint next_value() {
+    uint current = _current;
+    assert(current != 0, "sanity");
+    uint advance = count_trailing_zeros(current);
+    assert(((current >> advance) & 0x1) == 1, "sanity");
+    _current = (current >> advance) - 1;
+    _value += advance;
+    return _value;
+  }
 
   // Return the next element of the set.  Return 0 when done.
   uint next() {
-    uint current = _current;
-    if (current != 0) {
-      uint advance = count_trailing_zeros(current);
-      assert(((current >> advance) & 0x1) == 1, "sanity");
-      _current = (current >> advance) - 1;
-      _value += advance;
-      return _value;
-    } else {
+    if (_current != 0) {
+      return next_value();
+    } else if (_next_word < IndexSet::words_per_block || _next_block < _max_blocks) {
       return advance_and_next();
+    } else {
+      return 0;
     }
   }
+
 };
 
 #endif // SHARE_OPTO_INDEXSET_HPP

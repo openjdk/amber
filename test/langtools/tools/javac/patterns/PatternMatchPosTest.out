@@ -1,3 +1,4 @@
+<<<<<<< working copy
 (o instanceof String s)
 o instanceof String s
 o
@@ -19,3 +20,20 @@ java.lang.Integer
 java.lang
 java
 var s
+||||||| base
+=======
+- compiler.note.proc.messager: (o instanceof String s)
+- compiler.note.proc.messager: o instanceof String s
+- compiler.note.proc.messager: o
+- compiler.note.proc.messager: String s
+- compiler.note.proc.messager: String
+- compiler.note.proc.messager: (o instanceof java.lang.String s)
+- compiler.note.proc.messager: o instanceof java.lang.String s
+- compiler.note.proc.messager: o
+- compiler.note.proc.messager: java.lang.String s
+- compiler.note.proc.messager: java.lang.String
+- compiler.note.proc.messager: java.lang
+- compiler.note.proc.messager: java
+- compiler.note.preview.filename: PatternMatchPosTestData.java
+- compiler.note.preview.recompile
+>>>>>>> merge rev

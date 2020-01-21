@@ -25,7 +25,7 @@
 
 package sun.security.ssl;
 
-import java.io.*;
+import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.*;
@@ -71,7 +71,8 @@ public abstract class SSLContextImpl extends SSLContextSpi {
     private volatile StatusResponseManager statusResponseManager;
 
     private final ReentrantLock contextLock = new ReentrantLock();
-    final HashMap<Integer, SessionTicketExtension.StatelessKey> keyHashMap = new HashMap<>();
+    final HashMap<Integer,
+            SessionTicketExtension.StatelessKey> keyHashMap = new HashMap<>();
 
 
     SSLContextImpl() {
@@ -372,7 +373,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
     private static List<CipherSuite> getApplicableCipherSuites(
             Collection<CipherSuite> allowedCipherSuites,
             List<ProtocolVersion> protocols) {
-        TreeSet<CipherSuite> suites = new TreeSet<>();
+        LinkedHashSet<CipherSuite> suites = new LinkedHashSet<>();
         if (protocols != null && (!protocols.isEmpty())) {
             for (CipherSuite suite : allowedCipherSuites) {
                 if (!suite.isAvailable()) {
@@ -549,9 +550,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
                 ProtocolVersion.TLS13,
                 ProtocolVersion.TLS12,
                 ProtocolVersion.TLS11,
-                ProtocolVersion.TLS10,
-                ProtocolVersion.SSL30,
-                ProtocolVersion.SSL20Hello
+                ProtocolVersion.TLS10
             });
 
             supportedCipherSuites = getApplicableSupportedCipherSuites(
@@ -594,17 +593,6 @@ public abstract class SSLContextImpl extends SSLContextSpi {
         boolean isDTLS() {
             return false;
         }
-
-        static ProtocolVersion[] getSupportedProtocols() {
-            return new ProtocolVersion[]{
-                    ProtocolVersion.TLS13,
-                    ProtocolVersion.TLS12,
-                    ProtocolVersion.TLS11,
-                    ProtocolVersion.TLS10,
-                    ProtocolVersion.SSL30,
-                    ProtocolVersion.SSL20Hello
-            };
-        }
     }
 
     /*
@@ -619,8 +607,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
         static {
             clientDefaultProtocols = getAvailableProtocols(
                     new ProtocolVersion[] {
-                ProtocolVersion.TLS10,
-                ProtocolVersion.SSL30
+                ProtocolVersion.TLS10
             });
 
             clientDefaultCipherSuites = getApplicableEnabledCipherSuites(
@@ -651,8 +638,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             clientDefaultProtocols = getAvailableProtocols(
                     new ProtocolVersion[] {
                 ProtocolVersion.TLS11,
-                ProtocolVersion.TLS10,
-                ProtocolVersion.SSL30
+                ProtocolVersion.TLS10
             });
 
             clientDefaultCipherSuites = getApplicableEnabledCipherSuites(
@@ -685,8 +671,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
                     new ProtocolVersion[] {
                 ProtocolVersion.TLS12,
                 ProtocolVersion.TLS11,
-                ProtocolVersion.TLS10,
-                ProtocolVersion.SSL30
+                ProtocolVersion.TLS10
             });
 
             clientDefaultCipherSuites = getApplicableEnabledCipherSuites(
@@ -719,8 +704,7 @@ public abstract class SSLContextImpl extends SSLContextSpi {
                 ProtocolVersion.TLS13,
                 ProtocolVersion.TLS12,
                 ProtocolVersion.TLS11,
-                ProtocolVersion.TLS10,
-                ProtocolVersion.SSL30
+                ProtocolVersion.TLS10
             });
 
             clientDefaultCipherSuites = getApplicableEnabledCipherSuites(
@@ -857,11 +841,13 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             // Use the default enabled protocols if no customization
             ProtocolVersion[] candidates;
             if (refactored.isEmpty()) {
-                if (client) {
-                    candidates = getProtocols();
-                } else {
-                    candidates = getSupportedProtocols();
-                }
+                // Client and server use the same default protocols.
+                candidates = new ProtocolVersion[] {
+                        ProtocolVersion.TLS13,
+                        ProtocolVersion.TLS12,
+                        ProtocolVersion.TLS11,
+                        ProtocolVersion.TLS10
+                    };
             } else {
                 // Use the customized TLS protocols.
                 candidates =
@@ -869,16 +855,6 @@ public abstract class SSLContextImpl extends SSLContextSpi {
             }
 
             return getAvailableProtocols(candidates);
-        }
-
-        static ProtocolVersion[] getProtocols() {
-            return new ProtocolVersion[]{
-                    ProtocolVersion.TLS13,
-                    ProtocolVersion.TLS12,
-                    ProtocolVersion.TLS11,
-                    ProtocolVersion.TLS10,
-                    ProtocolVersion.SSL30
-            };
         }
 
         protected CustomizedTLSContext() {
@@ -906,8 +882,6 @@ public abstract class SSLContextImpl extends SSLContextSpi {
         List<CipherSuite> getServerDefaultCipherSuites() {
             return serverDefaultCipherSuites;
         }
-
-
     }
 
     /*
@@ -1183,7 +1157,6 @@ public abstract class SSLContextImpl extends SSLContextSpi {
         private static final List<CipherSuite> serverDefaultCipherSuites;
 
         static {
-            // Both DTLSv1.0 and DTLSv1.2 can be used in FIPS mode.
             supportedProtocols = Arrays.asList(
                 ProtocolVersion.DTLS12,
                 ProtocolVersion.DTLS10
@@ -1480,8 +1453,9 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
         checkAdditionalTrust(chain, authType, engine, false);
     }
 
-    private void checkAdditionalTrust(X509Certificate[] chain, String authType,
-                Socket socket, boolean isClient) throws CertificateException {
+    private void checkAdditionalTrust(X509Certificate[] chain,
+            String authType, Socket socket,
+            boolean checkClientTrusted) throws CertificateException {
         if (socket != null && socket.isConnected() &&
                                     socket instanceof SSLSocket) {
 
@@ -1495,9 +1469,8 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
             String identityAlg = sslSocket.getSSLParameters().
                                         getEndpointIdentificationAlgorithm();
             if (identityAlg != null && !identityAlg.isEmpty()) {
-                String hostname = session.getPeerHost();
-                X509TrustManagerImpl.checkIdentity(
-                                    hostname, chain[0], identityAlg);
+                X509TrustManagerImpl.checkIdentity(session, chain,
+                                    identityAlg, checkClientTrusted);
             }
 
             // try the best to check the algorithm constraints
@@ -1519,12 +1492,13 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
                 constraints = new SSLAlgorithmConstraints(sslSocket, true);
             }
 
-            checkAlgorithmConstraints(chain, constraints, isClient);
+            checkAlgorithmConstraints(chain, constraints, checkClientTrusted);
         }
     }
 
-    private void checkAdditionalTrust(X509Certificate[] chain, String authType,
-            SSLEngine engine, boolean isClient) throws CertificateException {
+    private void checkAdditionalTrust(X509Certificate[] chain,
+            String authType, SSLEngine engine,
+            boolean checkClientTrusted) throws CertificateException {
         if (engine != null) {
             SSLSession session = engine.getHandshakeSession();
             if (session == null) {
@@ -1535,9 +1509,8 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
             String identityAlg = engine.getSSLParameters().
                                         getEndpointIdentificationAlgorithm();
             if (identityAlg != null && !identityAlg.isEmpty()) {
-                String hostname = session.getPeerHost();
-                X509TrustManagerImpl.checkIdentity(
-                                    hostname, chain[0], identityAlg);
+                X509TrustManagerImpl.checkIdentity(session, chain,
+                                    identityAlg, checkClientTrusted);
             }
 
             // try the best to check the algorithm constraints
@@ -1559,13 +1532,13 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
                 constraints = new SSLAlgorithmConstraints(engine, true);
             }
 
-            checkAlgorithmConstraints(chain, constraints, isClient);
+            checkAlgorithmConstraints(chain, constraints, checkClientTrusted);
         }
     }
 
     private void checkAlgorithmConstraints(X509Certificate[] chain,
             AlgorithmConstraints constraints,
-            boolean isClient) throws CertificateException {
+            boolean checkClientTrusted) throws CertificateException {
         try {
             // Does the certificate chain end with a trusted certificate?
             int checkedLength = chain.length - 1;
@@ -1584,7 +1557,7 @@ final class AbstractTrustManagerWrapper extends X509ExtendedTrustManager
             if (checkedLength >= 0) {
                 AlgorithmChecker checker =
                     new AlgorithmChecker(constraints, null,
-                            (isClient ? Validator.VAR_TLS_CLIENT :
+                            (checkClientTrusted ? Validator.VAR_TLS_CLIENT :
                                         Validator.VAR_TLS_SERVER));
                 checker.init(false);
                 for (int i = checkedLength; i >= 0; i--) {

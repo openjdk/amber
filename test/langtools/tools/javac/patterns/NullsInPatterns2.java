@@ -24,7 +24,7 @@
 /*
  * @test
  * @summary Testing pattern matching against the null constant
- * @compile/fail/ref=NullsInPatterns2.out -XDrawDiagnostics NullsInPatterns2.java
+ * @compile/fail/ref=NullsInPatterns2.out -XDrawDiagnostics --enable-preview -source ${jdk.version} NullsInPatterns2.java
  */
 
 public class NullsInPatterns2 {

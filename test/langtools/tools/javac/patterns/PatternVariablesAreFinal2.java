@@ -1,7 +1,8 @@
 /*
  * @test
  * @summary Pattern variables are final so should be allowed to be referenced in an inner class
- * @run main PatternVariablesAreFinal2
+ * @compile --enable-preview -source ${jdk.version} PatternVariablesAreFinal2.java
+ * @run main/othervm --enable-preview PatternVariablesAreFinal2
  */
 public class PatternVariablesAreFinal2 {
     public static void main(String[] args) {

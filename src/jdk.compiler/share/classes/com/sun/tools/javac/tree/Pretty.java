@@ -27,7 +27,6 @@ package com.sun.tools.javac.tree;
 
 import java.io.*;
 
-import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.*;
@@ -171,7 +170,7 @@ public class Pretty extends JCTree.Visitor {
      * Traversal methods
      *************************************************************************/
 
-    /** Exception to propogate IOException through visitXXX methods */
+    /** Exception to propagate IOException through visitXXX methods */
     private static class UncheckedIOException extends Error {
         static final long serialVersionUID = -4032692679158424751L;
         UncheckedIOException(IOException e) {

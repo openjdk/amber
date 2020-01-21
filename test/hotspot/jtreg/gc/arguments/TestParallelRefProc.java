@@ -28,6 +28,7 @@ package gc.arguments;
  * @key gc
  * @summary Test defaults processing for -XX:+ParallelRefProcEnabled.
  * @library /test/lib
+ * @library /
  * @build sun.hotspot.WhiteBox
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox sun.hotspot.WhiteBox$WhiteBoxPermission
  * @run main/othervm -Xbootclasspath/a:. -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI gc.arguments.TestParallelRefProc
@@ -50,10 +51,6 @@ public class TestParallelRefProc {
             noneGCSupported = false;
             testFlag(new String[] { "-XX:+UseSerialGC" }, false);
         }
-        if (GC.ConcMarkSweep.isSupported()) {
-            noneGCSupported = false;
-            testFlag(new String[] { "-XX:+UseConcMarkSweepGC" }, false);
-        }
         if (GC.Parallel.isSupported()) {
             noneGCSupported = false;
             testFlag(new String[] { "-XX:+UseParallelGC" }, false);
@@ -65,7 +62,7 @@ public class TestParallelRefProc {
             testFlag(new String[] { "-XX:+UseG1GC", "-XX:-ParallelRefProcEnabled", "-XX:ParallelGCThreads=2" }, false);
         }
         if (noneGCSupported) {
-            throw new SkippedException("Skipping test because none of Serial/ConcMarkSweep/Parallel/G1 is supported.");
+            throw new SkippedException("Skipping test because none of Serial/Parallel/G1 is supported.");
         }
     }
 
@@ -80,7 +77,7 @@ public class TestParallelRefProc {
         result.addAll(Arrays.asList(args));
         result.add("-XX:+PrintFlagsFinal");
         result.add("-version");
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(result.toArray(new String[0]));
+        ProcessBuilder pb = GCArguments.createJavaProcessBuilder(result.toArray(new String[0]));
 
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
 

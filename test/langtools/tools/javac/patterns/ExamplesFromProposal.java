@@ -1,8 +1,8 @@
 /*
  * @test
  * @summary All example code from "Pattern Matching for Java" document, released April 2017 (with switch renamed as match)
- * @compile ExamplesFromProposal.java
- * @run main ExamplesFromProposal
+ * @compile --enable-preview -source ${jdk.version} ExamplesFromProposal.java
+ * @run main/othervm --enable-preview ExamplesFromProposal
  */
 
 interface Node {

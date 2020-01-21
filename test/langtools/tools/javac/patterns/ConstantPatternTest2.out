@@ -25,4 +25,6 @@ ConstantPatternTest2.java:97:28: compiler.err.illegal.start.of.type
 ConstantPatternTest2.java:97:32: compiler.err.expected: ';'
 ConstantPatternTest2.java:100:29: compiler.err.illegal.start.of.type
 ConstantPatternTest2.java:100:36: compiler.err.expected: ';'
+- compiler.note.preview.filename: ConstantPatternTest2.java
+- compiler.note.preview.recompile
 27 errors

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,8 +72,8 @@ int KlassInfoEntry::compare(KlassInfoEntry* e1, KlassInfoEntry* e2) {
   ResourceMark rm;
   const char* name1 = e1->klass()->external_name();
   const char* name2 = e2->klass()->external_name();
-  bool d1 = (name1[0] == '[');
-  bool d2 = (name2[0] == '[');
+  bool d1 = (name1[0] == JVM_SIGNATURE_ARRAY);
+  bool d2 = (name2[0] == JVM_SIGNATURE_ARRAY);
   if (d1 && !d2) {
     return -1;
   } else if (d2 && !d1) {
@@ -123,7 +123,7 @@ void KlassInfoEntry::print_on(outputStream* st) const {
 
 KlassInfoEntry* KlassInfoBucket::lookup(Klass* const k) {
   // Can happen if k is an archived class that we haven't loaded yet.
-  if (k->java_mirror() == NULL) {
+  if (k->java_mirror_no_keepalive() == NULL) {
     return NULL;
   }
 
@@ -778,6 +778,10 @@ class FindInstanceClosure : public ObjectClosure {
 
   void do_object(oop obj) {
     if (obj->is_a(_klass)) {
+      // obj was read with AS_NO_KEEPALIVE, or equivalent.
+      // The object needs to be kept alive when it is published.
+      Universe::heap()->keep_alive(obj);
+
       _result->append(obj);
     }
   }
@@ -792,8 +796,5 @@ void HeapInspection::find_instances_at_safepoint(Klass* k, GrowableArray<oop>* r
 
   // Iterate over objects in the heap
   FindInstanceClosure fic(k, result);
-  // If this operation encounters a bad object when using CMS,
-  // consider using safe_object_iterate() which avoids metadata
-  // objects that may contain bad references.
   Universe::heap()->object_iterate(&fic);
 }

@@ -340,15 +340,8 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
-     *
-     * @deprecated
-     * This method is modeling switch expressions,
-     * which are part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
     @Override
-    @Deprecated(forRemoval=true, since="12")
-    @SuppressWarnings("removal")
     public R visitSwitchExpression(SwitchExpressionTree node, P p) {
         R r = scan(node.getExpression(), p);
         r = scanAndReduce(node.getCases(), p, r);
@@ -363,7 +356,6 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
-    @SuppressWarnings("removal")
     public R visitCase(CaseTree node, P p) {
         R r = scan(node.getPatterns(), p);
         if (node.getCaseKind() == CaseKind.RULE)
@@ -690,10 +682,36 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
+     * @since 14
+     */
+    @Override
+    public R visitAnyPattern(AnyPatternTree node, P p) {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
      */
     @Override
     public R visitBindingPattern(BindingPatternTree node, P p) {
         return scan(node.getType(), p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
+    public R visitDeconstructionPattern(DeconstructionPatternTree node, P p) {
+        R r = scan(node.getDeconstructor(), p);
+        return scanAndReduce(node.getNestedPatterns(), p, r);
     }
 
     /**
@@ -969,15 +987,8 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
-     *
-     * @deprecated
-     * This method is modeling switch expressions,
-     * which are part of a preview feature and may be removed
-     * if the preview feature is removed.
      */
     @Override
-    @Deprecated(forRemoval=true, since="13")
-    @SuppressWarnings("removal")
     public R visitYield(YieldTree node, P p) {
         return scan(node.getValue(), p);
     }

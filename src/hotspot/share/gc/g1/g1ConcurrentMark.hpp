@@ -32,6 +32,7 @@
 #include "gc/g1/heapRegionSet.hpp"
 #include "gc/shared/taskqueue.hpp"
 #include "gc/shared/verifyOption.hpp"
+#include "gc/shared/workgroup.hpp"
 #include "memory/allocation.hpp"
 #include "utilities/compilerWarnings.hpp"
 
@@ -44,6 +45,7 @@ class G1ConcurrentMark;
 class G1OldTracer;
 class G1RegionToSpaceMapper;
 class G1SurvivorRegions;
+class ThreadClosure;
 
 PRAGMA_DIAG_PUSH
 // warning C4522: multiple assignment operators specified
@@ -700,7 +702,7 @@ private:
   // When this task got into the termination protocol
   double                      _termination_start_time_ms;
 
-  TruncatedSeq                _marking_step_diffs_ms;
+  TruncatedSeq                _marking_step_diff_ms;
 
   // Updates the local fields after this task has claimed
   // a new region to scan

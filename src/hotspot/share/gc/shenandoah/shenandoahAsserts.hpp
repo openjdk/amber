@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -66,7 +66,7 @@ public:
   static void assert_rp_isalive_not_installed(const char *file, int line);
   static void assert_rp_isalive_installed(const char *file, int line);
 
-  static void assert_locked_or_shenandoah_safepoint(const Monitor* lock, const char*file, int line);
+  static void assert_locked_or_shenandoah_safepoint(Mutex* lock, const char* file, int line);
 
 #ifdef ASSERT
 #define shenandoah_assert_in_heap(interior_loc, obj) \

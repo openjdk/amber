@@ -1,8 +1,8 @@
 /*
  * @test /nodynamiccopyright/
- * @bug 8187429
+ * @bug 8187429 8231827
  * @summary Missing unchecked conversion warning
- * @compile/fail/ref=UncheckedWarningOnMatchesTest.out -Xlint:unchecked -Werror -XDrawDiagnostics UncheckedWarningOnMatchesTest.java
+ * @compile/fail/ref=UncheckedWarningOnMatchesTest.out -Xlint:unchecked -Werror -XDrawDiagnostics --enable-preview -source ${jdk.version} UncheckedWarningOnMatchesTest.java
  */
 import java.util.ArrayList;
 
@@ -15,7 +15,7 @@ public class UncheckedWarningOnMatchesTest {
             System.out.println("Blah");
         }
         switch (o) {
-            case ArrayList<Integer> ai:  // unchecked conversion
+            case ArrayList<Integer> ai:  // unchecked conversion XXX: should be an error! (presumably)
                 System.out.println("ArrayList<Integer>");
                 break;
         }

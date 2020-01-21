@@ -203,6 +203,7 @@ public class Checker extends DocTreePathScanner<Void, Void> {
             case INTERFACE:
             case ENUM:
             case ANNOTATION_TYPE:
+            case RECORD:
                 implicitHeadingRank = 1;
                 break;
 
@@ -685,7 +686,7 @@ public class Checker extends DocTreePathScanner<Void, Void> {
 
         // TODO: basic check on value
 
-        return super.visitAttribute(tree, ignore);
+        return null;
     }
 
     private void validateHtml4Attrs(AttributeTree tree, Name name, AttrKind k) {

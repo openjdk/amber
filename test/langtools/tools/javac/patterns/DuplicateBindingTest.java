@@ -1,7 +1,8 @@
 /*
  * @test /nodynamiccopyright/
+ * @bug 8231827
  * @summary Basic pattern bindings scope test
- * @compile/fail/ref=DuplicateBindingTest.out -XDrawDiagnostics -XDdev DuplicateBindingTest.java
+ * @compile/fail/ref=DuplicateBindingTest.out -XDrawDiagnostics --enable-preview -source ${jdk.version} DuplicateBindingTest.java
  */
 
 public class DuplicateBindingTest {
