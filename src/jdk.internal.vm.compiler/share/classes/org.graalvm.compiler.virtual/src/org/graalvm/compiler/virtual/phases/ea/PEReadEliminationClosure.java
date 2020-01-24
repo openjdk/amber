@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -121,11 +121,11 @@ public final class PEReadEliminationClosure extends PartialEscapeClosure<PEReadE
             return processUnsafeStore((RawStoreNode) node, state, effects);
         } else if (node instanceof MemoryCheckpoint.Single) {
             COUNTER_MEMORYCHECKPOINT.increment(node.getDebug());
-            LocationIdentity identity = ((MemoryCheckpoint.Single) node).getLocationIdentity();
+            LocationIdentity identity = ((MemoryCheckpoint.Single) node).getKilledLocationIdentity();
             processIdentity(state, identity);
         } else if (node instanceof MemoryCheckpoint.Multi) {
             COUNTER_MEMORYCHECKPOINT.increment(node.getDebug());
-            for (LocationIdentity identity : ((MemoryCheckpoint.Multi) node).getLocationIdentities()) {
+            for (LocationIdentity identity : ((MemoryCheckpoint.Multi) node).getKilledLocationIdentities()) {
                 processIdentity(state, identity);
             }
         }
@@ -217,7 +217,11 @@ public final class PEReadEliminationClosure extends PartialEscapeClosure<PEReadE
                 long offset = store.offset().asJavaConstant().asLong();
                 boolean overflowAccess = isOverflowAccess(accessKind, componentKind);
                 int index = overflowAccess ? -1 : VirtualArrayNode.entryIndexForOffset(tool.getMetaAccess(), offset, accessKind, type.getComponentType(), Integer.MAX_VALUE);
-                return processStore(store, store.object(), location, index, accessKind, overflowAccess, store.value(), state, effects);
+                if (index != -1) {
+                    return processStore(store, store.object(), location, index, accessKind, overflowAccess, store.value(), state, effects);
+                } else {
+                    state.killReadCache(location, index);
+                }
             } else {
                 processIdentity(state, location);
             }

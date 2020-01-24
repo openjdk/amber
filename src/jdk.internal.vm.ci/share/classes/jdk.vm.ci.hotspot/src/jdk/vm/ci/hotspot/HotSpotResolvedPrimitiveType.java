@@ -46,7 +46,6 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     @NativeImageReinitialize static HotSpotResolvedPrimitiveType[] primitives;
 
     private JavaKind kind;
-    private HotSpotResolvedObjectType arrayClass;
     HotSpotObjectConstantImpl mirror;
 
     /**
@@ -87,14 +86,7 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
         if (kind == JavaKind.Void) {
             return null;
         }
-        if (arrayClass == null) {
-            try {
-                arrayClass = (HotSpotResolvedObjectType) runtime().compilerToVm.lookupType("[" + kind.getTypeChar(), null, true);
-            } catch (ClassNotFoundException e) {
-                throw new JVMCIError(e);
-            }
-        }
-        return arrayClass;
+        return super.getArrayClass();
     }
 
     @Override
@@ -155,6 +147,11 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     @Override
     public boolean isInitialized() {
         return true;
+    }
+
+    @Override
+    public boolean isBeingInitialized() {
+        return false;
     }
 
     @Override

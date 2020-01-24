@@ -25,15 +25,17 @@
 #include "precompiled.hpp"
 #include "classfile/javaClasses.hpp"
 #include "gc/shared/oopStorage.inline.hpp"
+#include "gc/shared/oopStorageSet.hpp"
 #include "logging/log.hpp"
 #include "memory/allocation.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
-#include "oops/oop.inline.hpp"
 #include "oops/method.hpp"
+#include "oops/oop.inline.hpp"
 #include "oops/weakHandle.inline.hpp"
 #include "prims/resolvedMethodTable.hpp"
+#include "runtime/atomic.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/mutexLocker.hpp"
@@ -56,15 +58,15 @@ unsigned int method_hash(const Method* method) {
   return name_hash ^ signature_hash;
 }
 
-typedef ConcurrentHashTable<WeakHandle<vm_resolved_method_table_data>,
-                            ResolvedMethodTableConfig,
+typedef ConcurrentHashTable<ResolvedMethodTableConfig,
                             mtClass> ResolvedMethodTableHash;
 
-class ResolvedMethodTableConfig : public ResolvedMethodTableHash::BaseConfig {
+class ResolvedMethodTableConfig : public AllStatic {
  private:
  public:
-  static uintx get_hash(WeakHandle<vm_resolved_method_table_data> const& value,
-                        bool* is_dead) {
+  typedef WeakHandle<vm_resolved_method_table_data> Value;
+
+  static uintx get_hash(Value const& value, bool* is_dead) {
     oop val_oop = value.peek();
     if (val_oop == NULL) {
       *is_dead = true;
@@ -76,13 +78,13 @@ class ResolvedMethodTableConfig : public ResolvedMethodTableHash::BaseConfig {
   }
 
   // We use default allocation/deallocation but counted
-  static void* allocate_node(size_t size, WeakHandle<vm_resolved_method_table_data> const& value) {
+  static void* allocate_node(size_t size, Value const& value) {
     ResolvedMethodTable::item_added();
-    return ResolvedMethodTableHash::BaseConfig::allocate_node(size, value);
+    return AllocateHeap(size, mtClass);
   }
-  static void free_node(void* memory, WeakHandle<vm_resolved_method_table_data> const& value) {
+  static void free_node(void* memory, Value const& value) {
     value.release();
-    ResolvedMethodTableHash::BaseConfig::free_node(memory, value);
+    FreeHeap(memory);
     ResolvedMethodTable::item_removed();
   }
 };
@@ -90,7 +92,6 @@ class ResolvedMethodTableConfig : public ResolvedMethodTableHash::BaseConfig {
 static ResolvedMethodTableHash* _local_table           = NULL;
 static size_t                   _current_size          = (size_t)1 << ResolvedMethodTableSizeLog;
 
-OopStorage*              ResolvedMethodTable::_weak_handles          = NULL;
 volatile bool            ResolvedMethodTable::_has_work              = false;
 
 volatile size_t          _items_count           = 0;
@@ -98,9 +99,6 @@ volatile size_t          _uncleaned_items_count = 0;
 
 void ResolvedMethodTable::create_table() {
   _local_table  = new ResolvedMethodTableHash(ResolvedMethodTableSizeLog, END_SIZE, GROW_HINT);
-  _weak_handles = new OopStorage("ResolvedMethodTable weak",
-                                 ResolvedMethodTableWeakAlloc_lock,
-                                 ResolvedMethodTableWeakActive_lock);
   log_trace(membername, table)("Start size: " SIZE_FORMAT " (" SIZE_FORMAT ")",
                                _current_size, ResolvedMethodTableSizeLog);
 }
@@ -330,7 +328,7 @@ void ResolvedMethodTable::reset_dead_counter() {
 }
 
 void ResolvedMethodTable::inc_dead_counter(size_t ndead) {
-  size_t total = Atomic::add(ndead, &_uncleaned_items_count);
+  size_t total = Atomic::add(&_uncleaned_items_count, ndead);
   log_trace(membername, table)(
      "Uncleaned items:" SIZE_FORMAT " added: " SIZE_FORMAT " total:" SIZE_FORMAT,
      _uncleaned_items_count, ndead, total);

@@ -61,6 +61,8 @@
 # List of providers and their preference orders (see above):
 #
 #ifdef solaris
+# Note: The OracleUcrypto provider is deprecated and subject to removal in
+# a future version of the JDK.
 security.provider.tbd=OracleUcrypto
 security.provider.tbd=SunPKCS11 ${java.home}/conf/security/sunpkcs11-solaris.cfg
 #endif
@@ -500,6 +502,22 @@ sun.security.krb5.disableReferrals=false
 sun.security.krb5.maxReferrals=5
 
 #
+# This property contains a list of disabled EC Named Curves that can be included
+# in the jdk.[tls|certpath|jar].disabledAlgorithms properties.  To include this
+# list in any of the disabledAlgorithms properties, add the property name as
+# an entry.
+jdk.disabled.namedCurves = secp112r1, secp112r2, secp128r1, secp128r2, \
+    secp160k1, secp160r1, secp160r2, secp192k1, secp192r1, secp224k1, \
+    secp224r1, secp256k1, sect113r1, sect113r2, sect131r1, sect131r2, \
+    sect163k1, sect163r1, sect163r2, sect193r1, sect193r2, sect233k1, \
+    sect233r1, sect239k1, sect283k1, sect283r1, sect409k1, sect409r1, \
+    sect571k1, sect571r1, X9.62 c2tnb191v1, X9.62 c2tnb191v2, \
+    X9.62 c2tnb191v3, X9.62 c2tnb239v1, X9.62 c2tnb239v2, X9.62 c2tnb239v3, \
+    X9.62 c2tnb359v1, X9.62 c2tnb431r1, X9.62 prime192v2, X9.62 prime192v3, \
+    X9.62 prime239v1, X9.62 prime239v2, X9.62 prime239v3, brainpoolP256r1, \
+    brainpoolP320r1, brainpoolP384r1, brainpoolP512r1
+
+#
 # Algorithm restrictions for certification path (CertPath) processing
 #
 # In some environments, certain algorithms or key lengths may be undesirable
@@ -513,7 +531,7 @@ sun.security.krb5.maxReferrals=5
 #       " DisabledAlgorithm { , DisabledAlgorithm } "
 #
 #   DisabledAlgorithm:
-#       AlgorithmName [Constraint] { '&' Constraint }
+#       AlgorithmName [Constraint] { '&' Constraint } | IncludeProperty
 #
 #   AlgorithmName:
 #       (see below)
@@ -540,10 +558,13 @@ sun.security.krb5.maxReferrals=5
 #   UsageConstraint:
 #       usage [TLSServer] [TLSClient] [SignedJAR]
 #
+#   IncludeProperty:
+#       include <security property>
+#
 # The "AlgorithmName" is the standard algorithm name of the disabled
-# algorithm. See "Java Cryptography Architecture Standard Algorithm Name
-# Documentation" for information about Standard Algorithm Names.  Matching
-# is performed using a case-insensitive sub-element matching rule.  (For
+# algorithm. See the Java Security Standard Algorithm Names Specification
+# for information about Standard Algorithm Names.  Matching is
+# performed using a case-insensitive sub-element matching rule.  (For
 # example, in "SHA1withECDSA" the sub-elements are "SHA1" for hashing and
 # "ECDSA" for signatures.)  If the assertion "AlgorithmName" is a
 # sub-element of the certificate algorithm name, the algorithm will be
@@ -551,6 +572,14 @@ sun.security.krb5.maxReferrals=5
 # the assertion algorithm name "DSA" will disable all certificate algorithms
 # that rely on DSA, such as NONEwithDSA, SHA1withDSA.  However, the assertion
 # will not disable algorithms related to "ECDSA".
+#
+# The "IncludeProperty" allows a implementation-defined security property that
+# can be included in the disabledAlgorithms properties.  These properties are
+# to help manage common actions easier across multiple disabledAlgorithm
+# properties.
+# There is one defined security property:  jdk.disabled.NamedCurves
+# See the property for more specific details.
+#
 #
 # A "Constraint" defines restrictions on the keys and/or certificates for
 # a specified AlgorithmName:
@@ -624,7 +653,8 @@ sun.security.krb5.maxReferrals=5
 #
 #
 jdk.certpath.disabledAlgorithms=MD2, MD5, SHA1 jdkCA & usage TLSServer, \
-    RSA keySize < 1024, DSA keySize < 1024, EC keySize < 224
+    RSA keySize < 1024, DSA keySize < 1024, EC keySize < 224, \
+    include jdk.disabled.namedCurves
 
 #
 # Algorithm restrictions for signed JAR files
@@ -668,7 +698,7 @@ jdk.certpath.disabledAlgorithms=MD2, MD5, SHA1 jdkCA & usage TLSServer, \
 # See "jdk.certpath.disabledAlgorithms" for syntax descriptions.
 #
 jdk.jar.disabledAlgorithms=MD2, MD5, RSA keySize < 1024, \
-      DSA keySize < 1024
+      DSA keySize < 1024, include jdk.disabled.namedCurves
 
 #
 # Algorithm restrictions for Secure Socket Layer/Transport Layer Security
@@ -677,8 +707,9 @@ jdk.jar.disabledAlgorithms=MD2, MD5, RSA keySize < 1024, \
 # In some environments, certain algorithms or key lengths may be undesirable
 # when using SSL/TLS/DTLS.  This section describes the mechanism for disabling
 # algorithms during SSL/TLS/DTLS security parameters negotiation, including
-# protocol version negotiation, cipher suites selection, peer authentication
-# and key exchange mechanisms.
+# protocol version negotiation, cipher suites selection, named groups
+# selection, signature schemes selection, peer authentication and key
+# exchange mechanisms.
 #
 # Disabled algorithms will not be negotiated for SSL/TLS connections, even
 # if they are enabled explicitly in an application.
@@ -699,9 +730,11 @@ jdk.jar.disabledAlgorithms=MD2, MD5, RSA keySize < 1024, \
 # It is not guaranteed to be examined and used by other implementations.
 #
 # Example:
-#   jdk.tls.disabledAlgorithms=MD5, SSLv3, DSA, RSA keySize < 2048
+#   jdk.tls.disabledAlgorithms=MD5, SSLv3, DSA, RSA keySize < 2048, \
+#       rsa_pkcs1_sha1, secp224r1
 jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, DH keySize < 1024, \
-    EC keySize < 224, 3DES_EDE_CBC, anon, NULL
+    EC keySize < 224, 3DES_EDE_CBC, anon, NULL, \
+    include jdk.disabled.namedCurves
 
 #
 # Legacy algorithms for Secure Socket Layer/Transport Layer Security (SSL/TLS)
@@ -743,8 +776,8 @@ jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, DH keySize < 1024, \
 #     3. JSSE cipher (encryption) algorithm name, e.g., AES_128_CBC
 #     4. JSSE message digest algorithm name, e.g., SHA
 #
-# See SSL/TLS specifications and "Java Cryptography Architecture Standard
-# Algorithm Name Documentation" for information about the algorithm names.
+# See SSL/TLS specifications and the Java Security Standard Algorithm Names
+# Specification for information about the algorithm names.
 #
 # Note: If a legacy algorithm is also restricted through the
 # jdk.tls.disabledAlgorithms property or the
@@ -1064,6 +1097,16 @@ jdk.xml.dsig.secureValidationPolicy=\
 jceks.key.serialFilter = java.base/java.lang.Enum;java.base/java.security.KeyRep;\
   java.base/java.security.KeyRep$Type;java.base/javax.crypto.spec.SecretKeySpec;!*
 
+# The iteration count used for password-based encryption (PBE) in JCEKS
+# keystores. Values in the range 10000 to 5000000 are considered valid.
+# If the value is out of this range, or is not a number, or is unspecified;
+# a default of 200000 is used.
+#
+# If the system property jdk.jceks.iterationCount is also specified, it
+# supersedes the security property value defined here.
+#
+#jdk.jceks.iterationCount = 200000
+
 #
 # PKCS12 KeyStore properties
 #
@@ -1168,8 +1211,9 @@ jceks.key.serialFilter = java.base/java.lang.Enum;java.base/java.security.KeyRep
 # Disabled mechanisms for the Simple Authentication and Security Layer (SASL)
 #
 # Disabled mechanisms will not be negotiated by both SASL clients and servers.
-# These mechanisms will be ignored if they are specified in the mechanisms argument
-# of `Sasl.createClient` or the mechanism argument of `Sasl.createServer`.
+# These mechanisms will be ignored if they are specified in the "mechanisms"
+# argument of "Sasl.createSaslClient" or the "mechanism" argument of
+# "Sasl.createSaslServer".
 #
 # The value of this property is a comma-separated list of SASL mechanisms.
 # The mechanisms are case-sensitive. Whitespaces around the commas are ignored.
@@ -1210,3 +1254,51 @@ jdk.sasl.disabledMechanisms=
 # if this property is not enabled.
 #
 jdk.security.caDistrustPolicies=SYMANTEC_TLS
+
+#
+# FilePermission path canonicalization
+#
+# This security property dictates how the path argument is processed and stored
+# while constructing a FilePermission object. If the value is set to true, the
+# path argument is canonicalized and FilePermission methods (such as implies,
+# equals, and hashCode) are implemented based on this canonicalized result.
+# Otherwise, the path argument is not canonicalized and FilePermission methods are
+# implemented based on the original input. See the implementation note of the
+# FilePermission class for more details.
+#
+# If a system property of the same name is also specified, it supersedes the
+# security property value defined here.
+#
+# The default value for this property is false.
+#
+jdk.io.permissionsUseCanonicalPath=false
+
+
+#
+# Policies for the proxy_impersonator Kerberos ccache configuration entry
+#
+# The proxy_impersonator ccache configuration entry indicates that the ccache
+# is a synthetic delegated credential for use with S4U2Proxy by an intermediate
+# server. The ccache file should also contain the TGT of this server and
+# an evidence ticket from the default principal of the ccache to this server.
+#
+# This security property determines how Java uses this configuration entry.
+# There are 3 possible values:
+#
+#  no-impersonate     - Ignore this configuration entry, and always act as
+#                       the owner of the TGT (if it exists).
+#
+#  try-impersonate    - Try impersonation when this configuration entry exists.
+#                       If no matching TGT or evidence ticket is found,
+#                       fallback to no-impersonate.
+#
+#  always-impersonate - Always impersonate when this configuration entry exists.
+#                       If no matching TGT or evidence ticket is found,
+#                       no initial credential is read from the ccache.
+#
+# The default value is "always-impersonate".
+#
+# If a system property of the same name is also specified, it supersedes the
+# security property value defined here.
+#
+#jdk.security.krb5.default.initiate.credential=always-impersonate

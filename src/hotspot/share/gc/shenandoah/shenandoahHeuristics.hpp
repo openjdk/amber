@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -127,13 +127,9 @@ public:
 
   virtual void record_phase_time(ShenandoahPhaseTimings::Phase phase, double secs);
 
-  virtual bool should_start_normal_gc() const;
+  virtual bool should_start_gc() const;
 
   virtual bool should_start_update_refs();
-
-  virtual bool should_start_traversal_gc();
-
-  virtual bool can_do_traversal_gc();
 
   virtual bool should_degenerate_cycle();
 

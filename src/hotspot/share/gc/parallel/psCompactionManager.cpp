@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 
 #include "precompiled.hpp"
 #include "classfile/systemDictionary.hpp"
-#include "gc/parallel/gcTaskManager.hpp"
 #include "gc/parallel/objectStartArray.hpp"
 #include "gc/parallel/parMarkBitMap.inline.hpp"
 #include "gc/parallel/parallelScavengeHeap.hpp"
@@ -40,7 +39,6 @@
 #include "oops/instanceMirrorKlass.inline.hpp"
 #include "oops/objArrayKlass.inline.hpp"
 #include "oops/oop.inline.hpp"
-#include "runtime/atomic.hpp"
 
 PSOldGen*            ParCompactionManager::_old_gen = NULL;
 ParCompactionManager**  ParCompactionManager::_manager_array = NULL;
@@ -51,6 +49,8 @@ ParCompactionManager::ObjArrayTaskQueueSet*
 ObjectStartArray*    ParCompactionManager::_start_array = NULL;
 ParMarkBitMap*       ParCompactionManager::_mark_bitmap = NULL;
 RegionTaskQueueSet*  ParCompactionManager::_region_array = NULL;
+GrowableArray<size_t >* ParCompactionManager::_shadow_region_array = NULL;
+Monitor*                ParCompactionManager::_shadow_region_monitor = NULL;
 
 ParCompactionManager::ParCompactionManager() :
     _action(CopyAndUpdate) {
@@ -68,16 +68,15 @@ ParCompactionManager::ParCompactionManager() :
 }
 
 void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
-  assert(PSParallelCompact::gc_task_manager() != NULL,
+  assert(ParallelScavengeHeap::heap() != NULL,
     "Needed for initialization");
 
   _mark_bitmap = mbm;
 
-  uint parallel_gc_threads = PSParallelCompact::gc_task_manager()->workers();
+  uint parallel_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();
 
   assert(_manager_array == NULL, "Attempt to initialize twice");
   _manager_array = NEW_C_HEAP_ARRAY(ParCompactionManager*, parallel_gc_threads+1, mtGC);
-  guarantee(_manager_array != NULL, "Could not allocate manager_array");
 
   _stack_array = new OopTaskQueueSet(parallel_gc_threads);
   guarantee(_stack_array != NULL, "Could not allocate stack_array");
@@ -100,12 +99,17 @@ void ParCompactionManager::initialize(ParMarkBitMap* mbm) {
   _manager_array[parallel_gc_threads] = new ParCompactionManager();
   guarantee(_manager_array[parallel_gc_threads] != NULL,
     "Could not create ParCompactionManager");
-  assert(PSParallelCompact::gc_task_manager()->workers() != 0,
+  assert(ParallelScavengeHeap::heap()->workers().total_workers() != 0,
     "Not initialized?");
+
+  _shadow_region_array = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<size_t >(10, true);
+
+  _shadow_region_monitor = new Monitor(Mutex::barrier, "CompactionManager monitor",
+                                       Mutex::_allow_vm_block_flag, Monitor::_safepoint_check_never);
 }
 
 void ParCompactionManager::reset_all_bitmap_query_caches() {
-  uint parallel_gc_threads = PSParallelCompact::gc_task_manager()->workers();
+  uint parallel_gc_threads = ParallelScavengeHeap::heap()->workers().total_workers();
   for (uint i=0; i<=parallel_gc_threads; i++) {
     _manager_array[i]->reset_bitmap_query_cache();
   }
@@ -165,4 +169,34 @@ void ParCompactionManager::drain_region_stacks() {
       PSParallelCompact::fill_and_update_region(this, region_index);
     }
   } while (!region_stack()->is_empty());
+}
+
+size_t ParCompactionManager::pop_shadow_region_mt_safe(PSParallelCompact::RegionData* region_ptr) {
+  MonitorLocker ml(_shadow_region_monitor, Mutex::_no_safepoint_check_flag);
+  while (true) {
+    if (!_shadow_region_array->is_empty()) {
+      return _shadow_region_array->pop();
+    }
+    // Check if the corresponding heap region is available now.
+    // If so, we don't need to get a shadow region anymore, and
+    // we return InvalidShadow to indicate such a case.
+    if (region_ptr->claimed()) {
+      return InvalidShadow;
+    }
+    ml.wait(1);
+  }
+}
+
+void ParCompactionManager::push_shadow_region_mt_safe(size_t shadow_region) {
+  MonitorLocker ml(_shadow_region_monitor, Mutex::_no_safepoint_check_flag);
+  _shadow_region_array->push(shadow_region);
+  ml.notify();
+}
+
+void ParCompactionManager::push_shadow_region(size_t shadow_region) {
+  _shadow_region_array->push(shadow_region);
+}
+
+void ParCompactionManager::remove_all_shadow_regions() {
+  _shadow_region_array->clear();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,7 +43,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,17 +67,28 @@ import jdk.jfr.internal.settings.ThresholdSetting;
 
 public final class Utils {
 
+    private static final Object flushObject = new Object();
     private static final String INFINITY = "infinity";
-
-    private static Boolean SAVE_GENERATED;
-
     public static final String EVENTS_PACKAGE_NAME = "jdk.jfr.events";
     public static final String INSTRUMENT_PACKAGE_NAME = "jdk.jfr.internal.instrument";
     public static final String HANDLERS_PACKAGE_NAME = "jdk.jfr.internal.handlers";
     public static final String REGISTER_EVENT = "registerEvent";
     public static final String ACCESS_FLIGHT_RECORDER = "accessFlightRecorder";
-
     private final static String LEGACY_EVENT_NAME_PREFIX = "com.oracle.jdk.";
+
+    private static Boolean SAVE_GENERATED;
+
+
+    private static final Duration MICRO_SECOND = Duration.ofNanos(1_000);
+    private static final Duration SECOND = Duration.ofSeconds(1);
+    private static final Duration MINUTE = Duration.ofMinutes(1);
+    private static final Duration HOUR = Duration.ofHours(1);
+    private static final Duration DAY = Duration.ofDays(1);
+    private static final int NANO_SIGNIFICANT_FIGURES = 9;
+    private static final int MILL_SIGNIFICANT_FIGURES = 3;
+    private static final int DISPLAY_NANO_DIGIT = 3;
+    private static final int BASE = 10;
+
 
     public static void checkAccessFlightRecorder() throws SecurityException {
         SecurityManager sm = System.getSecurityManager();
@@ -594,5 +607,118 @@ public final class Utils {
         String date = Repository.REPO_DATE_FORMAT.format(LocalDateTime.now());
         String idText = recording == null ? "" :  "-id-" + Long.toString(recording.getId());
         return "hotspot-" + "pid-" + pid + idText + "-" + date + ".jfr";
+    }
+
+    public static String formatDuration(Duration d) {
+        Duration roundedDuration = roundDuration(d);
+        if (roundedDuration.equals(Duration.ZERO)) {
+            return "0 s";
+        } else if(roundedDuration.isNegative()){
+            return "-" + formatPositiveDuration(roundedDuration.abs());
+        } else {
+            return formatPositiveDuration(roundedDuration);
+        }
+    }
+
+    private static String formatPositiveDuration(Duration d){
+        if (d.compareTo(MICRO_SECOND) < 0) {
+            // 0.000001 ms - 0.000999 ms
+            double outputMs = (double) d.toNanosPart() / 1_000_000;
+            return String.format("%.6f ms",  outputMs);
+        } else if (d.compareTo(SECOND) < 0) {
+            // 0.001 ms - 999 ms
+            int valueLength = countLength(d.toNanosPart());
+            int outputDigit = NANO_SIGNIFICANT_FIGURES - valueLength;
+            double outputMs = (double) d.toNanosPart() / 1_000_000;
+            return String.format("%." + outputDigit + "f ms",  outputMs);
+        } else if (d.compareTo(MINUTE) < 0) {
+            // 1.00 s - 59.9 s
+            int valueLength = countLength(d.toSecondsPart());
+            int outputDigit = MILL_SIGNIFICANT_FIGURES - valueLength;
+            double outputSecond = d.toSecondsPart() + (double) d.toMillisPart() / 1_000;
+            return String.format("%." + outputDigit + "f s",  outputSecond);
+        } else if (d.compareTo(HOUR) < 0) {
+            // 1 m 0 s - 59 m 59 s
+            return String.format("%d m %d s",  d.toMinutesPart(), d.toSecondsPart());
+        } else if (d.compareTo(DAY) < 0) {
+            // 1 h 0 m - 23 h 59 m
+            return String.format("%d h %d m",  d.toHoursPart(), d.toMinutesPart());
+        } else {
+            // 1 d 0 h -
+            return String.format("%d d %d h",  d.toDaysPart(), d.toHoursPart());
+        }
+    }
+
+    private static int countLength(long value){
+        return (int) Math.log10(value) + 1;
+    }
+
+    private static Duration roundDuration(Duration d) {
+        if (d.equals(Duration.ZERO)) {
+            return d;
+        } else if(d.isNegative()){
+            Duration roundedPositiveDuration = roundPositiveDuration(d.abs());
+            return roundedPositiveDuration.negated();
+        } else {
+            return roundPositiveDuration(d);
+        }
+    }
+
+    private static Duration roundPositiveDuration(Duration d){
+        if (d.compareTo(MICRO_SECOND) < 0) {
+            // No round
+            return d;
+        } else if (d.compareTo(SECOND) < 0) {
+            // Round significant figures to three digits
+            int valueLength = countLength(d.toNanosPart());
+            int roundValue = (int) Math.pow(BASE, valueLength - DISPLAY_NANO_DIGIT);
+            long roundedNanos = Math.round((double) d.toNanosPart() / roundValue) * roundValue;
+            return d.truncatedTo(ChronoUnit.SECONDS).plusNanos(roundedNanos);
+        } else if (d.compareTo(MINUTE) < 0) {
+            // Round significant figures to three digits
+            int valueLength = countLength(d.toSecondsPart());
+            int roundValue = (int) Math.pow(BASE, valueLength);
+            long roundedMills = Math.round((double) d.toMillisPart() / roundValue) * roundValue;
+            return d.truncatedTo(ChronoUnit.SECONDS).plusMillis(roundedMills);
+        } else if (d.compareTo(HOUR) < 0) {
+            // Round for more than 500 ms or less
+            return d.plusMillis(SECOND.dividedBy(2).toMillisPart()).truncatedTo(ChronoUnit.SECONDS);
+        } else if (d.compareTo(DAY) < 0) {
+            // Round for more than 30 seconds or less
+            return d.plusSeconds(MINUTE.dividedBy(2).toSecondsPart()).truncatedTo(ChronoUnit.MINUTES);
+        } else {
+            // Round for more than 30 minutes or less
+            return d.plusMinutes(HOUR.dividedBy(2).toMinutesPart()).truncatedTo(ChronoUnit.HOURS);
+        }
+    }
+
+
+    public static void takeNap(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            // ok
+        }
+    }
+
+    public static void notifyFlush() {
+        synchronized (flushObject) {
+            flushObject.notifyAll();
+        }
+    }
+
+    public static void waitFlush(long timeOut) {
+        synchronized (flushObject) {
+            try {
+                flushObject.wait(timeOut);
+            } catch (InterruptedException e) {
+                // OK
+            }
+        }
+
+    }
+
+    public static long timeToNanos(Instant timestamp) {
+        return timestamp.getEpochSecond() * 1_000_000_000L + timestamp.getNano();
     }
 }

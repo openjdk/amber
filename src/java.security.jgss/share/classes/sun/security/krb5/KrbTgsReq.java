@@ -45,27 +45,30 @@ import java.util.Arrays;
 public class KrbTgsReq {
 
     private PrincipalName princName;
+    private PrincipalName clientAlias;
     private PrincipalName servName;
+    private PrincipalName serverAlias;
     private TGSReq tgsReqMessg;
     private KerberosTime ctime;
     private Ticket secondTicket = null;
     private boolean useSubkey = false;
     EncryptionKey tgsReqKey;
 
-    private static final boolean DEBUG = Krb5.DEBUG;
-
     private byte[] obuf;
     private byte[] ibuf;
 
     // Used in CredentialsUtil
     public KrbTgsReq(KDCOptions options, Credentials asCreds,
-            PrincipalName cname, PrincipalName sname,
+            PrincipalName cname, PrincipalName clientAlias,
+            PrincipalName sname, PrincipalName serverAlias,
             Ticket[] additionalTickets, PAData[] extraPAs)
         throws KrbException, IOException {
         this(options,
              asCreds,
              cname,
+             clientAlias,
              sname,
+             serverAlias,
              null, // KerberosTime from
              null, // KerberosTime till
              null, // KerberosTime rtime
@@ -82,6 +85,7 @@ public class KrbTgsReq {
             KDCOptions options,
             Credentials asCreds,
             PrincipalName sname,
+            PrincipalName serverAlias,
             KerberosTime from,
             KerberosTime till,
             KerberosTime rtime,
@@ -90,16 +94,18 @@ public class KrbTgsReq {
             AuthorizationData authorizationData,
             Ticket[] additionalTickets,
             EncryptionKey subKey) throws KrbException, IOException {
-        this(options, asCreds, asCreds.getClient(), sname,
-                from, till, rtime, eTypes, addresses,
-                authorizationData, additionalTickets, subKey, null);
+        this(options, asCreds, asCreds.getClient(), asCreds.getClientAlias(),
+                sname, serverAlias, from, till, rtime, eTypes,
+                addresses, authorizationData, additionalTickets, subKey, null);
     }
 
     private KrbTgsReq(
             KDCOptions options,
             Credentials asCreds,
             PrincipalName cname,
+            PrincipalName clientAlias,
             PrincipalName sname,
+            PrincipalName serverAlias,
             KerberosTime from,
             KerberosTime till,
             KerberosTime rtime,
@@ -111,7 +117,9 @@ public class KrbTgsReq {
             PAData[] extraPAs) throws KrbException, IOException {
 
         princName = cname;
+        this.clientAlias = clientAlias;
         servName = sname;
+        this.serverAlias = serverAlias;
         ctime = KerberosTime.now();
 
         // check if they are valid arguments. The optional fields
@@ -363,6 +371,14 @@ public class KrbTgsReq {
 
     Ticket getSecondTicket() {
         return secondTicket;
+    }
+
+    PrincipalName getClientAlias() {
+        return clientAlias;
+    }
+
+    PrincipalName getServerAlias() {
+        return serverAlias;
     }
 
     private static void debug(String message) {

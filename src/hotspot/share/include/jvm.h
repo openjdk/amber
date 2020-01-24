@@ -192,6 +192,13 @@ JNIEXPORT void JNICALL
 JVM_InitStackTraceElement(JNIEnv* env, jobject element, jobject stackFrameInfo);
 
 /*
+ * java.lang.NullPointerException
+ */
+
+JNIEXPORT jstring JNICALL
+JVM_GetExtendedNPEMessage(JNIEnv *env, jthrowable throwable);
+
+/*
  * java.lang.StackWalker
  */
 enum {
@@ -241,14 +248,8 @@ JVM_Sleep(JNIEnv *env, jclass threadClass, jlong millis);
 JNIEXPORT jobject JNICALL
 JVM_CurrentThread(JNIEnv *env, jclass threadClass);
 
-JNIEXPORT jint JNICALL
-JVM_CountStackFrames(JNIEnv *env, jobject thread);
-
 JNIEXPORT void JNICALL
 JVM_Interrupt(JNIEnv *env, jobject thread);
-
-JNIEXPORT jboolean JNICALL
-JVM_IsInterrupted(JNIEnv *env, jobject thread, jboolean clearInterrupted);
 
 JNIEXPORT jboolean JNICALL
 JVM_HoldsLock(JNIEnv *env, jclass threadClass, jobject obj);
@@ -517,6 +518,7 @@ JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 JNIEXPORT jobjectArray JNICALL
 JVM_GetClassDeclaredConstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
+
 /* Differs from JVM_GetClassModifiers in treatment of inner classes.
    This returns the access flags for the class as specified in the
    class file rather than searching the InnerClasses attribute (if
@@ -536,6 +538,14 @@ JVM_GetNestHost(JNIEnv *env, jclass current);
 
 JNIEXPORT jobjectArray JNICALL
 JVM_GetNestMembers(JNIEnv *env, jclass current);
+
+/* Records - since JDK 14 */
+
+JNIEXPORT jboolean JNICALL
+JVM_IsRecord(JNIEnv *env, jclass cls);
+
+JNIEXPORT jobjectArray JNICALL
+JVM_GetRecordComponents(JNIEnv *env, jclass ofClass);
 
 /* The following two reflection routines are still needed due to startup time issues */
 /*
@@ -1039,19 +1049,6 @@ JVM_IsSameClassPackage(JNIEnv *env, jclass class1, jclass class2);
 #include "classfile_constants.h"
 
 /*
- * A function defined by the byte-code verifier and called by the VM.
- * This is not a function implemented in the VM.
- *
- * Returns JNI_FALSE if verification fails. A detailed error message
- * will be places in msg_buf, whose length is specified by buf_len.
- */
-typedef jboolean (*verifier_fn_t)(JNIEnv *env,
-                                  jclass cb,
-                                  char * msg_buf,
-                                  jint buf_len);
-
-
-/*
  * Support for a VM-independent class format checker.
  */
 typedef struct {
@@ -1073,35 +1070,6 @@ typedef struct {
     method_size_info clinit;   /* memory used in clinit */
     method_size_info main;     /* used everywhere else */
 } class_size_info;
-
-/*
- * Functions defined in libjava.so to perform string conversions.
- *
- */
-
-typedef jstring (*to_java_string_fn_t)(JNIEnv *env, char *str);
-
-typedef char *(*to_c_string_fn_t)(JNIEnv *env, jstring s, jboolean *b);
-
-/* This is the function defined in libjava.so that performs class
- * format checks. This functions fills in size information about
- * the class file and returns:
- *
- *   0: good
- *  -1: out of memory
- *  -2: bad format
- *  -3: unsupported version
- *  -4: bad class name
- */
-
-typedef jint (*check_format_fn_t)(char *class_name,
-                                  unsigned char *data,
-                                  unsigned int data_size,
-                                  class_size_info *class_size,
-                                  char *message_buffer,
-                                  jint buffer_length,
-                                  jboolean measure_only,
-                                  jboolean check_relaxed);
 
 #define JVM_RECOGNIZED_CLASS_MODIFIERS (JVM_ACC_PUBLIC | \
                                         JVM_ACC_FINAL | \
@@ -1135,14 +1103,6 @@ typedef jint (*check_format_fn_t)(char *class_name,
                                          JVM_ACC_STRICT | \
                                          JVM_ACC_SYNTHETIC)
 
-/*
- * This is the function defined in libjava.so to perform path
- * canonicalization. VM call this function before opening jar files
- * to load system classes.
- *
- */
-
-typedef int (*canonicalize_fn_t)(JNIEnv *env, char *orig, char *out, int len);
 
 /*************************************************************************
  PART 3: I/O and Network Support
@@ -1225,76 +1185,6 @@ JVM_GetTemporaryDirectory(JNIEnv *env);
  */
 JNIEXPORT jobjectArray JNICALL
 JVM_GetEnclosingMethodInfo(JNIEnv* env, jclass ofClass);
-
-/* =========================================================================
- * The following defines a private JVM interface that the JDK can query
- * for the JVM version and capabilities.  sun.misc.Version defines
- * the methods for getting the VM version and its capabilities.
- *
- * When a new bit is added, the following should be updated to provide
- * access to the new capability:
- *    HS:   JVM_GetVersionInfo and Abstract_VM_Version class
- *    SDK:  Version class
- *
- * Similary, a private JDK interface JDK_GetVersionInfo0 is defined for
- * JVM to query for the JDK version and capabilities.
- *
- * When a new bit is added, the following should be updated to provide
- * access to the new capability:
- *    HS:   JDK_Version class
- *    SDK:  JDK_GetVersionInfo0
- *
- * ==========================================================================
- */
-typedef struct {
-    unsigned int jvm_version;  /* Encoded $VNUM as specified by JEP-223 */
-    unsigned int patch_version : 8; /* JEP-223 patch version */
-    unsigned int reserved3 : 8;
-    unsigned int reserved1 : 16;
-    unsigned int reserved2;
-
-    /* The following bits represents JVM supports that JDK has dependency on.
-     * JDK can use these bits to determine which JVM version
-     * and support it has to maintain runtime compatibility.
-     *
-     * When a new bit is added in a minor or update release, make sure
-     * the new bit is also added in the main/baseline.
-     */
-    unsigned int is_attach_supported : 1;
-    unsigned int : 31;
-    unsigned int : 32;
-    unsigned int : 32;
-} jvm_version_info;
-
-#define JVM_VERSION_MAJOR(version) ((version & 0xFF000000) >> 24)
-#define JVM_VERSION_MINOR(version) ((version & 0x00FF0000) >> 16)
-#define JVM_VERSION_SECURITY(version) ((version & 0x0000FF00) >> 8)
-#define JVM_VERSION_BUILD(version) ((version & 0x000000FF))
-
-JNIEXPORT void JNICALL
-JVM_GetVersionInfo(JNIEnv* env, jvm_version_info* info, size_t info_size);
-
-typedef struct {
-    unsigned int jdk_version; /* Encoded $VNUM as specified by JEP-223 */
-    unsigned int patch_version : 8; /* JEP-223 patch version */
-    unsigned int reserved3 : 8;
-    unsigned int reserved1 : 16;
-    unsigned int reserved2;
-    unsigned int : 32;
-    unsigned int : 32;
-    unsigned int : 32;
-} jdk_version_info;
-
-#define JDK_VERSION_MAJOR(version) ((version & 0xFF000000) >> 24)
-#define JDK_VERSION_MINOR(version) ((version & 0x00FF0000) >> 16)
-#define JDK_VERSION_SECURITY(version) ((version & 0x0000FF00) >> 8)
-#define JDK_VERSION_BUILD(version) ((version & 0x000000FF))
-
-/*
- * This is the function JDK_GetVersionInfo0 defined in libjava.so
- * that is dynamically looked up by JVM.
- */
-typedef void (*jdk_version_info_fn_t)(jdk_version_info* info, size_t info_size);
 
 /*
  * This structure is used by the launcher to get the default thread

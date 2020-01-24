@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2018 SAP SE. All rights reserved.
+ * Copyright (c) 2012, 2019 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,7 @@
 #include "interpreter/interp_masm.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/compiledICHolder.hpp"
+#include "oops/klass.inline.hpp"
 #include "runtime/safepointMechanism.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/vframeArray.hpp"
@@ -570,7 +571,6 @@ void SharedRuntime::generate_trampoline(MacroAssembler *masm, address destinatio
   __ bctr();
 }
 
-#ifdef COMPILER2
 static int reg2slot(VMReg r) {
   return r->reg2stack() + SharedRuntime::out_preserve_stack_slots();
 }
@@ -578,7 +578,6 @@ static int reg2slot(VMReg r) {
 static int reg2offset(VMReg r) {
   return (r->reg2stack() + SharedRuntime::out_preserve_stack_slots()) * VMRegImpl::stack_slot_size;
 }
-#endif
 
 // ---------------------------------------------------------------------------
 // Read the array of BasicTypes from a signature, and compute where the
@@ -1142,7 +1141,7 @@ void SharedRuntime::gen_i2c_adapter(MacroAssembler *masm,
       }
       if (!r_2->is_valid()) {
         // Not sure we need to do this but it shouldn't hurt.
-        if (sig_bt[i] == T_OBJECT || sig_bt[i] == T_ADDRESS || sig_bt[i] == T_ARRAY) {
+        if (is_reference_type(sig_bt[i]) || sig_bt[i] == T_ADDRESS) {
           __ ld(r, ld_offset, ld_ptr);
           ld_offset-=wordSize;
         } else {
@@ -1277,6 +1276,7 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
   c2i_entry = __ pc();
 
   // Class initialization barrier for static methods
+  address c2i_no_clinit_check_entry = NULL;
   if (VM_Version::supports_fast_class_init_checks()) {
     Label L_skip_barrier;
 
@@ -1295,14 +1295,14 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
     __ bctr();
 
     __ bind(L_skip_barrier);
+    c2i_no_clinit_check_entry = __ pc();
   }
 
   gen_c2i_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs, call_interpreter, ientry);
 
-  return AdapterHandlerLibrary::new_entry(fingerprint, i2c_entry, c2i_entry, c2i_unverified_entry);
+  return AdapterHandlerLibrary::new_entry(fingerprint, i2c_entry, c2i_entry, c2i_unverified_entry, c2i_no_clinit_check_entry);
 }
 
-#ifdef COMPILER2
 // An oop arg. Must pass a handle not the oop itself.
 static void object_move(MacroAssembler* masm,
                         int frame_size_in_slots,
@@ -1737,15 +1737,14 @@ static void verify_oop_args(MacroAssembler* masm,
   Register temp_reg = R19_method;  // not part of any compiled calling seq
   if (VerifyOops) {
     for (int i = 0; i < method->size_of_parameters(); i++) {
-      if (sig_bt[i] == T_OBJECT ||
-          sig_bt[i] == T_ARRAY) {
+      if (is_reference_type(sig_bt[i])) {
         VMReg r = regs[i].first();
         assert(r->is_valid(), "bad oop arg");
         if (r->is_stack()) {
           __ ld(temp_reg, reg2offset(r), R1_SP);
-          __ verify_oop(temp_reg);
+          __ verify_oop(temp_reg, FILE_AND_LINE);
         } else {
-          __ verify_oop(r->as_Register());
+          __ verify_oop(r->as_Register(), FILE_AND_LINE);
         }
       }
     }
@@ -1811,8 +1810,6 @@ static void gen_special_dispatch(MacroAssembler* masm,
                                                  receiver_reg, member_reg, /*for_compiler_entry:*/ true);
 }
 
-#endif // COMPILER2
-
 // ---------------------------------------------------------------------------
 // Generate a native wrapper for a given method. The method takes arguments
 // in the Java compiled code convention, marshals them to the native
@@ -1847,8 +1844,8 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
                                                 int compile_id,
                                                 BasicType *in_sig_bt,
                                                 VMRegPair *in_regs,
-                                                BasicType ret_type) {
-#ifdef COMPILER2
+                                                BasicType ret_type,
+                                                address critical_entry) {
   if (method->is_method_handle_intrinsic()) {
     vmIntrinsics::ID iid = method->intrinsic_id();
     intptr_t start = (intptr_t)__ pc();
@@ -1872,7 +1869,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
   }
 
   bool is_critical_native = true;
-  address native_func = method->critical_native_function();
+  address native_func = critical_entry;
   if (native_func == NULL) {
     native_func = method->native_function();
     is_critical_native = false;
@@ -2105,12 +2102,12 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
 
   // Check ic: object class == cached class?
   if (!method_is_static) {
-  Register ic = as_Register(Matcher::inline_cache_reg_encode());
+  Register ic = R19_inline_cache_reg;
   Register receiver_klass = r_temp_1;
 
   __ cmpdi(CCR0, R3_ARG1, 0);
   __ beq(CCR0, ic_miss);
-  __ verify_oop(R3_ARG1);
+  __ verify_oop(R3_ARG1, FILE_AND_LINE);
   __ load_klass(receiver_klass, R3_ARG1);
 
   __ cmpd(CCR0, receiver_klass, ic);
@@ -2599,7 +2596,7 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
   // Unbox oop result, e.g. JNIHandles::resolve value.
   // --------------------------------------------------------------------------
 
-  if (ret_type == T_OBJECT || ret_type == T_ARRAY) {
+  if (is_reference_type(ret_type)) {
     __ resolve_jobject(R3_RET, r_temp_1, r_temp_2, /* needs_frame */ false);
   }
 
@@ -2635,12 +2632,10 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
 
   // Handler for pending exceptions (out-of-line).
   // --------------------------------------------------------------------------
-
   // Since this is a native call, we know the proper exception handler
   // is the empty function. We just pop this frame and then jump to
   // forward_exception_entry.
   if (!is_critical_native) {
-  __ align(InteriorEntryAlignment);
   __ bind(handle_pending_exception);
 
   __ pop_frame();
@@ -2653,7 +2648,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
   // --------------------------------------------------------------------------
 
   if (!method_is_static) {
-  __ align(InteriorEntryAlignment);
   __ bind(ic_miss);
 
   __ b64_patchable((address)SharedRuntime::get_ic_miss_stub(),
@@ -2680,10 +2674,6 @@ nmethod *SharedRuntime::generate_native_wrapper(MacroAssembler *masm,
   }
 
   return nm;
-#else
-  ShouldNotReachHere();
-  return NULL;
-#endif // COMPILER2
 }
 
 // This function returns the adjust size (in number of words) to a c2i adapter
@@ -2717,10 +2707,6 @@ static void push_skeleton_frame(MacroAssembler* masm, bool deopt,
   __ ld(frame_size_reg, 0, frame_sizes_reg);
   __ std(pc_reg, _abi(lr), R1_SP);
   __ push_frame(frame_size_reg, R0/*tmp*/);
-#ifdef ASSERT
-  __ load_const_optimized(pc_reg, 0x5afe);
-  __ std(pc_reg, _ijava_state_neg(ijava_reserved), R1_SP);
-#endif
   __ std(R1_SP, _ijava_state_neg(sender_sp), R1_SP);
   __ addi(number_of_frames_reg, number_of_frames_reg, -1);
   __ addi(frame_sizes_reg, frame_sizes_reg, wordSize);
@@ -2793,10 +2779,6 @@ static void push_skeleton_frames(MacroAssembler* masm, bool deopt,
   __ std(R12_scratch2, _abi(lr), R1_SP);
 
   // Initialize initial_caller_sp.
-#ifdef ASSERT
- __ load_const_optimized(pc_reg, 0x5afe);
- __ std(pc_reg, _ijava_state_neg(ijava_reserved), R1_SP);
-#endif
  __ std(frame_size_reg, _ijava_state_neg(sender_sp), R1_SP);
 
 #ifdef ASSERT
@@ -2868,7 +2850,7 @@ void SharedRuntime::generate_deopt_blob() {
   // We can't grab a free register here, because all registers may
   // contain live values, so let the RegisterSaver do the adjustment
   // of the return pc.
-  const int return_pc_adjustment_no_exception = -HandlerImpl::size_deopt_handler();
+  const int return_pc_adjustment_no_exception = -MacroAssembler::bl64_patchable_size;
 
   // Push the "unpack frame"
   // Save everything in sight.

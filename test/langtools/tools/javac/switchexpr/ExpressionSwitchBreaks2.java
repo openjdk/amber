@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @bug 8206986
  * @summary Check behavior for invalid breaks.
- * @compile/fail/ref=ExpressionSwitchBreaks2.out -XDrawDiagnostics --enable-preview -source ${jdk.version} ExpressionSwitchBreaks2.java
+ * @compile/fail/ref=ExpressionSwitchBreaks2.out -XDrawDiagnostics ExpressionSwitchBreaks2.java
  */
 
 public class ExpressionSwitchBreaks2 {
@@ -41,9 +41,11 @@ public class ExpressionSwitchBreaks2 {
         }
         }
         j: print(switch (i) {
+            case 0: yield 0;
             default: break j;
         }, 0);
         j2: print(switch (i) {
+            case 0: yield 0;
             default: break j2;
         }, 0);
         return null;

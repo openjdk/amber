@@ -229,7 +229,6 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBAWT, \
         format-nonliteral parentheses unused-value unused-function, \
     DISABLED_WARNINGS_clang := logical-op-parentheses extern-initializer \
         sign-compare format-nonliteral, \
-    DISABLED_WARNINGS_solstudio := E_DECLARATION_IN_CODE, \
     DISABLED_WARNINGS_microsoft := 4244 4267 4996, \
     ASFLAGS := $(LIBAWT_ASFLAGS), \
     LDFLAGS := $(LDFLAGS_JDKLIB) $(call SET_SHARED_LIBRARY_ORIGIN), \
@@ -339,8 +338,8 @@ ifeq ($(call isTargetOs, windows macosx), false)
             implicit-fallthrough undef unused-function, \
         DISABLED_WARNINGS_clang := parentheses format undef \
             logical-op-parentheses format-nonliteral int-conversion, \
-        DISABLED_WARNINGS_solstudio := E_DECLARATION_IN_CODE \
-            E_ASSIGNMENT_TYPE_MISMATCH E_NON_CONST_INIT, \
+        DISABLED_WARNINGS_solstudio := E_ASSIGNMENT_TYPE_MISMATCH \
+             E_NON_CONST_INIT, \
         LDFLAGS := $(LDFLAGS_JDKLIB) \
             $(call SET_SHARED_LIBRARY_ORIGIN) \
             -L$(INSTALL_LIBRARIES_HERE), \
@@ -384,7 +383,7 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBLCMS, \
         libawt/java2d, \
     HEADERS_FROM_SRC := $(LIBLCMS_HEADERS_FROM_SRC), \
     DISABLED_WARNINGS_gcc := format-nonliteral type-limits \
-        misleading-indentation undef unused-function, \
+        misleading-indentation undef unused-function stringop-truncation, \
     DISABLED_WARNINGS_clang := tautological-compare format-nonliteral undef, \
     DISABLED_WARNINGS_solstudio := E_STATEMENT_NOT_REACHED, \
     DISABLED_WARNINGS_microsoft := 4819, \
@@ -471,7 +470,6 @@ ifeq ($(call isTargetOs, windows macosx), false)
           $(LIBAWT_HEADLESS_CFLAGS), \
       EXTRA_HEADER_DIRS := $(LIBAWT_HEADLESS_EXTRA_HEADER_DIRS), \
       DISABLED_WARNINGS_gcc := unused-function, \
-      DISABLED_WARNINGS_xlc := 1506-356, \
       DISABLED_WARNINGS_solstudio := E_EMPTY_TRANSLATION_UNIT, \
       LDFLAGS := $(LDFLAGS_JDKLIB) \
           $(call SET_SHARED_LIBRARY_ORIGIN), \
@@ -480,10 +478,6 @@ ifeq ($(call isTargetOs, windows macosx), false)
       LIBS_linux := $(LIBM) $(LIBDL), \
       LIBS_solaris := $(LIBM) $(LIBDL) $(LIBCXX), \
   ))
-
-  # AIX warning explanation:
-  # 1506-356 : (W) Compilation unit is empty.
-  #            This happens during the headless build
 
   $(BUILD_LIBAWT_HEADLESS): $(BUILD_LIBAWT)
 
@@ -625,7 +619,8 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBFONTMANAGER, \
         E_ENUM_VAL_OVERFLOWS_INT_MAX, \
     DISABLED_WARNINGS_CXX_solstudio := \
         truncwarn wvarhidenmem wvarhidemem wbadlkginit identexpected \
-        hidevf w_novirtualdescr arrowrtn2 refmemnoconstr_aggr unknownpragma, \
+        hidevf w_novirtualdescr arrowrtn2 refmemnoconstr_aggr unknownpragma \
+        doubunder wunreachable, \
     DISABLED_WARNINGS_microsoft := 4267 4244 4018 4090 4996 4146 4334 4819 4101 4068 4805 4138, \
     LDFLAGS := $(subst -Xlinker -z -Xlinker defs,, \
         $(subst -Wl$(COMMA)-z$(COMMA)defs,,$(LDFLAGS_JDKLIB))) $(LDFLAGS_CXX_JDK) \
@@ -791,7 +786,8 @@ ifeq ($(ENABLE_HEADLESS_ONLY), false)
     LIBSPLASHSCREEN_EXCLUDE_SRC_PATTERNS := /unix/
   endif
 
-  LIBSPLASHSCREEN_CFLAGS += -DSPLASHSCREEN -DPNG_NO_MMX_CODE -DPNG_ARM_NEON_OPT=0
+  LIBSPLASHSCREEN_CFLAGS += -DSPLASHSCREEN -DPNG_NO_MMX_CODE \
+                            -DPNG_ARM_NEON_OPT=0 -DPNG_ARM_NEON_IMPLEMENTATION=0
 
   ifeq ($(call isTargetOs, linux), true)
     ifeq ($(call isTargetCpuArch, ppc), true)
@@ -852,8 +848,7 @@ ifeq ($(ENABLE_HEADLESS_ONLY), false)
           maybe-uninitialized shift-negative-value implicit-fallthrough \
           unused-function, \
       DISABLED_WARNINGS_clang := incompatible-pointer-types sign-compare, \
-      DISABLED_WARNINGS_solstudio := E_NEWLINE_NOT_LAST E_DECLARATION_IN_CODE \
-          E_STATEMENT_NOT_REACHED, \
+      DISABLED_WARNINGS_solstudio := E_STATEMENT_NOT_REACHED, \
       DISABLED_WARNINGS_microsoft := 4018 4244 4267, \
       LDFLAGS := $(LDFLAGS_JDKLIB) \
           $(call SET_SHARED_LIBRARY_ORIGIN), \

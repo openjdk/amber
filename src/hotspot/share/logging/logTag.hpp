@@ -24,7 +24,6 @@
 #ifndef SHARE_LOGGING_LOGTAG_HPP
 #define SHARE_LOGGING_LOGTAG_HPP
 
-#include "logging/logTag_ext.hpp"
 #include "memory/allocation.hpp"
 #include "utilities/globalDefinitions.hpp"
 
@@ -109,6 +108,7 @@
   LOG_TAG(nestmates) \
   LOG_TAG(nmethod) \
   LOG_TAG(normalize) \
+  LOG_TAG(numa) \
   LOG_TAG(objecttagging) \
   LOG_TAG(obsolete) \
   LOG_TAG(oldobject) \
@@ -137,6 +137,7 @@
   LOG_TAG(parser) \
   LOG_TAG(ptrqueue) \
   LOG_TAG(purge) \
+  LOG_TAG(record) \
   LOG_TAG(resolve) \
   LOG_TAG(safepoint) \
   LOG_TAG(sampling) \
@@ -149,6 +150,7 @@
   LOG_TAG(startuptime) \
   LOG_TAG(state) \
   LOG_TAG(stats) \
+  LOG_TAG(streaming) \
   LOG_TAG(stringdedup) \
   LOG_TAG(stringtable) \
   LOG_TAG(symboltable) \
@@ -171,13 +173,12 @@
   LOG_TAG(mirror) \
   LOG_TAG(verification) \
   LOG_TAG(verify) \
-  LOG_TAG(vmmonitor) \
+  LOG_TAG(vmmutex) \
   LOG_TAG(vmoperation) \
   LOG_TAG(vmthread) \
   LOG_TAG(vtables) \
   LOG_TAG(vtablestubs) \
-  LOG_TAG(workgang) \
-  LOG_TAG_LIST_EXT
+  LOG_TAG(workgang)
 
 #define PREFIX_LOG_TAG(T) (LogTag::_##T)
 

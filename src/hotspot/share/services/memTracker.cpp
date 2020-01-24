@@ -24,6 +24,7 @@
 #include "precompiled.hpp"
 #include "jvm.h"
 
+#include "runtime/atomic.hpp"
 #include "runtime/orderAccess.hpp"
 #include "runtime/vmThread.hpp"
 #include "runtime/vmOperations.hpp"
@@ -147,7 +148,7 @@ void Tracker::record(address addr, size_t size) {
 // Shutdown can only be issued via JCmd, and NMT JCmd is serialized by lock
 void MemTracker::shutdown() {
   // We can only shutdown NMT to minimal tracking level if it is ever on.
-  if (tracking_level () > NMT_minimal) {
+  if (tracking_level() > NMT_minimal) {
     transition_to(NMT_minimal);
   }
 }
@@ -175,6 +176,22 @@ bool MemTracker::transition_to(NMT_TrackingLevel level) {
   return true;
 }
 
+
+static volatile bool g_final_report_did_run = false;
+void MemTracker::final_report(outputStream* output) {
+  // This function is called during both error reporting and normal VM exit.
+  // However, it should only ever run once.  E.g. if the VM crashes after
+  // printing the final report during normal VM exit, it should not print
+  // the final report again. In addition, it should be guarded from
+  // recursive calls in case NMT reporting itself crashes.
+  if (Atomic::cmpxchg(&g_final_report_did_run, false, true) == false) {
+    NMT_TrackingLevel level = tracking_level();
+    if (level >= NMT_summary) {
+      report(level == NMT_summary, output);
+    }
+  }
+}
+
 void MemTracker::report(bool summary_only, outputStream* output) {
  assert(output != NULL, "No output stream");
   MemBaseline baseline;
@@ -186,12 +203,9 @@ void MemTracker::report(bool summary_only, outputStream* output) {
       MemDetailReporter rpt(baseline, output);
       rpt.report();
       output->print("Metaspace:");
-      // Metadata reporting requires a safepoint, so avoid it if VM is not in good state.
-      assert(!VMError::fatal_error_in_progress(), "Do not report metadata in error report");
-      VM_PrintMetadata vmop(output, K,
-          MetaspaceUtils::rf_show_loaders |
-          MetaspaceUtils::rf_break_down_by_spacetype);
-      VMThread::execute(&vmop);
+      // The basic metaspace report avoids any locking and should be safe to
+      // be called at any time.
+      MetaspaceUtils::print_basic_report(output, K);
     }
   }
 }

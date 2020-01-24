@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
+import java.util.Iterator;
 
 import jdk.internal.util.StaticProperty;
 import sun.net.SocksProxy;
@@ -165,18 +167,10 @@ class SocksSocketImpl extends DelegatingSocketImpl implements SocksConsts {
                 return false;
             out.write(1);
             out.write(userName.length());
-            try {
-                out.write(userName.getBytes("ISO-8859-1"));
-            } catch (java.io.UnsupportedEncodingException uee) {
-                assert false;
-            }
+            out.write(userName.getBytes(StandardCharsets.ISO_8859_1));
             if (password != null) {
                 out.write(password.length());
-                try {
-                    out.write(password.getBytes("ISO-8859-1"));
-                } catch (java.io.UnsupportedEncodingException uee) {
-                    assert false;
-                }
+                out.write(password.getBytes(StandardCharsets.ISO_8859_1));
             } else
                 out.write(0);
             out.flush();
@@ -207,11 +201,7 @@ class SocksSocketImpl extends DelegatingSocketImpl implements SocksConsts {
         out.write((endpoint.getPort() >> 0) & 0xff);
         out.write(endpoint.getAddress().getAddress());
         String userName = getUserName();
-        try {
-            out.write(userName.getBytes("ISO-8859-1"));
-        } catch (java.io.UnsupportedEncodingException uee) {
-            assert false;
-        }
+        out.write(userName.getBytes(StandardCharsets.ISO_8859_1));
         out.write(0);
         out.flush();
         byte[] data = new byte[8];
@@ -327,8 +317,12 @@ class SocksSocketImpl extends DelegatingSocketImpl implements SocksConsts {
             }
             Proxy p = null;
             IOException savedExc = null;
-            java.util.Iterator<Proxy> iProxy = null;
-            iProxy = sel.select(uri).iterator();
+            final Iterator<Proxy> iProxy;
+            try {
+                iProxy = sel.select(uri).iterator();
+            } catch (IllegalArgumentException iae) {
+                throw new IOException("Failed to select a proxy", iae);
+            }
             if (iProxy == null || !(iProxy.hasNext())) {
                 delegate.connect(epoint, remainingMillis(deadlineMillis));
                 return;
@@ -422,11 +416,7 @@ class SocksSocketImpl extends DelegatingSocketImpl implements SocksConsts {
         if (epoint.isUnresolved()) {
             out.write(DOMAIN_NAME);
             out.write(epoint.getHostName().length());
-            try {
-                out.write(epoint.getHostName().getBytes("ISO-8859-1"));
-            } catch (java.io.UnsupportedEncodingException uee) {
-                assert false;
-            }
+            out.write(epoint.getHostName().getBytes(StandardCharsets.ISO_8859_1));
             out.write((epoint.getPort() >> 8) & 0xff);
             out.write((epoint.getPort() >> 0) & 0xff);
         } else if (epoint.getAddress() instanceof Inet6Address) {

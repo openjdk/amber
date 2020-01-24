@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,8 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.Context;
+import com.sun.tools.javac.util.List;
+import com.sun.tools.javac.util.Names;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
@@ -45,8 +47,6 @@ import static com.sun.tools.javac.code.Kinds.Kind.*;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- *  @author Neal Gafter
  */
 public class JavadocMemberEnter extends MemberEnter {
     public static JavadocMemberEnter instance0(Context context) {
@@ -61,6 +61,7 @@ public class JavadocMemberEnter extends MemberEnter {
     }
 
     final ToolEnvironment toolEnv;
+
 
     protected JavadocMemberEnter(Context context) {
         super(context);
@@ -80,7 +81,12 @@ public class JavadocMemberEnter extends MemberEnter {
             toolEnv.setElementToTreePath(meth, treePath);
         }
         // release resources
+        // handle constructors for record types specially, because of downstream checks
+        if ((env.enclClass.mods.flags & Flags.RECORD) != 0 && TreeInfo.isConstructor(tree)) {
+            tree.body.stats = List.nil();
+        } else {
         tree.body = null;
+        }
     }
 
     @Override

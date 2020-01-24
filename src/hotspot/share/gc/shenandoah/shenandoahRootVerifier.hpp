@@ -30,6 +30,7 @@
 class ShenandoahRootVerifier : public StackObj {
 public:
   enum RootTypes {
+    None                = 0,
     SerialRoots         = 1 << 0,
     ThreadRoots         = 1 << 1,
     CodeRoots           = 1 << 2,
@@ -44,7 +45,7 @@ private:
   RootTypes _types;
 
 public:
-  ShenandoahRootVerifier();
+  ShenandoahRootVerifier(RootTypes types = AllRoots);
 
   void excludes(RootTypes types);
   void oops_do(OopClosure* cl);
@@ -52,6 +53,8 @@ public:
   // Used to seed ShenandoahVerifier, do not honor root type filter
   void roots_do(OopClosure* cl);
   void strong_roots_do(OopClosure* cl);
+
+  static RootTypes combine(RootTypes t1, RootTypes t2);
 private:
   bool verify(RootTypes type) const;
 };

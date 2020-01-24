@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -165,6 +165,8 @@ public class HostAddress implements Cloneable {
     /**
      * Creates a HostAddress from the specified address and address type.
      *
+     * Warning: called by nativeccache.c.
+     *
      * @param new_addrType the value of the address type which matches the defined
      *                       address family constants in the Berkeley Standard
      *                       Distributions of Unix.
@@ -209,7 +211,7 @@ public class HostAddress implements Cloneable {
         }
         if (DEBUG) {
             if (addrType == Krb5.ADDRTYPE_INET ||
-                addrType == Krb5.ADDRTYPE_INET6) {
+                    addrType == Krb5.ADDRTYPE_INET6) {
                 System.out.println("Host address is " +
                         InetAddress.getByAddress(address));
             }

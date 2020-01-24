@@ -35,7 +35,9 @@ groups=TEST.groups TEST.quick-groups
 # to determine additional characteristics of the system for use with the @requires tag.
 # Note: compiled bootlibs code will be located in the folder 'bootClasses'
 requires.extraPropDefns = ../../jtreg-ext/requires/VMProps.java
-requires.extraPropDefns.bootlibs = ../../lib/sun ../../lib/jdk/test/lib/Platform.java
+requires.extraPropDefns.bootlibs = ../../lib/sun \
+    ../../lib/jdk/test/lib/Platform.java \
+    ../../lib/jdk/test/lib/Container.java
 requires.extraPropDefns.vmOpts = -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI -Xbootclasspath/a:bootClasses
 requires.properties= \
     sun.arch.data.model \
@@ -45,7 +47,6 @@ requires.properties= \
     vm.gc.G1 \
     vm.gc.Serial \
     vm.gc.Parallel \
-    vm.gc.ConcMarkSweep \
     vm.gc.Shenandoah \
     vm.gc.Epsilon \
     vm.gc.Z \
@@ -70,7 +71,7 @@ requires.properties= \
     test.vm.gc.nvdimm
 
 # Minimum jtreg version
-requiredVersion=4.2 b14
+requiredVersion=4.2 b16
 
 # Path to libraries in the topmost test directory. This is needed so @library
 # does not need ../../../ notation to reach them

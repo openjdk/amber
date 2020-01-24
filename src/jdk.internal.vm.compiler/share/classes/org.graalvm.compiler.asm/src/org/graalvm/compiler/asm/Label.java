@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package org.graalvm.compiler.asm;
 
 import java.util.ArrayList;
+
+import org.graalvm.compiler.debug.GraalError;
 
 /**
  * This class represents a label within assembly code.
@@ -71,7 +73,9 @@ public final class Label {
      * {@link #addPatchAt(int, Assembler)}.
      */
     protected void bind(int pos, Assembler asm) {
-        assert pos >= 0;
+        if (pos < 0) {
+            throw new GraalError("Cannot bind label to negative position %d", pos);
+        }
         this.position = pos;
         if (patchPositions != null) {
             for (int i = 0; i < patchPositions.size(); ++i) {

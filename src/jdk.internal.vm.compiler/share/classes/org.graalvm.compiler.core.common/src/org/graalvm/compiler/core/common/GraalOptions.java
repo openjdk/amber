@@ -26,10 +26,11 @@ package org.graalvm.compiler.core.common;
 
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
+import org.graalvm.compiler.options.OptionStability;
 import org.graalvm.compiler.options.OptionType;
 
 /**
- * This class encapsulates options that control the behavior of the Graal compiler.
+ * This class encapsulates options that control the behavior of the GraalVM compiler.
  */
 // @formatter:off
 public final class GraalOptions {
@@ -62,7 +63,7 @@ public final class GraalOptions {
     public static final OptionKey<Integer> MaximumInliningSize = new OptionKey<>(300);
 
     @Option(help = "If the previous low-level graph size of the method exceeds the threshold, it is not inlined.", type = OptionType.Expert)
-    public static final OptionKey<Integer> SmallCompiledLowLevelGraphSize = new OptionKey<>(300);
+    public static final OptionKey<Integer> SmallCompiledLowLevelGraphSize = new OptionKey<>(330);
 
     @Option(help = "", type = OptionType.Expert)
     public static final OptionKey<Double> LimitInlinedInvokes = new OptionKey<>(5.0);
@@ -114,7 +115,7 @@ public final class GraalOptions {
     public static final OptionKey<Boolean> PartialUnroll = new OptionKey<>(true);
 
     @Option(help = "", type = OptionType.Expert)
-    public static final OptionKey<Float> MinimumPeelProbability = new OptionKey<>(0.35f);
+    public static final OptionKey<Float> MinimumPeelFrequency = new OptionKey<>(0.35f);
 
     @Option(help = "", type = OptionType.Expert)
     public static final OptionKey<Integer> LoopMaxUnswitch = new OptionKey<>(3);
@@ -165,6 +166,9 @@ public final class GraalOptions {
 
     @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> ConditionalElimination = new OptionKey<>(true);
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Integer> ConditionalEliminationMaxIterations = new OptionKey<>(4);
 
     @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> RawConditionalElimination = new OptionKey<>(true);
@@ -238,12 +242,6 @@ public final class GraalOptions {
     public static final OptionKey<Boolean> OptImplicitNullChecks = new OptionKey<>(true);
 
     @Option(help = "", type = OptionType.Debug)
-    public static final OptionKey<Boolean> OptClearNonLiveLocals = new OptionKey<>(true);
-
-    @Option(help = "", type = OptionType.Debug)
-    public static final OptionKey<Boolean> OptLoopTransform = new OptionKey<>(true);
-
-    @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> OptFloatingReads = new OptionKey<>(true);
 
     @Option(help = "", type = OptionType.Debug)
@@ -273,7 +271,7 @@ public final class GraalOptions {
     @Option(help = "Use a cache for snippet graphs.", type = OptionType.Debug)
     public static final OptionKey<Boolean> UseSnippetGraphCache = new OptionKey<>(true);
 
-    @Option(help = "file:doc-files/TraceInliningHelp.txt", type = OptionType.Debug)
+    @Option(help = "file:doc-files/TraceInliningHelp.txt", type = OptionType.Debug, stability = OptionStability.STABLE)
     public static final OptionKey<Boolean> TraceInlining = new OptionKey<>(false);
 
     @Option(help = "Enable inlining decision tracing in stubs and snippets.", type = OptionType.Debug)
@@ -288,4 +286,9 @@ public final class GraalOptions {
     @Option(help = "If applicable, use bulk zeroing instructions when the zeroing size in bytes exceeds this threshold.", type = OptionType.Expert)
     public static final OptionKey<Integer> MinimalBulkZeroingSize = new OptionKey<>(2048);
 
+    @Option(help = "Alignment in bytes for loop header blocks.", type = OptionType.Expert)
+    public static final OptionKey<Integer> LoopHeaderAlignment = new OptionKey<>(16);
+
+    @Option(help = "Do not include membars for volatile accesses until the end of optimizations.", type = OptionType.Expert)
+    public static final OptionKey<Boolean> LateMembars = new OptionKey<>(true);
 }

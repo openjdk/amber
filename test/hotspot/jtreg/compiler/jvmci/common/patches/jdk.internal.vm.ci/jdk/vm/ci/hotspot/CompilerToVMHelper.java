@@ -101,11 +101,6 @@ public class CompilerToVMHelper {
         }
     }
 
-    public static Object resolveConstantInPool(ConstantPool constantPool, int cpi) {
-        DirectHotSpotObjectConstantImpl obj = (DirectHotSpotObjectConstantImpl) CTVM.resolveConstantInPool((HotSpotConstantPool) constantPool, cpi);
-        return obj.object;
-    }
-
     public static Object resolvePossiblyCachedConstantInPool(ConstantPool constantPool, int cpi) {
         DirectHotSpotObjectConstantImpl obj = (DirectHotSpotObjectConstantImpl) CTVM.resolvePossiblyCachedConstantInPool((HotSpotConstantPool) constantPool, cpi);
         return obj.object;
@@ -336,5 +331,16 @@ public class CompilerToVMHelper {
 
     public static HotSpotResolvedObjectType fromObjectClass(Class<?> theClass) {
           return (HotSpotResolvedObjectType) metaAccess.lookupJavaType(theClass);
+    }
+
+    public static InstalledCode getInstalledCode(ResolvedJavaMethod method, String name, long address, long entryPoint) {
+        return new InstalledCodeStub((HotSpotResolvedJavaMethodImpl) method, name, address, entryPoint);
+    }
+    private static class InstalledCodeStub extends HotSpotNmethod {
+        private InstalledCodeStub(HotSpotResolvedJavaMethodImpl method, String name, long address, long entryPoint) {
+            super(method, name, false, 0);
+            this.address = address;
+            this.entryPoint = entryPoint;
+        }
     }
 }

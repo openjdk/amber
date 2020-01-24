@@ -338,9 +338,6 @@ final class P11PSSSignature extends SignatureSpi {
 
         int keySize = 0; // in bytes
         if (mechInfo != null) {
-            // check against available native info
-            int minKeySize = (int) mechInfo.ulMinKeySize;
-            int maxKeySize = (int) mechInfo.ulMaxKeySize;
             if (key instanceof P11Key) {
                 keySize = (((P11Key) key).length() + 7) >> 3;
             } else if (key instanceof RSAKey) {
@@ -348,13 +345,16 @@ final class P11PSSSignature extends SignatureSpi {
             } else {
                 throw new InvalidKeyException("Unrecognized key type " + key);
             }
-            if ((minKeySize != -1) && (keySize < minKeySize)) {
+            // check against available native info which are in bits
+            if ((mechInfo.iMinKeySize != 0) &&
+                    (keySize < (mechInfo.iMinKeySize >> 3))) {
                 throw new InvalidKeyException(KEY_ALGO +
-                    " key must be at least " + minKeySize + " bytes");
+                    " key must be at least " + mechInfo.iMinKeySize + " bits");
             }
-            if ((maxKeySize != -1) && (keySize > maxKeySize)) {
+            if ((mechInfo.iMaxKeySize != Integer.MAX_VALUE) &&
+                    (keySize > (mechInfo.iMaxKeySize >> 3))) {
                 throw new InvalidKeyException(KEY_ALGO +
-                    " key must be at most " + maxKeySize + " bytes");
+                    " key must be at most " + mechInfo.iMaxKeySize + " bits");
             }
         }
         if (this.sigParams != null) {
@@ -395,33 +395,49 @@ final class P11PSSSignature extends SignatureSpi {
                 ("Unsupported digest algorithm in Signature parameters: " +
                  digestAlgorithm);
         }
+
         if (!(params.getMGFAlgorithm().equalsIgnoreCase("MGF1"))) {
             throw new InvalidAlgorithmParameterException("Only supports MGF1");
         }
+
+        // defaults to the digest algorithm unless overridden
+        String mgfDigestAlgo = digestAlgorithm;
+        AlgorithmParameterSpec mgfParams = params.getMGFParameters();
+        if (mgfParams != null) {
+            if (!(mgfParams instanceof MGF1ParameterSpec)) {
+                throw new InvalidAlgorithmParameterException
+                        ("Only MGF1ParameterSpec is supported");
+            }
+            mgfDigestAlgo = ((MGF1ParameterSpec)mgfParams).getDigestAlgorithm();
+        }
+
         if (params.getTrailerField() != PSSParameterSpec.TRAILER_FIELD_BC) {
             throw new InvalidAlgorithmParameterException
                 ("Only supports TrailerFieldBC(1)");
         }
+
         int saltLen = params.getSaltLength();
         if (this.p11Key != null) {
-            int maxSaltLen = ((this.p11Key.length() + 7) >> 3) - digestLen.intValue() - 2;
+            int maxSaltLen = ((this.p11Key.length() + 7) >> 3) -
+                    digestLen.intValue() - 2;
 
             if (DEBUG) {
                 System.out.println("Max saltLen = " + maxSaltLen);
                 System.out.println("Curr saltLen = " + saltLen);
             }
             if (maxSaltLen < 0 || saltLen > maxSaltLen) {
-                throw new InvalidAlgorithmParameterException("Invalid with current key size");
+                throw new InvalidAlgorithmParameterException
+                        ("Invalid with current key size");
             }
-        } else {
-            if (DEBUG) System.out.println("No key available for validating saltLen");
+        } else if (DEBUG) {
+            System.out.println("No key available for validating saltLen");
         }
 
         // validated, now try to store the parameter internally
         try {
             this.mechanism.setParameter(
                     new CK_RSA_PKCS_PSS_PARAMS(digestAlgorithm, "MGF1",
-                        digestAlgorithm, saltLen));
+                            mgfDigestAlgo, saltLen));
             this.sigParams = params;
         } catch (IllegalArgumentException iae) {
             throw new InvalidAlgorithmParameterException(iae);

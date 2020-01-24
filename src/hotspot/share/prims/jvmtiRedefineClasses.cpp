@@ -40,10 +40,12 @@
 #include "memory/metaspaceShared.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
+#include "oops/annotations.hpp"
 #include "oops/constantPool.hpp"
-#include "oops/fieldStreams.hpp"
+#include "oops/fieldStreams.inline.hpp"
 #include "oops/klassVtable.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/recordComponent.hpp"
 #include "prims/jvmtiImpl.hpp"
 #include "prims/jvmtiRedefineClasses.hpp"
 #include "prims/jvmtiThreadState.inline.hpp"
@@ -232,12 +234,9 @@ void VM_RedefineClasses::doit() {
     ResolvedMethodTable::adjust_method_entries(&trace_name_printed);
   }
 
-  // Disable any dependent concurrent compilations
-  SystemDictionary::notice_modification();
-
-  // Set flag indicating that some invariants are no longer true.
+  // Increment flag indicating that some invariants are no longer true.
   // See jvmtiExport.hpp for detailed explanation.
-  JvmtiExport::set_has_redefined_a_class();
+  JvmtiExport::increment_redefinition_count();
 
   // check_class() is optionally called for product bits, but is
   // always called for non-product bits.
@@ -788,6 +787,69 @@ static jvmtiError check_nest_attributes(InstanceKlass* the_class,
   return JVMTI_ERROR_NONE;
 }
 
+// Return an error status if the class Record attribute was changed.
+static jvmtiError check_record_attribute(InstanceKlass* the_class, InstanceKlass* scratch_class) {
+  // Get lists of record components.
+  Array<RecordComponent*>* the_record = the_class->record_components();
+  Array<RecordComponent*>* scr_record = scratch_class->record_components();
+  bool the_record_exists = the_record != NULL;
+  bool scr_record_exists = scr_record != NULL;
+
+  if (the_record_exists && scr_record_exists) {
+    int the_num_components = the_record->length();
+    int scr_num_components = scr_record->length();
+    if (the_num_components != scr_num_components) {
+      log_trace(redefine, class, record)
+        ("redefined class %s attribute change error: Record num_components=%d changed to num_components=%d",
+         the_class->external_name(), the_num_components, scr_num_components);
+      return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+    }
+
+    // Compare each field in each record component.
+    ConstantPool* the_cp =  the_class->constants();
+    ConstantPool* scr_cp =  scratch_class->constants();
+    for (int x = 0; x < the_num_components; x++) {
+      RecordComponent* the_component = the_record->at(x);
+      RecordComponent* scr_component = scr_record->at(x);
+      const Symbol* const the_name = the_cp->symbol_at(the_component->name_index());
+      const Symbol* const scr_name = scr_cp->symbol_at(scr_component->name_index());
+      const Symbol* const the_descr = the_cp->symbol_at(the_component->descriptor_index());
+      const Symbol* const scr_descr = scr_cp->symbol_at(scr_component->descriptor_index());
+      if (the_name != scr_name || the_descr != scr_descr) {
+        log_trace(redefine, class, record)
+          ("redefined class %s attribute change error: Record name_index, descriptor_index, and/or attributes_count changed",
+           the_class->external_name());
+        return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+      }
+
+      int the_gen_sig = the_component->generic_signature_index();
+      int scr_gen_sig = scr_component->generic_signature_index();
+      const Symbol* const the_gen_sig_sym = (the_gen_sig == 0 ? NULL :
+        the_cp->symbol_at(the_component->generic_signature_index()));
+      const Symbol* const scr_gen_sig_sym = (scr_gen_sig == 0 ? NULL :
+        scr_cp->symbol_at(scr_component->generic_signature_index()));
+      if (the_gen_sig_sym != scr_gen_sig_sym) {
+        log_trace(redefine, class, record)
+          ("redefined class %s attribute change error: Record generic_signature attribute changed",
+           the_class->external_name());
+        return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+      }
+
+      // It's okay if a record component's annotations were changed.
+    }
+
+  } else if (the_record_exists ^ scr_record_exists) {
+    const char* action_str = (the_record_exists) ? "removed" : "added";
+    log_trace(redefine, class, record)
+      ("redefined class %s attribute change error: Record attribute %s",
+       the_class->external_name(), action_str);
+    return JVMTI_ERROR_UNSUPPORTED_REDEFINITION_CLASS_ATTRIBUTE_CHANGED;
+  }
+
+  return JVMTI_ERROR_NONE;
+}
+
+
 static bool can_add_or_delete(Method* m) {
       // Compatibility mode
   return (AllowRedefinitionToAddDeleteMethods &&
@@ -837,6 +899,12 @@ jvmtiError VM_RedefineClasses::compare_and_normalize_class_versions(
 
   // Check whether the nest-related attributes have been changed.
   jvmtiError err = check_nest_attributes(the_class, scratch_class);
+  if (err != JVMTI_ERROR_NONE) {
+    return err;
+  }
+
+  // Check whether the Record attribute has been changed.
+  err = check_record_attribute(the_class, scratch_class);
   if (err != JVMTI_ERROR_NONE) {
     return err;
   }
@@ -1626,6 +1694,11 @@ jvmtiError VM_RedefineClasses::merge_cp_and_rewrite(
     return JVMTI_ERROR_INTERNAL;
   }
 
+  if (old_cp->has_dynamic_constant()) {
+    merge_cp->set_has_dynamic_constant();
+    scratch_cp->set_has_dynamic_constant();
+  }
+
   log_info(redefine, class, constantpool)("merge_cp_len=%d, index_map_len=%d", merge_cp_length, _index_map_count);
 
   if (_index_map_count == 0) {
@@ -1705,6 +1778,12 @@ bool VM_RedefineClasses::rewrite_cp_refs(InstanceKlass* scratch_class,
 
   // rewrite constant pool references in the nest attributes:
   if (!rewrite_cp_refs_in_nest_attributes(scratch_class)) {
+    // propagate failure back to caller
+    return false;
+  }
+
+  // rewrite constant pool references in the Record attribute:
+  if (!rewrite_cp_refs_in_record_attribute(scratch_class, THREAD)) {
     // propagate failure back to caller
     return false;
   }
@@ -1803,6 +1882,46 @@ bool VM_RedefineClasses::rewrite_cp_refs_in_nest_attributes(
   for (int i = 0; i < nest_members->length(); i++) {
     u2 cp_index = nest_members->at(i);
     nest_members->at_put(i, find_new_index(cp_index));
+  }
+  return true;
+}
+
+// Rewrite constant pool references in the Record attribute.
+bool VM_RedefineClasses::rewrite_cp_refs_in_record_attribute(
+       InstanceKlass* scratch_class, TRAPS) {
+  Array<RecordComponent*>* components = scratch_class->record_components();
+  if (components != NULL) {
+    for (int i = 0; i < components->length(); i++) {
+      RecordComponent* component = components->at(i);
+      u2 cp_index = component->name_index();
+      component->set_name_index(find_new_index(cp_index));
+      cp_index = component->descriptor_index();
+      component->set_descriptor_index(find_new_index(cp_index));
+      cp_index = component->generic_signature_index();
+      if (cp_index != 0) {
+        component->set_generic_signature_index(find_new_index(cp_index));
+      }
+
+      AnnotationArray* annotations = component->annotations();
+      if (annotations != NULL && annotations->length() != 0) {
+        int byte_i = 0;  // byte index into annotations
+        if (!rewrite_cp_refs_in_annotations_typeArray(annotations, byte_i, THREAD)) {
+          log_debug(redefine, class, annotation)("bad record_component_annotations at %d", i);
+          // propagate failure back to caller
+          return false;
+        }
+      }
+
+      AnnotationArray* type_annotations = component->type_annotations();
+      if (type_annotations != NULL && type_annotations->length() != 0) {
+        int byte_i = 0;  // byte index into annotations
+        if (!rewrite_cp_refs_in_annotations_typeArray(type_annotations, byte_i, THREAD)) {
+          log_debug(redefine, class, annotation)("bad record_component_type_annotations at %d", i);
+          // propagate failure back to caller
+          return false;
+        }
+      }
+    }
   }
   return true;
 }
@@ -2164,14 +2283,14 @@ bool VM_RedefineClasses::rewrite_cp_refs_in_element_value(
 
   switch (tag) {
     // These BaseType tag values are from Table 4.2 in VM spec:
-    case 'B':  // byte
-    case 'C':  // char
-    case 'D':  // double
-    case 'F':  // float
-    case 'I':  // int
-    case 'J':  // long
-    case 'S':  // short
-    case 'Z':  // boolean
+    case JVM_SIGNATURE_BYTE:
+    case JVM_SIGNATURE_CHAR:
+    case JVM_SIGNATURE_DOUBLE:
+    case JVM_SIGNATURE_FLOAT:
+    case JVM_SIGNATURE_INT:
+    case JVM_SIGNATURE_LONG:
+    case JVM_SIGNATURE_SHORT:
+    case JVM_SIGNATURE_BOOLEAN:
 
     // The remaining tag values are from Table 4.8 in the 2nd-edition of
     // the VM spec:
@@ -2242,7 +2361,7 @@ bool VM_RedefineClasses::rewrite_cp_refs_in_element_value(
       }
       break;
 
-    case '[':
+    case JVM_SIGNATURE_ARRAY:
     {
       if ((byte_i_ref + 2) > annotations_typeArray->length()) {
         // not enough room for a num_values field
@@ -3249,6 +3368,10 @@ void VM_RedefineClasses::set_new_constant_pool(
   // reference to the cp holder is needed for copy_operands()
   smaller_cp->set_pool_holder(scratch_class);
 
+  if (scratch_cp->has_dynamic_constant()) {
+    smaller_cp->set_has_dynamic_constant();
+  }
+
   scratch_cp->copy_cp_to(1, scratch_cp_length - 1, smaller_cp, 1, THREAD);
   if (HAS_PENDING_EXCEPTION) {
     // Exception is handled in the caller
@@ -3486,12 +3609,11 @@ void VM_RedefineClasses::AdjustAndCleanMetadata::do_klass(Klass* k) {
     // cached references to old methods so it doesn't need to be
     // updated. We can simply start with the previous version(s) in
     // that case.
-    constantPoolHandle other_cp;
     ConstantPoolCache* cp_cache;
 
     if (!ik->is_being_redefined()) {
       // this klass' constant pool cache may need adjustment
-      other_cp = constantPoolHandle(ik->constants());
+      ConstantPool* other_cp = ik->constants();
       cp_cache = other_cp->cache();
       if (cp_cache != NULL) {
         cp_cache->adjust_method_entries(&trace_name_printed);
@@ -3510,25 +3632,16 @@ void VM_RedefineClasses::AdjustAndCleanMetadata::do_klass(Klass* k) {
   }
 }
 
-void VM_RedefineClasses::update_jmethod_ids() {
+void VM_RedefineClasses::update_jmethod_ids(Thread* thread) {
   for (int j = 0; j < _matching_methods_length; ++j) {
     Method* old_method = _matching_old_methods[j];
     jmethodID jmid = old_method->find_jmethod_id_or_null();
     if (jmid != NULL) {
       // There is a jmethodID, change it to point to the new method
-      methodHandle new_method_h(_matching_new_methods[j]);
+      methodHandle new_method_h(thread, _matching_new_methods[j]);
       Method::change_method_associated_with_jmethod_id(jmid, new_method_h());
       assert(Method::resolve_jmethod_id(jmid) == _matching_new_methods[j],
              "should be replaced");
-    }
-  }
-  // Update deleted jmethodID
-  for (int j = 0; j < _deleted_methods_length; ++j) {
-    Method* old_method = _deleted_methods[j];
-    jmethodID jmid = old_method->find_jmethod_id_or_null();
-    if (jmid != NULL) {
-      // Change the jmethodID to point to NSME.
-      Method::change_method_associated_with_jmethod_id(jmid, Universe::throw_no_such_method_error());
     }
   }
 }
@@ -3964,7 +4077,7 @@ void VM_RedefineClasses::redefine_single_class(jclass the_jclass,
   _new_methods = scratch_class->methods();
   _the_class = the_class;
   compute_added_deleted_matching_methods();
-  update_jmethod_ids();
+  update_jmethod_ids(THREAD);
 
   _any_class_has_resolved_methods = the_class->has_resolved_methods() || _any_class_has_resolved_methods;
 

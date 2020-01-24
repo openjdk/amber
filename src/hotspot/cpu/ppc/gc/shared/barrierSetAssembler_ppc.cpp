@@ -113,6 +113,12 @@ void BarrierSetAssembler::resolve_jobject(MacroAssembler* masm, Register value,
   __ clrrdi(tmp1, value, JNIHandles::weak_tag_size);
   __ ld(value, 0, tmp1);      // Resolve (untagged) jobject.
 
-  __ verify_oop(value);
+  __ verify_oop(value, FILE_AND_LINE);
   __ bind(done);
+}
+
+void BarrierSetAssembler::try_resolve_jobject_in_native(MacroAssembler* masm, Register dst, Register jni_env,
+                                                        Register obj, Register tmp, Label& slowpath) {
+  __ clrrdi(dst, obj, JNIHandles::weak_tag_size);
+  __ ld(dst, 0, dst);         // Resolve (untagged) jobject.
 }

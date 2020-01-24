@@ -62,9 +62,6 @@ import jdk.javadoc.internal.doclets.toolkit.Resources;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Atul M Dambalkar
- * @author Robert Field
  */
 public class Extern {
 
@@ -101,7 +98,7 @@ public class Extern {
 
         /**
          * The URL or the directory path at which the element documentation will be
-         * avaliable.
+         * available.
          */
         final DocPath path;
 
@@ -409,9 +406,10 @@ public class Extern {
                         }
                         checkLinkCompatibility(elemname, moduleName, path);
                         Item item = new Item(elemname, elempath, relative);
-                        packageItems.computeIfAbsent(moduleName == null ?
-                            DocletConstants.DEFAULT_ELEMENT_NAME : moduleName, k -> new TreeMap<>())
-                            .put(elemname, item);
+                        packageItems.computeIfAbsent(
+                                moduleName == null ? DocletConstants.DEFAULT_ELEMENT_NAME : moduleName,
+                                k -> new TreeMap<>())
+                            .putIfAbsent(elemname, item); // first-one-wins semantics
                     }
                 }
             }

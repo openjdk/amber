@@ -317,7 +317,15 @@ int LIR_Assembler::check_icache() {
 }
 
 void LIR_Assembler::clinit_barrier(ciMethod* method) {
-  ShouldNotReachHere(); // not implemented
+  assert(VM_Version::supports_fast_class_init_checks(), "sanity");
+  assert(!method->holder()->is_not_initialized(), "initialization should have been started");
+
+  Label L_skip_barrier;
+
+  __ mov_metadata(rscratch2, method->holder()->constant_encoding());
+  __ clinit_barrier(rscratch2, rscratch1, &L_skip_barrier /*L_fast_path*/);
+  __ far_jump(RuntimeAddress(SharedRuntime::get_handle_wrong_method_stub()));
+  __ bind(L_skip_barrier);
 }
 
 void LIR_Assembler::jobject2reg(jobject o, Register reg) {
@@ -720,7 +728,7 @@ void LIR_Assembler::reg2reg(LIR_Opr src, LIR_Opr dest) {
     move_regs(src->as_register(), dest->as_register());
 
   } else if (dest->is_double_cpu()) {
-    if (src->type() == T_OBJECT || src->type() == T_ARRAY) {
+    if (is_reference_type(src->type())) {
       // Surprising to me but we can see move of a long to t_object
       __ verify_oop(src->as_register());
       move_regs(src->as_register(), dest->as_register_lo());
@@ -748,10 +756,10 @@ void LIR_Assembler::reg2reg(LIR_Opr src, LIR_Opr dest) {
 
 void LIR_Assembler::reg2stack(LIR_Opr src, LIR_Opr dest, BasicType type, bool pop_fpu_stack) {
   if (src->is_single_cpu()) {
-    if (type == T_ARRAY || type == T_OBJECT) {
+    if (is_reference_type(type)) {
       __ str(src->as_register(), frame_map()->address_for_slot(dest->single_stack_ix()));
       __ verify_oop(src->as_register());
-    } else if (type == T_METADATA || type == T_DOUBLE) {
+    } else if (type == T_METADATA || type == T_DOUBLE || type == T_ADDRESS) {
       __ str(src->as_register(), frame_map()->address_for_slot(dest->single_stack_ix()));
     } else {
       __ strw(src->as_register(), frame_map()->address_for_slot(dest->single_stack_ix()));
@@ -786,7 +794,7 @@ void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type, LIR_Patch
     return;
   }
 
-  if (type == T_ARRAY || type == T_OBJECT) {
+  if (is_reference_type(type)) {
     __ verify_oop(src->as_register());
 
     if (UseCompressedOops && !wide) {
@@ -861,10 +869,10 @@ void LIR_Assembler::stack2reg(LIR_Opr src, LIR_Opr dest, BasicType type) {
   assert(dest->is_register(), "should not call otherwise");
 
   if (dest->is_single_cpu()) {
-    if (type == T_ARRAY || type == T_OBJECT) {
+    if (is_reference_type(type)) {
       __ ldr(dest->as_register(), frame_map()->address_for_slot(src->single_stack_ix()));
       __ verify_oop(dest->as_register());
-    } else if (type == T_METADATA) {
+    } else if (type == T_METADATA || type == T_ADDRESS) {
       __ ldr(dest->as_register(), frame_map()->address_for_slot(src->single_stack_ix()));
     } else {
       __ ldrw(dest->as_register(), frame_map()->address_for_slot(src->single_stack_ix()));
@@ -1011,7 +1019,7 @@ void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type, LIR_Patch
       ShouldNotReachHere();
   }
 
-  if (type == T_ARRAY || type == T_OBJECT) {
+  if (is_reference_type(type)) {
     if (UseCompressedOops && !wide) {
       __ decode_heap_oop(dest->as_register());
     }
@@ -1219,8 +1227,8 @@ void LIR_Assembler::emit_alloc_array(LIR_OpAllocArray* op) {
   __ uxtw(len, len);
 
   if (UseSlowPath ||
-      (!UseFastNewObjectArray && (op->type() == T_OBJECT || op->type() == T_ARRAY)) ||
-      (!UseFastNewTypeArray   && (op->type() != T_OBJECT && op->type() != T_ARRAY))) {
+      (!UseFastNewObjectArray && is_reference_type(op->type())) ||
+      (!UseFastNewTypeArray   && !is_reference_type(op->type()))) {
     __ b(*op->stub()->entry());
   } else {
     Register tmp1 = op->tmp1()->as_register();
@@ -1940,10 +1948,10 @@ void LIR_Assembler::comp_op(LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2,
     if (opr2->is_single_cpu()) {
       // cpu register - cpu register
       Register reg2 = opr2->as_register();
-      if (opr1->type() == T_OBJECT || opr1->type() == T_ARRAY) {
+      if (is_reference_type(opr1->type())) {
         __ cmpoop(reg1, reg2);
       } else {
-        assert(opr2->type() != T_OBJECT && opr2->type() != T_ARRAY, "cmp int, oop?");
+        assert(!is_reference_type(opr2->type()), "cmp int, oop?");
         __ cmpw(reg1, reg2);
       }
       return;
@@ -1969,6 +1977,9 @@ void LIR_Assembler::comp_op(LIR_Condition condition, LIR_Opr opr1, LIR_Opr opr2,
         break;
       case T_ADDRESS:
         imm = opr2->as_constant_ptr()->as_jint();
+        break;
+      case T_METADATA:
+        imm = (intptr_t)(opr2->as_constant_ptr()->as_metadata());
         break;
       case T_OBJECT:
       case T_ARRAY:
@@ -2235,7 +2246,7 @@ void LIR_Assembler::emit_arraycopy(LIR_OpArrayCopy* op) {
   CodeStub* stub = op->stub();
   int flags = op->flags();
   BasicType basic_type = default_type != NULL ? default_type->element_type()->basic_type() : T_ILLEGAL;
-  if (basic_type == T_ARRAY) basic_type = T_OBJECT;
+  if (is_reference_type(basic_type)) basic_type = T_OBJECT;
 
   // if we don't know anything, just go through the generic arraycopy
   if (default_type == NULL // || basic_type == T_OBJECT
@@ -2894,40 +2905,7 @@ void LIR_Assembler::rt_call(LIR_Opr result, address dest, const LIR_OprList* arg
     __ far_call(RuntimeAddress(dest));
   } else {
     __ mov(rscratch1, RuntimeAddress(dest));
-    int len = args->length();
-    int type = 0;
-    if (! result->is_illegal()) {
-      switch (result->type()) {
-      case T_VOID:
-        type = 0;
-        break;
-      case T_INT:
-      case T_LONG:
-      case T_OBJECT:
-        type = 1;
-        break;
-      case T_FLOAT:
-        type = 2;
-        break;
-      case T_DOUBLE:
-        type = 3;
-        break;
-      default:
-        ShouldNotReachHere();
-        break;
-      }
-    }
-    int num_gpargs = 0;
-    int num_fpargs = 0;
-    for (int i = 0; i < args->length(); i++) {
-      LIR_Opr arg = args->at(i);
-      if (arg->type() == T_FLOAT || arg->type() == T_DOUBLE) {
-        num_fpargs++;
-      } else {
-        num_gpargs++;
-      }
-    }
-    __ blrt(rscratch1, num_gpargs, num_fpargs, type);
+    __ blr(rscratch1);
   }
 
   if (info != NULL) {
@@ -3156,7 +3134,7 @@ void LIR_Assembler::peephole(LIR_List *lir) {
 void LIR_Assembler::atomic_op(LIR_Code code, LIR_Opr src, LIR_Opr data, LIR_Opr dest, LIR_Opr tmp_op) {
   Address addr = as_Address(src->as_address_ptr());
   BasicType type = src->type();
-  bool is_oop = type == T_OBJECT || type == T_ARRAY;
+  bool is_oop = is_reference_type(type);
 
   void (MacroAssembler::* add)(Register prev, RegisterOrConstant incr, Register addr);
   void (MacroAssembler::* xchg)(Register prev, Register newv, Register addr);

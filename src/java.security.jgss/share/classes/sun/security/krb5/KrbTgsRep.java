@@ -44,7 +44,6 @@ public class KrbTgsRep extends KrbKdcRep {
     private TGSRep rep;
     private Credentials creds;
     private Ticket secondTicket;
-    private static final boolean DEBUG = Krb5.DEBUG;
 
     KrbTgsRep(byte[] ibuf, KrbTgsReq tgsReq)
         throws KrbException, IOException {
@@ -86,9 +85,27 @@ public class KrbTgsRep extends KrbKdcRep {
 
         check(false, req, rep, tgsReq.tgsReqKey);
 
+        PrincipalName serverAlias = tgsReq.getServerAlias();
+        if (serverAlias != null) {
+            PrincipalName repSname = enc_part.sname;
+            if (serverAlias.equals(repSname) ||
+                    isReferralSname(repSname)) {
+                serverAlias = null;
+            }
+        }
+
+        PrincipalName clientAlias = null;
+        if (rep.cname.equals(req.reqBody.cname)) {
+            // Only propagate the client alias if it is not an
+            // impersonation ticket (S4U2Self or S4U2Proxy).
+            clientAlias = tgsReq.getClientAlias();
+        }
+
         this.creds = new Credentials(rep.ticket,
                                 rep.cname,
+                                clientAlias,
                                 enc_part.sname,
+                                serverAlias,
                                 enc_part.key,
                                 enc_part.flags,
                                 enc_part.authtime,
@@ -110,5 +127,17 @@ public class KrbTgsRep extends KrbKdcRep {
 
     sun.security.krb5.internal.ccache.Credentials setCredentials() {
         return new sun.security.krb5.internal.ccache.Credentials(rep, secondTicket);
+    }
+
+    private static boolean isReferralSname(PrincipalName sname) {
+        if (sname != null) {
+            String[] snameStrings = sname.getNameStrings();
+            if (snameStrings.length == 2 &&
+                    snameStrings[0].equals(
+                            PrincipalName.TGS_DEFAULT_SRV_NAME)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

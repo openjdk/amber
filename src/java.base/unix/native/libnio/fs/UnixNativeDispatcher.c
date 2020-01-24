@@ -143,6 +143,7 @@ typedef int fstatat64_func(int, const char *, struct stat64 *, int);
 typedef int unlinkat_func(int, const char*, int);
 typedef int renameat_func(int, const char*, int, const char*);
 typedef int futimesat_func(int, const char *, const struct timeval *);
+typedef int futimens_func(int, const struct timespec *);
 typedef int lutimes_func(const char *, const struct timeval *);
 typedef DIR* fdopendir_func(int);
 
@@ -151,6 +152,7 @@ static fstatat64_func* my_fstatat64_func = NULL;
 static unlinkat_func* my_unlinkat_func = NULL;
 static renameat_func* my_renameat_func = NULL;
 static futimesat_func* my_futimesat_func = NULL;
+static futimens_func* my_futimens_func = NULL;
 static lutimes_func* my_lutimes_func = NULL;
 static fdopendir_func* my_fdopendir_func = NULL;
 
@@ -275,6 +277,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     my_futimesat_func = (futimesat_func*) dlsym(RTLD_DEFAULT, "futimesat");
     my_lutimes_func = (lutimes_func*) dlsym(RTLD_DEFAULT, "lutimes");
 #endif
+    my_futimens_func = (futimens_func*) dlsym(RTLD_DEFAULT, "futimens");
 #if defined(_AIX)
     my_fdopendir_func = (fdopendir_func*) dlsym(RTLD_DEFAULT, "fdopendir64");
 #else
@@ -287,7 +290,7 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
         my_fstatat64_func = (fstatat64_func*)&fstatat64_wrapper;
 #endif
 
-    /* supports futimes or futimesat and/or lutimes */
+    /* supports futimes or futimesat, futimens, and/or lutimes */
 
 #ifdef _ALLBSD_SOURCE
     capabilities |= sun_nio_fs_UnixNativeDispatcher_SUPPORTS_FUTIMES;
@@ -298,6 +301,8 @@ Java_sun_nio_fs_UnixNativeDispatcher_init(JNIEnv* env, jclass this)
     if (my_lutimes_func != NULL)
         capabilities |= sun_nio_fs_UnixNativeDispatcher_SUPPORTS_LUTIMES;
 #endif
+    if (my_futimens_func != NULL)
+        capabilities |= sun_nio_fs_UnixNativeDispatcher_SUPPORTS_FUTIMENS;
 
     /* supports openat, etc. */
 
@@ -396,6 +401,51 @@ Java_sun_nio_fs_UnixNativeDispatcher_fclose(JNIEnv* env, jclass this, jlong stre
     if (fclose(fp) == EOF && errno != EINTR) {
         throwUnixException(env, errno);
     }
+}
+
+JNIEXPORT void JNICALL
+Java_sun_nio_fs_UnixNativeDispatcher_rewind(JNIEnv* env, jclass this, jlong stream)
+{
+    FILE* fp = jlong_to_ptr(stream);
+    int saved_errno;
+
+    errno = 0;
+    rewind(fp);
+    saved_errno = errno;
+    if (ferror(fp)) {
+        throwUnixException(env, saved_errno);
+    }
+}
+
+/**
+ * This function returns line length without NUL terminator or -1 on EOF.
+ */
+JNIEXPORT jint JNICALL
+Java_sun_nio_fs_UnixNativeDispatcher_getlinelen(JNIEnv* env, jclass this, jlong stream)
+{
+    FILE* fp = jlong_to_ptr(stream);
+    size_t lineSize = 0;
+    char * lineBuffer = NULL;
+    int saved_errno;
+
+    ssize_t res = getline(&lineBuffer, &lineSize, fp);
+    saved_errno = errno;
+
+    /* Should free lineBuffer no matter result, according to man page */
+    if (lineBuffer != NULL)
+        free(lineBuffer);
+
+    if (feof(fp))
+        return -1;
+
+    /* On successfull return res >= 0, otherwise res is -1 */
+    if (res == -1)
+        throwUnixException(env, saved_errno);
+
+    if (res > INT_MAX)
+        throwUnixException(env, EOVERFLOW);
+
+    return (jint)res;
 }
 
 JNIEXPORT jint JNICALL
@@ -688,6 +738,29 @@ Java_sun_nio_fs_UnixNativeDispatcher_futimes(JNIEnv* env, jclass this, jint file
     }
     RESTARTABLE((*my_futimesat_func)(filedes, NULL, &times[0]), err);
 #endif
+    if (err == -1) {
+        throwUnixException(env, errno);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_sun_nio_fs_UnixNativeDispatcher_futimens(JNIEnv* env, jclass this, jint filedes,
+    jlong accessTime, jlong modificationTime)
+{
+    struct timespec times[2];
+    int err = 0;
+
+    times[0].tv_sec = accessTime / 1000000000;
+    times[0].tv_nsec = accessTime % 1000000000;
+
+    times[1].tv_sec = modificationTime / 1000000000;
+    times[1].tv_nsec = modificationTime % 1000000000;
+
+    if (my_futimens_func == NULL) {
+        JNU_ThrowInternalError(env, "my_futimens_func is NULL");
+        return;
+    }
+    RESTARTABLE((*my_futimens_func)(filedes, &times[0]), err);
     if (err == -1) {
         throwUnixException(env, errno);
     }

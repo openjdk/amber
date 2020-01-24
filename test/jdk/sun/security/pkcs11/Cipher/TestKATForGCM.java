@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,12 +30,13 @@
  * @summary Known Answer Test for AES cipher with GCM mode support in
  * PKCS11 provider.
  */
-import java.security.*;
-import javax.crypto.*;
-import javax.crypto.spec.*;
-import java.math.*;
-
-import java.util.*;
+import java.security.GeneralSecurityException;
+import java.security.Provider;
+import java.util.Arrays;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class TestKATForGCM extends PKCS11Test {
 
@@ -314,8 +315,26 @@ public class TestKATForGCM extends PKCS11Test {
                     ", no support for " + transformation);
             return;
         }
-        if (execute(testValues, c)) {
-            System.out.println("Test Passed!");
+        try {
+            if (execute(testValues, c)) {
+                System.out.println("Test Passed!");
+            }
+        } catch (Exception e) {
+            System.out.println("Exception occured using " + p.getName() + " version " + p.getVersionStr());
+
+            if (isNSS(p)) {
+                double ver = getNSSInfo("nss");
+                String osName = System.getProperty("os.name");
+                if (ver < 3.251d && osName.equals("SunOS")) {
+                    // buggy behaviour from solaris on 11.2 OS (nss < 3.251)
+                    System.out.println("Skipping: SunPKCS11-NSS: Old NSS: " + ver);
+                    return; // OK
+                } else if (ver > 3.139 && ver < 3.15 && osName.equals("Linux")) {
+                    // warn about buggy behaviour on Linux with nss 3.14
+                    System.out.println("Warning: old NSS " + ver + " might be problematic, consider upgrading it");
+                }
+            }
+            throw e;
         }
     }
 }

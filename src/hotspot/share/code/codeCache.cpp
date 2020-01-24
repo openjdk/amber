@@ -33,6 +33,7 @@
 #include "code/icBuffer.hpp"
 #include "code/nmethod.hpp"
 #include "code/pcDesc.hpp"
+#include "compiler/compilationPolicy.hpp"
 #include "compiler/compileBroker.hpp"
 #include "jfr/jfrEvents.hpp"
 #include "logging/log.hpp"
@@ -46,7 +47,7 @@
 #include "oops/oop.inline.hpp"
 #include "oops/verifyOopClosure.hpp"
 #include "runtime/arguments.hpp"
-#include "runtime/compilationPolicy.hpp"
+#include "runtime/atomic.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/icache.hpp"
@@ -749,7 +750,7 @@ void CodeCache::release_exception_cache(ExceptionCache* entry) {
     for (;;) {
       ExceptionCache* purge_list_head = Atomic::load(&_exception_cache_purge_list);
       entry->set_purge_list_next(purge_list_head);
-      if (Atomic::cmpxchg(entry, &_exception_cache_purge_list, purge_list_head) == purge_list_head) {
+      if (Atomic::cmpxchg(&_exception_cache_purge_list, purge_list_head, entry) == purge_list_head) {
         break;
       }
     }
@@ -771,9 +772,10 @@ void CodeCache::purge_exception_caches() {
 uint8_t CodeCache::_unloading_cycle = 1;
 
 void CodeCache::increment_unloading_cycle() {
-  if (_unloading_cycle == 1) {
-    _unloading_cycle = 2;
-  } else {
+  // 2-bit value (see IsUnloadingState in nmethod.cpp for details)
+  // 0 is reserved for new methods.
+  _unloading_cycle = (_unloading_cycle + 1) % 4;
+  if (_unloading_cycle == 0) {
     _unloading_cycle = 1;
   }
 }
@@ -1152,15 +1154,7 @@ void CodeCache::mark_all_nmethods_for_deoptimization() {
   CompiledMethodIterator iter(CompiledMethodIterator::only_alive_and_not_unloading);
   while(iter.next()) {
     CompiledMethod* nm = iter.method();
-    if (!nm->method()->is_method_handle_intrinsic() &&
-        !nm->is_not_installed() &&
-        nm->is_in_use() &&
-        !nm->is_native_method()) {
-      // Intrinsics and native methods are never deopted. A method that is
-      // not installed yet or is not in use is not safe to deopt; the
-      // is_in_use() check covers the not_entrant and not zombie cases.
-      // Note: A not_entrant method can become a zombie at anytime if it was
-      // made not_entrant before the previous safepoint/handshake.
+    if (!nm->is_native_method()) {
       nm->mark_for_deoptimization();
     }
   }
@@ -1188,12 +1182,7 @@ void CodeCache::make_marked_nmethods_not_entrant() {
   CompiledMethodIterator iter(CompiledMethodIterator::only_alive_and_not_unloading);
   while(iter.next()) {
     CompiledMethod* nm = iter.method();
-    if (nm->is_marked_for_deoptimization() && nm->is_in_use()) {
-      // only_alive_and_not_unloading() can return not_entrant nmethods.
-      // A not_entrant method can become a zombie at anytime if it was
-      // made not_entrant before the previous safepoint/handshake. The
-      // is_in_use() check covers the not_entrant and not zombie cases
-      // that have become true after the method was marked for deopt.
+    if (nm->is_marked_for_deoptimization()) {
       nm->make_not_entrant();
     }
   }

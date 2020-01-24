@@ -58,9 +58,11 @@ public enum SourceVersion {
      *   9: modules, small cleanups to 1.7 and 1.8 changes
      *  10: local-variable type inference (var)
      *  11: local-variable syntax for lambda parameters
-     *  12: no changes (switch expressions were in preview)
+     *  12: no changes (switch expressions in preview)
      *  13: no changes (switch expressions and text blocks in preview)
-     *  14: TBD
+     *  14: switch expressions (pattern matching and records in
+     *      preview, text blocks in preview again)
+     *  15: TBD
      */
 
     /**
@@ -199,9 +201,19 @@ public enum SourceVersion {
      * The version recognized by the Java Platform, Standard Edition
      * 14.
      *
+     * Additions in this release include switch expressions.
+     *
      * @since 14
      */
-     RELEASE_14;
+    RELEASE_14,
+
+    /**
+     * The version recognized by the Java Platform, Standard Edition
+     * 15.
+     *
+     * @since 15
+     */
+     RELEASE_15;
 
     // Note that when adding constants for newer releases, the
     // behavior of latest() and latestSupported() must be updated too.
@@ -212,7 +224,7 @@ public enum SourceVersion {
      * @return the latest source version that can be modeled
      */
     public static SourceVersion latest() {
-        return RELEASE_14;
+        return RELEASE_15;
     }
 
     private static final SourceVersion latestSupported = getLatestSupported();
@@ -227,7 +239,7 @@ public enum SourceVersion {
     private static SourceVersion getLatestSupported() {
         int intVersion = Runtime.version().feature();
         return (intVersion >= 11) ?
-            valueOf("RELEASE_" + Math.min(14, intVersion)):
+            valueOf("RELEASE_" + Math.min(15, intVersion)):
             RELEASE_10;
     }
 

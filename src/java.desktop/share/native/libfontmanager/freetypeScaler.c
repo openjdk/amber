@@ -154,7 +154,31 @@ static unsigned long ReadTTFontFileFunc(FT_Stream stream,
     jobject bBuffer;
     int bread = 0;
 
-    if (numBytes == 0) return 0;
+    /* A call with numBytes == 0 is a seek. It should return 0 if the
+     * seek position is within the file and non-zero otherwise.
+     * For all other cases, ie numBytes !=0, return the number of bytes
+     * actually read. This applies to truncated reads and also failed reads.
+     */
+
+    if (numBytes == 0) {
+        if (offset > scalerInfo->fileSize) {
+            return -1;
+        } else {
+            return 0;
+       }
+    }
+
+    if (offset + numBytes < offset) {
+        return 0; // ft should not do this, but just in case.
+    }
+
+    if (offset >= scalerInfo->fileSize) {
+        return 0;
+    }
+
+    if (offset + numBytes > scalerInfo->fileSize) {
+        numBytes = scalerInfo->fileSize - offset;
+    }
 
     /* Large reads will bypass the cache and data copying */
     if (numBytes > FILEDATACACHESIZE) {
@@ -164,7 +188,11 @@ static unsigned long ReadTTFontFileFunc(FT_Stream stream,
                                           scalerInfo->font2D,
                                           sunFontIDs.ttReadBlockMID,
                                           bBuffer, offset, numBytes);
-            return bread;
+            if (bread < 0) {
+                return 0;
+            } else {
+               return bread;
+            }
         } else {
             /* We probably hit bug 4845371. For reasons that
              * are currently unclear, the call stacks after the initial
@@ -179,9 +207,18 @@ static unsigned long ReadTTFontFileFunc(FT_Stream stream,
             (*env)->CallObjectMethod(env, scalerInfo->font2D,
                                      sunFontIDs.ttReadBytesMID,
                                      offset, numBytes);
-            (*env)->GetByteArrayRegion(env, byteArray,
-                                       0, numBytes, (jbyte*)destBuffer);
-            return numBytes;
+            /* If there's an OutofMemoryError then byteArray will be null */
+            if (byteArray == NULL) {
+                return 0;
+            } else {
+                jsize len = (*env)->GetArrayLength(env, byteArray);
+                if (len < numBytes) {
+                    numBytes = len; // don't get more bytes than there are ..
+                }
+                (*env)->GetByteArrayRegion(env, byteArray,
+                                           0, numBytes, (jbyte*)destBuffer);
+                return numBytes;
+            }
         }
     } /* Do we have a cache hit? */
       else if (scalerInfo->fontDataOffset <= offset &&
@@ -203,6 +240,11 @@ static unsigned long ReadTTFontFileFunc(FT_Stream stream,
                                       sunFontIDs.ttReadBlockMID,
                                       bBuffer, offset,
                                       scalerInfo->fontDataLength);
+        if (bread <= 0) {
+            return 0;
+        } else if (bread < numBytes) {
+           numBytes = bread;
+        }
         memcpy(destBuffer, scalerInfo->fontData, numBytes);
         return numBytes;
     }
@@ -430,17 +472,41 @@ Java_sun_font_FreetypeFontScaler_createScalerContextNative(
     return ptr_to_jlong(context);
 }
 
+// values used by FreeType (as of version 2.10.1) for italics transformation matrix in FT_GlyphSlot_Oblique
+#define FT_MATRIX_ONE 0x10000
+#define FT_MATRIX_OBLIQUE_XY 0x0366A
+
+static void setupTransform(FT_Matrix* target, FTScalerContext *context) {
+    FT_Matrix* transform = &context->transform;
+    if (context->doItalize) {
+        // we cannot use FT_GlyphSlot_Oblique as it doesn't work well with arbitrary transforms,
+        // so we add corresponding shear transform to the requested glyph transformation
+        target->xx = FT_MATRIX_ONE;
+        target->xy = FT_MATRIX_OBLIQUE_XY;
+        target->yx = 0;
+        target->yy = FT_MATRIX_ONE;
+        FT_Matrix_Multiply(transform, target);
+    } else {
+        target->xx = transform->xx;
+        target->xy = transform->xy;
+        target->yx = transform->yx;
+        target->yy = transform->yy;
+    }
+}
+
 static int setupFTContext(JNIEnv *env,
                           jobject font2D,
                           FTScalerInfo *scalerInfo,
                           FTScalerContext *context) {
+    FT_Matrix matrix;
     int errCode = 0;
 
     scalerInfo->env = env;
     scalerInfo->font2D = font2D;
 
     if (context != NULL) {
-        FT_Set_Transform(scalerInfo->face, &context->transform, NULL);
+        setupTransform(&matrix, context);
+        FT_Set_Transform(scalerInfo->face, &matrix, NULL);
 
         errCode = FT_Set_Char_Size(scalerInfo->face, 0, context->ptsz, 72, 72);
 
@@ -454,11 +520,8 @@ static int setupFTContext(JNIEnv *env,
     return errCode;
 }
 
-/* ftsynth.c uses (0x10000, 0x0366A, 0x0, 0x10000) matrix to get oblique
-   outline.  Therefore x coordinate will change by 0x0366A*y.
-   Note that y coordinate does not change. These values are based on
-   libfreetype version 2.9.1. */
-#define OBLIQUE_MODIFIER(y)  (context->doItalize ? ((y)*0x366A/0x10000) : 0)
+// using same values as for the transformation matrix
+#define OBLIQUE_MODIFIER(y)  (context->doItalize ? ((y)*FT_MATRIX_OBLIQUE_XY/FT_MATRIX_ONE) : 0)
 
 /* FT_GlyphSlot_Embolden (ftsynth.c) uses FT_MulFix(units_per_EM, y_scale) / 24
  * strength value when glyph format is FT_GLYPH_FORMAT_OUTLINE. This value has
@@ -569,6 +632,12 @@ Java_sun_font_FreetypeFontScaler_getFontMetricsNative(
     return metrics;
 }
 
+static jlong
+    getGlyphImageNativeInternal(
+        JNIEnv *env, jobject scaler, jobject font2D,
+        jlong pScalerContext, jlong pScaler, jint glyphCode,
+        jboolean renderImage);
+
 /*
  * Class:     sun_font_FreetypeFontScaler
  * Method:    getGlyphAdvanceNative
@@ -580,29 +649,29 @@ Java_sun_font_FreetypeFontScaler_getGlyphAdvanceNative(
         jlong pScalerContext, jlong pScaler, jint glyphCode) {
 
    /* This method is rarely used because requests for metrics are usually
-      coupled with request for bitmap and to large extend work can be reused
-      (to find out metrics we need to hint glyph).
-      So, we typically go through getGlyphImage code path.
-
-      For initial freetype implementation we delegate
-      all work to getGlyphImage but drop result image.
-      This is waste of work related to scan conversion and conversion from
-      freetype format to our format but for now this seems to be ok.
-
-      NB: investigate performance benefits of refactoring code
-      to avoid unnecesary work with bitmaps. */
+    * coupled with a request for the bitmap and to a large extent the
+    * work can be reused (to find out metrics we may need to hint the glyph).
+    * So, we typically go through the getGlyphImage code path.
+    * When we do get here, we need to pass a parameter which indicates
+    * that we don't need freetype to render the bitmap, and consequently
+    * don't need to allocate our own storage either.
+    * This is also important when enter here requesting metrics for sizes
+    * of text which a large size would be rejected for a bitmap but we
+    * still need the metrics.
+    */
 
     GlyphInfo *info;
-    jfloat advance;
+    jfloat advance = 0.0f;
     jlong image;
 
-    image = Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
-                 env, scaler, font2D, pScalerContext, pScaler, glyphCode);
+    image = getGlyphImageNativeInternal(
+          env, scaler, font2D, pScalerContext, pScaler, glyphCode, JNI_FALSE);
     info = (GlyphInfo*) jlong_to_ptr(image);
 
-    advance = info->advanceX;
-
-    free(info);
+    if (info != NULL) {
+        advance = info->advanceX;
+        free(info);
+    }
 
     return advance;
 }
@@ -617,23 +686,22 @@ Java_sun_font_FreetypeFontScaler_getGlyphMetricsNative(
         JNIEnv *env, jobject scaler, jobject font2D, jlong pScalerContext,
         jlong pScaler, jint glyphCode, jobject metrics) {
 
-     /* As initial implementation we delegate all work to getGlyphImage
-        but drop result image. This is clearly waste of resorces.
-
-        TODO: investigate performance benefits of refactoring code
-              by avoiding bitmap generation and conversion from FT
-              bitmap format. */
+     /* See the comments in getGlyphMetricsNative. They apply here too. */
      GlyphInfo *info;
 
-     jlong image = Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
+     jlong image = getGlyphImageNativeInternal(
                                  env, scaler, font2D,
-                                 pScalerContext, pScaler, glyphCode);
+                                 pScalerContext, pScaler, glyphCode, JNI_FALSE);
      info = (GlyphInfo*) jlong_to_ptr(image);
 
-     (*env)->SetFloatField(env, metrics, sunFontIDs.xFID, info->advanceX);
-     (*env)->SetFloatField(env, metrics, sunFontIDs.yFID, info->advanceY);
-
-     free(info);
+     if (info != NULL) {
+         (*env)->SetFloatField(env, metrics, sunFontIDs.xFID, info->advanceX);
+         (*env)->SetFloatField(env, metrics, sunFontIDs.yFID, info->advanceY);
+         free(info);
+     } else {
+         (*env)->SetFloatField(env, metrics, sunFontIDs.xFID, 0.0f);
+         (*env)->SetFloatField(env, metrics, sunFontIDs.yFID, 0.0f);
+     }
 }
 
 
@@ -740,6 +808,13 @@ static void CopyFTSubpixelVToSubpixel(const void* srcImage, int srcRowBytes,
 }
 
 
+/* JDK does not use glyph images for fonts with a
+ * pixel size > 100 (see THRESHOLD in OutlineTextRenderer.java)
+ * so if the glyph bitmap image dimension is > 1024 pixels,
+ * something is up.
+ */
+#define MAX_GLYPH_DIM 1024
+
 /*
  * Class:     sun_font_FreetypeFontScaler
  * Method:    getGlyphImageNative
@@ -749,6 +824,17 @@ JNIEXPORT jlong JNICALL
 Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
         JNIEnv *env, jobject scaler, jobject font2D,
         jlong pScalerContext, jlong pScaler, jint glyphCode) {
+
+    return getGlyphImageNativeInternal(
+        env, scaler, font2D,
+        pScalerContext, pScaler, glyphCode, JNI_TRUE);
+}
+
+static jlong
+     getGlyphImageNativeInternal(
+        JNIEnv *env, jobject scaler, jobject font2D,
+        jlong pScalerContext, jlong pScaler, jint glyphCode,
+        jboolean renderImage) {
 
     int error, imageSize;
     UInt16 width, height;
@@ -770,6 +856,17 @@ Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
         invalidateJavaScaler(env, scaler, scalerInfo);
         return ptr_to_jlong(getNullGlyphImage());
     }
+
+    /*
+     * When using Fractional metrics (linearly scaling advances) and
+     * greyscale antialiasing, disable hinting so that the glyph shapes
+     * are constant as size increases. This is good for animation as well
+     * as being compatible with what happened in earlier JDK versions
+     * which did not use freetype.
+     */
+    if (context->aaType == TEXT_AA_ON && context->fmType == TEXT_FM_ON) {
+         renderFlags |= FT_LOAD_NO_HINTING;
+     }
 
     if (!context->useSbits) {
         renderFlags |= FT_LOAD_NO_BITMAP;
@@ -806,21 +903,36 @@ Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
     if (context->doBold) { /* if bold style */
         FT_GlyphSlot_Embolden(ftglyph);
     }
-    if (context->doItalize) { /* if oblique */
-        FT_GlyphSlot_Oblique(ftglyph);
-    }
 
     /* generate bitmap if it is not done yet
      e.g. if algorithmic styling is performed and style was added to outline */
-    if (ftglyph->format == FT_GLYPH_FORMAT_OUTLINE) {
+    if (renderImage && (ftglyph->format == FT_GLYPH_FORMAT_OUTLINE)) {
+        FT_BBox bbox;
+        FT_Outline_Get_CBox(&(ftglyph->outline), &bbox);
+        int w = (int)((bbox.xMax>>6)-(bbox.xMin>>6));
+        int h = (int)((bbox.yMax>>6)-(bbox.yMin>>6));
+        if (w > MAX_GLYPH_DIM || h > MAX_GLYPH_DIM) {
+            glyphInfo = getNullGlyphImage();
+            return ptr_to_jlong(glyphInfo);
+        }
         error = FT_Render_Glyph(ftglyph, FT_LOAD_TARGET_MODE(target));
         if (error != 0) {
             return ptr_to_jlong(getNullGlyphImage());
         }
     }
 
-    width  = (UInt16) ftglyph->bitmap.width;
-    height = (UInt16) ftglyph->bitmap.rows;
+    if (renderImage) {
+        width  = (UInt16) ftglyph->bitmap.width;
+        height = (UInt16) ftglyph->bitmap.rows;
+            if (width > MAX_GLYPH_DIM || height > MAX_GLYPH_DIM) {
+              glyphInfo = getNullGlyphImage();
+              return ptr_to_jlong(glyphInfo);
+            }
+     } else {
+        width = 0;
+        height = 0;
+     }
+
 
     imageSize = width*height;
     glyphInfo = (GlyphInfo*) malloc(sizeof(GlyphInfo) + imageSize);
@@ -833,13 +945,16 @@ Java_sun_font_FreetypeFontScaler_getGlyphImageNative(
     glyphInfo->rowBytes  = width;
     glyphInfo->width     = width;
     glyphInfo->height    = height;
-    glyphInfo->topLeftX  = (float)  ftglyph->bitmap_left;
-    glyphInfo->topLeftY  = (float) -ftglyph->bitmap_top;
 
-    if (ftglyph->bitmap.pixel_mode ==  FT_PIXEL_MODE_LCD) {
-        glyphInfo->width = width/3;
-    } else if (ftglyph->bitmap.pixel_mode ==  FT_PIXEL_MODE_LCD_V) {
-        glyphInfo->height = glyphInfo->height/3;
+    if (renderImage) {
+        glyphInfo->topLeftX  = (float)  ftglyph->bitmap_left;
+        glyphInfo->topLeftY  = (float) -ftglyph->bitmap_top;
+
+        if (ftglyph->bitmap.pixel_mode ==  FT_PIXEL_MODE_LCD) {
+            glyphInfo->width = width/3;
+        } else if (ftglyph->bitmap.pixel_mode ==  FT_PIXEL_MODE_LCD_V) {
+            glyphInfo->height = glyphInfo->height/3;
+        }
     }
 
     if (context->fmType == TEXT_FM_ON) {
@@ -1031,9 +1146,6 @@ static FT_Outline* getFTOutline(JNIEnv* env, jobject font2D,
     /* apply styles */
     if (context->doBold) { /* if bold style */
         FT_GlyphSlot_Embolden(ftglyph);
-    }
-    if (context->doItalize) { /* if oblique */
-        FT_GlyphSlot_Oblique(ftglyph);
     }
 
     FT_Outline_Translate(&ftglyph->outline,
