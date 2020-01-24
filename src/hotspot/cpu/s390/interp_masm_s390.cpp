@@ -976,7 +976,7 @@ void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
   //
   // markWord displaced_header = obj->mark().set_unlocked();
   // monitor->lock()->set_displaced_header(displaced_header);
-  // if (Atomic::cmpxchg(/*ex=*/monitor, /*addr*/obj->mark_addr(), /*cmp*/displaced_header) == displaced_header) {
+  // if (Atomic::cmpxchg(/*addr*/obj->mark_addr(), /*cmp*/displaced_header, /*ex=*/monitor) == displaced_header) {
   //   // We stored the monitor address into the object's mark word.
   // } else if (THREAD->is_lock_owned((address)displaced_header))
   //   // Simple recursive case.
@@ -1011,7 +1011,7 @@ void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
   z_stg(displaced_header, BasicObjectLock::lock_offset_in_bytes() +
                           BasicLock::displaced_header_offset_in_bytes(), monitor);
 
-  // if (Atomic::cmpxchg(/*ex=*/monitor, /*addr*/obj->mark_addr(), /*cmp*/displaced_header) == displaced_header) {
+  // if (Atomic::cmpxchg(/*addr*/obj->mark_addr(), /*cmp*/displaced_header, /*ex=*/monitor) == displaced_header) {
 
   // Store stack address of the BasicObjectLock (this is monitor) into object.
   add2reg(object_mark_addr, oopDesc::mark_offset_in_bytes(), object);
@@ -1072,8 +1072,7 @@ void InterpreterMacroAssembler::lock_object(Register monitor, Register object) {
 void InterpreterMacroAssembler::unlock_object(Register monitor, Register object) {
 
   if (UseHeavyMonitors) {
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit),
-            monitor, /*check_for_exceptions=*/ true);
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), monitor);
     return;
   }
 
@@ -1083,7 +1082,7 @@ void InterpreterMacroAssembler::unlock_object(Register monitor, Register object)
   // if ((displaced_header = monitor->displaced_header()) == NULL) {
   //   // Recursive unlock. Mark the monitor unlocked by setting the object field to NULL.
   //   monitor->set_obj(NULL);
-  // } else if (Atomic::cmpxchg(displaced_header, obj->mark_addr(), monitor) == monitor) {
+  // } else if (Atomic::cmpxchg(obj->mark_addr(), monitor, displaced_header) == monitor) {
   //   // We swapped the unlocked mark in displaced_header into the object's mark word.
   //   monitor->set_obj(NULL);
   // } else {
@@ -1124,7 +1123,7 @@ void InterpreterMacroAssembler::unlock_object(Register monitor, Register object)
                                                       BasicLock::displaced_header_offset_in_bytes()));
   z_bre(done); // displaced_header == 0 -> goto done
 
-  // } else if (Atomic::cmpxchg(displaced_header, obj->mark_addr(), monitor) == monitor) {
+  // } else if (Atomic::cmpxchg(obj->mark_addr(), monitor, displaced_header) == monitor) {
   //   // We swapped the unlocked mark in displaced_header into the object's mark word.
   //   monitor->set_obj(NULL);
 
@@ -1147,8 +1146,7 @@ void InterpreterMacroAssembler::unlock_object(Register monitor, Register object)
   // The lock has been converted into a heavy lock and hence
   // we need to get into the slow case.
   z_stg(object, obj_entry);   // Restore object entry, has been cleared above.
-  call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit),
-          monitor,  /*check_for_exceptions=*/false);
+  call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::monitorexit), monitor);
 
   // }
 
@@ -2095,7 +2093,7 @@ void InterpreterMacroAssembler::notify_method_entry() {
     Label jvmti_post_done;
     MacroAssembler::load_and_test_int(Z_R0, Address(Z_thread, JavaThread::interp_only_mode_offset()));
     z_bre(jvmti_post_done);
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_entry), /*check_exceptions=*/false);
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_entry));
     bind(jvmti_post_done);
   }
 }
@@ -2129,7 +2127,7 @@ void InterpreterMacroAssembler::notify_method_exit(bool native_method,
     MacroAssembler::load_and_test_int(Z_R0, Address(Z_thread, JavaThread::interp_only_mode_offset()));
     z_bre(jvmti_post_done);
     if (!native_method) push(state); // see frame::interpreter_frame_result()
-    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_exit), /*check_exceptions=*/false);
+    call_VM(noreg, CAST_FROM_FN_PTR(address, InterpreterRuntime::post_method_exit));
     if (!native_method) pop(state);
     bind(jvmti_post_done);
   }

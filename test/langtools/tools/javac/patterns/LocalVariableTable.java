@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,10 +23,11 @@
 
 /*
  * @test
+ * @bug 8231827
  * @summary Ensure the LV table entries are generated for bindings
  * @modules jdk.jdeps/com.sun.tools.classfile
- * @compile -g LocalVariableTable.java
- * @run main LocalVariableTable
+ * @compile -g --enable-preview -source ${jdk.version} LocalVariableTable.java
+ * @run main/othervm --enable-preview LocalVariableTable
  */
 
 import java.io.*;

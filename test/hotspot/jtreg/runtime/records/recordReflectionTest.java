@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @compile --enable-preview --source 14 recordReflectionTest.java
+ * @compile --enable-preview --source ${jdk.version} recordReflectionTest.java
  * @run main/othervm --enable-preview recordReflectionTest
  */
 
@@ -64,7 +64,7 @@ public class recordReflectionTest {
         for (int x = 0; x < components.length; x++) {
             RecordComponent component = components[x];
             if (component.getName() == name &&
-                component.toGenericString().contains(enclosingClass) &&
+                component.getDeclaringRecord().toString().contains(enclosingClass) &&
                 component.getType().toString().contains(type) &&
                 component.getAccessor().toString().contains(method) &&
                 component.getGenericSignature() == genericSig) {
@@ -87,8 +87,8 @@ public class recordReflectionTest {
 
         recordReflectionTest rft = new recordReflectionTest();
         components = rft.nr.getComponents();
-        if (components.length != 0) {
-            throw new RuntimeException("Non-empty component accessors returned for notRecord");
+        if (components != null) {
+            throw new RuntimeException("Non-null component accessors returned for notRecord");
         }
 
         recordGeneric rg = new recordGeneric(35, "abcd");

@@ -25,6 +25,14 @@
 package java.lang;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Programs can only use this
+ *           class when preview features are enabled. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * This is the common base class of all Java language record classes.
  *
  * <p>More information about records, including descriptions of the
@@ -56,8 +64,7 @@ package java.lang;
  * <p>The primary reasons to provide an explicit declaration for the
  * canonical constructor or accessor methods are to validate constructor
  * arguments, perform defensive copies on mutable components, or normalize groups
- * of components (such as reducing a rational number to lowest terms.)  If any
- * of these are provided explicitly.
+ * of components (such as reducing a rational number to lowest terms.)
  *
  * <p>For all record classes, the following invariant must hold: if a record R's
  * components are {@code c1, c2, ... cn}, then if a record instance is copied
@@ -67,27 +74,42 @@ package java.lang;
  * </pre>
  * then it must be the case that {@code r.equals(copy)}.
  *
- * @jls 8.10
+ * @apiNote
+ * A record class that {@code implements} {@link java.io.Serializable} is said
+ * to be a <i>serializable record</i>. Serializable records are serialized and
+ * deserialized differently than ordinary serializable objects. During
+ * deserialization the record's canonical constructor is invoked to construct
+ * the record object. Certain serialization-related methods, such as readObject
+ * and writeObject, are ignored for serializable records. More information about
+ * serializable records can be found in
+ * <a href="{@docRoot}/java.base/java/io/ObjectInputStream.html#record-serialization">record serialization</a>.
+ *
+ * @jls 8.10 Record Types
  * @since 14
  */
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=true)
 public abstract class Record {
     /**
      * Indicates whether some other object is "equal to" this one.  In addition
      * to the general contract of {@link Object#equals(Object)},
      * record classes must further participate in the invariant that when
      * a record instance is "copied" by passing the result of the record component
-     * accessor methods to the canonical constructor, the resulting copy is
-     * equal to the original instance.
+     * accessor methods to the canonical constructor, as follows:
+     * <pre>
+     *     R copy = new R(r.c1(), r.c2(), ..., r.cn());
+     * </pre>
+     * then it must be the case that {@code r.equals(copy)}.
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns {@code true} if and
      * only if the argument is an instance of the same record type as this object,
      * and each component of this record is equal to the corresponding component
-     * of the argument, according to {@link Object#equals(Object)} for components
-     * whose types are reference types, and the primitive wrapper equality
-     * comparison for components whose types are primitive types.
+     * of the argument, according to {@link java.util.Objects#equals(Object,Object)}
+     * for components whose types are reference types, and according to the semantics
+     * of the {@code equals} method on the corresponding primitive wrapper type.
      *
-     * @see Object#equals(Object)
+     * @see java.util.Objects#equals(Object,Object)
      *
      * @param   obj   the reference object with which to compare.
      * @return  {@code true} if this object is the same as the obj
@@ -97,9 +119,9 @@ public abstract class Record {
     public abstract boolean equals(Object obj);
 
     /**
-     * {@inheritDoc}
+     * Obeys the general contract of {@link Object#hashCode Object.hashCode}.
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns a hash code value derived
      * by combining the hash code value for all the components, according to
      * {@link Object#hashCode()} for components whose types are reference types,
@@ -114,16 +136,16 @@ public abstract class Record {
     public abstract int hashCode();
 
     /**
-     * {@inheritDoc}
+     * Obeys the general contract of {@link Object#toString Object.toString}.
      *
-     * @implNote
+     * @implSpec
      * The implicitly provided implementation returns a string that is derived
      * from the name of the record class and the names and string representations
      * of all the components, according to {@link Object#toString()} for components
      * whose types are reference types, and the primitive wrapper {@code toString}
      * method for components whose types are primitive types.
      *
-     * @see     Object#toString() ()
+     * @see     Object#toString()
      *
      * @return  a string representation of the object.
      */

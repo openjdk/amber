@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -339,9 +339,8 @@ bool JVMFlag::is_constant_in_binary() const {
 }
 
 bool JVMFlag::is_unlocker() const {
-  return strcmp(_name, "UnlockDiagnosticVMOptions") == 0     ||
-  strcmp(_name, "UnlockExperimentalVMOptions") == 0   ||
-  is_unlocker_ext();
+  return strcmp(_name, "UnlockDiagnosticVMOptions") == 0 ||
+         strcmp(_name, "UnlockExperimentalVMOptions") == 0;
 }
 
 bool JVMFlag::is_unlocked() const {
@@ -351,13 +350,25 @@ bool JVMFlag::is_unlocked() const {
   if (is_experimental()) {
     return UnlockExperimentalVMOptions;
   }
-  return is_unlocked_ext();
+  return true;
 }
 
 void JVMFlag::clear_diagnostic() {
   assert(is_diagnostic(), "sanity");
   _flags = Flags(_flags & ~KIND_DIAGNOSTIC);
   assert(!is_diagnostic(), "sanity");
+}
+
+void JVMFlag::clear_experimental() {
+  assert(is_experimental(), "sanity");
+ _flags = Flags(_flags & ~KIND_EXPERIMENTAL);
+  assert(!is_experimental(), "sanity");
+}
+
+void JVMFlag::set_product() {
+  assert(!is_product(), "sanity");
+ _flags = Flags(_flags | KIND_PRODUCT);
+  assert(is_product(), "sanity");
 }
 
 // Get custom message for this locked flag, or NULL if
@@ -388,18 +399,18 @@ JVMFlag::MsgType JVMFlag::get_locked_message(char* buf, int buflen) const {
                  _name);
     return JVMFlag::NOTPRODUCT_FLAG_BUT_PRODUCT_BUILD;
   }
-  return get_locked_message_ext(buf, buflen);
+  return JVMFlag::NONE;
 }
 
 bool JVMFlag::is_writeable() const {
-  return is_manageable() || (is_product() && is_read_write()) || is_writeable_ext();
+  return is_manageable() || (is_product() && is_read_write());
 }
 
 // All flags except "manageable" are assumed to be internal flags.
 // Long term, we need to define a mechanism to specify which flags
 // are external/stable and change this function accordingly.
 bool JVMFlag::is_external() const {
-  return is_manageable() || is_external_ext();
+  return is_manageable();
 }
 
 // Helper function for JVMFlag::print_on().
@@ -436,11 +447,11 @@ void JVMFlag::print_on(outputStream* st, bool withComments, bool printRanges) {
     //  an eye-pleasing tabular output is created.
     //
     //  Sample output:
-    //       bool CMSScavengeBeforeRemark                  = false                                     {product} {default}
-    //      uintx CMSScheduleRemarkEdenPenetration         = 50                                        {product} {default}
-    //     size_t CMSScheduleRemarkEdenSizeThreshold       = 2097152                                   {product} {default}
-    //      uintx CMSScheduleRemarkSamplingRatio           = 5                                         {product} {default}
-    //     double CMSSmallCoalSurplusPercent               = 1.050000                                  {product} {default}
+    //       bool ThreadPriorityVerbose                    = false                                     {product} {default}
+    //      uintx ThresholdTolerance                       = 10                                        {product} {default}
+    //     size_t TLABSize                                 = 0                                         {product} {default}
+    //      uintx SurvivorRatio                            = 8                                         {product} {default}
+    //     double InitialRAMPercentage                     = 1.562500                                  {product} {default}
     //      ccstr CompileCommandFile                       = MyFile.cmd                                {product} {command line}
     //  ccstrlist CompileOnly                              = Method1
     //            CompileOnly                             += Method2                                   {product} {command line}
@@ -698,6 +709,8 @@ void JVMFlag::print_origin(outputStream* st, unsigned int width) {
       st->print("attach"); break;
     case INTERNAL:
       st->print("internal"); break;
+    case JIMAGE_RESOURCE:
+      st->print("jimage"); break;
   }
   st->print("}");
 }
@@ -881,7 +894,6 @@ static JVMFlag flagTable[] = {
              IGNORE_RANGE, \
              IGNORE_CONSTRAINT, \
              IGNORE_WRITEABLE)
-  FLAGTABLE_EXT
   {0, NULL, NULL}
 };
 

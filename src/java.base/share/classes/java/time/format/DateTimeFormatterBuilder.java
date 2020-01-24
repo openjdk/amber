@@ -306,7 +306,7 @@ public final class DateTimeFormatterBuilder {
     /**
      * Changes the parse style to be strict for the remainder of the formatter.
      * <p>
-     * Parsing can be strict or lenient - by default its strict.
+     * Parsing can be strict or lenient - by default it is strict.
      * This controls the degree of flexibility in matching the text and sign styles.
      * <p>
      * When used, this method changes the parsing to be strict from this point onwards.
@@ -325,7 +325,7 @@ public final class DateTimeFormatterBuilder {
      * Changes the parse style to be lenient for the remainder of the formatter.
      * Note that case sensitivity is set separately to this method.
      * <p>
-     * Parsing can be strict or lenient - by default its strict.
+     * Parsing can be strict or lenient - by default it is strict.
      * This controls the degree of flexibility in matching the text and sign styles.
      * Applications calling this method should typically also call {@link #parseCaseInsensitive()}.
      * <p>
@@ -3200,7 +3200,7 @@ public final class DateTimeFormatterBuilder {
                 char ch = text.charAt(pos++);
                 int digit = context.getDecimalStyle().convertToDigit(ch);
                 if (digit < 0) {
-                    if (pos < minEndPos) {
+                    if (pos <= minEndPos) {
                         return ~position;  // need at least min width digits
                     }
                     pos--;
@@ -4123,7 +4123,8 @@ public final class DateTimeFormatterBuilder {
             }
             Locale locale = context.getLocale();
             boolean isCaseSensitive = context.isCaseSensitive();
-            Set<String> regionIds = ZoneRulesProvider.getAvailableZoneIds();
+            Set<String> regionIds = new HashSet<>(ZoneRulesProvider.getAvailableZoneIds());
+            Set<String> nonRegionIds = new HashSet<>(64);
             int regionIdsSize = regionIds.size();
 
             Map<Locale, Entry<Integer, SoftReference<PrefixTree>>> cached =
@@ -4139,7 +4140,8 @@ public final class DateTimeFormatterBuilder {
                 zoneStrings = TimeZoneNameUtility.getZoneStrings(locale);
                 for (String[] names : zoneStrings) {
                     String zid = names[0];
-                    if (!regionIds.contains(zid)) {
+                    if (!regionIds.remove(zid)) {
+                        nonRegionIds.add(zid);
                         continue;
                     }
                     tree.add(zid, zid);    // don't convert zid -> metazone
@@ -4149,12 +4151,27 @@ public final class DateTimeFormatterBuilder {
                         tree.add(names[i], zid);
                     }
                 }
+
+                // add names for provider's custom ids
+                final PrefixTree t = tree;
+                regionIds.stream()
+                    .filter(zid -> !zid.startsWith("Etc") && !zid.startsWith("GMT"))
+                    .forEach(cid -> {
+                        String[] cidNames = TimeZoneNameUtility.retrieveDisplayNames(cid, locale);
+                        int i = textStyle == TextStyle.FULL ? 1 : 2;
+                        for (; i < cidNames.length; i += 2) {
+                            if (cidNames[i] != null && !cidNames[i].isEmpty()) {
+                                t.add(cidNames[i], cid);
+                            }
+                        }
+                    });
+
                 // if we have a set of preferred zones, need a copy and
                 // add the preferred zones again to overwrite
                 if (preferredZones != null) {
                     for (String[] names : zoneStrings) {
                         String zid = names[0];
-                        if (!preferredZones.contains(zid) || !regionIds.contains(zid)) {
+                        if (!preferredZones.contains(zid) || nonRegionIds.contains(zid)) {
                             continue;
                         }
                         int i = textStyle == TextStyle.FULL ? 1 : 2;

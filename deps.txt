@@ -1,2 +1,1 @@
-patterns-stage-1
-records-and-sealed
+sealed-types

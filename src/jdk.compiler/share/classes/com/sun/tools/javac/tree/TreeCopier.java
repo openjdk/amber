@@ -143,7 +143,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    @SuppressWarnings("removal")
     public JCTree visitYield(YieldTree node, P p) {
         JCYield t = (JCYield) node;
         JCExpression value = copy(t.value, p);
@@ -379,7 +378,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    @SuppressWarnings("removal")
     public JCTree visitSwitchExpression(SwitchExpressionTree node, P p) {
         JCSwitchExpression t = (JCSwitchExpression) node;
         JCExpression selector = copy(t.selector, p);

@@ -35,6 +35,7 @@ import java.text.RuleBasedCollator;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.lang.model.SourceVersion;
@@ -77,6 +78,7 @@ import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.SerialFieldTree;
+import com.sun.source.doctree.UnknownBlockTagTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.LineMap;
 import com.sun.source.util.DocSourcePositions;
@@ -89,6 +91,8 @@ import jdk.javadoc.internal.doclets.toolkit.CommentUtils.DocCommentDuo;
 import jdk.javadoc.internal.doclets.toolkit.Messages;
 import jdk.javadoc.internal.doclets.toolkit.Resources;
 import jdk.javadoc.internal.doclets.toolkit.WorkArounds;
+import jdk.javadoc.internal.doclets.toolkit.taglets.BaseTaglet;
+import jdk.javadoc.internal.doclets.toolkit.taglets.Taglet;
 import jdk.javadoc.internal.tool.DocEnvImpl;
 
 import static javax.lang.model.element.ElementKind.*;
@@ -105,9 +109,6 @@ import static jdk.javadoc.internal.doclets.toolkit.builders.ConstantsSummaryBuil
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Atul M Dambalkar
- * @author Jamie Ho
  */
 public class Utils {
     public final BaseConfiguration configuration;
@@ -214,15 +215,6 @@ public class Utils {
         return null;
     }
 
-    public ExecutableElement findAccessorFor(VariableElement field, DocTree.Kind kind) {
-        switch (kind) {
-            case GETTER:
-                return elementUtils.getterFor(field);
-            default:
-                throw new IllegalStateException("Cannot get here!");
-        }
-    }
-
     /**
      * Test whether a class is a subclass of another class.
      *
@@ -237,7 +229,7 @@ public class Utils {
     /**
      * @param e1 the first method to compare.
      * @param e2 the second method to compare.
-     * @return true if member1 overrides/hides or is overriden/hidden by member2.
+     * @return true if member1 overrides/hides or is overridden/hidden by member2.
      */
 
     public boolean executableMembersEqual(ExecutableElement e1, ExecutableElement e2) {
@@ -311,6 +303,7 @@ public class Utils {
         return !e.getAnnotationMirrors().isEmpty();
     }
 
+    @SuppressWarnings("preview")
     public boolean isAnnotationType(Element e) {
         return new SimpleElementVisitor14<Boolean, Void>() {
             @Override
@@ -426,10 +419,12 @@ public class Utils {
         return typeUtils.isSubtype(e.asType(), getExternalizableType());
     }
 
+    @SuppressWarnings("preview")
     public boolean isRecord(TypeElement e) {
         return e.getKind() == ElementKind.RECORD;
     }
 
+    @SuppressWarnings("preview")
     public boolean isCanonicalRecordConstructor(ExecutableElement ee) {
         TypeElement te = (TypeElement) ee.getEnclosingElement();
         List<? extends RecordComponentElement> stateComps = te.getRecordComponents();
@@ -453,17 +448,18 @@ public class Utils {
     }
 
     public SortedSet<VariableElement> serializableFields(TypeElement aclass) {
-        return configuration.workArounds.getSerializableFields(this, aclass);
+        return configuration.workArounds.getSerializableFields(aclass);
     }
 
     public SortedSet<ExecutableElement> serializationMethods(TypeElement aclass) {
-        return configuration.workArounds.getSerializationMethods(this, aclass);
+        return configuration.workArounds.getSerializationMethods(aclass);
     }
 
     public boolean definesSerializableFields(TypeElement aclass) {
-        return configuration.workArounds.definesSerializableFields(this, aclass);
+        return configuration.workArounds.definesSerializableFields( aclass);
     }
 
+    @SuppressWarnings("preview")
     public String modifiersToString(Element e, boolean trailingSpace) {
         SortedSet<Modifier> modifiers = new TreeSet<>(e.getModifiers());
         modifiers.remove(NATIVE);
@@ -493,12 +489,12 @@ public class Utils {
             void addSealed(TypeElement e) {
                 if (elementUtils.isSealed(e)) {
                     append("sealed");
-                } else if (needsNonSealed(e)) {
+                } else if (anySupertypeSealed(e) && !e.getModifiers().contains(FINAL)) {
                     append("non-sealed");
                 }
             }
 
-            boolean needsNonSealed(TypeElement te) {
+            boolean anySupertypeSealed(TypeElement te) {
                 return isSealed(te.getSuperclass())
                         || te.getInterfaces().stream().anyMatch(this::isSealed);
             }
@@ -524,7 +520,7 @@ public class Utils {
                 if (trailingSpace) {
                     sb.append(" ");
                 }
-                return sb.toString();
+                        return sb.toString();
             }
 
             @Override
@@ -556,6 +552,7 @@ public class Utils {
             }
 
             @Override
+            @SuppressWarnings("preview")
             public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> mods) {
                 Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
                 Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
@@ -602,6 +599,10 @@ public class Utils {
             return false;
         }
         return true;
+    }
+
+    public boolean isUndocumentedEnclosure(TypeElement enclosingTypeElement) {
+        return isPackagePrivate(enclosingTypeElement) && !isLinkable(enclosingTypeElement);
     }
 
     public boolean isError(TypeElement te) {
@@ -674,7 +675,7 @@ public class Utils {
     /**
      * Get the signature. It is the parameter list, type is qualified.
      * For instance, for a method {@code mymethod(String x, int y)},
-     * it will return {@code (java.lang.String,int)}.
+     * it will return {@code(java.lang.String,int)}.
      *
      * @param e
      * @return String
@@ -1139,8 +1140,7 @@ public class Utils {
 
         // Allow for the behavior that members of undocumented supertypes
         // may be included in documented types
-        TypeElement enclElem = getEnclosingTypeElement(elem);
-        if (typeElem != enclElem && isSubclassOf(typeElem, enclElem)) {
+        if (isUndocumentedEnclosure(getEnclosingTypeElement(elem))) {
             return true;
         }
 
@@ -1176,7 +1176,7 @@ public class Utils {
 
             @Override
             public TypeElement visitTypeVariable(TypeVariable t, Void p) {
-               /* TODO, this may not be an optimimal fix.
+               /* TODO, this may not be an optimal fix.
                 * if we have an annotated type @DA T, then erasure returns a
                 * none, in this case we use asElement instead.
                 */
@@ -1432,16 +1432,6 @@ public class Utils {
         }
         sb.append(text, pos, textLength);
         return sb;
-    }
-
-    /**
-     * Returns a locale independent upper cased String. That is, it
-     * always uses US locale, this is a clone of the one in StringUtils.
-     * @param s to convert
-     * @return converted String
-     */
-    public static String toUpperCase(String s) {
-        return s.toUpperCase(Locale.US);
     }
 
     /**
@@ -1922,7 +1912,7 @@ public class Utils {
     }
 
     /**
-     * Get the qualified type name of a TypeMiror compatible with the Element's
+     * Get the qualified type name of a TypeMirror compatible with the Element's
      * getQualified name, returns  the qualified name of the Reference type
      * otherwise the primitive name.
      * @param t the type whose name is to be obtained.
@@ -1968,6 +1958,7 @@ public class Utils {
         return getFullyQualifiedName(e, true);
     }
 
+    @SuppressWarnings("preview")
     public String getFullyQualifiedName(Element e, final boolean outer) {
         return new SimpleElementVisitor14<String, Void>() {
             @Override
@@ -2142,6 +2133,7 @@ public class Utils {
             }
         }
 
+        @SuppressWarnings("preview")
         boolean hasParameters(Element e) {
             return new SimpleElementVisitor14<Boolean, Void>() {
                 @Override
@@ -2163,6 +2155,7 @@ public class Utils {
          * @return a negative integer, zero, or a positive integer as the first argument is less
          * than, equal to, or greater than the second.
          */
+        @SuppressWarnings("preview")
         private String getFullyQualifiedName(Element e) {
             return new SimpleElementVisitor14<String, Void>() {
                 @Override
@@ -2274,10 +2267,12 @@ public class Utils {
         return convertToTypeElement(getItems(e, false, ANNOTATION_TYPE));
     }
 
+    @SuppressWarnings("preview")
     public List<TypeElement> getRecords(Element e) {
         return convertToTypeElement(getItems(e, true, RECORD));
     }
 
+    @SuppressWarnings("preview")
     public List<TypeElement> getRecordsUnfiltered(Element e) {
         return convertToTypeElement(getItems(e, false, RECORD));
     }
@@ -2436,6 +2431,7 @@ public class Utils {
         List<TypeElement> clist = getClassesUnfiltered(e);
         clist.addAll(getInterfacesUnfiltered(e));
         clist.addAll(getAnnotationTypesUnfiltered(e));
+        clist.addAll(getRecordsUnfiltered(e));
         SortedSet<TypeElement> oset = new TreeSet<>(makeGeneralPurposeComparator());
         oset.addAll(clist);
         return oset;
@@ -2525,6 +2521,7 @@ public class Utils {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("preview")
     List<Element> getItems(Element e, boolean filter, ElementKind select) {
         List<Element> elements = new ArrayList<>();
         return new SimpleElementVisitor14<List<Element>, Void>() {
@@ -2572,8 +2569,10 @@ public class Utils {
         return elements;
     }
 
+    @SuppressWarnings("preview")
     private SimpleElementVisitor14<Boolean, Void> shouldDocumentVisitor = null;
 
+    @SuppressWarnings("preview")
     public boolean shouldDocument(Element e) {
         if (shouldDocumentVisitor == null) {
             shouldDocumentVisitor = new SimpleElementVisitor14<Boolean, Void>() {
@@ -2600,7 +2599,7 @@ public class Utils {
 
                 @Override
                 public Boolean visitUnknown(Element e, Void p) {
-                    throw new AssertionError("unkown element: " + p);
+                    throw new AssertionError("unknown element: " + e);
                 }
             };
         }
@@ -2626,8 +2625,10 @@ public class Utils {
         return nameCache.computeIfAbsent(e, this::getSimpleName0);
     }
 
+    @SuppressWarnings("preview")
     private SimpleElementVisitor14<String, Void> snvisitor = null;
 
+    @SuppressWarnings("preview")
     private String getSimpleName0(Element e) {
         if (snvisitor == null) {
             snvisitor = new SimpleElementVisitor14<String, Void>() {
@@ -2811,7 +2812,9 @@ public class Utils {
         return configuration.docEnv.isIncluded(e);
     }
 
+    @SuppressWarnings("preview")
     private SimpleElementVisitor14<Boolean, Void> specifiedVisitor = null;
+    @SuppressWarnings("preview")
     public boolean isSpecified(Element e) {
         if (specifiedVisitor == null) {
             specifiedVisitor = new SimpleElementVisitor14<Boolean, Void>() {
@@ -3003,74 +3006,36 @@ public class Utils {
         wksMap.remove(element);
     }
 
-    public List<? extends DocTree> filteredList(List<? extends DocTree> dlist, DocTree.Kind... select) {
-        List<DocTree> list = new ArrayList<>(dlist.size());
-        if (select == null)
-            return dlist;
-        for (DocTree dt : dlist) {
-            if (dt.getKind() != ERRONEOUS) {
-                for (DocTree.Kind kind : select) {
-                    if (dt.getKind() == kind) {
-                        list.add(dt);
-                    }
-                }
-            }
-        }
-        return list;
-    }
-
-    private List<? extends DocTree> getBlockTags0(Element element, DocTree.Kind... kinds) {
-        DocCommentTree dcTree = getDocCommentTree(element);
-        if (dcTree == null)
-            return Collections.emptyList();
-
-        return filteredList(dcTree.getBlockTags(), kinds);
-    }
-
     public List<? extends DocTree> getBlockTags(Element element) {
-        return getBlockTags0(element, (Kind[]) null);
+        DocCommentTree dcTree = getDocCommentTree(element);
+        return dcTree == null ? Collections.emptyList() : dcTree.getBlockTags();
     }
 
-    public List<? extends DocTree> getBlockTags(Element element, DocTree.Kind... kinds) {
-        return getBlockTags0(element, kinds);
+    public List<? extends DocTree> getBlockTags(Element element, Predicate<DocTree> filter) {
+        return getBlockTags(element).stream()
+                .filter(t -> t.getKind() != ERRONEOUS)
+                .filter(filter)
+                .collect(Collectors.toList());
     }
 
-    public List<? extends DocTree> getBlockTags(Element element, String tagName) {
-        DocTree.Kind kind = null;
-        switch (tagName) {
-            case "author":
-            case "deprecated":
-            case "hidden":
-            case "param":
-            case "return":
-            case "see":
-            case "serial":
-            case "since":
-            case "throws":
-            case "exception":
-            case "version":
-                kind = DocTree.Kind.valueOf(toUpperCase(tagName));
-                return getBlockTags(element, kind);
-            case "serialData":
-                kind = SERIAL_DATA;
-                return getBlockTags(element, kind);
-            case "serialField":
-                kind = SERIAL_FIELD;
-                return getBlockTags(element, kind);
-            default:
-                kind = DocTree.Kind.UNKNOWN_BLOCK_TAG;
-                break;
-        }
-        List<? extends DocTree> blockTags = getBlockTags(element, kind);
-        List<DocTree> out = new ArrayList<>();
-        String tname = tagName.startsWith("@") ? tagName.substring(1) : tagName;
-        CommentHelper ch = getCommentHelper(element);
-        for (DocTree dt : blockTags) {
-            if (ch.getTagName(dt).equals(tname)) {
-                out.add(dt);
+    public List<? extends DocTree> getBlockTags(Element element, DocTree.Kind kind) {
+        return getBlockTags(element, t -> t.getKind() == kind);
+    }
+
+    public List<? extends DocTree> getBlockTags(Element element, DocTree.Kind kind, DocTree.Kind altKind) {
+        return getBlockTags(element, t -> t.getKind() == kind || t.getKind() == altKind);
+    }
+
+    public List<? extends DocTree> getBlockTags(Element element, Taglet taglet) {
+        return getBlockTags(element, t -> {
+            if (taglet instanceof BaseTaglet) {
+                return ((BaseTaglet) taglet).accepts(t);
+            } else if (t instanceof UnknownBlockTagTree) {
+                return ((UnknownBlockTagTree) t).getTagName().equals(taglet.getName());
+            } else {
+                return false;
             }
-        }
-        return out;
+        });
     }
 
     public boolean hasBlockTag(Element element, DocTree.Kind kind) {

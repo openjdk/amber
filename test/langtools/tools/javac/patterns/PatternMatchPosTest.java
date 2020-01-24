@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,9 +23,10 @@
 
 /*
  * @test
+ * @bug 8231827
  * @summary Check proper positions.
  * @build PatternMatchPosTest
- * @compile/ref=PatternMatchPosTest.out -processor PatternMatchPosTest -Xlint:unchecked PatternMatchPosTest.java
+ * @compile/ref=PatternMatchPosTest.out -processor PatternMatchPosTest -Xlint:unchecked -XDrawDiagnostics --enable-preview -source ${jdk.version} PatternMatchPosTestData.java
  */
 
 import java.io.IOException;
@@ -37,13 +38,13 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
 
-import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.IfTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
+import javax.tools.Diagnostic;
 
 @SupportedAnnotationTypes("*")
 public class PatternMatchPosTest extends AbstractProcessor {
@@ -84,7 +85,8 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     if (print) {
                         int start = (int) sp.getStartPosition(dataPath.getCompilationUnit(), tree);
                         int end = (int) sp.getEndPosition(dataPath.getCompilationUnit(), tree);
-                        System.out.println(text.substring(start, end));
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
+                                                                 text.substring(start, end));
                     }
                     return super.scan(tree, p);
                 }
@@ -100,11 +102,4 @@ public class PatternMatchPosTest extends AbstractProcessor {
         return SourceVersion.latestSupported();
     }
 
-}
-
-class PatternMatchPosTestData {
-    void data(Object o) {
-        if (o instanceof String s) { }
-        if (o instanceof java.lang.String s) { }
-    }
 }

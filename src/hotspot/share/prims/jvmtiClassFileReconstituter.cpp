@@ -26,7 +26,7 @@
 #include "classfile/symbolTable.hpp"
 #include "interpreter/bytecodeStream.hpp"
 #include "memory/universe.hpp"
-#include "oops/fieldStreams.hpp"
+#include "oops/fieldStreams.inline.hpp"
 #include "oops/recordComponent.hpp"
 #include "prims/jvmtiClassFileReconstituter.hpp"
 #include "runtime/handles.inline.hpp"
@@ -453,7 +453,7 @@ void JvmtiClassFileReconstituter::write_permitted_subtypes_attribute() {
 //  component_info {
 //    u2 name_index;
 //    u2 descriptor_index
-//    u2 attributs_count;
+//    u2 attributes_count;
 //    attribute_info_attributes[attributes_count];
 //  }
 void JvmtiClassFileReconstituter::write_record_attribute() {

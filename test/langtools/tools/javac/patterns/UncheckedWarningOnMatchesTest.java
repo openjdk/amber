@@ -1,8 +1,8 @@
 /*
  * @test /nodynamiccopyright/
- * @bug 8187429
+ * @bug 8187429 8231827
  * @summary Missing unchecked conversion warning
- * @compile/fail/ref=UncheckedWarningOnMatchesTest.out -Xlint:unchecked -Werror -XDrawDiagnostics UncheckedWarningOnMatchesTest.java
+ * @compile/fail/ref=UncheckedWarningOnMatchesTest.out -Xlint:unchecked -Werror -XDrawDiagnostics --enable-preview -source ${jdk.version} UncheckedWarningOnMatchesTest.java
  */
 import java.util.ArrayList;
 

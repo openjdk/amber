@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,7 @@
  * @test
  * @modules java.base/jdk.internal.misc
  * @library /test/lib ..
- * @compile --enable-preview --source 14 sealedP1/superClass.java sealedP1/c1.java sealedP2/c2.java sealedP3/c3.java
+ * @compile --enable-preview --source ${jdk.version} sealedP1/superClass.java sealedP1/c1.java sealedP2/c2.java sealedP3/c3.java
  * @build sun.hotspot.WhiteBox
  * @compile/module=java.base java/lang/ModuleHelper.java
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox

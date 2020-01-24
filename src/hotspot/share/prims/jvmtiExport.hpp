@@ -91,6 +91,7 @@ class JvmtiExport : public AllStatic {
   JVMTI_SUPPORT_FLAG(can_force_early_return)
 
   JVMTI_SUPPORT_FLAG(early_vmstart_recorded)
+  JVMTI_SUPPORT_FLAG(can_get_owned_monitor_info) // includes can_get_owned_monitor_stack_depth_info
 
   friend class JvmtiEventControllerPrivate;  // should only modify these flags
   JVMTI_SUPPORT_FLAG(should_post_single_step)
@@ -159,13 +160,13 @@ class JvmtiExport : public AllStatic {
   // internal implementation.  Also called from JvmtiDeferredEvent::post()
   static void post_dynamic_code_generated_internal(const char *name, const void *code_begin, const void *code_end) NOT_JVMTI_RETURN;
 
+  static void post_class_unload_internal(const char *name) NOT_JVMTI_RETURN;
  private:
 
   // GenerateEvents support to allow posting of CompiledMethodLoad and
   // DynamicCodeGenerated events for a given environment.
   friend class JvmtiCodeBlobEvents;
 
-  static void post_compiled_method_load(JvmtiEnv* env, nmethod *nm) NOT_JVMTI_RETURN;
   static void post_dynamic_code_generated(JvmtiEnv* env, const char *name, const void *code_begin,
                                           const void *code_end) NOT_JVMTI_RETURN;
 
@@ -173,10 +174,10 @@ class JvmtiExport : public AllStatic {
   // one or more classes during the lifetime of the VM. The flag should
   // only be set by the friend class and can be queried by other sub
   // systems as needed to relax invariant checks.
-  static bool _has_redefined_a_class;
+  static uint64_t _redefinition_count;
   friend class VM_RedefineClasses;
-  inline static void set_has_redefined_a_class() {
-    JVMTI_ONLY(_has_redefined_a_class = true;)
+  inline static void increment_redefinition_count() {
+    JVMTI_ONLY(_redefinition_count++;)
   }
   // Flag to indicate if the compiler has recorded all dependencies. When the
   // can_redefine_classes capability is enabled in the OnLoad phase then the compiler
@@ -188,8 +189,14 @@ class JvmtiExport : public AllStatic {
 
  public:
   inline static bool has_redefined_a_class() {
-    JVMTI_ONLY(return _has_redefined_a_class);
+    JVMTI_ONLY(return _redefinition_count != 0);
     NOT_JVMTI(return false);
+  }
+
+  // Only set in safepoint, so no memory ordering needed.
+  inline static uint64_t redefinition_count() {
+    JVMTI_ONLY(return _redefinition_count);
+    NOT_JVMTI(return 0);
   }
 
   inline static bool all_dependencies_are_recorded() {
@@ -334,6 +341,7 @@ class JvmtiExport : public AllStatic {
                                         unsigned char **data_ptr, unsigned char **end_ptr,
                                         JvmtiCachedClassFileData **cache_ptr) NOT_JVMTI_RETURN_(false);
   static void post_native_method_bind(Method* method, address* function_ptr) NOT_JVMTI_RETURN;
+  static void post_compiled_method_load(JvmtiEnv* env, nmethod *nm) NOT_JVMTI_RETURN;
   static void post_compiled_method_load(nmethod *nm) NOT_JVMTI_RETURN;
   static void post_dynamic_code_generated(const char *name, const void *code_begin, const void *code_end) NOT_JVMTI_RETURN;
 

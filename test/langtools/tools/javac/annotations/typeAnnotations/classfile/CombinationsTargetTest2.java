@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,8 +30,12 @@
 
 import com.sun.tools.classfile.*;
 import java.io.File;
+import java.util.List;
 
 public class CombinationsTargetTest2 extends ClassfileTestHelper {
+
+    private static final String JDK_VERSION =
+            Integer.toString(Runtime.getRuntime().version().feature());
 
     // Test count helps identify test case in event of failure.
     int testcount = 0;
@@ -128,6 +132,7 @@ public class CombinationsTargetTest2 extends ClassfileTestHelper {
         expected_tinvisibles = tinv;
         expected_visibles = vis;
         expected_invisibles = inv;
+        extraOptions = List.of();
         File testFile = null;
         String tname="Test" + N.toString();
         hasInnerClass=false;
@@ -405,7 +410,9 @@ public class CombinationsTargetTest2 extends ClassfileTestHelper {
                     "    boolean dataIsString = ( data instanceof _As_ _Bs_ String str && str.isEmpty());\n" +
                     "}\n").concat(sourceBase).replace("_OTHER_", annot2).replace("_As_",As).replace("_Bs_",Bs) +
                     "\n\n";
-                    hasInnerClass=false;
+                extraOptions = List.of("--enable-preview",
+                                       "-source", JDK_VERSION);
+                hasInnerClass=false;
                 break;
             case src8: // (repeating) type annotations in use of instanceof
                     /*
@@ -457,7 +464,9 @@ public class CombinationsTargetTest2 extends ClassfileTestHelper {
                     "    }\n" +
                     "}\n").concat(sourceBase).replace("_OTHER_", annot2).replace("_As_",As).replace("_Bs_",Bs) +
                     "\n\n";
-                    hasInnerClass=false;
+                extraOptions = List.of("--enable-preview",
+                                       "-source", JDK_VERSION);
+                hasInnerClass=false;
                 break;
 
         }

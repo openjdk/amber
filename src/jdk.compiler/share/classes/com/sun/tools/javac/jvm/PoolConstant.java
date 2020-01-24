@@ -35,8 +35,6 @@ import com.sun.tools.javac.util.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import com.sun.tools.javac.code.Symbol;
-
 /**
  * This interface models all javac entities that can be used to represent constant pool entries.
  * A pool constant entity must (i) be associated with a constant pool entry tag and have a function
@@ -201,7 +199,7 @@ public interface PoolConstant {
     }
 
     /**
-     * A pool constant implememntation describing a name and type pool entry.
+     * A pool constant implementation describing a name and type pool entry.
      */
     final class NameAndType implements PoolConstant {
 

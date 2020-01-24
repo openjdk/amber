@@ -43,6 +43,7 @@
 #include "opto/runtime.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "utilities/bitMap.inline.hpp"
 
 //----------------------------GraphKit-----------------------------------------
 // Main utility constructor.
@@ -1412,7 +1413,7 @@ Node* GraphKit::must_be_not_null(Node* value, bool do_replace_in_map) {
   _gvn.set_type(iff, iff->Value(&_gvn));
   Node *if_f = _gvn.transform(new IfFalseNode(iff));
   Node *frame = _gvn.transform(new ParmNode(C->start(), TypeFunc::FramePtr));
-  Node *halt = _gvn.transform(new HaltNode(if_f, frame));
+  Node* halt = _gvn.transform(new HaltNode(if_f, frame, "unexpected null in intrinsic"));
   C->root()->add_req(halt);
   Node *if_t = _gvn.transform(new IfTrueNode(iff));
   set_control(if_t);
@@ -1492,18 +1493,19 @@ Node* GraphKit::make_load(Node* ctl, Node* adr, const Type* t, BasicType bt,
                           bool require_atomic_access,
                           bool unaligned,
                           bool mismatched,
-                          bool unsafe) {
+                          bool unsafe,
+                          uint8_t barrier_data) {
   assert(adr_idx != Compile::AliasIdxTop, "use other make_load factory" );
   const TypePtr* adr_type = NULL; // debug-mode-only argument
   debug_only(adr_type = C->get_adr_type(adr_idx));
   Node* mem = memory(adr_idx);
   Node* ld;
   if (require_atomic_access && bt == T_LONG) {
-    ld = LoadLNode::make_atomic(ctl, mem, adr, adr_type, t, mo, control_dependency, unaligned, mismatched, unsafe);
+    ld = LoadLNode::make_atomic(ctl, mem, adr, adr_type, t, mo, control_dependency, unaligned, mismatched, unsafe, barrier_data);
   } else if (require_atomic_access && bt == T_DOUBLE) {
-    ld = LoadDNode::make_atomic(ctl, mem, adr, adr_type, t, mo, control_dependency, unaligned, mismatched, unsafe);
+    ld = LoadDNode::make_atomic(ctl, mem, adr, adr_type, t, mo, control_dependency, unaligned, mismatched, unsafe, barrier_data);
   } else {
-    ld = LoadNode::make(_gvn, ctl, mem, adr, adr_type, t, bt, mo, control_dependency, unaligned, mismatched, unsafe);
+    ld = LoadNode::make(_gvn, ctl, mem, adr, adr_type, t, bt, mo, control_dependency, unaligned, mismatched, unsafe, barrier_data);
   }
   ld = _gvn.transform(ld);
   if (((bt == T_OBJECT) && C->do_escape_analysis()) || C->eliminate_boxing()) {
@@ -1692,14 +1694,6 @@ Node* GraphKit::access_atomic_add_at(Node* obj,
 
 void GraphKit::access_clone(Node* src, Node* dst, Node* size, bool is_array) {
   return _barrier_set->clone(this, src, dst, size, is_array);
-}
-
-Node* GraphKit::access_resolve(Node* n, DecoratorSet decorators) {
-  // Use stronger ACCESS_WRITE|ACCESS_READ by default.
-  if ((decorators & (ACCESS_READ | ACCESS_WRITE)) == 0) {
-    decorators |= ACCESS_READ | ACCESS_WRITE;
-  }
-  return _barrier_set->resolve(this, n, decorators);
 }
 
 //-------------------------array_element_address-------------------------
@@ -2116,7 +2110,7 @@ void GraphKit::uncommon_trap(int trap_request,
   // The debug info is the only real input to this call.
 
   // Halt-and-catch fire here.  The above call should never return!
-  HaltNode* halt = new HaltNode(control(), frameptr());
+  HaltNode* halt = new HaltNode(control(), frameptr(), "uncommon trap returned which should never happen");
   _gvn.set_type_bottom(halt);
   root()->add_req(halt);
 
@@ -2276,7 +2270,7 @@ void GraphKit::record_profiled_arguments_for_speculation(ciMethod* dest_method, 
   int skip = Bytecodes::has_receiver(bc) ? 1 : 0;
   for (int j = skip, i = 0; j < nargs && i < TypeProfileArgsLimit; j++) {
     const Type *targ = tf->domain()->field_at(j + TypeFunc::Parms);
-    if (targ->basic_type() == T_OBJECT || targ->basic_type() == T_ARRAY) {
+    if (is_reference_type(targ->basic_type())) {
       ProfilePtrKind ptr_kind = ProfileMaybeNull;
       ciKlass* better_type = NULL;
       if (method()->argument_profiled_type(bci(), i, better_type, ptr_kind)) {
@@ -3322,8 +3316,6 @@ FastLockNode* GraphKit::shared_lock(Node* obj) {
 
   assert(dead_locals_are_killed(), "should kill locals before sync. point");
 
-  obj = access_resolve(obj, ACCESS_READ | ACCESS_WRITE);
-
   // Box the stack location
   Node* box = _gvn.transform(new BoxLockNode(next_monitor()));
   Node* mem = reset_memory();
@@ -4048,8 +4040,6 @@ void GraphKit::inflate_string_slow(Node* src, Node* dst, Node* start, Node* coun
    *   dst[i_char++] = (char)(src[i_byte] & 0xff);
    * }
    */
-  src = access_resolve(src, ACCESS_READ);
-  dst = access_resolve(dst, ACCESS_WRITE);
   add_predicate();
   RegionNode* head = new RegionNode(3);
   head->init_req(1, control());

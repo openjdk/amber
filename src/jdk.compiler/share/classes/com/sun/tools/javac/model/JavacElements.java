@@ -45,7 +45,6 @@ import static javax.lang.model.util.ElementFilter.methodsIn;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.code.*;
-import com.sun.tools.javac.code.Accessors.Kind;
 import com.sun.tools.javac.code.Attribute.Compound;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.ExportsFlag;
@@ -283,6 +282,9 @@ public class JavacElements implements Elements {
         Symbol sym = cast(Symbol.class, e);
         class Vis extends JCTree.Visitor {
             List<JCAnnotation> result = null;
+            public void visitModuleDef(JCModuleDecl tree) {
+                result = tree.mods.annotations;
+            }
             public void visitPackageDef(JCPackageDecl tree) {
                 result = tree.annotations;
             }
@@ -807,19 +809,5 @@ public class JavacElements implements Elements {
 
     public void newRound() {
         resultCache.clear();
-    }
-
-    @Override
-    public ExecutableElement getterFor(VariableElement variableElement) {
-        return accessorFor(Kind.GET, variableElement);
-    }
-
-    private ExecutableElement accessorFor(Accessors.Kind kind, VariableElement variableElement) {
-        for (Pair<Accessors.Kind, MethodSymbol> accessor : ((VarSymbol)variableElement).accessors) {
-            if (accessor.fst == kind) {
-                return accessor.snd;
-            }
-        }
-        return null;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -192,9 +192,6 @@ class CompletenessAnalyzer {
         IDENTIFIER(TokenKind.IDENTIFIER, XEXPR1|XDECL1|XTERM),  //
         UNDERSCORE(TokenKind.UNDERSCORE, XERRO),  //  _
         CLASS(TokenKind.CLASS, XEXPR|XDECL1|XBRACESNEEDED),  //  class decl (MAPPED: DOTCLASS)
-        RECORD(TokenKind.RECORD, XEXPR|XDECL1),  //  record decl (MAPPED: DOTCLASS)
-        SEALED(TokenKind.SEALED, XEXPR|XDECL1),  //  sealed class decl (MAPPED: DOTCLASS)
-        PERMITS(TokenKind.PERMITS, XEXPR|XDECL),  // permits classlist
         MONKEYS_AT(TokenKind.MONKEYS_AT, XEXPR|XDECL1),  //  @
         IMPORT(TokenKind.IMPORT, XDECL1|XSTART),  //  import -- consider declaration
         SEMI(TokenKind.SEMI, XSTMT1|XTERM|XSTART),  //  ;
@@ -221,7 +218,6 @@ class CompletenessAnalyzer {
         LONG(TokenKind.LONG, XEXPR1|XDECL1),  //  long
         SHORT(TokenKind.SHORT, XEXPR1|XDECL1),  //  short
         VOID(TokenKind.VOID, XEXPR1|XDECL1),  //  void
-        VAR(TokenKind.VAR, XEXPR1|XDECL1|XTERM),  //  var
 
         // Modifiers keywords
         ABSTRACT(TokenKind.ABSTRACT, XDECL1 | XMODIFIER),  //  abstract
@@ -674,12 +670,12 @@ class CompletenessAnalyzer {
 
         public Completeness parseDeclaration() {
             boolean isImport = token.kind == IMPORT;
-            boolean isDatum = false;
+            boolean isRecord = false;
             boolean afterModifiers = false;
             boolean isBracesNeeded = false;
             while (token.kind.isDeclaration()) {
                 isBracesNeeded |= token.kind.isBracesNeeded();
-                isDatum |= !afterModifiers && token.kind == TK.IDENTIFIER && token.tok.name() == names.record;
+                isRecord |= !afterModifiers && token.kind == TK.IDENTIFIER && token.tok.name() == names.record;
                 afterModifiers |= !token.kind.isModifier();
                 nextToken();
             }
@@ -699,19 +695,12 @@ class CompletenessAnalyzer {
                         case BRACES:
                         case SEMI:
                             return Completeness.COMPLETE;
-                        case VAR:
                         case IDENTIFIER:
-                            return isBracesNeeded
+                            return isBracesNeeded || isRecord
                                     ? Completeness.DEFINITELY_INCOMPLETE
                                     : Completeness.COMPLETE_WITH_SEMI;
                         case BRACKETS:
                             return Completeness.COMPLETE_WITH_SEMI;
-                        case PARENS:
-                            if (isDatum) {
-                                return Completeness.COMPLETE_WITH_SEMI;
-                            } else {
-                                return Completeness.DEFINITELY_INCOMPLETE;
-                            }
                         case DOTSTAR:
                             if (isImport) {
                                 return Completeness.COMPLETE_WITH_SEMI;
@@ -785,6 +774,7 @@ class CompletenessAnalyzer {
                     case ENUM:
                     case ANNOTATION_TYPE:
                     case INTERFACE:
+                    case RECORD:
                     case METHOD:
                         return parseDeclaration();
                     default:

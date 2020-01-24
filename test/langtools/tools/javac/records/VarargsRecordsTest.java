@@ -36,7 +36,7 @@ import static org.testng.Assert.*;
  * VarargsRecordsTest
  *
  * @test
- * @compile --enable-preview -source 14 VarargsRecordsTest.java
+ * @compile --enable-preview -source ${jdk.version} VarargsRecordsTest.java
  * @run testng/othervm --enable-preview VarargsRecordsTest
  */
 @Test

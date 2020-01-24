@@ -100,12 +100,11 @@ public class CommentHelper {
 
     public void setOverrideElement(Element ove) {
         if (this.element == ove) {
-            throw new AssertionError("cannot set given element as overriden element");
+            throw new AssertionError("cannot set given element as overridden element");
         }
         overriddenElement = ove;
     }
 
-    @SuppressWarnings("fallthrough")
     public String getTagName(DocTree dtree) {
         switch (dtree.getKind()) {
             case AUTHOR:
@@ -148,6 +147,9 @@ public class CommentHelper {
     Element getElement(BaseConfiguration c, ReferenceTree rtree) {
         // likely a synthesized tree
         if (path == null) {
+            // NOTE: this code path only supports module/package/type signatures
+            //       and not member signatures. For more complete support,
+            //       set a suitable path and avoid this branch.
             TypeMirror symbol = c.utils.getSymbol(rtree.getSignature());
             if (symbol == null) {
                 return null;

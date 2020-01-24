@@ -26,6 +26,7 @@
  * @summary Verify type annotation on binding patterns
  * @library /tools/lib
  * @modules java.compiler
+ *          jdk.jdeps/com.sun.tools.javap
  * @build toolbox.JavapTask
  * @compile --enable-preview -source ${jdk.version} Patterns.java
  * @run main/othervm --enable-preview Patterns

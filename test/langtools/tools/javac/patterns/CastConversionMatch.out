@@ -1,2 +1,4 @@
-CastConversionMatch.java:33:26: compiler.err.type.found.req: int, (compiler.misc.type.req.class.array)
+CastConversionMatch.java:11:26: compiler.err.type.found.req: int, (compiler.misc.type.req.class.array)
+- compiler.note.preview.filename: CastConversionMatch.java
+- compiler.note.preview.recompile
 1 error

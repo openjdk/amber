@@ -30,6 +30,7 @@
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/ostream.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 // A growable array.
 
@@ -218,15 +219,6 @@ template<class E> class GrowableArray : public GenericGrowableArray {
 
   void print();
 
-  inline static bool safe_equals(oop obj1, oop obj2) {
-    return oopDesc::equals(obj1, obj2);
-  }
-
-  template <class X>
-  inline static bool safe_equals(X i1, X i2) {
-    return i1 == i2;
-  }
-
   int append(const E& elem) {
     check_nesting();
     if (_len == _max) grow(_len);
@@ -311,7 +303,7 @@ template<class E> class GrowableArray : public GenericGrowableArray {
 
   bool contains(const E& elem) const {
     for (int i = 0; i < _len; i++) {
-      if (safe_equals(_data[i], elem)) return true;
+      if (_data[i] == elem) return true;
     }
     return false;
   }
@@ -485,10 +477,9 @@ template<class E> class GrowableArray : public GenericGrowableArray {
 // Global GrowableArray methods (one instance in the library per each 'E' type).
 
 template<class E> void GrowableArray<E>::grow(int j) {
-    // grow the array by doubling its size (amortized growth)
     int old_max = _max;
-    if (_max == 0) _max = 1; // prevent endless loop
-    while (j >= _max) _max = _max*2;
+    // grow the array by increasing _max to the first power of two larger than the size we need
+    _max = next_power_of_2((uint32_t)j);
     // j < _max
     E* newData = (E*)raw_allocate(sizeof(E));
     int i = 0;

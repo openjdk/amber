@@ -114,7 +114,8 @@ class MacroAssembler: public Assembler {
       // short offset operators (jmp and jcc)
       char* disp = (char*) &branch[1];
       int imm8 = target - (address) &disp[1];
-      guarantee(this->is8bit(imm8), "Short forward jump exceeds 8-bit offset at %s:%d", file, line);
+      guarantee(this->is8bit(imm8), "Short forward jump exceeds 8-bit offset at %s:%d",
+                file == NULL ? "<NULL>" : file, line);
       *disp = imm8;
     } else {
       int* disp = (int*) &branch[(op == 0x0F || op == 0xC7)? 2: 1];
@@ -992,6 +993,8 @@ private:
 public:
   void aesecb_encrypt(Register source_addr, Register dest_addr, Register key, Register len);
   void aesecb_decrypt(Register source_addr, Register dest_addr, Register key, Register len);
+  void aesctr_encrypt(Register src_addr, Register dest_addr, Register key, Register counter,
+                      Register len_reg, Register used, Register used_addr, Register saved_encCounter_start);
 
 #endif
 
@@ -1180,6 +1183,10 @@ public:
   void sqrtsd(XMMRegister dst, Address src)        { Assembler::sqrtsd(dst, src); }
   void sqrtsd(XMMRegister dst, AddressLiteral src);
 
+  void roundsd(XMMRegister dst, XMMRegister src, int32_t rmode)    { Assembler::roundsd(dst, src, rmode); }
+  void roundsd(XMMRegister dst, Address src, int32_t rmode)        { Assembler::roundsd(dst, src, rmode); }
+  void roundsd(XMMRegister dst, AddressLiteral src, int32_t rmode, Register scratch_reg);
+
   void sqrtss(XMMRegister dst, XMMRegister src)    { Assembler::sqrtss(dst, src); }
   void sqrtss(XMMRegister dst, Address src)        { Assembler::sqrtss(dst, src); }
   void sqrtss(XMMRegister dst, AddressLiteral src);
@@ -1232,6 +1239,10 @@ public:
 
   void vpaddw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vpaddw(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+
+  void vpaddd(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) { Assembler::vpaddd(dst, nds, src, vector_len); }
+  void vpaddd(XMMRegister dst, XMMRegister nds, Address src, int vector_len) { Assembler::vpaddd(dst, nds, src, vector_len); }
+  void vpaddd(XMMRegister dst, XMMRegister nds, AddressLiteral src, int vector_len, Register rscratch);
 
   void vpand(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) { Assembler::vpand(dst, nds, src, vector_len); }
   void vpand(XMMRegister dst, XMMRegister nds, Address src, int vector_len) { Assembler::vpand(dst, nds, src, vector_len); }
@@ -1345,7 +1356,7 @@ public:
   void vpxor(XMMRegister dst, Address src) { Assembler::vpxor(dst, dst, src, true); }
 
   void vinserti128(XMMRegister dst, XMMRegister nds, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinserti32x4(dst, dst, src, imm8);
     } else if (UseAVX > 1) {
       // vinserti128 is available only in AVX2
@@ -1356,7 +1367,7 @@ public:
   }
 
   void vinserti128(XMMRegister dst, XMMRegister nds, Address src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinserti32x4(dst, dst, src, imm8);
     } else if (UseAVX > 1) {
       // vinserti128 is available only in AVX2
@@ -1367,7 +1378,7 @@ public:
   }
 
   void vextracti128(XMMRegister dst, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextracti32x4(dst, src, imm8);
     } else if (UseAVX > 1) {
       // vextracti128 is available only in AVX2
@@ -1378,7 +1389,7 @@ public:
   }
 
   void vextracti128(Address dst, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextracti32x4(dst, src, imm8);
     } else if (UseAVX > 1) {
       // vextracti128 is available only in AVX2
@@ -1403,7 +1414,7 @@ public:
   }
 
   void vinsertf128_high(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 1);
     } else {
       Assembler::vinsertf128(dst, dst, src, 1);
@@ -1411,7 +1422,7 @@ public:
   }
 
   void vinsertf128_high(XMMRegister dst, Address src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 1);
     } else {
       Assembler::vinsertf128(dst, dst, src, 1);
@@ -1419,7 +1430,7 @@ public:
   }
 
   void vextractf128_high(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 1);
     } else {
       Assembler::vextractf128(dst, src, 1);
@@ -1427,7 +1438,7 @@ public:
   }
 
   void vextractf128_high(Address dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 1);
     } else {
       Assembler::vextractf128(dst, src, 1);
@@ -1469,7 +1480,7 @@ public:
   }
 
   void vinsertf128_low(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 0);
     } else {
       Assembler::vinsertf128(dst, dst, src, 0);
@@ -1477,7 +1488,7 @@ public:
   }
 
   void vinsertf128_low(XMMRegister dst, Address src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 0);
     } else {
       Assembler::vinsertf128(dst, dst, src, 0);
@@ -1485,7 +1496,7 @@ public:
   }
 
   void vextractf128_low(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 0);
     } else {
       Assembler::vextractf128(dst, src, 0);
@@ -1493,7 +1504,7 @@ public:
   }
 
   void vextractf128_low(Address dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 0);
     } else {
       Assembler::vextractf128(dst, src, 0);
@@ -1627,9 +1638,9 @@ public:
 
 #ifdef COMPILER2
   // Generic instructions support for use in .ad files C2 code generation
-  void vabsnegd(int opcode, XMMRegister dst, Register scr);
+  void vabsnegd(int opcode, XMMRegister dst, XMMRegister src, Register scr);
   void vabsnegd(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
-  void vabsnegf(int opcode, XMMRegister dst, Register scr);
+  void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, Register scr);
   void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);

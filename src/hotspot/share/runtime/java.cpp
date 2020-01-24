@@ -56,7 +56,6 @@
 #include "prims/jvmtiExport.hpp"
 #include "runtime/arguments.hpp"
 #include "runtime/biasedLocking.hpp"
-#include "runtime/compilationPolicy.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/flags/flagSetting.hpp"
 #include "runtime/handles.inline.hpp"
@@ -691,25 +690,18 @@ void vm_shutdown_during_initialization(const char* error, const char* message) {
 JDK_Version JDK_Version::_current;
 const char* JDK_Version::_runtime_name;
 const char* JDK_Version::_runtime_version;
+const char* JDK_Version::_runtime_vendor_version;
+const char* JDK_Version::_runtime_vendor_vm_bug_url;
 
 void JDK_Version::initialize() {
-  jdk_version_info info;
   assert(!_current.is_valid(), "Don't initialize twice");
 
-  void *lib_handle = os::native_java_library();
-  jdk_version_info_fn_t func = CAST_TO_FN_PTR(jdk_version_info_fn_t,
-     os::dll_lookup(lib_handle, "JDK_GetVersionInfo0"));
-
-  assert(func != NULL, "Support for JDK 1.5 or older has been removed after JEP-223");
-
-  (*func)(&info, sizeof(info));
-
-  int major = JDK_VERSION_MAJOR(info.jdk_version);
-  int minor = JDK_VERSION_MINOR(info.jdk_version);
-  int security = JDK_VERSION_SECURITY(info.jdk_version);
-  int build = JDK_VERSION_BUILD(info.jdk_version);
-
-  _current = JDK_Version(major, minor, security, info.patch_version, build);
+  int major = VM_Version::vm_major_version();
+  int minor = VM_Version::vm_minor_version();
+  int security = VM_Version::vm_security_version();
+  int build = VM_Version::vm_build_number();
+  int patch = VM_Version::vm_patch_version();
+  _current = JDK_Version(major, minor, security, patch, build);
 }
 
 void JDK_Version_init() {
@@ -732,6 +724,7 @@ int JDK_Version::compare(const JDK_Version& other) const {
   return (e > o) ? 1 : ((e == o) ? 0 : -1);
 }
 
+/* See JEP 223 */
 void JDK_Version::to_string(char* buffer, size_t buflen) const {
   assert(buffer && buflen > 0, "call with useful buffer");
   size_t index = 0;
@@ -743,13 +736,12 @@ void JDK_Version::to_string(char* buffer, size_t buflen) const {
         &buffer[index], buflen - index, "%d.%d", _major, _minor);
     if (rc == -1) return;
     index += rc;
-    if (_security > 0) {
-      rc = jio_snprintf(&buffer[index], buflen - index, ".%d", _security);
+    if (_patch > 0) {
+      rc = jio_snprintf(&buffer[index], buflen - index, ".%d.%d", _security, _patch);
       if (rc == -1) return;
       index += rc;
-    }
-    if (_patch > 0) {
-      rc = jio_snprintf(&buffer[index], buflen - index, ".%d", _patch);
+    } else if (_security > 0) {
+      rc = jio_snprintf(&buffer[index], buflen - index, ".%d", _security);
       if (rc == -1) return;
       index += rc;
     }

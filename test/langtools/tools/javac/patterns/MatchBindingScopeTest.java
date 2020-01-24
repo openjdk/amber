@@ -1,7 +1,8 @@
 /*
  * @test /nodynamiccopyright/
+ * @bug 8231827
  * @summary Basic pattern bindings scope test
- * @compile/fail/ref=MatchBindingScopeTest.out -XDrawDiagnostics MatchBindingScopeTest.java
+ * @compile/fail/ref=MatchBindingScopeTest.out -XDrawDiagnostics --enable-preview -source ${jdk.version} MatchBindingScopeTest.java
  */
 public class MatchBindingScopeTest {
 

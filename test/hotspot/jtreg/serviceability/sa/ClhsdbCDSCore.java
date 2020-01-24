@@ -34,26 +34,30 @@
  * @run main/othervm/timeout=2400 -Xmx1g ClhsdbCDSCore
  */
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.HashMap;
-import jdk.test.lib.process.ProcessTools;
-import jdk.test.lib.Platform;
-import jdk.test.lib.process.OutputAnalyzer;
-import jdk.test.lib.cds.CDSTestUtils;
-import jdk.test.lib.cds.CDSOptions;
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import jdk.test.lib.Asserts;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import jdk.internal.misc.Unsafe;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import jdk.internal.misc.Unsafe;
+
+import jdk.test.lib.Asserts;
+import jdk.test.lib.Platform;
+import jdk.test.lib.cds.CDSOptions;
+import jdk.test.lib.cds.CDSTestUtils;
+import jdk.test.lib.process.OutputAnalyzer;
+import jdk.test.lib.process.ProcessTools;
+import jdk.test.lib.SA.SATestUtils;
+
 import jtreg.SkippedException;
 
 class CrashApp {
@@ -102,28 +106,37 @@ public class ClhsdbCDSCore {
 
             System.out.println(crashOut.getOutput());
             String crashOutputString = crashOut.getOutput();
+            SATestUtils.unzipCores(new File("."));
             String coreFileLocation = getCoreFileLocation(crashOutputString);
             if (coreFileLocation == null) {
                 if (Platform.isOSX()) {
                     File coresDir = new File("/cores");
-                    if (!coresDir.isDirectory() || !coresDir.canWrite()) {
-                        throw new Error("cores is not a directory or does not have write permissions");
+                    if (!coresDir.isDirectory()) {
+                        cleanup();
+                        throw new Error(coresDir + " is not a directory");
+                    }
+                    // the /cores directory is usually not writable on macOS 10.15
+                    if (!coresDir.canWrite()) {
+                        cleanup();
+                        throw new SkippedException("Directory \"" + coresDir +
+                            "\" is not writable");
                     }
                 } else if (Platform.isLinux()) {
                     // Check if a crash report tool is installed.
                     File corePatternFile = new File(CORE_PATTERN_FILE_NAME);
-                    Scanner scanner = new Scanner(corePatternFile);
-                    while (scanner.hasNextLine()) {
-                        String line = scanner.nextLine();
-                        line = line.trim();
-                        System.out.println(line);
-                        if (line.startsWith("|")) {
-                            System.out.println(
-                                "\nThis system uses a crash report tool ($cat /proc/sys/kernel/core_pattern).\n" +
-                                "Core files might not be generated. Please reset /proc/sys/kernel/core_pattern\n" +
-                                "to enable core generation. Skipping this test.");
-                            cleanup();
-                            throw new SkippedException("This system uses a crash report tool");
+                    try (Scanner scanner = new Scanner(corePatternFile)) {
+                        while (scanner.hasNextLine()) {
+                            String line = scanner.nextLine();
+                            line = line.trim();
+                            System.out.println(line);
+                            if (line.startsWith("|")) {
+                                System.out.println(
+                                    "\nThis system uses a crash report tool ($cat /proc/sys/kernel/core_pattern).\n" +
+                                    "Core files might not be generated. Please reset /proc/sys/kernel/core_pattern\n" +
+                                    "to enable core generation. Skipping this test.");
+                                cleanup();
+                                throw new SkippedException("This system uses a crash report tool");
+                            }
                         }
                     }
                 }

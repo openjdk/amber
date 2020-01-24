@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,13 @@ import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * A simple visitor of program elements with default behavior
  * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
  * source version.
@@ -73,7 +80,9 @@ import static javax.lang.model.SourceVersion.*;
  * @see SimpleElementVisitor9
  * @since 14
  */
-@SupportedSourceVersion(RELEASE_14)
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
+@SupportedSourceVersion(RELEASE_15)
 public class SimpleElementVisitor14<R, P> extends SimpleElementVisitor9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
@@ -103,6 +112,7 @@ public class SimpleElementVisitor14<R, P> extends SimpleElementVisitor9<R, P> {
      * @param p a visitor-specified parameter
      * @return  {@inheritDoc}
      */
+    @SuppressWarnings("preview")
     @Override
     public R visitRecordComponent(RecordComponentElement e, P p) {
         return defaultAction(e, p);

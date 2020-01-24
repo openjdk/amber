@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@ import java.lang.annotation.*;
 /**
  * @test
  * @bug 8006547
- * @compile NoTargetOnContainer2.java
+ * @compile --enable-preview -source ${jdk.version} NoTargetOnContainer2.java
  */
 
 @interface FooContainer {

@@ -30,6 +30,8 @@
 #include "runtime/frame.inline.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "services/memTracker.hpp"
+#include "runtime/atomic.hpp"
+#include "runtime/orderAccess.hpp"
 #include "utilities/align.hpp"
 #include "utilities/events.hpp"
 #include "utilities/formatBuffer.hpp"
@@ -47,6 +49,7 @@
 #include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
+#include <utmpx.h>
 
 // Todo: provide a os::get_max_process_id() or similar. Number of processes
 // may have been configured, can be read more accurately from proc fs etc.
@@ -165,11 +168,6 @@ size_t os::lasterror(char *buf, size_t len) {
   ::strncpy(buf, s, n);
   buf[n] = '\0';
   return n;
-}
-
-bool os::is_debugger_attached() {
-  // not implemented
-  return false;
 }
 
 void os::wait_for_keypress_at_exit(void) {
@@ -373,10 +371,35 @@ struct tm* os::gmtime_pd(const time_t* clock, struct tm*  res) {
 void os::Posix::print_load_average(outputStream* st) {
   st->print("load average:");
   double loadavg[3];
-  os::loadavg(loadavg, 3);
-  st->print("%0.02f %0.02f %0.02f", loadavg[0], loadavg[1], loadavg[2]);
+  int res = os::loadavg(loadavg, 3);
+  if (res != -1) {
+    st->print("%0.02f %0.02f %0.02f", loadavg[0], loadavg[1], loadavg[2]);
+  } else {
+    st->print(" Unavailable");
+  }
   st->cr();
 }
+
+// boot/uptime information;
+// unfortunately it does not work on macOS and Linux because the utx chain has no entry
+// for reboot at least on my test machines
+void os::Posix::print_uptime_info(outputStream* st) {
+  int bootsec = -1;
+  int currsec = time(NULL);
+  struct utmpx* ent;
+  setutxent();
+  while ((ent = getutxent())) {
+    if (!strcmp("system boot", ent->ut_line)) {
+      bootsec = ent->ut_tv.tv_sec;
+      break;
+    }
+  }
+
+  if (bootsec != -1) {
+    os::print_dhm(st, "OS uptime:", (long) (currsec-bootsec));
+  }
+}
+
 
 void os::Posix::print_rlimit_info(outputStream* st) {
   st->print("rlimit:");
@@ -396,6 +419,10 @@ void os::Posix::print_rlimit_info(outputStream* st) {
 #if defined(AIX)
   st->print(", NPROC ");
   st->print("%d", sysconf(_SC_CHILD_MAX));
+  st->print(", THREADS ");
+  getrlimit(RLIMIT_THREADS, &rlim);
+  if (rlim.rlim_cur == RLIM_INFINITY) st->print("infinity");
+  else st->print(UINT64_FORMAT, uint64_t(rlim.rlim_cur));
 #elif !defined(SOLARIS)
   st->print(", NPROC ");
   getrlimit(RLIMIT_NPROC, &rlim);
@@ -412,6 +439,11 @@ void os::Posix::print_rlimit_info(outputStream* st) {
   getrlimit(RLIMIT_AS, &rlim);
   if (rlim.rlim_cur == RLIM_INFINITY) st->print("infinity");
   else st->print(UINT64_FORMAT "k", uint64_t(rlim.rlim_cur) / 1024);
+
+  st->print(", CPU ");
+  getrlimit(RLIMIT_CPU, &rlim);
+  if (rlim.rlim_cur == RLIM_INFINITY) st->print("infinity");
+  else st->print(UINT64_FORMAT, uint64_t(rlim.rlim_cur));
 
   st->print(", DATA ");
   getrlimit(RLIMIT_DATA, &rlim);
@@ -640,61 +672,6 @@ void os::naked_short_sleep(jlong ms) {
   return;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// interrupt support
-
-void os::interrupt(Thread* thread) {
-  debug_only(Thread::check_for_dangling_thread_pointer(thread);)
-
-  OSThread* osthread = thread->osthread();
-
-  if (!osthread->interrupted()) {
-    osthread->set_interrupted(true);
-    // More than one thread can get here with the same value of osthread,
-    // resulting in multiple notifications.  We do, however, want the store
-    // to interrupted() to be visible to other threads before we execute unpark().
-    OrderAccess::fence();
-    ParkEvent * const slp = thread->_SleepEvent ;
-    if (slp != NULL) slp->unpark() ;
-  }
-
-  // For JSR166. Unpark even if interrupt status already was set
-  if (thread->is_Java_thread())
-    ((JavaThread*)thread)->parker()->unpark();
-
-  ParkEvent * ev = thread->_ParkEvent ;
-  if (ev != NULL) ev->unpark() ;
-}
-
-bool os::is_interrupted(Thread* thread, bool clear_interrupted) {
-  debug_only(Thread::check_for_dangling_thread_pointer(thread);)
-
-  OSThread* osthread = thread->osthread();
-
-  bool interrupted = osthread->interrupted();
-
-  // NOTE that since there is no "lock" around the interrupt and
-  // is_interrupted operations, there is the possibility that the
-  // interrupted flag (in osThread) will be "false" but that the
-  // low-level events will be in the signaled state. This is
-  // intentional. The effect of this is that Object.wait() and
-  // LockSupport.park() will appear to have a spurious wakeup, which
-  // is allowed and not harmful, and the possibility is so rare that
-  // it is not worth the added complexity to add yet another lock.
-  // For the sleep event an explicit reset is performed on entry
-  // to os::sleep, so there is no early return. It has also been
-  // recommended not to put the interrupted flag into the "event"
-  // structure because it hides the issue.
-  if (interrupted && clear_interrupted) {
-    osthread->set_interrupted(false);
-    // consider thread->_SleepEvent->reset() ... optional optimization
-  }
-
-  return interrupted;
-}
-
-
-
 static const struct {
   int sig; const char* name;
 }
@@ -741,6 +718,9 @@ static const struct {
 #endif
   {  SIGHUP,      "SIGHUP" },
   {  SIGILL,      "SIGILL" },
+#ifdef SIGINFO
+  {  SIGINFO,     "SIGINFO" },
+#endif
   {  SIGINT,      "SIGINT" },
 #ifdef SIGIO
   {  SIGIO,       "SIGIO" },
@@ -1953,7 +1933,7 @@ void os::PlatformEvent::park() {       // AKA "down()"
   // atomically decrement _event
   for (;;) {
     v = _event;
-    if (Atomic::cmpxchg(v - 1, &_event, v) == v) break;
+    if (Atomic::cmpxchg(&_event, v, v - 1) == v) break;
   }
   guarantee(v >= 0, "invariant");
 
@@ -1993,7 +1973,7 @@ int os::PlatformEvent::park(jlong millis) {
   // atomically decrement _event
   for (;;) {
     v = _event;
-    if (Atomic::cmpxchg(v - 1, &_event, v) == v) break;
+    if (Atomic::cmpxchg(&_event, v, v - 1) == v) break;
   }
   guarantee(v >= 0, "invariant");
 
@@ -2049,9 +2029,9 @@ void os::PlatformEvent::unpark() {
   // shake out uses of park() and unpark() without checking state conditions
   // properly. This spurious return doesn't manifest itself in any user code
   // but only in the correctly written condition checking loops of ObjectMonitor,
-  // Mutex/Monitor, Thread::muxAcquire and os::sleep
+  // Mutex/Monitor, Thread::muxAcquire and JavaThread::sleep
 
-  if (Atomic::xchg(1, &_event) >= 0) return;
+  if (Atomic::xchg(&_event, 1) >= 0) return;
 
   int status = pthread_mutex_lock(_mutex);
   assert_status(status == 0, status, "mutex_lock");
@@ -2099,7 +2079,7 @@ void Parker::park(bool isAbsolute, jlong time) {
   // Return immediately if a permit is available.
   // We depend on Atomic::xchg() having full barrier semantics
   // since we are doing a lock-free update to _counter.
-  if (Atomic::xchg(0, &_counter) > 0) return;
+  if (Atomic::xchg(&_counter, 0) > 0) return;
 
   Thread* thread = Thread::current();
   assert(thread->is_Java_thread(), "Must be JavaThread");
@@ -2107,7 +2087,7 @@ void Parker::park(bool isAbsolute, jlong time) {
 
   // Optional optimization -- avoid state transitions if there's
   // an interrupt pending.
-  if (Thread::is_interrupted(thread, false)) {
+  if (jt->is_interrupted(false)) {
     return;
   }
 
@@ -2128,10 +2108,12 @@ void Parker::park(bool isAbsolute, jlong time) {
   // the ThreadBlockInVM() CTOR and DTOR may grab Threads_lock.
   ThreadBlockInVM tbivm(jt);
 
+  // Can't access interrupt state now that we are _thread_blocked. If we've
+  // been interrupted since we checked above then _counter will be > 0.
+
   // Don't wait if cannot get lock since interference arises from
-  // unparking. Also re-check interrupt before trying wait.
-  if (Thread::is_interrupted(thread, false) ||
-      pthread_mutex_trylock(_mutex) != 0) {
+  // unparking.
+  if (pthread_mutex_trylock(_mutex) != 0) {
     return;
   }
 

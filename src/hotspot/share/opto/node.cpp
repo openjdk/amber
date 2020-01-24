@@ -41,6 +41,7 @@
 #include "opto/type.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 class RegMask;
 // #include "phase.hpp"
@@ -546,9 +547,6 @@ Node *Node::clone() const {
   if (n->is_SafePoint()) {
     n->as_SafePoint()->clone_replaced_nodes();
   }
-  if (n->is_Load()) {
-    n->as_Load()->copy_barrier_info(this);
-  }
   return n;                     // Return the clone
 }
 
@@ -656,7 +654,7 @@ void Node::grow( uint len ) {
     to[3] = NULL;
     return;
   }
-  while( new_max <= len ) new_max <<= 1; // Find next power-of-2
+  new_max = next_power_of_2(len);
   // Trimming to limit allows a uint8 to handle up to 255 edges.
   // Previously I was using only powers-of-2 which peaked at 128 edges.
   //if( new_max >= limit ) new_max = limit-1;
@@ -679,7 +677,7 @@ void Node::out_grow( uint len ) {
     _out = (Node **)arena->Amalloc(4*sizeof(Node*));
     return;
   }
-  while( new_max <= len ) new_max <<= 1; // Find next power-of-2
+  new_max = next_power_of_2(len);
   // Trimming to limit allows a uint8 to handle up to 255 edges.
   // Previously I was using only powers-of-2 which peaked at 128 edges.
   //if( new_max >= limit ) new_max = limit-1;
@@ -704,8 +702,25 @@ bool Node::is_dead() const {
   dump();
   return true;
 }
-#endif
 
+bool Node::is_reachable_from_root() const {
+  ResourceMark rm;
+  Unique_Node_List wq;
+  wq.push((Node*)this);
+  RootNode* root = Compile::current()->root();
+  for (uint i = 0; i < wq.size(); i++) {
+    Node* m = wq.at(i);
+    if (m == root) {
+      return true;
+    }
+    for (DUIterator_Fast jmax, j = m->fast_outs(jmax); j < jmax; j++) {
+      Node* u = m->fast_out(j);
+      wq.push(u);
+    }
+  }
+  return false;
+}
+#endif
 
 //------------------------------is_unreachable---------------------------------
 bool Node::is_unreachable(PhaseIterGVN &igvn) const {
@@ -1151,7 +1166,7 @@ bool Node::has_special_unique_user() const {
     // See IfProjNode::Identity()
     return true;
   } else {
-    return BarrierSet::barrier_set()->barrier_set_c2()->has_special_unique_user(this);
+    return false;
   }
 };
 
@@ -1454,10 +1469,6 @@ bool Node::rematerialize() const {
 // Nodes which use memory without consuming it, hence need antidependences.
 bool Node::needs_anti_dependence_check() const {
   if (req() < 2 || (_flags & Flag_needs_anti_dependence_check) == 0) {
-    return false;
-  }
-  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-  if (!bs->needs_anti_dependence_check(this)) {
     return false;
   }
   return in(1)->bottom_type()->has_memory();
@@ -2246,7 +2257,7 @@ void Node_Array::grow( uint i ) {
     _nodes[0] = NULL;
   }
   uint old = _max;
-  while( i >= _max ) _max <<= 1;        // Double to fit
+  _max = next_power_of_2(i);
   _nodes = (Node**)_a->Arealloc( _nodes, old*sizeof(Node*),_max*sizeof(Node*));
   Copy::zero_to_bytes( &_nodes[old], (_max-old)*sizeof(Node*) );
 }
@@ -2389,14 +2400,15 @@ void Node_List::dump_simple() const {
 
 //=============================================================================
 //------------------------------remove-----------------------------------------
-void Unique_Node_List::remove( Node *n ) {
-  if( _in_worklist[n->_idx] ) {
-    for( uint i = 0; i < size(); i++ )
-      if( _nodes[i] == n ) {
-        map(i,Node_List::pop());
-        _in_worklist >>= n->_idx;
+void Unique_Node_List::remove(Node* n) {
+  if (_in_worklist.test(n->_idx)) {
+    for (uint i = 0; i < size(); i++) {
+      if (_nodes[i] == n) {
+        map(i, Node_List::pop());
+        _in_worklist.remove(n->_idx);
         return;
       }
+    }
     ShouldNotReachHere();
   }
 }
@@ -2405,11 +2417,11 @@ void Unique_Node_List::remove( Node *n ) {
 // Remove useless nodes from worklist
 void Unique_Node_List::remove_useless_nodes(VectorSet &useful) {
 
-  for( uint i = 0; i < size(); ++i ) {
+  for (uint i = 0; i < size(); ++i) {
     Node *n = at(i);
     assert( n != NULL, "Did not expect null entries in worklist");
-    if( ! useful.test(n->_idx) ) {
-      _in_worklist >>= n->_idx;
+    if (!useful.test(n->_idx)) {
+      _in_worklist.remove(n->_idx);
       map(i,Node_List::pop());
       // Node *replacement = Node_List::pop();
       // if( i != size() ) { // Check if removing last entry

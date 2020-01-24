@@ -31,7 +31,6 @@
  * @run main TestSealedTypes
  */
 
-
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -55,6 +54,7 @@ public class TestSealedTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -70,6 +70,7 @@ public class TestSealedTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-sourcepath", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -86,6 +87,7 @@ public class TestSealedTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -105,6 +107,7 @@ public class TestSealedTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -116,14 +119,15 @@ public class TestSealedTypes extends JavadocTester {
     }
 
     @Test
-    public void testImplicitSealedModifierClass(Path base) throws IOException {
+    public void testSealedSubtypeModifierClass(Path base) throws IOException {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B { }",
-                "package p; public abstract class B extends A { }");
+                "package p; public sealed abstract class B extends A { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -135,14 +139,15 @@ public class TestSealedTypes extends JavadocTester {
     }
 
     @Test
-    public void testImplicitSealedModifierInterface(Path base) throws IOException {
+    public void testSealedSubtypeInterface(Path base) throws IOException {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed interface A permits B { }",
-                "package p; public interface B extends A { }");
+                "package p; public sealed interface B extends A { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -158,10 +163,11 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B { }",
-                "package p; public class B extends A { }");
+                "package p; public final class B extends A { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -176,12 +182,13 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B,C,D { }",
-                "package p; public class B extends A { }",
-                "package p; public class C extends A { }",
-                "package p; public class D extends A { }");
+                "package p; public final class B extends A { }",
+                "package p; public final class C extends A { }",
+                "package p; public final class D extends A { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -198,12 +205,13 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B,C,D { }",
-                "package p; public class B extends A { }",
-                "package p; public class C extends A { }",
-                "package p;        class D extends A { }");
+                "package p; public final class B extends A { }",
+                "package p; public final class C extends A { }",
+                "package p;        final class D extends A { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -214,19 +222,20 @@ public class TestSealedTypes extends JavadocTester {
                 + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
     }
 
-    @Test
+    // @Test // javac incorrectly rejects the source
     public void testPartialMultiplePermitsWithSubtypes1(Path base) throws IOException {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B,C,D { }",
-                "package p; public class B extends A { }",
-                "package p; public class C extends A { }",
+                "package p; public final  class B extends A { }",
+                "package p; public final  class C extends A { }",
                 "package p;        sealed class D extends A permits D1, D2 { }",
-                "package p; public class D1 extends D { }",
-                "package p; public class D2 extends D { }");
+                "package p; public final  class D1 extends D { }",
+                "package p; public final  class D2 extends D { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -242,14 +251,15 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A permits B,C,D { }",
-                "package p; public class B extends A { }",
-                "package p; public class C extends A { }",
-                "package p;        non-sealed class D extends A { }",
-                "package p; public class D1 extends D { }",
-                "package p; public class D2 extends D { }");
+                "package p; public final  class B extends A { }",
+                "package p; public final  class C extends A { }",
+                "package p;    non-sealed class D extends A { }",
+                "package p; public final  class D1 extends D { }",
+                "package p; public final  class D2 extends D { }");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -265,13 +275,14 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A { }\n"
-                + "class B extends A { }\n"
-                + "class C extends A { }\n"
-                + "class D extends A { }\n");
+                + "final class B extends A { }\n"
+                + "final class C extends A { }\n"
+                + "final class D extends A { }\n");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
                 "-package",
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 
@@ -288,13 +299,14 @@ public class TestSealedTypes extends JavadocTester {
         Path src = base.resolve("src");
         tb.writeJavaFiles(src,
                 "package p; public sealed class A {\n"
-                + "  public static class B extends A { }\n"
-                + "  public static class C extends A { }\n"
-                + "  public static class D extends A { }\n"
+                + "  public static final class B extends A { }\n"
+                + "  public static final class C extends A { }\n"
+                + "  public static final class D extends A { }\n"
                 + "}");
 
         javadoc("-d", base.resolve("out").toString(),
                 "--source-path", src.toString(),
+                "--enable-preview", "--source", thisRelease,
                 "p");
         checkExit(Exit.OK);
 

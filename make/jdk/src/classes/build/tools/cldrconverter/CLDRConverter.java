@@ -70,6 +70,7 @@ public class CLDRConverter {
     private static String LIKELYSUBTAGS_SOURCE_FILE;
     private static String TIMEZONE_SOURCE_FILE;
     private static String WINZONES_SOURCE_FILE;
+    private static String PLURALS_SOURCE_FILE;
     static String DESTINATION_DIR = "build/gensrc";
 
     static final String LOCALE_NAME_PREFIX = "locale.displayname.";
@@ -93,6 +94,7 @@ public class CLDRConverter {
     private static SupplementDataParseHandler handlerSuppl;
     private static LikelySubtagsParseHandler handlerLikelySubtags;
     private static WinZonesParseHandler handlerWinZones;
+    static PluralsParseHandler handlerPlurals;
     static SupplementalMetadataParseHandler handlerSupplMeta;
     static NumberingSystemsParseHandler handlerNumbering;
     static MetaZonesParseHandler handlerMetaZones;
@@ -244,6 +246,7 @@ public class CLDRConverter {
         TIMEZONE_SOURCE_FILE = CLDR_BASE + "/bcp47/timezone.xml";
         SPPL_META_SOURCE_FILE = CLDR_BASE + "/supplemental/supplementalMetadata.xml";
         WINZONES_SOURCE_FILE = CLDR_BASE + "/supplemental/windowsZones.xml";
+        PLURALS_SOURCE_FILE = CLDR_BASE + "/supplemental/plurals.xml";
 
         if (BASE_LOCALES.isEmpty()) {
             setupBaseLocales("en-US");
@@ -264,6 +267,9 @@ public class CLDRConverter {
 
             // Generate Windows tzmappings
             generateWindowsTZMappings();
+
+            // Generate Plural rules
+            generatePluralRules();
         }
     }
 
@@ -451,6 +457,10 @@ public class CLDRConverter {
         // Parse windowsZones
         handlerWinZones = new WinZonesParseHandler();
         parseLDMLFile(new File(WINZONES_SOURCE_FILE), handlerWinZones);
+
+        // Parse plurals
+        handlerPlurals = new PluralsParseHandler();
+        parseLDMLFile(new File(PLURALS_SOURCE_FILE), handlerPlurals);
     }
 
     // Parsers for data in "bcp47" directory
@@ -864,7 +874,7 @@ public class CLDRConverter {
         }
 
         for (String key : map.keySet()) {
-        // Copy available calendar names
+            // Copy available calendar names
             if (key.startsWith(CLDRConverter.LOCALE_TYPE_PREFIX_CA)) {
                 String type = key.substring(CLDRConverter.LOCALE_TYPE_PREFIX_CA.length());
                 for (CalendarType calendarType : CalendarType.values()) {
@@ -891,12 +901,13 @@ public class CLDRConverter {
         List<String> numberingScripts = (List<String>) map.remove("numberingScripts");
         if (numberingScripts != null) {
             for (String script : numberingScripts) {
-                copyIfPresent(map, script + "." + "NumberElements", formatData);
+                copyIfPresent(map, script + ".NumberElements", formatData);
+                copyIfPresent(map, script + ".NumberPatterns", formatData);
             }
         } else {
             copyIfPresent(map, "NumberElements", formatData);
+            copyIfPresent(map, "NumberPatterns", formatData);
         }
-        copyIfPresent(map, "NumberPatterns", formatData);
         copyIfPresent(map, "short.CompactNumberPatterns", formatData);
         copyIfPresent(map, "long.CompactNumberPatterns", formatData);
 
@@ -1159,4 +1170,69 @@ public class CLDRConverter {
                 .collect(Collectors.toList()),
             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
+
+    /**
+     * Generate ResourceBundle source file for plural rules. The generated
+     * class is {@code sun.text.resources.PluralRules} which has one public
+     * two dimensional array {@code rulesArray}. Each array element consists
+     * of two elements that designate the locale and the locale's plural rules
+     * string. The latter has the syntax from Unicode Consortium's
+     * <a href="http://unicode.org/reports/tr35/tr35-numbers.html#Plural_rules_syntax">
+     * Plural rules syntax</a>. {@code samples} and {@code "other"} are being ommited.
+     *
+     * @throws Exception
+     */
+    private static void generatePluralRules() throws Exception {
+        Files.createDirectories(Paths.get(DESTINATION_DIR, "sun", "text", "resources"));
+        Files.write(Paths.get(DESTINATION_DIR, "sun", "text", "resources", "PluralRules.java"),
+            Stream.concat(
+                Stream.concat(
+                    Stream.of(
+                        "package sun.text.resources;",
+                        "public final class PluralRules {",
+                        "    public static final String[][] rulesArray = {"
+                    ),
+                    pluralRulesStream().sorted()
+                ),
+                Stream.of(
+                    "    };",
+                    "}"
+                )
+            )
+            .collect(Collectors.toList()),
+        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    }
+
+    private static Stream<String> pluralRulesStream() {
+        return handlerPlurals.getData().entrySet().stream()
+            .filter(e -> !((Map<String, String>)e.getValue()).isEmpty())
+            .map(e -> {
+                String loc = e.getKey();
+                Map<String, String> rules = (Map<String, String>)e.getValue();
+                return "        {\"" + loc + "\", \"" +
+                    rules.entrySet().stream()
+                        .map(rule -> rule.getKey() + ":" + rule.getValue().replaceFirst("@.*", ""))
+                        .map(String::trim)
+                        .collect(Collectors.joining(";")) + "\"},";
+            });
+    }
+
+    // for debug
+    static void dumpMap(Map<String, Object> map) {
+        map.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(e -> {
+                Object val = e.getValue();
+                String valStr = null;
+
+                if (val instanceof String[]) {
+                    valStr = Arrays.asList((String[])val).toString();
+                } else if (val != null) {
+                    valStr = val.toString();
+                }
+                return e.getKey() + " = " + valStr;
+            })
+            .forEach(System.out::println);
+    }
 }
+

@@ -35,12 +35,14 @@ package gc.g1;
  *          java.management
  * @build sun.hotspot.WhiteBox
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- * @run main gc.g1.TestGCLogMessages
+ *                                sun.hotspot.WhiteBox$WhiteBoxPermission
+ * @run main/othervm -Xbootclasspath/a:. -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI
+ *                   gc.g1.TestGCLogMessages
  */
 
 import jdk.test.lib.process.OutputAnalyzer;
 import jdk.test.lib.process.ProcessTools;
-import jdk.test.lib.Platform;
+import sun.hotspot.code.Compiler;
 
 public class TestGCLogMessages {
 
@@ -85,7 +87,7 @@ public class TestGCLogMessages {
         }
 
         public boolean isAvailable() {
-            return Platform.isGraal() || Platform.isServer();
+            return Compiler.isC2Enabled() || Compiler.isGraalEnabled();
         }
     }
 
@@ -116,6 +118,7 @@ public class TestGCLogMessages {
         new LogMessageWithLevel("Code Root Scan", Level.DEBUG),
         // Object Copy
         new LogMessageWithLevel("Object Copy", Level.DEBUG),
+        new LogMessageWithLevel("Copied Bytes", Level.DEBUG),
         new LogMessageWithLevel("LAB Waste", Level.DEBUG),
         new LogMessageWithLevel("LAB Undo Waste", Level.DEBUG),
         // Ext Root Scan
@@ -128,8 +131,6 @@ public class TestGCLogMessages {
         new LogMessageWithLevel("CLDG Roots", Level.TRACE),
         new LogMessageWithLevel("JVMTI Roots", Level.TRACE),
         new LogMessageWithLevel("CM RefProcessor Roots", Level.TRACE),
-        new LogMessageWithLevel("Wait For Strong CLD", Level.TRACE),
-        new LogMessageWithLevel("Weak CLD Roots", Level.TRACE),
         // Redirty Cards
         new LogMessageWithLevel("Redirty Cards", Level.DEBUG),
         new LogMessageWithLevel("Parallel Redirty", Level.TRACE),
@@ -144,9 +145,15 @@ public class TestGCLogMessages {
         new LogMessageWithLevel("Prepare Heap Roots", Level.DEBUG),
         // Free CSet
         new LogMessageWithLevel("Free Collection Set", Level.DEBUG),
-        new LogMessageWithLevel("Free Collection Set Serial", Level.TRACE),
+        new LogMessageWithLevel("Serial Free Collection Set", Level.TRACE),
+        new LogMessageWithLevel("Parallel Free Collection Set", Level.TRACE),
         new LogMessageWithLevel("Young Free Collection Set", Level.TRACE),
         new LogMessageWithLevel("Non-Young Free Collection Set", Level.TRACE),
+        // Rebuild Free List
+        new LogMessageWithLevel("Rebuild Free List", Level.DEBUG),
+        new LogMessageWithLevel("Serial Rebuild Free List", Level.TRACE),
+        new LogMessageWithLevel("Parallel Rebuild Free List", Level.TRACE),
+
         // Humongous Eager Reclaim
         new LogMessageWithLevel("Humongous Reclaim", Level.DEBUG),
         // Merge PSS

@@ -91,6 +91,10 @@ public class HttpProxy {
         this.proxyPort = proxyPort;
     }
 
+    static boolean canUseIPv6() {
+        return IPSupport.hasIPv6() && !IPSupport.preferIPv4Stack();
+    }
+
     void test() throws Exception {
         InetSocketAddress proxyAddress = new InetSocketAddress(proxyHost, proxyPort);
         Proxy httpProxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
@@ -101,7 +105,7 @@ public class HttpProxy {
             externalAddresses.add(
                 new InetSocketAddress(InetAddress.getLocalHost(), ss.getLocalPort()));
 
-            if (!"true".equals(System.getProperty("java.net.preferIPv4Stack"))) {
+            if (canUseIPv6()) {
                 byte[] bytes = new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
                 var address = InetAddress.getByAddress(bytes);
                 externalAddresses.add(
@@ -160,6 +164,7 @@ public class HttpProxy {
             public void run() {
                 try { simpleWrite(os, start); }
                 catch (Exception e) {unexpected(e); }
+                finally { out.println(threadName + ": done"); }
             }}, threadName)).start();
     }
 
@@ -170,6 +175,7 @@ public class HttpProxy {
             b[1] = (byte) (i % 256);
             os.write(b);
         }
+        out.println("Wrote " + start + " -> " + (start + 100));
     }
 
     void simpleRead(InputStream is, int start) throws Exception {
@@ -184,6 +190,7 @@ public class HttpProxy {
             if (r != i)
                 throw new Exception("read " + r + " expected " +i);
         }
+        out.println("Read " + start + " -> " + (start + 100));
     }
 
     int bytes(byte b1, byte b2) {
@@ -249,6 +256,7 @@ public class HttpProxy {
 
             // retrieve the host and port info from the status-line
             InetSocketAddress serverAddr = getConnectInfo(statusLine);
+            out.println("Proxy serving CONNECT request to " + serverAddr);
 
             //open socket to the server
             try (Socket serverSocket = new Socket(serverAddr.getAddress(),

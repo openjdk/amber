@@ -203,6 +203,7 @@ public class Checker extends DocTreePathScanner<Void, Void> {
             case INTERFACE:
             case ENUM:
             case ANNOTATION_TYPE:
+            case RECORD:
                 implicitHeadingRank = 1;
                 break;
 
@@ -854,6 +855,7 @@ public class Checker extends DocTreePathScanner<Void, Void> {
         boolean typaram = tree.isTypeParameter();
         IdentifierTree nameTree = tree.getName();
         Element paramElement = nameTree != null ? env.trees.getElement(new DocTreePath(getCurrentPath(), nameTree)) : null;
+
         if (paramElement == null) {
             switch (env.currElement.getKind()) {
                 case CLASS: case INTERFACE: {

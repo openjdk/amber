@@ -34,7 +34,7 @@
 #include "gc/z/zRootsIterator.hpp"
 #include "gc/z/zStat.hpp"
 #include "gc/z/zTask.hpp"
-#include "gc/z/zThread.hpp"
+#include "gc/z/zThread.inline.hpp"
 #include "gc/z/zThreadLocalAllocBuffer.hpp"
 #include "gc/z/zUtils.inline.hpp"
 #include "gc/z/zWorkers.inline.hpp"
@@ -44,11 +44,12 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/handshake.hpp"
-#include "runtime/orderAccess.hpp"
 #include "runtime/prefetch.inline.hpp"
+#include "runtime/safepointMechanism.hpp"
 #include "runtime/thread.hpp"
 #include "utilities/align.hpp"
 #include "utilities/globalDefinitions.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include "utilities/ticks.hpp"
 
 static const ZStatSubPhase ZSubPhaseConcurrentMark("Concurrent Mark");
@@ -80,7 +81,7 @@ size_t ZMark::calculate_nstripes(uint nworkers) const {
   // Calculate the number of stripes from the number of workers we use,
   // where the number of stripes must be a power of two and we want to
   // have at least one worker per stripe.
-  const size_t nstripes = ZUtils::round_down_power_of_2(nworkers);
+  const size_t nstripes = round_down_power_of_2(nworkers);
   return MIN2(nstripes, ZMarkStripesMax);
 }
 
@@ -133,8 +134,15 @@ public:
     // Update thread local address bad mask
     ZThreadLocalData::set_address_bad_mask(thread, ZAddressBadMask);
 
+    // Mark invisible root
+    ZThreadLocalData::do_invisible_root(thread, ZBarrier::mark_barrier_on_invisible_root_oop_field);
+
     // Retire TLAB
     ZThreadLocalAllocBuffer::retire(thread);
+  }
+
+  virtual bool should_disarm_nmethods() const {
+    return true;
   }
 
   virtual void do_oop(oop* p) {
@@ -156,7 +164,7 @@ public:
   ZMarkRootsTask(ZMark* mark) :
       ZTask("ZMarkRootsTask"),
       _mark(mark),
-      _roots(true /* visit_invisible */, false /* visit_jvmti_weak_export */) {}
+      _roots(false /* visit_jvmti_weak_export */) {}
 
   virtual void work() {
     _roots.oops_do(&_cl);
@@ -339,7 +347,7 @@ void ZMark::mark_and_follow(ZMarkCache* cache, ZMarkStackEntry entry) {
     return;
   }
 
-  // Decode object address
+  // Decode object address and follow flag
   const uintptr_t addr = entry.object_address();
 
   if (!try_mark_object(cache, addr, finalizable)) {
@@ -348,7 +356,13 @@ void ZMark::mark_and_follow(ZMarkCache* cache, ZMarkStackEntry entry) {
   }
 
   if (is_array(addr)) {
-    follow_array_object(objArrayOop(ZOop::from_address(addr)), finalizable);
+    // Decode follow flag
+    const bool follow = entry.follow();
+
+    // The follow flag is currently only relevant for object arrays
+    if (follow) {
+      follow_array_object(objArrayOop(ZOop::from_address(addr)), finalizable);
+    }
   } else {
     follow_object(ZOop::from_address(addr), finalizable);
   }
@@ -405,13 +419,14 @@ void ZMark::idle() const {
   os::naked_short_sleep(1);
 }
 
-class ZMarkFlushAndFreeStacksClosure : public ThreadClosure {
+class ZMarkFlushAndFreeStacksClosure : public HandshakeClosure {
 private:
   ZMark* const _mark;
   bool         _flushed;
 
 public:
   ZMarkFlushAndFreeStacksClosure(ZMark* mark) :
+      HandshakeClosure("ZMarkFlushAndFreeStacks"),
       _mark(mark),
       _flushed(false) {}
 
@@ -440,7 +455,7 @@ bool ZMark::flush(bool at_safepoint) {
 
 bool ZMark::try_flush(volatile size_t* nflush) {
   // Only flush if handshakes are enabled
-  if (!ThreadLocalHandshakes) {
+  if (!SafepointMechanism::uses_thread_local_poll()) {
     return false;
   }
 
@@ -478,7 +493,7 @@ bool ZMark::try_terminate() {
       // Flush before termination
       if (!try_flush(&_work_nterminateflush)) {
         // No more work available, skip further flush attempts
-        Atomic::store(false, &_work_terminateflush);
+        Atomic::store(&_work_terminateflush, false);
       }
 
       // Don't terminate, regardless of whether we successfully

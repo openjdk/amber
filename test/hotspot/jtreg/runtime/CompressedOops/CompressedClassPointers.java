@@ -25,7 +25,7 @@
  * @test
  * @bug 8024927
  * @summary Testing address of compressed class pointer space as best as possible.
- * @requires vm.bits == 64 & vm.opt.final.UseCompressedOops == true
+ * @requires vm.bits == 64 & vm.opt.final.UseCompressedOops == true & os.family != "windows"
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
  *          java.management
@@ -53,10 +53,10 @@ public class CompressedClassPointers {
         output.shouldHaveExitValue(0);
     }
 
-    public static void smallHeapTestWith3G() throws Exception {
+    public static void smallHeapTestWith1G() throws Exception {
         ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
             "-XX:+UnlockDiagnosticVMOptions",
-            "-XX:CompressedClassSpaceSize=3g",
+            "-XX:CompressedClassSpaceSize=1g",
             "-Xmx128m",
             "-Xlog:gc+metaspace=trace",
             "-Xshare:off",
@@ -114,7 +114,7 @@ public class CompressedClassPointers {
             "-XX:SharedBaseAddress=8g",
             "-XX:+PrintCompressedOopsMode",
             "-XX:+VerifyBeforeGC",
-            "-Xshare:dump");
+            "-Xshare:dump", "-Xlog:cds");
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
         if (output.firstMatch("Shared spaces are not supported in this VM") != null) {
             return;
@@ -149,7 +149,7 @@ public class CompressedClassPointers {
              }
         }
         smallHeapTest();
-        smallHeapTestWith3G();
+        smallHeapTestWith1G();
         largeHeapTest();
         largePagesTest();
         heapBaseMinAddressTest();

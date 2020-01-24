@@ -67,8 +67,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.IndexBuilder;
  *  deletion without notice.</b>
  *
  * @see    IndexBuilder
- * @author Atul M Dambalkar
- * @author Bhavesh Patel (Modified)
  */
 public class AbstractIndexWriter extends HtmlDocletWriter {
 
@@ -92,7 +90,7 @@ public class AbstractIndexWriter extends HtmlDocletWriter {
                                   IndexBuilder indexbuilder) {
         super(configuration, path);
         this.indexbuilder = indexbuilder;
-        this.navBar = new Navigation(null, configuration, fixedNavDiv, PageMode.INDEX, path);
+        this.navBar = new Navigation(null, configuration, PageMode.INDEX, path);
     }
 
     /**
@@ -178,6 +176,7 @@ public class AbstractIndexWriter extends HtmlDocletWriter {
         contentTree.add(heading);
     }
 
+    @SuppressWarnings("preview")
     protected void addDescription(Content dl, Element element) {
         SearchIndexItem si = new SearchIndexItem();
         new SimpleElementVisitor14<Void, Void>() {
@@ -419,7 +418,7 @@ public class AbstractIndexWriter extends HtmlDocletWriter {
      * @return a content tree for the marker anchor
      */
     public Content getMarkerAnchorForIndex(String anchorNameForIndex) {
-        return links.createAnchor(getNameForIndex(anchorNameForIndex), null);
+        return links.createAnchor(getNameForIndex(anchorNameForIndex));
     }
 
     /**

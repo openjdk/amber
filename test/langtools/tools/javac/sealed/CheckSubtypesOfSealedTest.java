@@ -34,6 +34,7 @@
  * @run main CheckSubtypesOfSealedTest
  */
 
+import java.util.List;
 import com.sun.tools.classfile.*;
 import com.sun.tools.classfile.ConstantPool.CONSTANT_Utf8_info;
 import com.sun.tools.javac.code.Flags;
@@ -59,7 +60,8 @@ public class CheckSubtypesOfSealedTest extends TestBase {
     }
 
     void run() throws Exception {
-        InMemoryFileManager fileManager = compile(testSource);
+        InMemoryFileManager fileManager = compile(List.of("--enable-preview", "-source",
+                Integer.toString(Runtime.version().feature())), testSource);
         checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC2")), CheckFor.SEALED);
         checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC3")), CheckFor.FINAL);
         checkClassFile(readClassFile(fileManager.getClasses().get("SealedClasses$SAC4")), CheckFor.FINAL);

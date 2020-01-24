@@ -32,7 +32,6 @@
  * @summary Test command line flag combinations that
  *          could likely affect the behaviour of AppCDS
  * @library /test/lib
- * @modules jdk.jartool/sun.tools.jar
  * @build sun.hotspot.WhiteBox
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox sun.hotspot.WhiteBox$WhiteBoxPermission
  * @compile test-classes/Hello.java
@@ -44,12 +43,13 @@ import jdk.test.lib.Platform;
 import jdk.test.lib.process.OutputAnalyzer;
 
 import sun.hotspot.code.Compiler;
+import sun.hotspot.WhiteBox;
 
 public class CommandLineFlagCombo {
 
     // shared base address test table
     private static final String[] testTable = {
-        "-XX:+UseG1GC", "-XX:+UseSerialGC", "-XX:+UseParallelGC", "-XX:+UseConcMarkSweepGC",
+        "-XX:+UseG1GC", "-XX:+UseSerialGC", "-XX:+UseParallelGC",
         "-XX:+FlightRecorder",
         "-XX:+UseLargePages", // may only take effect on machines with large-pages
         "-XX:+UseCompressedClassPointers",
@@ -122,12 +122,11 @@ public class CommandLineFlagCombo {
             }
         }
 
-        if (Compiler.isGraalEnabled() && testEntry.equals("-XX:+UseConcMarkSweepGC"))
+        if (!WhiteBox.getWhiteBox().isJFRIncludedInVmBuild() && testEntry.equals("-XX:+FlightRecorder"))
         {
-            System.out.println("Graal does not support CMS");
+            System.out.println("JFR does not exist");
             return true;
         }
-
         return false;
     }
 }

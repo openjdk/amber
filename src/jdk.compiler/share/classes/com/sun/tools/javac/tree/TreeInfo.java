@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,7 +83,13 @@ public class TreeInfo {
     }
 
     public static boolean isCanonicalConstructor(JCTree tree) {
-        return isConstructor(tree) && ((JCMethodDecl)tree).sym.isRecord();
+        // the record flag is only set to the canonical constructor
+        return isConstructor(tree) && (((JCMethodDecl)tree).sym.flags_field & RECORD) != 0;
+    }
+
+    public static boolean isCompactConstructor(JCTree tree) {
+        // the record flag is only set to the canonical constructor
+        return isCanonicalConstructor(tree) && (((JCMethodDecl)tree).sym.flags_field & COMPACT_RECORD_CONSTRUCTOR) != 0;
     }
 
     public static boolean isReceiverParam(JCTree tree) {
@@ -104,7 +110,7 @@ public class TreeInfo {
 
     /** Is there a constructor invocation in the given list of trees?
      */
-    public static Name getConstructorInvocationName(List<? extends JCTree> trees, Names names, boolean isRecord) {
+    public static Name getConstructorInvocationName(List<? extends JCTree> trees, Names names) {
         for (JCTree tree : trees) {
             if (tree.hasTag(EXEC)) {
                 JCExpressionStatement stat = (JCExpressionStatement)tree;
@@ -222,10 +228,7 @@ public class TreeInfo {
     }
 
     public static List<Type> recordFieldTypes(JCClassDecl tree) {
-        return tree.defs.stream()
-                .filter(t -> t.hasTag(VARDEF))
-                .map(t -> (JCVariableDecl)t)
-                .filter(vd -> (vd.getModifiers().flags & (Flags.RECORD)) == RECORD)
+        return recordFields(tree).stream()
                 .map(vd -> vd.type)
                 .collect(List.collector());
     }
@@ -945,8 +948,8 @@ public class TreeInfo {
                 return ((JCClassDecl) tree).mods;
             case MODULEDEF:
                 return ((JCModuleDecl) tree).mods;
-            default:
-                return null;
+        default:
+            return null;
         }
     }
 

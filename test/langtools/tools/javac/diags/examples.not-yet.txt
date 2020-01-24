@@ -11,6 +11,7 @@ compiler.err.invalid.repeatable.annotation              # should not happen
 compiler.err.invalid.repeatable.annotation.invalid.value # "can't" happen
 compiler.err.invalid.repeatable.annotation.multiple.values # can't happen
 compiler.err.io.exception                               # (javah.JavahTask?)
+compiler.err.is.preview                                 # difficult to produce reliably despite future changes to java.base
 compiler.err.limit.code                                 # Code
 compiler.err.limit.code.too.large.for.try.stmt          # Gen
 compiler.err.limit.dimensions                           # Gen
@@ -111,9 +112,11 @@ compiler.warn.future.attr                               # ClassReader
 compiler.warn.illegal.char.for.encoding
 compiler.warn.incubating.modules                        # requires adjusted classfile
 compiler.warn.invalid.archive.file
+compiler.warn.is.preview                                # difficult to produce reliably despite future changes to java.base
 compiler.warn.override.bridge
 compiler.warn.position.overflow                         # CRTable: caused by files with long lines >= 1024 chars
 compiler.warn.proc.type.already.exists                  # JavacFiler: just mentioned in TODO
+compiler.warn.restricted.type.not.allowed.preview       # not produced by the compiler right now
 compiler.warn.unchecked.assign                          # DEAD, replaced by compiler.misc.unchecked.assign
 compiler.warn.unchecked.cast.to.type                    # DEAD, replaced by compiler.misc.unchecked.cast.to.type
 compiler.warn.unexpected.archive.file                   # Paths: zip file with unknown extn
@@ -163,29 +166,6 @@ compiler.err.duplicate.module.on.path
 compiler.err.locn.module-info.not.allowed.on.patch.path
 compiler.misc.cant.resolve.modules
 compiler.misc.file.does.not.contain.module
-
-# records related messages
-compiler.err.duplicate.argument.to.super
-compiler.err.expected3
-compiler.misc.bad.super.fields
-compiler.misc.super.field.mismatch
-compiler.err.accessor.return.type.doesnt.match
-compiler.err.canonical.with.name.mismatch
-compiler.err.cant.extend.record
-compiler.err.constructor.with.same.erasure.as.canonical
-compiler.err.local.record
-compiler.err.method.must.be.public
-compiler.err.nested.records.must.be.static
-compiler.err.non.sealed.with.no.sealed.supertype
-compiler.err.permits.in.no.sealed.class
-compiler.err.record.can.only.declare.methods.as.members
-compiler.err.record.cant.be.abstract
-compiler.err.record.cant.declare.duplicate.fields
-compiler.err.record.cant.declare.field.modifiers
-compiler.err.record.fields.must.be.in.header
-compiler.err.record.not.allowed
-compiler.misc.bad.record.super
-compiler.misc.feature.sealed.types
 
 # these keys were in javac.properties and examples are hard to be produced for them
 # basically because in most cases the compilation ends with an exception

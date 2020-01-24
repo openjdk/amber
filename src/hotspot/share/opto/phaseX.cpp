@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,7 @@
 #include "opto/regalloc.hpp"
 #include "opto/rootnode.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 //=============================================================================
 #define NODE_HASH_MINIMUM_SIZE    255
@@ -260,12 +261,9 @@ bool NodeHash::hash_delete( const Node *n ) {
 
 //------------------------------round_up---------------------------------------
 // Round up to nearest power of 2
-uint NodeHash::round_up( uint x ) {
-  x += (x>>2);                  // Add 25% slop
-  if( x <16 ) return 16;        // Small stuff
-  uint i=16;
-  while( i < x ) i <<= 1;       // Double to fit
-  return i;                     // Return hash table size
+uint NodeHash::round_up(uint x) {
+  x += (x >> 2);                  // Add 25% slop
+  return MAX2(16U, round_up_power_of_2(x));
 }
 
 //------------------------------grow-------------------------------------------
@@ -810,14 +808,6 @@ Node* PhaseGVN::apply_ideal(Node* k, bool can_reshape) {
   return i;
 }
 
-Node* PhaseGVN::apply_identity(Node* k) {
-  Node* i = BarrierSet::barrier_set()->barrier_set_c2()->identity_node(this, k);
-  if (i == k) {
-    i = k->Identity(this);
-  }
-  return i;
-}
-
 //------------------------------transform--------------------------------------
 // Return a node which computes the same function as this node, but in a
 // faster or cheaper fashion.
@@ -872,7 +862,7 @@ Node *PhaseGVN::transform_no_reclaim( Node *n ) {
   }
 
   // Now check for Identities
-  Node *i = apply_identity(k);  // Look for a nearby replacement
+  Node *i = k->Identity(this);  // Look for a nearby replacement
   if( i != k ) {                // Found? Return replacement!
     NOT_PRODUCT( set_progress(); )
     return i;
@@ -891,7 +881,10 @@ Node *PhaseGVN::transform_no_reclaim( Node *n ) {
 }
 
 bool PhaseGVN::is_dominator_helper(Node *d, Node *n, bool linear_only) {
-  if (d->is_top() || n->is_top()) {
+  if (d->is_top() || (d->is_Proj() && d->in(0)->is_top())) {
+    return false;
+  }
+  if (n->is_top() || (n->is_Proj() && n->in(0)->is_top())) {
     return false;
   }
   assert(d->is_CFG() && n->is_CFG(), "must have CFG nodes");
@@ -899,7 +892,7 @@ bool PhaseGVN::is_dominator_helper(Node *d, Node *n, bool linear_only) {
   while (d != n) {
     n = IfNode::up_one_dom(n, linear_only);
     i++;
-    if (n == NULL || i >= 10) {
+    if (n == NULL || i >= 100) {
       return false;
     }
   }
@@ -1298,7 +1291,7 @@ Node *PhaseIterGVN::transform_old(Node* n) {
   }
 
   // Now check for Identities
-  i = apply_identity(k);      // Look for a nearby replacement
+  i = k->Identity(this);      // Look for a nearby replacement
   if (i != k) {                // Found? Return replacement!
     NOT_PRODUCT(set_progress();)
     add_users_to_worklist(k);
@@ -1648,14 +1641,14 @@ void PhaseIterGVN::add_users_to_worklist( Node *n ) {
     // of the mirror load depends on the type of 'n'. See LoadNode::Value().
     //   LoadBarrier?(LoadP(LoadP(AddP(foo:Klass, #java_mirror))))
     BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-    bool has_load_barriers = bs->has_load_barriers();
+    bool has_load_barrier_nodes = bs->has_load_barrier_nodes();
 
     if (use_op == Op_LoadP && use->bottom_type()->isa_rawptr()) {
       for (DUIterator_Fast i2max, i2 = use->fast_outs(i2max); i2 < i2max; i2++) {
         Node* u = use->fast_out(i2);
         const Type* ut = u->bottom_type();
         if (u->Opcode() == Op_LoadP && ut->isa_instptr()) {
-          if (has_load_barriers) {
+          if (has_load_barrier_nodes) {
             // Search for load barriers behind the load
             for (DUIterator_Fast i3max, i3 = u->fast_outs(i3max); i3 < i3max; i3++) {
               Node* b = u->fast_out(i3);
@@ -1668,8 +1661,6 @@ void PhaseIterGVN::add_users_to_worklist( Node *n ) {
         }
       }
     }
-
-    BarrierSet::barrier_set()->barrier_set_c2()->igvn_add_users_to_worklist(this, use);
   }
 }
 
@@ -1808,14 +1799,14 @@ void PhaseCCP::analyze() {
         // Loading the java mirror from a Klass requires two loads and the type
         // of the mirror load depends on the type of 'n'. See LoadNode::Value().
         BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-        bool has_load_barriers = bs->has_load_barriers();
+        bool has_load_barrier_nodes = bs->has_load_barrier_nodes();
 
         if (m_op == Op_LoadP && m->bottom_type()->isa_rawptr()) {
           for (DUIterator_Fast i2max, i2 = m->fast_outs(i2max); i2 < i2max; i2++) {
             Node* u = m->fast_out(i2);
             const Type* ut = u->bottom_type();
             if (u->Opcode() == Op_LoadP && ut->isa_instptr() && ut != type(u)) {
-              if (has_load_barriers) {
+              if (has_load_barrier_nodes) {
                 // Search for load barriers behind the load
                 for (DUIterator_Fast i3max, i3 = u->fast_outs(i3max); i3 < i3max; i3++) {
                   Node* b = u->fast_out(i3);
@@ -1828,8 +1819,6 @@ void PhaseCCP::analyze() {
             }
           }
         }
-
-        BarrierSet::barrier_set()->barrier_set_c2()->ccp_analyze(this, worklist, m);
       }
     }
   }
@@ -2135,7 +2124,7 @@ void Type_Array::grow( uint i ) {
     _types[0] = NULL;
   }
   uint old = _max;
-  while( i >= _max ) _max <<= 1;        // Double to fit
+  _max = next_power_of_2(i);
   _types = (const Type**)_a->Arealloc( _types, old*sizeof(Type*),_max*sizeof(Type*));
   memset( &_types[old], 0, (_max-old)*sizeof(Type*) );
 }

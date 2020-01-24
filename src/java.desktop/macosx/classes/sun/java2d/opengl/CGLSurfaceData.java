@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package sun.java2d.opengl;
 
-import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
@@ -33,9 +32,7 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.ColorModel;
 
-import sun.java2d.SunGraphics2D;
 import sun.java2d.SurfaceData;
-
 import sun.lwawt.macosx.CPlatformView;
 
 public abstract class CGLSurfaceData extends OGLSurfaceData {
@@ -48,8 +45,9 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
 
     native void validate(int xoff, int yoff, int width, int height, boolean isOpaque);
 
-    private native void initOps(long pConfigInfo, long pPeerData, long layerPtr,
-                                int xoff, int yoff, boolean isOpaque);
+    private native void initOps(OGLGraphicsConfig gc, long pConfigInfo,
+                                long pPeerData, long layerPtr, int xoff,
+                                int yoff, boolean isOpaque);
 
     protected CGLSurfaceData(CGLGraphicsConfig gc, ColorModel cm, int type,
                              int width, int height) {
@@ -74,7 +72,7 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
             pPeerData = pView.getAWTView();
             isOpaque = pView.isOpaque();
         }
-        initOps(pConfigInfo, pPeerData, 0, 0, 0, isOpaque);
+        initOps(gc, pConfigInfo, pPeerData, 0, 0, 0, isOpaque);
     }
 
     protected CGLSurfaceData(CGLLayer layer, CGLGraphicsConfig gc,
@@ -90,7 +88,7 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
             layerPtr = layer.getPointer();
             isOpaque = layer.isOpaque();
         }
-        initOps(pConfigInfo, 0, layerPtr, 0, 0, isOpaque);
+        initOps(gc, pConfigInfo, 0, layerPtr, 0, 0, isOpaque);
     }
 
     @Override //SurfaceData
@@ -115,23 +113,6 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
         CGLGraphicsConfig gc = getGC(layer);
         Rectangle r = layer.getBounds();
         return new CGLLayerSurfaceData(layer, gc, r.width, r.height);
-    }
-
-    /**
-     * Creates a SurfaceData object representing the back buffer of a
-     * double-buffered on-screen Window.
-     */
-    public static CGLOffScreenSurfaceData createData(CPlatformView pView,
-            Image image, int type) {
-        CGLGraphicsConfig gc = getGC(pView);
-        Rectangle r = pView.getBounds();
-        if (type == FLIP_BACKBUFFER) {
-            return new CGLOffScreenSurfaceData(pView, gc, r.width, r.height,
-                    image, gc.getColorModel(), FLIP_BACKBUFFER);
-        } else {
-            return new CGLVSyncOffScreenSurfaceData(pView, gc, r.width,
-                    r.height, image, gc.getColorModel(), type);
-        }
     }
 
     /**
@@ -275,38 +256,6 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
         }
     }
 
-    /**
-     * A surface which implements a v-synced flip back-buffer with COPIED
-     * FlipContents.
-     *
-     * This surface serves as a back-buffer to the outside world, while it is
-     * actually an offscreen surface. When the BufferStrategy this surface
-     * belongs to is showed, it is first copied to the real private
-     * FLIP_BACKBUFFER, which is then flipped.
-     */
-    public static class CGLVSyncOffScreenSurfaceData extends
-            CGLOffScreenSurfaceData {
-        private CGLOffScreenSurfaceData flipSurface;
-
-        public CGLVSyncOffScreenSurfaceData(CPlatformView pView,
-                CGLGraphicsConfig gc, int width, int height, Image image,
-                ColorModel cm, int type) {
-            super(pView, gc, width, height, image, cm, type);
-            flipSurface = CGLSurfaceData.createData(pView, image,
-                    FLIP_BACKBUFFER);
-        }
-
-        public SurfaceData getFlipSurface() {
-            return flipSurface;
-        }
-
-        @Override
-        public void flush() {
-            flipSurface.flush();
-            super.flush();
-        }
-    }
-
     public static class CGLOffScreenSurfaceData extends CGLSurfaceData {
         private Image offscreenImage;
 
@@ -325,12 +274,7 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
 
         @Override
         public Rectangle getBounds() {
-            if (type == FLIP_BACKBUFFER) {
-                Rectangle r = pView.getBounds();
-                return new Rectangle(0, 0, r.width, r.height);
-            } else {
-                return new Rectangle(width, height);
-            }
+            return new Rectangle(width, height);
         }
 
         /**
@@ -339,45 +283,6 @@ public abstract class CGLSurfaceData extends OGLSurfaceData {
         @Override
         public Object getDestination() {
             return offscreenImage;
-        }
-    }
-
-    // Mac OS X specific APIs for JOGL/Java2D bridge...
-
-    // given a surface create and attach GL context, then return it
-    private static native long createCGLContextOnSurface(CGLSurfaceData sd,
-            long sharedContext);
-
-    public static long createOGLContextOnSurface(Graphics g, long sharedContext) {
-        SurfaceData sd = ((SunGraphics2D) g).surfaceData;
-        if ((sd instanceof CGLSurfaceData) == true) {
-            CGLSurfaceData cglsd = (CGLSurfaceData) sd;
-            return createCGLContextOnSurface(cglsd, sharedContext);
-        } else {
-            return 0L;
-        }
-    }
-
-    // returns whether or not the makeCurrent operation succeeded
-    static native boolean makeCGLContextCurrentOnSurface(CGLSurfaceData sd,
-            long ctx);
-
-    public static boolean makeOGLContextCurrentOnSurface(Graphics g, long ctx) {
-        SurfaceData sd = ((SunGraphics2D) g).surfaceData;
-        if ((ctx != 0L) && ((sd instanceof CGLSurfaceData) == true)) {
-            CGLSurfaceData cglsd = (CGLSurfaceData) sd;
-            return makeCGLContextCurrentOnSurface(cglsd, ctx);
-        } else {
-            return false;
-        }
-    }
-
-    // additional cleanup
-    private static native void destroyCGLContext(long ctx);
-
-    public static void destroyOGLContext(long ctx) {
-        if (ctx != 0L) {
-            destroyCGLContext(ctx);
         }
     }
 }

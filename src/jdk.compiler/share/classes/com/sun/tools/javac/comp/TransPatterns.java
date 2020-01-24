@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -147,6 +147,9 @@ public class TransPatterns extends TreeTranslator {
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
         if (tree.pattern.hasTag(Tag.BINDINGPATTERN)) {
+            //E instanceof T N
+            //=>
+            //(let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp))
             JCBindingPattern patt = (JCBindingPattern)tree.pattern;
             VarSymbol pattSym = patt.symbol;
             Type tempType = tree.expr.type.hasTag(BOT) ?
@@ -158,11 +161,8 @@ public class TransPatterns extends TreeTranslator {
                     patt.symbol.owner);
             JCExpression translatedExpr = translate(tree.expr);
             Type castTargetType = types.boxedTypeOrType(pattSym.erasure(types));
-            if (patt.vartype == null || tree.expr.type.isPrimitive()) {
-                result = make.Literal(BOOLEAN,1).setType(syms.booleanType);
-            } else {
-                result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
-            }
+
+            result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
 
             VarSymbol bindingVar = bindingContext.getBindingFor(patt.symbol);
             if (bindingVar != null) {
@@ -288,6 +288,20 @@ public class TransPatterns extends TreeTranslator {
         ListBuffer<JCStatement> statements = new ListBuffer<>();
         bindingContext = new BasicBindingContext(List.nil()) {
             boolean tryPrepend(BindingSymbol binding, JCVariableDecl var) {
+                //{
+                //    if (E instanceof T N) {
+                //        return ;
+                //    }
+                //    //use of N:
+                //}
+                //=>
+                //{
+                //    T N;
+                //    if ((let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp))) {
+                //        return ;
+                //    }
+                //    //use of N:
+                //}
                 hoistedVarMap.put(binding, var.sym);
                 statements.append(var);
                 return true;
@@ -314,9 +328,6 @@ public class TransPatterns extends TreeTranslator {
             this.make = null;
         }
 
-        if (debugTransPatterns) {
-            System.err.println(cdef);
-        }
         return cdef;
     }
 
@@ -345,47 +356,8 @@ public class TransPatterns extends TreeTranslator {
 
     JCExpression convert(JCExpression expr, Type target) {
         JCExpression result = make.at(expr.pos()).TypeCast(make.Type(target), expr);
-        result.type = (expr.type.constValue() != null) ?
-                constFold.coerce(expr.type, target) : target;
+        result.type = target;
         return result;
-    }
-
-    JCExpression makeDefaultValue(int pos, Type type) {
-        if (type.isReference()) {
-            return make.at(pos).Literal(BOT, null).setType(syms.botType);
-        } else {
-            final Object value;
-            switch (type.getTag()) {
-                case BYTE:
-                    value = (byte)0;
-                    break;
-                case SHORT:
-                    value = (short)0;
-                    break;
-                case INT:
-                    value = 0;
-                    break;
-                case FLOAT:
-                    value = 0f;
-                    break;
-                case LONG:
-                    value = 0L;
-                    break;
-                case DOUBLE:
-                    value = 0D;
-                    break;
-                case CHAR:
-                    value = (char)0;
-                    break;
-                case BOOLEAN:
-                    value = false;
-                    break;
-                default:
-                    Assert.error();
-                    return null;
-            }
-            return make.at(pos).Literal(value);
-        }
     }
 
     private List<BindingSymbol> getMatchBindings(JCExpression cond) {
@@ -432,6 +404,16 @@ public class TransPatterns extends TreeTranslator {
         @Override
         JCStatement decorateStatement(JCStatement stat) {
             if (hoistedVarMap.isEmpty()) return stat;
+            //if (E instanceof T N) {
+            //     //use N
+            //}
+            //=>
+            //{
+            //    T N;
+            //    if ((let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp))) {
+            //        //use N
+            //    }
+            //}
             ListBuffer<JCStatement> stats = new ListBuffer<>();
             for (Entry<BindingSymbol, VarSymbol> e : hoistedVarMap.entrySet()) {
                 JCVariableDecl decl = makeHoistedVarDecl(stat.pos, e.getValue());
@@ -449,6 +431,9 @@ public class TransPatterns extends TreeTranslator {
 
         @Override
         JCExpression decorateExpression(JCExpression expr) {
+            //E instanceof T N && /*use of N*/
+            //=>
+            //(let T N; (let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp)) && /*use of N*/)
             for (VarSymbol vsym : hoistedVarMap.values()) {
                 expr = make.at(expr.pos).LetExpr(makeHoistedVarDecl(expr.pos, vsym), expr).setType(expr.type);
             }
@@ -466,7 +451,7 @@ public class TransPatterns extends TreeTranslator {
         }
 
         private JCVariableDecl makeHoistedVarDecl(int pos, VarSymbol varSymbol) {
-            return make.at(pos).VarDef(varSymbol, null/*makeDefaultValue(pos, varSymbol.erasure(types))*/);
+            return make.at(pos).VarDef(varSymbol, null);
         }
     }
 }

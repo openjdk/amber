@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -155,8 +155,16 @@ public class IntrinsicGraphBuilder implements GraphBuilderContext, Receiver {
     @Override
     public void push(JavaKind kind, ValueNode value) {
         assert kind != JavaKind.Void;
-        assert returnValue == null;
+        GraalError.guarantee(returnValue == null, "can only push one value");
         returnValue = value;
+    }
+
+    @Override
+    public ValueNode pop(JavaKind slotKind) {
+        GraalError.guarantee(returnValue != null, "no value pushed");
+        ValueNode result = returnValue;
+        returnValue = null;
+        return result;
     }
 
     @Override

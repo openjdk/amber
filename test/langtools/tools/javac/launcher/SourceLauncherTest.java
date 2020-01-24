@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -213,6 +213,12 @@ public class SourceLauncherTest extends TestRunner {
 
     @Test
     public void testPermissions(Path base) throws IOException {
+        // does not work on exploded image, because the default policy file assumes jrt:; skip the test
+        if (Files.exists(Path.of(System.getProperty("java.home")).resolve("modules"))) {
+            out.println("JDK using exploded modules; test skipped");
+            return;
+        }
+
         Path policyFile = base.resolve("test.policy");
         Path sourceFile = base.resolve("TestPermissions.java");
 
@@ -292,7 +298,7 @@ public class SourceLauncherTest extends TestRunner {
             file + ":1: error: illegal character: '#'\n" +
             "#!/usr/bin/java --source " + thisVersion + "\n" +
             "^\n" +
-            file + ":1: error: class, interface, enum, or record expected\n" +
+            file + ":1: error: class, interface, or enum expected\n" +
             "#!/usr/bin/java --source " + thisVersion + "\n" +
             "  ^\n" +
             "2 errors\n",
@@ -498,7 +504,7 @@ public class SourceLauncherTest extends TestRunner {
             file + ":1: error: illegal character: '#'\n" +
             "#/usr/bin/java --source " + thisVersion + "\n" +
             "^\n" +
-            file + ":1: error: class, interface, enum, or record expected\n" +
+            file + ":1: error: class, interface, or enum expected\n" +
             "#/usr/bin/java --source " + thisVersion + "\n" +
             "  ^\n" +
             "2 errors\n",

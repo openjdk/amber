@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -179,7 +179,7 @@ class ReplParser extends JavacParser {
             default:
                 JCModifiers mods = modifiersOpt(pmods);
                 if (token.kind == CLASS
-                        || token.kind == IDENTIFIER && token.name() == names.record
+                        || isRecordStart()
                         || token.kind == INTERFACE
                         || token.kind == ENUM) {
                     return List.<JCTree>of(classOrRecordOrInterfaceOrEnumDeclaration(mods, dc));

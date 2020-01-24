@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -77,7 +77,6 @@ import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 
 import static com.sun.tools.javac.code.Kinds.Kind.*;
-import com.sun.tools.javac.tree.JCTree;
 
 /**
  * Contains operations specific to processing type annotations.
@@ -771,6 +770,7 @@ public class TypeAnnotations {
                 case CLASS:
                 case ENUM:
                 case INTERFACE:
+                case RECORD:
                     if (((JCClassDecl)frame).extending == tree) {
                         return TypeAnnotationPosition
                             .classExtends(location.toList(), currentLambda,
@@ -955,6 +955,7 @@ public class TypeAnnotations {
                         appendTypeAnnotationsToOwner(v, v.getRawTypeAttributes());
                     }
                     switch (v.getKind()) {
+                        case BINDING_VARIABLE:
                         case LOCAL_VARIABLE:
                             return TypeAnnotationPosition
                                 .localVariable(location.toList(), currentLambda,

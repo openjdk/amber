@@ -27,7 +27,7 @@ package com.sun.tools.javac.tree;
 
 import java.util.Iterator;
 
-import com.sun.source.tree.CaseTree.CaseKind;
+import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.UnresolvedClass;
@@ -222,11 +222,7 @@ public class TreeMaker implements JCTree.Factory {
     }
 
     public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init) {
-        return VarDef(mods, name, vartype, init, null);
-    }
-
-    public JCVariableDecl VarDef(JCModifiers mods, Name name, JCExpression vartype, JCExpression init, List<Pair<Accessors.Kind, Name>> accessors) {
-        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null, accessors);
+        JCVariableDecl tree = new JCVariableDecl(mods, name, vartype, init, null);
         tree.pos = pos;
         return tree;
     }
@@ -289,7 +285,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCase Case(@SuppressWarnings("removal") CaseKind caseKind, List<JCExpression> pats,
+    public JCCase Case(CaseTree.CaseKind caseKind, List<JCExpression> pats,
                        List<JCStatement> stats, JCTree body) {
         JCCase tree = new JCCase(caseKind, pats, stats, body);
         tree.pos = pos;
@@ -861,7 +857,7 @@ public class TreeMaker implements JCTree.Factory {
                 v.name,
                 Type(v.type),
                 init,
-                v, null).setPos(pos).setType(v.type);
+                v).setPos(pos).setType(v.type);
     }
 
     /** Create annotation trees from annotations.

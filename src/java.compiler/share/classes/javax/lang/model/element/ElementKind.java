@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -110,16 +110,51 @@ public enum ElementKind {
      MODULE,
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>records</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * A record type.
-     * @since amber
+     * @since 14
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
     RECORD,
 
     /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>records</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * A record component of a {@code record}.
      * @since 14
      */
-    RECORD_COMPONENT;
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    RECORD_COMPONENT,
+
+    /**
+     * {@preview Associated with pattern matching for {@code
+     * instanceof}, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>pattern
+     *           matching for {@code instanceof}</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * A binding variable in a pattern .
+     * @since 14
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.PATTERN_MATCHING_IN_INSTANCEOF,
+                                 essentialAPI=false)
+    BINDING_VARIABLE;
 
     /**
      * Returns {@code true} if this is a kind of class:
@@ -127,6 +162,7 @@ public enum ElementKind {
      *
      * @return {@code true} if this is a kind of class
      */
+    @SuppressWarnings("preview")
     public boolean isClass() {
         return this == CLASS || this == ENUM || this == RECORD;
     }

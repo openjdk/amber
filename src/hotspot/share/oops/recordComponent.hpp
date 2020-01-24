@@ -25,10 +25,11 @@
 #ifndef SHARE_OOPS_RECORDCOMPONENT_HPP
 #define SHARE_OOPS_RECORDCOMPONENT_HPP
 
-#include "memory/heapInspection.hpp"
 #include "oops/annotations.hpp"
 #include "oops/metadata.hpp"
 #include "utilities/globalDefinitions.hpp"
+
+class KlassSizeStats;
 
 // This class stores information extracted from the Record class attribute.
 class RecordComponent: public MetaspaceObj {
@@ -63,12 +64,19 @@ class RecordComponent: public MetaspaceObj {
     void deallocate_contents(ClassLoaderData* loader_data);
 
     u2 name_index() const { return _name_index; }
+    void set_name_index(u2 name_index) { _name_index = name_index; }
 
     u2 descriptor_index() const { return _descriptor_index; }
+    void set_descriptor_index(u2 descriptor_index) {
+      _descriptor_index = descriptor_index;
+    }
 
     u2 attributes_count() const { return _attributes_count; }
 
     u2 generic_signature_index() const { return _generic_signature_index; }
+    void set_generic_signature_index(u2 generic_signature_index) {
+      _generic_signature_index = generic_signature_index;
+    }
 
     AnnotationArray* annotations() const { return _annotations; }
     AnnotationArray* type_annotations() const { return _type_annotations; }
@@ -84,17 +92,7 @@ class RecordComponent: public MetaspaceObj {
     DEBUG_ONLY(bool on_stack() { return false; })  // for template
 
 #if INCLUDE_SERVICES
-    void collect_statistics(KlassSizeStats *sz) const {
-      // TBD is this right?
-      if (_annotations != NULL) {
-        sz->_annotations_bytes += sz->count(_annotations);
-        sz->_ro_bytes += sz->count(_annotations);
-      }
-      if (_type_annotations != NULL) {
-        sz->_annotations_bytes += sz->count(_type_annotations);
-        sz->_ro_bytes += sz->count(_type_annotations);
-      }
-    }
+    void collect_statistics(KlassSizeStats *sz) const;
 #endif
 
     bool is_klass() const { return false; }

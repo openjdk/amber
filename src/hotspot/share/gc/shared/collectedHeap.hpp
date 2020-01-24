@@ -88,7 +88,6 @@ class GCHeapLog : public EventLogBase<GCMessage> {
 // CollectedHeap
 //   GenCollectedHeap
 //     SerialHeap
-//     CMSHeap
 //   G1CollectedHeap
 //   ParallelScavengeHeap
 //   ShenandoahHeap
@@ -172,7 +171,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
     None,
     Serial,
     Parallel,
-    CMS,
     G1,
     Epsilon,
     Z,
@@ -232,11 +230,6 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   virtual bool is_in(const void* p) const = 0;
 
   DEBUG_ONLY(bool is_in_or_null(const void* p) const { return p == NULL || is_in(p); })
-
-  // This function verifies that "addr" is a valid oop location, w.r.t. heap
-  // datastructures such as bitmaps and virtual memory address. It does *not*
-  // check if the location is within committed heap memory.
-  virtual void check_oop_location(void* addr) const;
 
   virtual uint32_t hash_oop(oop obj) const;
 
@@ -394,9 +387,8 @@ class CollectedHeap : public CHeapObj<mtInternal> {
   // Iterate over all objects, calling "cl.do_object" on each.
   virtual void object_iterate(ObjectClosure* cl) = 0;
 
-  // Similar to object_iterate() except iterates only
-  // over live objects.
-  virtual void safe_object_iterate(ObjectClosure* cl) = 0;
+  // Keep alive an object that was loaded with AS_NO_KEEPALIVE.
+  virtual void keep_alive(oop obj) {}
 
   // Returns the longest time (in ms) that has elapsed since the last
   // time that any part of the heap was examined by a garbage collection.

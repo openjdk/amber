@@ -28,15 +28,12 @@ import java.io.IOException;
 
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static java.util.stream.Collectors.toList;
 
 /**
  * Base class for negative and positive compilation tests.
- *
- * @author Brian Goetz
  */
 @Test
 public class CompilationTestCase extends JavacTemplateTestBase {
@@ -65,10 +62,10 @@ public class CompilationTestCase extends JavacTemplateTestBase {
         defaultFileName = name;
     }
 
-    private String expand(String... constructs) {
+    protected String expandMarkers(String... constructs) {
         String s = programShell;
         for (String c : constructs)
-            s = s.replace("#", c);
+            s = s.replaceFirst("#", c);
         return s;
     }
 
@@ -86,14 +83,14 @@ public class CompilationTestCase extends JavacTemplateTestBase {
     }
 
     protected void assertOK(String... constructs) {
-        assertCompile(expand(constructs), this::assertCompileSucceeded);
+        assertCompile(expandMarkers(constructs), this::assertCompileSucceeded);
     }
 
     protected void assertOKWithWarning(String warning, String... constructs) {
-        assertCompile(expand(constructs), () -> assertCompileSucceededWithWarning(warning));
+        assertCompile(expandMarkers(constructs), () -> assertCompileSucceededWithWarning(warning));
     }
 
     protected void assertFail(String expectedDiag, String... constructs) {
-        assertCompile(expand(constructs), () -> assertCompileFailed(expectedDiag));
+        assertCompile(expandMarkers(constructs), () -> assertCompileFailed(expectedDiag));
     }
 }

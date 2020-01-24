@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -94,11 +94,14 @@ public class ScopeTest extends JavacTemplateTestBase {
 
     private void program(String block) {
         String s = "class C { void m(Object o) " + block + "}";
-        addSourceFile("C.java", new StringTemplate(s));
+        addSourceFile("C.java", s);
     }
 
     private void assertOK(String block) {
+        String sourceVersion = Integer.toString(Runtime.version().feature());
+
         reset();
+        addCompileOptions("--enable-preview", "-source", sourceVersion);
         program(block);
         try {
             compile();

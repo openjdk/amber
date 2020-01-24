@@ -34,20 +34,19 @@ package java.lang;
  * @see     java.lang.Integer#parseInt(String)
  * @since   1.0
  */
-public
-class NumberFormatException extends IllegalArgumentException {
+public class NumberFormatException extends IllegalArgumentException {
     @java.io.Serial
     static final long serialVersionUID = -2848938806368998894L;
 
     /**
-     * Constructs a <code>NumberFormatException</code> with no detail message.
+     * Constructs a {@code NumberFormatException} with no detail message.
      */
     public NumberFormatException () {
         super();
     }
 
     /**
-     * Constructs a <code>NumberFormatException</code> with the
+     * Constructs a {@code NumberFormatException} with the
      * specified detail message.
      *
      * @param   s   the detail message.

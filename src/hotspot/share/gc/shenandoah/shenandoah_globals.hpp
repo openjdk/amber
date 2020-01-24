@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2016, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -86,7 +86,7 @@
           "References get processed at every Nth GC cycle. Set to zero "    \
           "to disable reference processing.")                               \
                                                                             \
-  experimental(uintx, ShenandoahUnloadClassesFrequency, 5,                  \
+  experimental(uintx, ShenandoahUnloadClassesFrequency, 1,                  \
           "How often should classes get unloaded. "                         \
           "Class unloading is performed at every Nth GC cycle. "            \
           "Set to zero to disable class unloading during concurrent GC.")   \
@@ -299,11 +299,11 @@
           "Should internally-caused GCs invoke concurrent cycles, or go to" \
           "stop-the-world (degenerated/full)?")                             \
                                                                             \
-  experimental(bool, ShenandoahHumongousMoves, true,                        \
+  diagnostic(bool, ShenandoahHumongousMoves, true,                          \
           "Allow moving humongous regions. This makes GC more resistant "   \
           "to external fragmentation that may otherwise fail other "        \
           "humongous allocations, at the expense of higher GC copying "     \
-          "costs.")                                                         \
+          "costs. Currently affects stop-the-world (full) cycle only.")     \
                                                                             \
   diagnostic(bool, ShenandoahOOMDuringEvacALot, false,                      \
           "Simulate OOM during evacuation frequently.")                     \
@@ -313,9 +313,6 @@
                                                                             \
   diagnostic(bool, ShenandoahTerminationTrace, false,                       \
           "Tracing task termination timings")                               \
-                                                                            \
-  develop(bool, ShenandoahVerifyObjectEquals, false,                        \
-          "Verify that == and != are not used on oops. Only in fastdebug")  \
                                                                             \
   diagnostic(bool, ShenandoahAlwaysPreTouch, false,                         \
           "Pre-touch heap memory, overrides global AlwaysPreTouch")         \
@@ -391,5 +388,10 @@
                                                                             \
   experimental(bool, ShenandoahLoopOptsAfterExpansion, true,                \
           "Attempt more loop opts after barrier expansion")                 \
+                                                                            \
+  diagnostic(bool, ShenandoahSelfFixing, true,                              \
+          "Fix references with load reference barrier. Disabling this "     \
+          "might degrade performance.")                                     \
+
 
 #endif // SHARE_GC_SHENANDOAH_SHENANDOAH_GLOBALS_HPP

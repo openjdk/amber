@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,7 +21,7 @@
  * questions.
  */
 
-/**
+/*
  * CheckRecordMembers
  *
  * @test
@@ -32,7 +32,7 @@
  *          jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.util
  * @build combo.ComboTestHelper
- * @run main CheckRecordMembers
+ * @run main/othervm --enable-preview CheckRecordMembers
  */
 
 import java.lang.reflect.Constructor;
@@ -102,7 +102,7 @@ public class CheckRecordMembers extends combo.ComboInstance<CheckRecordMembers> 
     @Override
     public void doWork() throws Throwable {
         newCompilationTask()
-                //.withOptions(new String[]{"--enable-preview", "-source", Integer.toString(Runtime.version().feature())})
+                .withOptions(new String[]{"--enable-preview", "-source", Integer.toString(Runtime.version().feature())})
                 .withSourceFromTemplate("Data", sourceTemplate)
                 .generate(this::check);
     }

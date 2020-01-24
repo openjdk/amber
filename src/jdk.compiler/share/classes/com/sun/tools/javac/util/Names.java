@@ -25,8 +25,10 @@
 
 package com.sun.tools.javac.util;
 
+import java.util.Set;
+
 /**
- * Access to the compiler's name table.  STandard names are defined,
+ * Access to the compiler's name table.  Standard names are defined,
  * as well as methods to create new names.
  *
  *  <p><b>This is NOT part of any supported API.
@@ -70,8 +72,6 @@ public class Names {
     public final Name uses;
     public final Name open;
     public final Name with;
-    public final Name get;
-    public final Name set;
     public final Name yield;
 
     // field and method names
@@ -85,10 +85,10 @@ public class Names {
     public final Name deserializeLambda;
     public final Name desiredAssertionStatus;
     public final Name equals;
-    public final Name oldEquals;
     public final Name error;
     public final Name finalize;
     public final Name forRemoval;
+    public final Name essentialAPI;
     public final Name getClass;
     public final Name hasNext;
     public final Name hashCode;
@@ -200,13 +200,11 @@ public class Names {
     public final Name makeConcatWithConstants;
 
     // record related
-    // members of java.lang.invoke.ObjectMethodBuilders
+    // members of java.lang.runtime.ObjectMethods
     public final Name bootstrap;
 
     public final Name record;
-    public final Name where;
     public final Name non;
-    public final Name ofLazyProjection;
 
     // serialization members, used by records too
     public final Name serialPersistentFields;
@@ -247,8 +245,6 @@ public class Names {
         uses = fromString("uses");
         open = fromString("open");
         with = fromString("with");
-        get = fromString("get");
-        set = fromString("set");
         yield = fromString("yield");
 
         // field and method names
@@ -262,10 +258,10 @@ public class Names {
         deserializeLambda = fromString("$deserializeLambda$");
         desiredAssertionStatus = fromString("desiredAssertionStatus");
         equals = fromString("equals");
-        oldEquals = fromString("oldEquals");
         error = fromString("<error>");
         finalize = fromString("finalize");
         forRemoval = fromString("forRemoval");
+        essentialAPI = fromString("essentialAPI");
         getClass = fromString("getClass");
         hasNext = fromString("hasNext");
         hashCode = fromString("hashCode");
@@ -378,9 +374,7 @@ public class Names {
 
         bootstrap = fromString("bootstrap");
         record = fromString("record");
-        where = fromString("where");
         non = fromString("non");
-        ofLazyProjection = fromString("ofLazyProjection");
 
         serialPersistentFields = fromString("serialPersistentFields");
         writeObject = fromString("writeObject");

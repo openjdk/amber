@@ -44,8 +44,9 @@ struct JVMFlag {
     ERGONOMIC        = 5,
     ATTACH_ON_DEMAND = 6,
     INTERNAL         = 7,
+    JIMAGE_RESOURCE  = 8,
 
-    LAST_VALUE_ORIGIN = INTERNAL,
+    LAST_VALUE_ORIGIN = JIMAGE_RESOURCE,
     VALUE_ORIGIN_BITS = 4,
     VALUE_ORIGIN_MASK = right_n_bits(VALUE_ORIGIN_BITS),
 
@@ -206,12 +207,9 @@ public:
   bool is_writeable() const;
   bool is_external() const;
 
-  bool is_unlocker_ext() const;
-  bool is_unlocked_ext() const;
-  bool is_writeable_ext() const;
-  bool is_external_ext() const;
-
   void clear_diagnostic();
+  void clear_experimental();
+  void set_product();
 
   JVMFlag::MsgType get_locked_message(char*, int) const;
   JVMFlag::MsgType get_locked_message_ext(char*, int) const;

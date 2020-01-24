@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,7 +57,6 @@ import static com.sun.tools.javac.code.Kinds.Kind.VAR;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
-import com.sun.tools.javac.tree.JCTree;
 import static com.sun.tools.javac.tree.JCTree.Tag.ANNOTATION;
 import static com.sun.tools.javac.tree.JCTree.Tag.ASSIGN;
 import static com.sun.tools.javac.tree.JCTree.Tag.IDENT;
@@ -365,12 +364,17 @@ public class Annotate {
                     && (toAnnotate.kind == MDL || toAnnotate.owner.kind != MTH)
                     && types.isSameType(c.type, syms.deprecatedType)) {
                 toAnnotate.flags_field |= (Flags.DEPRECATED | Flags.DEPRECATED_ANNOTATION);
-                Attribute fr = c.member(names.forRemoval);
-                if (fr instanceof Attribute.Constant) {
-                    Attribute.Constant v = (Attribute.Constant) fr;
-                    if (v.type == syms.booleanType && ((Integer) v.value) != 0) {
-                        toAnnotate.flags_field |= Flags.DEPRECATED_REMOVAL;
-                    }
+                if (isAttributeTrue(c.member(names.forRemoval))) {
+                    toAnnotate.flags_field |= Flags.DEPRECATED_REMOVAL;
+                }
+            }
+
+            // Note: @Deprecated has no effect on local variables and parameters
+            if (!c.type.isErroneous()
+                    && types.isSameType(c.type, syms.previewFeatureType)) {
+                toAnnotate.flags_field |= Flags.PREVIEW_API;
+                if (isAttributeTrue(c.member(names.essentialAPI))) {
+                    toAnnotate.flags_field |= Flags.PREVIEW_ESSENTIAL_API;
                 }
             }
         }
@@ -398,6 +402,16 @@ public class Annotate {
             toAnnotate.setDeclarationAttributes(attrs);
         }
     }
+    //where:
+        private boolean isAttributeTrue(Attribute attr) {
+            if (attr instanceof Attribute.Constant) {
+                Attribute.Constant v = (Attribute.Constant) attr;
+                if (v.type == syms.booleanType && ((Integer) v.value) != 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
     /**
      * Attribute and store a semantic representation of the annotation tree {@code tree} into the
@@ -410,7 +424,7 @@ public class Annotate {
     public Attribute.Compound attributeAnnotation(JCAnnotation tree, Type expectedAnnotationType,
                                                   Env<AttrContext> env)
     {
-        // The attribute might have been entered if it is Target or Repetable
+        // The attribute might have been entered if it is Target or Repeatable
         // Because TreeCopier does not copy type, redo this if type is null
         if (tree.attribute != null && tree.type != null)
             return tree.attribute;
@@ -431,7 +445,7 @@ public class Annotate {
     public Attribute.TypeCompound attributeTypeAnnotation(JCAnnotation a, Type expectedAnnotationType,
                                                           Env<AttrContext> env)
     {
-        // The attribute might have been entered if it is Target or Repetable
+        // The attribute might have been entered if it is Target or Repeatable
         // Because TreeCopier does not copy type, redo this if type is null
         if (a.attribute == null || a.type == null || !(a.attribute instanceof Attribute.TypeCompound)) {
             // Create a new TypeCompound
@@ -526,7 +540,7 @@ public class Annotate {
     private Attribute attributeAnnotationValue(Type expectedElementType, JCExpression tree,
             Env<AttrContext> env)
     {
-        //first, try completing the symbol for the annotation value - if acompletion
+        //first, try completing the symbol for the annotation value - if a completion
         //error is thrown, we should recover gracefully, and display an
         //ordinary resolution diagnostic.
         try {
@@ -821,7 +835,11 @@ public class Annotate {
                 Attribute.Compound c = new Attribute.Compound(targetContainerType, List.of(p));
                 JCAnnotation annoTree = m.Annotation(c);
 
-                if (!chk.annotationApplicable(annoTree, on)) {
+                boolean isRecordMember = (on.flags_field & Flags.RECORD) != 0 || on.enclClass() != null && on.enclClass().isRecord();
+                /* if it is a record member we will not issue the error now and wait until annotations on records are
+                 * checked at Check::validateAnnotation, which will issue it
+                 */
+                if (!chk.annotationApplicable(annoTree, on) && (!isRecordMember || isRecordMember && (on.flags_field & Flags.GENERATED_MEMBER) == 0)) {
                     log.error(annoTree.pos(),
                               Errors.InvalidRepeatableAnnotationNotApplicable(targetContainerType, on));
                 }
@@ -1109,7 +1127,7 @@ public class Annotate {
 
         @Override
         public void visitBindingPattern(JCTree.JCBindingPattern tree) {
-            //type binding pattern's type will be annotated separatelly, avoid
+            //type binding pattern's type will be annotated separately, avoid
             //adding its annotations into the owning method here (would clash
             //with repeatable annotations).
         }
@@ -1146,7 +1164,7 @@ public class Annotate {
     };
 
     /* Last stage completer to enter just enough annotations to have a prototype annotation type.
-     * This currently means entering @Target and @Repetable.
+     * This currently means entering @Target and @Repeatable.
      */
     public AnnotationTypeCompleter annotationTypeSourceCompleter() {
         return theSourceCompleter;
@@ -1369,5 +1387,32 @@ public class Annotate {
 
     public void newRound() {
         blockCount = 1;
+    }
+
+    public Queues setQueues(Queues nue) {
+        Queues stored = new Queues(q, validateQ, typesQ, afterTypesQ);
+        this.q = nue.q;
+        this.typesQ = nue.typesQ;
+        this.afterTypesQ = nue.afterTypesQ;
+        this.validateQ = nue.validateQ;
+        return stored;
+    }
+
+    static class Queues {
+        private final ListBuffer<Runnable> q;
+        private final ListBuffer<Runnable> validateQ;
+        private final ListBuffer<Runnable> typesQ;
+        private final ListBuffer<Runnable> afterTypesQ;
+
+        public Queues() {
+            this(new ListBuffer<Runnable>(), new ListBuffer<Runnable>(), new ListBuffer<Runnable>(), new ListBuffer<Runnable>());
+        }
+
+        public Queues(ListBuffer<Runnable> q, ListBuffer<Runnable> validateQ, ListBuffer<Runnable> typesQ, ListBuffer<Runnable> afterTypesQ) {
+            this.q = q;
+            this.validateQ = validateQ;
+            this.typesQ = typesQ;
+            this.afterTypesQ = afterTypesQ;
+        }
     }
 }

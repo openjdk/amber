@@ -59,12 +59,22 @@ public class Credentials {
     KerberosTime endTime;
     KerberosTime renewTill;
     HostAddresses cAddr;
-    EncryptionKey serviceKey;
     AuthorizationData authzData;
     private static boolean DEBUG = Krb5.DEBUG;
     private static CredentialsCache cache;
     static boolean alreadyLoaded = false;
     private static boolean alreadyTried = false;
+
+    private Credentials proxy = null;
+
+    public Credentials getProxy() {
+        return proxy;
+    }
+
+    public Credentials setProxy(Credentials proxy) {
+        this.proxy = proxy;
+        return this;
+    }
 
     // Read native ticket with session key type in the given list
     private static native Credentials acquireDefaultNativeCreds(int[] eTypes);
@@ -88,6 +98,7 @@ public class Credentials {
         this.authzData = authzData;
     }
 
+    // Warning: called by NativeCreds.c and nativeccache.c
     public Credentials(Ticket new_ticket,
                        PrincipalName new_client,
                        PrincipalName new_client_alias,
@@ -225,11 +236,13 @@ public class Credentials {
         try {
             retVal = ticket.asn1Encode();
         } catch (Asn1Exception e) {
-            if (DEBUG)
-            System.out.println(e);
+            if (DEBUG) {
+                System.out.println(e);
+            }
         } catch (IOException ioe) {
-            if (DEBUG)
-            System.out.println(ioe);
+            if (DEBUG) {
+                System.out.println(ioe);
+            }
         }
         return retVal;
     }
@@ -319,20 +332,20 @@ public class Credentials {
                 Credentials creds = acquireDefaultCreds();
                 if (creds == null) {
                     if (DEBUG) {
-                        System.out.println(">>> Found no TGT's in LSA");
+                        System.out.println(">>> Found no TGT's in native ccache");
                     }
                     return null;
                 }
                 if (princ != null) {
                     if (creds.getClient().equals(princ)) {
                         if (DEBUG) {
-                            System.out.println(">>> Obtained TGT from LSA: "
+                            System.out.println(">>> Obtained TGT from native ccache: "
                                                + creds);
                         }
                         return creds;
                     } else {
                         if (DEBUG) {
-                            System.out.println(">>> LSA contains TGT for "
+                            System.out.println(">>> native ccache contains TGT for "
                                                + creds.getClient()
                                                + " not "
                                                + princ);
@@ -341,7 +354,7 @@ public class Credentials {
                     }
                 } else {
                     if (DEBUG) {
-                        System.out.println(">>> Obtained TGT from LSA: "
+                        System.out.println(">>> Obtained TGT from native ccache: "
                                            + creds);
                     }
                     return creds;
@@ -360,20 +373,19 @@ public class Credentials {
             return null;
         }
 
-        sun.security.krb5.internal.ccache.Credentials tgtCred  =
-            ccache.getDefaultCreds();
+        Credentials tgtCred = ccache.getInitialCreds();
 
         if (tgtCred == null) {
             return null;
         }
 
-        if (EType.isSupported(tgtCred.getEType())) {
-            return tgtCred.setKrbCreds();
+        if (EType.isSupported(tgtCred.key.getEType())) {
+            return tgtCred;
         } else {
             if (DEBUG) {
                 System.out.println(
                     ">>> unsupported key type found the default TGT: " +
-                    tgtCred.getEType());
+                    tgtCred.key.getEType());
             }
             return null;
         }
@@ -408,20 +420,19 @@ public class Credentials {
             cache = CredentialsCache.getInstance();
         }
         if (cache != null) {
-            sun.security.krb5.internal.ccache.Credentials temp =
-                cache.getDefaultCreds();
+            Credentials temp = cache.getInitialCreds();
             if (temp != null) {
                 if (DEBUG) {
                     System.out.println(">>> KrbCreds found the default ticket"
                             + " granting ticket in credential cache.");
                 }
-                if (EType.isSupported(temp.getEType())) {
-                    result = temp.setKrbCreds();
+                if (EType.isSupported(temp.key.getEType())) {
+                    result = temp;
                 } else {
                     if (DEBUG) {
                         System.out.println(
                             ">>> unsupported key type found the default TGT: " +
-                            temp.getEType());
+                            temp.key.getEType());
                     }
                 }
             }
@@ -436,7 +447,7 @@ public class Credentials {
                     ensureLoaded();
                 } catch (Exception e) {
                     if (DEBUG) {
-                        System.out.println("Can not load credentials cache");
+                        System.out.println("Can not load native ccache library");
                         e.printStackTrace();
                     }
                     alreadyTried = true;
@@ -496,10 +507,6 @@ public class Credentials {
 
     public CredentialsCache getCache() {
         return cache;
-    }
-
-    public EncryptionKey getServiceKey() {
-        return serviceKey;
     }
 
     /*

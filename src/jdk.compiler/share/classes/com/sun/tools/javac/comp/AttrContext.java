@@ -25,7 +25,6 @@
 
 package com.sun.tools.javac.comp;
 
-import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.code.*;
@@ -62,6 +61,10 @@ public class AttrContext {
      *  serializable class?
      */
     boolean isSerializable = false;
+
+    /** Is this a serializable lambda?
+     */
+    boolean isSerializableLambda = false;
 
     /** Is this a lambda environment?
      */
@@ -135,6 +138,7 @@ public class AttrContext {
         info.defaultSuperCallSite = defaultSuperCallSite;
         info.isSerializable = isSerializable;
         info.isLambda = isLambda;
+        info.isSerializableLambda = isSerializableLambda;
         info.attributionMode = attributionMode;
         info.isAnonymousDiamond = isAnonymousDiamond;
         info.isNewClass = isNewClass;

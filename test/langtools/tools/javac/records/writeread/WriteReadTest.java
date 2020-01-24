@@ -24,8 +24,8 @@
 /*
  * @test
  * @summary Verify javac can read record classfiles it writes
- * @compile --enable-preview -source 14 Record.java
- * @compile --enable-preview -source 14 WriteReadTest.java
+ * @compile --enable-preview -source ${jdk.version} Record.java
+ * @compile --enable-preview -source ${jdk.version} WriteReadTest.java
  */
 public class WriteReadTest {
     Record1 r1;

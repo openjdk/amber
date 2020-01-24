@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,21 @@
 
 package javax.lang.model.util;
 
+import java.util.List;
+import java.util.ArrayList;
 import javax.lang.model.element.*;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import static javax.lang.model.SourceVersion.*;
 
 /**
+ * {@preview Associated with records, a preview feature of the Java language.
+ *
+ *           This class is associated with <i>records</i>, a preview
+ *           feature of the Java language. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
  * A scanning visitor of program elements with default behavior
  * appropriate for the {@link SourceVersion#RELEASE_14 RELEASE_14}
  * source version.
@@ -91,7 +100,9 @@ import static javax.lang.model.SourceVersion.*;
  * @see ElementScanner9
  * @since 14
  */
-@SupportedSourceVersion(RELEASE_14)
+@jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                             essentialAPI=false)
+@SupportedSourceVersion(RELEASE_15)
 public class ElementScanner14<R, P> extends ElementScanner9<R, P> {
     /**
      * Constructor for concrete subclasses; uses {@code null} for the
@@ -114,12 +125,55 @@ public class ElementScanner14<R, P> extends ElementScanner9<R, P> {
     /**
      * {@inheritDoc}
      *
+     * @implSpec This implementation scans the type parameters, if
+     * any, and then the enclosed elements.
+     *
+     *
+     * @param e  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
+    public R visitType(TypeElement e, P p) {
+        return scan(createScanningList(e, e.getEnclosedElements()), p);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation first scans the type parameters, if any, and then
+     * the parameters.
+     *
+     * @param e  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    public R visitExecutable(ExecutableElement e, P p) {
+        return scan(createScanningList(e, e.getParameters()), p);
+    }
+
+    private List<? extends Element> createScanningList(Parameterizable element,
+                                                       List<? extends Element> toBeScanned) {
+        var typeParameters = element.getTypeParameters();
+        if (typeParameters.isEmpty()) {
+            return toBeScanned;
+        } else {
+            List<Element> scanningList = new ArrayList<>(typeParameters);
+            scanningList.addAll(toBeScanned);
+            return scanningList;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @implSpec This implementation scans the enclosed elements.
      *
      * @param e the element to visit
      * @param p a visitor-specified parameter
      * @return  the result of the scan
      */
+    @SuppressWarnings("preview")
     @Override
     public R visitRecordComponent(RecordComponentElement e, P p) {
         return scan(e.getEnclosedElements(), p);

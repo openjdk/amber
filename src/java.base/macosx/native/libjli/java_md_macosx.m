@@ -709,13 +709,6 @@ void* SplashProcAddress(const char* name) {
     }
 }
 
-void SplashFreeLibrary() {
-    if (hSplashLib) {
-        dlclose(hSplashLib);
-        hSplashLib = NULL;
-    }
-}
-
 /*
  * Signature adapter for pthread_create().
  */
@@ -755,10 +748,6 @@ CallJavaMainInNewThread(jlong stack_size, void* args) {
 
     pthread_attr_destroy(&attr);
     return rslt;
-}
-
-void SetJavaLauncherPlatformProps() {
-   /* Linux only */
 }
 
 static JavaVM* jvmInstance = NULL;

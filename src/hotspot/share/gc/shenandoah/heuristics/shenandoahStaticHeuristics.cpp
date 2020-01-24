@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -57,8 +57,9 @@ bool ShenandoahStaticHeuristics::should_start_gc() const {
   size_t threshold_available = capacity / 100 * ShenandoahFreeThreshold;
 
   if (available < threshold_available) {
-    log_info(gc)("Trigger: Free (" SIZE_FORMAT "M) is below free threshold (" SIZE_FORMAT "M)",
-                 available / M, threshold_available / M);
+    log_info(gc)("Trigger: Free (" SIZE_FORMAT "%s) is below free threshold (" SIZE_FORMAT "%s)",
+                 byte_size_in_proper_unit(available),           proper_unit_for_byte_size(available),
+                 byte_size_in_proper_unit(threshold_available), proper_unit_for_byte_size(threshold_available));
     return true;
   }
   return ShenandoahHeuristics::should_start_gc();

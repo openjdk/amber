@@ -290,6 +290,7 @@ public:
   const TypeF      *isa_float_constant() const;  // Returns NULL if not a FloatCon
   const TypeTuple  *is_tuple() const;            // Collection of fields, NOT a pointer
   const TypeAry    *is_ary() const;              // Array, NOT array pointer
+  const TypeAry    *isa_ary() const;             // Returns NULL of not ary
   const TypeVect   *is_vect() const;             // Vector
   const TypeVect   *isa_vect() const;            // Returns NULL if not a Vector
   const TypePtr    *is_ptr() const;              // Asserts it is a ptr type
@@ -454,7 +455,6 @@ public:
 
 private:
   // support arrays
-  static const BasicType _basic_type[];
   static const Type*        _zero_type[T_CONFLICT+1];
   static const Type* _const_basic_type[T_CONFLICT+1];
 };
@@ -1030,8 +1030,6 @@ public:
 
   virtual const TypeOopPtr *cast_to_instance_id(int instance_id) const;
 
-  virtual const TypeOopPtr *cast_to_nonconst() const;
-
   // corresponding pointer to klass, for a given instance
   const TypeKlassPtr* as_klass_type() const;
 
@@ -1115,8 +1113,6 @@ class TypeInstPtr : public TypeOopPtr {
   virtual const Type *cast_to_exactness(bool klass_is_exact) const;
 
   virtual const TypeOopPtr *cast_to_instance_id(int instance_id) const;
-
-  virtual const TypeOopPtr *cast_to_nonconst() const;
 
   virtual const TypePtr *add_offset( intptr_t offset ) const;
 
@@ -1202,8 +1198,6 @@ public:
 
   virtual const TypeOopPtr *cast_to_instance_id(int instance_id) const;
 
-  virtual const TypeOopPtr *cast_to_nonconst() const;
-
   virtual const TypeAryPtr* cast_to_size(const TypeInt* size) const;
   virtual const TypeInt* narrow_size_type(const TypeInt* size) const;
 
@@ -1223,6 +1217,8 @@ public:
   int stable_dimension() const;
 
   const TypeAryPtr* cast_to_autobox_cache(bool cache) const;
+
+  static jint max_array_length(BasicType etype) ;
 
   // Convenience common pre-built types.
   static const TypeAryPtr *RANGE;
@@ -1615,6 +1611,10 @@ inline const TypeAry *Type::is_ary() const {
   return (TypeAry*)this;
 }
 
+inline const TypeAry *Type::isa_ary() const {
+  return ((_base == Array) ? (TypeAry*)this : NULL);
+}
+
 inline const TypeVect *Type::is_vect() const {
   assert( _base >= VectorS && _base <= VectorZ, "Not a Vector" );
   return (TypeVect*)this;
@@ -1791,6 +1791,7 @@ inline bool Type::is_ptr_to_boxing_obj() const {
 #define Op_SubX      Op_SubL
 #define Op_XorX      Op_XorL
 #define Op_URShiftX  Op_URShiftL
+#define Op_LoadX     Op_LoadL
 // conversions
 #define ConvI2X(x)   ConvI2L(x)
 #define ConvL2X(x)   (x)
@@ -1838,6 +1839,7 @@ inline bool Type::is_ptr_to_boxing_obj() const {
 #define Op_SubX      Op_SubI
 #define Op_XorX      Op_XorI
 #define Op_URShiftX  Op_URShiftI
+#define Op_LoadX     Op_LoadI
 // conversions
 #define ConvI2X(x)   (x)
 #define ConvL2X(x)   ConvL2I(x)

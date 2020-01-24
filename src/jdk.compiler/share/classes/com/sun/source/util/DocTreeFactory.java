@@ -31,7 +31,6 @@ import javax.lang.model.element.Name;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
-import com.sun.source.doctree.AccessorTree;
 import com.sun.source.doctree.AttributeTree;
 import com.sun.source.doctree.AttributeTree.ValueKind;
 import com.sun.source.doctree.AuthorTree;
@@ -40,7 +39,6 @@ import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocRootTree;
 import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.DocTypeTree;
 import com.sun.source.doctree.EndElementTree;
 import com.sun.source.doctree.EntityTree;
@@ -235,13 +233,6 @@ public interface DocTreeFactory {
      * @return a {@code LiteralTree} object
      */
     LiteralTree newLiteralTree(TextTree text);
-
-    /**
-     * Create a new {@code AccessorTree} object, to represent a {@code @getter} tag.
-     * @param description the content of the tag
-     * @return a {@code AccessorTree} object
-     */
-    AccessorTree newAccessorTree(Kind kind, List<? extends DocTree> description);
 
     /**
      * Create a new {@code ParamTree} object, to represent a {@code @param } tag.

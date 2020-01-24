@@ -31,12 +31,10 @@
 // G1RedirtyCardsQueueBase::LocalQSet
 
 G1RedirtyCardsQueueBase::LocalQSet::LocalQSet(G1RedirtyCardsQueueSet* shared_qset) :
-  PtrQueueSet(),
+  PtrQueueSet(shared_qset->allocator()),
   _shared_qset(shared_qset),
   _buffers()
-{
-  PtrQueueSet::initialize(_shared_qset->allocator());
-}
+{}
 
 G1RedirtyCardsQueueBase::LocalQSet::~LocalQSet() {
   assert(_buffers._head == NULL, "unflushed qset");
@@ -86,14 +84,12 @@ void G1RedirtyCardsQueue::flush() {
 // G1RedirtyCardsQueueSet
 
 G1RedirtyCardsQueueSet::G1RedirtyCardsQueueSet(BufferNode::Allocator* allocator) :
-  PtrQueueSet(),
+  PtrQueueSet(allocator),
   _list(),
   _entry_count(0),
   _tail(NULL)
   DEBUG_ONLY(COMMA _collecting(true))
-{
-  initialize(allocator);
-}
+{}
 
 G1RedirtyCardsQueueSet::~G1RedirtyCardsQueueSet() {
   verify_empty();
@@ -133,7 +129,7 @@ void G1RedirtyCardsQueueSet::update_tail(BufferNode* node) {
 
 void G1RedirtyCardsQueueSet::enqueue_completed_buffer(BufferNode* node) {
   assert(_collecting, "precondition");
-  Atomic::add(buffer_size() - node->index(), &_entry_count);
+  Atomic::add(&_entry_count, buffer_size() - node->index());
   _list.push(*node);
   update_tail(node);
 }
@@ -143,7 +139,7 @@ void G1RedirtyCardsQueueSet::merge_bufferlist(LocalQSet* src) {
   const G1BufferNodeList from = src->take_all_completed_buffers();
   if (from._head != NULL) {
     assert(from._tail != NULL, "invariant");
-    Atomic::add(from._entry_count, &_entry_count);
+    Atomic::add(&_entry_count, from._entry_count);
     _list.prepend(*from._head, *from._tail);
     update_tail(from._tail);
   }

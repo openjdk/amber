@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,10 @@
 
 /*
  * @test
+ * @bug 8231827
  * @summary Testing pattern matching against the null constant
- * @run main NullsInPatterns
+ * @compile --enable-preview -source ${jdk.version} NullsInPatterns.java
+ * @run main/othervm --enable-preview NullsInPatterns
  */
 import java.util.List;
 
@@ -36,11 +38,12 @@ public class NullsInPatterns {
         } else {
             System.out.println("null does not match List type pattern");
         }
-        if (null instanceof List<Integer> l) {
-            throw new AssertionError("broken");
-        } else {
-            System.out.println("null does not match List<Integer> type pattern");
-        }
+        //reifiable types not allowed in type test patterns in instanceof:
+//        if (null instanceof List<Integer> l) {
+//            throw new AssertionError("broken");
+//        } else {
+//            System.out.println("null does not match List<Integer> type pattern");
+//        }
         if (null instanceof List<?> l) {
             throw new AssertionError("broken");
         } else {

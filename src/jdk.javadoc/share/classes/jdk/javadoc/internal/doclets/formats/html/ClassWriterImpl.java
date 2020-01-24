@@ -33,9 +33,9 @@ import java.util.TreeSet;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.SimpleElementVisitor8;
@@ -72,10 +72,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocletConstants;
  * @see java.util.List
  * @see java.util.ArrayList
  * @see java.util.HashMap
- *
- * @author Atul M Dambalkar
- * @author Robert Field
- * @author Bhavesh Patel (Modified)
  */
 public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWriter {
 
@@ -106,7 +102,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         this.typeElement = typeElement;
         configuration.currentTypeElement = typeElement;
         this.classtree = classTree;
-        this.navBar = new Navigation(typeElement, configuration, fixedNavDiv, PageMode.CLASS, path);
+        this.navBar = new Navigation(typeElement, configuration, PageMode.CLASS, path);
     }
 
     /**
@@ -115,16 +111,14 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     @Override
     public Content getHeader(String header) {
         HtmlTree bodyTree = getBody(getWindowTitle(utils.getSimpleName(typeElement)));
-        HtmlTree htmlTree = HtmlTree.HEADER();
-        addTop(htmlTree);
+        Content headerContent = new ContentBuilder();
+        addTop(headerContent);
         Content linkContent = getModuleLink(utils.elementUtils.getModuleOf(typeElement),
                 contents.moduleLabel);
         navBar.setNavLinkModule(linkContent);
         navBar.setMemberSummaryBuilder(configuration.getBuilderFactory().getMemberSummaryBuilder(this));
         navBar.setUserHeader(getUserHeaderFooter(true));
-        htmlTree.add(navBar.getContent(true));
-        bodyTree.add(htmlTree);
-        bodyTree.add(MarkerComments.START_OF_CLASS_DATA);
+        headerContent.add(navBar.getContent(true));
         HtmlTree div = new HtmlTree(HtmlTag.DIV);
         div.setStyle(HtmlStyle.header);
         if (configuration.showModules) {
@@ -150,12 +144,13 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                 LinkInfoImpl.Kind.CLASS_HEADER, typeElement);
         //Let's not link to ourselves in the header.
         linkInfo.linkToSelf = false;
-        Content headerContent = new StringContent(header);
         Content heading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING, true,
-                HtmlStyle.title, headerContent);
+                HtmlStyle.title, new StringContent(header));
         heading.add(getTypeParameterLinks(linkInfo));
         div.add(heading);
-        mainTree.add(div);
+        bodyContents.setHeader(headerContent)
+                .addMainContent(MarkerComments.START_OF_CLASS_DATA)
+                .addMainContent(div);
         return bodyTree;
     }
 
@@ -171,13 +166,13 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
      * {@inheritDoc}
      */
     @Override
-    public void addFooter(Content contentTree) {
-        contentTree.add(MarkerComments.END_OF_CLASS_DATA);
+    public void addFooter() {
+        bodyContents.addMainContent(MarkerComments.END_OF_CLASS_DATA);
         Content htmlTree = HtmlTree.FOOTER();
         navBar.setUserFooter(getUserHeaderFooter(false));
         htmlTree.add(navBar.getContent(false));
         addBottom(htmlTree);
-        contentTree.add(htmlTree);
+        bodyContents.setFooter(htmlTree);
     }
 
     /**
@@ -188,6 +183,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         String description = getDescription("declaration", typeElement);
         PackageElement pkg = utils.containingPackage(typeElement);
         List<DocPath> localStylesheets = getLocalStylesheets(pkg);
+        contentTree.add(bodyContents.toContent());
         printHtmlDocument(configuration.metakeywords.getMetaKeywords(typeElement),
                 description, localStylesheets, contentTree);
     }
@@ -211,7 +207,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     /**
      * {@inheritDoc}
      */
-    @Override
+    @Override @SuppressWarnings("preview")
     public void addClassSignature(String modifiers, Content classInfoTree) {
         Content hr = new HtmlTree(HtmlTag.HR);
         classInfoTree.add(hr);
@@ -231,6 +227,9 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             Content span = HtmlTree.SPAN(HtmlStyle.typeNameLabel, className);
             span.add(parameterLinks);
             pre.add(span);
+        }
+        if (utils.isRecord(typeElement)) {
+            pre.add(getRecordComponents(typeElement));
         }
         if (!utils.isInterface(typeElement)) {
             TypeMirror superclass = utils.getFirstVisibleSuperClass(typeElement);
@@ -288,6 +287,26 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
 
         }
         classInfoTree.add(pre);
+    }
+
+    @SuppressWarnings("preview")
+    private Content getRecordComponents(TypeElement typeElem) {
+        Content content = new ContentBuilder();
+        content.add("(");
+        String sep = "";
+        for (RecordComponentElement e : typeElement.getRecordComponents()) {
+            content.add(sep);
+            getAnnotations(e.getAnnotationMirrors(), false).stream()
+                    .forEach(a -> { content.add(a); content.add(" "); });
+            Content link = getLink(new LinkInfoImpl(configuration, LinkInfoImpl.Kind.RECORD_COMPONENT,
+                    e.asType()));
+            content.add(link);
+            content.add(Entity.NO_BREAK_SPACE);
+            content.add(e.getSimpleName());
+            sep = ", ";
+        }
+        content.add(")");
+        return content;
     }
 
     /**

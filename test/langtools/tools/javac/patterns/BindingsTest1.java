@@ -1,8 +1,32 @@
 /*
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+/*
  * @test
+ * @bug 8231827
  * @summary Basic tests for bindings from instanceof
- * @compile BindingsTest1.java
- * @run main BindingsTest1
+ * @compile --enable-preview -source ${jdk.version} BindingsTest1.java
+ * @run main/othervm --enable-preview BindingsTest1
  */
 
 public class BindingsTest1 {
@@ -76,7 +100,7 @@ public class BindingsTest1 {
             s.length();
         }
 
-        L2: {   
+        L2: {
             if (!(o1 instanceof String s)) {
                 break L2;
             } else {
@@ -122,6 +146,30 @@ public class BindingsTest1 {
             s.length();
         }
 
+        {
+            while (!(o1 instanceof String s)) {
+                L8: break L8;
+            }
+
+            s.length();
+        }
+
+        {
+            for ( ;!(o1 instanceof String s); ) {
+                L9: break L9;
+            }
+
+            s.length();
+        }
+
+        {
+            do {
+                L10: break L10;
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
+
         if (o1 instanceof String s) {
             Runnable r1 = new Runnable() {
                 @Override
@@ -136,6 +184,9 @@ public class BindingsTest1 {
             r2.run();
             String s2 = s;
         }
+
+        boolean result = (o1 instanceof String a1) ? (o1 instanceof String a2) : (!(o1 instanceof String a3));
+        boolean result2 = (o1 instanceof String a1) ? (o1 instanceof String a2) : (!(switch (0) { default -> false; }));
 
         System.out.println("BindingsTest1 complete");
     }

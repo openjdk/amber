@@ -25,20 +25,14 @@
 #include "precompiled.hpp"
 #include "jfr/leakprofiler/chains/edgeStore.hpp"
 #include "jfr/leakprofiler/chains/edgeUtils.hpp"
+#include "jfr/leakprofiler/utilities/unifiedOopRef.inline.hpp"
 #include "oops/oop.inline.hpp"
 
-StoredEdge::StoredEdge() : Edge() {}
-StoredEdge::StoredEdge(const Edge* parent, const oop* reference) : Edge(parent, reference), _gc_root_id(0), _skip_length(0) {}
+StoredEdge::StoredEdge(const Edge* parent, UnifiedOopRef reference) : Edge(parent, reference), _gc_root_id(0), _skip_length(0) {}
 
 StoredEdge::StoredEdge(const Edge& edge) : Edge(edge), _gc_root_id(0), _skip_length(0) {}
 
 StoredEdge::StoredEdge(const StoredEdge& edge) : Edge(edge), _gc_root_id(edge._gc_root_id), _skip_length(edge._skip_length) {}
-
-void StoredEdge::operator=(const StoredEdge& edge) {
-  Edge::operator=(edge);
-  _gc_root_id = edge._gc_root_id;
-  _skip_length = edge._skip_length;
-}
 
 traceid EdgeStore::_edge_id_counter = 0;
 
@@ -55,42 +49,46 @@ bool EdgeStore::is_empty() const {
   return !_edges->has_entries();
 }
 
-void EdgeStore::assign_id(EdgeEntry* entry) {
+void EdgeStore::on_link(EdgeEntry* entry) {
   assert(entry != NULL, "invariant");
   assert(entry->id() == 0, "invariant");
   entry->set_id(++_edge_id_counter);
 }
 
-bool EdgeStore::equals(const Edge& query, uintptr_t hash, const EdgeEntry* entry) {
+bool EdgeStore::on_equals(uintptr_t hash, const EdgeEntry* entry) {
   assert(entry != NULL, "invariant");
   assert(entry->hash() == hash, "invariant");
   return true;
 }
 
+void EdgeStore::on_unlink(EdgeEntry* entry) {
+  assert(entry != NULL, "invariant");
+  // nothing
+}
+
 #ifdef ASSERT
-bool EdgeStore::contains(const oop* reference) const {
+bool EdgeStore::contains(UnifiedOopRef reference) const {
   return get(reference) != NULL;
 }
 #endif
 
-StoredEdge* EdgeStore::get(const oop* reference) const {
-  assert(reference != NULL, "invariant");
-  const StoredEdge e(NULL, reference);
-  EdgeEntry* const entry = _edges->lookup_only(e, (uintptr_t)reference);
+StoredEdge* EdgeStore::get(UnifiedOopRef reference) const {
+  assert(!reference.is_null(), "invariant");
+  EdgeEntry* const entry = _edges->lookup_only(reference.addr<uintptr_t>());
   return entry != NULL ? entry->literal_addr() : NULL;
 }
 
-StoredEdge* EdgeStore::put(const oop* reference) {
-  assert(reference != NULL, "invariant");
+StoredEdge* EdgeStore::put(UnifiedOopRef reference) {
+  assert(!reference.is_null(), "invariant");
   const StoredEdge e(NULL, reference);
-  assert(NULL == _edges->lookup_only(e, (uintptr_t)reference), "invariant");
-  EdgeEntry& entry = _edges->put(e, (uintptr_t)reference);
+  assert(NULL == _edges->lookup_only(reference.addr<uintptr_t>()), "invariant");
+  EdgeEntry& entry = _edges->put(reference.addr<uintptr_t>(), e);
   return entry.literal_addr();
 }
 
 traceid EdgeStore::get_id(const Edge* edge) const {
   assert(edge != NULL, "invariant");
-  EdgeEntry* const entry = _edges->lookup_only(*edge, (uintptr_t)edge->reference());
+  EdgeEntry* const entry = _edges->lookup_only(edge->reference().addr<uintptr_t>());
   assert(entry != NULL, "invariant");
   return entry->id();
 }
@@ -255,6 +253,7 @@ void EdgeStore::put_chain(const Edge* chain, size_t length) {
   assert(leak_context_edge->parent() == NULL, "invariant");
 
   if (1 == length) {
+    store_gc_root_id_in_leak_context_edge(leak_context_edge, leak_context_edge);
     return;
   }
 

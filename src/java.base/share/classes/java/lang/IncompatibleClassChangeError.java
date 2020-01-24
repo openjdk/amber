@@ -33,13 +33,12 @@ package java.lang;
  * @author  unascribed
  * @since   1.0
  */
-public
-class IncompatibleClassChangeError extends LinkageError {
+public class IncompatibleClassChangeError extends LinkageError {
     @java.io.Serial
     private static final long serialVersionUID = -4914975503642802119L;
 
     /**
-     * Constructs an <code>IncompatibleClassChangeError</code> with no
+     * Constructs an {@code IncompatibleClassChangeError} with no
      * detail message.
      */
     public IncompatibleClassChangeError () {
@@ -47,7 +46,7 @@ class IncompatibleClassChangeError extends LinkageError {
     }
 
     /**
-     * Constructs an <code>IncompatibleClassChangeError</code> with the
+     * Constructs an {@code IncompatibleClassChangeError} with the
      * specified detail message.
      *
      * @param   s   the detail message.

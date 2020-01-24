@@ -33,13 +33,13 @@
 #include "ci/ciKlass.hpp"
 #include "ci/ciMemberName.hpp"
 #include "ci/ciUtilities.inline.hpp"
+#include "compiler/compilationPolicy.hpp"
 #include "compiler/compileBroker.hpp"
 #include "interpreter/bytecode.hpp"
 #include "jfr/jfrEvents.hpp"
 #include "memory/resourceArea.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/sharedRuntime.hpp"
-#include "runtime/compilationPolicy.hpp"
 #include "runtime/vm_version.hpp"
 #include "utilities/bitMap.inline.hpp"
 
@@ -1707,7 +1707,7 @@ void GraphBuilder::access_field(Bytecodes::Code code) {
             // For CallSite objects add a dependency for invalidation of the optimization.
             if (field->is_call_site_target()) {
               ciCallSite* call_site = const_oop->as_call_site();
-              if (!call_site->is_constant_call_site()) {
+              if (!call_site->is_fully_initialized_constant_call_site()) {
                 ciMethodHandle* target = field_value.as_object()->as_method_handle();
                 dependency_recorder()->assert_call_site_target_value(call_site, target);
               }
@@ -1725,6 +1725,23 @@ void GraphBuilder::access_field(Bytecodes::Code code) {
         Value replacement = !needs_patching ? _memory->load(load) : load;
         if (replacement != load) {
           assert(replacement->is_linked() || !replacement->can_be_linked(), "should already by linked");
+          // Writing an (integer) value to a boolean, byte, char or short field includes an implicit narrowing
+          // conversion. Emit an explicit conversion here to get the correct field value after the write.
+          BasicType bt = field->type()->basic_type();
+          switch (bt) {
+          case T_BOOLEAN:
+          case T_BYTE:
+            replacement = append(new Convert(Bytecodes::_i2b, replacement, as_ValueType(bt)));
+            break;
+          case T_CHAR:
+            replacement = append(new Convert(Bytecodes::_i2c, replacement, as_ValueType(bt)));
+            break;
+          case T_SHORT:
+            replacement = append(new Convert(Bytecodes::_i2s, replacement, as_ValueType(bt)));
+            break;
+          default:
+            break;
+          }
           push(type, replacement);
         } else {
           push(type, append(load));
@@ -2590,7 +2607,7 @@ void PhiSimplifier::block_do(BlockBegin* b) {
 
 #ifdef ASSERT
   for_each_phi_fun(b, phi,
-                   assert(phi->operand_count() != 1 || phi->subst() != phi, "missed trivial simplification");
+                   assert(phi->operand_count() != 1 || phi->subst() != phi || phi->is_illegal(), "missed trivial simplification");
   );
 
   ValueStack* state = b->state()->caller_state();
@@ -3168,7 +3185,7 @@ ValueStack* GraphBuilder::state_at_entry() {
     ciType* type = sig->type_at(i);
     BasicType basic_type = type->basic_type();
     // don't allow T_ARRAY to propagate into locals types
-    if (basic_type == T_ARRAY) basic_type = T_OBJECT;
+    if (is_reference_type(basic_type)) basic_type = T_OBJECT;
     ValueType* vt = as_ValueType(basic_type);
     state->store_local(idx, new Local(type, vt, idx, false));
     idx += type->size();
@@ -3793,7 +3810,7 @@ bool GraphBuilder::try_inline_full(ciMethod* callee, bool holder_known, bool ign
       INLINE_BAILOUT("total inlining greater than DesiredMethodLimit");
     }
     // printing
-    print_inlining(callee);
+    print_inlining(callee, "inline", /*success*/ true);
   }
 
   // NOTE: Bailouts from this point on, which occur at the
@@ -4315,16 +4332,11 @@ static void post_inlining_event(EventCompilerInlining* event,
 void GraphBuilder::print_inlining(ciMethod* callee, const char* msg, bool success) {
   CompileLog* log = compilation()->log();
   if (log != NULL) {
+    assert(msg != NULL, "inlining msg should not be null!");
     if (success) {
-      if (msg != NULL)
-        log->inline_success(msg);
-      else
-        log->inline_success("receiver is statically known");
+      log->inline_success(msg);
     } else {
-      if (msg != NULL)
-        log->inline_fail(msg);
-      else
-        log->inline_fail("reason unknown");
+      log->inline_fail(msg);
     }
   }
   EventCompilerInlining event;

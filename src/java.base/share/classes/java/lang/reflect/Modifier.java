@@ -43,6 +43,11 @@ import java.util.StringJoiner;
  * @since 1.1
  */
 public class Modifier {
+    /**
+     * Do not call.
+     */
+    private Modifier() {throw new AssertionError();}
+
 
     /**
      * Return {@code true} if the integer argument includes the

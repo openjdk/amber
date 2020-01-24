@@ -25,9 +25,7 @@
 
 package jdk.javadoc.internal.doclets.toolkit.builders;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,10 +36,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
 
-import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.toolkit.ClassWriter;
 import jdk.javadoc.internal.doclets.toolkit.CommentUtils;
@@ -58,9 +53,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.Utils;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Jamie Ho
- * @author Bhavesh Patel (Modified)
  */
 public class ClassBuilder extends AbstractBuilder {
 
@@ -85,7 +77,7 @@ public class ClassBuilder extends AbstractBuilder {
     private final boolean isEnum;
 
     /**
-     * Keep track of whether or not this typeElement is an record.
+     * Keep track of whether or not this typeElement is a record.
      */
     private final boolean isRecord;
 
@@ -143,16 +135,15 @@ public class ClassBuilder extends AbstractBuilder {
      */
     @Override
     public void build() throws DocletException {
-        buildClassDoc(contentTree);
+        buildClassDoc();
     }
 
      /**
       * Handles the {@literal <TypeElement>} tag.
       *
-      * @param contentTree the content tree to which the documentation will be added
       * @throws DocletException if there is a problem while building the documentation
       */
-     protected void buildClassDoc(Content contentTree) throws DocletException {
+     protected void buildClassDoc() throws DocletException {
         String key;
         if (isInterface) {
             key = "doclet.Interface";
@@ -163,7 +154,7 @@ public class ClassBuilder extends AbstractBuilder {
         } else {
             key = "doclet.Class";
         }
-        contentTree = writer.getHeader(resources.getText(key) + " "
+        Content contentTree = writer.getHeader(resources.getText(key) + " "
                 + utils.getSimpleName(typeElement));
         Content classContentTree = writer.getClassContentHeader();
 
@@ -172,8 +163,8 @@ public class ClassBuilder extends AbstractBuilder {
         buildMemberSummary(classContentTree);
         buildMemberDetails(classContentTree);
 
-        writer.addClassContentTree(contentTree, classContentTree);
-        writer.addFooter(contentTree);
+        writer.addClassContentTree(classContentTree);
+        writer.addFooter();
         writer.printDocument(contentTree);
         copyDocFiles();
     }
@@ -450,6 +441,7 @@ public class ClassBuilder extends AbstractBuilder {
      * @param elem the record element
      */
 
+    @SuppressWarnings("preview")
     private void setRecordDocumentation(TypeElement elem) {
         CommentUtils cmtUtils = configuration.cmtUtils;
         Set<Name> componentNames = elem.getRecordComponents().stream()
@@ -462,7 +454,7 @@ public class ClassBuilder extends AbstractBuilder {
                     utils.removeCommentHelper(ee); // purge previous entry
                     cmtUtils.setRecordConstructorTree(ee);
                 }
-                // only one canonical constructor; no longer need to keep looking
+                // only one canonical constructor; no need to keep looking
                 break;
             }
         }
@@ -477,7 +469,7 @@ public class ClassBuilder extends AbstractBuilder {
             }
         }
 
-        TypeMirror objectType = utils.elementUtils.getTypeElement("java.lang.Object").asType();
+        TypeMirror objectType = utils.getObjectType();
 
         for (ExecutableElement ee : utils.getMethods(elem)) {
             if (!utils.getFullBody(ee).isEmpty()) {

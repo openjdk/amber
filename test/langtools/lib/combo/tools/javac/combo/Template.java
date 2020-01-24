@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,7 @@ public interface Template {
 
     String expand(String selector);
 
-    /* Looks for expandable keys.  An expandable key can take the form:
+        /* Looks for expandable keys.  An expandable key can take the form:
          *   #{MAJOR}
          *   #{MAJOR.}
          *   #{MAJOR.MINOR}
@@ -57,33 +57,33 @@ public interface Template {
     public static String expandTemplate(String template,
                                         Map<String, Template> vars) {
         return expandTemplate(template, vars::get);
-    }
+        }
 
     private static String expandTemplate(String template, Function<String, Template> resolver) {
-        CharSequence in = template;
-        StringBuffer out = new StringBuffer();
-        while (true) {
-            boolean more = false;
+            CharSequence in = template;
+            StringBuffer out = new StringBuffer();
+            while (true) {
+                boolean more = false;
             Matcher m = KEY_PATTERN.matcher(in);
-            while (m.find()) {
-                String major = m.group(1);
-                String minor = m.group(2);
+                while (m.find()) {
+                    String major = m.group(1);
+                    String minor = m.group(2);
                 Template key = resolver.apply(major);
-                if (key == null)
-                    throw new IllegalStateException("Unknown major key " + major);
+                    if (key == null)
+                        throw new IllegalStateException("Unknown major key " + major);
 
-                String replacement = key.expand(minor == null ? "" : minor);
+                    String replacement = key.expand(minor == null ? "" : minor);
                 more |= KEY_PATTERN.matcher(replacement).find();
-                m.appendReplacement(out, replacement);
+                    m.appendReplacement(out, replacement);
+                }
+                m.appendTail(out);
+                if (!more)
+                    return out.toString();
+                else {
+                    in = out;
+                    out = new StringBuffer();
+                }
             }
-            m.appendTail(out);
-            if (!more)
-                return out.toString();
-            else {
-                in = out;
-                out = new StringBuffer();
-            }
-        }
     }
 }
 

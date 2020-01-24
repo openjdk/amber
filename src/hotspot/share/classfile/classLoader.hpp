@@ -26,6 +26,7 @@
 #define SHARE_CLASSFILE_CLASSLOADER_HPP
 
 #include "jimage.hpp"
+#include "runtime/arguments.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/perfData.hpp"
 #include "utilities/exceptions.hpp"
@@ -236,6 +237,8 @@ class ClassLoader: AllStatic {
   CDS_ONLY(static ClassPathEntry* app_classpath_entries() {return _app_classpath_entries;})
   CDS_ONLY(static ClassPathEntry* module_path_entries() {return _module_path_entries;})
 
+  static bool has_bootclasspath_append() { return _first_append_entry != NULL; }
+
  protected:
   // Initialization:
   //   - setup the boot loader's system class path
@@ -246,6 +249,8 @@ class ClassLoader: AllStatic {
   static void setup_patch_mod_entries();
   static void create_javabase();
 
+  static void* dll_lookup(void* lib, const char* name, const char* path);
+  static void load_java_library();
   static void load_zip_library();
   static void load_jimage_library();
 
@@ -272,7 +277,6 @@ class ClassLoader: AllStatic {
   static PackageEntry* get_package_entry(const char* class_name, ClassLoaderData* loader_data, TRAPS);
 
  public:
-  static jboolean decompress(void *in, u8 inSize, void *out, u8 outSize, char **pmsg);
   static int crc32(int crc, const char* buf, int len);
   static bool update_class_path_entry_list(const char *path,
                                            bool check_for_duplicates,
@@ -395,8 +399,7 @@ class ClassLoader: AllStatic {
   // Helper function used by CDS code to get the number of module path
   // entries during shared classpath setup time.
   static int num_module_path_entries() {
-    assert(DumpSharedSpaces || DynamicDumpSharedSpaces,
-           "Should only be called at CDS dump time");
+    Arguments::assert_is_dumping_archive();
     int num_entries = 0;
     ClassPathEntry* e= ClassLoader::_module_path_entries;
     while (e != NULL) {
@@ -409,6 +412,9 @@ class ClassLoader: AllStatic {
   static char* skip_uri_protocol(char* source);
   static void  record_result(InstanceKlass* ik, const ClassFileStream* stream, TRAPS);
 #endif
+
+  static char* lookup_vm_options();
+
   static JImageLocationRef jimage_find_resource(JImageFile* jf, const char* module_name,
                                                 const char* file_name, jlong &size);
 

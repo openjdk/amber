@@ -76,9 +76,6 @@
 #include "utilities/align.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/macros.hpp"
-#if INCLUDE_ZGC
-#include "gc/z/c2/zBarrierSetC2.hpp"
-#endif
 
 
 // -------------------- Compile::mach_constant_base_node -----------------------
@@ -341,7 +338,7 @@ void Compile::update_dead_node_list(Unique_Node_List &useful) {
   for (uint node_idx = 0; node_idx < max_idx; node_idx++) {
     // If node with index node_idx is not in useful set,
     // mark it as dead in dead node list.
-    if (! useful_node_set.test(node_idx) ) {
+    if (!useful_node_set.test(node_idx)) {
       record_dead_node(node_idx);
     }
   }
@@ -651,6 +648,7 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
                   _has_reserved_stack_access(target->has_reserved_stack_access()),
 #ifndef PRODUCT
                   _trace_opto_output(directive->TraceOptoOutputOption),
+                  _print_ideal(directive->PrintIdealOption),
 #endif
                   _has_method_handle_invokes(false),
                   _clinit_barrier_on_entry(false),
@@ -876,7 +874,7 @@ Compile::Compile( ciEnv* ci_env, C2Compiler* compiler, ciMethod* target, int osr
   NOT_PRODUCT( verify_graph_edges(); )
 
 #ifndef PRODUCT
-  if (PrintIdeal) {
+  if (print_ideal()) {
     ttyLocker ttyl;  // keep the following output all in one block
     // This output goes directly to the tty, not the compiler log.
     // To enable tools to match it up with the compilation activity,
@@ -986,10 +984,12 @@ Compile::Compile( ciEnv* ci_env,
     _has_reserved_stack_access(false),
 #ifndef PRODUCT
     _trace_opto_output(directive->TraceOptoOutputOption),
+    _print_ideal(directive->PrintIdealOption),
 #endif
     _has_method_handle_invokes(false),
     _clinit_barrier_on_entry(false),
     _comp_arena(mtCompiler),
+    _barrier_set_state(BarrierSet::barrier_set()->barrier_set_c2()->create_barrier_state(comp_arena())),
     _env(ci_env),
     _directive(directive),
     _log(ci_env->log()),
@@ -1475,8 +1475,6 @@ const TypePtr *Compile::flatten_alias_type( const TypePtr *tj ) const {
         tj = TypeInstPtr::MARK;
         ta = TypeAryPtr::RANGE; // generic ignored junk
         ptr = TypePtr::BotPTR;
-      } else if (BarrierSet::barrier_set()->barrier_set_c2()->flatten_gc_alias_type(tj)) {
-        ta = tj->isa_aryptr();
       } else {                  // Random constant offset into array body
         offset = Type::OffsetBot;   // Flatten constant access into array body
         tj = ta = TypeAryPtr::make(ptr,ta->ary(),ta->klass(),false,offset);
@@ -1541,8 +1539,6 @@ const TypePtr *Compile::flatten_alias_type( const TypePtr *tj ) const {
       if (!is_known_inst) { // Do it only for non-instance types
         tj = to = TypeInstPtr::make(TypePtr::BotPTR, env()->Object_klass(), false, NULL, offset);
       }
-    } else if (BarrierSet::barrier_set()->barrier_set_c2()->flatten_gc_alias_type(tj)) {
-      to = tj->is_instptr();
     } else if (offset < 0 || offset >= k->size_helper() * wordSize) {
       // Static fields are in the space above the normal instance
       // fields in the java.lang.Class instance.
@@ -1641,8 +1637,7 @@ const TypePtr *Compile::flatten_alias_type( const TypePtr *tj ) const {
           (offset == Type::OffsetBot && tj == TypePtr::BOTTOM) ||
           (offset == oopDesc::mark_offset_in_bytes() && tj->base() == Type::AryPtr) ||
           (offset == oopDesc::klass_offset_in_bytes() && tj->base() == Type::AryPtr) ||
-          (offset == arrayOopDesc::length_offset_in_bytes() && tj->base() == Type::AryPtr) ||
-          (BarrierSet::barrier_set()->barrier_set_c2()->verify_gc_alias_type(tj, offset)),
+          (offset == arrayOopDesc::length_offset_in_bytes() && tj->base() == Type::AryPtr),
           "For oops, klasses, raw offset must be constant; for arrays the offset is never known" );
   assert( tj->ptr() != TypePtr::TopPTR &&
           tj->ptr() != TypePtr::AnyNull &&
@@ -1655,6 +1650,7 @@ const TypePtr *Compile::flatten_alias_type( const TypePtr *tj ) const {
 }
 
 void Compile::AliasType::Init(int i, const TypePtr* at) {
+  assert(AliasIdxTop <= i && i < Compile::current()->_max_alias_types, "Invalid alias index");
   _index = i;
   _adr_type = at;
   _field = NULL;
@@ -2412,13 +2408,6 @@ void Compile::Optimize() {
     print_method(PHASE_MACRO_EXPANSION, 2);
   }
 
-#ifdef ASSERT
-  bs->verify_gc_barriers(this, BarrierSetC2::BeforeLateInsertion);
-#endif
-
-  bs->barrier_insertion_phase(C, igvn);
-  if (failing())  return;
-
   {
     TracePhase tp("barrierExpand", &timers[_t_barrierExpand]);
     if (bs->expand_barriers(this, igvn)) {
@@ -2472,7 +2461,11 @@ void Compile::Code_Gen() {
   {
     TracePhase tp("matcher", &timers[_t_matcher]);
     matcher.match();
+    if (failing()) {
+      return;
+    }
   }
+
   // In debug mode can dump m._nodes.dump() for mapping of ideal to machine
   // nodes.  Mapping is only valid at the root of each matched subtree.
   NOT_PRODUCT( verify_graph_edges(); )
@@ -3471,7 +3464,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
       // address computations.
       n->as_Type()->set_type(TypeLong::INT);
       ResourceMark rm;
-      Node_List wq;
+      Unique_Node_List wq;
       wq.push(n);
       for (uint next = 0; next < wq.size(); next++) {
         Node *m = wq.at(next);
@@ -3486,7 +3479,6 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
           // redundant
           for (DUIterator_Fast imax, i = k->fast_outs(imax); i < imax; i++) {
             Node* u = k->fast_out(i);
-            assert(!wq.contains(u), "shouldn't process one node several times");
             if (u->Opcode() == Op_LShiftL ||
                 u->Opcode() == Op_AddL ||
                 u->Opcode() == Op_SubL ||

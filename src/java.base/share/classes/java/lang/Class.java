@@ -207,8 +207,8 @@ public final class Class<T> implements java.io.Serializable,
      *
      * The string is formatted as a list of type modifiers, if any,
      * followed by the kind of type (empty string for primitive types
-     * and {@code class}, {@code enum}, {@code interface}, or
-     * <code>&#64;</code>{@code interface}, as appropriate), followed
+     * and {@code class}, {@code enum}, {@code interface},
+     * <code>&#64;</code>{@code interface}, or {@code record} as appropriate), followed
      * by the type's name, followed by an angle-bracketed
      * comma-separated list of the type's type parameters, if any,
      * including informative bounds on the type parameters, if any.
@@ -234,6 +234,7 @@ public final class Class<T> implements java.io.Serializable,
      *
      * @since 1.8
      */
+    @SuppressWarnings("preview")
     public String toGenericString() {
         if (isPrimitive()) {
             return toString();
@@ -264,6 +265,8 @@ public final class Class<T> implements java.io.Serializable,
                 } else {
                     if (isEnum())
                         sb.append("enum");
+                    else if (isRecord())
+                        sb.append("record");
                     else
                         sb.append("class");
                 }
@@ -322,10 +325,14 @@ public final class Class<T> implements java.io.Serializable,
      * @param      className   the fully qualified name of the desired class.
      * @return     the {@code Class} object for the class with the
      *             specified name.
-     * @exception LinkageError if the linkage fails
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    LinkageError if the linkage fails
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *            by this method fails
-     * @exception ClassNotFoundException if the class cannot be located
+     * @throws    ClassNotFoundException if the class cannot be located
+     *
+     * @jls 12.2 Loading of Classes and Interfaces
+     * @jls 12.3 Linking of Classes and Interfaces
+     * @jls 12.4 Initialization of Classes and Interfaces
      */
     @CallerSensitive
     public static Class<?> forName(String className)
@@ -340,7 +347,7 @@ public final class Class<T> implements java.io.Serializable,
      * interface with the given string name, using the given class loader.
      * Given the fully qualified name for a class or interface (in the same
      * format returned by {@code getName}) this method attempts to
-     * locate, load, and link the class or interface.  The specified class
+     * locate and load the class or interface.  The specified class
      * loader is used to load the class or interface.  If the parameter
      * {@code loader} is null, the class is loaded through the bootstrap
      * class loader.  The class is initialized only if the
@@ -375,17 +382,17 @@ public final class Class<T> implements java.io.Serializable,
      * is accessible to its caller.
      *
      * @param name       fully qualified name of the desired class
-     * @param initialize if {@code true} the class will be initialized.
+     * @param initialize if {@code true} the class will be initialized (which implies linking).
      *                   See Section 12.4 of <em>The Java Language Specification</em>.
      * @param loader     class loader from which the class must be loaded
      * @return           class object representing the desired class
      *
-     * @exception LinkageError if the linkage fails
-     * @exception ExceptionInInitializerError if the initialization provoked
+     * @throws    LinkageError if the linkage fails
+     * @throws    ExceptionInInitializerError if the initialization provoked
      *            by this method fails
-     * @exception ClassNotFoundException if the class cannot be located by
+     * @throws    ClassNotFoundException if the class cannot be located by
      *            the specified class loader
-     * @exception SecurityException
+     * @throws    SecurityException
      *            if a security manager is present, and the {@code loader} is
      *            {@code null}, and the caller's class loader is not
      *            {@code null}, and the caller does not have the
@@ -393,6 +400,10 @@ public final class Class<T> implements java.io.Serializable,
      *
      * @see       java.lang.Class#forName(String)
      * @see       java.lang.ClassLoader
+     *
+     * @jls 12.2 Loading of Classes and Interfaces
+     * @jls 12.3 Linking of Classes and Interfaces
+     * @jls 12.4 Initialization of Classes and Interfaces
      * @since     1.2
      */
     @CallerSensitive
@@ -428,9 +439,9 @@ public final class Class<T> implements java.io.Serializable,
      * Returns the {@code Class} with the given <a href="ClassLoader.html#binary-name">
      * binary name</a> in the given module.
      *
-     * <p> This method attempts to locate, load, and link the class or interface.
-     * It does not run the class initializer.  If the class is not found, this
-     * method returns {@code null}. </p>
+     * <p> This method attempts to locate and load the class or interface.
+     * It does not link the class, and does not run the class initializer.
+     * If the class is not found, this method returns {@code null}. </p>
      *
      * <p> If the class loader of the given module defines other modules and
      * the given name is a class defined in a different module, this method
@@ -466,6 +477,8 @@ public final class Class<T> implements java.io.Serializable,
      *         in a module.</li>
      *         </ul>
      *
+     * @jls 12.2 Loading of Classes and Interfaces
+     * @jls 12.3 Linking of Classes and Interfaces
      * @since 9
      * @spec JPMS
      */
@@ -650,12 +663,12 @@ public final class Class<T> implements java.io.Serializable,
      * or via a widening reference conversion. See <em>The Java Language
      * Specification</em>, sections 5.1.1 and 5.1.4 , for details.
      *
-     * @param cls the {@code Class} object to be checked
-     * @return the {@code boolean} value indicating whether objects of the
-     * type {@code cls} can be assigned to objects of this class
-     * @exception NullPointerException if the specified Class parameter is
+     * @param     cls the {@code Class} object to be checked
+     * @return    the {@code boolean} value indicating whether objects of the
+     *            type {@code cls} can be assigned to objects of this class
+     * @throws    NullPointerException if the specified Class parameter is
      *            null.
-     * @since 1.1
+     * @since     1.1
      */
     @HotSpotIntrinsicCandidate
     public native boolean isAssignableFrom(Class<?> cls);
@@ -1495,7 +1508,7 @@ public final class Class<T> implements java.io.Serializable,
      * class.  If the underlying class is a top level class this
      * method returns {@code null}.
      * @return the immediately enclosing class of the underlying class
-     * @exception  SecurityException
+     * @throws     SecurityException
      *             If a security manager, <i>s</i>, is present and the caller's
      *             class loader is not the same as or an ancestor of the class
      *             loader for the enclosing class and invocation of {@link
@@ -2251,11 +2264,27 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Returns an array containing {@code RecordComponent} objects reflecting all the
-     * declared record components of the record represented by this {@code Class} object
+     * {@preview Associated with records, a preview feature of the Java language.
      *
-     * @return  the array of {@code RecordComponent} objects representing all the
-     *          record components of this record
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns an array of {@code RecordComponent} objects representing all the
+     * record components of this record class, or {@code null} if this class is
+     * not a record class.
+     *
+     * <p> The components are returned in the same order that they are declared
+     * in the record header. The array is empty if this record class has no
+     * components. If the class is not a record class, that is {@link
+     * #isRecord()} returns {@code false}, then this method returns {@code null}.
+     * Conversely, if {@link #isRecord()} returns {@code true}, then this method
+     * returns a non-null value.
+     *
+     * @return  An array of {@code RecordComponent} objects representing all the
+     *          record components of this record class, or {@code null} if this
+     *          class is not a record class
      * @throws  SecurityException
      *          If a security manager, <i>s</i>, is present and any of the
      *          following conditions is met:
@@ -2277,26 +2306,26 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
+     * @jls 8.10 Record Types
      * @since 14
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
     @CallerSensitive
-    public RecordComponent[] getRecordComponents() throws SecurityException {
+    public RecordComponent[] getRecordComponents() {
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
-        if (isPrimitive() || isArray()) {
+        if (!isRecord()) {
+            return null;
+        }
+        RecordComponent[] recordComponents = getRecordComponents0();
+        if (recordComponents == null) {
             return new RecordComponent[0];
         }
-        Object[] recordComponents = getRecordComponents0();
-        if (recordComponents == null || recordComponents.length == 0) {
-            return new RecordComponent[0];
-        }
-        RecordComponent[] result = new RecordComponent[recordComponents.length];
-        for (int i = 0; i < recordComponents.length; i++) {
-            result[i] = (RecordComponent)recordComponents[i];
-        }
-        return result;
+        return recordComponents;
     }
 
     /**
@@ -3456,8 +3485,8 @@ public final class Class<T> implements java.io.Serializable,
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]   getDeclaredClasses0();
-    private native String[]     getRecordComponentNames0();
-    private native Object[]     getRecordComponents0();
+    @SuppressWarnings("preview")
+    private native RecordComponent[] getRecordComponents0();
     private native boolean      isRecord0();
 
     /**
@@ -3545,7 +3574,9 @@ public final class Class<T> implements java.io.Serializable,
      * Returns true if and only if this class was declared as an enum in the
      * source code.
      *
-     * Note that if an enum constant is declared with a class body,
+     * Note that {@link java.lang.Enum} is not itself an enum type.
+     *
+     * Also note that if an enum constant is declared with a class body,
      * the class of that enum constant object is an anonymous class
      * and <em>not</em> the class of the declaring enum type. The
      * {@link Enum#getDeclaringClass} method of an enum constant can
@@ -3565,16 +3596,42 @@ public final class Class<T> implements java.io.Serializable,
         this.getSuperclass() == java.lang.Enum.class;
     }
 
+    /** java.lang.Record.class */
+    private static final Class<?> JAVA_LANG_RECORD_CLASS = javaLangRecordClass();
+    private static Class<?> javaLangRecordClass() {
+        try {
+            return Class.forName0("java.lang.Record", false, null, null);
+        } catch (ClassNotFoundException e) {
+            throw new InternalError("should not reach here", e);
+        }
+    }
+
     /**
-     * Returns true if and only if this class was declared as a record in the
-     * source code.
+     * {@preview Associated with records, a preview feature of the Java language.
      *
-     * @return true if and only if this class was declared as a record in the
-     *     source code
-     * @since 1.12
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns {@code true} if and only if this class is a record class.
+     *
+     * <p> The {@linkplain #getSuperclass() direct superclass} of a record
+     * class is {@code java.lang.Record}. A record class has (possibly zero)
+     * record components, that is, {@link #getRecordComponents()} returns a
+     * non-null value.
+     *
+     * <p> Note that class {@link Record} is not a record type and thus invoking
+     * this method on class {@code Record} returns {@code false}.
+     *
+     * @return true if and only if this class is a record class, otherwise false
+     * @jls 8.10 Record Types
+     * @since 14
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
     public boolean isRecord() {
-        return isRecord0();
+        return getSuperclass() == JAVA_LANG_RECORD_CLASS && isRecord0();
     }
 
     // Fetches the factory for reflective objects

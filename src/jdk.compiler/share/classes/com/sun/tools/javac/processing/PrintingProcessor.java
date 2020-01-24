@@ -57,7 +57,7 @@ import com.sun.tools.javac.util.StringUtils;
  * deletion without notice.</b>
  */
 @SupportedAnnotationTypes("*")
-@SupportedSourceVersion(SourceVersion.RELEASE_14)
+@SupportedSourceVersion(SourceVersion.RELEASE_15)
 public class PrintingProcessor extends AbstractProcessor {
     PrintWriter writer;
 
@@ -90,6 +90,7 @@ public class PrintingProcessor extends AbstractProcessor {
     /**
      * Used for the -Xprint option and called by Elements.printElements
      */
+    @SuppressWarnings("preview")
     public static class PrintingElementVisitor
         extends SimpleElementVisitor14<PrintingElementVisitor, Boolean> {
         int indentation; // Indentation level;
@@ -109,6 +110,13 @@ public class PrintingProcessor extends AbstractProcessor {
                 writer.println();
             printDocComment(e);
             printModifiers(e);
+            return this;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public PrintingElementVisitor visitRecordComponent(RecordComponentElement e, Boolean p) {
+                // Do nothing; printing of component information done by
+                // printing the record type itself
             return this;
         }
 

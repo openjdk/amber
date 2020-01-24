@@ -43,7 +43,6 @@ class ObjectMonitor;
 class ObjectWaiter : public StackObj {
  public:
   enum TStates { TS_UNDEF, TS_READY, TS_RUN, TS_WAIT, TS_ENTER, TS_CXQ };
-  enum Sorted  { PREPEND, APPEND, SORTED };
   ObjectWaiter* volatile _next;
   ObjectWaiter* volatile _prev;
   Thread*       _thread;
@@ -51,7 +50,6 @@ class ObjectWaiter : public StackObj {
   ParkEvent *   _event;
   volatile int  _notified;
   volatile TStates TState;
-  Sorted        _Sorted;           // List placement disposition
   bool          _active;           // Contention monitoring is enabled
  public:
   ObjectWaiter(Thread* thread);
@@ -67,10 +65,6 @@ class ObjectWaiter : public StackObj {
 //
 // WARNING: This is a very sensitive and fragile class. DO NOT make any
 // changes unless you are fully aware of the underlying semantics.
-//
-// Class JvmtiRawMonitor currently inherits from ObjectMonitor so
-// changes in this class must be careful to not break JvmtiRawMonitor.
-// These two subsystems should be separated.
 //
 // ObjectMonitor Layout Overview/Highlights/Restrictions:
 //
@@ -127,16 +121,6 @@ class ObjectWaiter : public StackObj {
 //     in a 64-bit JVM.
 
 class ObjectMonitor {
- public:
-  enum {
-    OM_OK,                    // no error
-    OM_SYSTEM_ERROR,          // operating system error
-    OM_ILLEGAL_MONITOR_STATE, // IllegalMonitorStateException
-    OM_INTERRUPTED,           // Thread.interrupt()
-    OM_TIMED_OUT              // Object.wait() timed out
-  };
-
- private:
   friend class ObjectSynchronizer;
   friend class ObjectWaiter;
   friend class VMStructs;
@@ -158,16 +142,13 @@ class ObjectMonitor {
   DEFINE_PAD_MINUS_SIZE(0, DEFAULT_CACHE_LINE_SIZE,
                         sizeof(volatile markWord) + sizeof(void* volatile) +
                         sizeof(ObjectMonitor *));
- protected:                         // protected for JvmtiRawMonitor
   void* volatile _owner;            // pointer to owning thread OR BasicLock
- private:
   volatile jlong _previous_owner_tid;  // thread id of the previous owner of the monitor
- protected:                         // protected for JvmtiRawMonitor
-  volatile intptr_t _recursions;    // recursion count, 0 for first entry
+  volatile intx _recursions;        // recursion count, 0 for first entry
   ObjectWaiter* volatile _EntryList;  // Threads blocked on entry or reentry.
                                       // The list is actually composed of WaitNodes,
                                       // acting as proxies for Threads.
- private:
+
   ObjectWaiter* volatile _cxq;      // LL of recently-arrived threads blocked on entry.
   Thread* volatile _succ;           // Heir presumptive thread - used for futile wakeup throttling
   Thread* volatile _Responsible;
@@ -256,7 +237,7 @@ class ObjectMonitor {
   jint      waiters() const;
 
   jint      contentions() const;
-  intptr_t  recursions() const                                         { return _recursions; }
+  intx      recursions() const                                         { return _recursions; }
 
   // JVM/TI GetObjectMonitorUsage() needs this:
   ObjectWaiter* first_waiter()                                         { return _WaitSet; }
@@ -282,7 +263,7 @@ class ObjectMonitor {
     // _recursions == 0 _WaitSet == NULL
     DEBUG_ONLY(stringStream ss;)
     assert((is_busy() | _recursions) == 0, "freeing in-use monitor: %s, "
-           "recursions=" INTPTR_FORMAT, is_busy_to_string(&ss), _recursions);
+           "recursions=" INTX_FORMAT, is_busy_to_string(&ss), _recursions);
     _succ          = NULL;
     _EntryList     = NULL;
     _cxq           = NULL;
@@ -308,11 +289,14 @@ class ObjectMonitor {
   void      notifyAll(TRAPS);
 
   void      print() const;
+#ifdef ASSERT
+  void      print_debug_style_on(outputStream* st) const;
+#endif
   void      print_on(outputStream* st) const;
 
 // Use the following at your own risk
-  intptr_t  complete_exit(TRAPS);
-  void      reenter(intptr_t recursions, TRAPS);
+  intx      complete_exit(TRAPS);
+  void      reenter(intx recursions, TRAPS);
 
  private:
   void      AddWaiter(ObjectWaiter* waiter);

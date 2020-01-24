@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -985,6 +985,7 @@ public class ElementsTable {
         return (xclasses || toolEnv.getFileKind(te) == SOURCE) && isSelected(te);
     }
 
+    @SuppressWarnings("preview")
     SimpleElementVisitor14<Boolean, Void> visibleElementVisitor = null;
     /**
      * Returns true if the element is selected, by applying
@@ -996,6 +997,7 @@ public class ElementsTable {
      * @param e the element to be checked
      * @return true if the element is visible
      */
+    @SuppressWarnings("preview")
     public boolean isSelected(Element e) {
         if (toolEnv.isSynthetic((Symbol) e)) {
             return false;
@@ -1028,15 +1030,16 @@ public class ElementsTable {
 
                 @Override
                 public Boolean visitUnknown(Element e, Void p) {
-                    throw new AssertionError("unkown element: " + p);
+                    throw new AssertionError("unknown element: " + e);
                 }
             };
         }
         return visibleElementVisitor.visit(e);
     }
 
+    @SuppressWarnings("preview")
     private class IncludedVisitor extends SimpleElementVisitor14<Boolean, Void> {
-        final private Set<Element> includedCache;
+        private final Set<Element> includedCache;
 
         public IncludedVisitor() {
             includedCache = new LinkedHashSet<>();
@@ -1239,8 +1242,8 @@ public class ElementsTable {
             }
         }
 
-        static EnumSet<AccessKind> getFilterSet(AccessKind acccessValue) {
-            switch (acccessValue) {
+        static EnumSet<AccessKind> getFilterSet(AccessKind accessValue) {
+            switch (accessValue) {
                 case PUBLIC:
                     return EnumSet.of(AccessKind.PUBLIC);
                 case PROTECTED:

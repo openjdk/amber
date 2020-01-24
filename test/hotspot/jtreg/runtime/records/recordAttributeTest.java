@@ -23,7 +23,9 @@
 
 /*
  * @test
- * @compile recordAttribute.jcod
+ * @compile abstractRecord.jcod notFinalRecord.jcod oldRecordAttribute.jcod superNotJLRecord.jcod
+ * @compile shortRecordAttribute.jcod twoRecordAttributes.jcod badRecordAttribute.jcod
+ *
  * @run main/othervm --enable-preview recordAttributeTest
  */
 
@@ -48,32 +50,31 @@ public class recordAttributeTest {
 
     public static void main(String... args) throws Throwable {
 
-        // Test loading a class with two Record attributes.
+        // Test loading a class with two Record attributes. This should throw ClassFormatError.
         runTest("twoRecordAttributes",
                 "Multiple Record attributes in class");
 
-        // Test loading a Record type marked abstract.
+        // Test loading a Record type marked abstract. This should throw ClassFormatError.
         runTest("abstractRecord",
                 "Record attribute in non-final or abstract class");
 
-        // Test loading a Record type that is not final.
+        // Test loading a Record type that is not final. This should throw ClassFormatError.
         runTest("notFinalRecord",
                 "Record attribute in non-final or abstract class");
 
-        // Test loading a Record type that is badly formed.
+        // Test loading a Record type that is badly formed. This should throw ClassFormatError.
         runTest("badRecordAttribute",
                 "Invalid constant pool index 13 for descriptor in Record attribute");
 
-        // Test loading a Record type that is too small.
+        // Test loading a Record type that is too small. This should throw ClassFormatError.
         runTest("shortRecordAttribute", "Truncated class file");
 
         // Test that loading a class with an old class file version ignores a
-        // badly formed Record attribute.
+        // badly formed Record attribute. No exception should be thrown.
         Class newClass = Class.forName("oldRecordAttribute");
 
         // Test that loading a class whose super class is not java.lang.Record
-        // ignores a badly formed Record attribute.
+        // ignores a badly formed Record attribute. No exception should be thrown.
         newClass = Class.forName("superNotJLRecord");
     }
 }
-

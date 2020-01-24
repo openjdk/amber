@@ -55,10 +55,7 @@ private:
                                     bool tosca_live,
                                     bool expand_call);
 
-  void resolve_forward_pointer(MacroAssembler* masm, Register dst, Register tmp = noreg);
-  void resolve_forward_pointer_not_null(MacroAssembler* masm, Register dst, Register tmp = noreg);
-
-  void load_reference_barrier_not_null(MacroAssembler* masm, Register dst);
+  void load_reference_barrier_not_null(MacroAssembler* masm, Register dst, Address src);
 
   void storeval_barrier_impl(MacroAssembler* masm, Register dst, Register tmp);
 
@@ -75,15 +72,13 @@ public:
   void generate_c1_load_reference_barrier_runtime_stub(StubAssembler* sasm);
 #endif
 
-  void load_reference_barrier(MacroAssembler* masm, Register dst);
-  void load_reference_barrier_native(MacroAssembler* masm, Register dst);
+  void load_reference_barrier(MacroAssembler* masm, Register dst, Address src);
+  void load_reference_barrier_native(MacroAssembler* masm, Register dst, Address src);
 
   void cmpxchg_oop(MacroAssembler* masm,
                    Register res, Address addr, Register oldval, Register newval,
                    bool exchange, Register tmp1, Register tmp2);
   virtual void arraycopy_prologue(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
-                                  Register src, Register dst, Register count);
-  virtual void arraycopy_epilogue(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
                                   Register src, Register dst, Register count);
   virtual void load_at(MacroAssembler* masm, DecoratorSet decorators, BasicType type,
                        Register dst, Address src, Register tmp1, Register tmp_thread);
@@ -91,7 +86,6 @@ public:
                         Address dst, Register val, Register tmp1, Register tmp2);
   virtual void try_resolve_jobject_in_native(MacroAssembler* masm, Register jni_env,
                                              Register obj, Register tmp, Label& slowpath);
-
   virtual void barrier_stubs_init();
 
 };

@@ -70,13 +70,10 @@ public class ExpSwitchNestingTest extends CompilationTestCase {
             = List.of(FOR, WHILE, DO, SSWITCH, IF, BLOCK);
 
     // @@@ When expression switch becomes a permanent feature, we don't need these any more
-    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
-                                               Integer.toString(Runtime.version().feature())};
     private static final String SHELL = "class C { static boolean cond = false; static int x = 0; void m() { # } }";
 
     {
         setDefaultFilename("C.java");
-        setCompileOptions(PREVIEW_OPTIONS);
         setProgramShell(SHELL);
     }
 

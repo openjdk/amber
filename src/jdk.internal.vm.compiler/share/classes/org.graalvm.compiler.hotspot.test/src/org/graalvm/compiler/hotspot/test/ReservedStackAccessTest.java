@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,11 @@
 package org.graalvm.compiler.hotspot.test;
 
 import java.io.IOException;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.graalvm.compiler.test.SubprocessUtil;
 import org.graalvm.compiler.test.SubprocessUtil.Subprocess;
-
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,11 +67,13 @@ public class ReservedStackAccessTest extends HotSpotGraalCompilerTest {
 
     @Test
     public void run() throws IOException, InterruptedException {
+        Assume.assumeFalse("GR-19833", runtime().getVMConfig().osName.equals("windows"));
         Assume.assumeTrue(runtime().getVMConfig().enableStackReservedZoneAddress != 0);
         List<String> vmArgs = SubprocessUtil.withoutDebuggerArguments(SubprocessUtil.getVMCommandLine());
         vmArgs.add("-XX:+UseJVMCICompiler");
         vmArgs.add("-Dgraal.Inline=false");
         vmArgs.add("-XX:CompileCommand=exclude,java/util/concurrent/locks/AbstractOwnableSynchronizer.setExclusiveOwnerThread");
+        vmArgs.add(SubprocessUtil.PACKAGE_OPENING_OPTIONS);
 
         // Avoid SOE in HotSpotJVMCIRuntime.adjustCompilationLevel
         vmArgs.add("-Dgraal.CompileGraalWithC1Only=false");

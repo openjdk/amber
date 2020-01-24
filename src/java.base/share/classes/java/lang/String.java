@@ -702,7 +702,7 @@ public final class String
      * @param      index   the index of the {@code char} value.
      * @return     the {@code char} value at the specified index of this string.
      *             The first {@code char} value is at index {@code 0}.
-     * @exception  IndexOutOfBoundsException  if the {@code index}
+     * @throws     IndexOutOfBoundsException  if the {@code index}
      *             argument is negative or not less than the length of this
      *             string.
      */
@@ -731,7 +731,7 @@ public final class String
      * @param      index the index to the {@code char} values
      * @return     the code point value of the character at the
      *             {@code index}
-     * @exception  IndexOutOfBoundsException  if the {@code index}
+     * @throws     IndexOutOfBoundsException  if the {@code index}
      *             argument is negative or not less than the length of this
      *             string.
      * @since      1.5
@@ -763,7 +763,7 @@ public final class String
      *
      * @param     index the index following the code point that should be returned
      * @return    the Unicode code point value before the given index.
-     * @exception IndexOutOfBoundsException if the {@code index}
+     * @throws    IndexOutOfBoundsException if the {@code index}
      *            argument is less than 1 or greater than the length
      *            of this string.
      * @since     1.5
@@ -794,7 +794,7 @@ public final class String
      * the text range.
      * @return the number of Unicode code points in the specified text
      * range
-     * @exception IndexOutOfBoundsException if the
+     * @throws    IndexOutOfBoundsException if the
      * {@code beginIndex} is negative, or {@code endIndex}
      * is larger than the length of this {@code String}, or
      * {@code beginIndex} is larger than {@code endIndex}.
@@ -821,7 +821,7 @@ public final class String
      * @param index the index to be offset
      * @param codePointOffset the offset in code points
      * @return the index within this {@code String}
-     * @exception IndexOutOfBoundsException if {@code index}
+     * @throws    IndexOutOfBoundsException if {@code index}
      *   is negative or larger then the length of this
      *   {@code String}, or if {@code codePointOffset} is positive
      *   and the substring starting with {@code index} has fewer
@@ -858,7 +858,7 @@ public final class String
      *                        to copy.
      * @param      dst        the destination array.
      * @param      dstBegin   the start offset in the destination array.
-     * @exception IndexOutOfBoundsException If any of the following
+     * @throws    IndexOutOfBoundsException If any of the following
      *            is true:
      *            <ul><li>{@code srcBegin} is negative.
      *            <li>{@code srcBegin} is greater than {@code srcEnd}
@@ -1867,7 +1867,7 @@ public final class String
      *
      * @param      beginIndex   the beginning index, inclusive.
      * @return     the specified substring.
-     * @exception  IndexOutOfBoundsException  if
+     * @throws     IndexOutOfBoundsException  if
      *             {@code beginIndex} is negative or larger than the
      *             length of this {@code String} object.
      */
@@ -1890,7 +1890,7 @@ public final class String
      * @param      beginIndex   the beginning index, inclusive.
      * @param      endIndex     the ending index, exclusive.
      * @return     the specified substring.
-     * @exception  IndexOutOfBoundsException  if the
+     * @throws     IndexOutOfBoundsException  if the
      *             {@code beginIndex} is negative, or
      *             {@code endIndex} is larger than the length of
      *             this {@code String} object, or
@@ -2888,6 +2888,15 @@ public final class String
     }
 
     /**
+     * {@preview Associated with text blocks, a preview feature of
+     *           the Java language.
+     *
+     *           This method is associated with <i>text blocks</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns a string whose value is this string, with incidental
      * {@linkplain Character#isWhitespace(int) white space} removed from
      * the beginning and end of every line.
@@ -2963,10 +2972,9 @@ public final class String
      *
      * @since 13
      *
-     * @deprecated  This method is associated with text blocks, a preview language feature.
-     *              Text blocks and/or this method may be changed or removed in a future release.
      */
-    @Deprecated(forRemoval=true, since="13")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
+                                 essentialAPI=true)
     public String stripIndent() {
         int length = length();
         if (length == 0) {
@@ -3005,6 +3013,15 @@ public final class String
     }
 
     /**
+     * {@preview Associated with text blocks, a preview feature of
+     *           the Java language.
+     *
+     *           This method is associated with <i>text blocks</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns a string whose value is this string, with escape sequences
      * translated as if in a string literal.
      * <p>
@@ -3045,6 +3062,11 @@ public final class String
      *     <td>{@code U+000D}</td>
      *   </tr>
      *   <tr>
+     *     <th scope="row">{@code \u005Cs}</th>
+     *     <td>space</td>
+     *     <td>{@code U+0020}</td>
+     *   </tr>
+     *   <tr>
      *     <th scope="row">{@code \u005C"}</th>
      *     <td>double quote</td>
      *     <td>{@code U+0022}</td>
@@ -3064,6 +3086,11 @@ public final class String
      *     <td>octal escape</td>
      *     <td>code point equivalents</td>
      *   </tr>
+     *   <tr>
+     *     <th scope="row">{@code \u005C<line-terminator>}</th>
+     *     <td>continuation</td>
+     *     <td>discard</td>
+     *   </tr>
      *   </tbody>
      * </table>
      *
@@ -3079,11 +3106,9 @@ public final class String
      * @jls 3.10.7 Escape Sequences
      *
      * @since 13
-     *
-     * @deprecated  This method is associated with text blocks, a preview language feature.
-     *              Text blocks and/or this method may be changed or removed in a future release.
      */
-    @Deprecated(forRemoval=true, since="13")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
+                                 essentialAPI=true)
     public String translateEscapes() {
         if (isEmpty()) {
             return "";
@@ -3109,6 +3134,9 @@ public final class String
                 case 'r':
                     ch = '\r';
                     break;
+                case 's':
+                    ch = ' ';
+                    break;
                 case 't':
                     ch = '\t';
                     break;
@@ -3131,6 +3159,13 @@ public final class String
                     }
                     ch = (char)code;
                     break;
+                case '\n':
+                    continue;
+                case '\r':
+                    if (from < length && chars[from] == '\n') {
+                        from++;
+                    }
+                    continue;
                 default: {
                     String msg = String.format(
                         "Invalid escape sequence: \\%c \\\\u%04X",
@@ -3309,6 +3344,15 @@ public final class String
     }
 
     /**
+     * {@preview Associated with text blocks, a preview feature of
+     *           the Java language.
+     *
+     *           This method is associated with <i>text blocks</i>, a preview
+     *           feature of the Java language. Programs can only use this
+     *           method when preview features are enabled. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Formats using this string as the format string, and the supplied
      * arguments.
      *
@@ -3324,10 +3368,9 @@ public final class String
      *
      * @since 13
      *
-     * @deprecated  This method is associated with text blocks, a preview language feature.
-     *              Text blocks and/or this method may be changed or removed in a future release.
      */
-    @Deprecated(forRemoval=true, since="13")
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
+                                 essentialAPI=true)
     public String formatted(Object... args) {
         return new Formatter().format(this, args).toString();
     }
@@ -3374,7 +3417,7 @@ public final class String
      * @param   count    length of the subarray.
      * @return  a {@code String} that contains the characters of the
      *          specified subarray of the character array.
-     * @exception IndexOutOfBoundsException if {@code offset} is
+     * @throws    IndexOutOfBoundsException if {@code offset} is
      *          negative, or {@code count} is negative, or
      *          {@code offset+count} is larger than
      *          {@code data.length}.
@@ -3391,7 +3434,7 @@ public final class String
      * @param   count    length of the subarray.
      * @return  a {@code String} that contains the characters of the
      *          specified subarray of the character array.
-     * @exception IndexOutOfBoundsException if {@code offset} is
+     * @throws    IndexOutOfBoundsException if {@code offset} is
      *          negative, or {@code count} is negative, or
      *          {@code offset+count} is larger than
      *          {@code data.length}.

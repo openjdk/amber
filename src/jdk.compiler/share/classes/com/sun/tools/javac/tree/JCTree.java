@@ -48,12 +48,10 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
 
-import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.OpensDirective;
 import com.sun.tools.javac.code.Type.ModuleType;
-import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
 
 /**
  * Root class for abstract syntax tree nodes. It provides definitions
@@ -160,7 +158,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         SWITCH_EXPRESSION,
 
-        /** Synchronized statements, of type Synchonized.
+        /** Synchronized statements, of type Synchronized.
          */
         SYNCHRONIZED,
 
@@ -792,6 +790,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public void accept(Visitor v) { v.visitClassDef(this); }
 
+        @SuppressWarnings("preview")
         @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() {
             if ((mods.flags & Flags.ANNOTATION) != 0)
@@ -800,6 +799,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                 return Kind.INTERFACE;
             else if ((mods.flags & Flags.ENUM) != 0)
                 return Kind.ENUM;
+            else if ((mods.flags & Flags.RECORD) != 0)
+                return Kind.RECORD;
             else
                 return Kind.CLASS;
         }
@@ -949,27 +950,23 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public VarSymbol sym;
         /** explicit start pos */
         public int startPos = Position.NOPOS;
-        /** accessors */
-        public List<Pair<Accessors.Kind, Name>> accessors;
 
         protected JCVariableDecl(JCModifiers mods,
                          Name name,
                          JCExpression vartype,
                          JCExpression init,
-                         VarSymbol sym,
-                         List<Pair<Accessors.Kind, Name>> accessors) {
+                         VarSymbol sym) {
             this.mods = mods;
             this.name = name;
             this.vartype = vartype;
             this.init = init;
             this.sym = sym;
-            this.accessors = accessors;
         }
 
         protected JCVariableDecl(JCModifiers mods,
                          JCExpression nameexpr,
                          JCExpression vartype) {
-            this(mods, null, vartype, null, null, null);
+            this(mods, null, vartype, null, null);
             this.nameexpr = nameexpr;
             if (nameexpr.hasTag(Tag.IDENT)) {
                 this.name = ((JCIdent)nameexpr).name;
@@ -1271,17 +1268,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     public static class JCCase extends JCStatement implements CaseTree {
         //as CaseKind is deprecated for removal (as it is part of a preview feature),
         //using indirection through these fields to avoid unnecessary @SuppressWarnings:
-        @SuppressWarnings("removal")
         public static final CaseKind STATEMENT = CaseKind.STATEMENT;
-        @SuppressWarnings("removal")
         public static final CaseKind RULE = CaseKind.RULE;
-        @SuppressWarnings("removal")
         public final CaseKind caseKind;
         public List<JCExpression> pats;
         public List<JCStatement> stats;
         public JCTree body;
         public boolean completesNormally;
-        protected JCCase(@SuppressWarnings("removal") CaseKind caseKind, List<JCExpression> pats,
+        protected JCCase(CaseKind caseKind, List<JCExpression> pats,
                          List<JCStatement> stats, JCTree body) {
             Assert.checkNonNull(pats);
             Assert.check(pats.isEmpty() || pats.head != null);
@@ -1295,21 +1289,17 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.CASE; }
-        @Override @DefinedBy(Api.COMPILER_TREE)
+        @Override @Deprecated @DefinedBy(Api.COMPILER_TREE)
         public JCExpression getExpression() { return pats.head; }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        @SuppressWarnings("removal")
         public List<JCExpression> getExpressions() { return pats; }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        @SuppressWarnings("removal")
         public List<JCStatement> getStatements() {
             return caseKind == CaseKind.STATEMENT ? stats : null;
         }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        @SuppressWarnings("removal")
         public JCTree getBody() { return body; }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        @SuppressWarnings("removal")
         public CaseKind getCaseKind() {
             return caseKind;
         }
@@ -1326,7 +1316,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * A "switch ( ) { }" construction.
      */
-    @SuppressWarnings("removal")
     public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
         public JCExpression selector;
         public List<JCCase> cases;
@@ -1607,7 +1596,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * A break-with from a switch expression.
      */
-    @SuppressWarnings("removal")
     public static class JCYield extends JCStatement implements YieldTree {
         public JCExpression value;
         public JCTree target;
@@ -3186,7 +3174,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
         JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
-        JCCase Case(@SuppressWarnings("removal") CaseKind caseKind, List<JCExpression> pat,
+        JCCase Case(CaseTree.CaseKind caseKind, List<JCExpression> pat,
                     List<JCStatement> stats, JCTree body);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);

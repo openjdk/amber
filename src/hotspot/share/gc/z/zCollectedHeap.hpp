@@ -98,7 +98,8 @@ public:
   virtual GrowableArray<MemoryPool*> memory_pools();
 
   virtual void object_iterate(ObjectClosure* cl);
-  virtual void safe_object_iterate(ObjectClosure* cl);
+
+  virtual void keep_alive(oop obj);
 
   virtual void register_nmethod(nmethod* nm);
   virtual void unregister_nmethod(nmethod* nm);
@@ -126,7 +127,6 @@ public:
   virtual void prepare_for_verify();
   virtual void verify(VerifyOption option /* ignored */);
   virtual bool is_oop(oop object) const;
-  virtual void check_oop_location(void* addr) const;
 };
 
 #endif // SHARE_GC_Z_ZCOLLECTEDHEAP_HPP

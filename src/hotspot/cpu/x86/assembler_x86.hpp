@@ -26,7 +26,7 @@
 #define CPU_X86_ASSEMBLER_X86_HPP
 
 #include "asm/register.hpp"
-#include "vm_version_x86.hpp"
+#include "runtime/vm_version.hpp"
 
 class BiasedLockingCounters;
 
@@ -1592,6 +1592,9 @@ private:
 
 #ifdef _LP64
   void notq(Register dst);
+
+  void btsq(Address dst, int imm8);
+  void btrq(Address dst, int imm8);
 #endif
 
   void orl(Address dst, int32_t imm32);
@@ -1835,14 +1838,14 @@ private:
 
   void shldl(Register dst, Register src);
   void shldl(Register dst, Register src, int8_t imm8);
+  void shrdl(Register dst, Register src);
+  void shrdl(Register dst, Register src, int8_t imm8);
 
   void shll(Register dst, int imm8);
   void shll(Register dst);
 
   void shlq(Register dst, int imm8);
   void shlq(Register dst);
-
-  void shrdl(Register dst, Register src);
 
   void shrl(Register dst, int imm8);
   void shrl(Register dst);
@@ -1855,6 +1858,9 @@ private:
   // Compute Square Root of Scalar Double-Precision Floating-Point Value
   void sqrtsd(XMMRegister dst, Address src);
   void sqrtsd(XMMRegister dst, XMMRegister src);
+
+  void roundsd(XMMRegister dst, Address src, int32_t rmode);
+  void roundsd(XMMRegister dst, XMMRegister src, int32_t rmode);
 
   // Compute Square Root of Scalar Single-Precision Floating-Point Value
   void sqrtss(XMMRegister dst, Address src);
@@ -2020,6 +2026,12 @@ private:
   void vsqrtps(XMMRegister dst, XMMRegister src, int vector_len);
   void vsqrtps(XMMRegister dst, Address src, int vector_len);
 
+  // Round Packed Double precision value.
+  void vroundpd(XMMRegister dst, XMMRegister src, int32_t rmode, int vector_len);
+  void vroundpd(XMMRegister dst, Address src, int32_t rmode, int vector_len);
+  void vrndscalepd(XMMRegister dst,  XMMRegister src,  int32_t rmode, int vector_len);
+  void vrndscalepd(XMMRegister dst, Address src, int32_t rmode, int vector_len);
+
   // Bitwise Logical AND of Packed Floating-Point Values
   void andpd(XMMRegister dst, XMMRegister src);
   void andps(XMMRegister dst, XMMRegister src);
@@ -2127,6 +2139,9 @@ private:
   void vpsrad(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
   void evpsraq(XMMRegister dst, XMMRegister src, int shift, int vector_len);
   void evpsraq(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
+
+  void vpshldvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
+  void vpshrdvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
 
   // And packed integers
   void pand(XMMRegister dst, XMMRegister src);

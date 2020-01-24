@@ -25,23 +25,23 @@
 
 package org.graalvm.compiler.asm.aarch64;
 
+import static jdk.vm.ci.aarch64.AArch64.CPU;
+import static jdk.vm.ci.aarch64.AArch64.rscratch1;
+import static jdk.vm.ci.aarch64.AArch64.rscratch2;
+import static jdk.vm.ci.aarch64.AArch64.sp;
+import static jdk.vm.ci.aarch64.AArch64.zr;
 import static org.graalvm.compiler.asm.aarch64.AArch64Address.AddressingMode.BASE_REGISTER_ONLY;
 import static org.graalvm.compiler.asm.aarch64.AArch64Address.AddressingMode.EXTENDED_REGISTER_OFFSET;
 import static org.graalvm.compiler.asm.aarch64.AArch64Address.AddressingMode.IMMEDIATE_SCALED;
 import static org.graalvm.compiler.asm.aarch64.AArch64Address.AddressingMode.IMMEDIATE_UNSCALED;
 import static org.graalvm.compiler.asm.aarch64.AArch64Address.AddressingMode.REGISTER_OFFSET;
+import static org.graalvm.compiler.asm.aarch64.AArch64Assembler.Instruction.LDP;
+import static org.graalvm.compiler.asm.aarch64.AArch64Assembler.Instruction.STP;
 import static org.graalvm.compiler.asm.aarch64.AArch64MacroAssembler.AddressGenerationPlan.WorkPlan.ADD_TO_BASE;
 import static org.graalvm.compiler.asm.aarch64.AArch64MacroAssembler.AddressGenerationPlan.WorkPlan.ADD_TO_INDEX;
 import static org.graalvm.compiler.asm.aarch64.AArch64MacroAssembler.AddressGenerationPlan.WorkPlan.NO_WORK;
 
 import org.graalvm.compiler.asm.BranchTargetOutOfBoundsException;
-
-import static jdk.vm.ci.aarch64.AArch64.CPU;
-import static jdk.vm.ci.aarch64.AArch64.r8;
-import static jdk.vm.ci.aarch64.AArch64.r9;
-import static jdk.vm.ci.aarch64.AArch64.sp;
-import static jdk.vm.ci.aarch64.AArch64.zr;
-
 import org.graalvm.compiler.asm.Label;
 import org.graalvm.compiler.core.common.NumUtil;
 import org.graalvm.compiler.debug.GraalError;
@@ -52,10 +52,14 @@ import jdk.vm.ci.code.TargetDescription;
 
 public class AArch64MacroAssembler extends AArch64Assembler {
 
-    private final ScratchRegister[] scratchRegister = new ScratchRegister[]{new ScratchRegister(r8), new ScratchRegister(r9)};
+    private final ScratchRegister[] scratchRegister = new ScratchRegister[]{new ScratchRegister(rscratch1), new ScratchRegister(rscratch2)};
 
     // Points to the next free scratch register
     private int nextFreeScratchRegister = 0;
+
+    // Last immediate ldr/str instruction, which is a candidate to be merged.
+    private AArch64MemoryEncoding lastImmLoadStoreEncoding;
+    private boolean isImmLoadStoreMerged = false;
 
     public AArch64MacroAssembler(TargetDescription target) {
         super(target);
@@ -81,6 +85,43 @@ public class AArch64MacroAssembler extends AArch64Assembler {
 
     public ScratchRegister getScratchRegister() {
         return scratchRegister[nextFreeScratchRegister++];
+    }
+
+    @Override
+    public void bind(Label l) {
+        super.bind(l);
+        // Clear last ldr/str instruction to prevent the labeled ldr/str being merged.
+        lastImmLoadStoreEncoding = null;
+    }
+
+    private static class AArch64MemoryEncoding {
+        private AArch64Address address;
+        private Register result;
+        private int sizeInBytes;
+        private int position;
+        private boolean isStore;
+
+        AArch64MemoryEncoding(int sizeInBytes, Register result, AArch64Address address, boolean isStore, int position) {
+            this.sizeInBytes = sizeInBytes;
+            this.result = result;
+            this.address = address;
+            this.isStore = isStore;
+            this.position = position;
+            AArch64Address.AddressingMode addressingMode = address.getAddressingMode();
+            assert addressingMode == IMMEDIATE_SCALED || addressingMode == IMMEDIATE_UNSCALED : "Invalid address mode" +
+                            "to merge: " + addressingMode;
+        }
+
+        Register getBase() {
+            return address.getBase();
+        }
+
+        int getOffset() {
+            if (address.getAddressingMode() == IMMEDIATE_UNSCALED) {
+                return address.getImmediateRaw();
+            }
+            return address.getImmediate() * sizeInBytes;
+        }
     }
 
     /**
@@ -323,6 +364,132 @@ public class AArch64MacroAssembler extends AArch64Assembler {
         }
     }
 
+    private boolean tryMerge(int sizeInBytes, Register rt, AArch64Address address, boolean isStore) {
+        isImmLoadStoreMerged = false;
+        if (lastImmLoadStoreEncoding == null) {
+            return false;
+        }
+
+        // Only immediate scaled/unscaled address can be merged.
+        // Pre-index and post-index mode can't be merged.
+        AArch64Address.AddressingMode addressMode = address.getAddressingMode();
+        if (addressMode != IMMEDIATE_SCALED && addressMode != IMMEDIATE_UNSCALED) {
+            return false;
+        }
+
+        // Only the two adjacent ldrs/strs can be merged.
+        int lastPosition = position() - 4;
+        if (lastPosition < 0 || lastPosition != lastImmLoadStoreEncoding.position) {
+            return false;
+        }
+
+        if (isStore != lastImmLoadStoreEncoding.isStore) {
+            return false;
+        }
+
+        // Only merge ldr/str with the same size of 32bits or 64bits.
+        if (sizeInBytes != lastImmLoadStoreEncoding.sizeInBytes || (sizeInBytes != 4 && sizeInBytes != 8)) {
+            return false;
+        }
+
+        // Base register must be the same one.
+        Register curBase = address.getBase();
+        Register preBase = lastImmLoadStoreEncoding.getBase();
+        if (!curBase.equals(preBase)) {
+            return false;
+        }
+
+        // If the two ldrs have the same rt register, they can't be merged.
+        // If the two ldrs have dependence, they can't be merged.
+        Register curRt = rt;
+        Register preRt = lastImmLoadStoreEncoding.result;
+        if (!isStore && (curRt.equals(preRt) || preRt.equals(curBase))) {
+            return false;
+        }
+
+        // Offset checking. Offsets of the two ldrs/strs must be continuous.
+        int curOffset = address.getImmediateRaw();
+        if (addressMode == IMMEDIATE_SCALED) {
+            curOffset = curOffset * sizeInBytes;
+        }
+        int preOffset = lastImmLoadStoreEncoding.getOffset();
+        if (Math.abs(curOffset - preOffset) != sizeInBytes) {
+            return false;
+        }
+
+        // Offset must be in ldp/stp instruction's range.
+        int offset = curOffset > preOffset ? preOffset : curOffset;
+        int minOffset = -64 * sizeInBytes;
+        int maxOffset = 63 * sizeInBytes;
+        if (offset < minOffset || offset > maxOffset) {
+            return false;
+        }
+
+        // Alignment checking.
+        if (isFlagSet(AArch64.Flag.AvoidUnalignedAccesses)) {
+            // AArch64 sp is 16-bytes aligned.
+            if (curBase.equals(sp)) {
+                long pairMask = sizeInBytes * 2 - 1;
+                if ((offset & pairMask) != 0) {
+                    return false;
+                }
+            } else {
+                // If base is not sp, we can't guarantee the access is aligned.
+                return false;
+            }
+        } else {
+            // ldp/stp only supports sizeInBytes aligned offset.
+            long mask = sizeInBytes - 1;
+            if ((curOffset & mask) != 0 || (preOffset & mask) != 0) {
+                return false;
+            }
+        }
+
+        // Merge two ldrs/strs to ldp/stp.
+        Register rt1 = preRt;
+        Register rt2 = curRt;
+        if (curOffset < preOffset) {
+            rt1 = curRt;
+            rt2 = preRt;
+        }
+        int immediate = offset / sizeInBytes;
+        Instruction instruction = isStore ? STP : LDP;
+        int size = sizeInBytes * Byte.SIZE;
+        insertLdpStp(size, instruction, rt1, rt2, curBase, immediate, lastPosition);
+        lastImmLoadStoreEncoding = null;
+        isImmLoadStoreMerged = true;
+        return true;
+    }
+
+    /**
+     * Try to merge two continuous ldr/str to one ldp/stp. If this current ldr/str is not merged,
+     * save it as the last ldr/str.
+     */
+    private boolean tryMergeLoadStore(int srcSize, Register rt, AArch64Address address, boolean isStore) {
+        int sizeInBytes = srcSize / Byte.SIZE;
+        if (tryMerge(sizeInBytes, rt, address, isStore)) {
+            return true;
+        }
+
+        // Save last ldr/str if it is not merged.
+        AArch64Address.AddressingMode addressMode = address.getAddressingMode();
+        if (addressMode == IMMEDIATE_SCALED || addressMode == IMMEDIATE_UNSCALED) {
+            if (addressMode == IMMEDIATE_UNSCALED) {
+                long mask = sizeInBytes - 1;
+                int offset = address.getImmediateRaw();
+                if ((offset & mask) != 0) {
+                    return false;
+                }
+            }
+            lastImmLoadStoreEncoding = new AArch64MemoryEncoding(sizeInBytes, rt, address, isStore, position());
+        }
+        return false;
+    }
+
+    public boolean isImmLoadStoreMerged() {
+        return isImmLoadStoreMerged;
+    }
+
     public void movx(Register dst, Register src) {
         mov(64, dst, src);
     }
@@ -507,7 +674,7 @@ public class AArch64MacroAssembler extends AArch64Assembler {
         assert targetSize == 32 || targetSize == 64;
         assert srcSize <= targetSize;
         if (targetSize == srcSize) {
-            super.ldr(srcSize, rt, address);
+            ldr(srcSize, rt, address);
         } else {
             super.ldrs(targetSize, srcSize, rt, address);
         }
@@ -523,7 +690,25 @@ public class AArch64MacroAssembler extends AArch64Assembler {
      */
     @Override
     public void ldr(int srcSize, Register rt, AArch64Address address) {
-        super.ldr(srcSize, rt, address);
+        // Try to merge two adjacent loads into one ldp.
+        if (!tryMergeLoadStore(srcSize, rt, address, false)) {
+            super.ldr(srcSize, rt, address);
+        }
+    }
+
+    /**
+     * Stores register rt into memory pointed by address.
+     *
+     * @param destSize number of bits written to memory. Must be 8, 16, 32 or 64.
+     * @param rt general purpose register. May not be null or stackpointer.
+     * @param address all addressing modes allowed. May not be null.
+     */
+    @Override
+    public void str(int destSize, Register rt, AArch64Address address) {
+        // Try to merge two adjacent stores into one stp.
+        if (!tryMergeLoadStore(destSize, rt, address, true)) {
+            super.str(destSize, rt, address);
+        }
     }
 
     /**
@@ -819,7 +1004,7 @@ public class AArch64MacroAssembler extends AArch64Assembler {
     }
 
     /**
-     * unsigned multiply high. dst = (src1 * src2) >> size
+     * Unsigned multiply high. dst = (src1 * src2) >> size
      *
      * @param size register size. Has to be 32 or 64.
      * @param dst general purpose register. May not be null or the stackpointer.
@@ -840,7 +1025,7 @@ public class AArch64MacroAssembler extends AArch64Assembler {
     }
 
     /**
-     * signed multiply high. dst = (src1 * src2) >> size
+     * Signed multiply high. dst = (src1 * src2) >> size
      *
      * @param size register size. Has to be 32 or 64.
      * @param dst general purpose register. May not be null or the stackpointer.
@@ -858,6 +1043,60 @@ public class AArch64MacroAssembler extends AArch64Assembler {
             // xDst = xDst >> 32
             lshr(64, dst, dst, 32);
         }
+    }
+
+    /**
+     * Signed multiply long. xDst = wSrc1 * wSrc2
+     *
+     * @param size destination register size. Has to be 64.
+     * @param dst 64-bit general purpose register. May not be null or the stackpointer.
+     * @param src1 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src2 32-bit general purpose register. May not be null or the stackpointer.
+     */
+    public void smull(int size, Register dst, Register src1, Register src2) {
+        this.smaddl(size, dst, src1, src2, zr);
+    }
+
+    /**
+     * Signed multiply-negate long. xDst = -(wSrc1 * wSrc2)
+     *
+     * @param size destination register size. Has to be 64.
+     * @param dst 64-bit general purpose register. May not be null or the stackpointer.
+     * @param src1 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src2 32-bit general purpose register. May not be null or the stackpointer.
+     */
+    public void smnegl(int size, Register dst, Register src1, Register src2) {
+        this.smsubl(size, dst, src1, src2, zr);
+    }
+
+    /**
+     * Signed multiply-add long. xDst = xSrc3 + (wSrc1 * wSrc2)
+     *
+     * @param size destination register size. Has to be 64.
+     * @param dst 64-bit general purpose register. May not be null or the stackpointer.
+     * @param src1 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src2 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src3 64-bit general purpose register. May not be null or the stackpointer.
+     */
+    public void smaddl(int size, Register dst, Register src1, Register src2, Register src3) {
+        assert (!dst.equals(sp) && !src1.equals(sp) && !src2.equals(sp) && !src3.equals(sp));
+        assert size == 64;
+        super.smaddl(dst, src1, src2, src3);
+    }
+
+    /**
+     * Signed multiply-sub long. xDst = xSrc3 - (wSrc1 * wSrc2)
+     *
+     * @param size destination register size. Has to be 64.
+     * @param dst 64-bit general purpose register. May not be null or the stackpointer.
+     * @param src1 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src2 32-bit general purpose register. May not be null or the stackpointer.
+     * @param src3 64-bit general purpose register. May not be null or the stackpointer.
+     */
+    public void smsubl(int size, Register dst, Register src1, Register src2, Register src3) {
+        assert (!dst.equals(sp) && !src1.equals(sp) && !src2.equals(sp) && !src3.equals(sp));
+        assert size == 64;
+        super.smsubl(dst, src1, src2, src3);
     }
 
     /**
@@ -1310,6 +1549,20 @@ public class AArch64MacroAssembler extends AArch64Assembler {
         super.fmsub(size, dst, dst, d, n);
     }
 
+    /**
+     * dst = src1 * src2 + src3.
+     *
+     * @param size register size.
+     * @param dst floating point register. May not be null.
+     * @param src1 floating point register. May not be null.
+     * @param src2 floating point register. May not be null.
+     * @param src3 floating point register. May not be null.
+     */
+    @Override
+    public void fmadd(int size, Register dst, Register src1, Register src2, Register src3) {
+        super.fmadd(size, dst, src1, src2, src3);
+    }
+
     /* Branches */
 
     /**
@@ -1367,32 +1620,32 @@ public class AArch64MacroAssembler extends AArch64Assembler {
                 case 64: {
                     // Be careful with registers: it's possible that x, y, and dst are the same
                     // register.
-                    Register rscratch1 = sc1.getRegister();
-                    Register rscratch2 = sc2.getRegister();
-                    mul(64, rscratch1, x, y);     // Result bits 0..63
-                    smulh(64, rscratch2, x, y);  // Result bits 64..127
+                    Register temp1 = sc1.getRegister();
+                    Register temp2 = sc2.getRegister();
+                    mul(64, temp1, x, y);     // Result bits 0..63
+                    smulh(64, temp2, x, y);  // Result bits 64..127
                     // Top is pure sign ext
-                    subs(64, zr, rscratch2, rscratch1, ShiftType.ASR, 63);
+                    subs(64, zr, temp2, temp1, ShiftType.ASR, 63);
                     // Copy all 64 bits of the result into dst
-                    mov(64, dst, rscratch1);
-                    mov(rscratch1, 0x80000000);
+                    mov(64, dst, temp1);
+                    mov(temp1, 0x80000000);
                     // Develop 0 (EQ), or 0x80000000 (NE)
-                    cmov(32, rscratch1, rscratch1, zr, ConditionFlag.NE);
-                    cmp(32, rscratch1, 1);
+                    cmov(32, temp1, temp1, zr, ConditionFlag.NE);
+                    cmp(32, temp1, 1);
                     // 0x80000000 - 1 => VS
                     break;
                 }
                 case 32: {
-                    Register rscratch1 = sc1.getRegister();
-                    smaddl(rscratch1, x, y, zr);
+                    Register temp1 = sc1.getRegister();
+                    smaddl(temp1, x, y, zr);
                     // Copy the low 32 bits of the result into dst
-                    mov(32, dst, rscratch1);
-                    subs(64, zr, rscratch1, rscratch1, ExtendType.SXTW, 0);
+                    mov(32, dst, temp1);
+                    subs(64, zr, temp1, temp1, ExtendType.SXTW, 0);
                     // NE => overflow
-                    mov(rscratch1, 0x80000000);
+                    mov(temp1, 0x80000000);
                     // Develop 0 (EQ), or 0x80000000 (NE)
-                    cmov(32, rscratch1, rscratch1, zr, ConditionFlag.NE);
-                    cmp(32, rscratch1, 1);
+                    cmov(32, temp1, temp1, zr, ConditionFlag.NE);
+                    cmp(32, temp1, 1);
                     // 0x80000000 - 1 => VS
                     break;
                 }
@@ -1706,6 +1959,9 @@ public class AArch64MacroAssembler extends AArch64Assembler {
                 Register reg = AArch64.cpuRegisters.get(regEncoding);
                 // 1 => 64; 0 => 32
                 int size = sizeEncoding * 32 + 32;
+                if (!NumUtil.isSignedNbit(21, branchOffset)) {
+                    throw new BranchTargetOutOfBoundsException(true, "Branch target %d out of bounds", branchOffset);
+                }
                 switch (type) {
                     case BRANCH_NONZERO:
                         super.cbnz(size, reg, branchOffset, branch);

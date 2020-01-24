@@ -40,14 +40,11 @@
 //
 // no virtual functions allowed
 
-extern bool always_do_update_barrier;
-
 // Forward declarations.
 class OopClosure;
 class ScanClosure;
 class FastScanClosure;
 class FilteringClosure;
-class CMSIsAliveClosure;
 
 class PSPromotionManager;
 class ParCompactionManager;
@@ -95,9 +92,6 @@ class oopDesc {
   inline int klass_gap() const;
   inline void set_klass_gap(int z);
   static inline void set_klass_gap(HeapWord* mem, int z);
-  // For when the klass pointer is being used as a linked list "next" field.
-  inline void set_klass_to_list_ptr(oop k);
-  inline oop list_ptr_from_klass();
 
   // size of object header, aligned to platform wordSize
   static int header_size() { return sizeof(oopDesc)/HeapWordSize; }
@@ -152,10 +146,6 @@ class oopDesc {
     }
   }
 
-  inline static bool equals(oop o1, oop o2) { return Access<>::equals(o1, o2); }
-
-  inline static bool equals_raw(oop o1, oop o2) { return RawAccess<>::equals(o1, o2); }
-
   // Access to fields in a instanceOop through these methods.
   template <DecoratorSet decorator>
   oop obj_field_access(int offset) const;
@@ -179,6 +169,8 @@ class oopDesc {
 
   jboolean bool_field(int offset) const;
   void bool_field_put(int offset, jboolean contents);
+  jboolean bool_field_volatile(int offset) const;
+  void bool_field_put_volatile(int offset, jboolean contents);
 
   jint int_field(int offset) const;
   jint int_field_raw(int offset) const;

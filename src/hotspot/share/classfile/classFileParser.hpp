@@ -28,7 +28,6 @@
 #include "memory/referenceType.hpp"
 #include "oops/annotations.hpp"
 #include "oops/constantPool.hpp"
-#include "oops/recordComponent.hpp"
 #include "oops/typeArrayOop.hpp"
 #include "utilities/accessFlags.hpp"
 
@@ -43,6 +42,7 @@ class FieldInfo;
 template <typename T>
 class GrowableArray;
 class InstanceKlass;
+class RecordComponent;
 class Symbol;
 class TempNewSymbol;
 
@@ -104,8 +104,8 @@ class ClassFileParser {
   Array<InstanceKlass*>* _local_interfaces;
   Array<InstanceKlass*>* _transitive_interfaces;
   Annotations* _combined_annotations;
-  AnnotationArray* _annotations;
-  AnnotationArray* _type_annotations;
+  AnnotationArray* _class_annotations;
+  AnnotationArray* _class_type_annotations;
   Array<AnnotationArray*>* _fields_annotations;
   Array<AnnotationArray*>* _fields_type_annotations;
   InstanceKlass* _klass;  // InstanceKlass* once created.

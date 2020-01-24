@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -235,7 +235,9 @@ public class Kinds {
         STATIC_INIT("kindname.static.init"),
         INSTANCE_INIT("kindname.instance.init"),
         PACKAGE("kindname.package"),
-        MODULE("kindname.module");
+        MODULE("kindname.module"),
+        RECORD_COMPONENT("kindname.record.component"),
+        RECORD("kindname.record");
 
         private final String name;
 
@@ -277,8 +279,10 @@ public class Kinds {
 
         case ANNOTATION_TYPE:
         case CLASS:
-        case RECORD:
             return KindName.CLASS;
+
+        case RECORD:
+            return KindName.RECORD;
 
         case INTERFACE:
             return KindName.INTERFACE;
@@ -286,13 +290,16 @@ public class Kinds {
         case TYPE_PARAMETER:
             return KindName.TYPEVAR;
 
+        case BINDING_VARIABLE:
         case ENUM_CONSTANT:
-        case FIELD:
         case PARAMETER:
         case LOCAL_VARIABLE:
         case EXCEPTION_PARAMETER:
         case RESOURCE_VARIABLE:
             return KindName.VAR;
+
+        case FIELD:
+            return ((sym.flags_field & RECORD) != 0) ? KindName.RECORD_COMPONENT : KindName.VAR;
 
         case CONSTRUCTOR:
             return KindName.CONSTRUCTOR;
