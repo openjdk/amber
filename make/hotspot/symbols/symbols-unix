@@ -122,6 +122,7 @@ JVM_GetNestMembers
 JVM_GetPrimitiveArrayElement
 JVM_GetProperties
 JVM_GetProtectionDomain
+JVM_GetRecordComponents
 JVM_GetSimpleBinaryName
 JVM_GetStackAccessControlContext
 JVM_GetSystemPackage
@@ -142,14 +143,13 @@ JVM_InvokeMethod
 JVM_IsArrayClass
 JVM_IsConstructorIx
 JVM_IsInterface
-JVM_IsInterrupted
 JVM_IsPrimitiveClass
+JVM_IsRecord
 JVM_IsSameClassPackage
 JVM_IsSupportedJNIVersion
 JVM_IsThreadAlive
 JVM_IsVMGeneratedMethodIx
 JVM_LatestUserDefinedLoader
-JVM_LinkClass
 JVM_LoadLibrary
 JVM_MaxMemory
 JVM_MaxObjectInspectionAge

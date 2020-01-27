@@ -68,6 +68,7 @@ extern Monitor* CGC_lock;                        // used for coordination betwee
                                                  // fore- & background GC threads.
 extern Monitor* STS_lock;                        // used for joining/leaving SuspendibleThreadSet.
 extern Monitor* FullGCCount_lock;                // in support of "concurrent" full gc
+extern Monitor* G1OldGCCount_lock;               // in support of "concurrent" full gc
 extern Monitor* DirtyCardQ_CBL_mon;              // Protects dirty card Q
                                                  // completed buffer queue.
 extern Mutex*   Shared_DirtyCardQ_lock;          // Lock protecting dirty card
@@ -173,15 +174,17 @@ void print_owned_locks_on_error(outputStream* st);
 
 char *lock_name(Mutex *mutex);
 
-// for debugging: check that we're already owning this lock (or are at a safepoint)
+// for debugging: check that we're already owning this lock (or are at a safepoint / handshake)
 #ifdef ASSERT
 void assert_locked_or_safepoint(const Mutex* lock);
 void assert_locked_or_safepoint_weak(const Mutex* lock);
 void assert_lock_strong(const Mutex* lock);
+void assert_locked_or_safepoint_or_handshake(const Mutex* lock, const JavaThread* thread);
 #else
 #define assert_locked_or_safepoint(lock)
 #define assert_locked_or_safepoint_weak(lock)
 #define assert_lock_strong(lock)
+#define assert_locked_or_safepoint_or_handshake(lock, thread)
 #endif
 
 class MutexLocker: public StackObj {

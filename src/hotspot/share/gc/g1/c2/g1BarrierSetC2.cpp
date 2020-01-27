@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -298,11 +298,7 @@ void G1BarrierSetC2::pre_barrier(GraphKit* kit,
  *
  * In the case of slow allocation the allocation code must handle the barrier
  * as part of the allocation in the case the allocated object is not located
- * in the nursery, this would happen for humongous objects. This is similar to
- * how CMS is required to handle this case, see the comments for the method
- * CollectedHeap::new_deferred_store_barrier and OptoRuntime::new_deferred_store_barrier.
- * A deferred card mark is required for these objects and handled in the above
- * mentioned methods.
+ * in the nursery; this would happen for humongous objects.
  *
  * Returns true if the post barrier can be removed
  */
@@ -601,12 +597,15 @@ Node* G1BarrierSetC2::load_at_resolved(C2Access& access, const Type* val_type) c
   Node* adr = access.addr().node();
   Node* obj = access.base();
 
+  bool anonymous = (decorators & C2_UNSAFE_ACCESS) != 0;
   bool mismatched = (decorators & C2_MISMATCHED) != 0;
   bool unknown = (decorators & ON_UNKNOWN_OOP_REF) != 0;
   bool in_heap = (decorators & IN_HEAP) != 0;
+  bool in_native = (decorators & IN_NATIVE) != 0;
   bool on_weak = (decorators & ON_WEAK_OOP_REF) != 0;
   bool is_unordered = (decorators & MO_UNORDERED) != 0;
-  bool need_cpu_mem_bar = !is_unordered || mismatched || !in_heap;
+  bool is_mixed = !in_heap && !in_native;
+  bool need_cpu_mem_bar = !is_unordered || mismatched || is_mixed;
 
   Node* top = Compile::current()->top();
   Node* offset = adr->is_AddP() ? adr->in(AddPNode::Offset) : top;

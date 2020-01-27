@@ -58,12 +58,8 @@ public class UseCompressedOops {
         testCompressedOopsModes(args);
         // Test GCs.
         testCompressedOopsModes(args, "-XX:+UseG1GC");
-        if (!Compiler.isGraalEnabled()) { // Graal does not support CMS
-            testCompressedOopsModes(args, "-XX:+UseConcMarkSweepGC");
-        }
         testCompressedOopsModes(args, "-XX:+UseSerialGC");
         testCompressedOopsModes(args, "-XX:+UseParallelGC");
-        testCompressedOopsModes(args, "-XX:+UseParallelOldGC");
         if (GC.Shenandoah.isSupported()) {
             testCompressedOopsModes(args, "-XX:+UnlockExperimentalVMOptions", "-XX:+UseShenandoahGC");
         }

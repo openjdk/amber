@@ -163,10 +163,6 @@ const size_t minimumSymbolTableSize = 1024;
   develop(bool, CleanChunkPoolAsync, true,                                  \
           "Clean the chunk pool asynchronously")                            \
                                                                             \
-  product_pd(bool, ThreadLocalHandshakes,                                   \
-          "Use thread-local polls instead of global poll for safepoints.")  \
-          constraint(ThreadLocalHandshakesConstraintFunc,AfterErgo)         \
-                                                                            \
   diagnostic(uint, HandshakeTimeout, 0,                                     \
           "If nonzero set a timeout in milliseconds for handshakes")        \
                                                                             \
@@ -304,9 +300,6 @@ const size_t minimumSymbolTableSize = 1024;
                                                                             \
   notproduct(bool, TraceCodeBlobStacks, false,                              \
           "Trace stack-walk of codeblobs")                                  \
-                                                                            \
-  product(bool, PrintJNIResolving, false,                                   \
-          "Used to implement -v:jni")                                       \
                                                                             \
   notproduct(bool, PrintRewrites, false,                                    \
           "Print methods that are being rewritten")                         \
@@ -1411,7 +1404,7 @@ const size_t minimumSymbolTableSize = 1024;
   product(intx,  AllocatePrefetchDistance, -1,                              \
           "Distance to prefetch ahead of allocation pointer. "              \
           "-1: use system-specific value (automatically determined")        \
-          constraint(AllocatePrefetchDistanceConstraintFunc, AfterMemoryInit)\
+          constraint(AllocatePrefetchDistanceConstraintFunc,AfterMemoryInit)\
                                                                             \
   product(intx,  AllocatePrefetchLines, 3,                                  \
           "Number of lines to prefetch ahead of array allocation pointer")  \
@@ -1492,7 +1485,7 @@ const size_t minimumSymbolTableSize = 1024;
   notproduct(intx, MaxSubklassPrintSize, 4,                                 \
           "maximum number of subklasses to print when printing klass")      \
                                                                             \
-  product(intx, MaxInlineLevel, 9,                                          \
+  product(intx, MaxInlineLevel, 15,                                         \
           "maximum number of nested calls that are inlined")                \
           range(0, max_jint)                                                \
                                                                             \
@@ -1950,9 +1943,6 @@ const size_t minimumSymbolTableSize = 1024;
   experimental(bool, UseCriticalCompilerThreadPriority, false,              \
           "Compiler thread(s) run at critical scheduling priority")         \
                                                                             \
-  experimental(bool, UseCriticalCMSThreadPriority, false,                   \
-          "ConcurrentMarkSweep thread runs at critical scheduling priority")\
-                                                                            \
   develop(intx, NewCodeParameter,      0,                                   \
           "Testing Only: Create a dedicated integer parameter before "      \
           "putback")                                                        \
@@ -2223,9 +2213,6 @@ const size_t minimumSymbolTableSize = 1024;
           "Maximum total size of NIO direct-buffer allocations")            \
           range(0, max_jlong)                                               \
                                                                             \
-  product(bool, ClassForNameDeferLinking, false,                            \
-          "Revert to not linking in Class.forName()")                       \
-                                                                            \
   /* Flags used for temporary code during development  */                   \
                                                                             \
   diagnostic(bool, UseNewCode, false,                                       \
@@ -2438,6 +2425,14 @@ const size_t minimumSymbolTableSize = 1024;
                                                                             \
   product(ccstr, ExtraSharedClassListFile, NULL,                            \
           "Extra classlist for building the CDS archive file")              \
+                                                                            \
+  diagnostic(intx, ArchiveRelocationMode, 0,                                \
+           "(0) first map at preferred address, and if "                    \
+           "unsuccessful, map at alternative address (default); "           \
+           "(1) always map at alternative address; "                        \
+           "(2) always map at preferred address, and if unsuccessful, "     \
+           "do not map the archive")                                        \
+           range(0, 2)                                                      \
                                                                             \
   experimental(size_t, ArrayAllocatorMallocLimit,                           \
           SOLARIS_ONLY(64*K) NOT_SOLARIS((size_t)-1),                       \

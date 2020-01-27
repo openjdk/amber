@@ -420,10 +420,10 @@ public class JavacTrees extends DocTrees {
 
     @Override @DefinedBy(Api.COMPILER_TREE)
     public Element getElement(DocTreePath path) {
-        DocTree forTree = path.getLeaf();
-        if (forTree instanceof DCReference)
-            return attributeDocReference(path.getTreePath(), ((DCReference) forTree));
-        if (forTree instanceof DCIdentifier) {
+        DocTree tree = path.getLeaf();
+        if (tree instanceof DCReference)
+            return attributeDocReference(path.getTreePath(), ((DCReference) tree));
+        if (tree instanceof DCIdentifier) {
             if (path.getParentPath().getLeaf() instanceof DCParam) {
                 return attributeParamIdentifier(path.getTreePath(), (DCParam) path.getParentPath().getLeaf());
             }
@@ -536,7 +536,7 @@ public class JavacTrees extends DocTrees {
         }
     }
 
-    private Symbol attributeParamIdentifier(TreePath path, DCParam ptag) {
+    private Symbol attributeParamIdentifier(TreePath path, DCParam paramTag) {
         Symbol javadocSymbol = getElement(path);
         if (javadocSymbol == null)
             return null;
@@ -544,16 +544,18 @@ public class JavacTrees extends DocTrees {
         List<? extends Symbol> params = List.nil();
         if (kind == ElementKind.METHOD || kind == ElementKind.CONSTRUCTOR) {
             MethodSymbol ee = (MethodSymbol) javadocSymbol;
-            params = ptag.isTypeParameter()
+            params = paramTag.isTypeParameter()
                     ? ee.getTypeParameters()
                     : ee.getParameters();
         } else if (kind.isClass() || kind.isInterface()) {
             ClassSymbol te = (ClassSymbol) javadocSymbol;
-            params = te.getTypeParameters();
+            params = paramTag.isTypeParameter()
+                    ? te.getTypeParameters()
+                    : te.getRecordComponents();
         }
 
         for (Symbol param : params) {
-            if (param.getSimpleName() == ptag.getName().getName()) {
+            if (param.getSimpleName() == paramTag.getName().getName()) {
                 return param;
             }
         }
@@ -951,34 +953,20 @@ public class JavacTrees extends DocTrees {
 
     private Env<AttrContext> attribStatToTree(JCTree stat, Env<AttrContext>env,
                                               JCTree tree, Map<JCClassDecl, JCClassDecl> copiedClasses) {
-        JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
-        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
-        try {
-            Env<AttrContext> result = attr.attribStatToTree(stat, env, tree);
+        Env<AttrContext> result = attr.attribStatToTree(stat, env, tree);
 
-            enter.unenter(env.toplevel, stat);
-            fixLocalClassNames(copiedClasses, env);
-            return result;
-        } finally {
-            log.popDiagnosticHandler(diagHandler);
-            log.useSource(prev);
-        }
+        fixLocalClassNames(copiedClasses, env);
+
+        return result;
     }
 
     private Env<AttrContext> attribExprToTree(JCExpression expr, Env<AttrContext>env,
                                               JCTree tree, Map<JCClassDecl, JCClassDecl> copiedClasses) {
-        JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
-        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
-        try {
-            Env<AttrContext> result = attr.attribExprToTree(expr, env, tree);
+        Env<AttrContext> result = attr.attribExprToTree(expr, env, tree);
 
-            enter.unenter(env.toplevel, expr);
-            fixLocalClassNames(copiedClasses, env);
-            return result;
-        } finally {
-            log.popDiagnosticHandler(diagHandler);
-            log.useSource(prev);
-        }
+        fixLocalClassNames(copiedClasses, env);
+
+        return result;
     }
 
     /* Change the flatnames of the local and anonymous classes in the Scope to

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,15 +41,15 @@ private:
   static const bool Publish     = true;
   static const bool Overflow    = false;
 
+  template <ZBarrierFastPath fast_path> static void self_heal(volatile oop* p, uintptr_t addr, uintptr_t heal_addr);
+
   template <ZBarrierFastPath fast_path, ZBarrierSlowPath slow_path> static oop barrier(volatile oop* p, oop o);
   template <ZBarrierFastPath fast_path, ZBarrierSlowPath slow_path> static oop weak_barrier(volatile oop* p, oop o);
   template <ZBarrierFastPath fast_path, ZBarrierSlowPath slow_path> static void root_barrier(oop* p, oop o);
 
-  static bool is_null_fast_path(uintptr_t addr);
   static bool is_good_or_null_fast_path(uintptr_t addr);
   static bool is_weak_good_or_null_fast_path(uintptr_t addr);
-
-  static bool is_resurrection_blocked(volatile oop* p, oop* o);
+  static bool is_marked_or_null_fast_path(uintptr_t addr);
 
   static bool during_mark();
   static bool during_relocate();
@@ -105,6 +105,7 @@ public:
   static void keep_alive_barrier_on_weak_oop_field(volatile oop* p);
   static void keep_alive_barrier_on_phantom_oop_field(volatile oop* p);
   static void keep_alive_barrier_on_phantom_root_oop_field(oop* p);
+  static void keep_alive_barrier_on_oop(oop o);
 
   // Mark barrier
   static void mark_barrier_on_oop_field(volatile oop* p, bool finalizable);

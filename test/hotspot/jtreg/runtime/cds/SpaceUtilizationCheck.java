@@ -33,6 +33,7 @@
  */
 
 import jdk.test.lib.cds.CDSTestUtils;
+import jdk.test.lib.cds.CDSOptions;
 import jdk.test.lib.process.OutputAnalyzer;
 import sun.hotspot.WhiteBox;
 
@@ -49,19 +50,22 @@ public class SpaceUtilizationCheck {
 
     public static void main(String[] args) throws Exception {
         // (1) Default VM arguments
-        test();
+        test("-Xlog:cds=debug");
 
         // (2) Use the now deprecated VM arguments. They should have no effect.
-        test("-XX:SharedReadWriteSize=128M",
+        test("-Xlog:cds=debug",
+             "-XX:SharedReadWriteSize=128M",
              "-XX:SharedReadOnlySize=128M",
              "-XX:SharedMiscDataSize=128M",
              "-XX:SharedMiscCodeSize=128M");
     }
 
     static void test(String... extra_options) throws Exception {
-        OutputAnalyzer output = CDSTestUtils.createArchive(extra_options);
+        CDSOptions opts = new CDSOptions();
+        opts.addSuffix(extra_options);
+        OutputAnalyzer output = CDSTestUtils.createArchive(opts);
         CDSTestUtils.checkDump(output);
-        Pattern pattern = Pattern.compile("^(..) *space: *([0-9]+).* out of *([0-9]+) bytes .* at 0x([0-9a0-f]+)");
+        Pattern pattern = Pattern.compile("(..) *space: *([0-9]+).* out of *([0-9]+) bytes .* at 0x([0-9a0-f]+)");
         WhiteBox wb = WhiteBox.getWhiteBox();
         long reserve_alignment = wb.metaspaceReserveAlignment();
         System.out.println("Metaspace::reserve_alignment() = " + reserve_alignment);
@@ -73,8 +77,8 @@ public class SpaceUtilizationCheck {
                 Matcher matcher = pattern.matcher(line);
                 if (matcher.find()) {
                     String name = matcher.group(1);
-                    if (name.equals("s0") || name.equals("s1")) {
-                      // String regions are listed at the end and they may not be fully occupied.
+                    if (name.equals("bm")) {
+                      // Bitmap space does not have a requested address.
                       break;
                     } else {
                       System.out.println("Checking " + name + " in : " + line);

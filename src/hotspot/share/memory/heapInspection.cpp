@@ -719,7 +719,7 @@ size_t HeapInspection::populate_table(KlassInfoTable* cit, BoolObjectClosure *fi
   ResourceMark rm;
 
   RecordInstanceClosure ric(cit, filter);
-  Universe::heap()->safe_object_iterate(&ric);
+  Universe::heap()->object_iterate(&ric);
   return ric.missed_count();
 }
 
@@ -778,6 +778,10 @@ class FindInstanceClosure : public ObjectClosure {
 
   void do_object(oop obj) {
     if (obj->is_a(_klass)) {
+      // obj was read with AS_NO_KEEPALIVE, or equivalent.
+      // The object needs to be kept alive when it is published.
+      Universe::heap()->keep_alive(obj);
+
       _result->append(obj);
     }
   }
@@ -792,5 +796,5 @@ void HeapInspection::find_instances_at_safepoint(Klass* k, GrowableArray<oop>* r
 
   // Iterate over objects in the heap
   FindInstanceClosure fic(k, result);
-  Universe::heap()->safe_object_iterate(&fic);
+  Universe::heap()->object_iterate(&fic);
 }

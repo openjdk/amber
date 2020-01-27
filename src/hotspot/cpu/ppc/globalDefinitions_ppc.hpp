@@ -30,6 +30,10 @@
 #error "CC_INTERP is no longer supported. Removed in change 8145117."
 #endif
 
+#ifndef FILE_AND_LINE
+#define FILE_AND_LINE __FILE__ ":" XSTR(__LINE__)
+#endif
+
 // Size of PPC Instructions
 const int BytesPerInstWord = 4;
 
@@ -50,6 +54,12 @@ const bool CCallingConventionRequiresIntsAsLongs = true;
 #if defined(COMPILER2) && (defined(AIX) || defined(LINUX))
 // Include Transactional Memory lock eliding optimization
 #define INCLUDE_RTM_OPT 1
+#else
+#define INCLUDE_RTM_OPT 0
+#endif
+
+#if defined(AIX)
+#define PREFERRED_METASPACE_ALIGNMENT
 #endif
 
 #define SUPPORT_RESERVED_STACK_AREA

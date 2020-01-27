@@ -574,6 +574,26 @@ AC_DEFUN([BASIC_REQUIRE_SPECIAL],
 ])
 
 ###############################################################################
+# Like BASIC_REQUIRE_PROGS but also allows for bash built-ins
+# $1: variable to set
+# $2: executable name (or list of names) to look for
+# $3: [path]
+AC_DEFUN([BASIC_REQUIRE_BUILTIN_PROGS],
+[
+  BASIC_SETUP_TOOL($1, [AC_PATH_PROGS($1, $2, , $3)])
+  if test "x[$]$1" = x; then
+    AC_MSG_NOTICE([Required tool $2 not found in PATH, checking built-in])
+    if help $2 > /dev/null 2>&1; then
+      AC_MSG_NOTICE([Found $2 as shell built-in. Using it])
+      $1="$2"
+    else
+      AC_MSG_ERROR([Required tool $2 also not found as built-in.])
+    fi
+  fi
+  BASIC_CHECK_NONEMPTY($1)
+])
+
+###############################################################################
 # Setup the most fundamental tools that relies on not much else to set up,
 # but is used by much of the early bootstrap code.
 AC_DEFUN_ONCE([BASIC_SETUP_FUNDAMENTAL_TOOLS],
@@ -1267,12 +1287,23 @@ AC_DEFUN_ONCE([BASIC_SETUP_COMPLEX_TOOLS],
     BASIC_REQUIRE_PROGS(MIG, mig)
     BASIC_REQUIRE_PROGS(XATTR, xattr)
     BASIC_PATH_PROGS(CODESIGN, codesign)
+
     if test "x$CODESIGN" != "x"; then
-      # Verify that the openjdk_codesign certificate is present
-      AC_MSG_CHECKING([if openjdk_codesign certificate is present])
+      # Check for user provided code signing identity.
+      # If no identity was provided, fall back to "openjdk_codesign".
+      AC_ARG_WITH([macosx-codesign-identity], [AS_HELP_STRING([--with-macosx-codesign-identity],
+        [specify the code signing identity])],
+        [MACOSX_CODESIGN_IDENTITY=$with_macosx_codesign_identity],
+        [MACOSX_CODESIGN_IDENTITY=openjdk_codesign]
+      )
+
+      AC_SUBST(MACOSX_CODESIGN_IDENTITY)
+
+      # Verify that the codesign certificate is present
+      AC_MSG_CHECKING([if codesign certificate is present])
       $RM codesign-testfile
       $TOUCH codesign-testfile
-      $CODESIGN -s openjdk_codesign codesign-testfile 2>&AS_MESSAGE_LOG_FD >&AS_MESSAGE_LOG_FD || CODESIGN=
+      $CODESIGN -s "$MACOSX_CODESIGN_IDENTITY" codesign-testfile 2>&AS_MESSAGE_LOG_FD >&AS_MESSAGE_LOG_FD || CODESIGN=
       $RM codesign-testfile
       if test "x$CODESIGN" = x; then
         AC_MSG_RESULT([no])
@@ -1283,6 +1314,9 @@ AC_DEFUN_ONCE([BASIC_SETUP_COMPLEX_TOOLS],
     BASIC_REQUIRE_PROGS(SETFILE, SetFile)
   elif test "x$OPENJDK_TARGET_OS" = "xsolaris"; then
     BASIC_REQUIRE_PROGS(ELFEDIT, elfedit)
+  fi
+  if ! test "x$OPENJDK_TARGET_OS" = "xwindows"; then
+    BASIC_REQUIRE_BUILTIN_PROGS(ULIMIT, ulimit)
   fi
 ])
 

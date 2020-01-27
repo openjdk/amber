@@ -26,7 +26,7 @@
 #define CPU_X86_ASSEMBLER_X86_HPP
 
 #include "asm/register.hpp"
-#include "vm_version_x86.hpp"
+#include "runtime/vm_version.hpp"
 
 class BiasedLockingCounters;
 
@@ -1592,6 +1592,9 @@ private:
 
 #ifdef _LP64
   void notq(Register dst);
+
+  void btsq(Address dst, int imm8);
+  void btrq(Address dst, int imm8);
 #endif
 
   void orl(Address dst, int32_t imm32);
@@ -1835,14 +1838,14 @@ private:
 
   void shldl(Register dst, Register src);
   void shldl(Register dst, Register src, int8_t imm8);
+  void shrdl(Register dst, Register src);
+  void shrdl(Register dst, Register src, int8_t imm8);
 
   void shll(Register dst, int imm8);
   void shll(Register dst);
 
   void shlq(Register dst, int imm8);
   void shlq(Register dst);
-
-  void shrdl(Register dst, Register src);
 
   void shrl(Register dst, int imm8);
   void shrl(Register dst);
@@ -2136,6 +2139,9 @@ private:
   void vpsrad(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
   void evpsraq(XMMRegister dst, XMMRegister src, int shift, int vector_len);
   void evpsraq(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
+
+  void vpshldvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
+  void vpshrdvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
 
   // And packed integers
   void pand(XMMRegister dst, XMMRegister src);
