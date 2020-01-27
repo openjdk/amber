@@ -2,6 +2,21 @@ DuplicateBindingTest.java:16:43: compiler.err.already.defined: kindname.variable
 DuplicateBindingTest.java:20:22: compiler.err.already.defined: kindname.variable, k, kindname.method, main(java.lang.String[])
 DuplicateBindingTest.java:22:22: compiler.err.already.defined: kindname.variable, args, kindname.method, main(java.lang.String[])
 DuplicateBindingTest.java:19:19: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Integer)
+DuplicateBindingTest.java:34:60: compiler.err.match.binding.exists
+DuplicateBindingTest.java:35:62: compiler.err.match.binding.exists
+DuplicateBindingTest.java:39:63: compiler.err.match.binding.exists
+DuplicateBindingTest.java:40:65: compiler.err.match.binding.exists
+DuplicateBindingTest.java:44:59: compiler.err.match.binding.exists
+DuplicateBindingTest.java:53:68: compiler.err.match.binding.exists
+DuplicateBindingTest.java:54:60: compiler.err.match.binding.exists
+DuplicateBindingTest.java:55:61: compiler.err.match.binding.exists
+DuplicateBindingTest.java:56:63: compiler.err.match.binding.exists
+DuplicateBindingTest.java:57:67: compiler.err.match.binding.exists
+DuplicateBindingTest.java:58:94: compiler.err.match.binding.exists
+DuplicateBindingTest.java:59:102: compiler.err.match.binding.exists
+DuplicateBindingTest.java:60:73: compiler.err.match.binding.exists
+DuplicateBindingTest.java:63:69: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, DuplicateBindingTest, null)
+DuplicateBindingTest.java:64:44: compiler.err.cant.resolve.location: kindname.variable, s, , , (compiler.misc.location: kindname.class, DuplicateBindingTest, null)
 - compiler.note.preview.filename: DuplicateBindingTest.java
 - compiler.note.preview.recompile
-4 errors
+19 errors
