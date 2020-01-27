@@ -165,6 +165,7 @@ public class Krb5 {
 
     // S4U2user info
     public static final int PA_FOR_USER      = 129;
+    public static final int PA_PAC_OPTIONS   = 167;
 
     // FAST (RFC 6806)
     public static final int PA_REQ_ENC_PA_REP = 149;
@@ -309,7 +310,7 @@ public class Krb5 {
         return errMsgList.get(i);
     }
 
-
+    // Warning: used by NativeCreds.c
     public static final boolean DEBUG = GetBooleanAction
             .privilegedGetProperty("sun.security.krb5.debug");
 

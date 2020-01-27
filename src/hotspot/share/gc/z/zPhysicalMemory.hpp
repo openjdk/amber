@@ -25,7 +25,7 @@
 #define SHARE_GC_Z_ZPHYSICALMEMORY_HPP
 
 #include "memory/allocation.hpp"
-#include OS_CPU_HEADER(gc/z/zPhysicalMemoryBacking)
+#include OS_HEADER(gc/z/zPhysicalMemoryBacking)
 
 class ZPhysicalMemorySegment : public CHeapObj<mtGC> {
 private:
@@ -81,6 +81,8 @@ public:
 
   ZPhysicalMemory alloc(size_t size);
   void free(const ZPhysicalMemory& pmem);
+
+  void pretouch(uintptr_t offset, size_t size) const;
 
   void map(const ZPhysicalMemory& pmem, uintptr_t offset) const;
   void unmap(const ZPhysicalMemory& pmem, uintptr_t offset) const;

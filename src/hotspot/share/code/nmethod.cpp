@@ -49,6 +49,7 @@
 #include "oops/methodData.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiImpl.hpp"
+#include "prims/jvmtiThreadState.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/flags/flagSetting.hpp"
@@ -58,6 +59,7 @@
 #include "runtime/orderAccess.hpp"
 #include "runtime/os.hpp"
 #include "runtime/safepointVerifiers.hpp"
+#include "runtime/serviceThread.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/sweeper.hpp"
 #include "runtime/vmThread.hpp"
@@ -315,7 +317,7 @@ ExceptionCache* ExceptionCache::next() {
 }
 
 void ExceptionCache::set_next(ExceptionCache *ec) {
-  Atomic::store(ec, &_next);
+  Atomic::store(&_next, ec);
 }
 
 //-----------------------------------------------------------------------------
@@ -428,7 +430,8 @@ void nmethod::init_defaults() {
   _has_flushed_dependencies   = 0;
   _lock_count                 = 0;
   _stack_traversal_mark       = 0;
-  _unload_reported            = false; // jvmti state
+  _load_reported              = false; // jvmti state
+  _unload_reported            = false;
   _is_far_code                = false; // nmethods are located in CodeCache
 
 #ifdef ASSERT
@@ -436,7 +439,6 @@ void nmethod::init_defaults() {
 #endif
 
   _oops_do_mark_link       = NULL;
-  _jmethod_id              = NULL;
   _osr_link                = NULL;
 #if INCLUDE_RTM_OPT
   _rtm_state               = NoRTM;
@@ -477,7 +479,6 @@ nmethod* nmethod::new_native_nmethod(const methodHandle& method,
     debug_only(nm->verify();) // might block
 
     nm->log_new_nmethod();
-    nm->make_in_use();
   }
   return nm;
 }
@@ -965,15 +966,16 @@ void nmethod::print_nmethod(bool printmethod) {
 
 #if defined(SUPPORT_DATA_STRUCTS)
   if (AbstractDisassembler::show_structs()) {
-    if (printmethod || PrintDebugInfo || CompilerOracle::has_option_string(_method, "PrintDebugInfo")) {
+    methodHandle mh(Thread::current(), _method);
+    if (printmethod || PrintDebugInfo || CompilerOracle::has_option_string(mh, "PrintDebugInfo")) {
       print_scopes();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
-    if (printmethod || PrintRelocations || CompilerOracle::has_option_string(_method, "PrintRelocations")) {
+    if (printmethod || PrintRelocations || CompilerOracle::has_option_string(mh, "PrintRelocations")) {
       print_relocations();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
-    if (printmethod || PrintDependencies || CompilerOracle::has_option_string(_method, "PrintDependencies")) {
+    if (printmethod || PrintDependencies || CompilerOracle::has_option_string(mh, "PrintDependencies")) {
       print_dependencies();
       tty->print_cr("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ");
     }
@@ -1137,6 +1139,25 @@ void nmethod::inc_decompile_count() {
   mdo->inc_decompile_count();
 }
 
+bool nmethod::try_transition(int new_state_int) {
+  signed char new_state = new_state_int;
+#ifdef DEBUG
+  if (new_state != unloaded) {
+    assert_lock_strong(CompiledMethod_lock);
+  }
+#endif
+  for (;;) {
+    signed char old_state = Atomic::load(&_state);
+    if (old_state >= new_state) {
+      // Ensure monotonicity of transitions.
+      return false;
+    }
+    if (Atomic::cmpxchg(&_state, old_state, new_state) == old_state) {
+      return true;
+    }
+  }
+}
+
 void nmethod::make_unloaded() {
   post_compiled_method_unload();
 
@@ -1160,7 +1181,9 @@ void nmethod::make_unloaded() {
   }
   // Unlink the osr method, so we do not look this up again
   if (is_osr_method()) {
-    // Invalidate the osr nmethod only once
+    // Invalidate the osr nmethod only once. Note that with concurrent
+    // code cache unloading, OSR nmethods are invalidated before they
+    // are made unloaded. Therefore, this becomes a no-op then.
     if (is_in_use()) {
       invalidate_osr_method();
     }
@@ -1210,12 +1233,14 @@ void nmethod::make_unloaded() {
   set_osr_link(NULL);
   NMethodSweeper::report_state_change(this);
 
-  // The release is only needed for compile-time ordering, as accesses
-  // into the nmethod after the store are not safe due to the sweeper
-  // being allowed to free it when the store is observed, during
-  // concurrent nmethod unloading. Therefore, there is no need for
-  // acquire on the loader side.
-  OrderAccess::release_store(&_state, (signed char)unloaded);
+  bool transition_success = try_transition(unloaded);
+
+  // It is an important invariant that there exists no race between
+  // the sweeper and GC thread competing for making the same nmethod
+  // zombie and unloaded respectively. This is ensured by
+  // can_convert_to_zombie() returning false for any is_unloading()
+  // nmethod, informing the sweeper not to step on any GC toes.
+  assert(transition_success, "Invalid nmethod transition to unloaded");
 
 #if INCLUDE_JVMCI
   // Clear the link between this nmethod and a HotSpotNmethod mirror
@@ -1271,9 +1296,8 @@ void nmethod::unlink_from_method() {
  */
 bool nmethod::make_not_entrant_or_zombie(int state) {
   assert(state == zombie || state == not_entrant, "must be zombie or not_entrant");
-  assert(!is_zombie(), "should not already be a zombie");
 
-  if (_state == state) {
+  if (Atomic::load(&_state) >= state) {
     // Avoid taking the lock if already in required state.
     // This is safe from races because the state is an end-state,
     // which the nmethod cannot back out of once entered.
@@ -1281,11 +1305,10 @@ bool nmethod::make_not_entrant_or_zombie(int state) {
     return false;
   }
 
-  // Make sure neither the nmethod nor the method is flushed in case of a safepoint in code below.
+  // Make sure the nmethod is not flushed.
   nmethodLocker nml(this);
-  methodHandle the_method(method());
   // This can be called while the system is already at a safepoint which is ok
-  NoSafepointVerifier nsv(true, !SafepointSynchronize::is_at_safepoint());
+  NoSafepointVerifier nsv;
 
   // during patching, depending on the nmethod state we must notify the GC that
   // code has been unloaded, unregistering it. We cannot do this right while
@@ -1294,21 +1317,19 @@ bool nmethod::make_not_entrant_or_zombie(int state) {
   // This flag is used to remember whether we need to later lock and unregister.
   bool nmethod_needs_unregister = false;
 
-  // invalidate osr nmethod before acquiring the patching lock since
-  // they both acquire leaf locks and we don't want a deadlock.
-  // This logic is equivalent to the logic below for patching the
-  // verified entry point of regular methods. We check that the
-  // nmethod is in use to ensure that it is invalidated only once.
-  if (is_osr_method() && is_in_use()) {
-    // this effectively makes the osr nmethod not entrant
-    invalidate_osr_method();
-  }
-
   {
     // Enter critical section.  Does not block for safepoint.
-    MutexLocker pl(CompiledMethod_lock, Mutex::_no_safepoint_check_flag);
+    MutexLocker ml(CompiledMethod_lock->owned_by_self() ? NULL : CompiledMethod_lock, Mutex::_no_safepoint_check_flag);
 
-    if (_state == state) {
+    // This logic is equivalent to the logic below for patching the
+    // verified entry point of regular methods. We check that the
+    // nmethod is in use to ensure that it is invalidated only once.
+    if (is_osr_method() && is_in_use()) {
+      // this effectively makes the osr nmethod not entrant
+      invalidate_osr_method();
+    }
+
+    if (Atomic::load(&_state) >= state) {
       // another thread already performed this transition so nothing
       // to do, but return false to indicate this.
       return false;
@@ -1335,7 +1356,7 @@ bool nmethod::make_not_entrant_or_zombie(int state) {
     }
 
     // Must happen before state change. Otherwise we have a race condition in
-    // nmethod::can_not_entrant_be_converted(). I.e., a method can immediately
+    // nmethod::can_convert_to_zombie(). I.e., a method can immediately
     // transition its state from 'not_entrant' to 'zombie' without having to wait
     // for stack scanning.
     if (state == not_entrant) {
@@ -1344,7 +1365,18 @@ bool nmethod::make_not_entrant_or_zombie(int state) {
     }
 
     // Change state
-    _state = state;
+    if (!try_transition(state)) {
+      // If the transition fails, it is due to another thread making the nmethod more
+      // dead. In particular, one thread might be making the nmethod unloaded concurrently.
+      // If so, having patched in the jump in the verified entry unnecessarily is fine.
+      // The nmethod is no longer possible to call by Java threads.
+      // Incrementing the decompile count is also fine as the caller of make_not_entrant()
+      // had a valid reason to deoptimize the nmethod.
+      // Marking the nmethod as seen on stack also has no effect, as the nmethod is now
+      // !is_alive(), and the seen on stack value is only used to convert not_entrant
+      // nmethods to zombie in can_convert_to_zombie().
+      return false;
+    }
 
     // Log the transition once
     log_state_change();
@@ -1473,6 +1505,13 @@ oop nmethod::oop_at(int index) const {
   return NativeAccess<AS_NO_KEEPALIVE>::oop_load(oop_addr_at(index));
 }
 
+oop nmethod::oop_at_phantom(int index) const {
+  if (index == 0) {
+    return NULL;
+  }
+  return NativeAccess<ON_PHANTOM_OOP_REF>::oop_load(oop_addr_at(index));
+}
+
 //
 // Notify all classes this nmethod is dependent on that it is no
 // longer dependent. This should only be called in two situations.
@@ -1526,38 +1565,45 @@ void nmethod::flush_dependencies(bool delete_immediately) {
 // post_compiled_method_load_event
 // new method for install_code() path
 // Transfer information from compilation to jvmti
-void nmethod::post_compiled_method_load_event() {
+void nmethod::post_compiled_method_load_event(JvmtiThreadState* state) {
 
-  Method* moop = method();
+  // Don't post this nmethod load event if it is already dying
+  // because the sweeper might already be deleting this nmethod.
+  if (is_not_entrant() && can_convert_to_zombie()) {
+    return;
+  }
+
+  // This is a bad time for a safepoint.  We don't want
+  // this nmethod to get unloaded while we're queueing the event.
+  NoSafepointVerifier nsv;
+
+  Method* m = method();
   HOTSPOT_COMPILED_METHOD_LOAD(
-      (char *) moop->klass_name()->bytes(),
-      moop->klass_name()->utf8_length(),
-      (char *) moop->name()->bytes(),
-      moop->name()->utf8_length(),
-      (char *) moop->signature()->bytes(),
-      moop->signature()->utf8_length(),
+      (char *) m->klass_name()->bytes(),
+      m->klass_name()->utf8_length(),
+      (char *) m->name()->bytes(),
+      m->name()->utf8_length(),
+      (char *) m->signature()->bytes(),
+      m->signature()->utf8_length(),
       insts_begin(), insts_size());
 
-  if (JvmtiExport::should_post_compiled_method_load() ||
-      JvmtiExport::should_post_compiled_method_unload()) {
-    get_and_cache_jmethod_id();
-  }
 
   if (JvmtiExport::should_post_compiled_method_load()) {
-    // Let the Service thread (which is a real Java thread) post the event
-    MutexLocker ml(Service_lock, Mutex::_no_safepoint_check_flag);
-    JvmtiDeferredEventQueue::enqueue(
-      JvmtiDeferredEvent::compiled_method_load_event(this));
+    // Only post unload events if load events are found.
+    set_load_reported();
+    // If a JavaThread hasn't been passed in, let the Service thread
+    // (which is a real Java thread) post the event
+    JvmtiDeferredEvent event = JvmtiDeferredEvent::compiled_method_load_event(this);
+    if (state == NULL) {
+      // Execute any barrier code for this nmethod as if it's called, since
+      // keeping it alive looks like stack walking.
+      run_nmethod_entry_barrier();
+      ServiceThread::enqueue_deferred_event(&event);
+    } else {
+      // This enters the nmethod barrier outside in the caller.
+      state->enqueue_event(&event);
+    }
   }
-}
-
-jmethodID nmethod::get_and_cache_jmethod_id() {
-  if (_jmethod_id == NULL) {
-    // Cache the jmethod_id since it can no longer be looked up once the
-    // method itself has been marked for unloading.
-    _jmethod_id = method()->jmethod_id();
-  }
-  return _jmethod_id;
 }
 
 void nmethod::post_compiled_method_unload() {
@@ -1573,18 +1619,17 @@ void nmethod::post_compiled_method_unload() {
   // If a JVMTI agent has enabled the CompiledMethodUnload event then
   // post the event. Sometime later this nmethod will be made a zombie
   // by the sweeper but the Method* will not be valid at that point.
-  // If the _jmethod_id is null then no load event was ever requested
-  // so don't bother posting the unload.  The main reason for this is
-  // that the jmethodID is a weak reference to the Method* so if
+  // The jmethodID is a weak reference to the Method* so if
   // it's being unloaded there's no way to look it up since the weak
   // ref will have been cleared.
-  if (_jmethod_id != NULL && JvmtiExport::should_post_compiled_method_unload()) {
+
+  // Don't bother posting the unload if the load event wasn't posted.
+  if (load_reported() && JvmtiExport::should_post_compiled_method_unload()) {
     assert(!unload_reported(), "already unloaded");
     JvmtiDeferredEvent event =
-      JvmtiDeferredEvent::compiled_method_unload_event(this,
-          _jmethod_id, insts_begin());
-    MutexLocker ml(Service_lock, Mutex::_no_safepoint_check_flag);
-    JvmtiDeferredEventQueue::enqueue(event);
+      JvmtiDeferredEvent::compiled_method_unload_event(
+          method()->jmethod_id(), insts_begin());
+    ServiceThread::enqueue_deferred_event(&event);
   }
 
   // The JVMTI CompiledMethodUnload event can be enabled or disabled at
@@ -1758,10 +1803,9 @@ void nmethod::do_unloading(bool unloading_occurred) {
   }
 }
 
-void nmethod::oops_do(OopClosure* f, bool allow_zombie) {
+void nmethod::oops_do(OopClosure* f, bool allow_dead) {
   // make sure the oops ready to receive visitors
-  assert(allow_zombie || !is_zombie(), "should not call follow on zombie nmethod");
-  assert(!is_unloaded(), "should not call follow on unloaded nmethod");
+  assert(allow_dead || is_alive(), "should not call follow on dead nmethod");
 
   // Prevent extra code cache walk for platforms that don't have immediate oops.
   if (relocInfo::mustIterateImmediateOopsInCode()) {
@@ -1790,57 +1834,183 @@ void nmethod::oops_do(OopClosure* f, bool allow_zombie) {
   }
 }
 
-#define NMETHOD_SENTINEL ((nmethod*)badAddress)
-
 nmethod* volatile nmethod::_oops_do_mark_nmethods;
 
-// An nmethod is "marked" if its _mark_link is set non-null.
-// Even if it is the end of the linked list, it will have a non-null link value,
-// as long as it is on the list.
-// This code must be MP safe, because it is used from parallel GC passes.
-bool nmethod::test_set_oops_do_mark() {
-  assert(nmethod::oops_do_marking_is_active(), "oops_do_marking_prologue must be called");
-  if (_oops_do_mark_link == NULL) {
-    // Claim this nmethod for this thread to mark.
-    if (Atomic::replace_if_null(NMETHOD_SENTINEL, &_oops_do_mark_link)) {
-      // Atomically append this nmethod (now claimed) to the head of the list:
-      nmethod* observed_mark_nmethods = _oops_do_mark_nmethods;
-      for (;;) {
-        nmethod* required_mark_nmethods = observed_mark_nmethods;
-        _oops_do_mark_link = required_mark_nmethods;
-        observed_mark_nmethods =
-          Atomic::cmpxchg(this, &_oops_do_mark_nmethods, required_mark_nmethods);
-        if (observed_mark_nmethods == required_mark_nmethods)
-          break;
-      }
-      // Mark was clear when we first saw this guy.
-      LogTarget(Trace, gc, nmethod) lt;
-      if (lt.is_enabled()) {
-        LogStream ls(lt);
-        CompileTask::print(&ls, this, "oops_do, mark", /*short_form:*/ true);
-      }
-      return false;
-    }
+void nmethod::oops_do_log_change(const char* state) {
+  LogTarget(Trace, gc, nmethod) lt;
+  if (lt.is_enabled()) {
+    LogStream ls(lt);
+    CompileTask::print(&ls, this, state, true /* short_form */);
   }
-  // On fall through, another racing thread marked this nmethod before we did.
-  return true;
+}
+
+bool nmethod::oops_do_try_claim() {
+  if (oops_do_try_claim_weak_request()) {
+    nmethod* result = oops_do_try_add_to_list_as_weak_done();
+    assert(result == NULL, "adding to global list as weak done must always succeed.");
+    return true;
+  }
+  return false;
+}
+
+bool nmethod::oops_do_try_claim_weak_request() {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+
+  if ((_oops_do_mark_link == NULL) &&
+      (Atomic::replace_if_null(&_oops_do_mark_link, mark_link(this, claim_weak_request_tag)))) {
+    oops_do_log_change("oops_do, mark weak request");
+    return true;
+  }
+  return false;
+}
+
+void nmethod::oops_do_set_strong_done(nmethod* old_head) {
+  _oops_do_mark_link = mark_link(old_head, claim_strong_done_tag);
+}
+
+nmethod::oops_do_mark_link* nmethod::oops_do_try_claim_strong_done() {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, mark_link(NULL, claim_weak_request_tag), mark_link(this, claim_strong_done_tag));
+  if (old_next == NULL) {
+    oops_do_log_change("oops_do, mark strong done");
+  }
+  return old_next;
+}
+
+nmethod::oops_do_mark_link* nmethod::oops_do_try_add_strong_request(nmethod::oops_do_mark_link* next) {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+  assert(next == mark_link(this, claim_weak_request_tag), "Should be claimed as weak");
+
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, next, mark_link(this, claim_strong_request_tag));
+  if (old_next == next) {
+    oops_do_log_change("oops_do, mark strong request");
+  }
+  return old_next;
+}
+
+bool nmethod::oops_do_try_claim_weak_done_as_strong_done(nmethod::oops_do_mark_link* next) {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+  assert(extract_state(next) == claim_weak_done_tag, "Should be claimed as weak done");
+
+  oops_do_mark_link* old_next = Atomic::cmpxchg(&_oops_do_mark_link, next, mark_link(extract_nmethod(next), claim_strong_done_tag));
+  if (old_next == next) {
+    oops_do_log_change("oops_do, mark weak done -> mark strong done");
+    return true;
+  }
+  return false;
+}
+
+nmethod* nmethod::oops_do_try_add_to_list_as_weak_done() {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+
+  assert(extract_state(_oops_do_mark_link) == claim_weak_request_tag ||
+         extract_state(_oops_do_mark_link) == claim_strong_request_tag,
+         "must be but is nmethod " PTR_FORMAT " %u", p2i(extract_nmethod(_oops_do_mark_link)), extract_state(_oops_do_mark_link));
+
+  nmethod* old_head = Atomic::xchg(&_oops_do_mark_nmethods, this);
+  // Self-loop if needed.
+  if (old_head == NULL) {
+    old_head = this;
+  }
+  // Try to install end of list and weak done tag.
+  if (Atomic::cmpxchg(&_oops_do_mark_link, mark_link(this, claim_weak_request_tag), mark_link(old_head, claim_weak_done_tag)) == mark_link(this, claim_weak_request_tag)) {
+    oops_do_log_change("oops_do, mark weak done");
+    return NULL;
+  } else {
+    return old_head;
+  }
+}
+
+void nmethod::oops_do_add_to_list_as_strong_done() {
+  assert(SafepointSynchronize::is_at_safepoint(), "only at safepoint");
+
+  nmethod* old_head = Atomic::xchg(&_oops_do_mark_nmethods, this);
+  // Self-loop if needed.
+  if (old_head == NULL) {
+    old_head = this;
+  }
+  assert(_oops_do_mark_link == mark_link(this, claim_strong_done_tag), "must be but is nmethod " PTR_FORMAT " state %u",
+         p2i(extract_nmethod(_oops_do_mark_link)), extract_state(_oops_do_mark_link));
+
+  oops_do_set_strong_done(old_head);
+}
+
+void nmethod::oops_do_process_weak(OopsDoProcessor* p) {
+  if (!oops_do_try_claim_weak_request()) {
+    // Failed to claim for weak processing.
+    oops_do_log_change("oops_do, mark weak request fail");
+    return;
+  }
+
+  p->do_regular_processing(this);
+
+  nmethod* old_head = oops_do_try_add_to_list_as_weak_done();
+  if (old_head == NULL) {
+    return;
+  }
+  oops_do_log_change("oops_do, mark weak done fail");
+  // Adding to global list failed, another thread added a strong request.
+  assert(extract_state(_oops_do_mark_link) == claim_strong_request_tag,
+         "must be but is %u", extract_state(_oops_do_mark_link));
+
+  oops_do_log_change("oops_do, mark weak request -> mark strong done");
+
+  oops_do_set_strong_done(old_head);
+  // Do missing strong processing.
+  p->do_remaining_strong_processing(this);
+}
+
+void nmethod::oops_do_process_strong(OopsDoProcessor* p) {
+  oops_do_mark_link* next_raw = oops_do_try_claim_strong_done();
+  if (next_raw == NULL) {
+    p->do_regular_processing(this);
+    oops_do_add_to_list_as_strong_done();
+    return;
+  }
+  // Claim failed. Figure out why and handle it.
+  if (oops_do_has_weak_request(next_raw)) {
+    oops_do_mark_link* old = next_raw;
+    // Claim failed because being weak processed (state == "weak request").
+    // Try to request deferred strong processing.
+    next_raw = oops_do_try_add_strong_request(old);
+    if (next_raw == old) {
+      // Successfully requested deferred strong processing.
+      return;
+    }
+    // Failed because of a concurrent transition. No longer in "weak request" state.
+  }
+  if (oops_do_has_any_strong_state(next_raw)) {
+    // Already claimed for strong processing or requested for such.
+    return;
+  }
+  if (oops_do_try_claim_weak_done_as_strong_done(next_raw)) {
+    // Successfully claimed "weak done" as "strong done". Do the missing marking.
+    p->do_remaining_strong_processing(this);
+    return;
+  }
+  // Claim failed, some other thread got it.
 }
 
 void nmethod::oops_do_marking_prologue() {
+  assert_at_safepoint();
+
   log_trace(gc, nmethod)("oops_do_marking_prologue");
-  assert(_oops_do_mark_nmethods == NULL, "must not call oops_do_marking_prologue twice in a row");
-  // We use cmpxchg instead of regular assignment here because the user
-  // may fork a bunch of threads, and we need them all to see the same state.
-  nmethod* observed = Atomic::cmpxchg(NMETHOD_SENTINEL, &_oops_do_mark_nmethods, (nmethod*)NULL);
-  guarantee(observed == NULL, "no races in this sequential code");
+  assert(_oops_do_mark_nmethods == NULL, "must be empty");
 }
 
 void nmethod::oops_do_marking_epilogue() {
-  assert(_oops_do_mark_nmethods != NULL, "must not call oops_do_marking_epilogue twice in a row");
-  nmethod* cur = _oops_do_mark_nmethods;
-  while (cur != NMETHOD_SENTINEL) {
-    assert(cur != NULL, "not NULL-terminated");
-    nmethod* next = cur->_oops_do_mark_link;
+  assert_at_safepoint();
+
+  nmethod* next = _oops_do_mark_nmethods;
+  _oops_do_mark_nmethods = NULL;
+  if (next == NULL) {
+    return;
+  }
+  nmethod* cur;
+  do {
+    cur = next;
+    next = extract_nmethod(cur->_oops_do_mark_link);
     cur->_oops_do_mark_link = NULL;
     DEBUG_ONLY(cur->verify_oop_relocations());
 
@@ -1849,11 +2019,8 @@ void nmethod::oops_do_marking_epilogue() {
       LogStream ls(lt);
       CompileTask::print(&ls, cur, "oops_do, unmark", /*short_form:*/ true);
     }
-    cur = next;
-  }
-  nmethod* required = _oops_do_mark_nmethods;
-  nmethod* observed = Atomic::cmpxchg((nmethod*)NULL, &_oops_do_mark_nmethods, required);
-  guarantee(observed == required, "no races in this sequential code");
+    // End if self-loop has been detected.
+  } while (cur != next);
   log_trace(gc, nmethod)("oops_do_marking_epilogue");
 }
 
@@ -2153,6 +2320,17 @@ public:
   virtual void do_oop(narrowOop* p) { ShouldNotReachHere(); }
 };
 
+class VerifyMetadataClosure: public MetadataClosure {
+ public:
+  void do_metadata(Metadata* md) {
+    if (md->is_method()) {
+      Method* method = (Method*)md;
+      assert(!method->is_old(), "Should not be installing old methods");
+    }
+  }
+};
+
+
 void nmethod::verify() {
 
   // Hmm. OSR methods can be deopted but not marked as zombie or not_entrant
@@ -2215,7 +2393,13 @@ void nmethod::verify() {
   assert(voc.ok(), "embedded oops must be OK");
   Universe::heap()->verify_nmethod(this);
 
+  assert(_oops_do_mark_link == NULL, "_oops_do_mark_link for %s should be NULL but is " PTR_FORMAT,
+         nm->method()->external_name(), p2i(_oops_do_mark_link));
   verify_scopes();
+
+  CompiledICLocker nm_verify(this);
+  VerifyMetadataClosure vmc;
+  metadata_do(&vmc);
 }
 
 
@@ -2224,7 +2408,6 @@ void nmethod::verify_interrupt_point(address call_site) {
   if (!is_not_installed()) {
     if (CompiledICLocker::is_safe(this)) {
       CompiledIC_at(this, call_site);
-      CHECK_UNHANDLED_OOPS_ONLY(Thread::current()->clear_unhandled_oops());
     } else {
       CompiledICLocker ml_verify(this);
       CompiledIC_at(this, call_site);
@@ -2904,13 +3087,13 @@ void nmethod::print_nmethod_labels(outputStream* stream, address block_begin, bo
   }
 
   if (block_begin == entry_point()) {
-    methodHandle m = method();
-    if (m.not_null()) {
+    Method* m = method();
+    if (m != NULL) {
       stream->print("  # ");
       m->print_value_on(stream);
       stream->cr();
     }
-    if (m.not_null() && !is_osr_method()) {
+    if (m != NULL && !is_osr_method()) {
       ResourceMark rm;
       int sizeargs = m->size_of_parameters();
       BasicType* sig_bt = NEW_RESOURCE_ARRAY(BasicType, sizeargs);
@@ -3062,6 +3245,8 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
   }
   assert(!oop_map_required, "missed oopmap");
 
+  Thread* thread = Thread::current();
+
   // Print any debug info present at this pc.
   ScopeDesc* sd  = scope_desc_in(begin, end);
   if (sd != NULL) {
@@ -3092,7 +3277,7 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
         case Bytecodes::_invokestatic:
         case Bytecodes::_invokeinterface:
           {
-            Bytecode_invoke invoke(sd->method(), sd->bci());
+            Bytecode_invoke invoke(methodHandle(thread, sd->method()), sd->bci());
             st->print(" ");
             if (invoke.name() != NULL)
               invoke.name()->print_symbol_on(st);
@@ -3105,7 +3290,7 @@ void nmethod::print_code_comment_on(outputStream* st, int column, address begin,
         case Bytecodes::_getstatic:
         case Bytecodes::_putstatic:
           {
-            Bytecode_field field(sd->method(), sd->bci());
+            Bytecode_field field(methodHandle(thread, sd->method()), sd->bci());
             st->print(" ");
             if (field.name() != NULL)
               field.name()->print_symbol_on(st);
@@ -3181,7 +3366,7 @@ public:
       if (cm != NULL && cm->is_far_code()) {
         // Temporary fix, see JDK-8143106
         CompiledDirectStaticCall* csc = CompiledDirectStaticCall::at(instruction_address());
-        csc->set_to_far(methodHandle(cm->method()), dest);
+        csc->set_to_far(methodHandle(Thread::current(), cm->method()), dest);
         return;
       }
     }

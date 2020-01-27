@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -35,26 +35,31 @@
 #include "oops/compressedOops.inline.hpp"
 #include "oops/oop.inline.hpp"
 
-template <class T, bool STRING_DEDUP, bool DEGEN>
+template <class T, bool STRING_DEDUP, bool DEGEN, bool ATOMIC_UPDATE>
 void ShenandoahTraversalGC::process_oop(T* p, Thread* thread, ShenandoahObjToScanQueue* queue, ShenandoahMarkingContext* const mark_context) {
   T o = RawAccess<>::oop_load(p);
   if (!CompressedOops::is_null(o)) {
     oop obj = CompressedOops::decode_not_null(o);
     if (DEGEN) {
+      assert(!ATOMIC_UPDATE, "Degen path assumes non-atomic updates");
       oop forw = ShenandoahBarrierSet::resolve_forwarded_not_null(obj);
-      if (!oopDesc::equals_raw(obj, forw)) {
+      if (obj != forw) {
         // Update reference.
         RawAccess<IS_NOT_NULL>::oop_store(p, forw);
       }
       obj = forw;
     } else if (_heap->in_collection_set(obj)) {
       oop forw = ShenandoahBarrierSet::resolve_forwarded_not_null(obj);
-      if (oopDesc::equals_raw(obj, forw)) {
+      if (obj == forw) {
         forw = _heap->evacuate_object(obj, thread);
       }
       shenandoah_assert_forwarded_except(p, obj, _heap->cancelled_gc());
       // Update reference.
-      ShenandoahHeap::cas_oop(forw, p, obj);
+      if (ATOMIC_UPDATE) {
+        ShenandoahHeap::cas_oop(forw, p, obj);
+      } else {
+        RawAccess<IS_NOT_NULL>::oop_store(p, forw);
+      }
       obj = forw;
     }
 

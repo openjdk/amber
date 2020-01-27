@@ -67,22 +67,22 @@
           "Time between statistics print outs (in seconds)")                \
           range(1, (uint)-1)                                                \
                                                                             \
-  diagnostic(bool, ZStatisticsForceTrace, false,                            \
-          "Force tracing of ZStats")                                        \
-                                                                            \
   diagnostic(bool, ZProactive, true,                                        \
           "Enable proactive GC cycles")                                     \
                                                                             \
   diagnostic(bool, ZVerifyViews, false,                                     \
           "Verify heap view accesses")                                      \
                                                                             \
-  diagnostic(bool, ZVerifyMarking, false,                                   \
+  diagnostic(bool, ZVerifyRoots, trueInDebug,                               \
+          "Verify roots")                                                   \
+                                                                            \
+  diagnostic(bool, ZVerifyObjects, false,                                   \
+          "Verify objects")                                                 \
+                                                                            \
+  diagnostic(bool, ZVerifyMarking, trueInDebug,                             \
           "Verify marking stacks")                                          \
                                                                             \
   diagnostic(bool, ZVerifyForwarding, false,                                \
-          "Verify forwarding tables")                                       \
-                                                                            \
-  develop(bool, ZVerifyLoadBarriers, false,                                 \
-          "Verify that reference loads are followed by barriers")
+          "Verify forwarding tables")
 
 #endif // SHARE_GC_Z_Z_GLOBALS_HPP

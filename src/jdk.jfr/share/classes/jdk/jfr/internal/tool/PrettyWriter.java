@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -550,20 +550,7 @@ public final class PrettyWriter extends EventPrintWriter {
                 println("N/A");
                 return true;
             }
-            double s = d.toNanosPart() / 1000_000_000.0 + d.toSecondsPart();
-            if (s < 1.0) {
-                if (s < 0.001) {
-                    println(String.format("%.3f", s * 1_000_000) + " us");
-                } else {
-                    println(String.format("%.3f", s * 1_000) + " ms");
-                }
-            } else {
-                if (s < 1000.0) {
-                    println(String.format("%.3f", s) + " s");
-                } else {
-                    println(String.format("%.0f", s) + " s");
-                }
-            }
+            println(Utils.formatDuration(d));
             return true;
         }
         if (value instanceof OffsetDateTime) {

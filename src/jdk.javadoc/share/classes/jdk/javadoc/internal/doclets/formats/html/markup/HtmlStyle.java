@@ -32,8 +32,6 @@ package jdk.javadoc.internal.doclets.formats.html.markup;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Bhavesh Patel
  */
 public enum HtmlStyle {
     aboutLanguage,
@@ -43,7 +41,6 @@ public enum HtmlStyle {
     altColor,
     annotations,
     arguments,
-    bar,
     block,
     blockList,
     bottomNav,
@@ -69,29 +66,23 @@ public enum HtmlStyle {
     descfrmTypeLabel,
     details,
     detail,
-    docSummary,
     emphasizedPhrase,
     exceptions,
     externalLink,
     fieldDetails,
     fieldSummary,
-    fixedNav,
+    flexBox,
+    flexHeader,
+    flexContent,
     header,
     helpSection,
     hierarchy,
     horizontal,
-    footer,
     implementationLabel,
-    indexContainer,
-    indexNav,
     inheritance,
     inheritedList,
     interfaceName,
-    leftContainer,
-    leftTop,
-    leftBottom,
     legalCopy,
-    mainContainer,
     memberDetails,
     memberName,
     memberNameLabel,
@@ -99,7 +90,6 @@ public enum HtmlStyle {
     memberSignature,
     memberSummary,
     methodDetails,
-    methodSignature,
     methodSummary,
     modifiers,
     moduleDescription,
@@ -128,8 +118,6 @@ public enum HtmlStyle {
     requiresSummary,
     returnLabel,
     returnType,
-    rightContainer,
-    rightIframe,
     rowColor,
     searchTagLink,
     searchTagResult,
@@ -146,6 +134,8 @@ public enum HtmlStyle {
     subNavList,
     subTitle,
     summary,
+    systemPropertiesContainer,
+    systemPropertiesSummary,
     tabEnd,
     tableTab,
     throwsLabel,
@@ -157,5 +147,6 @@ public enum HtmlStyle {
     typeParametersLong,
     typeSummary,
     useSummary,
-    usesSummary
+    usesSummary,
+    verticalSeparator
 }

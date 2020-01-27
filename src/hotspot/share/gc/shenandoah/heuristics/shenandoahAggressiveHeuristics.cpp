@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2019, Red Hat, Inc. All rights reserved.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -65,7 +65,7 @@ void ShenandoahAggressiveHeuristics::choose_collection_set_from_regiondata(Shena
   }
 }
 
-bool ShenandoahAggressiveHeuristics::should_start_normal_gc() const {
+bool ShenandoahAggressiveHeuristics::should_start_gc() const {
   log_info(gc)("Trigger: Start next cycle immediately");
   return true;
 }

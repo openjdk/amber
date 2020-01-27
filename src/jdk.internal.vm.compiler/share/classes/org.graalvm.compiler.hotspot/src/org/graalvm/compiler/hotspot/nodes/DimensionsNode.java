@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,6 @@ package org.graalvm.compiler.hotspot.nodes;
 import static org.graalvm.compiler.core.common.NumUtil.roundUp;
 import static org.graalvm.compiler.nodeinfo.NodeCycles.CYCLES_2;
 import static org.graalvm.compiler.nodeinfo.NodeSize.SIZE_1;
-
-import java.util.BitSet;
 
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.graph.NodeClass;
@@ -64,7 +62,7 @@ public final class DimensionsNode extends FixedWithNextNode implements LIRLowera
         int size = rank * 4;
         int wordSize = lirGen.target().wordSize;
         int slots = roundUp(size, wordSize) / wordSize;
-        VirtualStackSlot array = lirGen.allocateStackSlots(slots, new BitSet(0), null);
+        VirtualStackSlot array = lirGen.allocateStackSlots(slots);
         Value result = lirGen.emitAddress(array);
         gen.setResult(this, result);
     }

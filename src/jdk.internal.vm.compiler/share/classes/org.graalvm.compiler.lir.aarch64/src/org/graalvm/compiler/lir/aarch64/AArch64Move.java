@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -255,10 +255,19 @@ public class AArch64Move {
 
         @Override
         public void emitCode(CompilationResultBuilder crb, AArch64MacroAssembler masm) {
-            if (state != null) {
-                crb.recordImplicitException(masm.position(), state);
-            }
+            int prePosition = masm.position();
             emitMemAccess(crb, masm);
+            if (state != null) {
+                int implicitExceptionPosition = prePosition;
+                // Adjust implicit exception position if this ldr/str has been merged to ldp/stp.
+                if (kind.isInteger() && prePosition == masm.position() && masm.isImmLoadStoreMerged()) {
+                    implicitExceptionPosition = prePosition - 4;
+                    if (crb.isImplicitExceptionExist(implicitExceptionPosition)) {
+                        return;
+                    }
+                }
+                crb.recordImplicitException(implicitExceptionPosition, state);
+            }
         }
 
         @Override
@@ -346,8 +355,17 @@ public class AArch64Move {
 
         @Override
         public void emitCode(CompilationResultBuilder crb, AArch64MacroAssembler masm) {
-            crb.recordImplicitException(masm.position(), state);
+            int prePosition = masm.position();
             masm.ldr(64, zr, address.toAddress());
+            int implicitExceptionPosition = prePosition;
+            // Adjust implicit exception position if this ldr has been merged to ldp.
+            if (prePosition == masm.position() && masm.isImmLoadStoreMerged()) {
+                implicitExceptionPosition = prePosition - 4;
+                if (crb.isImplicitExceptionExist(implicitExceptionPosition)) {
+                    return;
+                }
+            }
+            crb.recordImplicitException(implicitExceptionPosition, state);
         }
 
         @Override
@@ -433,7 +451,10 @@ public class AArch64Move {
     }
 
     static void reg2stack(CompilationResultBuilder crb, AArch64MacroAssembler masm, AllocatableValue result, AllocatableValue input) {
-        AArch64Address dest = loadStackSlotAddress(crb, masm, asStackSlot(result), Value.ILLEGAL);
+        AArch64Address dest;
+        try (ScratchRegister scratch = masm.getScratchRegister()) {
+            dest = loadStackSlotAddress(crb, masm, asStackSlot(result), scratch.getRegister());
+        }
         Register src = asRegister(input);
         // use the slot kind to define the operand size
         AArch64Kind kind = (AArch64Kind) result.getPlatformKind();
@@ -525,8 +546,8 @@ public class AArch64Move {
                 break;
             case Object:
                 if (input.isNull()) {
-                    if (crb.mustReplaceWithNullRegister(input)) {
-                        masm.mov(64, dst, crb.nullRegister);
+                    if (crb.mustReplaceWithUncompressedNullRegister(input)) {
+                        masm.mov(64, dst, crb.uncompressedNullRegister);
                     } else {
                         masm.mov(dst, 0);
                     }
@@ -546,7 +567,7 @@ public class AArch64Move {
         try (ScratchRegister addrReg = masm.getScratchRegister()) {
             StackSlot slot = (StackSlot) result;
             AArch64Address resultAddress = loadStackSlotAddress(crb, masm, slot, addrReg.getRegister());
-            if (constant.isDefaultForKind() || constant.isNull()) {
+            if (constant.isNull() && !crb.mustReplaceWithUncompressedNullRegister(constant)) {
                 emitStore(crb, masm, (AArch64Kind) result.getPlatformKind(), resultAddress, zr.asValue(LIRKind.combine(result)));
             } else {
                 try (ScratchRegister sc = masm.getScratchRegister()) {
@@ -722,7 +743,7 @@ public class AArch64Move {
 
         @Override
         public void emitCode(CompilationResultBuilder crb, AArch64MacroAssembler masm) {
-            Register nullRegister = crb.nullRegister;
+            Register nullRegister = crb.uncompressedNullRegister;
             if (!nullRegister.equals(Register.None)) {
                 emitConversion(asRegister(result), asRegister(input), nullRegister, masm);
             }

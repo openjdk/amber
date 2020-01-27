@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,11 +29,11 @@ import static jdk.vm.ci.amd64.AMD64.k2;
 import static jdk.vm.ci.amd64.AMD64.rdi;
 import static jdk.vm.ci.amd64.AMD64.rdx;
 import static jdk.vm.ci.amd64.AMD64.rsi;
-
 import static jdk.vm.ci.code.ValueUtil.asRegister;
 import static org.graalvm.compiler.lir.LIRInstruction.OperandFlag.REG;
 
-import jdk.vm.ci.amd64.AMD64;
+import java.util.EnumSet;
+
 import org.graalvm.compiler.asm.Label;
 import org.graalvm.compiler.asm.amd64.AMD64Address;
 import org.graalvm.compiler.asm.amd64.AMD64Assembler;
@@ -44,17 +44,24 @@ import org.graalvm.compiler.lir.Opcode;
 import org.graalvm.compiler.lir.asm.CompilationResultBuilder;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 
+import jdk.vm.ci.amd64.AMD64;
+import jdk.vm.ci.amd64.AMD64.CPUFeature;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.Register;
+import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.Value;
 
 @Opcode("AMD64_STRING_INFLATE")
 public final class AMD64StringLatin1InflateOp extends AMD64LIRInstruction {
     public static final LIRInstructionClass<AMD64StringLatin1InflateOp> TYPE = LIRInstructionClass.create(AMD64StringLatin1InflateOp.class);
 
-    @Alive({REG}) private Value rsrc;
-    @Alive({REG}) private Value rdst;
-    @Alive({REG}) private Value rlen;
+    @Use({REG}) private Value rsrc;
+    @Use({REG}) private Value rdst;
+    @Use({REG}) private Value rlen;
+
+    @Temp({REG}) private Value rsrcTemp;
+    @Temp({REG}) private Value rdstTemp;
+    @Temp({REG}) private Value rlenTemp;
 
     @Temp({REG}) private Value vtmp1;
     @Temp({REG}) private Value rtmp2;
@@ -66,11 +73,11 @@ public final class AMD64StringLatin1InflateOp extends AMD64LIRInstruction {
         assert asRegister(dst).equals(rdi);
         assert asRegister(len).equals(rdx);
 
-        rsrc = src;
-        rdst = dst;
-        rlen = len;
+        rsrcTemp = rsrc = src;
+        rdstTemp = rdst = dst;
+        rlenTemp = rlen = len;
 
-        vtmp1 = tool.newVariable(LIRKind.value(AMD64Kind.V512_BYTE));
+        vtmp1 = useAVX512ForStringInflateCompress(tool.target()) ? tool.newVariable(LIRKind.value(AMD64Kind.V512_BYTE)) : tool.newVariable(LIRKind.value(AMD64Kind.V128_BYTE));
         rtmp2 = tool.newVariable(LIRKind.value(AMD64Kind.DWORD));
     }
 
@@ -84,6 +91,13 @@ public final class AMD64StringLatin1InflateOp extends AMD64LIRInstruction {
         Register tmp2 = asRegister(rtmp2);
 
         byteArrayInflate(masm, src, dst, len, tmp1, tmp2);
+    }
+
+    public static boolean useAVX512ForStringInflateCompress(TargetDescription target) {
+        EnumSet<CPUFeature> features = ((AMD64) target.arch).getFeatures();
+        return features.contains(AMD64.CPUFeature.AVX512BW) &&
+                        features.contains(AMD64.CPUFeature.AVX512VL) &&
+                        features.contains(AMD64.CPUFeature.BMI2);
     }
 
     /**
@@ -107,10 +121,7 @@ public final class AMD64StringLatin1InflateOp extends AMD64LIRInstruction {
         assert dst.number != len.number && dst.number != tmp.number;
         assert len.number != tmp.number;
 
-        if (masm.supports(AMD64.CPUFeature.AVX512BW) &&
-                        masm.supports(AMD64.CPUFeature.AVX512VL) &&
-                        masm.supports(AMD64.CPUFeature.BMI2)) {
-
+        if (useAVX512ForStringInflateCompress(masm.target)) {
             // If the length of the string is less than 16, we chose not to use the
             // AVX512 instructions.
             masm.testl(len, -16);
@@ -264,4 +275,8 @@ public final class AMD64StringLatin1InflateOp extends AMD64LIRInstruction {
         masm.bind(labelDone);
     }
 
+    @Override
+    public boolean needsClearUpperVectorRegisters() {
+        return true;
+    }
 }

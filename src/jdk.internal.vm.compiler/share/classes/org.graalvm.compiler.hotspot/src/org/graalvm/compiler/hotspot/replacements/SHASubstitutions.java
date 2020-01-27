@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@ package org.graalvm.compiler.hotspot.replacements;
 
 import static org.graalvm.compiler.hotspot.GraalHotSpotVMConfigBase.INJECTED_INTRINSIC_CONTEXT;
 import static org.graalvm.compiler.hotspot.GraalHotSpotVMConfigBase.INJECTED_METAACCESS;
-import static org.graalvm.compiler.serviceprovider.JavaVersionUtil.Java8OrEarlier;
 
 import org.graalvm.compiler.api.replacements.ClassSubstitution;
 import org.graalvm.compiler.api.replacements.Fold;
@@ -46,8 +45,6 @@ import jdk.vm.ci.meta.JavaKind;
 
 @ClassSubstitution(className = "sun.security.provider.SHA", optional = true)
 public class SHASubstitutions {
-
-    public static final String implCompressName = Java8OrEarlier ? "implCompress" : "implCompress0";
 
     @MethodSubstitution(isStatic = false)
     static void implCompress0(Object receiver, byte[] buf, int ofs) {

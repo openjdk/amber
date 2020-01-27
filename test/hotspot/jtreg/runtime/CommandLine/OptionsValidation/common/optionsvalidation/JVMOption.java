@@ -44,6 +44,9 @@ import static optionsvalidation.JVMOptionsUtils.VMType;
 
 public abstract class JVMOption {
 
+    private static final String UNLOCK_FLAG1 = "-XX:+UnlockDiagnosticVMOptions";
+    private static final String UNLOCK_FLAG2 = "-XX:+UnlockExperimentalVMOptions";
+
     /**
      * Executor for JCMD
      */
@@ -397,8 +400,7 @@ public abstract class JVMOption {
         }
 
         if (GCType != null &&
-            !(prepend.contains("-XX:+UseConcMarkSweepGC") ||
-              prepend.contains("-XX:+UseSerialGC") ||
+            !(prepend.contains("-XX:+UseSerialGC") ||
               prepend.contains("-XX:+UseParallelGC") ||
               prepend.contains("-XX:+UseG1GC"))) {
             explicitGC = GCType;
@@ -407,6 +409,9 @@ public abstract class JVMOption {
         if (explicitGC != null) {
             runJava.add(explicitGC);
         }
+
+        runJava.add(UNLOCK_FLAG1);
+        runJava.add(UNLOCK_FLAG2);
 
         runJava.addAll(prepend);
         runJava.add(optionValue);

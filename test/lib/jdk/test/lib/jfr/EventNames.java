@@ -153,6 +153,7 @@ public class EventNames {
     public final static String CodeCacheFull = PREFIX + "CodeCacheFull";
     public final static String ObjectAllocationInNewTLAB = PREFIX + "ObjectAllocationInNewTLAB";
     public final static String ObjectAllocationOutsideTLAB = PREFIX + "ObjectAllocationOutsideTLAB";
+    public final static String Deoptimization = PREFIX + "Deoptimization";
 
     // OS
     public final static String OSInformation = PREFIX + "OSInformation";
@@ -189,6 +190,12 @@ public class EventNames {
     public final static String CPUTimeStampCounter = PREFIX + "CPUTimeStampCounter";
     public final static String ActiveRecording = PREFIX + "ActiveRecording";
     public final static String ActiveSetting = PREFIX + "ActiveSetting";
+    public static final String Flush = PREFIX + "Flush";
+    public static final String FlushStringPool = PREFIX + "FlushStringPool";
+    public static final String FlushStacktrace = PREFIX + "FlushStacktrace";
+    public static final String FlushStorage = PREFIX + "FlushStorage";
+    public static final String FlushMetadata = PREFIX + "FlushMetadata";
+    public static final String FlushTypeSet = PREFIX + "FlushTypeSet";
 
     public static boolean isGcEvent(EventType et) {
         return et.getCategoryNames().contains(GC_CATEGORY);

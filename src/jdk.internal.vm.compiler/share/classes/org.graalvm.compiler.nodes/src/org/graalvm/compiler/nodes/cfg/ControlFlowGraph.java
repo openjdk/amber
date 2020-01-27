@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,6 +38,7 @@ import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.debug.GraalError;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.NodeMap;
+import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.nodes.AbstractBeginNode;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.ControlSinkNode;
@@ -210,7 +211,7 @@ public final class ControlFlowGraph implements AbstractControlFlowGraph<Block> {
     public static void addDeferredExit(DeferredExit[] deferredExits, Block b) {
         Loop<Block> outermostExited = b.getDominator().getLoop();
         Loop<Block> exitBlockLoop = b.getLoop();
-        assert outermostExited != null;
+        assert outermostExited != null : "Dominator must be in a loop. Possible cause is a missing loop exit node.";
         while (outermostExited.getParent() != null && outermostExited.getParent() != exitBlockLoop) {
             outermostExited = outermostExited.getParent();
         }
@@ -414,6 +415,15 @@ public final class ControlFlowGraph implements AbstractControlFlowGraph<Block> {
 
     public Block blockFor(Node node) {
         return nodeToBlock.get(node);
+    }
+
+    public Block commonDominatorFor(NodeIterable<? extends Node> nodes) {
+        Block commonDom = null;
+        for (Node n : nodes) {
+            Block b = blockFor(n);
+            commonDom = (Block) AbstractControlFlowGraph.commonDominator(commonDom, b);
+        }
+        return commonDom;
     }
 
     @Override

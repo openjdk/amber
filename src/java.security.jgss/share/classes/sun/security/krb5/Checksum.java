@@ -102,7 +102,7 @@ public class Checksum {
         } catch (Exception exc) {
             if (DEBUG) {
                 System.out.println("Exception in getting default checksum "+
-                                   "value from the configuration " +
+                                   "value from the configuration. " +
                                    "Setting default checksum to be RSA-MD5");
                 exc.printStackTrace();
             }
@@ -122,7 +122,7 @@ public class Checksum {
             if (DEBUG) {
                 System.out.println("Exception in getting safe default " +
                                    "checksum value " +
-                                   "from the configuration Setting  " +
+                                   "from the configuration. Setting " +
                                    "safe default checksum to be RSA-MD5");
                 exc.printStackTrace();
             }
@@ -195,6 +195,26 @@ public class Checksum {
                                                key.getBytes(),
                                                checksum,
             usage);
+    }
+
+    // ===============  ATTENTION! Use with care  ==================
+    // According to https://tools.ietf.org/html/rfc3961#section-6.1,
+    // An unkeyed checksum should only be used "in limited circumstances
+    // where the lack of a key does not provide a window for an attack,
+    // preferably as part of an encrypted message".
+    public boolean verifyAnyChecksum(byte[] data, EncryptionKey key,
+            int usage)
+            throws KdcErrException, KrbCryptoException {
+        CksumType cksumEngine = CksumType.getInstance(cksumType);
+        if (!cksumEngine.isSafe()) {
+            return cksumEngine.verifyChecksum(data, checksum);
+        } else {
+            return cksumEngine.verifyKeyedChecksum(data,
+                    data.length,
+                    key.getBytes(),
+                    checksum,
+                    usage);
+        }
     }
 
     /*

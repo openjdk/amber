@@ -204,11 +204,6 @@
   develop(bool, G1VerifyCTCleanup, false,                                   \
           "Verify card table cleanup.")                                     \
                                                                             \
-  product(size_t, G1RSetScanBlockSize, 64,                                  \
-          "Size of a work unit of cards claimed by a worker thread"         \
-          "during RSet scanning.")                                          \
-          range(1, max_uintx)                                               \
-                                                                            \
   develop(uintx, G1DummyRegionsPerGC, 0,                                    \
           "The number of dummy regions G1 will allocate at the end of "     \
           "each evacuation pause in order to artificially fill up the "     \
@@ -244,9 +239,6 @@
   product(uintx, G1MixedGCCountTarget, 8,                                   \
           "The target number of mixed GCs after a marking cycle.")          \
           range(0, max_uintx)                                               \
-                                                                            \
-  experimental(bool, G1PretouchAuxiliaryMemory, false,                      \
-          "Pre-touch large auxiliary data structures used by the GC.")      \
                                                                             \
   experimental(bool, G1EagerReclaimHumongousObjects, true,                  \
           "Try to reclaim dead large objects at every young GC.")           \

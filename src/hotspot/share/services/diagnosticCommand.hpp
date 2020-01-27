@@ -388,7 +388,7 @@ public:
     return "GC.class_stats";
   }
   static const char* description() {
-    return "Provide statistics about Java class meta data.";
+    return "(Deprecated) Provide statistics about Java class meta data.";
   }
   static const char* impact() {
     return "High: Depends on Java heap size and content.";
@@ -880,7 +880,7 @@ public:
     return "High: Switches the VM into Java debug mode.";
   }
   static const JavaPermission permission() {
-    JavaPermission p = { "java.lang.management.ManagementPermission", "monitor", NULL };
+    JavaPermission p = { "java.lang.management.ManagementPermission", "control", NULL };
     return p;
   }
   static int num_arguments() { return 0; }

@@ -89,7 +89,10 @@ public final class GraalServices {
             synchronized (servicesCache) {
                 ArrayList<S> providersList = new ArrayList<>();
                 for (S provider : providers) {
-                    providersList.add(provider);
+                    Module module = provider.getClass().getModule();
+                    if (isHotSpotGraalModule(module.getName())) {
+                        providersList.add(provider);
+                    }
                 }
                 providers = providersList;
                 servicesCache.put(service, providersList);
@@ -100,8 +103,29 @@ public final class GraalServices {
         return providers;
     }
 
+    /**
+     * Determines if the module named by {@code name} is part of Graal when it is configured as a
+     * HotSpot JIT compiler.
+     */
+    private static boolean isHotSpotGraalModule(String name) {
+        if (name != null) {
+            return name.equals("jdk.internal.vm.compiler") ||
+                            name.equals("jdk.internal.vm.compiler.management") ||
+                            name.equals("com.oracle.graal.graal_enterprise");
+        }
+        return false;
+    }
+
     protected static <S> Iterable<S> load0(Class<S> service) {
-        Iterable<S> iterable = ServiceLoader.load(service, GraalServices.class.getClassLoader());
+        Module module = GraalServices.class.getModule();
+        // Graal cannot know all the services used by another module
+        // (e.g. enterprise) so dynamically register the service use now.
+        if (!module.canUse(service)) {
+            module.addUses(service);
+        }
+
+        ModuleLayer layer = module.getLayer();
+        Iterable<S> iterable = ServiceLoader.load(layer, service);
         return new Iterable<>() {
             @Override
             public Iterator<S> iterator() {
@@ -136,7 +160,9 @@ public final class GraalServices {
      * @param other all JVMCI packages will be opened to the module defining this class
      */
     static void openJVMCITo(Class<?> other) {
-        if (IS_IN_NATIVE_IMAGE) return;
+        if (IS_IN_NATIVE_IMAGE) {
+            return;
+        }
 
         Module jvmciModule = JVMCI_MODULE;
         Module otherModule = other.getModule();
@@ -210,6 +236,10 @@ public final class GraalServices {
      * trusted code.
      */
     public static boolean isToStringTrusted(Class<?> c) {
+        if (IS_IN_NATIVE_IMAGE) {
+            return true;
+        }
+
         Module module = c.getModule();
         Module jvmciModule = JVMCI_MODULE;
         assert jvmciModule.getPackages().contains("jdk.vm.ci.runtime");
@@ -521,11 +551,7 @@ public final class GraalServices {
         return Math.fma(a, b, c);
     }
 
-    /**
-     * Set the flag in the {@link VirtualObject} that indicates that it is a boxed primitive that
-     * was produced as a result of a call to a {@code valueOf} method.
-     */
-    public static void markVirtualObjectAsAutoBox(VirtualObject virtualObject) {
-       virtualObject.setIsAutoBox(true);
+    public static VirtualObject createVirtualObject(ResolvedJavaType type, int id, boolean isAutoBox) {
+        return VirtualObject.get(type, id, isAutoBox);
     }
 }

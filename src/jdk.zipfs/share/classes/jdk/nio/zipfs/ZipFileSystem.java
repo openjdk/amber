@@ -33,6 +33,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.Runtime.Version;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -41,9 +42,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.*;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.UserPrincipalLookupService;
+import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -52,6 +51,10 @@ import java.security.PrivilegedExceptionAction;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
@@ -82,9 +85,25 @@ class ZipFileSystem extends FileSystem {
     private static final boolean isWindows = AccessController.doPrivileged(
         (PrivilegedAction<Boolean>)()->System.getProperty("os.name")
                                              .startsWith("Windows"));
-    private static final Set<String> supportedFileAttributeViews =
-        Set.of("basic", "zip");
     private static final byte[] ROOTPATH = new byte[] { '/' };
+    private static final String PROPERTY_POSIX = "enablePosixFileAttributes";
+    private static final String PROPERTY_DEFAULT_OWNER = "defaultOwner";
+    private static final String PROPERTY_DEFAULT_GROUP = "defaultGroup";
+    private static final String PROPERTY_DEFAULT_PERMISSIONS = "defaultPermissions";
+    // Property used to specify the entry version to use for a multi-release JAR
+    private static final String PROPERTY_RELEASE_VERSION = "releaseVersion";
+    // Original property used to specify the entry version to use for a
+    // multi-release JAR which is kept for backwards compatibility.
+    private static final String PROPERTY_MULTI_RELEASE = "multi-release";
+
+    private static final Set<PosixFilePermission> DEFAULT_PERMISSIONS =
+        PosixFilePermissions.fromString("rwxrwxrwx");
+    // Property used to specify the compression mode to use
+    private static final String PROPERTY_COMPRESSION_METHOD = "compressionMethod";
+    // Value specified for compressionMethod property to compress Zip entries
+    private static final String COMPRESSION_METHOD_DEFLATED = "DEFLATED";
+    // Value specified for compressionMethod property to not compress Zip entries
+    private static final String COMPRESSION_METHOD_STORED = "STORED";
 
     private final ZipFileSystemProvider provider;
     private final Path zfpath;
@@ -103,6 +122,17 @@ class ZipFileSystem extends FileSystem {
     private final int defaultCompressionMethod; // METHOD_STORED if "noCompression=true"
                                                 // METHOD_DEFLATED otherwise
 
+    // entryLookup is identity by default, will be overridden for multi-release jars
+    private Function<byte[], byte[]> entryLookup = Function.identity();
+
+    // POSIX support
+    final boolean supportPosix;
+    private final UserPrincipal defaultOwner;
+    private final GroupPrincipal defaultGroup;
+    private final Set<PosixFilePermission> defaultPermissions;
+
+    private final Set<String> supportedFileAttributeViews;
+
     ZipFileSystem(ZipFileSystemProvider provider,
                   Path zfpath,
                   Map<String, ?> env) throws IOException
@@ -113,7 +143,13 @@ class ZipFileSystem extends FileSystem {
         this.noExtt = "false".equals(env.get("zipinfo-time"));
         this.useTempFile  = isTrue(env, "useTempFile");
         this.forceEnd64 = isTrue(env, "forceZIP64End");
-        this.defaultCompressionMethod = isTrue(env, "noCompression") ? METHOD_STORED : METHOD_DEFLATED;
+        this.defaultCompressionMethod = getDefaultCompressionMethod(env);
+        this.supportPosix = isTrue(env, PROPERTY_POSIX);
+        this.defaultOwner = initOwner(zfpath, env);
+        this.defaultGroup = initGroup(zfpath, env);
+        this.defaultPermissions = initPermissions(env);
+        this.supportedFileAttributeViews = supportPosix ?
+            Set.of("basic", "posix", "zip") : Set.of("basic", "zip");
         if (Files.notExists(zfpath)) {
             // create a new zip if it doesn't exist
             if (isTrue(env, "create")) {
@@ -121,7 +157,7 @@ class ZipFileSystem extends FileSystem {
                     new END().write(os, 0, forceEnd64);
                 }
             } else {
-                throw new FileSystemNotFoundException(zfpath.toString());
+                throw new NoSuchFileException(zfpath.toString());
             }
         }
         // sm and existence check
@@ -144,11 +180,160 @@ class ZipFileSystem extends FileSystem {
         }
         this.provider = provider;
         this.zfpath = zfpath;
+
+        initializeReleaseVersion(env);
+    }
+
+    /**
+     * Return the compression method to use (STORED or DEFLATED).  If the
+     * property {@code commpressionMethod} is set use its value to determine
+     * the compression method to use.  If the property is not set, then the
+     * default compression is DEFLATED unless the property {@code noCompression}
+     * is set which is supported for backwards compatibility.
+     * @param env Zip FS map of properties
+     * @return The Compression method to use
+     */
+    private int getDefaultCompressionMethod(Map<String, ?> env) {
+        int result =
+                isTrue(env, "noCompression") ? METHOD_STORED : METHOD_DEFLATED;
+        if (env.containsKey(PROPERTY_COMPRESSION_METHOD)) {
+            Object compressionMethod =  env.get(PROPERTY_COMPRESSION_METHOD);
+            if (compressionMethod != null) {
+                if (compressionMethod instanceof String) {
+                    switch (((String) compressionMethod).toUpperCase()) {
+                        case COMPRESSION_METHOD_STORED:
+                            result = METHOD_STORED;
+                            break;
+                        case COMPRESSION_METHOD_DEFLATED:
+                            result = METHOD_DEFLATED;
+                            break;
+                        default:
+                            throw new IllegalArgumentException(String.format(
+                                    "The value for the %s property must be %s or %s",
+                                    PROPERTY_COMPRESSION_METHOD, COMPRESSION_METHOD_STORED,
+                                    COMPRESSION_METHOD_DEFLATED));
+                    }
+                } else {
+                    throw new IllegalArgumentException(String.format(
+                            "The Object type for the %s property must be a String",
+                            PROPERTY_COMPRESSION_METHOD));
+                }
+            } else {
+                throw new IllegalArgumentException(String.format(
+                        "The value for the %s property must be %s or %s",
+                        PROPERTY_COMPRESSION_METHOD, COMPRESSION_METHOD_STORED,
+                        COMPRESSION_METHOD_DEFLATED));
+            }
+        }
+        return result;
     }
 
     // returns true if there is a name=true/"true" setting in env
     private static boolean isTrue(Map<String, ?> env, String name) {
         return "true".equals(env.get(name)) || TRUE.equals(env.get(name));
+    }
+
+    // Initialize the default owner for files inside the zip archive.
+    // If not specified in env, it is the owner of the archive. If no owner can
+    // be determined, we try to go with system property "user.name". If that's not
+    // accessible, we return "<zipfs_default>".
+    private UserPrincipal initOwner(Path zfpath, Map<String, ?> env) throws IOException {
+        Object o = env.get(PROPERTY_DEFAULT_OWNER);
+        if (o == null) {
+            try {
+                PrivilegedExceptionAction<UserPrincipal> pa = ()->Files.getOwner(zfpath);
+                return AccessController.doPrivileged(pa);
+            } catch (UnsupportedOperationException | PrivilegedActionException e) {
+                if (e instanceof UnsupportedOperationException ||
+                    e.getCause() instanceof NoSuchFileException)
+                {
+                    PrivilegedAction<String> pa = ()->System.getProperty("user.name");
+                    String userName = AccessController.doPrivileged(pa);
+                    return ()->userName;
+                } else {
+                    throw new IOException(e);
+                }
+            }
+        }
+        if (o instanceof String) {
+            if (((String)o).isEmpty()) {
+                throw new IllegalArgumentException("Value for property " +
+                        PROPERTY_DEFAULT_OWNER + " must not be empty.");
+            }
+            return ()->(String)o;
+        }
+        if (o instanceof UserPrincipal) {
+            return (UserPrincipal)o;
+        }
+        throw new IllegalArgumentException("Value for property " +
+                PROPERTY_DEFAULT_OWNER + " must be of type " + String.class +
+            " or " + UserPrincipal.class);
+    }
+
+    // Initialize the default group for files inside the zip archive.
+    // If not specified in env, we try to determine the group of the zip archive itself.
+    // If this is not possible/unsupported, we will return a group principal going by
+    // the same name as the default owner.
+    private GroupPrincipal initGroup(Path zfpath, Map<String, ?> env) throws IOException {
+        Object o = env.get(PROPERTY_DEFAULT_GROUP);
+        if (o == null) {
+            try {
+                PosixFileAttributeView zfpv = Files.getFileAttributeView(zfpath, PosixFileAttributeView.class);
+                if (zfpv == null) {
+                    return defaultOwner::getName;
+                }
+                PrivilegedExceptionAction<GroupPrincipal> pa = ()->zfpv.readAttributes().group();
+                return AccessController.doPrivileged(pa);
+            } catch (UnsupportedOperationException | PrivilegedActionException e) {
+                if (e instanceof UnsupportedOperationException ||
+                    e.getCause() instanceof NoSuchFileException)
+                {
+                    return defaultOwner::getName;
+                } else {
+                    throw new IOException(e);
+                }
+            }
+        }
+        if (o instanceof String) {
+            if (((String)o).isEmpty()) {
+                throw new IllegalArgumentException("Value for property " +
+                        PROPERTY_DEFAULT_GROUP + " must not be empty.");
+            }
+            return ()->(String)o;
+        }
+        if (o instanceof GroupPrincipal) {
+            return (GroupPrincipal)o;
+        }
+        throw new IllegalArgumentException("Value for property " +
+                PROPERTY_DEFAULT_GROUP + " must be of type " + String.class +
+            " or " + GroupPrincipal.class);
+    }
+
+    // Initialize the default permissions for files inside the zip archive.
+    // If not specified in env, it will return 777.
+    private Set<PosixFilePermission> initPermissions(Map<String, ?> env) {
+        Object o = env.get(PROPERTY_DEFAULT_PERMISSIONS);
+        if (o == null) {
+            return DEFAULT_PERMISSIONS;
+        }
+        if (o instanceof String) {
+            return PosixFilePermissions.fromString((String)o);
+        }
+        if (!(o instanceof Set)) {
+            throw new IllegalArgumentException("Value for property " +
+                PROPERTY_DEFAULT_PERMISSIONS + " must be of type " + String.class +
+                " or " + Set.class);
+        }
+        Set<PosixFilePermission> perms = new HashSet<>();
+        for (Object o2 : (Set<?>)o) {
+            if (o2 instanceof PosixFilePermission) {
+                perms.add((PosixFilePermission)o2);
+            } else {
+                throw new IllegalArgumentException(PROPERTY_DEFAULT_PERMISSIONS +
+                    " must only contain objects of type " + PosixFilePermission.class);
+            }
+        }
+        return perms;
     }
 
     @Override
@@ -338,11 +523,13 @@ class ZipFileSystem extends FileSystem {
                 return (Entry)inode;
             } else if (inode.pos == -1) {
                 // pseudo directory, uses METHOD_STORED
-                Entry e = new Entry(inode.name, inode.isdir, METHOD_STORED);
+                Entry e = supportPosix ?
+                    new PosixEntry(inode.name, inode.isdir, METHOD_STORED) :
+                    new Entry(inode.name, inode.isdir, METHOD_STORED);
                 e.mtime = e.atime = e.ctime = zfsDefaultTimeStamp;
                 return e;
             } else {
-                return new Entry(this, inode);
+                return supportPosix ? new PosixEntry(this, inode) : new Entry(this, inode);
             }
         } finally {
             endRead();
@@ -381,6 +568,65 @@ class ZipFileSystem extends FileSystem {
                 e.atime = atime.toMillis();
             if (ctime != null)
                 e.ctime = ctime.toMillis();
+            update(e);
+        } finally {
+            endWrite();
+        }
+    }
+
+    void setOwner(byte[] path, UserPrincipal owner) throws IOException {
+        checkWritable();
+        beginWrite();
+        try {
+            ensureOpen();
+            Entry e = getEntry(path);    // ensureOpen checked
+            if (e == null) {
+                throw new NoSuchFileException(getString(path));
+            }
+            // as the owner information is not persistent, we don't need to
+            // change e.type to Entry.COPY
+            if (e instanceof PosixEntry) {
+                ((PosixEntry)e).owner = owner;
+                update(e);
+            }
+        } finally {
+            endWrite();
+        }
+    }
+
+    void setGroup(byte[] path, GroupPrincipal group) throws IOException {
+        checkWritable();
+        beginWrite();
+        try {
+            ensureOpen();
+            Entry e = getEntry(path);    // ensureOpen checked
+            if (e == null) {
+                throw new NoSuchFileException(getString(path));
+            }
+            // as the group information is not persistent, we don't need to
+            // change e.type to Entry.COPY
+            if (e instanceof PosixEntry) {
+                ((PosixEntry)e).group = group;
+                update(e);
+            }
+        } finally {
+            endWrite();
+        }
+    }
+
+    void setPermissions(byte[] path, Set<PosixFilePermission> perms) throws IOException {
+        checkWritable();
+        beginWrite();
+        try {
+            ensureOpen();
+            Entry e = getEntry(path);    // ensureOpen checked
+            if (e == null) {
+                throw new NoSuchFileException(getString(path));
+            }
+            if (e.type == Entry.CEN) {
+                e.type = Entry.COPY;     // copy e
+            }
+            e.posixPerms = perms == null ? -1 : ZipUtils.permsToFlags(perms);
             update(e);
         } finally {
             endWrite();
@@ -448,7 +694,9 @@ class ZipFileSystem extends FileSystem {
             if (dir.length == 0 || exists(dir))  // root dir, or existing dir
                 throw new FileAlreadyExistsException(getString(dir));
             checkParents(dir);
-            Entry e = new Entry(dir, Entry.NEW, true, METHOD_STORED);
+            Entry e = supportPosix ?
+                new PosixEntry(dir, Entry.NEW, true, METHOD_STORED, attrs) :
+                new Entry(dir, Entry.NEW, true, METHOD_STORED, attrs);
             update(e);
         } finally {
             endWrite();
@@ -489,7 +737,9 @@ class ZipFileSystem extends FileSystem {
                 checkParents(dst);
             }
             // copy eSrc entry and change name
-            Entry u = new Entry(eSrc, Entry.COPY);
+            Entry u = supportPosix ?
+                new PosixEntry((PosixEntry)eSrc, Entry.COPY) :
+                new Entry(eSrc, Entry.COPY);
             u.name(dst);
             if (eSrc.type == Entry.NEW || eSrc.type == Entry.FILECH) {
                 u.type = eSrc.type;    // make it the same type
@@ -504,7 +754,20 @@ class ZipFileSystem extends FileSystem {
                         Files.copy(eSrc.file, u.file, REPLACE_EXISTING);
                     }
                 }
+            } else if (eSrc.type == Entry.CEN && eSrc.method != defaultCompressionMethod) {
+
+                /**
+                 * We are copying a file within the same Zip file using a
+                 * different compression method.
+                 */
+                try (InputStream in = newInputStream(src);
+                     OutputStream out = newOutputStream(dst,
+                             CREATE, TRUNCATE_EXISTING, WRITE)) {
+                    in.transferTo(out);
+                }
+                u = getEntry(dst);
             }
+
             if (!hasCopyAttrs)
                 u.mtime = u.atime= u.ctime = System.currentTimeMillis();
             update(u);
@@ -553,12 +816,16 @@ class ZipFileSystem extends FileSystem {
                     }
                     return os;
                 }
-                return getOutputStream(new Entry(e, Entry.NEW));
+                return getOutputStream(supportPosix ?
+                    new PosixEntry((PosixEntry)e, Entry.NEW, defaultCompressionMethod)
+                        : new Entry(e, Entry.NEW, defaultCompressionMethod));
             } else {
                 if (!hasCreate && !hasCreateNew)
                     throw new NoSuchFileException(getString(path));
                 checkParents(path);
-                return getOutputStream(new Entry(path, Entry.NEW, false, defaultCompressionMethod));
+                return getOutputStream(supportPosix ?
+                    new PosixEntry(path, Entry.NEW, false, defaultCompressionMethod) :
+                    new Entry(path, Entry.NEW, false, defaultCompressionMethod));
             }
         } finally {
             endRead();
@@ -645,7 +912,9 @@ class ZipFileSystem extends FileSystem {
                     if (e.isDir() || options.contains(CREATE_NEW))
                         throw new FileAlreadyExistsException(getString(path));
                     SeekableByteChannel sbc =
-                            new EntryOutputChannel(new Entry(e, Entry.NEW));
+                            new EntryOutputChannel(supportPosix ?
+                                new PosixEntry((PosixEntry)e, Entry.NEW) :
+                                new Entry(e, Entry.NEW));
                     if (options.contains(APPEND)) {
                         try (InputStream is = getInputStream(e)) {  // copyover
                             byte[] buf = new byte[8192];
@@ -664,7 +933,9 @@ class ZipFileSystem extends FileSystem {
                     throw new NoSuchFileException(getString(path));
                 checkParents(path);
                 return new EntryOutputChannel(
-                    new Entry(path, Entry.NEW, false, defaultCompressionMethod));
+                    supportPosix ?
+                        new PosixEntry(path, Entry.NEW, false, defaultCompressionMethod, attrs) :
+                        new Entry(path, Entry.NEW, false, defaultCompressionMethod, attrs));
             } finally {
                 endRead();
             }
@@ -728,7 +999,10 @@ class ZipFileSystem extends FileSystem {
             final FileChannel fch = tmpfile.getFileSystem()
                                            .provider()
                                            .newFileChannel(tmpfile, options, attrs);
-            final Entry u = isFCH ? e : new Entry(path, tmpfile, Entry.FILECH);
+            final Entry u = isFCH ? e : (
+                supportPosix ?
+                new PosixEntry(path, tmpfile, Entry.FILECH, attrs) :
+                new Entry(path, tmpfile, Entry.FILECH, attrs));
             if (forWrite) {
                 u.flag = FLAG_DATADESCR;
                 u.method = defaultCompressionMethod;
@@ -1090,6 +1364,142 @@ class ZipFileSystem extends FileSystem {
         }
     }
 
+    /**
+     * If a version property has been specified and the file represents a multi-release JAR,
+     * determine the requested runtime version and initialize the ZipFileSystem instance accordingly.
+     *
+     * Checks if the Zip File System property "releaseVersion" has been specified. If it has,
+     * use its value to determine the requested version. If not use the value of the "multi-release" property.
+     */
+    private void initializeReleaseVersion(Map<String, ?> env) throws IOException {
+        Object o = env.containsKey(PROPERTY_RELEASE_VERSION) ?
+            env.get(PROPERTY_RELEASE_VERSION) :
+            env.get(PROPERTY_MULTI_RELEASE);
+
+        if (o != null && isMultiReleaseJar()) {
+            int version;
+            if (o instanceof String) {
+                String s = (String)o;
+                if (s.equals("runtime")) {
+                    version = Runtime.version().feature();
+                } else if (s.matches("^[1-9][0-9]*$")) {
+                    version = Version.parse(s).feature();
+                } else {
+                    throw new IllegalArgumentException("Invalid runtime version");
+                }
+            } else if (o instanceof Integer) {
+                version = Version.parse(((Integer)o).toString()).feature();
+            } else if (o instanceof Version) {
+                version = ((Version)o).feature();
+            } else {
+                throw new IllegalArgumentException("env parameter must be String, " +
+                    "Integer, or Version");
+            }
+            createVersionedLinks(version < 0 ? 0 : version);
+            setReadOnly();
+        }
+    }
+
+    /**
+     * Returns true if the Manifest main attribute "Multi-Release" is set to true; false otherwise.
+     */
+    private boolean isMultiReleaseJar() throws IOException {
+        try (InputStream is = newInputStream(getBytes("/META-INF/MANIFEST.MF"))) {
+            String multiRelease = new Manifest(is).getMainAttributes()
+                .getValue(Attributes.Name.MULTI_RELEASE);
+            return "true".equalsIgnoreCase(multiRelease);
+        } catch (NoSuchFileException x) {
+            return false;
+        }
+    }
+
+    /**
+     * Create a map of aliases for versioned entries, for example:
+     *   version/PackagePrivate.class -> META-INF/versions/9/version/PackagePrivate.class
+     *   version/PackagePrivate.java -> META-INF/versions/9/version/PackagePrivate.java
+     *   version/Version.class -> META-INF/versions/10/version/Version.class
+     *   version/Version.java -> META-INF/versions/10/version/Version.java
+     *
+     * Then wrap the map in a function that getEntry can use to override root
+     * entry lookup for entries that have corresponding versioned entries.
+     */
+    private void createVersionedLinks(int version) {
+        IndexNode verdir = getInode(getBytes("/META-INF/versions"));
+        // nothing to do, if no /META-INF/versions
+        if (verdir == null) {
+            return;
+        }
+        // otherwise, create a map and for each META-INF/versions/{n} directory
+        // put all the leaf inodes, i.e. entries, into the alias map
+        // possibly shadowing lower versioned entries
+        HashMap<IndexNode, byte[]> aliasMap = new HashMap<>();
+        getVersionMap(version, verdir).values().forEach(versionNode ->
+            walk(versionNode.child, entryNode ->
+                aliasMap.put(
+                    getOrCreateInode(getRootName(entryNode, versionNode), entryNode.isdir),
+                    entryNode.name))
+        );
+        entryLookup = path -> {
+            byte[] entry = aliasMap.get(IndexNode.keyOf(path));
+            return entry == null ? path : entry;
+        };
+    }
+
+    /**
+     * Create a sorted version map of version -> inode, for inodes <= max version.
+     *   9 -> META-INF/versions/9
+     *  10 -> META-INF/versions/10
+     */
+    private TreeMap<Integer, IndexNode> getVersionMap(int version, IndexNode metaInfVersions) {
+        TreeMap<Integer,IndexNode> map = new TreeMap<>();
+        IndexNode child = metaInfVersions.child;
+        while (child != null) {
+            Integer key = getVersion(child, metaInfVersions);
+            if (key != null && key <= version) {
+                map.put(key, child);
+            }
+            child = child.sibling;
+        }
+        return map;
+    }
+
+    /**
+     * Extract the integer version number -- META-INF/versions/9 returns 9.
+     */
+    private Integer getVersion(IndexNode inode, IndexNode metaInfVersions) {
+        try {
+            byte[] fullName = inode.name;
+            return Integer.parseInt(getString(Arrays
+                .copyOfRange(fullName, metaInfVersions.name.length + 1, fullName.length)));
+        } catch (NumberFormatException x) {
+            // ignore this even though it might indicate issues with the JAR structure
+            return null;
+        }
+    }
+
+    /**
+     * Walk the IndexNode tree processing all leaf nodes.
+     */
+    private void walk(IndexNode inode, Consumer<IndexNode> consumer) {
+        if (inode == null) return;
+        if (inode.isDir()) {
+            walk(inode.child, consumer);
+        } else {
+            consumer.accept(inode);
+        }
+        walk(inode.sibling, consumer);
+    }
+
+    /**
+     * Extract the root name from a versioned entry name.
+     * E.g. given inode 'META-INF/versions/9/foo/bar.class'
+     * and prefix 'META-INF/versions/9/' returns 'foo/bar.class'.
+     */
+    private byte[] getRootName(IndexNode inode, IndexNode prefix) {
+        byte[] fullName = inode.name;
+        return Arrays.copyOfRange(fullName, prefix.name.length, fullName.length);
+    }
+
     // Reads zip file central directory. Returns the file position of first
     // CEN header, otherwise returns -1 if an error occurred. If zip->msg != NULL
     // then the error was a zip format error and zip->msg has the error text.
@@ -1157,9 +1567,7 @@ class ZipFileSystem extends FileSystem {
 
     // Creates a new empty temporary file in the same directory as the
     // specified file.  A variant of Files.createTempFile.
-    private Path createTempFileInSameDirectoryAs(Path path)
-        throws IOException
-    {
+    private Path createTempFileInSameDirectoryAs(Path path) throws IOException {
         Path parent = path.toAbsolutePath().getParent();
         Path dir = (parent == null) ? path.getFileSystem().getPath(".") : parent;
         Path tmpPath = Files.createTempFile(dir, "zipfstmp", null);
@@ -1263,7 +1671,7 @@ class ZipFileSystem extends FileSystem {
             return 0;
 
         long written = 0;
-        if (e.csize > 0 && (e.crc != 0 || e.size == 0)) {
+        if (e.method != METHOD_STORED && e.csize > 0 && (e.crc != 0 || e.size == 0)) {
             // pre-compressed entry, write directly to output stream
             writeTo(e, os);
         } else {
@@ -1305,6 +1713,7 @@ class ZipFileSystem extends FileSystem {
         }
         if (!hasUpdate)
             return;
+        PosixFileAttributes attrs = getPosixAttributes(zfpath);
         Path tmpFile = createTempFileInSameDirectoryAs(zfpath);
         try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(tmpFile, WRITE))) {
             ArrayList<Entry> elist = new ArrayList<>(inodes.size());
@@ -1343,7 +1752,7 @@ class ZipFileSystem extends FileSystem {
                         continue;               // no root '/' directory even if it
                                                 // exists in original zip/jar file.
                     }
-                    e = new Entry(this, inode);
+                    e = supportPosix ? new PosixEntry(this, inode) : new Entry(this, inode);
                     try {
                         if (buf == null)
                             buf = new byte[8192];
@@ -1381,19 +1790,47 @@ class ZipFileSystem extends FileSystem {
             Files.delete(zfpath);
         }
 
+        // Set the POSIX permissions of the original Zip File if available
+        // before moving the temp file
+        if (attrs != null) {
+            Files.setPosixFilePermissions(tmpFile, attrs.permissions());
+        }
         Files.move(tmpFile, zfpath, REPLACE_EXISTING);
         hasUpdate = false;    // clear
     }
 
-    IndexNode getInode(byte[] path) {
-        return inodes.get(IndexNode.keyOf(Objects.requireNonNull(path, "path")));
+    /**
+     * Returns a file's POSIX file attributes.
+     * @param path The path to the file
+     * @return The POSIX file attributes for the specified file or
+     *         null if the POSIX attribute view is not available
+     * @throws IOException If an error occurs obtaining the POSIX attributes for
+     *                    the specified file
+     */
+    private PosixFileAttributes getPosixAttributes(Path path) throws IOException {
+        try {
+            PosixFileAttributeView view =
+                    Files.getFileAttributeView(path, PosixFileAttributeView.class);
+            // Return if the attribute view is not supported
+            if (view == null) {
+                return null;
+            }
+            return view.readAttributes();
+        } catch (UnsupportedOperationException e) {
+            // PosixFileAttributes not available
+            return null;
+        }
+    }
+
+    private IndexNode getInode(byte[] path) {
+        return inodes.get(IndexNode.keyOf(Objects.requireNonNull(entryLookup.apply(path), "path")));
     }
 
     /**
      * Return the IndexNode from the root tree. If it doesn't exist,
      * it gets created along with all parent directory IndexNodes.
      */
-    IndexNode getOrCreateInode(byte[] path, boolean isdir) {
+    private IndexNode getOrCreateInode(byte[] path, boolean isdir) {
         IndexNode node = getInode(path);
         // if node exists, return it
         if (node != null) {
@@ -1417,7 +1854,7 @@ class ZipFileSystem extends FileSystem {
             return (Entry)inode;
         if (inode == null || inode.pos == -1)
             return null;
-        return new Entry(this, inode);
+        return supportPosix ? new PosixEntry(this, inode): new Entry(this, inode);
     }
 
     public void deleteFile(byte[] path, boolean failIfNotExists)
@@ -1512,12 +1949,6 @@ class ZipFileSystem extends FileSystem {
             super(os, getDeflater());
             this.e = Objects.requireNonNull(e, "Zip entry is null");
             this.crc = new CRC32();
-        }
-
-        @Override
-        public synchronized void write(int b) throws IOException {
-            super.write(b);
-            crc.update(b);
         }
 
         @Override
@@ -1836,7 +2267,7 @@ class ZipFileSystem extends FileSystem {
     // Releases the specified inflater to the list of available inflaters.
     private void releaseDeflater(Deflater def) {
         synchronized (deflaters) {
-            if (inflaters.size() < MAX_FLATER) {
+            if (deflaters.size() < MAX_FLATER) {
                def.reset();
                deflaters.add(def);
             } else {
@@ -1995,7 +2426,7 @@ class ZipFileSystem extends FileSystem {
 
         private static final ThreadLocal<IndexNode> cachedKey = new ThreadLocal<>();
 
-        final static IndexNode keyOf(byte[] name) { // get a lookup key;
+        static final IndexNode keyOf(byte[] name) { // get a lookup key;
             IndexNode key = cachedKey.get();
             if (key == null) {
                 key = new IndexNode(name, -1);
@@ -2053,6 +2484,7 @@ class ZipFileSystem extends FileSystem {
         // entry attributes
         int    version;
         int    flag;
+        int    posixPerms = -1; // posix permissions
         int    method = -1;    // compression method
         long   mtime  = -1;    // last modification time (in DOS time)
         long   atime  = -1;    // last access time
@@ -2081,14 +2513,26 @@ class ZipFileSystem extends FileSystem {
             this.method = method;
         }
 
-        Entry(byte[] name, int type, boolean isdir, int method) {
+        @SuppressWarnings("unchecked")
+        Entry(byte[] name, int type, boolean isdir, int method, FileAttribute<?>... attrs) {
             this(name, isdir, method);
             this.type = type;
+            for (FileAttribute<?> attr : attrs) {
+                String attrName = attr.name();
+                if (attrName.equals("posix:permissions")) {
+                    posixPerms = ZipUtils.permsToFlags((Set<PosixFilePermission>)attr.value());
+                }
+            }
         }
 
-        Entry(byte[] name, Path file, int type) {
-            this(name, type, false, METHOD_STORED);
+        Entry(byte[] name, Path file, int type, FileAttribute<?>... attrs) {
+            this(name, type, false, METHOD_STORED, attrs);
             this.file = file;
+        }
+
+        Entry(Entry e, int type, int compressionMethod) {
+            this(e, type);
+            this.method = compressionMethod;
         }
 
         Entry(Entry e, int type) {
@@ -2111,6 +2555,7 @@ class ZipFileSystem extends FileSystem {
             */
             this.locoff    = e.locoff;
             this.comment   = e.comment;
+            this.posixPerms = e.posixPerms;
             this.type      = type;
         }
 
@@ -2135,6 +2580,15 @@ class ZipFileSystem extends FileSystem {
             throw new ZipException("unsupported compression method");
         }
 
+        /**
+         * Adds information about compatibility of file attribute information
+         * to a version value.
+         */
+        private int versionMadeBy(int version) {
+            return (posixPerms < 0) ? version :
+                VERSION_MADE_BY_BASE_UNIX | (version & 0xff);
+        }
+
         ///////////////////// CEN //////////////////////
         private void readCEN(ZipFileSystem zipfs, IndexNode inode) throws IOException {
             byte[] cen = zipfs.cen;
@@ -2157,6 +2611,9 @@ class ZipFileSystem extends FileSystem {
             attrs       = CENATT(cen, pos);
             attrsEx     = CENATX(cen, pos);
             */
+            if (CENVEM_FA(cen, pos) == FILE_ATTRIBUTES_UNIX) {
+                posixPerms = CENATX_PERMS(cen, pos) & 0xFFF; // 12 bits for setuid, setgid, sticky + perms
+            }
             locoff      = CENOFF(cen, pos);
             pos += CENHDR;
             this.name = inode.name;
@@ -2223,7 +2680,7 @@ class ZipFileSystem extends FileSystem {
                 }
             }
             writeInt(os, CENSIG);            // CEN header signature
-            writeShort(os, version0);        // version made by
+            writeShort(os, versionMadeBy(version0)); // version made by
             writeShort(os, version0);        // version needed to extract
             writeShort(os, flag);            // general purpose bit flag
             writeShort(os, method);          // compression method
@@ -2242,7 +2699,9 @@ class ZipFileSystem extends FileSystem {
             }
             writeShort(os, 0);              // starting disk number
             writeShort(os, 0);              // internal file attributes (unused)
-            writeInt(os, 0);                // external file attributes (unused)
+            writeInt(os, posixPerms > 0 ? posixPerms << 16 : 0); // external file
+                                            // attributes, used for storing posix
+                                            // permissions
             writeInt(os, locoff0);          // relative offset of local header
             writeBytes(os, zname, 1, nlen);
             if (zip64) {
@@ -2527,6 +2986,10 @@ class ZipFileSystem extends FileSystem {
             fm.format("    compressedSize  : %d%n", compressedSize());
             fm.format("    crc             : %x%n", crc());
             fm.format("    method          : %d%n", method());
+            Set<PosixFilePermission> permissions = storedPermissions().orElse(null);
+            if (permissions != null) {
+                fm.format("    permissions     : %s%n", permissions);
+            }
             fm.close();
             return sb.toString();
         }
@@ -2606,6 +3069,67 @@ class ZipFileSystem extends FileSystem {
             if (comment != null)
                 return Arrays.copyOf(comment, comment.length);
             return null;
+        }
+
+        @Override
+        public Optional<Set<PosixFilePermission>> storedPermissions() {
+            Set<PosixFilePermission> perms = null;
+            if (posixPerms != -1) {
+                perms = new HashSet<>(PosixFilePermission.values().length);
+                for (PosixFilePermission perm : PosixFilePermission.values()) {
+                    if ((posixPerms & ZipUtils.permToFlag(perm)) != 0) {
+                        perms.add(perm);
+                    }
+                }
+            }
+            return Optional.ofNullable(perms);
+        }
+    }
+
+    final class PosixEntry extends Entry implements PosixFileAttributes {
+        private UserPrincipal owner = defaultOwner;
+        private GroupPrincipal group = defaultGroup;
+
+        PosixEntry(byte[] name, boolean isdir, int method) {
+            super(name, isdir, method);
+        }
+
+        PosixEntry(byte[] name, int type, boolean isdir, int method, FileAttribute<?>... attrs) {
+            super(name, type, isdir, method, attrs);
+        }
+
+        PosixEntry(byte[] name, Path file, int type, FileAttribute<?>... attrs) {
+            super(name, file, type, attrs);
+        }
+
+        PosixEntry(PosixEntry e, int type, int compressionMethod) {
+            super(e, type);
+            this.method = compressionMethod;
+        }
+
+        PosixEntry(PosixEntry e, int type) {
+            super(e, type);
+            this.owner = e.owner;
+            this.group = e.group;
+        }
+
+        PosixEntry(ZipFileSystem zipfs, IndexNode inode) throws IOException {
+            super(zipfs, inode);
+        }
+
+        @Override
+        public UserPrincipal owner() {
+            return owner;
+        }
+
+        @Override
+        public GroupPrincipal group() {
+            return group;
+        }
+
+        @Override
+        public Set<PosixFilePermission> permissions() {
+            return storedPermissions().orElse(Set.copyOf(defaultPermissions));
         }
     }
 

@@ -161,9 +161,7 @@ void PrintMachineDependentOptions();
 int CallJavaMainInNewThread(jlong stack_size, void* args);
 
 /* sun.java.launcher.* platform properties. */
-void SetJavaLauncherPlatformProps(void);
 void SetJavaCommandLineProp(char* what, int argc, char** argv);
-void SetJavaLauncherProp(void);
 
 /*
  * Functions defined in java.c and used in java_md.c.
@@ -175,10 +173,6 @@ jboolean IsWhiteSpaceOption(const char* name);
 
 // Utility function defined in args.c
 int isTerminalOpt(char *arg);
-
-const char* GetProgramName();
-const char* GetFullVersion();
-jboolean IsJavaArgs();
 jboolean IsJavaw();
 
 int ContinueInNewThread(InvocationFunctions* ifn, jlong threadStackSize,

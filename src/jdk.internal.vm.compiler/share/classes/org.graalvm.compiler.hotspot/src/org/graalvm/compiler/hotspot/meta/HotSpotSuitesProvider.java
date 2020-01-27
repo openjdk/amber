@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,8 +39,6 @@ import org.graalvm.compiler.hotspot.HotSpotInstructionProfiling;
 import org.graalvm.compiler.hotspot.lir.VerifyMaxRegisterSizePhase;
 import org.graalvm.compiler.hotspot.phases.AheadOfTimeVerificationPhase;
 import org.graalvm.compiler.hotspot.phases.LoadJavaMirrorWithKlassPhase;
-import org.graalvm.compiler.hotspot.phases.WriteBarrierAdditionPhase;
-import org.graalvm.compiler.hotspot.phases.WriteBarrierVerificationPhase;
 import org.graalvm.compiler.hotspot.phases.aot.AOTInliningPolicy;
 import org.graalvm.compiler.hotspot.phases.aot.EliminateRedundantInitializationPhase;
 import org.graalvm.compiler.hotspot.phases.aot.ReplaceConstantNodesPhase;
@@ -112,11 +110,6 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
             }
         }
 
-        ret.getMidTier().appendPhase(new WriteBarrierAdditionPhase(config));
-        if (VerifyPhases.getValue(options)) {
-            ret.getMidTier().appendPhase(new WriteBarrierVerificationPhase(config));
-        }
-
         return ret;
     }
 
@@ -175,7 +168,7 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         if (profileInstructions != null) {
             suites.getPostAllocationOptimizationStage().appendPhase(new HotSpotInstructionProfiling(profileInstructions));
         }
-        if (Assertions.detailedAssertionsEnabled(options)) {
+        if (Assertions.assertionsEnabled()) {
             suites.getPostAllocationOptimizationStage().appendPhase(new VerifyMaxRegisterSizePhase(config.maxVectorSize));
         }
         return suites;

@@ -348,7 +348,7 @@ const class TypePtr *MachNode::adr_type() const {
       return TypePtr::BOTTOM;
     }
     // %%% make offset be intptr_t
-    assert(!Universe::heap()->is_in_reserved(cast_to_oop(offset)), "must be a raw ptr");
+    assert(!Universe::heap()->is_in(cast_to_oop(offset)), "must be a raw ptr");
     return TypeRawPtr::BOTTOM;
   }
 
@@ -387,10 +387,10 @@ const class TypePtr *MachNode::adr_type() const {
 
 
 //-----------------------------operand_index---------------------------------
-int MachNode::operand_index( uint operand ) const {
-  if( operand < 1 )  return -1;
+int MachNode::operand_index(uint operand) const {
+  if (operand < 1)  return -1;
   assert(operand < num_opnds(), "oob");
-  if( _opnds[operand]->num_edges() == 0 )  return -1;
+  if (_opnds[operand]->num_edges() == 0)  return -1;
 
   uint skipped   = oper_input_base(); // Sum of leaves skipped so far
   for (uint opcnt = 1; opcnt < operand; opcnt++) {
@@ -410,6 +410,20 @@ int MachNode::operand_index(const MachOper *oper) const {
   }
   if (_opnds[opcnt] != oper) return -1;
   return skipped;
+}
+
+int MachNode::operand_index(Node* def) const {
+  uint skipped = oper_input_base(); // Sum of leaves skipped so far
+  for (uint opcnt = 1; opcnt < num_opnds(); opcnt++) {
+    uint num_edges = _opnds[opcnt]->num_edges(); // leaves for operand
+    for (uint i = 0; i < num_edges; i++) {
+      if (in(skipped + i) == def) {
+        return opcnt;
+      }
+    }
+    skipped += num_edges;
+  }
+  return -1;
 }
 
 //------------------------------peephole---------------------------------------

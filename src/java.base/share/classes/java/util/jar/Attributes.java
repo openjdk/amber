@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,9 +36,9 @@ import java.util.Set;
 
 import jdk.internal.misc.VM;
 import jdk.internal.vm.annotation.Stable;
-import sun.util.logging.PlatformLogger;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import sun.nio.cs.UTF_8;
+import sun.util.logging.PlatformLogger;
 
 /**
  * The Attributes class maps Manifest attribute names to associated string
@@ -148,7 +148,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name the attribute name
      * @param value the attribute value
      * @return the previous value of the attribute, or null if none
-     * @exception ClassCastException if the name is not a Attributes.Name
+     * @throws    ClassCastException if the name is not a Attributes.Name
      *            or the value is not a String
      */
     public Object put(Object name, Object value) {
@@ -169,7 +169,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * @param name the attribute name as a string
      * @param value the attribute value
      * @return the previous value of the attribute, or null if none
-     * @exception IllegalArgumentException if the attribute name is invalid
+     * @throws    IllegalArgumentException if the attribute name is invalid
      */
     public String putValue(String name, String value) {
         return (String)put(Name.of(name), value);
@@ -213,7 +213,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
      * Attributes to this Map. Duplicate mappings will be replaced.
      *
      * @param attr the Attributes to be stored in this map
-     * @exception ClassCastException if attr is not an Attributes
+     * @throws    ClassCastException if attr is not an Attributes
      */
     public void putAll(Map<?,?> attr) {
         // ## javac bug?
@@ -337,7 +337,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
             buffer.append(vername);
             buffer.append(": ");
             buffer.append(version);
-            out.write(buffer.toString().getBytes(UTF_8));
+            out.write(buffer.toString().getBytes(UTF_8.INSTANCE));
             Manifest.println(out);
         }
 
@@ -399,7 +399,7 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                     lastline = buf;
                     continue;
                 }
-                value = new String(buf, 0, buf.length, UTF_8);
+                value = new String(buf, 0, buf.length, UTF_8.INSTANCE);
                 lastline = null;
             } else {
                 while (lbuf[i++] != ':') {
@@ -412,13 +412,13 @@ public class Attributes implements Map<Object,Object>, Cloneable {
                     throw new IOException("invalid header field ("
                                 + Manifest.getErrorPosition(filename, lineNumber) + ")");
                 }
-                name = new String(lbuf, 0, i - 2, UTF_8);
+                name = new String(lbuf, 0, i - 2, UTF_8.INSTANCE);
                 if (is.peek() == ' ') {
                     lastline = new byte[len - i];
                     System.arraycopy(lbuf, i, lastline, 0, len - i);
                     continue;
                 }
-                value = new String(lbuf, i, len - i, UTF_8);
+                value = new String(lbuf, i, len - i, UTF_8.INSTANCE);
             }
             try {
                 if ((putValue(name, value) != null) && (!lineContinued)) {
@@ -470,9 +470,9 @@ public class Attributes implements Map<Object,Object>, Cloneable {
          * Constructs a new attribute name using the given string name.
          *
          * @param name the attribute string name
-         * @exception IllegalArgumentException if the attribute name was
+         * @throws    IllegalArgumentException if the attribute name was
          *            invalid
-         * @exception NullPointerException if the attribute name was null
+         * @throws    NullPointerException if the attribute name was null
          */
         public Name(String name) {
             this.hashCode = hash(name);

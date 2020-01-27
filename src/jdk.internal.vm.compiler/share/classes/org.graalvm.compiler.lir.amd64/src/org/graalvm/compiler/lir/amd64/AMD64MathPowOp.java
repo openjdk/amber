@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016, Intel Corporation. All rights reserved.
  * Intel Math Library (LIBM) Source Code
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -113,7 +113,7 @@ public final class AMD64MathPowOp extends AMD64MathIntrinsicBinaryOp {
 
     public AMD64MathPowOp() {
         super(TYPE, /* GPR */ rax, rcx, rdx, r8, r9, r10, r11,
-                        /* XMM */ xmm2, xmm3, xmm4, xmm5, xmm6, xmm7);
+                        /* XMM */ xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7);
     }
 
     private ArrayDataPointerConstant highsigmask = pointerConstant(16, new int[]{

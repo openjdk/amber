@@ -565,8 +565,6 @@ class MacroAssembler: public Assembler {
                       Label* L_slow_path = NULL);
 
   // Method handle support (JSR 292).
-  void check_method_handle_type(Register mtype_reg, Register mh_reg, Register temp_reg, Label& wrong_method_type);
-
   RegisterOrConstant argument_offset(RegisterOrConstant arg_slot, Register temp_reg, int extra_slot_offset = 0);
 
   // Biased locking support
@@ -890,6 +888,8 @@ class MacroAssembler: public Assembler {
   void sha256(bool multi_block);
   void sha512(bool multi_block);
 
+  void cache_wb(Address line);
+  void cache_wbsync(bool is_presync);
 
   //
   // Debugging
@@ -916,6 +916,9 @@ class MacroAssembler: public Assembler {
   // Verify R16_thread contents.
   void verify_thread();
 
+  // Calls verify_oop. If UseCompressedOops is on, decodes the oop.
+  // Preserves reg.
+  void verify_coop(Register reg, const char*);
   // Emit code to verify that reg contains a valid oop if +VerifyOops is set.
   void verify_oop(Register reg, const char* s = "broken oop");
   void verify_oop_addr(RegisterOrConstant offs, Register base, const char* s = "contains broken oop");

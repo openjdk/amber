@@ -34,7 +34,6 @@
 #include "gc/g1/heapRegionRemSet.hpp"
 #include "gc/g1/heapRegionSet.inline.hpp"
 #include "gc/shared/taskqueue.inline.hpp"
-#include "runtime/orderAccess.hpp"
 
 G1GCPhaseTimes* G1CollectedHeap::phase_times() const {
   return _policy->phase_times();
@@ -163,8 +162,12 @@ bool G1CollectedHeap::is_in_cset_or_humongous(const oop obj) {
   return _region_attr.is_in_cset_or_humongous((HeapWord*)obj);
 }
 
-G1HeapRegionAttr G1CollectedHeap::region_attr(const void* addr) {
+G1HeapRegionAttr G1CollectedHeap::region_attr(const void* addr) const {
   return _region_attr.at((HeapWord*)addr);
+}
+
+G1HeapRegionAttr G1CollectedHeap::region_attr(uint idx) const {
+  return _region_attr.get_by_index(idx);
 }
 
 void G1CollectedHeap::register_humongous_region_with_region_attr(uint index) {
@@ -177,7 +180,7 @@ void G1CollectedHeap::register_region_with_region_attr(HeapRegion* r) {
 
 void G1CollectedHeap::register_old_region_with_region_attr(HeapRegion* r) {
   _region_attr.set_in_old(r->hrm_index(), r->rem_set()->is_tracked());
-  _rem_set->prepare_for_scan_rem_set(r->hrm_index());
+  _rem_set->exclude_region_from_scan(r->hrm_index());
 }
 
 void G1CollectedHeap::register_optional_region_with_region_attr(HeapRegion* r) {
@@ -293,6 +296,10 @@ inline void G1CollectedHeap::set_humongous_reclaim_candidate(uint region, bool v
 inline bool G1CollectedHeap::is_humongous_reclaim_candidate(uint region) {
   assert(_hrm->at(region)->is_starts_humongous(), "Must start a humongous object");
   return _humongous_reclaim_candidates.is_candidate(region);
+}
+
+inline void G1CollectedHeap::set_has_humongous_reclaim_candidate(bool value) {
+  _has_humongous_reclaim_candidates = value;
 }
 
 inline void G1CollectedHeap::set_humongous_is_live(oop obj) {

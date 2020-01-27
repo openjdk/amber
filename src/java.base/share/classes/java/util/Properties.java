@@ -46,6 +46,9 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import sun.nio.cs.ISO_8859_1;
+import sun.nio.cs.UTF_8;
+
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.util.ArraysSupport;
@@ -137,11 +140,11 @@ import jdk.internal.util.xml.PropertiesDefaultHandler;
  * @author  Xueming Shen
  * @since   1.0
  */
-public
-class Properties extends Hashtable<Object,Object> {
+public class Properties extends Hashtable<Object,Object> {
     /**
      * use serialVersionUID from JDK 1.1.X for interoperability
      */
+    @java.io.Serial
     private static final long serialVersionUID = 4112578634029874840L;
 
     private static final Unsafe UNSAFE = Unsafe.getUnsafe();
@@ -393,7 +396,7 @@ class Properties extends Hashtable<Object,Object> {
      * The specified stream remains open after this method returns.
      *
      * @param      inStream   the input stream.
-     * @exception  IOException  if an error occurred when reading from the
+     * @throws     IOException  if an error occurred when reading from the
      *             input stream.
      * @throws     IllegalArgumentException if the input stream contains a
      *             malformed Unicode escape sequence.
@@ -800,7 +803,7 @@ class Properties extends Hashtable<Object,Object> {
      *
      * @param   out      an output stream.
      * @param   comments   a description of the property list.
-     * @exception  ClassCastException  if this {@code Properties} object
+     * @throws     ClassCastException  if this {@code Properties} object
      *             contains any keys or values that are not
      *             {@code Strings}.
      */
@@ -852,11 +855,11 @@ class Properties extends Hashtable<Object,Object> {
      *
      * @param   writer      an output character stream writer.
      * @param   comments   a description of the property list.
-     * @exception  IOException if writing this property list to the specified
+     * @throws     IOException if writing this property list to the specified
      *             output stream throws an {@code IOException}.
-     * @exception  ClassCastException  if this {@code Properties} object
+     * @throws     ClassCastException  if this {@code Properties} object
      *             contains any keys or values that are not {@code Strings}.
-     * @exception  NullPointerException  if {@code writer} is null.
+     * @throws     NullPointerException  if {@code writer} is null.
      * @since 1.6
      */
     public void store(Writer writer, String comments)
@@ -899,17 +902,17 @@ class Properties extends Hashtable<Object,Object> {
      *
      * @param   out      an output stream.
      * @param   comments   a description of the property list.
-     * @exception  IOException if writing this property list to the specified
+     * @throws     IOException if writing this property list to the specified
      *             output stream throws an {@code IOException}.
-     * @exception  ClassCastException  if this {@code Properties} object
+     * @throws     ClassCastException  if this {@code Properties} object
      *             contains any keys or values that are not {@code Strings}.
-     * @exception  NullPointerException  if {@code out} is null.
+     * @throws     NullPointerException  if {@code out} is null.
      * @since 1.2
      */
     public void store(OutputStream out, String comments)
         throws IOException
     {
-        store0(new BufferedWriter(new OutputStreamWriter(out, "8859_1")),
+        store0(new BufferedWriter(new OutputStreamWriter(out, ISO_8859_1.INSTANCE)),
                comments,
                true);
     }
@@ -1001,7 +1004,7 @@ class Properties extends Hashtable<Object,Object> {
     public void storeToXML(OutputStream os, String comment)
         throws IOException
     {
-        storeToXML(os, comment, "UTF-8");
+        storeToXML(os, comment, UTF_8.INSTANCE);
     }
 
     /**

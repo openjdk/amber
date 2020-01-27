@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -104,6 +104,10 @@ public class ClassReader {
     /** Switch: allow modules.
      */
     boolean allowModules;
+
+    /** Switch: allow records
+     */
+    boolean allowRecords;
 
    /** Lint option: warn about classfile issues
      */
@@ -230,7 +234,7 @@ public class ClassReader {
     CompoundAnnotationProxy target;
 
     /**
-     * The prototype @Repetable Attribute.Compound if this class is an annotation annotated with
+     * The prototype @Repeatable Attribute.Compound if this class is an annotation annotated with
      * @Repeatable
      */
     CompoundAnnotationProxy repeatable;
@@ -264,6 +268,8 @@ public class ClassReader {
         Source source = Source.instance(context);
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
+        allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
+                Feature.RECORDS.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -808,8 +814,11 @@ public class ClassReader {
                            checkType(var, Double.class, v);
                            break;
                        case CLASS:
-                           Assert.check(var.type.tsym == syms.stringType.tsym);
-                           checkType(var, String.class, v);
+                           if (var.type.tsym == syms.stringType.tsym) {
+                               checkType(var, String.class, v);
+                           } else {
+                               throw badClassFile("bad.constant.value.type", var.type);
+                           }
                            break;
                        default:
                            // ignore ConstantValue attribute if type is not primitive or String
@@ -867,8 +876,8 @@ public class ClassReader {
                         // Parameter names are not explicitly identified as such,
                         // but all parameter name entries in the LocalVariableTable
                         // have a start_pc of 0.  Therefore, we record the name
-                        // indicies of all slots with a start_pc of zero in the
-                        // parameterNameIndicies array.
+                        // indices of all slots with a start_pc of zero in the
+                        // parameterNameIndices array.
                         // Note that this implicitly honors the JVMS spec that
                         // there may be more than one LocalVariableTable, and that
                         // there is no specified ordering for the entries.
@@ -989,7 +998,7 @@ public class ClassReader {
                 }
             },
 
-            // additional "legacy" v49 attributes, superceded by flags
+            // additional "legacy" v49 attributes, superseded by flags
 
             new AttributeReader(names.Annotation, V49, CLASS_OR_MEMBER_ATTRIBUTE) {
                 protected void read(Symbol sym, int attrLen) {
@@ -1181,6 +1190,19 @@ public class ClassReader {
                     }
                 }
             },
+
+            new AttributeReader(names.Record, V58, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowRecords;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        sym.flags_field |= RECORD;
+                    }
+                    bp = bp + attrLen;
+                }
+            }
         };
 
         for (AttributeReader r: readers)
@@ -1392,20 +1414,27 @@ public class ClassReader {
                     repeatable = proxy;
                 } else if (proxy.type.tsym == syms.deprecatedType.tsym) {
                     sym.flags_field |= (DEPRECATED | DEPRECATED_ANNOTATION);
-                    for (Pair<Name, Attribute> v : proxy.values) {
-                        if (v.fst == names.forRemoval && v.snd instanceof Attribute.Constant) {
-                            Attribute.Constant c = (Attribute.Constant)v.snd;
-                            if (c.type == syms.booleanType && ((Integer)c.value) != 0) {
-                                sym.flags_field |= DEPRECATED_REMOVAL;
-                            }
-                        }
-                    }
+                    setFlagIfAttributeTrue(proxy, sym, names.forRemoval, DEPRECATED_REMOVAL);
+                }  else if (proxy.type.tsym == syms.previewFeatureType.tsym) {
+                    sym.flags_field |= PREVIEW_API;
+                    setFlagIfAttributeTrue(proxy, sym, names.essentialAPI, PREVIEW_ESSENTIAL_API);
                 }
                 proxies.append(proxy);
             }
         }
         annotate.normal(new AnnotationCompleter(sym, proxies.toList()));
     }
+    //where:
+        private void setFlagIfAttributeTrue(CompoundAnnotationProxy proxy, Symbol sym, Name attribute, long flag) {
+            for (Pair<Name, Attribute> v : proxy.values) {
+                if (v.fst == attribute && v.snd instanceof Attribute.Constant) {
+                    Attribute.Constant c = (Attribute.Constant)v.snd;
+                    if (c.type == syms.booleanType && ((Integer)c.value) != 0) {
+                        sym.flags_field |= flag;
+                    }
+                }
+            }
+        }
 
     /** Read parameter annotations.
      */

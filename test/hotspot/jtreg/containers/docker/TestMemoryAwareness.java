@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,14 +30,14 @@
  * @modules java.base/jdk.internal.misc
  *          java.management
  *          jdk.jartool/sun.tools.jar
- * @build AttemptOOM sun.hotspot.WhiteBox PrintContainerInfo
+ * @build AttemptOOM sun.hotspot.WhiteBox PrintContainerInfo CheckOperatingSystemMXBean
  * @run driver ClassFileInstaller -jar whitebox.jar sun.hotspot.WhiteBox sun.hotspot.WhiteBox$WhiteBoxPermission
  * @run driver TestMemoryAwareness
  */
 import jdk.test.lib.containers.docker.Common;
 import jdk.test.lib.containers.docker.DockerRunOptions;
 import jdk.test.lib.containers.docker.DockerTestUtils;
-
+import jdk.test.lib.process.OutputAnalyzer;
 
 public class TestMemoryAwareness {
     private static final String imageName = Common.imageName("memory");
@@ -62,8 +62,22 @@ public class TestMemoryAwareness {
             // Add extra 10 Mb to allocator limit, to be sure to cause OOM
             testOOM("256m", 256 + 10);
 
+            testOperatingSystemMXBeanAwareness(
+                "100M", Integer.toString(((int) Math.pow(2, 20)) * 100),
+                "150M", Integer.toString(((int) Math.pow(2, 20)) * (150 - 100))
+            );
+            testOperatingSystemMXBeanAwareness(
+                "128M", Integer.toString(((int) Math.pow(2, 20)) * 128),
+                "256M", Integer.toString(((int) Math.pow(2, 20)) * (256 - 128))
+            );
+            testOperatingSystemMXBeanAwareness(
+                "1G", Integer.toString(((int) Math.pow(2, 20)) * 1024),
+                "1500M", Integer.toString(((int) Math.pow(2, 20)) * (1500 - 1024))
+            );
         } finally {
-            DockerTestUtils.removeDockerImage(imageName);
+            if (!DockerTestUtils.RETAIN_IMAGE_AFTER_TEST) {
+                DockerTestUtils.removeDockerImage(imageName);
+            }
         }
     }
 
@@ -98,15 +112,48 @@ public class TestMemoryAwareness {
     private static void testOOM(String dockerMemLimit, int sizeToAllocInMb) throws Exception {
         Common.logNewTestCase("OOM");
 
+        // add "--memory-swappiness 0" so as to disable anonymous page swapping.
         DockerRunOptions opts = Common.newOpts(imageName, "AttemptOOM")
-            .addDockerOpts("--memory", dockerMemLimit, "--memory-swap", dockerMemLimit);
+            .addDockerOpts("--memory", dockerMemLimit, "--memory-swappiness", "0", "--memory-swap", dockerMemLimit);
         opts.classParams.add("" + sizeToAllocInMb);
 
+        // make sure we avoid inherited Xmx settings from the jtreg vmoptions
+        // set Xmx ourselves instead
+        System.out.println("sizeToAllocInMb is:" + sizeToAllocInMb + " sizeToAllocInMb/2 is:" + sizeToAllocInMb/2);
+        String javaHeapSize = sizeToAllocInMb/2 + "m";
+        opts.addJavaOptsAppended("-Xmx" + javaHeapSize);
+
+        OutputAnalyzer out = DockerTestUtils.dockerRunJava(opts);
+
+        if (out.getExitValue() == 0) {
+            throw new RuntimeException("We exited successfully, but we wanted to provoke an OOM inside the container");
+        }
+
+        out.shouldContain("Entering AttemptOOM main")
+           .shouldNotContain("AttemptOOM allocation successful")
+           .shouldContain("java.lang.OutOfMemoryError");
+    }
+
+    private static void testOperatingSystemMXBeanAwareness(String memoryAllocation, String expectedMemory,
+            String swapAllocation, String expectedSwap) throws Exception {
+        Common.logNewTestCase("Check OperatingSystemMXBean");
+
+        DockerRunOptions opts = Common.newOpts(imageName, "CheckOperatingSystemMXBean")
+            .addDockerOpts(
+                "--memory", memoryAllocation,
+                "--memory-swap", swapAllocation
+            );
+
         DockerTestUtils.dockerRunJava(opts)
-            .shouldHaveExitValue(1)
-            .shouldContain("Entering AttemptOOM main")
-            .shouldNotContain("AttemptOOM allocation successful")
-            .shouldContain("java.lang.OutOfMemoryError");
+            .shouldHaveExitValue(0)
+            .shouldContain("Checking OperatingSystemMXBean")
+            .shouldContain("OperatingSystemMXBean.getTotalPhysicalMemorySize: " + expectedMemory)
+            .shouldMatch("OperatingSystemMXBean\\.getFreePhysicalMemorySize: [1-9][0-9]+")
+            .shouldContain("OperatingSystemMXBean.getTotalMemorySize: " + expectedMemory)
+            .shouldMatch("OperatingSystemMXBean\\.getFreeMemorySize: [1-9][0-9]+")
+            .shouldContain("OperatingSystemMXBean.getTotalSwapSpaceSize: " + expectedSwap)
+            .shouldMatch("OperatingSystemMXBean\\.getFreeSwapSpaceSize: [1-9][0-9]+")
+            ;
     }
 
 }

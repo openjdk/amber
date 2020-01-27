@@ -972,6 +972,8 @@ source_hpp %{
   // To keep related declarations/definitions/uses close together,
   // we switch between source %{ }% and source_hpp %{ }% freely as needed.
 
+#include "opto/convertnode.hpp"
+
   // Returns true if Node n is followed by a MemBar node that
   // will do an acquire. If so, this node must not do the acquire
   // operation.
@@ -2222,6 +2224,7 @@ const bool Matcher::match_rule_supported(int opcode) {
   if (!has_match_rule(opcode))
     return false;
 
+  bool ret_value = true;
   switch (opcode) {
   case Op_SqrtD:
     return VM_Version::has_fsqrt();
@@ -2272,6 +2275,7 @@ const bool Matcher::match_rule_supported(int opcode) {
   case Op_AddVL:
   case Op_SubVL:
   case Op_MulVI:
+  case Op_RoundDoubleModeV:
     return SuperwordUseVSX;
   case Op_PopCountVI:
     return (SuperwordUseVSX && UsePopCountInstruction);
@@ -2283,12 +2287,20 @@ const bool Matcher::match_rule_supported(int opcode) {
   case Op_UpperCase:
   case Op_Whitespace:
     return UseCharacterCompareIntrinsics;
+
+  case Op_CacheWB:
+  case Op_CacheWBPreSync:
+  case Op_CacheWBPostSync:
+    if (!VM_Version::supports_data_cache_line_flush()) {
+      ret_value = false;
+    }
+    break;
   }
 
-  return true;  // Per default match rules are supported.
+  return ret_value;  // Per default match rules are supported.
 }
 
-const bool Matcher::match_rule_supported_vector(int opcode, int vlen) {
+const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
 
   // TODO
   // identify extra cases that we might want to provide match rules for
@@ -2422,6 +2434,24 @@ const bool Matcher::require_postalloc_expand = true;
 // the cpu only look at the lower 5/6 bits anyway?
 // PowerPC requires masked shift counts.
 const bool Matcher::need_masked_shift_count = true;
+
+// No support for generic vector operands.
+const bool Matcher::supports_generic_vector_operands  = false;
+
+MachOper* Matcher::specialize_generic_vector_operand(MachOper* original_opnd, uint ideal_reg) {
+  ShouldNotReachHere(); // generic vector operands not supported
+  return NULL;
+}
+
+bool Matcher::is_generic_reg2reg_move(MachNode* m) {
+  ShouldNotReachHere();  // generic vector operands not supported
+  return false;
+}
+
+bool Matcher::is_generic_vector(MachOper* opnd)  {
+  ShouldNotReachHere();  // generic vector operands not supported
+  return false;
+}
 
 // This affects two different things:
 //  - how Decode nodes are matched
@@ -6925,25 +6955,6 @@ instruct storeCM_CMS(memory mem, iRegLdst releaseFieldAddr, flagsReg crx) %{
   ins_pipe(pipe_class_memory);
 %}
 
-// Card-mark for CMS garbage collection.
-// This cardmark does an optimization so that it must not always
-// do a releasing store. For this, it needs the constant address of
-// CMSCollectorCardTableBarrierSetBSExt::_requires_release.
-// This constant address is split off here by expand so we can use
-// adlc / matcher functionality to load it from the constant section.
-instruct storeCM_CMS_ExEx(memory mem, immI_0 zero) %{
-  match(Set mem (StoreCM mem zero));
-  predicate(UseConcMarkSweepGC);
-
-  expand %{
-    immL baseImm %{ 0 /* TODO: PPC port (jlong)CMSCollectorCardTableBarrierSetBSExt::requires_release_address() */ %}
-    iRegLdst releaseFieldAddress;
-    flagsReg crx;
-    loadConL_Ex(releaseFieldAddress, baseImm);
-    storeCM_CMS(mem, releaseFieldAddress, crx);
-  %}
-%}
-
 instruct storeCM_G1(memory mem, immI_0 zero) %{
   match(Set mem (StoreCM mem zero));
   predicate(UseG1GC);
@@ -10867,6 +10878,14 @@ instruct castII(iRegIdst dst) %{
   ins_pipe(pipe_class_default);
 %}
 
+instruct castLL(iRegLdst dst) %{
+  match(Set dst (CastLL dst));
+  format %{ " -- \t// castLL of $dst" %}
+  size(0);
+  ins_encode( /*empty*/ );
+  ins_pipe(pipe_class_default);
+%}
+
 instruct checkCastPP(iRegPdst dst) %{
   match(Set dst (CheckCastPP dst));
   format %{ " -- \t// checkcastPP of $dst" %}
@@ -14446,6 +14465,53 @@ instruct vabs2D_reg(vecX dst, vecX src) %{
   ins_pipe(pipe_class_default);
 %}
 
+// Round Instructions
+instruct roundD_reg(regD dst, regD src, immI8 rmode) %{
+  match(Set dst (RoundDoubleMode src rmode));
+  format %{ "RoundDoubleMode $src,$rmode" %}
+  size(4);
+  ins_encode %{
+    switch ($rmode$$constant) {
+      case RoundDoubleModeNode::rmode_rint:
+        __ frin($dst$$FloatRegister, $src$$FloatRegister);
+        break;
+      case RoundDoubleModeNode::rmode_floor:
+        __ frim($dst$$FloatRegister, $src$$FloatRegister);
+        break;
+      case RoundDoubleModeNode::rmode_ceil:
+        __ frip($dst$$FloatRegister, $src$$FloatRegister);
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
+// Vector Round Instructions
+instruct vround2D_reg(vecX dst, vecX src, immI8 rmode) %{
+  match(Set dst (RoundDoubleModeV src rmode));
+  predicate(n->as_Vector()->length() == 2);
+  format %{ "RoundDoubleModeV $src,$rmode" %}
+  size(4);
+  ins_encode %{
+    switch ($rmode$$constant) {
+      case RoundDoubleModeNode::rmode_rint:
+        __ xvrdpi($dst$$VectorSRegister, $src$$VectorSRegister);
+        break;
+      case RoundDoubleModeNode::rmode_floor:
+        __ xvrdpim($dst$$VectorSRegister, $src$$VectorSRegister);
+        break;
+      case RoundDoubleModeNode::rmode_ceil:
+        __ xvrdpip($dst$$VectorSRegister, $src$$VectorSRegister);
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
 // Vector Negate Instructions
 
 instruct vneg4F_reg(vecX dst, vecX src) %{
@@ -15156,6 +15222,44 @@ instruct brNop2() %{
   ins_encode %{
     // TODO: PPC port $archOpcode(ppc64Opcode_mcrf);
     __ brnop2();
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
+instruct cacheWB(indirect addr)
+%{
+  match(CacheWB addr);
+
+  ins_cost(100);
+  format %{ "cache writeback, address = $addr" %}
+  ins_encode %{
+    assert($addr->index_position() < 0, "should be");
+    assert($addr$$disp == 0, "should be");
+    __ cache_wb(Address($addr$$base$$Register));
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
+instruct cacheWBPreSync()
+%{
+  match(CacheWBPreSync);
+
+  ins_cost(0);
+  format %{ "cache writeback presync" %}
+  ins_encode %{
+    __ cache_wbsync(true);
+  %}
+  ins_pipe(pipe_class_default);
+%}
+
+instruct cacheWBPostSync()
+%{
+  match(CacheWBPostSync);
+
+  ins_cost(100);
+  format %{ "cache writeback postsync" %}
+  ins_encode %{
+    __ cache_wbsync(false);
   %}
   ins_pipe(pipe_class_default);
 %}

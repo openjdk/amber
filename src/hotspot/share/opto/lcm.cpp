@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -170,7 +170,6 @@ void PhaseCFG::implicit_null_check(Block* block, Node *proj, Node *val, int allo
     case Op_LoadI:
     case Op_LoadL:
     case Op_LoadP:
-    case Op_LoadBarrierSlowReg:
     case Op_LoadN:
     case Op_LoadS:
     case Op_LoadKlass:
@@ -959,7 +958,7 @@ bool PhaseCFG::schedule_local(Block* block, GrowableArray<int>& ready_cnt, Vecto
       ready_cnt.at_put(n->_idx, local); // Count em up
 
 #ifdef ASSERT
-      if( UseConcMarkSweepGC || UseG1GC ) {
+      if (UseG1GC) {
         if( n->is_Mach() && n->as_Mach()->ideal_Opcode() == Op_StoreCM ) {
           // Check the precedence edges
           for (uint prec = n->req(); prec < n->len(); prec++) {

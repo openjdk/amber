@@ -42,8 +42,6 @@
 #include "memory/allocation.hpp"
 #include "memory/iterator.hpp"
 #include "memory/resourceArea.hpp"
-#include "runtime/atomic.hpp"
-#include "runtime/orderAccess.hpp"
 #include "utilities/debug.hpp"
 
 ZNMethodTableEntry* ZNMethodTable::_table = NULL;
@@ -51,7 +49,7 @@ size_t ZNMethodTable::_size = 0;
 size_t ZNMethodTable::_nregistered = 0;
 size_t ZNMethodTable::_nunregistered = 0;
 ZNMethodTableIteration ZNMethodTable::_iteration;
-ZSafeDelete<ZNMethodTableEntry[]> ZNMethodTable::_safe_delete;
+ZSafeDeleteNoLock<ZNMethodTableEntry[]> ZNMethodTable::_safe_delete;
 
 size_t ZNMethodTable::first_index(const nmethod* nm, size_t size) {
   assert(is_power_of_2(size), "Invalid size");
@@ -113,8 +111,8 @@ void ZNMethodTable::rebuild(size_t new_size) {
 
   log_debug(gc, nmethod)("Rebuilding NMethod Table: "
                          SIZE_FORMAT "->" SIZE_FORMAT " entries, "
-                         SIZE_FORMAT "(%.0lf%%->%.0lf%%) registered, "
-                         SIZE_FORMAT "(%.0lf%%->%.0lf%%) unregistered",
+                         SIZE_FORMAT "(%.0f%%->%.0f%%) registered, "
+                         SIZE_FORMAT "(%.0f%%->%.0f%%) unregistered",
                          _size, new_size,
                          _nregistered, percent_of(_nregistered, _size), percent_of(_nregistered, new_size),
                          _nunregistered, percent_of(_nunregistered, _size), 0.0);

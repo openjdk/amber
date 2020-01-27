@@ -78,6 +78,10 @@ interim-rmic:
 interim-cldrconverter:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f CopyInterimCLDRConverter.gmk)
 
+interim-tzdb:
+	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f CopyInterimTZDB.gmk)
+
+
 buildtools-jdk:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f CompileToolsJdk.gmk)
 
@@ -88,7 +92,7 @@ buildtools-hotspot:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f CompileToolsHotspot.gmk)
 
 ALL_TARGETS += buildtools-langtools interim-langtools \
-    interim-rmic interim-cldrconverter buildtools-jdk buildtools-modules \
+    interim-rmic interim-cldrconverter interim-tzdb buildtools-jdk buildtools-modules \
     buildtools-hotspot
 
 ################################################################################
@@ -129,7 +133,7 @@ GENSRC_TARGETS += $(sort $(GENSRC_MODULEINFO_TARGETS) \
 define DeclareModuleInfoRecipe
   $1-gensrc-moduleinfo:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) \
-	    -f GensrcModuleInfo.gmk MODULE=$1)
+	    -f gensrc/GensrcModuleInfo.gmk MODULE=$1)
 
   $1-gensrc: $1-gensrc-moduleinfo
 endef
@@ -212,6 +216,21 @@ $(eval $(call DeclareRecipesForPhase, LIBS, \
     USE_WRAPPER := true))
 
 ALL_TARGETS += $(LIBS_TARGETS)
+
+################################################################################
+# Targets for compiling static versions of certain native libraries. These do
+# not end up in the jmods or the normal JDK image, but are instead bundled into
+# a special deliverable.
+$(eval $(call DeclareRecipesForPhase, STATIC_LIBS, \
+    TARGET_SUFFIX := static-libs, \
+    FILE_PREFIX := Lib, \
+    MAKE_SUBDIR := lib, \
+    CHECK_MODULES := $(STATIC_LIBS_MODULES), \
+    USE_WRAPPER := true, \
+    EXTRA_ARGS := STATIC_LIBS=true, \
+))
+
+ALL_TARGETS += $(STATIC_LIBS_TARGETS)
 
 ################################################################################
 # Targets for compiling native executables
@@ -373,6 +392,9 @@ legacy-jre-image:
 symbols-image:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Images.gmk symbols)
 
+static-libs-image:
+	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f StaticLibsImage.gmk)
+
 mac-jdk-bundle:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f MacBundles.gmk jdk-bundle)
 
@@ -392,7 +414,7 @@ endif
 
 ALL_TARGETS += store-source-revision create-source-revision-tracker bootcycle-images zip-security \
     zip-source jrtfs-jar jdk-image legacy-jre-image \
-    symbols-image mac-jdk-bundle mac-legacy-jre-bundle \
+    symbols-image static-libs-image mac-jdk-bundle mac-legacy-jre-bundle \
     release-file exploded-image-optimize jcov-image
 
 ################################################################################
@@ -427,6 +449,9 @@ docs-jdk-index:
 docs-zip:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Docs.gmk docs-zip)
 
+docs-specs-zip:
+	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Docs.gmk docs-specs-zip)
+
 update-build-docs:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f UpdateBuildDocs.gmk)
 
@@ -436,7 +461,7 @@ update-x11wrappers:
 ALL_TARGETS += docs-jdk-api-javadoc docs-jdk-api-modulegraph \
     docs-javase-api-javadoc docs-javase-api-modulegraph \
     docs-reference-api-javadoc docs-reference-api-modulegraph docs-jdk-specs \
-    docs-jdk-index docs-zip update-build-docs update-x11wrappers
+    docs-jdk-index docs-zip docs-specs-zip update-build-docs update-x11wrappers
 
 ################################################################################
 # Cross compilation support
@@ -607,12 +632,16 @@ test-bundles:
 docs-bundles:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Bundles.gmk docs-bundles)
 
+static-libs-bundles:
+	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Bundles.gmk static-libs-bundles)
+
 ifeq ($(JCOV_ENABLED), true)
   jcov-bundles:
 	+($(CD) $(TOPDIR)/make && $(MAKE) $(MAKE_ARGS) -f Bundles.gmk jcov-bundles)
 endif
 
-ALL_TARGETS += product-bundles legacy-bundles test-bundles docs-bundles jcov-bundles
+ALL_TARGETS += product-bundles legacy-bundles test-bundles docs-bundles \
+    static-libs-bundles jcov-bundles
 
 ################################################################################
 # Install targets
@@ -645,7 +674,7 @@ else
 
   interim-langtools: $(INTERIM_LANGTOOLS_GENSRC_TARGETS)
 
-  buildtools-jdk: interim-langtools interim-cldrconverter
+  buildtools-jdk: interim-langtools interim-cldrconverter interim-tzdb
 
   buildtools-hotspot: interim-langtools
 
@@ -700,6 +729,8 @@ else
   $(foreach m, $(JAVA_MODULES), \
       $(eval $m-java: $(addsuffix -java, $(filter $(JAVA_MODULES), \
       $(call FindDepsForModule,$m)))))
+  # Declare dependencies between the module meta targets
+  $(foreach m, $(ALL_MODULES), $(eval $m: $(call FindDepsForModule,$m)))
 
   # Declare dependencies between <module>-rmic to <module>-java
   $(foreach m, $(RMIC_MODULES), $(eval $m-rmic: $m-java))
@@ -787,6 +818,10 @@ else
   vscode-project-rtags: compile-commands
   vscode-project-ccls: compile-commands
 
+  # The -static-libs targets depend on -java as well as java.base-copy.
+  $(foreach m, $(filter $(JAVA_MODULES), $(STATIC_LIBS_MODULES)), \
+    $(eval $m-static-libs: $m-java java.base-copy))
+
   # Jmods cannot be created until we have the jmod tool ready to run. During
   # a normal build we run it from the exploded image, but when cross compiling
   # it's run from the buildjdk, which is either created at build time or user
@@ -849,6 +884,8 @@ else
   legacy-jre-image: jmods release-file
   symbols-image: $(LIBS_TARGETS) $(LAUNCHER_TARGETS)
 
+  static-libs-image: $(STATIC_LIBS_TARGETS)
+
   mac-jdk-bundle: jdk-image
   mac-legacy-jre-bundle: legacy-jre-image
 
@@ -884,6 +921,8 @@ else
       docs-jdk-index
 
   docs-zip: docs-jdk
+
+  docs-specs-zip: docs-jdk-specs
 
   # Tests
   test: jdk-image test-image
@@ -935,6 +974,8 @@ else
 
   jcov-bundles: jcov-image
 
+  static-libs-bundles: static-libs-image
+
   generate-summary: jmods buildtools-modules
 
   update-x11wrappers: java.base-copy buildtools-jdk
@@ -972,6 +1013,8 @@ java: $(JAVA_TARGETS)
 rmic: $(RMIC_TARGETS)
 
 libs: $(LIBS_TARGETS)
+
+static-libs: $(STATIC_LIBS_TARGETS)
 
 launchers: $(LAUNCHER_TARGETS)
 
@@ -1083,10 +1126,10 @@ endif
 all-images: product-images test-image docs-image
 
 # all-bundles packages all our deliverables as tar.gz bundles.
-all-bundles: product-bundles test-bundles docs-bundles
+all-bundles: product-bundles test-bundles docs-bundles static-libs-bundles
 
 ALL_TARGETS += buildtools hotspot hotspot-libs hotspot-gensrc gensrc gendata \
-    copy java rmic libs launchers jmods \
+    copy java rmic libs static-libs launchers jmods \
     jdk.jdwp.agent-gensrc $(ALL_MODULES) demos \
     exploded-image-base exploded-image \
     create-buildjdk docs-jdk-api docs-javase-api docs-reference-api docs-jdk \

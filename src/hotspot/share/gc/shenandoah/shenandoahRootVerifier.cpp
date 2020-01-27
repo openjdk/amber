@@ -43,7 +43,7 @@
 // Check for overflow of number of root types.
 STATIC_ASSERT((static_cast<uint>(ShenandoahRootVerifier::AllRoots) + 1) > static_cast<uint>(ShenandoahRootVerifier::AllRoots));
 
-ShenandoahRootVerifier::ShenandoahRootVerifier() : _types(AllRoots) {
+ShenandoahRootVerifier::ShenandoahRootVerifier(RootTypes types) : _types(types) {
 }
 
 void ShenandoahRootVerifier::excludes(RootTypes types) {
@@ -52,6 +52,10 @@ void ShenandoahRootVerifier::excludes(RootTypes types) {
 
 bool ShenandoahRootVerifier::verify(RootTypes type) const {
   return (_types & type) != 0;
+}
+
+ShenandoahRootVerifier::RootTypes ShenandoahRootVerifier::combine(RootTypes t1, RootTypes t2) {
+  return static_cast<ShenandoahRootVerifier::RootTypes>(static_cast<uint>(t1) | static_cast<uint>(t2));
 }
 
 void ShenandoahRootVerifier::oops_do(OopClosure* oops) {

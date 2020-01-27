@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2377,7 +2377,7 @@ private:
     _processing_noninput = false;
     // A replacement variable, originally '$'
     if ( Opcode::as_opcode_type(rep_var) != Opcode::NOT_AN_OPCODE ) {
-      if (!_inst._opcode->print_opcode(_fp, Opcode::as_opcode_type(rep_var) )) {
+      if ((_inst._opcode == NULL) || !_inst._opcode->print_opcode(_fp, Opcode::as_opcode_type(rep_var) )) {
         // Missing opcode
         _AD.syntax_err( _inst._linenum,
                         "Missing $%s opcode definition in %s, used by encoding %s\n",
@@ -2433,7 +2433,7 @@ private:
       else if( Opcode::as_opcode_type(inst_rep_var) != Opcode::NOT_AN_OPCODE ) {
         // else check if "primary", "secondary", "tertiary"
         assert( _constant_status == LITERAL_ACCESSED, "Must be processing a literal constant parameter");
-        if (!_inst._opcode->print_opcode(_fp, Opcode::as_opcode_type(inst_rep_var) )) {
+        if ((_inst._opcode == NULL) || !_inst._opcode->print_opcode(_fp, Opcode::as_opcode_type(inst_rep_var) )) {
           // Missing opcode
           _AD.syntax_err( _inst._linenum,
                           "Missing $%s opcode definition in %s\n",
@@ -2781,6 +2781,8 @@ static void defineIn_RegMask(FILE *fp, FormDict &globals, OperandForm &oper) {
       // Return the sole RegMask.
       if (strcmp(first_reg_class, "stack_slots") == 0) {
         fprintf(fp,"  return &(Compile::current()->FIRST_STACK_mask());\n");
+      } else if (strcmp(first_reg_class, "dynamic") == 0) {
+        fprintf(fp,"  return &RegMask::Empty;\n");
       } else {
         const char* first_reg_class_to_upper = toUpper(first_reg_class);
         fprintf(fp,"  return &%s_mask();\n", first_reg_class_to_upper);
@@ -3936,6 +3938,9 @@ void ArchDesc::buildMachNode(FILE *fp_cpp, InstructForm *inst, const char *inden
   if( inst->is_ideal_if() ) {
     fprintf(fp_cpp, "%s node->_prob = _leaf->as_If()->_prob;\n", indent);
     fprintf(fp_cpp, "%s node->_fcnt = _leaf->as_If()->_fcnt;\n", indent);
+  }
+  if (inst->is_ideal_halt()) {
+    fprintf(fp_cpp, "%s node->_halt_reason = _leaf->as_Halt()->_halt_reason;\n", indent);
   }
   if (inst->is_ideal_jump()) {
     fprintf(fp_cpp, "%s node->_probs = _leaf->as_Jump()->_probs;\n", indent);
