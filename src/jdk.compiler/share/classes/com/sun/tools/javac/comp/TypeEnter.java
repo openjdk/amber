@@ -1219,7 +1219,7 @@ public class TypeEnter implements Completer {
                     flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
-                    if ((c.flags() & ENUM) != 0) {
+                    if ((owner().flags() & ENUM) != 0) {
                         flags &= ~PUBLIC;
                     }
                 }

@@ -1024,7 +1024,7 @@ public class JavacTrees extends DocTrees {
                             c = syms.defineClass(tree.name, owner);
                             if (owner.kind != TYP) {
                                 //for local classes, assign the flatname
-                                c.flatname = chk.localClassName(c);
+                                c.flatname = chk.localClassName(c, tree.mods.flags);
                                 chk.putCompiled(c);
                                 toClear.add(c);
                             }
