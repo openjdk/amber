@@ -388,9 +388,9 @@ public class Check {
             } else if (s1.kind == MTH && !types.hasSameArgs(s1.type, s2.type, false)) {
                 duplicateErasureError(pos, s1, s2);
                 s1.flags_field |= CLASH;
-            } else if ((sym.flags() & MATCH_BINDING) != 0 &&
-                       (byName.flags() & MATCH_BINDING) != 0 &&
-                       (byName.flags() & MATCH_BINDING_TO_OUTER) == 0) {
+            } else if ((s1.flags() & MATCH_BINDING) != 0 &&
+                       (s1.flags() & MATCH_BINDING) != 0 &&
+                       (s2.flags() & MATCH_BINDING_TO_OUTER) == 0) {
                 //this error will be reported separately in MatchBindingsComputer
                 return false;
             } else {

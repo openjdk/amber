@@ -3931,7 +3931,7 @@ public class Attr extends JCTree.Visitor {
         tree.type = attribTree(tree.vartype, env, varInfo);
         VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype.type, env.info.scope.owner);
         if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
-            chk.checkTransparentVar(tree.pos(), v, env.info.scope);
+            chk.checkTransparent(tree.pos(), v, env.info.scope);
         }
         annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
         annotate.flush();

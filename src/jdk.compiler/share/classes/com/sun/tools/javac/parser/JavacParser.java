@@ -2598,7 +2598,7 @@ public class JavacParser implements Parser {
                     }
                     ListBuffer<JCStatement> stats = new ListBuffer<>();
                     pos = token.pos;
-                    stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, null));
+                    stats.add(methodDeclaratorRest(pos, mods, returnType, ident(), params, false, returnType == null, false, null));
                     storeEnd(stats.last(), S.prevToken().endPos);
                     return stats.toList();
                 }
@@ -2681,7 +2681,7 @@ public class JavacParser implements Parser {
             ListBuffer<JCStatement> stats;
             if (Feature.LOCAL_METHODS.allowedInSource(source) && peekToken(LPAREN)) {
                 stats = new ListBuffer<>();
-                stats.add(methodDeclaratorRest(token.pos, mods, type, ident(), List.nil(), false, false, null));
+                stats.add(methodDeclaratorRest(token.pos, mods, type, ident(), List.nil(), false, false, false, null));
             } else {
                 stats = variableDeclarators(mods, type, new ListBuffer<JCStatement>(), true);
                 // A "LocalVariableDeclarationStatement" subsumes the terminating semicolon
