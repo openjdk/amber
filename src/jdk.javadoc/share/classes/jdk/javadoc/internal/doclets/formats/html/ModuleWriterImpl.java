@@ -68,8 +68,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Bhavesh Patel
  */
 public class ModuleWriterImpl extends HtmlDocletWriter implements ModuleSummaryWriter {
 
@@ -283,7 +281,7 @@ public class ModuleWriterImpl extends HtmlDocletWriter implements ModuleSummaryW
                 }
                 packages.put(pkg, e);
             }
-        };
+        }
 
         // Get all exported packages for the module, using the exports directive for the module.
         for (ModuleElement.ExportsDirective directive : ElementFilter.exportsIn(mdle.getDirectives())) {
