@@ -85,6 +85,7 @@ bool   Arguments::_BackgroundCompilation        = BackgroundCompilation;
 bool   Arguments::_ClipInlining                 = ClipInlining;
 intx   Arguments::_Tier3InvokeNotifyFreqLog     = Tier3InvokeNotifyFreqLog;
 intx   Arguments::_Tier4InvocationThreshold     = Tier4InvocationThreshold;
+size_t Arguments::_SharedBaseAddress            = SharedBaseAddress;
 
 bool   Arguments::_enable_preview               = false;
 
@@ -515,19 +516,16 @@ static SpecialFlag const special_jvm_flags[] = {
   // -------------- Deprecated Flags --------------
   // --- Non-alias flags - sorted by obsolete_in then expired_in:
   { "MaxGCMinorPauseMillis",        JDK_Version::jdk(8), JDK_Version::undefined(), JDK_Version::undefined() },
-  { "UseConcMarkSweepGC",           JDK_Version::jdk(9), JDK_Version::undefined(), JDK_Version::undefined() },
   { "MaxRAMFraction",               JDK_Version::jdk(10),  JDK_Version::undefined(), JDK_Version::undefined() },
   { "MinRAMFraction",               JDK_Version::jdk(10),  JDK_Version::undefined(), JDK_Version::undefined() },
   { "InitialRAMFraction",           JDK_Version::jdk(10),  JDK_Version::undefined(), JDK_Version::undefined() },
   { "UseMembar",                    JDK_Version::jdk(10), JDK_Version::jdk(12), JDK_Version::undefined() },
-  { "AllowJNIEnvProxy",             JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::jdk(15) },
-  { "ThreadLocalHandshakes",        JDK_Version::jdk(13), JDK_Version::jdk(14), JDK_Version::jdk(15) },
   { "AllowRedefinitionToAddDeleteMethods", JDK_Version::jdk(13), JDK_Version::undefined(), JDK_Version::undefined() },
   { "FlightRecorder",               JDK_Version::jdk(13), JDK_Version::undefined(), JDK_Version::undefined() },
   { "FieldsAllocationStyle",        JDK_Version::jdk(14), JDK_Version::jdk(15), JDK_Version::jdk(16) },
   { "CompactFields",                JDK_Version::jdk(14), JDK_Version::jdk(15), JDK_Version::jdk(16) },
   { "MonitorBound",                 JDK_Version::jdk(14), JDK_Version::jdk(15), JDK_Version::jdk(16) },
-  { "G1RSetScanBlockSize",          JDK_Version::jdk(14), JDK_Version::jdk(15), JDK_Version::jdk(16) },
+  { "UseParallelOldGC",             JDK_Version::jdk(14), JDK_Version::jdk(15), JDK_Version::jdk(16) },
 
   // --- Deprecated alias flags (see also aliased_jvm_flags) - sorted by obsolete_in then expired_in:
   { "DefaultMaxRAMFraction",        JDK_Version::jdk(8),  JDK_Version::undefined(), JDK_Version::undefined() },
@@ -541,11 +539,10 @@ static SpecialFlag const special_jvm_flags[] = {
   { "SharedReadOnlySize",            JDK_Version::undefined(), JDK_Version::jdk(10), JDK_Version::undefined() },
   { "SharedMiscDataSize",            JDK_Version::undefined(), JDK_Version::jdk(10), JDK_Version::undefined() },
   { "SharedMiscCodeSize",            JDK_Version::undefined(), JDK_Version::jdk(10), JDK_Version::undefined() },
-  { "CompilationPolicyChoice",       JDK_Version::jdk(13),     JDK_Version::jdk(14), JDK_Version::jdk(15) },
-  { "TraceNMethodInstalls",          JDK_Version::jdk(13),     JDK_Version::jdk(14), JDK_Version::jdk(15) },
-  { "FailOverToOldVerifier",         JDK_Version::undefined(), JDK_Version::jdk(14), JDK_Version::jdk(15) },
   { "BindGCTaskThreadsToCPUs",       JDK_Version::undefined(), JDK_Version::jdk(14), JDK_Version::jdk(16) },
   { "UseGCTaskAffinity",             JDK_Version::undefined(), JDK_Version::jdk(14), JDK_Version::jdk(16) },
+  { "GCTaskTimeStampEntries",        JDK_Version::undefined(), JDK_Version::jdk(14), JDK_Version::jdk(16) },
+  { "G1RSetScanBlockSize",           JDK_Version::jdk(14),     JDK_Version::jdk(15), JDK_Version::jdk(16) },
 
 #ifdef TEST_VERIFY_SPECIAL_JVM_FLAGS
   // These entries will generate build errors.  Their purpose is to test the macros.
@@ -588,6 +585,7 @@ static AliasedLoggingFlag const aliased_logging_flags[] = {
   { "TraceSafepointCleanupTime", LogLevel::Info,  true,  LOG_TAGS(safepoint, cleanup) },
   { "TraceJVMTIObjectTagging",   LogLevel::Debug, true,  LOG_TAGS(jvmti, objecttagging) },
   { "TraceRedefineClasses",      LogLevel::Info,  false, LOG_TAGS(redefine, class) },
+  { "PrintJNIResolving",         LogLevel::Debug, true,  LOG_TAGS(jni, resolve) },
   { NULL,                        LogLevel::Off,   false, LOG_TAGS(_NO_TAG) }
 };
 
@@ -1566,6 +1564,7 @@ static void no_shared_spaces(const char* message) {
       "Class data sharing is inconsistent with other specified options.\n");
     vm_exit_during_initialization("Unable to use shared archive", message);
   } else {
+    log_info(cds)("Unable to use shared archive: %s", message);
     FLAG_SET_DEFAULT(UseSharedSpaces, false);
   }
 }
@@ -1613,11 +1612,9 @@ void Arguments::set_use_compressed_oops() {
   size_t max_heap_size = MAX3(MaxHeapSize, InitialHeapSize, MinHeapSize);
 
   if (max_heap_size <= max_heap_for_compressed_oops()) {
-#if !defined(COMPILER1) || defined(TIERED)
     if (FLAG_IS_DEFAULT(UseCompressedOops)) {
       FLAG_SET_ERGO(UseCompressedOops, true);
     }
-#endif
   } else {
     if (UseCompressedOops && !FLAG_IS_DEFAULT(UseCompressedOops)) {
       warning("Max heap size too large for Compressed Oops");
@@ -2199,6 +2196,9 @@ jint Arguments::parse_vm_init_args(const JavaVMInitArgs *vm_options_args,
     Arguments::_Tier4InvocationThreshold = Tier4InvocationThreshold;
   }
 
+  // CDS dumping always write the archive to the default value of SharedBaseAddress.
+  Arguments::_SharedBaseAddress = SharedBaseAddress;
+
   // Setup flags for mixed which is the default
   set_mode_flags(_mixed);
 
@@ -2400,9 +2400,7 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
       } else if (!strcmp(tail, ":gc")) {
         LogConfiguration::configure_stdout(LogLevel::Info, true, LOG_TAGS(gc));
       } else if (!strcmp(tail, ":jni")) {
-        if (FLAG_SET_CMDLINE(PrintJNIResolving, true) != JVMFlag::SUCCESS) {
-          return JNI_EINVAL;
-        }
+        LogConfiguration::configure_stdout(LogLevel::Debug, true, LOG_TAGS(jni, resolve));
       }
     // -da / -ea / -disableassertions / -enableassertions
     // These accept an optional class/package name separated by a colon, e.g.,
@@ -2546,18 +2544,6 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
       if (FLAG_SET_CMDLINE(ClassUnloading, false) != JVMFlag::SUCCESS) {
         return JNI_EINVAL;
       }
-    // -Xconcgc
-    } else if (match_option(option, "-Xconcgc")) {
-      if (FLAG_SET_CMDLINE(UseConcMarkSweepGC, true) != JVMFlag::SUCCESS) {
-        return JNI_EINVAL;
-      }
-      handle_extra_cms_flags("-Xconcgc uses UseConcMarkSweepGC");
-    // -Xnoconcgc
-    } else if (match_option(option, "-Xnoconcgc")) {
-      if (FLAG_SET_CMDLINE(UseConcMarkSweepGC, false) != JVMFlag::SUCCESS) {
-        return JNI_EINVAL;
-      }
-      handle_extra_cms_flags("-Xnoconcgc uses UseConcMarkSweepGC");
     // -Xbatch
     } else if (match_option(option, "-Xbatch")) {
       if (FLAG_SET_CMDLINE(BackgroundCompilation, false) != JVMFlag::SUCCESS) {
@@ -2964,6 +2950,12 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
         return JNI_ERR;
 #endif // INCLUDE_MANAGEMENT
 #if INCLUDE_JVMCI
+    } else if (match_option(option, "-XX:-EnableJVMCIProduct")) {
+      if (EnableJVMCIProduct) {
+        jio_fprintf(defaultStream::error_stream(),
+                  "-XX:-EnableJVMCIProduct cannot come after -XX:+EnableJVMCIProduct\n");
+        return JNI_EINVAL;
+      }
     } else if (match_option(option, "-XX:+EnableJVMCIProduct")) {
       JVMFlag *jvmciFlag = JVMFlag::find_flag("EnableJVMCIProduct");
       // Allow this flag if it has been unlocked.
@@ -3819,15 +3811,6 @@ bool Arguments::handle_deprecated_print_gc_flags() {
   return true;
 }
 
-void Arguments::handle_extra_cms_flags(const char* msg) {
-  SpecialFlag flag;
-  const char *flag_name = "UseConcMarkSweepGC";
-  if (lookup_special_flag(flag_name, flag)) {
-    handle_aliases_and_deprecation(flag_name, /* print warning */ true);
-    warning("%s", msg);
-  }
-}
-
 // Parse entry point called from JNI_CreateJavaVM
 
 jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
@@ -4029,6 +4012,12 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
   no_shared_spaces("CDS Disabled");
 #endif // INCLUDE_CDS
 
+#ifndef TIERED
+  if (FLAG_IS_CMDLINE(CompilationMode)) {
+    warning("CompilationMode has no effect in non-tiered VMs");
+  }
+#endif
+
   return JNI_OK;
 }
 
@@ -4129,20 +4118,6 @@ jint Arguments::apply_ergo() {
   }
 #endif
 
-#if defined(IA32)
-  // Only server compiler can optimize safepoints well enough.
-  if (!is_server_compilation_mode_vm()) {
-    FLAG_SET_ERGO_IF_DEFAULT(ThreadLocalHandshakes, false);
-  }
-#endif
-
-  // ThreadLocalHandshakesConstraintFunc handles the constraints.
-  if (FLAG_IS_DEFAULT(ThreadLocalHandshakes) || !SafepointMechanism::supports_thread_local_poll()) {
-    log_debug(ergo)("ThreadLocalHandshakes %s", ThreadLocalHandshakes ? "enabled." : "disabled.");
-  } else {
-    log_info(ergo)("ThreadLocalHandshakes %s", ThreadLocalHandshakes ? "enabled." : "disabled.");
-  }
-
   return JNI_OK;
 }
 
@@ -4155,14 +4130,11 @@ jint Arguments::adjust_after_os() {
          FLAG_SET_DEFAULT(MinHeapDeltaBytes, 64*M);
       }
     }
-    // UseNUMAInterleaving is set to ON for all collectors and
-    // platforms when UseNUMA is set to ON. NUMA-aware collectors
-    // such as the parallel collector for Linux and Solaris will
-    // interleave old gen and survivor spaces on top of NUMA
-    // allocation policy for the eden space.
-    // Non NUMA-aware collectors such as CMS, G1 and Serial-GC on
-    // all platforms and ParallelGC on Windows will interleave all
-    // of the heap spaces across NUMA nodes.
+    // UseNUMAInterleaving is set to ON for all collectors and platforms when
+    // UseNUMA is set to ON. NUMA-aware collectors will interleave old gen and
+    // survivor spaces on top of NUMA allocation policy for the eden space.
+    // Non NUMA-aware collectors will interleave all of the heap spaces across
+    // NUMA nodes.
     if (FLAG_IS_DEFAULT(UseNUMAInterleaving)) {
       FLAG_SET_ERGO(UseNUMAInterleaving, true);
     }

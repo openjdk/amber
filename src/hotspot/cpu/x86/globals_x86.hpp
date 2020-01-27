@@ -81,9 +81,6 @@ define_pd_global(intx, StackReservedPages, DEFAULT_STACK_RESERVED_PAGES);
 define_pd_global(bool, RewriteBytecodes,     true);
 define_pd_global(bool, RewriteFrequentPairs, true);
 
-// GC Ergo Flags
-define_pd_global(size_t, CMSYoungGenPerWorker, 64*M);  // default max size of CMS young gen, per GC worker thread
-
 define_pd_global(uintx, TypeProfileLevel, 111);
 
 define_pd_global(bool, CompactStrings, true);
@@ -91,13 +88,6 @@ define_pd_global(bool, CompactStrings, true);
 define_pd_global(bool, PreserveFramePointer, false);
 
 define_pd_global(intx, InitArrayShortSize, 8*BytesPerLong);
-
-#if defined(_LP64) || defined(_WINDOWS)
-define_pd_global(bool, ThreadLocalHandshakes, true);
-#else
-// get_thread() is slow on linux 32 bit, therefore off by default
-define_pd_global(bool, ThreadLocalHandshakes, false);
-#endif
 
 #define ARCH_FLAGS(develop, \
                    product, \

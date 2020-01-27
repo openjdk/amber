@@ -72,6 +72,7 @@ Mutex*   NonJavaThreadsListSync_lock  = NULL;
 Monitor* CGC_lock                     = NULL;
 Monitor* STS_lock                     = NULL;
 Monitor* FullGCCount_lock             = NULL;
+Monitor* G1OldGCCount_lock            = NULL;
 Monitor* DirtyCardQ_CBL_mon           = NULL;
 Mutex*   Shared_DirtyCardQ_lock       = NULL;
 Mutex*   MarkStackFreeList_lock       = NULL;
@@ -186,6 +187,11 @@ void assert_lock_strong(const Mutex* lock) {
   if (lock->owned_by_self()) return;
   fatal("must own lock %s", lock->name());
 }
+
+void assert_locked_or_safepoint_or_handshake(const Mutex* lock, const JavaThread* thread) {
+  if (Thread::current()->is_VM_thread() && thread->is_vmthread_processing_handshake()) return;
+  assert_locked_or_safepoint(lock);
+}
 #endif
 
 #define def(var, type, pri, vm_block, safepoint_check_allowed ) {      \
@@ -203,6 +209,8 @@ void mutex_init() {
 
   def(FullGCCount_lock             , PaddedMonitor, leaf,        true,  _safepoint_check_never);      // in support of ExplicitGCInvokesConcurrent
   if (UseG1GC) {
+    def(G1OldGCCount_lock          , PaddedMonitor, leaf,        true,  _safepoint_check_always);
+
     def(DirtyCardQ_CBL_mon         , PaddedMonitor, access,      true,  _safepoint_check_never);
     def(Shared_DirtyCardQ_lock     , PaddedMutex  , access + 1,  true,  _safepoint_check_never);
 
@@ -241,7 +249,7 @@ void mutex_init() {
     Notification_lock = Service_lock;
   }
 
-  def(JmethodIdCreation_lock       , PaddedMutex  , leaf,        true,  _safepoint_check_always); // used for creating jmethodIDs.
+  def(JmethodIdCreation_lock       , PaddedMutex  , leaf,        true,  _safepoint_check_never); // used for creating jmethodIDs.
 
   def(SystemDictionary_lock        , PaddedMonitor, leaf,        true,  _safepoint_check_always);
   def(ProtectionDomainSet_lock     , PaddedMutex  , leaf-1,      true,  _safepoint_check_never);
@@ -262,10 +270,6 @@ void mutex_init() {
   def(BeforeExit_lock              , PaddedMonitor, leaf,        true,  _safepoint_check_always);
   def(PerfDataMemAlloc_lock        , PaddedMutex  , leaf,        true,  _safepoint_check_always); // used for allocating PerfData memory for performance data
   def(PerfDataManager_lock         , PaddedMutex  , leaf,        true,  _safepoint_check_always); // used for synchronized access to PerfDataManager resources
-
-  // CMS_modUnionTable_lock                   leaf
-  // CMS_bitMap_lock                          leaf 1
-  // CMS_freeList_lock                        leaf 2
 
   def(Threads_lock                 , PaddedMonitor, barrier,     true,  _safepoint_check_always);  // Used for safepoint protocol.
   def(NonJavaThreadsList_lock      , PaddedMutex,   leaf,        true,  _safepoint_check_never);
@@ -312,7 +316,7 @@ void mutex_init() {
 #if INCLUDE_JFR
   def(JfrMsg_lock                  , PaddedMonitor, leaf,        true,  _safepoint_check_always);
   def(JfrBuffer_lock               , PaddedMutex  , leaf,        true,  _safepoint_check_never);
-  def(JfrStream_lock               , PaddedMutex  , nonleaf + 1, false, _safepoint_check_always);
+  def(JfrStream_lock               , PaddedMutex  , nonleaf + 1, false, _safepoint_check_never);
   def(JfrStacktrace_lock           , PaddedMutex  , special,     true,  _safepoint_check_never);
   def(JfrThreadSampler_lock        , PaddedMonitor, leaf,        true,  _safepoint_check_never);
 #endif

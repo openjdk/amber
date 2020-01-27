@@ -108,6 +108,7 @@
   LOG_TAG(nestmates) \
   LOG_TAG(nmethod) \
   LOG_TAG(normalize) \
+  LOG_TAG(numa) \
   LOG_TAG(objecttagging) \
   LOG_TAG(obsolete) \
   LOG_TAG(oldobject) \
@@ -136,6 +137,7 @@
   LOG_TAG(parser) \
   LOG_TAG(ptrqueue) \
   LOG_TAG(purge) \
+  LOG_TAG(record) \
   LOG_TAG(resolve) \
   LOG_TAG(safepoint) \
   LOG_TAG(sampling) \

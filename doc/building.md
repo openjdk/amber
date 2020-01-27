@@ -120,6 +120,8 @@ At a minimum, a machine with 4 cores is advisable, as well as 4 GB of RAM. (The
 more cores to use, the more memory you need.) At least 8 GB of free disk space
 is required.
 
+Note: The sparc port is deprecated.
+
 ### Building on aarch64
 
 At a minimum, a machine with 8 cores is advisable, as well as 8 GB of RAM.
@@ -257,6 +259,8 @@ version 2.21.1 is needed, which is provided by Solaris 11 Update 1. Objcopy is
 needed if you want to have external debug symbols. Please make sure you are
 using at least version 2.21.1 of objcopy, or that you disable external debug
 symbols.
+
+Note: The Solaris port is deprecated.
 
 ### macOS
 
@@ -473,8 +477,8 @@ If a required library is not detected by `configure`, you need to provide the
 path to it. There are two forms of the `configure` arguments to point to an
 external library: `--with-<LIB>=<path>` or `--with-<LIB>-include=<path to
 include> --with-<LIB>-lib=<path to lib>`. The first variant is more concise,
-but require the include files an library files to reside in a default hierarchy
-under this directory. In most cases, it works fine.
+but require the include files and library files to reside in a default
+hierarchy under this directory. In most cases, it works fine.
 
 As a fallback, the second version allows you to point to the include directory
 and the lib directory separately.
@@ -484,7 +488,7 @@ and the lib directory separately.
 FreeType2 from [The FreeType Project](http://www.freetype.org/) is not required
 on any platform. The exception is on Unix-based platforms when configuring such
 that the build artifacts will reference a system installed library,
-rather than bundling the JDK’s own copy.
+rather than bundling the JDK's own copy.
 
   * To install on an apt-based Linux, try running `sudo apt-get install
     libfreetype6-dev`.
@@ -623,8 +627,8 @@ bash configure [options]
 
 This will create an output directory containing the configuration and setup an
 area for the build result. This directory typically looks like
-`build/linux-x64-normal-server-release`, but the actual name depends on your
-specific configuration. (It can also be set directly, see [Using Multiple
+`build/linux-x64-server-release`, but the actual name depends on your specific
+configuration. (It can also be set directly, see [Using Multiple
 Configurations](#using-multiple-configurations)). This directory is referred to
 as `$BUILD` in this documentation.
 

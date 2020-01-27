@@ -296,7 +296,7 @@ public class Resolve {
             (owner.flags() & STATIC) == 0;
     }
 
-    /** Is class accessible in given evironment?
+    /** Is class accessible in given environment?
      *  @param env    The current environment.
      *  @param c      The class whose accessibility is checked.
      */
@@ -3233,7 +3233,7 @@ public class Resolve {
         @Override
         ReferenceLookupResult unboundResult(ReferenceLookupResult boundRes, ReferenceLookupResult unboundRes) {
             if (boundRes.isSuccess() && !boundRes.hasKind(StaticKind.NON_STATIC)) {
-                //the first serach has at least one applicable static method
+                //the first search has at least one applicable static method
                 return boundRes;
             } else if (unboundRes.isSuccess() && !unboundRes.hasKind(StaticKind.STATIC)) {
                 //the second search has at least one applicable non-static method
@@ -4596,7 +4596,7 @@ public class Resolve {
          */
         interface DiagnosticRewriter {
             JCDiagnostic rewriteDiagnostic(JCDiagnostic.Factory diags,
-                    DiagnosticPosition preferedPos, DiagnosticSource preferredSource,
+                    DiagnosticPosition preferredPos, DiagnosticSource preferredSource,
                     DiagnosticType preferredKind, JCDiagnostic d);
         }
 
@@ -4652,12 +4652,12 @@ public class Resolve {
 
             @Override
             public JCDiagnostic rewriteDiagnostic(JCDiagnostic.Factory diags,
-                    DiagnosticPosition preferedPos, DiagnosticSource preferredSource,
+                    DiagnosticPosition preferredPos, DiagnosticSource preferredSource,
                     DiagnosticType preferredKind, JCDiagnostic d) {
                 JCDiagnostic cause = (JCDiagnostic)d.getArgs()[causeIndex];
                 DiagnosticPosition pos = d.getDiagnosticPosition();
                 if (pos == null) {
-                    pos = preferedPos;
+                    pos = preferredPos;
                 }
                 return diags.create(preferredKind, preferredSource, pos,
                         "prob.found.req", cause);

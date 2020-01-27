@@ -944,8 +944,11 @@ Node *LoopNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   return RegionNode::Ideal(phase, can_reshape);
 }
 
-void LoopNode::verify_strip_mined(int expect_skeleton) const {
 #ifdef ASSERT
+void LoopNode::verify_strip_mined(int expect_skeleton) const {
+  if (!is_valid_counted_loop()) {
+    return; // Skip malformed counted loop
+  }
   const OuterStripMinedLoopNode* outer = NULL;
   const CountedLoopNode* inner = NULL;
   if (is_strip_mined()) {
@@ -955,6 +958,7 @@ void LoopNode::verify_strip_mined(int expect_skeleton) const {
   } else if (is_OuterStripMinedLoop()) {
     outer = this->as_OuterStripMinedLoop();
     inner = outer->unique_ctrl_out()->as_CountedLoop();
+    assert(inner->is_valid_counted_loop(), "OuterStripMinedLoop should have been removed");
     assert(!is_strip_mined(), "outer loop shouldn't be marked strip mined");
   }
   if (inner != NULL || outer != NULL) {
@@ -1024,8 +1028,8 @@ void LoopNode::verify_strip_mined(int expect_skeleton) const {
     assert(sfpt->outcnt() == 1, "no data node");
     assert(outer_tail->outcnt() == 1 || !has_skeleton, "no data node");
   }
-#endif
 }
+#endif
 
 //=============================================================================
 //------------------------------Ideal------------------------------------------
@@ -1798,7 +1802,7 @@ void IdealLoopTree::split_fall_in( PhaseIdealLoop *phase, int fall_in_cnt ) {
       // disappear it.  In JavaGrande I have a case where this useless
       // Phi is the loop limit and prevents recognizing a CountedLoop
       // which in turn prevents removing an empty loop.
-      Node *id_old_phi = igvn.apply_identity(old_phi);
+      Node *id_old_phi = old_phi->Identity(&igvn);
       if( id_old_phi != old_phi ) { // Found a simple identity?
         // Note that I cannot call 'replace_node' here, because
         // that will yank the edge from old_phi to the Region and
@@ -2121,7 +2125,7 @@ bool IdealLoopTree::beautify_loops( PhaseIdealLoop *phase ) {
 void IdealLoopTree::allpaths_check_safepts(VectorSet &visited, Node_List &stack) {
   assert(stack.size() == 0, "empty stack");
   stack.push(_tail);
-  visited.Clear();
+  visited.clear();
   visited.set(_tail->_idx);
   while (stack.size() > 0) {
     Node* n = stack.pop();
@@ -2930,12 +2934,12 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   int stack_size = (C->live_nodes() >> 1) + 16; // (live_nodes>>1)+16 from Java2D stats
   Node_Stack nstack( a, stack_size );
 
-  visited.Clear();
+  visited.clear();
   Node_List worklist(a);
   // Don't need C->root() on worklist since
   // it will be processed among C->top() inputs
-  worklist.push( C->top() );
-  visited.set( C->top()->_idx ); // Set C->top() as visited now
+  worklist.push(C->top());
+  visited.set(C->top()->_idx); // Set C->top() as visited now
   build_loop_early( visited, worklist, nstack );
 
   // Given early legal placement, try finding counted loops.  This placement
@@ -2945,12 +2949,12 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   }
 
   // Find latest loop placement.  Find ideal loop placement.
-  visited.Clear();
+  visited.clear();
   init_dom_lca_tags();
   // Need C->root() on worklist when processing outs
-  worklist.push( C->root() );
+  worklist.push(C->root());
   NOT_PRODUCT( C->verify_graph_edges(); )
-  worklist.push( C->top() );
+  worklist.push(C->top());
   build_loop_late( visited, worklist, nstack );
 
   if (_verify_only) {
@@ -3046,7 +3050,7 @@ void PhaseIdealLoop::build_and_optimize(LoopOptsMode mode) {
   // Check for aggressive application of split-if and other transforms
   // that require basic-block info (like cloning through Phi's)
   if( SplitIfBlocks && do_split_ifs ) {
-    visited.Clear();
+    visited.clear();
     split_if_with_blocks( visited, nstack);
     NOT_PRODUCT( if( VerifyLoopOptimizations ) verify(); );
   }
@@ -3391,10 +3395,7 @@ void IdealLoopTree::verify_tree(IdealLoopTree *loop, const IdealLoopTree *parent
 void PhaseIdealLoop::set_idom(Node* d, Node* n, uint dom_depth) {
   uint idx = d->_idx;
   if (idx >= _idom_size) {
-    uint newsize = _idom_size<<1;
-    while( idx >= newsize ) {
-      newsize <<= 1;
-    }
+    uint newsize = next_power_of_2(idx);
     _idom      = REALLOC_RESOURCE_ARRAY( Node*,     _idom,_idom_size,newsize);
     _dom_depth = REALLOC_RESOURCE_ARRAY( uint, _dom_depth,_idom_size,newsize);
     memset( _dom_depth + _idom_size, 0, (newsize - _idom_size) * sizeof(uint) );
@@ -4268,12 +4269,6 @@ void PhaseIdealLoop::verify_strip_mined_scheduling(Node *n, Node* least) {
 // Put Data nodes into some loop nest, by setting the _nodes[]->loop mapping.
 // Second pass finds latest legal placement, and ideal loop placement.
 void PhaseIdealLoop::build_loop_late_post(Node *n) {
-  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-
-  if (bs->build_loop_late_post(this, n)) {
-    return;
-  }
-
   build_loop_late_post_work(n, true);
 }
 

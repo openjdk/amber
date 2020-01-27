@@ -47,7 +47,6 @@ requires.properties= \
     vm.gc.G1 \
     vm.gc.Serial \
     vm.gc.Parallel \
-    vm.gc.ConcMarkSweep \
     vm.gc.Shenandoah \
     vm.gc.Epsilon \
     vm.gc.Z \
@@ -72,7 +71,7 @@ requires.properties= \
     test.vm.gc.nvdimm
 
 # Minimum jtreg version
-requiredVersion=4.2 b14
+requiredVersion=4.2 b16
 
 # Path to libraries in the topmost test directory. This is needed so @library
 # does not need ../../../ notation to reach them

@@ -349,12 +349,23 @@ public class TestHelper {
      * occurs then back off for a moment and try again. When a number of
      * attempts fail, give up and throw an exception.
      */
-    void createAFile(File aFile, List<String> contents) throws IOException {
+    void createAFile(File aFile, List<String> lines) throws IOException {
+        createAFile(aFile, lines, true);
+    }
+
+    void createAFile(File aFile, List<String> lines, boolean endWithNewline) throws IOException {
         IOException cause = null;
         for (int attempts = 0; attempts < 10; attempts++) {
             try {
-                Files.write(aFile.getAbsoluteFile().toPath(), contents,
-                    Charset.defaultCharset(), CREATE, TRUNCATE_EXISTING, WRITE);
+                if (endWithNewline) {
+                    Files.write(aFile.getAbsoluteFile().toPath(),
+                        lines, Charset.defaultCharset(),
+                        CREATE, TRUNCATE_EXISTING, WRITE);
+                } else {
+                    Files.write(aFile.getAbsoluteFile().toPath(),
+                        String.join(System.lineSeparator(), lines).getBytes(Charset.defaultCharset()),
+                        CREATE, TRUNCATE_EXISTING, WRITE);
+                }
                 if (cause != null) {
                     /*
                      * report attempts and errors that were encountered
@@ -487,6 +498,40 @@ public class TestHelper {
 
     static boolean isEnglishLocale() {
         return Locale.getDefault().getLanguage().equals("en");
+    }
+
+    /**
+     * Helper method to initialize a simple module that just prints the passed in arguments
+     */
+    static void createEchoArgumentsModule(File modulesDir) throws IOException {
+        if (modulesDir.exists()) {
+            recursiveDelete(modulesDir);
+        }
+
+        modulesDir.mkdirs();
+
+        File srcDir = new File(modulesDir, "src");
+        File modsDir = new File(modulesDir, "mods");
+        File testDir = new File(srcDir, "test");
+        File launcherTestDir = new File(testDir, "launcher");
+        srcDir.mkdir();
+        modsDir.mkdir();
+        testDir.mkdir();
+        launcherTestDir.mkdir();
+
+        String[] moduleInfoCode = { "module test {}" };
+        createFile(new File(testDir, "module-info.java"), Arrays.asList(moduleInfoCode));
+
+        String[] moduleCode = {
+            "package launcher;",
+            "import java.util.Arrays;",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "System.out.println(Arrays.toString(args));",
+            "}",
+            "}"
+        };
+        createFile(new File(launcherTestDir, "Main.java"), Arrays.asList(moduleCode));
     }
 
     /*

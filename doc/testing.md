@@ -332,6 +332,10 @@ Generate AOT modules before testing for the specified module, or set of
 modules. If multiple modules are specified, they should be separated by space
 (or, to help avoid quoting issues, the special value `%20`).
 
+#### RETRY_COUNT
+
+Retry failed tests up to a set number of times. Defaults to 0.
+
 ### Gtest keywords
 
 #### REPEAT
@@ -420,6 +424,35 @@ For example:
     $ make test TEST="jtreg:sun/security/pkcs11/Secmod/AddTrustedCert.java" JTREG="JAVA_OPTIONS=-Dtest.nss.lib.paths=/path/to/your/latest/NSS-libs"
 
 For more notes about the PKCS11 tests, please refer to test/jdk/sun/security/pkcs11/README.
+
+### Client UI Tests
+
+Some Client UI tests use key sequences which may be reserved by the operating
+system. Usually that causes the test failure. So it is highly recommended to disable
+system key shortcuts prior testing. The steps to access and disable system key shortcuts
+for various platforms are provided below.
+
+#### MacOS
+Choose Apple menu; System Preferences, click Keyboard, then click Shortcuts;
+select or deselect desired shortcut.
+
+For example, test/jdk/javax/swing/TooltipManager/JMenuItemToolTipKeyBindingsTest/JMenuItemToolTipKeyBindingsTest.java fails
+on MacOS because it uses `CTRL + F1` key sequence to show or hide tooltip message
+but the key combination is reserved by the operating system. To run the test correctly
+the default global key shortcut should be disabled using the steps described above, and then deselect
+"Turn keyboard access on or off" option which is responsible for `CTRL + F1` combination.
+
+#### Linux
+Open the Activities overview and start typing Settings; Choose Settings, click Devices,
+then click Keyboard; set or override desired shortcut.
+
+#### Windows
+Type `gpedit` in the Search and then click Edit group policy; navigate to
+User Configuration -> Administrative Templates -> Windows Components -> File Explorer;
+in the right-side pane look for "Turn off Windows key hotkeys" and double click on it;
+enable or disable hotkeys.
+
+Note: restart is required to make the settings take effect.
 
 ---
 # Override some definitions in the global css file that are not optimal for
