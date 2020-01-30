@@ -228,7 +228,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         linkInfo.linkToSelf = false;
         Content className = new StringContent(utils.getSimpleName(typeElement));
         Content parameterLinks = getTypeParameterLinks(linkInfo);
-        if (configuration.getOptions().linkSource) {
+        if (options.linkSource()) {
             addSrcLink(typeElement, className, pre);
             pre.add(parameterLinks);
         } else {
@@ -322,7 +322,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
      */
     @Override
     public void addClassDescription(Content classInfoTree) {
-        if(!configuration.getOptions().noComment) {
+        if (!options.noComment()) {
             // generate documentation for the class.
             if (!utils.getFullBody(typeElement).isEmpty()) {
                 addInlineComment(typeElement, classInfoTree);
@@ -335,7 +335,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
      */
     @Override
     public void addClassTagInfo(Content classInfoTree) {
-        if(!configuration.getOptions().noComment) {
+        if (!options.noComment()) {
             // Print Information about all the tags here
             addTagsInfo(typeElement, classInfoTree);
         }
