@@ -393,7 +393,7 @@ public class Utils {
     }
 
     public boolean isProperty(String name) {
-        return options.javafx && name.endsWith("Property");
+        return options.javafx() && name.endsWith("Property");
     }
 
     public String getPropertyName(String name) {
@@ -1390,7 +1390,7 @@ public class Utils {
         if (!text.contains("\t"))
             return text;
 
-        final int tabLength = options.sourceTabSize;
+        final int tabLength = options.sourceTabSize();
         final String whitespace = " ".repeat(tabLength);
         final int textLength = text.length();
         StringBuilder result = new StringBuilder(textLength);
@@ -1523,7 +1523,7 @@ public class Utils {
         if (!isIncluded(e)) {
             return false;
         }
-        if (options.javafx &&
+        if (options.javafx() &&
                 hasBlockTag(e, DocTree.Kind.UNKNOWN_BLOCK_TAG, "treatAsPrivate")) {
             return true;
         }
@@ -1536,8 +1536,7 @@ public class Utils {
      * @return true if there are no comments, false otherwise
      */
     public boolean isSimpleOverride(ExecutableElement m) {
-        if (!options.summarizeOverriddenMethods ||
-                !isIncluded(m)) {
+        if (!options.summarizeOverriddenMethods() || !isIncluded(m)) {
             return false;
         }
 
@@ -2023,10 +2022,8 @@ public class Utils {
                         return result;
                     }
                     if (hasParameters(e1) && hasParameters(e2)) {
-                        @SuppressWarnings("unchecked")
-                        List<VariableElement> parameters1 = (List<VariableElement>)((ExecutableElement)e1).getParameters();
-                        @SuppressWarnings("unchecked")
-                        List<VariableElement> parameters2 = (List<VariableElement>)((ExecutableElement)e2).getParameters();
+                        List<? extends VariableElement> parameters1 = ((ExecutableElement)e1).getParameters();
+                        List<? extends VariableElement> parameters2 = ((ExecutableElement)e2).getParameters();
                         result = compareParameters(false, parameters1, parameters2);
                         if (result != 0) {
                             return result;
