@@ -827,12 +827,13 @@ public class TypeEnter implements Completer {
         @Override
         protected void runPhase(Env<AttrContext> env) {
             JCClassDecl tree = env.enclClass;
-            List<Type> closureInSameCompilationUnit = types.closure(tree.sym.type).stream()
+            List<Type> directSuperTypes = List.of(types.supertype(tree.sym.type)).appendList(types.interfaces(tree.sym.type));
+            List<Type> directSuperTypesInSameCU = directSuperTypes.stream()
                     .filter(supertype ->
                             TreeInfo.declarationFor(supertype.tsym, env.toplevel) != null &&
                                     TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null)
                     .collect(List.collector());
-            Set<Type> explicitlySealedSuperTypesInCU = closureInSameCompilationUnit.stream()
+            Set<Type> explicitlySealedSuperTypesInCU = directSuperTypesInSameCU.stream()
                     .filter(type -> type != tree.sym.type && type.tsym.isSealed()).collect(Collectors.toSet());
 
             boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();

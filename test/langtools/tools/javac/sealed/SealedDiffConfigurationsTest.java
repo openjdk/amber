@@ -98,8 +98,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .writeAll();
 
         checkSealedClassFile(out, "Test$Sealed.class", List.of("Test$Sub1", "Test$Sub2"));
-        checkSubtypeClassFile(out, "Test$Sub1.class", "Test$Sealed");
-        checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed");
+        checkSubtypeClassFile(out, "Test$Sub1.class", "Test$Sealed", true);
+        checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed", true);
     }
 
     @Test
@@ -126,8 +126,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .writeAll();
 
         checkSealedClassFile(out, "Test$Sealed.class", List.of("Test$Sub1", "Test$Sub2"));
-        checkSubtypeClassFile(out, "Test$Sub1.class", "Test$Sealed");
-        checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed");
+        checkSubtypeClassFile(out, "Test$Sub1.class", "Test$Sealed", true);
+        checkSubtypeClassFile(out, "Test$Sub2.class", "Test$Sealed", true);
     }
 
     private void checkSealedClassFile(Path out, String cfName, List<String> expectedSubTypeNames) throws ConstantPoolException, Exception {
@@ -148,9 +148,11 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         }
     }
 
-    private void checkSubtypeClassFile(Path out, String cfName, String superClassName) throws Exception {
+    private void checkSubtypeClassFile(Path out, String cfName, String superClassName, boolean shouldBeFinal) throws Exception {
         ClassFile subCF1 = ClassFile.read(out.resolve(cfName));
-        Assert.check((subCF1.access_flags.flags & Flags.FINAL) != 0, String.format("class at file %s must be final", cfName));
+        if (shouldBeFinal) {
+            Assert.check((subCF1.access_flags.flags & Flags.FINAL) != 0, String.format("class at file %s must be final", cfName));
+        }
         Assert.checkNull((PermittedSubtypes_attribute)subCF1.attributes.get("PermittedSubtypes"));
         Assert.check(((CONSTANT_Class_info)subCF1.constant_pool.get(subCF1.super_class)).getName().equals(superClassName));
     }
@@ -191,8 +193,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .writeAll();
 
         checkSealedClassFile(out.resolve("pkg"), "Sealed.class", List.of("pkg/Sub1", "pkg/Sub1"));
-        checkSubtypeClassFile(out.resolve("pkg"), "Sub1.class", "pkg/Sealed");
-        checkSubtypeClassFile(out.resolve("pkg"), "Sub2.class", "pkg/Sealed");
+        checkSubtypeClassFile(out.resolve("pkg"), "Sub1.class", "pkg/Sealed", true);
+        checkSubtypeClassFile(out.resolve("pkg"), "Sub2.class", "pkg/Sealed", true);
     }
 
     @Test
@@ -231,9 +233,49 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .run()
                 .writeAll();
 
-        checkSealedClassFile(out.resolve("pkg1"), "Sealed.class", List.of("pkg2/Sub1", "pkg2/Sub1"));
-        checkSubtypeClassFile(out.resolve("pkg2"), "Sub1.class", "pkg1/Sealed");
-        checkSubtypeClassFile(out.resolve("pkg2"), "Sub2.class", "pkg1/Sealed");
+        checkSealedClassFile(out.resolve("pkg1"), "Sealed.class", List.of("pkg2/Sub1", "pkg2/Sub2"));
+        checkSubtypeClassFile(out.resolve("pkg2"), "Sub1.class", "pkg1/Sealed", true);
+        checkSubtypeClassFile(out.resolve("pkg2"), "Sub2.class", "pkg1/Sealed", true);
+    }
+
+    @Test
+    public void testDiffPackagePos2(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path pkg1 = src.resolve("pkg1");
+        Path pkg2 = src.resolve("pkg2");
+        Path sealed = pkg1.resolve("Sealed");
+        Path sub1 = pkg2.resolve("Sub1");
+        Path sub2 = pkg2.resolve("Sub2");
+
+        tb.writeJavaFiles(sealed,
+                "package pkg1;\n" +
+                        "import pkg2.*;\n" +
+                        "public sealed class Sealed permits pkg2.Sub1 {\n" +
+                        "}");
+        tb.writeJavaFiles(sub1,
+                "package pkg2;\n" +
+                        "import pkg1.*;\n" +
+                        "public non-sealed class Sub1 extends pkg1.Sealed {\n" +
+                        "}");
+        tb.writeJavaFiles(sub2,
+                "package pkg3;\n" +
+                        "import pkg2.*;\n" +
+                        "public class Sub2 extends pkg2.Sub1 {\n" +
+                        "}");
+
+        Path out = base.resolve("out");
+
+        Files.createDirectories(out);
+
+        new JavacTask(tb)
+                .outdir(out)
+                .files(findJavaFiles(pkg1, pkg2))
+                .options("--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
+                .run()
+                .writeAll();
+
+        checkSealedClassFile(out.resolve("pkg1"), "Sealed.class", List.of("pkg2/Sub1"));
+        checkSubtypeClassFile(out.resolve("pkg2"), "Sub1.class", "pkg1/Sealed", false);
     }
 
     @Test
