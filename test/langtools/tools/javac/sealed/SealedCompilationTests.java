@@ -186,6 +186,9 @@ public class SealedCompilationTests extends CompilationTestCase {
                 "}");
     }
 
+    /* It is a compile-time error if a class declaration has more than one of the class modifiers
+     * sealed, non-sealed and final
+     */
     public void testBadModifiers() {
         assertFail("compiler.err.non.sealed.with.no.sealed.supertype",
                 "class SealedTest { non-sealed class NoSealedSuper {} }");
@@ -275,5 +278,18 @@ public class SealedCompilationTests extends CompilationTestCase {
                 enum E implements I {E1}
                 """))
             assertOK(s);
+    }
+
+    public void testClassesCanExtendNonSealed() {
+        for (String s : List.of(
+                """
+                sealed class C {}
+
+                non-sealed class Sub extends C {}
+
+                class Sub2 extends Sub {}
+                """)) {
+            assertOK(s);
+        }
     }
 }
