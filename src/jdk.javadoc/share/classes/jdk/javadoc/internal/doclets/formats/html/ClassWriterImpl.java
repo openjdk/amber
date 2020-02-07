@@ -105,9 +105,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         this.navBar = new Navigation(typeElement, configuration, PageMode.CLASS, path);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getHeader(String header) {
         HtmlTree bodyTree = getBody(getWindowTitle(utils.getSimpleName(typeElement)));
@@ -154,17 +151,11 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         return bodyTree;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getClassContentHeader() {
         return getContentHeader();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addFooter() {
         bodyContents.addMainContent(MarkerComments.END_OF_CLASS_DATA);
@@ -175,9 +166,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         bodyContents.setFooter(htmlTree);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void printDocument(Content contentTree) throws DocFileIOException {
         String description = getDescription("declaration", typeElement);
@@ -188,33 +176,21 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                 description, localStylesheets, contentTree);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getClassInfoTreeHeader() {
         return getMemberTreeHeader();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Content getClassInfo(Content classInfoTree) {
         return getMemberTree(HtmlStyle.description, classInfoTree);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected TypeElement getCurrentPageElement() {
         return typeElement;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override @SuppressWarnings("preview")
     public void addClassSignature(String modifiers, Content classInfoTree) {
         Content hr = new HtmlTree(HtmlTag.HR);
@@ -317,9 +293,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         return content;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addClassDescription(Content classInfoTree) {
         if (!options.noComment()) {
@@ -330,9 +303,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addClassTagInfo(Content classInfoTree) {
         if (!options.noComment()) {
@@ -390,9 +360,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         return content;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addClassTree(Content classContentTree) {
         if (!utils.isClass(typeElement)) {
@@ -401,9 +368,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         classContentTree.add(getClassInheritanceTree(typeElement.asType()));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addParamInfo(Content classInfoTree) {
         if (utils.hasBlockTag(typeElement, DocTree.Kind.PARAM)) {
@@ -415,9 +379,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addSubClassInfo(Content classInfoTree) {
         if (utils.isClass(typeElement)) {
@@ -438,9 +399,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addSubInterfacesInfo(Content classInfoTree) {
         if (utils.isInterface(typeElement)) {
@@ -456,9 +414,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addInterfaceUsageInfo (Content classInfoTree) {
         if (!utils.isInterface(typeElement)) {
@@ -480,9 +435,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addImplementedInterfacesInfo(Content classInfoTree) {
         SortedSet<TypeMirror> interfaces = new TreeSet<>(utils.makeTypeMirrorClassUseComparator());
@@ -496,9 +448,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addSuperInterfacesInfo(Content classInfoTree) {
         SortedSet<TypeMirror> interfaces =
@@ -514,9 +463,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addNestedClassInfo(final Content classInfoTree) {
         Element outerClass = typeElement.getEnclosingElement();
@@ -540,9 +486,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         }.visit(outerClass);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addFunctionalInterfaceInfo (Content classInfoTree) {
         if (isFunctionalInterface()) {
@@ -566,9 +509,6 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     }
 
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addClassDeprecationInfo(Content classInfoTree) {
         List<? extends DocTree> deprs = utils.getBlockTags(typeElement, DocTree.Kind.DEPRECATED);
