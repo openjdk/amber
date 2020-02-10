@@ -96,17 +96,11 @@ public class MethodBuilder extends AbstractMemberBuilder {
         return new MethodBuilder(context, typeElement, writer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasMembersToDocument() {
         return !methods.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void build(Content contentTree) throws DocletException {
         buildMethodDoc(contentTree);
@@ -166,7 +160,7 @@ public class MethodBuilder extends AbstractMemberBuilder {
      * @param methodDocTree the content tree to which the documentation will be added
      */
     protected void buildMethodComments(Content methodDocTree) {
-        if (!options.noComment) {
+        if (!options.noComment()) {
             ExecutableElement method = currentMethod;
             if (utils.getFullBody(currentMethod).isEmpty()) {
                 DocFinder.Output docs = DocFinder.search(configuration,
