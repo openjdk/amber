@@ -768,7 +768,11 @@ public class JavacParser implements Parser {
                 ListBuffer<JCPattern> nested = new ListBuffer<>();
                 do {
                     nextToken();
-                    nested.append(parsePattern());
+                    JCPattern nestedPattern = parsePattern();
+                    if (nestedPattern.hasTag(BINDINGPATTERN) && ((JCBindingPattern) nestedPattern).vartype != null) {
+                        log.error(nestedPattern.pos(), Errors.DeconstructionPatternNoVar);
+                    }
+                    nested.append(nestedPattern);
                 } while (token.kind == COMMA);
                 Name name = null;
                 if (token.kind == IDENTIFIER) {
@@ -968,7 +972,11 @@ public class JavacParser implements Parser {
                     ListBuffer<JCPattern> nested = new ListBuffer<>();
                     do {
                         nextToken();
-                        nested.append(parsePattern());
+                        JCPattern nestedPattern = parsePattern();
+                        if (nestedPattern.hasTag(BINDINGPATTERN) && ((JCBindingPattern) nestedPattern).vartype != null) {
+                            log.error(nestedPattern.pos(), Errors.DeconstructionPatternNoVar);
+                        }
+                        nested.append(nestedPattern);
                     } while (token.kind == COMMA);
                     Name name = null;
                     if (token.kind == IDENTIFIER) {

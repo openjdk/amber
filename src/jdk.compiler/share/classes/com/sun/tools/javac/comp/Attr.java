@@ -79,6 +79,8 @@ import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /** This is the main context-dependent analysis phase in GJC. It
  *  encompasses name resolution, type checking and constant folding as
@@ -3947,56 +3949,27 @@ public class Attr extends JCTree.Visitor {
     @Override
     public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
         Type site = tree.type = attribType(tree.deconstructor, env);
-        ListBuffer<Type> components = new ListBuffer<>();
-        Map<JCPattern, MatchBindings> nestedBindings = new HashMap<>();
-        for (JCPattern n : tree.nested) {
-            if ((n.hasTag(BINDINGPATTERN) && ((JCBindingPattern) n).vartype == null) || n.hasTag(ANYPATTERN)) {
-                components.append(Type.noType);
-            } else {
-                components.append(attribExpr(n, env));
-                nestedBindings.put(n, matchBindings);
-            }
-        }
-        Iterable<Symbol> patterns = site.tsym.members().getSymbols(sym -> sym.kind == Kind.MTH && sym.name.startsWith(names.fromString("\\%pattern\\%")));
-        List<Pair<MethodSymbol, List<Type>>> foundPatterns = List.nil();
-        for (Symbol pattern : patterns) {
-            String[] parts = BytecodeName.toSourceName(pattern.name.toString()).split("\\$", 4);
-            if (!parts[2].contentEquals(site.tsym.name))
-                continue;
-            ListBuffer<Type> patternComponents = new ListBuffer<>();
-            byte[] sig = Convert.string2utf(parts[3]);
-            int[] idx = {1};
-            while (sig[idx[0]] != ')') {//TODO: handle errors
-                patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
-            }
-            if (isSubTypesIgnoreNone(components.toList(), patternComponents.toList())) {
-                //found a pattern:
-                foundPatterns = foundPatterns.prepend(Pair.of((MethodSymbol) pattern, patternComponents.toList()));
-            }
+        List<Type> recordTypes;
+        if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
+            ClassSymbol record = (ClassSymbol) site.tsym;
+            recordTypes = record.getRecordComponents().stream().map(rc -> rc.type).collect(List.collector());
+            tree.record = record;
+        } else {
+            log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
+            recordTypes = Stream.generate(() -> Type.noType)
+                                .limit(tree.nested.size())
+                                .collect(List.collector());
         }
         ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
-        if (foundPatterns.size() == 1) {
-            tree.extractorResolver = foundPatterns.head.fst;
-            List<Type> currentTypes;
-            tree.innerTypes = currentTypes = foundPatterns.head.snd;
-            //fix var/any patterns:
-            for (JCPattern nestedPattern : tree.nested) {
-                MatchBindings currentBindings;
-                if (nestedPattern.type == null) {
-                    attribExpr(nestedPattern, env, currentTypes.head);
-                    currentBindings = matchBindings;
-                } else {
-                    currentBindings = nestedBindings.get(nestedPattern);
-                    Assert.checkNonNull(currentBindings);
-                }
-                Assert.check(currentBindings.bindingsWhenFalse.isEmpty());
-                outBindings.appendList(currentBindings.bindingsWhenTrue);
-                currentTypes = currentTypes.tail;
-            }
-        } else {
-            //TODO: error:
+        List<JCPattern> nestedPatterns = tree.nested;
+        while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
+            boolean nestedIsValidPattern = !nestedPatterns.head.hasTag(BINDINGPATTERN) ||
+                                           ((JCBindingPattern) nestedPatterns.head).vartype == null;
+            attribExpr(nestedPatterns.head, env, nestedIsValidPattern ? recordTypes.head : Type.noType);
+            outBindings.addAll(matchBindings.bindingsWhenTrue);
+            nestedPatterns = nestedPatterns.tail;
+            recordTypes = recordTypes.tail;
         }
-//        //TODO: some checks....
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
     }

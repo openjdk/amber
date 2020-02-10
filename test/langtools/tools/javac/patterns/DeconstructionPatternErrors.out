@@ -1,0 +1,6 @@
+DeconstructionPatternErrors.java:12:28: compiler.err.deconstruction.pattern.no.var
+DeconstructionPatternErrors.java:14:29: compiler.err.deconstruction.pattern.no.var
+DeconstructionPatternErrors.java:14:39: compiler.err.deconstruction.pattern.no.var
+- compiler.note.preview.filename: DeconstructionPatternErrors.java
+- compiler.note.preview.recompile
+3 errors

@@ -2266,7 +2266,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 //        public BindingSymbol symbol;
         public JCExpression deconstructor;
         public List<JCPattern> nested;
-        public Symbol extractorResolver; //TODO: MethodSymbol?; TODO: rename to pattern(Sym?)
+        public ClassSymbol record;
         public List<Type> innerTypes;
 
         protected JCDeconstructionPattern(Name name, JCExpression deconstructor, List<JCPattern> nested) {
