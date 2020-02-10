@@ -105,9 +105,6 @@ public class AnnotationTypeFieldBuilder extends AbstractMemberBuilder {
         return !members.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void build(Content contentTree) throws DocletException {
         buildAnnotationTypeField(contentTree);
@@ -181,7 +178,7 @@ public class AnnotationTypeFieldBuilder extends AbstractMemberBuilder {
      * @param annotationDocTree the content tree to which the documentation will be added
      */
     protected void buildMemberComments(Content annotationDocTree) {
-        if (!options.noComment) {
+        if (!options.noComment()) {
             writer.addComments(currentMember, annotationDocTree);
         }
     }

@@ -96,9 +96,6 @@ public class ConstructorBuilder extends AbstractMemberBuilder {
         return new ConstructorBuilder(context, typeElement, writer);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean hasMembersToDocument() {
         return !constructors.isEmpty();
@@ -113,9 +110,6 @@ public class ConstructorBuilder extends AbstractMemberBuilder {
         return writer;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void build(Content contentTree) throws DocletException {
         buildConstructorDoc(contentTree);
@@ -176,7 +170,7 @@ public class ConstructorBuilder extends AbstractMemberBuilder {
      * @param constructorDocTree the content tree to which the documentation will be added
      */
     protected void buildConstructorComments(Content constructorDocTree) {
-        if (!options.noComment) {
+        if (!options.noComment()) {
             writer.addComments(currentConstructor, constructorDocTree);
         }
     }

@@ -103,9 +103,6 @@ public class FieldBuilder extends AbstractMemberBuilder {
         return !fields.isEmpty();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void build(Content contentTree) throws DocletException {
         buildFieldDoc(contentTree);
@@ -166,7 +163,7 @@ public class FieldBuilder extends AbstractMemberBuilder {
      * @param fieldDocTree the content tree to which the documentation will be added
      */
     protected void buildFieldComments(Content fieldDocTree) {
-        if (!options.noComment) {
+        if (!options.noComment()) {
             writer.addComments(currentElement, fieldDocTree);
         }
     }
