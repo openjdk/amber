@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -248,14 +249,13 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
             }
         }
         List<? extends TypeMirror> permits = typeElement.getPermittedSubtypes();
-        if (!permits.isEmpty()) {
+        List<? extends TypeMirror> linkablePermits = permits.stream()
+                .filter(t -> utils.isLinkable(utils.asTypeElement(t)))
+                .collect(Collectors.toList());
+        if (!linkablePermits.isEmpty()) {
             boolean isFirst = true;
-            for (TypeMirror type : permits) {
+            for (TypeMirror type : linkablePermits) {
                 TypeElement tDoc = utils.asTypeElement(type);
-                // Document all permitted subtypes, not just public linkable types,
-                // because it may be of interest to the reader that not all of the
-                // subtypes may be accessible: for example, in a pattern statement
-                // switching on the type of an object.
                 if (isFirst) {
                     pre.add(DocletConstants.NL);
                     pre.add("permits ");
@@ -271,6 +271,10 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
 
         }
         classInfoTree.add(pre);
+        // TODO: is this the right place to document this, as compared to an "all permitted subtypes" list
+        if (linkablePermits.size() < permits.size()) {
+            classInfoTree.add(" (not exhaustive)"); // FIXME: use <span> and L10N
+        }
     }
 
     @SuppressWarnings("preview")
