@@ -5023,6 +5023,15 @@ public class Attr extends JCTree.Visitor {
                 log.error(env.tree, Errors.SealedInterfaceOrAbstractMustHaveSubtypes);
             }
 
+            if (c.isSealed() && !((ClassType)c.type).permitted.isEmpty()) {
+                for (Type subType : ((ClassType)c.type).permitted) {
+                    if (subType.getTag() == TYPEVAR) {
+                        log.error(env.tree, Errors.TypeVarListedInPermits);
+                    }
+                }
+
+            }
+
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
             // because the annotations were not available at the time the env was created. Therefore,
             // we look up the environment chain for the first enclosing environment for which the

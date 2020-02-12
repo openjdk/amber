@@ -471,4 +471,41 @@ public class SealedDiffConfigurationsTest extends TestRunner {
             throw new AssertionError("Expected output not found. Expected: " + expected);
         }
     }
+
+    @Test
+    public void testDiffPackageNeg2(Path base) throws Exception {
+        // test that the compiler rejects a subtype that is not accessible to the sealed class
+        Path src = base.resolve("src");
+        Path pkg1 = src.resolve("pkg1");
+        Path pkg2 = src.resolve("pkg2");
+        Path sealed = pkg1.resolve("Sealed");
+        Path sub1 = pkg2.resolve("Sub1");
+        Path sub2 = pkg2.resolve("Sub2");
+
+        tb.writeJavaFiles(sealed,
+                "package pkg1;\n" +
+                        "import pkg2.*;\n" +
+                        "public sealed class Sealed permits pkg2.Sub1 {\n" +
+                        "}");
+        tb.writeJavaFiles(sub1,
+                "package pkg2;\n" +
+                        "import pkg1.*;\n" +
+                        "final class Sub1 extends pkg1.Sealed {\n" +
+                        "}");
+
+        List<String> error = new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "-source", Integer.toString(Runtime.version().feature()))
+                .files(findJavaFiles(pkg1, pkg2))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+                "Sealed.java:3:40: compiler.err.not.def.public.cant.access: pkg2.Sub1, pkg2",
+                "Sub1.java:3:7: compiler.err.cant.inherit.from.sealed: pkg1.Sealed",
+                "2 errors");
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
 }
