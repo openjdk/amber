@@ -292,4 +292,25 @@ public class SealedCompilationTests extends CompilationTestCase {
             assertOK(s);
         }
     }
+
+    public void testEmptyPermits() {
+        for (String s : List.of(
+            """
+            sealed class C permits {}
+            non-sealed class Sub extends C {}
+            """)) {
+            assertFail("compiler.err.illegal.start.of.type", s);
+        }
+    }
+
+    public void testTypeVarInPermits() {
+        for (String s : List.of(
+            """
+            class Outer<T> {
+                sealed class C permits T  {}
+            }
+            """)) {
+            assertFail("compiler.err.type.var.listed.in.permits", s);
+        }
+    }
 }
