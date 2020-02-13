@@ -96,7 +96,7 @@ public class SealedCompilationTests extends CompilationTestCase {
         for (String shell : SHELLS)
             for (String b : List.of(CC1, AC1, I1))
                 for (String p : List.of("", "permits Sub"))
-                    for (String m : List.of("sealed", "final", "non-sealed"))
+                    for (String m : List.of("final", "non-sealed"))
                         assertOK(shell, b, p, m);
 
 
@@ -249,10 +249,17 @@ public class SealedCompilationTests extends CompilationTestCase {
     }
 
     public void testSealedInterfaceAndAbstracClasses() {
-        assertFail("compiler.err.sealed.interface.or.abstract.must.have.subtypes",
-                "sealed interface I1 {}");
-        assertFail("compiler.err.sealed.interface.or.abstract.must.have.subtypes",
-                "sealed abstract class AC {}");
+        for (String s : List.of(
+                """
+                sealed interface I {}
+                """,
+                """
+                sealed abstract class AC {}
+                """,
+                """
+                sealed class C {}
+                """))
+            assertFail("compiler.err.sealed.type.must.have.subtypes", s);
     }
 
     public void testEnumsCantBeSealedOrNonSealed() {
@@ -311,6 +318,41 @@ public class SealedCompilationTests extends CompilationTestCase {
             }
             """)) {
             assertFail("compiler.err.type.var.listed.in.permits", s);
+        }
+    }
+
+    public void testRepeatedTypeInPermits() {
+        for (String s : List.of(
+            """
+            sealed class C permits Sub, Sub {}
+
+            final class Sub extends C {}
+            """)) {
+            assertFail("compiler.err.duplicated.type.in.permits", s);
+        }
+    }
+
+    public void testSubtypeDoesntExtendSealed() {
+        for (String s : List.of(
+            """
+            sealed class C permits Sub {}
+
+            final class Sub {}
+            """,
+            """
+            sealed interface I permits Sub {}
+
+            final class Sub {}
+            """,
+            """
+            sealed class C permits Sub1, Sub2 {}
+
+            sealed class Sub1 extends C permits Sub2 {}
+
+            final class Sub2 extends Sub1 {}
+            """
+            )) {
+            assertFail("compiler.err.subtype.listed.in.permits.doesnt.extend.sealed", s);
         }
     }
 }

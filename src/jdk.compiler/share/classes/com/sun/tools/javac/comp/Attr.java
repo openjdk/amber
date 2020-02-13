@@ -5018,18 +5018,37 @@ public class Attr extends JCTree.Visitor {
 
             if (c.isSealed() &&
                     !((ClassType)c.type).isPermittedExplicit &&
-                    ((ClassType)c.type).permitted.isEmpty() &&
-                    (c.isInterface() || c.isAbstract())) {
-                log.error(env.tree, Errors.SealedInterfaceOrAbstractMustHaveSubtypes);
+                    ((ClassType)c.type).permitted.isEmpty()) {
+                log.error(env.tree, Errors.SealedTypeMustHaveSubtypes);
             }
 
             if (c.isSealed() && !((ClassType)c.type).permitted.isEmpty()) {
+                Set<Type> permittedTypes = new HashSet<>();
+                boolean sealedInUnnamed = c.packge().modle == syms.unnamedModule || c.packge().modle == syms.noModule;
                 for (Type subType : ((ClassType)c.type).permitted) {
                     if (subType.getTag() == TYPEVAR) {
-                        log.error(env.tree, Errors.TypeVarListedInPermits);
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.TypeVarListedInPermits);
+                    }
+                    if (permittedTypes.contains(subType)) {
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.DuplicatedTypeInPermits(subType));
+                    } else {
+                        permittedTypes.add(subType);
+                    }
+                    if (sealedInUnnamed) {
+                        if (subType.tsym.packge() != c.packge()) {
+                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                        }
+                    } else if (subType.tsym.packge().modle != c.packge().modle) {
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                    }
+                    if (c.isInterface()) {
+                        if (!types.interfaces(subType).map(t -> t.tsym).contains(c.type.tsym)) {
+                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
+                        }
+                    } else if (((ClassType)subType).supertype_field.tsym != c.type.tsym) {
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
                     }
                 }
-
             }
 
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
