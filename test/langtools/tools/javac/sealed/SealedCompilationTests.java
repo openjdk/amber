@@ -84,7 +84,7 @@ public class SealedCompilationTests extends CompilationTestCase {
             # class Sub implements Sup { }
             """;
         String I2 =
-                """
+            """
             sealed interface Sup # { }
             # class Sub1 implements Sup { }
             # class Sub2 implements Sup { }
@@ -260,6 +260,34 @@ public class SealedCompilationTests extends CompilationTestCase {
                 sealed class C {}
                 """))
             assertFail("compiler.err.sealed.type.must.have.subtypes", s);
+
+        for (String s : List.of(
+                """
+                sealed interface I {}
+
+                non-sealed interface I2 extends I {}
+                """,
+                """
+                sealed interface I {}
+
+                sealed interface I2 extends I {}
+
+                non-sealed interface I3 extends I2 {}
+                """,
+                """
+                sealed interface I permits I2 {}
+
+                non-sealed interface I2 extends I {}
+                """,
+                """
+                sealed interface I permits I2 {}
+
+                sealed interface I2 extends I permits I3 {}
+
+                non-sealed interface I3 extends I2 {}
+                """
+                ))
+            assertOK(s);
     }
 
     public void testEnumsCantBeSealedOrNonSealed() {
