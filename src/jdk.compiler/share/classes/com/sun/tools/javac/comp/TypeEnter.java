@@ -838,7 +838,9 @@ public class TypeEnter implements Completer {
                                         TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null)
                         .collect(List.collector());
                 Set<Type> explicitlySealedSuperTypesInCU = directSuperTypesInSameCU.stream()
-                        .filter(type -> type != tree.sym.type && type.tsym.isSealed()).collect(Collectors.toSet());
+                            .filter(type -> type != tree.sym.type &&
+                                    type.tsym != null &&
+                                    type.tsym.isSealed()).collect(Collectors.toSet());
 
                 boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();
                 if (anySuperInSameCUIsSealed) {
