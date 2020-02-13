@@ -733,6 +733,14 @@ public class TreeInfo {
                 if (that.type != null && that.type.tsym == sym) result = that;
                 else super.visitTypeParameter(that);
             }
+            public void visitIdent(JCIdent that) {
+                if (that.sym == sym) result = that;
+                else super.visitIdent(that);
+            }
+            public void visitSelect(JCFieldAccess that) {
+                if (that.sym == sym) result = that;
+                else super.visitSelect(that);
+            }
         }
         DeclScanner s = new DeclScanner();
         tree.accept(s);
