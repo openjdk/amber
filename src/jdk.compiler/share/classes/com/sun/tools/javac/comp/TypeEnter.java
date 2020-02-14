@@ -948,8 +948,12 @@ public class TypeEnter implements Completer {
             }
 
             for (Type sup : new ArrayList<>(supertypes)) {
-                java.util.List<Type> supers = superTypesInASealedHierarchy((ClassSymbol)sup.tsym, env, inSameCUOnly);
-                if ((supers == null || supers.isEmpty()) && !sup.tsym.isSealed()) {
+                if (sup.tsym instanceof ClassSymbol) {
+                    java.util.List<Type> supers = superTypesInASealedHierarchy((ClassSymbol)sup.tsym, env, inSameCUOnly);
+                    if ((supers == null || supers.isEmpty()) && !sup.tsym.isSealed()) {
+                        supertypes.remove(sup);
+                    }
+                } else {
                     supertypes.remove(sup);
                 }
             }
