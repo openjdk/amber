@@ -23,8 +23,8 @@
 
 /*
  * @test
- * @compile --enable-preview -source ${jdk.version} otherPkg/wrongPackage.java Pkg/Permitted.java Pkg/notPermitted.jcod Pkg/sealedInterface.java
- * @compile --enable-preview -source ${jdk.version} Pkg/sealedInterface.java
+ * @compile Pkg/sealedInterface.jcod Pkg/notPermitted.jcod
+ * @compile --enable-preview -source ${jdk.version} Pkg/Permitted.java otherPkg/wrongPackage.java
  * @run main/othervm --enable-preview SealedUnnamedModuleIntfTest
  */
 

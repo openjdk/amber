@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,6 @@
 // Small class used by SealedModuleTest
 package sealedP2;
 
-public sealed class c2 extends sealedP1.superClass {
+public final class c2 extends sealedP1.superClass {
     public void method2() { }
 }

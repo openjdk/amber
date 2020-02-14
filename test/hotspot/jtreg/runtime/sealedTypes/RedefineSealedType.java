@@ -45,7 +45,10 @@ import jdk.test.lib.process.OutputAnalyzer;
 
 public class RedefineSealedType {
 
-    sealed static class Tester permits java.lang.Class, java.lang.String {};
+    final class A extends Tester { }
+    final class B extends Tester { }
+
+    sealed static class Tester permits A, B {}
 
     static class LoggingTransformer implements ClassFileTransformer {
 

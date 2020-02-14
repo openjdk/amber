@@ -31,19 +31,16 @@ public class sealedTest {
 
     sealed class Sealed1 permits Sub1 {}
 
-    non-sealed class Sub1 extends Sealed1 {}
+    final class Sub1 extends Sealed1 {}
 
     sealed interface SealedI1 permits Sub2 {}
 
-    sealed class Sub2 implements SealedI1 {}
+    final class Sub2 extends Sealed2 implements SealedI1 {}
 
-    sealed class Sealed2 {}
-
-    sealed class Sub3 extends Sealed2 {}
+    sealed class Sealed2 permits Sub2 {}
 
     Sub1 sub1 = new Sub1();
     Sub2 sub2 = new Sub2();
-    Sub3 sub3 = new Sub3();
 
     public static void main(String... args) {
         System.out.println("Basic testing of sealed types");

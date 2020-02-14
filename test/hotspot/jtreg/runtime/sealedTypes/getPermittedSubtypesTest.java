@@ -36,15 +36,15 @@ public class getPermittedSubtypesTest {
 
     sealed class Sealed1 permits Sub1 {}
 
-    sealed class Sub1 extends Sealed1 {}
+    final class Sub1 extends Sealed1 implements SealedI1 {}
 
     sealed interface SealedI1 permits notSealed, Sub1, Extender {}
 
     non-sealed interface Extender extends SealedI1 { }
 
-    non-sealed class notSealed implements SealedI1 {}
+    final class finalC implements Extender {}
 
-    sealed class noPermits {}
+    final class notSealed implements SealedI1 {}
 
     final class Final4 {}
 
@@ -105,7 +105,6 @@ public class getPermittedSubtypesTest {
                                                      "LgetPermittedSubtypesTest$Sub1;",
                                                      "LgetPermittedSubtypesTest$Extender;"});
         testSealedInfo(Sealed1.class, new String[] {"LgetPermittedSubtypesTest$Sub1;"});
-        testSealedInfo(noPermits.class, new String[] { });
         testSealedInfo(Final4.class, new String[] { });
         testSealedInfo(notSealed.class, new String[] { });
 
