@@ -23,7 +23,8 @@
 
 /*
  * @test
- * @compile --enable-preview -source ${jdk.version} asteroids/Pluto.java planets/Neptune.java planets/Mars.jcod planets/outerPlanets.java
+ * @compile planets/outerPlanets.jcod planets/Mars.jcod
+ * @compile --enable-preview -source ${jdk.version} planets/Neptune.java asteroids/Pluto.java
  * @run main/othervm --enable-preview SealedUnnamedModuleTest
  */
 

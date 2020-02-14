@@ -34,7 +34,7 @@ public class overrideSealedTest {
         public String draw() { return "rectangle"; }
     }
 
-    sealed class Square extends Rectangle {
+    final class Square extends Rectangle {
         public String draw() { return "square"; }
     }
 
