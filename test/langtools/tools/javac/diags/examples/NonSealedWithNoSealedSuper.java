@@ -21,18 +21,9 @@
  * questions.
  */
 
-// key: compiler.err.cant.inherit.from.sealed
-// key: compiler.err.non.sealed.sealed.or.final.expected
+// key: compiler.err.non.sealed.with.no.sealed.supertype
 // options: --enable-preview -source ${jdk.version}
 
-sealed interface SealedInterface permits Sub1 {
-    void m();
-}
+class C {}
 
-class Sub1 implements SealedInterface {
-    public void m() { }
-}
-
-class CantInheritFromSealed implements SealedInterface {
-    public void m() { }
-}
+non-sealed class Sub extends C {}
