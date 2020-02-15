@@ -692,6 +692,11 @@ section.description {
 .verticalSeparator {
     padding: 0 5px;
 }
+span.permitsNote {
+    color: grey;
+    font-family:'DejaVu Serif', Georgia, "Times New Roman", Times, serif;
+    font-style: italic
+}
 /*
  * Indicator icon for external links.
  */

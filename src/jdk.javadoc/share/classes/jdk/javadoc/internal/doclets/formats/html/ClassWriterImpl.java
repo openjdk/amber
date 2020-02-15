@@ -268,13 +268,13 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                         type));
                 pre.add(link);
             }
-
+            if (linkablePermits.size() < permits.size()) {
+                Content c = new StringContent(resources.getText("doclet.not.exhaustive"));
+                pre.add(" ");
+                pre.add(HtmlTree.SPAN(HtmlStyle.permitsNote, c));
+            }
         }
         classInfoTree.add(pre);
-        // TODO: is this the right place to document this, as compared to an "all permitted subtypes" list
-        if (linkablePermits.size() < permits.size()) {
-            classInfoTree.add(" (not exhaustive)"); // FIXME: use <span> and L10N
-        }
     }
 
     @SuppressWarnings("preview")
