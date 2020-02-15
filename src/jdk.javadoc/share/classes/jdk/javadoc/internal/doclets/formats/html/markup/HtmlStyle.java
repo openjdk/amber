@@ -112,6 +112,7 @@ public enum HtmlStyle {
     packagesSummary,
     packageUses,
     paramLabel,
+    permitsNote,
     propertyDetails,
     propertySummary,
     providesSummary,

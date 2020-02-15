@@ -219,7 +219,8 @@ public class TestSealedTypes extends JavadocTester {
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
-                + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
+                + "<a href=\"C.html\" title=\"class in p\">C</a> "
+		+ "<span class=\"permitsNote\">(not exhaustive)</span></pre>");
     }
 
     // @Test // javac incorrectly rejects the source
@@ -267,7 +268,8 @@ public class TestSealedTypes extends JavadocTester {
                 "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
-                + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
+                + "<a href=\"C.html\" title=\"class in p\">C</a> "
+		+ "<span class=\"permitsNote\">(not exhaustive)</span></pre>");
     }
 
     @Test
