@@ -21,9 +21,4 @@
  * questions.
  */
 
-public sealed class Host permits classOne,classTwo,classThree,classFour {
-    public static String getID() { return "HostABCD/redef/Host.java"; }
-    public int m() {
-        return 2; // redefined class
-    }
-}
+final public class classTwo extends Host { }

@@ -33,7 +33,7 @@
  *          java.instrument
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
- * @compile --enable-preview --source ${jdk.version} Host/Host.java
+ * @compile --enable-preview --source ${jdk.version} Host/Host.java classOne.java classTwo.java classThree.java classFour.java
  * @compile --enable-preview --source ${jdk.version} TestPermittedSubtypesAttr.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubtypesAttr Host
  * @compile --enable-preview --source ${jdk.version} HostA/Host.java
@@ -47,14 +47,13 @@
 /* Test Description
 
 The basic test class is called Host and we have variants that have zero or more
-permitted subtypes java.lang.Class, java.lang.Object, java.lang.String, and
-java.lang.System.  Each variant of Host is defined in source code in its own
-directory i.e.
+permitted subtypes classOne, classTwo, classThree, and classFour. Each variant
+of Host is defined in source code in its own directory i.e.
 
 Host/Host.java defines zero permitted classes
-Sealed type HostA/Host.java permits java.lang.Class.
-Sealed HostAB/Host.java permits java.lang.Class and java.lang.Object (in that order)
-Sealed HostABC/Host.java permits java.lang.Class, java.lang.Object, and java.lang.String (in that order)
+Sealed type HostA/Host.java permits classOne
+Sealed HostAB/Host.java permits classOne and classTwo (in that order)
+Sealed HostABC/Host.java permits classOne, classTwo, and classThree (in that order)
 etc.
 
 Each Host class has the form:
@@ -266,6 +265,7 @@ public class TestPermittedSubtypesAttr {
         CompilerUtils.compile(src.toPath(),
                               dst.toPath(),
                               false /* don't recurse */,
+                              "-classpath", DEST,
                               "--enable-preview",
                               "--source", VERSION);
     }
