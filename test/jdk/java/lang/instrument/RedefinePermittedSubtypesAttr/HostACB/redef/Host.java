@@ -21,7 +21,7 @@
  * questions.
  */
 
-public sealed class Host permits java.lang.Class,java.lang.String,java.lang.Object {
+public sealed class Host permits classOne,classThree,classTwo {
     public static String getID() { return "HostACB/redef/Host.java"; }
     public int m() {
         return 2; // redefined class
