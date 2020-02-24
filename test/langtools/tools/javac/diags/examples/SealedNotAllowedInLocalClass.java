@@ -21,11 +21,13 @@
  * questions.
  */
 
-// key: compiler.err.duplicated.type.in.permits
+// key: compiler.err.sealed.or.non.sealed.local.classes.not.allowed
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
-sealed class Sealed permits Sub, Sub {}
-
-final class Sub extends Sealed {}
+class Outer {
+    void m() {
+        sealed class S { }
+    }
+}
