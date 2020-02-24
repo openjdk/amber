@@ -21,11 +21,14 @@
  * questions.
  */
 
-// key: compiler.err.duplicated.type.in.permits
+// key: compiler.err.local.classes.cant.extend.sealed
+// key: compiler.err.sealed.type.must.have.subtypes
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
-sealed class Sealed permits Sub, Sub {}
-
-final class Sub extends Sealed {}
+sealed class C {
+    void m() {
+        final class D extends C { }
+    }
+}

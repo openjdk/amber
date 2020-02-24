@@ -22,6 +22,8 @@
  */
 
 // key: compiler.err.subtype.listed.in.permits.doesnt.extend.sealed
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 sealed class Sealed permits Sub {}

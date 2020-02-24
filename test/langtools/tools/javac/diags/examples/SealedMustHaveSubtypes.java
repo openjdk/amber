@@ -22,6 +22,8 @@
  */
 
 // key: compiler.err.sealed.type.must.have.subtypes
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 sealed class Sealed {}

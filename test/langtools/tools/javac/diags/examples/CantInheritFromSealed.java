@@ -23,6 +23,8 @@
 
 // key: compiler.err.cant.inherit.from.sealed
 // key: compiler.err.non.sealed.sealed.or.final.expected
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
 
 sealed interface SealedInterface permits Sub1 {
