@@ -849,7 +849,7 @@ public class TypeEnter implements Completer {
                         for (Type supertype : potentiallySealedSuperTypes) {
                             if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
                                 if (!((ClassType)supertype.tsym.type).isPermittedExplicit) {
-                                    if (tree.sym.isAnonymous()) {
+                                    if (tree.sym.isAnonymous() && !tree.sym.isEnum()) {
                                         log.error(findTreeReferringSym(tree, supertype.tsym), Errors.CantInheritFromSealed(supertype.tsym));
                                     } else {
                                         ((ClassType)supertype).permitted = ((ClassType)supertype).permitted.append(tree.sym.type);
@@ -874,7 +874,7 @@ public class TypeEnter implements Completer {
                     log.error(tree, Errors.NonSealedWithNoSealedSupertype);
                 }
 
-                if (hasSuperTypesInSealedHierarchy && tree.sym.isLocal()) {
+                if (hasSuperTypesInSealedHierarchy && tree.sym.isLocal() && !tree.sym.isEnum()) {
                     log.error(tree, Errors.LocalClassesCantExtendSealed);
                 }
 

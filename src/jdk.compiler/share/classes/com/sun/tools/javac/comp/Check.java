@@ -1336,7 +1336,7 @@ public class Check {
         JCClassDecl cdef = (JCClassDecl) tree;
         for (JCTree defs: cdef.defs) {
             defs.accept(sts);
-            if (sts.specialized) return 0;
+            if (sts.specialized) return SEALED;
         }
         return FINAL;
     }
