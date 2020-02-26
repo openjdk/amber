@@ -5019,6 +5019,7 @@ public class Attr extends JCTree.Visitor {
             Env<AttrContext> env = typeEnvs.get(c);
 
             if (c.isSealed() &&
+                    !c.isEnum() &&
                     !((ClassType)c.type).isPermittedExplicit &&
                     ((ClassType)c.type).permitted.isEmpty()) {
                 log.error(env.tree, Errors.SealedTypeMustHaveSubtypes);
