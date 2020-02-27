@@ -186,6 +186,27 @@ public class SealedCompilationTests extends CompilationTestCase {
                 "}");
     }
 
+    public void testTypeInPermitsIsSameClassOrSuper() {
+        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+                """
+                sealed class Sealed permits Sealed {}
+                """
+                );
+        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+                """
+                interface I {}
+                sealed class Sealed implements I permits I {}
+                """
+                );
+        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+                """
+                interface I {}
+                interface I2 extends I {}
+                sealed class Sealed implements I2 permits I {}
+                """
+                );
+    }
+
     /* It is a compile-time error if a class declaration has more than one of the class modifiers
      * sealed, non-sealed and final
      */
