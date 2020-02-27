@@ -5044,12 +5044,18 @@ public class Attr extends JCTree.Visitor {
                     } else if (subType.tsym.packge().modle != c.packge().modle) {
                         log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
                     }
-                    if (c.isInterface()) {
+                    if (subType.tsym == c.type.tsym || types.isSuperType(subType, c.type)) {
+                        log.error(TreeInfo.declarationFor(subType.tsym, ((JCClassDecl)env.tree).permitting),
+                                Errors.TypeListedInPermitsIsSameClassOrSupertype(subType.tsym == c.type.tsym ?
+                                        Fragments.SameClass : Fragments.Supertype));
+                    } else if (c.isInterface()) {
                         if (!types.interfaces(subType).map(t -> t.tsym).contains(c.type.tsym)) {
-                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
+                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree),
+                                    Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
                         }
                     } else if (((ClassType)subType).supertype_field.tsym != c.type.tsym) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree),
+                                Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
                     }
                 }
             }

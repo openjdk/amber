@@ -747,6 +747,10 @@ public class TreeInfo {
         return s.result;
     }
 
+    public static JCTree declarationFor(final Symbol sym, final List<? extends JCTree> trees) {
+        return trees.stream().map(t -> TreeInfo.declarationFor(sym, t)).filter(t -> t != null).findFirst().get();
+    }
+
     public static Env<AttrContext> scopeFor(JCTree node, JCCompilationUnit unit) {
         return scopeFor(pathFor(node, unit));
     }
