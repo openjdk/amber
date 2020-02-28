@@ -844,58 +844,27 @@ public class TypeEnter implements Completer {
 
                 boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();
                 if (anySuperInSameCUIsSealed) {
-                    java.util.List<Type> potentiallySealedSuperTypes = superTypesInASealedHierarchy(tree.sym, env, true);
+                    java.util.Set<Type> potentiallySealedSuperTypes = superTypesInASealedHierarchy(tree.sym, env, true);
                     if (!potentiallySealedSuperTypes.isEmpty()) {
                         for (Type supertype : potentiallySealedSuperTypes) {
                             if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
                                 if (!((ClassType)supertype.tsym.type).isPermittedExplicit) {
-                                    if (tree.sym.isAnonymous() && !tree.sym.isEnum()) {
-                                        log.error(findTreeReferringSym(tree, supertype.tsym), Errors.CantInheritFromSealed(supertype.tsym));
-                                    } else {
+                                    if (!tree.sym.isAnonymous() || tree.sym.isEnum()) {
                                         ((ClassType)supertype).permitted = ((ClassType)supertype).permitted.append(tree.sym.type);
                                         ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
                                     }
-                                } else {
-                                    log.error(findTreeReferringSym(tree, supertype.tsym), Errors.CantInheritFromSealed(supertype.tsym));
                                 }
                             } else {
                                 ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
                             }
                         }
                     }
-
-                    if (!isNonSealed(tree.sym) && !isFinal(tree.sym) && !isSealed(tree.sym)) {
-                        log.error(tree, Errors.NonSealedSealedOrFinalExpected);
-                    }
                 }
 
-                boolean hasSuperTypesInSealedHierarchy = !superTypesInASealedHierarchy(tree.sym, env, false).isEmpty();
-                if ((tree.sym.flags_field & Flags.NON_SEALED) != 0 && !hasSuperTypesInSealedHierarchy) {
-                    log.error(tree, Errors.NonSealedWithNoSealedSupertype);
-                }
-
-                if (hasSuperTypesInSealedHierarchy && tree.sym.isLocal() && !tree.sym.isEnum()) {
-                    log.error(tree, Errors.LocalClassesCantExtendSealed);
-                }
-
-                if (hasSuperTypesInSealedHierarchy && !anySuperInSameCUIsSealed) {
-                    // that supertype most have a permits clause allowing this class to extend it
-                    List<Type> closureOutsideOfSameCU = types.closure(tree.sym.type).stream()
-                            .filter(supertype ->
-                                    TreeInfo.declarationFor(supertype.tsym, env.toplevel) == null ||
-                                            TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) == null)
-                            .collect(List.collector());
-                    Set<Type> explicitlySealedSuperTypesOutsideOfCU = closureOutsideOfSameCU.stream()
-                            .filter(type -> type != tree.sym.type && type.tsym.isSealed()).collect(Collectors.toSet());
-                    for (Type supertype : explicitlySealedSuperTypesOutsideOfCU) {
-                        if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
-                            log.error(tree, Errors.CantInheritFromSealed(supertype.tsym));
-                        }
-                    }
-
-                    if (!isNonSealed(tree.sym) && !isFinal(tree.sym) && !isSealed(tree.sym)) {
-                        log.error(tree, Errors.NonSealedSealedOrFinalExpected);
-                    }
+                java.util.Set<Type> sealedSupers = superTypesInASealedHierarchy(tree.sym, env, false);
+                boolean hasSuperTypesInSealedHierarchy = !sealedSupers.isEmpty();
+                if (hasSuperTypesInSealedHierarchy) {
+                    ((ClassType)tree.sym.type).sealedSupers = sealedSupers;
                 }
             }
         }
@@ -921,14 +890,14 @@ public class TypeEnter implements Completer {
         boolean isFinal(Symbol sym) { return sym != null && (sym.flags_field & FINAL) != 0; }
         boolean isSealed(Symbol sym) { return sym != null && (sym.flags_field & SEALED) != 0; }
 
-        java.util.List<Type> superTypesInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
+        java.util.Set<Type> superTypesInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
             if (csym == null) {
-                return null;
+                return Set.of();
             }
 
             Type supertype = csym.type != null ?
                     types.supertype(csym.type) : null;
-            java.util.List<Type> supertypes = new ArrayList<>();
+            java.util.Set<Type> supertypes = new HashSet<>();
 
             if (supertype != null &&
                     supertype.tsym != null &&
@@ -949,7 +918,7 @@ public class TypeEnter implements Completer {
 
             for (Type sup : new ArrayList<>(supertypes)) {
                 if (sup.tsym instanceof ClassSymbol) {
-                    java.util.List<Type> supers = superTypesInASealedHierarchy((ClassSymbol)sup.tsym, env, inSameCUOnly);
+                    java.util.Set<Type> supers = superTypesInASealedHierarchy((ClassSymbol)sup.tsym, env, inSameCUOnly);
                     if ((supers == null || supers.isEmpty()) && !sup.tsym.isSealed()) {
                         supertypes.remove(sup);
                     }

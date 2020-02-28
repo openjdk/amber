@@ -27,6 +27,7 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -5032,6 +5033,9 @@ public class Attr extends JCTree.Visitor {
                     if (subType.getTag() == TYPEVAR) {
                         log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.TypeVarListedInPermits);
                     }
+                    if (subType.tsym.isAnonymous() && !c.isEnum()) {
+                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                    }
                     if (permittedTypes.contains(subType)) {
                         log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.DuplicatedTypeInPermits(subType));
                     } else {
@@ -5058,6 +5062,49 @@ public class Attr extends JCTree.Visitor {
                                 Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
                     }
                 }
+            }
+
+            ClassType ct = (ClassType)c.type;
+
+            if (!ct.sealedSupers.isEmpty() && c.isLocal() && !c.isEnum()) {
+                log.error(TreeInfo.declarationFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
+            }
+
+            if (!ct.sealedSupers.isEmpty()) {
+                for (Type supertype : ct.sealedSupers) {
+                    if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                        if (((ClassType)supertype.tsym.type).isPermittedExplicit) {
+                            log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertype.tsym));
+                        }
+                    }
+                }
+                if (!isNonSealed(c) && !isFinal(c) && !isSealed(c)) {
+                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
+                }
+
+                if (!ct.hasSealedSuperInSameCU) {
+                    // that supertype most have a permits clause allowing this class to extend it
+                    List<Type> closureOutsideOfSameCU = types.closure(c.type).stream()
+                            .filter(supertype ->
+                                    TreeInfo.declarationFor(supertype.tsym, env.toplevel) == null ||
+                                            TreeInfo.declarationFor(c.outermostClass(), env.toplevel) == null)
+                            .collect(List.collector());
+                    Set<Type> explicitlySealedSuperTypesOutsideOfCU = closureOutsideOfSameCU.stream()
+                            .filter(type -> type != c.type && type.tsym.isSealed()).collect(Collectors.toSet());
+                    for (Type supertype : explicitlySealedSuperTypesOutsideOfCU) {
+                        if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                            log.error(TreeInfo.declarationFor(c, env.tree), Errors.CantInheritFromSealed(supertype.tsym));
+                        }
+                    }
+
+                    if (!isNonSealed(c) && !isFinal(c) && !isSealed(c)) {
+                        log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
+                    }
+                }
+            }
+
+            if ((c.flags_field & Flags.NON_SEALED) != 0 && ct.sealedSupers.isEmpty()) {
+                log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
             }
 
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
@@ -5109,6 +5156,10 @@ public class Attr extends JCTree.Visitor {
 
         }
     }
+
+    boolean isNonSealed(Symbol sym) { return sym != null && (sym.flags_field & NON_SEALED) != 0; }
+    boolean isFinal(Symbol sym) { return sym != null && (sym.flags_field & FINAL) != 0; }
+    boolean isSealed(Symbol sym) { return sym != null && (sym.flags_field & SEALED) != 0; }
 
     public void visitImport(JCImport tree) {
         // nothing to do
