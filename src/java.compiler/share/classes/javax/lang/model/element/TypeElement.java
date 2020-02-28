@@ -217,14 +217,13 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      * @implSpec The default implementations of this method returns an
      * empty and unmodifiable list.
      *
-     * @return the permitted subtypes, or an empty list
-     * if there are none
+     * @return the permitted subtypes, or an empty list if there are none
      *
-     * @since amber
+     * @since 15
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
                                  essentialAPI=false)
-    @SuppressWarnings("preview")
+    //@SuppressWarnings("preview")
     default List<? extends TypeMirror> getPermittedSubtypes() {
         return List.of();
     }
