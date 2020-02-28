@@ -229,13 +229,25 @@ public class SealedCompilationTests extends CompilationTestCase {
 
     public void testAnonymousAndLambdaCantExtendSealed() {
         for (String s : List.of(
-                "sealed interface I1 extends Runnable {\n" +
-                "    public static I1 i = () -> {};\n" +
-                "}",
-                "sealed interface I2 extends Runnable {\n" +
-                "    public static void foo() { new I2() { public void run() { } }; }\n" +
-                "}"))
+                """
+                sealed interface I1 extends Runnable {
+                    public static I1 i = () -> {};
+                }
+                """
+                ))
             assertFail("compiler.err.cant.inherit.from.sealed", s);
+
+        for (String s : List.of(
+                """
+                sealed interface I2 extends Runnable {
+                    public static void foo() { new I2() { public void run() { } }; }
+                }
+                final class C implements I2 {
+                    @Override public void run() {}
+                }
+                """
+                ))
+                assertFail("compiler.err.local.classes.cant.extend.sealed", s);
     }
 
     public void testNoLocalSealedClasses() {
