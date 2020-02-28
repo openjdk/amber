@@ -59,11 +59,36 @@ public enum Modifier {
      */
      DEFAULT,
     /** The modifier {@code static} */          STATIC,
+
     /**
+     * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * The modifier {@code sealed}
-     * @since amber
+     * @since 15
      */
-    SEALED, // Not sure this the best order; certainly after public/private.
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+                                             essentialAPI=false)
+    SEALED,
+
+    /**
+     * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * The modifier {@code non-sealed}
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+            essentialAPI=false)
+    NON_SEALED,
     /** The modifier {@code final} */           FINAL,
     /** The modifier {@code transient} */       TRANSIENT,
     /** The modifier {@code volatile} */        VOLATILE,

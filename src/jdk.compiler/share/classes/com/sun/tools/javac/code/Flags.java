@@ -405,25 +405,25 @@ public class Flags {
         LocalVarFlags               = FINAL | PARAMETER,
         ReceiverParamFlags          = PARAMETER;
 
-
+    @SuppressWarnings("preview")
     public static Set<Modifier> asModifierSet(long flags) {
         Set<Modifier> modifiers = modifierSets.get(flags);
         if (modifiers == null) {
             modifiers = java.util.EnumSet.noneOf(Modifier.class);
-            if (0 != (flags & PUBLIC))    modifiers.add(Modifier.PUBLIC);
-            if (0 != (flags & PROTECTED)) modifiers.add(Modifier.PROTECTED);
-            if (0 != (flags & PRIVATE))   modifiers.add(Modifier.PRIVATE);
-            if (0 != (flags & ABSTRACT))  modifiers.add(Modifier.ABSTRACT);
-            if (0 != (flags & STATIC))    modifiers.add(Modifier.STATIC);
-            if (0 != (flags & SEALED))    modifiers.add(Modifier.SEALED);
-            if (0 != (flags & FINAL))     modifiers.add(Modifier.FINAL);
-            if (0 != (flags & TRANSIENT)) modifiers.add(Modifier.TRANSIENT);
-            if (0 != (flags & VOLATILE))  modifiers.add(Modifier.VOLATILE);
-            if (0 != (flags & SYNCHRONIZED))
-                                          modifiers.add(Modifier.SYNCHRONIZED);
-            if (0 != (flags & NATIVE))    modifiers.add(Modifier.NATIVE);
-            if (0 != (flags & STRICTFP))  modifiers.add(Modifier.STRICTFP);
-            if (0 != (flags & DEFAULT))   modifiers.add(Modifier.DEFAULT);
+            if (0 != (flags & PUBLIC))        modifiers.add(Modifier.PUBLIC);
+            if (0 != (flags & PROTECTED))     modifiers.add(Modifier.PROTECTED);
+            if (0 != (flags & PRIVATE))       modifiers.add(Modifier.PRIVATE);
+            if (0 != (flags & ABSTRACT))      modifiers.add(Modifier.ABSTRACT);
+            if (0 != (flags & STATIC))        modifiers.add(Modifier.STATIC);
+            if (0 != (flags & SEALED))        modifiers.add(Modifier.SEALED);
+            if (0 != (flags & NON_SEALED))    modifiers.add(Modifier.NON_SEALED);
+            if (0 != (flags & FINAL))         modifiers.add(Modifier.FINAL);
+            if (0 != (flags & TRANSIENT))     modifiers.add(Modifier.TRANSIENT);
+            if (0 != (flags & VOLATILE))      modifiers.add(Modifier.VOLATILE);
+            if (0 != (flags & SYNCHRONIZED))  modifiers.add(Modifier.SYNCHRONIZED);
+            if (0 != (flags & NATIVE))        modifiers.add(Modifier.NATIVE);
+            if (0 != (flags & STRICTFP))      modifiers.add(Modifier.STRICTFP);
+            if (0 != (flags & DEFAULT))       modifiers.add(Modifier.DEFAULT);
             modifiers = Collections.unmodifiableSet(modifiers);
             modifierSets.put(flags, modifiers);
         }

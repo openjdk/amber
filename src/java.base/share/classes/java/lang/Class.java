@@ -4226,13 +4226,25 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
      * Returns an array containing {@code ClassDesc} objects representing all the
-     * permitted subtypes of this class if it is sealed. Returns an empty array if this
-     * class is not sealed.
+     * permitted subtypes of this {@linkplain Class} if it is sealed. Returns an empty array if this
+     * {@linkplain Class} is not sealed.
+     *
      * @return an array of class descriptors of all the permitted subtypes of this class
      * @throws IllegalArgumentException if a class descriptor is not in the correct format
-     * @since 14
+     *
+     * @jls 8.1 Class Declarations
+     * @jls 9.1 Interface Declarations
+     * @since 15
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
     public ClassDesc[] getPermittedSubtypes() {
         String[] descriptors = getPermittedSubtypes0();
         if (descriptors == null || descriptors.length == 0) {
@@ -4248,10 +4260,23 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * Returns true if this class or interface is sealed.
-     * @return returns true if the class or interface is sealed
-     * @since 14
+     * * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns true if this {@linkplain Class} is sealed.
+     *
+     * @return returns true if this class is sealed
+     *
+     * @jls 8.1 Class Declarations
+     * @jls 9.1 Interface Declarations
+     * @since 15
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
+    @SuppressWarnings("preview")
     public boolean isSealed() {
         return getPermittedSubtypes().length != 0;
     }
