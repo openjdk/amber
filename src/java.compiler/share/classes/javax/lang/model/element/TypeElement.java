@@ -223,7 +223,6 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
                                  essentialAPI=false)
-    //@SuppressWarnings("preview")
     default List<? extends TypeMirror> getPermittedSubtypes() {
         return List.of();
     }

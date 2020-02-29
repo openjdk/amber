@@ -679,8 +679,11 @@ public interface Elements {
      *
      * @param type the type element being examined
      * @return {@code true} if the type element is sealed, {@code false} otherwise
-     * @since amber
+     *
+     * @since 15
      */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+            essentialAPI=false)
     default boolean isSealed(TypeElement type) {
         return false;
     }
