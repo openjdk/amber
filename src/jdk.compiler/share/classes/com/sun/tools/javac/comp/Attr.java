@@ -171,7 +171,6 @@ public class Attr extends JCTree.Visitor {
                 (!preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF) || preview.isEnabled());
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
-        allowStaticMembersInInners = options.isSet("allowStaticMembersInInners");
 
         statInfo = new ResultInfo(KindSelector.NIL, Type.noType);
         varAssignmentInfo = new ResultInfo(KindSelector.ASG, Type.noType);
@@ -216,11 +215,6 @@ public class Attr extends JCTree.Visitor {
      * Switch: name of source level; used for error reporting.
      */
     String sourceName;
-
-    /** Switch: allow static members in inner classes
-     *
-     */
-    boolean allowStaticMembersInInners;
 
     /** Check kind and type of given tree against protokind and prototype.
      *  If check succeeds, store type in tree and return it.
@@ -5078,7 +5072,7 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
                 }
-                if (!isNonSealed(c) && !isFinal(c) && !isSealed(c)) {
+                if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
                     log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
                 }
 
@@ -5097,7 +5091,7 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
 
-                    if (!isNonSealed(c) && !isFinal(c) && !isSealed(c)) {
+                    if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
                         log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
                     }
                 }
@@ -5156,10 +5150,6 @@ public class Attr extends JCTree.Visitor {
 
         }
     }
-
-    boolean isNonSealed(Symbol sym) { return sym != null && (sym.flags_field & NON_SEALED) != 0; }
-    boolean isFinal(Symbol sym) { return sym != null && (sym.flags_field & FINAL) != 0; }
-    boolean isSealed(Symbol sym) { return sym != null && (sym.flags_field & SEALED) != 0; }
 
     public void visitImport(JCImport tree) {
         // nothing to do
@@ -5256,19 +5246,17 @@ public class Attr extends JCTree.Visitor {
         for (List<JCTree> l = tree.defs; l.nonEmpty(); l = l.tail) {
             // Attribute declaration
             attribStat(l.head, env);
-            if (!allowStaticMembersInInners) {
-                // Check that declarations in inner classes are not static (JLS 8.1.2)
-                // Make an exception for static constants.
-                if (c.owner.kind != PCK &&
-                        ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
-                        (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
-                    Symbol sym = null;
-                    if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
-                    if (sym == null ||
-                            sym.kind != VAR ||
-                            ((VarSymbol) sym).getConstValue() == null)
-                        log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
-                }
+            // Check that declarations in inner classes are not static (JLS 8.1.2)
+            // Make an exception for static constants.
+            if (c.owner.kind != PCK &&
+                    ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
+                    (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
+                Symbol sym = null;
+                if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
+                if (sym == null ||
+                        sym.kind != VAR ||
+                        ((VarSymbol) sym).getConstValue() == null)
+                    log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
             }
         }
 

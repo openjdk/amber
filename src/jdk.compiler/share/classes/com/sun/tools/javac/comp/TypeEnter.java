@@ -886,10 +886,6 @@ public class TypeEnter implements Completer {
                     TreeInfo.declarationFor(sym2.outermostClass(), env.toplevel) != null;
         }
 
-        boolean isNonSealed(Symbol sym) { return sym != null && (sym.flags_field & NON_SEALED) != 0; }
-        boolean isFinal(Symbol sym) { return sym != null && (sym.flags_field & FINAL) != 0; }
-        boolean isSealed(Symbol sym) { return sym != null && (sym.flags_field & SEALED) != 0; }
-
         java.util.Set<Type> superTypesInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
             if (csym == null) {
                 return Set.of();
@@ -902,14 +898,15 @@ public class TypeEnter implements Completer {
             if (supertype != null &&
                     supertype.tsym != null &&
                     supertype != syms.objectType &&
-                    !isNonSealed(supertype.tsym) &&
+                    supertype.tsym != null &&
+                    !supertype.tsym.isNonSealed() &&
                     (inSameCUOnly && areInSameCU(csym, supertype.tsym, env) || !inSameCUOnly)) {
                 supertypes.add(supertype);
             }
 
             if (csym.getInterfaces() != null) {
                 for (Type intf : csym.getInterfaces()) {
-                    if (intf != null && intf.tsym != null && !isNonSealed(intf.tsym) &&
+                    if (intf != null && intf.tsym != null && intf.tsym != null && !intf.tsym.isNonSealed() &&
                             (inSameCUOnly && areInSameCU(csym, intf.tsym, env) || !inSameCUOnly)) {
                         supertypes.add(intf);
                     }

@@ -95,13 +95,15 @@ public interface ClassTree extends StatementTree {
      *           features of the Java language.}
      *
      * Returns the subtypes permitted by this type declaration.
+     *
      * @implSpec this implementation returns an empty list
+     *
      * @return the subtypes
-     * @since amber
+     *
+     * @since 15
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
                                              essentialAPI=false)
-    @SuppressWarnings("preview")
     default List<? extends Tree> getPermitsClause() {
         return Collections.emptyList();
     }
