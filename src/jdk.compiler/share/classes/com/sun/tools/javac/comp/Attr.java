@@ -1207,6 +1207,26 @@ public class Attr extends JCTree.Visitor {
         }
     }
 
+        /** Check that given application node appears as first statement
+         *  in a constructor call.
+         *  @param tree          The application node
+         *  @param enclMethod    The enclosing method of the application.
+         *  @param error         Should an error be issued?
+         */
+        boolean checkFirstConstructorStat(JCMethodInvocation tree, JCMethodDecl enclMethod, boolean error) {
+            if (enclMethod != null && enclMethod.name == names.init) {
+                JCBlock body = enclMethod.body;
+                if (body.stats.head.hasTag(EXEC) &&
+                    ((JCExpressionStatement) body.stats.head).expr == tree)
+                    return true;
+            }
+            if (error) {
+                log.error(tree.pos(),
+                        Errors.CallMustBeFirstStmtInCtor(TreeInfo.name(tree.meth)));
+            }
+            return false;
+        }
+
     private int numberOfCallsToThisSuper(List<JCStatement> stats) {
         return (int)stats.stream().filter(s -> TreeInfo.isSelfCall(s)).count();
     }
