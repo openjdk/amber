@@ -95,10 +95,8 @@ public class TransPatterns extends TreeTranslator {
     private final Log log;
     private final ConstFold constFold;
     private final Names names;
-    private final Resolve rs;
     private final Target target;
     private TreeMaker make;
-    private Env<AttrContext> env;
 
     BindingContext bindingContext = new BindingContext() {
         @Override
@@ -149,7 +147,6 @@ public class TransPatterns extends TreeTranslator {
         log = Log.instance(context);
         constFold = ConstFold.instance(context);
         names = Names.instance(context);
-        rs = Resolve.instance(context);
         target = Target.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
     }
@@ -232,8 +229,6 @@ public class TransPatterns extends TreeTranslator {
             }
             Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
             return test != null ? test : make.Literal(true);
-        } else if (patt.hasTag(Tag.ANYPATTERN)) {
-            return make.Literal(true);
         } else {
             throw new IllegalStateException();
         }
@@ -403,12 +398,10 @@ public class TransPatterns extends TreeTranslator {
     public JCTree translateTopLevelClass(Env<AttrContext> env, JCTree cdef, TreeMaker make) {
         try {
             this.make = make;
-            this.env = env;
             translate(cdef);
         } finally {
             // note that recursive invocations of this method fail hard
             this.make = null;
-            this.env = null;
         }
 
         return cdef;

@@ -41,7 +41,6 @@ import com.sun.tools.javac.tree.JCTree.*;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
-import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCPattern;
 import com.sun.tools.javac.util.List;
@@ -465,12 +464,6 @@ public class TreeMaker implements JCTree.Factory {
 
     public JCInstanceOf TypeTest(JCExpression expr, JCTree clazz) {
         JCInstanceOf tree = new JCInstanceOf(expr, clazz);
-        tree.pos = pos;
-        return tree;
-    }
-
-    public JCAnyPattern AnyPattern() {
-        JCAnyPattern tree = new JCAnyPattern();
         tree.pos = pos;
         return tree;
     }

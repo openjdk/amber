@@ -219,11 +219,6 @@ public interface Tree {
          */
         PARENTHESIZED(ParenthesizedTree.class),
 
-         /**
-         * Used for instances of {@link AnyPatternTree}.
-         */
-        ANY_PATTERN(AnyPatternTree.class),
-
         /**
          * {@preview Associated with pattern matching for instanceof, a preview feature of
          *           the Java language.

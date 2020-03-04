@@ -25,11 +25,8 @@
 
 package com.sun.tools.javac.comp;
 
-import sun.invoke.util.BytecodeName;
-
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -80,7 +77,6 @@ import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /** This is the main context-dependent analysis phase in GJC. It
  *  encompasses name resolution, type checking and constant folding as
@@ -123,7 +119,6 @@ public class Attr extends JCTree.Visitor {
     final Dependencies dependencies;
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
-    final ClassReader reader;
     final MatchBindingsComputer matchBindingsComputer;
 
     public static Attr instance(Context context) {
@@ -161,7 +156,6 @@ public class Attr extends JCTree.Visitor {
         typeEnvs = TypeEnvs.instance(context);
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
-        reader = ClassReader.instance(context);
         matchBindingsComputer = MatchBindingsComputer.instance(context);
 
         Options options = Options.instance(context);
@@ -3921,12 +3915,6 @@ public class Attr extends JCTree.Visitor {
         chk.validate(typeTree, env, false);
         chk.checkCastable(tree.expr.pos(), exprtype, clazztype);
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
-    }
-
-    @Override
-    public void visitAnyPattern(JCAnyPattern tree) {
-        tree.type = resultInfo.pt;
-        result = tree.type;
     }
 
     public void visitBindingPattern(JCBindingPattern tree) {

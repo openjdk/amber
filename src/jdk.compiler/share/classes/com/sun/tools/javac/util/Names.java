@@ -201,7 +201,6 @@ public class Names {
     // record related
     // members of java.lang.runtime.ObjectMethods
     public final Name bootstrap;
-    public final Name ofLazyProjection;
 
     public final Name record;
 
@@ -367,7 +366,6 @@ public class Names {
         makeConcatWithConstants = fromString("makeConcatWithConstants");
 
         bootstrap = fromString("bootstrap");
-        ofLazyProjection = fromString("ofLazyProjection");
         record = fromString("record");
 
         serialPersistentFields = fromString("serialPersistentFields");

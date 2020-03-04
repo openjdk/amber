@@ -359,11 +359,6 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
-    @Override
-    public void visitAnyPattern(JCAnyPattern tree) {
-        result = tree;
-    }
-
     public void visitBindingPattern(JCBindingPattern tree) {
         tree.vartype = translate(tree.vartype);
         result = tree;
