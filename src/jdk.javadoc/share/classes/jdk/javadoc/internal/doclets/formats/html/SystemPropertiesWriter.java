@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -98,15 +98,14 @@ public class SystemPropertiesWriter extends HtmlDocletWriter {
         navBar.setUserHeader(getUserHeaderFooter(true));
         header.add(navBar.getContent(true));
         bodyTree.add(header);
-        HtmlTree div = new HtmlTree(HtmlTag.DIV);
-        div.setStyle(HtmlStyle.systemPropertiesContainer);
-        addSystemProperties(div);
+        Content mainContent = new ContentBuilder();
+        addSystemProperties(mainContent);
         Content titleContent = new StringContent(resources.getText("doclet.systemProperties"));
         Content pHeading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING, true,
                 HtmlStyle.title, titleContent);
         Content headerDiv = HtmlTree.DIV(HtmlStyle.header, pHeading);
         mainTree.add(headerDiv);
-        mainTree.add(div);
+        mainTree.add(mainContent);
         bodyTree.add(mainTree);
         Content footer = HtmlTree.FOOTER();
         navBar.setUserFooter(getUserHeaderFooter(false));
@@ -148,7 +147,7 @@ public class SystemPropertiesWriter extends HtmlDocletWriter {
 
     private Map<String, List<SearchIndexItem>> groupSystemProperties() {
         Map<String, List<SearchIndexItem>> searchIndexMap = new TreeMap<>();
-        for (SearchIndexItem searchIndex : configuration.tagSearchIndex) {
+        for (SearchIndexItem searchIndex : searchItems.get(SearchIndexItem.Category.SEARCH_TAGS)) {
             if (searchIndex.isSystemProperty()) {
                 List<SearchIndexItem> list = searchIndexMap
                         .computeIfAbsent(searchIndex.getLabel(), k -> new ArrayList<>());
