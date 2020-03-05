@@ -31,10 +31,10 @@
 #include "opto/macro.hpp"
 #include "opto/runtime.hpp"
 #include "utilities/align.hpp"
+#include "utilities/powerOfTwo.hpp"
 
-
-void PhaseMacroExpand::insert_mem_bar(Node** ctrl, Node** mem, int opcode, Node* precedent) {
-  MemBarNode* mb = MemBarNode::make(C, opcode, Compile::AliasIdxBot, precedent);
+void PhaseMacroExpand::insert_mem_bar(Node** ctrl, Node** mem, int opcode, int alias_idx, Node* precedent) {
+  MemBarNode* mb = MemBarNode::make(C, opcode, alias_idx, precedent);
   mb->init_req(TypeFunc::Control, *ctrl);
   mb->init_req(TypeFunc::Memory, *mem);
   transform_later(mb);
@@ -524,7 +524,7 @@ Node* PhaseMacroExpand::generate_arraycopy(ArrayCopyNode *ac, AllocateArrayNode*
       // Test S[] against D[], not S against D, because (probably)
       // the secondary supertype cache is less busy for S[] than S.
       // This usually only matters when D is an interface.
-      Node* not_subtype_ctrl = Phase::gen_subtype_check(src_klass, dest_klass, ctrl, mem, &_igvn);
+      Node* not_subtype_ctrl = Phase::gen_subtype_check(src_klass, dest_klass, ctrl, mem, _igvn);
       // Plug failing path into checked_oop_disjoint_arraycopy
       if (not_subtype_ctrl != top()) {
         Node* local_ctrl = not_subtype_ctrl;
@@ -706,7 +706,15 @@ Node* PhaseMacroExpand::generate_arraycopy(ArrayCopyNode *ac, AllocateArrayNode*
   // the membar also.
   //
   // Do not let reads from the cloned object float above the arraycopy.
-  if (alloc != NULL && !alloc->initialization()->does_not_escape()) {
+  if (ac->_dest_type != TypeOopPtr::BOTTOM && adr_type != ac->_dest_type) {
+    // Known instance: add memory of the destination type
+    MergeMemNode* mm = out_mem->clone()->as_MergeMem();
+    transform_later(mm);
+    uint dest_idx = C->get_alias_index(ac->_dest_type);
+    insert_mem_bar(ctrl, &out_mem, Op_MemBarCPUOrder, dest_idx);
+    mm->set_memory_at(dest_idx, out_mem);
+    out_mem = mm;
+  } else if (alloc != NULL && !alloc->initialization()->does_not_escape()) {
     // Do not let stores that initialize this object be reordered with
     // a subsequent store that would make this object accessible by
     // other threads.
