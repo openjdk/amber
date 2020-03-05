@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,7 @@ import javax.lang.model.element.TypeElement;
 
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.BodyContents;
+import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
@@ -162,9 +163,12 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * @param isFirst true if its the first link being documented
      * @param linksTree the content tree to which the summary will be added
      */
-    public void addInheritedMemberSummary(AbstractMemberWriter mw, TypeElement typeElement,
-            Element member, boolean isFirst, Content linksTree) {
-        if (! isFirst) {
+    public void addInheritedMemberSummary(AbstractMemberWriter mw,
+                                          TypeElement typeElement,
+                                          Element member,
+                                          boolean isFirst,
+                                          Content linksTree) {
+        if (!isFirst) {
             linksTree.add(", ");
         }
         mw.addInheritedSummaryLink(typeElement, member, linksTree);
@@ -176,9 +180,7 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * @return a content tree the document content header
      */
     public Content getContentHeader() {
-        HtmlTree div = new HtmlTree(HtmlTag.DIV);
-        div.setStyle(HtmlStyle.contentContainer);
-        return div;
+        return new ContentBuilder();
     }
 
     /**
