@@ -30,6 +30,7 @@
 class  AllocateNode;
 class  AllocateArrayNode;
 class  CallNode;
+class  SubTypeCheckNode;
 class  Node;
 class  PhaseIterGVN;
 
@@ -118,7 +119,7 @@ private:
   void expand_unlock_node(UnlockNode *unlock);
 
   // More helper methods modeled after GraphKit for array copy
-  void insert_mem_bar(Node** ctrl, Node** mem, int opcode, Node* precedent = NULL);
+  void insert_mem_bar(Node** ctrl, Node** mem, int opcode, int alias_idx = Compile::AliasIdxBot, Node* precedent = NULL);
   Node* array_element_address(Node* ary, Node* idx, BasicType elembt);
   Node* ConvI2L(Node* offset);
 
@@ -182,6 +183,8 @@ private:
                                     Node* copy_length, bool dest_uninitialized);
 
   void expand_arraycopy_node(ArrayCopyNode *ac);
+
+  void expand_subtypecheck_node(SubTypeCheckNode *check);
 
   int replace_input(Node *use, Node *oldref, Node *newref);
   void migrate_outs(Node *old, Node *target);
