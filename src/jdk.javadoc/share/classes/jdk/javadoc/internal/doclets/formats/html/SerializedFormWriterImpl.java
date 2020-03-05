@@ -184,9 +184,7 @@ public class SerializedFormWriterImpl extends SubWriterHolderWriter
      */
     @Override
     public Content getSerialUIDInfoHeader() {
-        HtmlTree dl = new HtmlTree(HtmlTag.DL);
-        dl.setStyle(HtmlStyle.nameValue);
-        return dl;
+        return HtmlTree.DL(HtmlStyle.nameValue);
     }
 
     /**
@@ -198,8 +196,10 @@ public class SerializedFormWriterImpl extends SubWriterHolderWriter
      *                      content will be added
      */
     @Override
-    public void addSerialUIDInfo(String header, String serialUID,
-            Content serialUidTree) {
+    public void addSerialUIDInfo(String header,
+                                 String serialUID,
+                                 Content serialUidTree)
+    {
         Content headerContent = new StringContent(header);
         serialUidTree.add(HtmlTree.DT(headerContent));
         Content serialContent = new StringContent(serialUID);
@@ -225,14 +225,13 @@ public class SerializedFormWriterImpl extends SubWriterHolderWriter
      */
     @Override
     public void addSerializedContent(Content serializedTreeContent) {
-        HtmlTree divContent = HtmlTree.DIV(HtmlStyle.serializedFormContainer,
-                serializedTreeContent);
-        bodyContents.addMainContent(divContent);
+        bodyContents.addMainContent(serializedTreeContent);
     }
 
     @Override
     public void addPackageSerializedTree(Content serializedSummariesTree,
-            Content packageSerializedTree) {
+                                         Content packageSerializedTree)
+    {
         serializedSummariesTree.add(HtmlTree.LI(HtmlStyle.blockList, packageSerializedTree));
     }
 
