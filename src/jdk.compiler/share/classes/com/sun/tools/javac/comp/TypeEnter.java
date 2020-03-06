@@ -1118,7 +1118,7 @@ public class TypeEnter implements Completer {
         private void addRecordMembersIfNeeded(JCClassDecl tree, Env<AttrContext> env) {
             if (lookupMethod(tree.sym, names.toString, List.nil()) == null) {
                 JCMethodDecl toString = make.
-                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.GENERATED_MEMBER),
+                    MethodDef(make.Modifiers(Flags.PUBLIC | Flags.RECORD | Flags.FINAL | Flags.GENERATED_MEMBER),
                               names.toString,
                               make.Type(syms.stringType),
                               List.nil(),

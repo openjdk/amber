@@ -70,6 +70,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeMirror;
 
+import com.sun.tools.classfile.AccessFlags;
 import com.sun.tools.classfile.Annotation;
 import com.sun.tools.classfile.Attribute;
 import com.sun.tools.classfile.Attributes;
@@ -982,6 +983,21 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
             }
         }
+    }
 
+    public void testMethodsInheritedFromRecordArePublicAndFinal() throws Exception {
+        int numberOfFieldRefs = 0;
+        File dir = assertOK(true, "record R() {}");
+        for (final File fileEntry : dir.listFiles()) {
+            if (fileEntry.getName().equals("R.class")) {
+                ClassFile classFile = ClassFile.read(fileEntry);
+                for (Method method : classFile.methods)
+                    switch (method.getName(classFile.constant_pool)) {
+                        case "toString", "equals", "hashCode" ->
+                            Assert.check(method.access_flags.is(AccessFlags.ACC_PUBLIC) && method.access_flags.is(AccessFlags.ACC_FINAL));
+                        default -> { /* do nothing */ }
+                    }
+            }
+        }
     }
 }
