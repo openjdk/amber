@@ -131,7 +131,8 @@ public class RecordCompilationTests extends CompilationTestCase {
         assertFail("compiler.err.already.defined", "record R(int x, int x) {}");
         for (String s : List.of("var", "record"))
             assertFail("compiler.err.restricted.type.not.allowed.here", "record R(# x) { }", s);
-        for (String s : List.of("public", "private", "volatile", "final"))
+        for (String s : List.of("public", "protected", "private", "static", "final", "transient", "volatile",
+                "abstract", "synchronized", "native", "strictfp")) // missing: sealed and non-sealed
             assertFail("compiler.err.record.cant.declare.field.modifiers", "record R(# String foo) { }", s);
         assertFail("compiler.err.varargs.must.be.last", "record R(int... x, int... y) {}");
         assertFail("compiler.err.instance.initializer.not.allowed.in.records", "record R(int i) { {} }");
