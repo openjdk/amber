@@ -258,7 +258,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "modulus",
                                    type = TypeKind.DOUBLE),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {Modifier.PUBLIC, Modifier.FINAL},
                                    name = "toString",
                                    type = TypeKind.DECLARED,
                                    origin = Elements.Origin.EXPLICIT),
@@ -329,7 +329,7 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "modulus",
                                    type = TypeKind.DOUBLE),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {Modifier.PUBLIC, Modifier.FINAL},
                                    name = "toString",
                                    type = TypeKind.DECLARED,
                                    origin = Elements.Origin.EXPLICIT),
