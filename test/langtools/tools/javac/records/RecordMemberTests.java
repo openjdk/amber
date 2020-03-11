@@ -44,26 +44,26 @@ import static org.testng.Assert.*;
 
 @Test
 public class RecordMemberTests {
-    record R1(int i, int j) {}
+    public record R1(int i, int j) {}
 
-    record R2(int i, int j) {
+    public record R2(int i, int j) {
         public R2 {}
     }
 
-    record R3(int i, int j) {
+    public record R3(int i, int j) {
         public R3 {
             this.i = i;
         }
     }
 
-    record R4(int i, int j) {
+    public record R4(int i, int j) {
         public R4 {
             this.i = i;
             this.j = j;
         }
     }
 
-    record R5(int i, int j) {
+    public record R5(int i, int j) {
         public R5 { this.i = this.j = 0; }
     }
 

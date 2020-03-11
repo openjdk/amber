@@ -273,18 +273,18 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    type = TypeKind.BOOLEAN,
                                    origin = Elements.Origin.EXPLICIT),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {},
                                    name = "r",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.EXPLICIT),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {},
                                    name = "theta",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.EXPLICIT),
 
                       @ElementInfo(kind = ElementKind.CONSTRUCTOR,
-                                   modifiers = {Modifier.PUBLIC},
+                                   modifiers = {},
                                    name = "<init>",
                                    type = TypeKind.VOID,
                                    origin = Elements.Origin.MANDATED),
@@ -343,12 +343,12 @@ public class TestRecordDesugar extends JavacTestingAbstractProcessor {
                                    name = "equals",
                                    type = TypeKind.BOOLEAN),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {},
                                    name = "real",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.EXPLICIT),
 
-                      @ElementInfo(modifiers = {Modifier.PUBLIC},
+                      @ElementInfo(modifiers = {},
                                    name = "imag",
                                    type = TypeKind.DOUBLE,
                                    origin = Elements.Origin.EXPLICIT),

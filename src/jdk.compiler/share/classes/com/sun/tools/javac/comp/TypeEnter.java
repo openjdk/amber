@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -1022,7 +1023,6 @@ public class TypeEnter implements Completer {
             List<JCTree> defsToEnter = isRecord ?
                     tree.defs.diff(alreadyEntered) : tree.defs;
             memberEnter.memberEnter(defsToEnter, env);
-            List<JCTree> defsBeforeAddingNewMembers = tree.defs;
             if (isRecord) {
                 addRecordMembersIfNeeded(tree, env);
             }
@@ -1043,7 +1043,7 @@ public class TypeEnter implements Completer {
                 List<JCAnnotation> originalAnnos = rec.getOriginalAnnos();
                 JCMethodDecl getter = make.at(tree.pos).
                         MethodDef(
-                                make.Modifiers(Flags.PUBLIC | Flags.GENERATED_MEMBER, originalAnnos),
+                                make.Modifiers(env.enclClass.sym.flags_field & Flags.AccessFlags | Flags.GENERATED_MEMBER, originalAnnos),
                           tree.sym.name,
                           /* we need to special case for the case when the user declared the type as an ident
                            * if we don't do that then we can have issues if type annotations are applied to the
@@ -1059,8 +1059,40 @@ public class TypeEnter implements Completer {
                 memberEnter.memberEnter(getter, env);
                 rec.accessor = getter.sym;
                 rec.accessorMeth = getter;
+                if (!env.enclClass.sym.getInterfaces().isEmpty()) {
+                    checkImplementations(env.tree, ((JCClassDecl)env.tree).sym, getter.sym);
+                    // this accessor is overriding a method declared in an inherited interface has to be public
+                    if ((getter.sym.flags_field & BAD_OVERRIDE) != 0) {
+                        getter.mods = make.Modifiers(PUBLIC | Flags.GENERATED_MEMBER, originalAnnos);
+                        getter.sym.flags_field &= ~BAD_OVERRIDE;
+                        getter.sym.flags_field |= PUBLIC;
+                    }
+                }
             } else if (implSym != null) {
                 rec.accessor = implSym;
+            }
+        }
+
+        void checkImplementations(JCTree tree, ClassSymbol ic, MethodSymbol ms) {
+            for (List<Type> l = types.closure(ic.type); l.nonEmpty(); l = l.tail) {
+                ClassSymbol lc = (ClassSymbol)l.head.tsym;
+                if ((lc.flags() & ABSTRACT) != 0) {
+                    for (Symbol sym : lc.members().getSymbols(NON_RECURSIVE)) {
+                        if (sym.kind == MTH &&
+                                (sym.flags() & (STATIC|ABSTRACT)) == ABSTRACT) {
+                            MethodSymbol absmeth = (MethodSymbol)sym;
+                            MethodSymbol implmeth = absmeth.implementation(ic, types, false);
+                            if (implmeth != null &&
+                                implmeth == ms &&
+                                    implmeth != absmeth &&
+                                    (implmeth.owner.flags() & INTERFACE) ==
+                                            (ic.flags() & INTERFACE)) {
+                                chk.checkOverride(tree, implmeth, absmeth, ic, false);
+                                return;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1218,9 +1250,6 @@ public class TypeEnter implements Completer {
                     (types.supertype(owner().type).tsym == syms.enumSym)) {
                     // constructors of true enums are private
                     flags = PRIVATE | GENERATEDCONSTR;
-                } else if ((owner().flags_field & RECORD) != 0) {
-                    // record constructors are public
-                    flags = PUBLIC | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
                 }
@@ -1339,7 +1368,7 @@ public class TypeEnter implements Completer {
                 params.add(new VarSymbol(GENERATED_MEMBER | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
             }
             csym.params = params.toList();
-            csym.flags_field |= RECORD | PUBLIC;
+            csym.flags_field |= RECORD;
             return csym;
         }
 

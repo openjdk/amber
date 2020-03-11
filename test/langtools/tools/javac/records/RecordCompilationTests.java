@@ -310,9 +310,8 @@ public class RecordCompilationTests extends CompilationTestCase {
                                 "public R(int _x, int _y) { this.x = _x; this.y = _y; }"))
             assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x, int y) { # }", s);
 
-        // canonical ctor must be public
         for (String s : List.of("", "protected", "private"))
-            assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x, int y) { # }",
+            assertOK("record R(int x, int y) { # }",
                        "# R(int x, int y) { this.x = x; this.y = y; }",
                        s);
 

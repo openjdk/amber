@@ -1180,11 +1180,6 @@ public class Attr extends JCTree.Visitor {
                             log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
                                     Fragments.Canonical, env.enclClass.sym.name, Fragments.CanonicalWithNameMismatch));
                         }
-                        if (!tree.sym.isPublic()) {
-                            log.error(tree, Errors.InvalidCanonicalConstructorInRecord(
-                                    TreeInfo.isCompactConstructor(tree) ? Fragments.Compact : Fragments.Canonical,
-                                    env.enclClass.sym.name, Fragments.CanonicalConstructorMustBePublic));
-                        }
                         if (tree.sym.type.asMethodType().thrown != null && !tree.sym.type.asMethodType().thrown.isEmpty()) {
                             log.error(tree,
                                     Errors.InvalidCanonicalConstructorInRecord(
