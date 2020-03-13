@@ -233,6 +233,7 @@ public class JavacParser implements Parser {
      *     mode = NOPARAMS    : no parameters allowed for type
      *     mode = TYPEARG     : type argument
      *     mode |= NOLAMBDA   : lambdas are not allowed
+     *     mode |= NOINVOCATION : method invocations are not allowed
      */
     protected static final int EXPR = 0x1;
     protected static final int TYPE = 0x2;
@@ -240,16 +241,14 @@ public class JavacParser implements Parser {
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
     protected static final int NOLAMBDA = 0x20;
-    protected static final int NOINVOCATION = 0x20;
+    protected static final int NOINVOCATION = 0x40;
 
     protected void selectExprMode() {
-        //TODO: copy NOINVOCATION
-        mode = (mode & NOLAMBDA) | EXPR;
+        mode = (mode & (NOLAMBDA | NOINVOCATION)) | EXPR;
     }
 
     protected void selectTypeMode() {
-        //TODO: copy NOINVOCATION
-        mode = (mode & NOLAMBDA) | TYPE;
+        mode = (mode & (NOLAMBDA|NOINVOCATION)) | TYPE;
     }
 
     /** The current mode.
@@ -966,13 +965,11 @@ public class JavacParser implements Parser {
                     checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
                     pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
                 } else if (token.kind == LPAREN) {
+                    checkSourceLevel(Feature.DECONSTRUCTION_PATTERNS);
                     ListBuffer<JCPattern> nested = new ListBuffer<>();
                     do {
                         nextToken();
                         JCPattern nestedPattern = parsePattern();
-                        if (nestedPattern.hasTag(BINDINGPATTERN) && ((JCBindingPattern) nestedPattern).vartype != null) {
-                            log.error(nestedPattern.pos(), Errors.DeconstructionPatternNoVar);
-                        }
                         nested.append(nestedPattern);
                     } while (token.kind == COMMA);
                     Name name = null;

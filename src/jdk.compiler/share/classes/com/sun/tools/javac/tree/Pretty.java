@@ -35,6 +35,7 @@ import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.List;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
+import com.sun.tools.javac.tree.JCTree;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 /** Prints out a tree as an indented Java source program.
@@ -890,6 +891,18 @@ public class Pretty extends JCTree.Visitor {
             printExpr(patt.vartype);
             print(" ");
             print(patt.name);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        try {
+            printExpr(tree.deconstructor);
+            print("(");
+            printExprs(tree.nested);
+            print(")");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

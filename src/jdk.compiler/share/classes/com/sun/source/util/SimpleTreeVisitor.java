@@ -557,6 +557,7 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return  the result of {@code defaultAction}
+     * @since 14
      */
     @Override
     public R visitBindingPattern(BindingPatternTree node, P p) {
@@ -569,6 +570,7 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
      * @param node {@inheritDoc}
      * @param p {@inheritDoc}
      * @return  the result of {@code defaultAction}
+     * @since 15
      */
     @Override
     public R visitDeconstructionPattern(DeconstructionPatternTree node, P p) {

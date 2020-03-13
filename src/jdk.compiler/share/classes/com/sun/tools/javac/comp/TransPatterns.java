@@ -183,7 +183,7 @@ public class TransPatterns extends TreeTranslator {
             super.visitTypeTest(tree);
         }
     }
-    
+
     private JCExpression preparePatternExtractor(JCPattern patt, VarSymbol temp, Type targetType) {
         if (targetType == syms.botType) {
             targetType = syms.objectType;
@@ -213,7 +213,7 @@ public class TransPatterns extends TreeTranslator {
                                      component.erasure(types),
                                      currentOwnerSym);
                 Symbol accessor = dpatt.record.members().findFirst(component.name, s -> s.kind == Kind.MTH && ((MethodSymbol) s).params.isEmpty());
-                LetExpr getAndRun = make.LetExpr(make.VarDef(nestedTemp, make.App(make.Select(convert(make.Ident(temp), dpatt.type), accessor))), preparePatternExtractor(nested, nestedTemp, nestedTemp.type));
+                LetExpr getAndRun = make.LetExpr(make.VarDef(nestedTemp, make.App(make.Select(convert(make.Ident(temp), dpatt.type), accessor))), preparePatternExtractor(nested, nestedTemp, nested.type));
                 getAndRun.needsCond = true;
                 getAndRun.setType(syms.booleanType);
                 if (!types.isAssignable(nestedTemp.type, nested.type)) { //TODO: erasure? primitives?
@@ -233,7 +233,7 @@ public class TransPatterns extends TreeTranslator {
             throw new IllegalStateException();
         }
     }
-    
+
     @Override
     public void visitBinary(JCBinary tree) {
         bindingContext = new BasicBindingContext();

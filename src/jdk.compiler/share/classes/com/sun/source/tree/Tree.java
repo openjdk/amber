@@ -235,7 +235,17 @@ public interface Tree {
         BINDING_PATTERN(BindingPatternTree.class),
 
         /**
+         * {@preview Associated with pattern matching for instanceof, a preview feature of
+         *           the Java language.
+         *
+         *           This enum constant is associated with <i>pattern matching for instanceof</i>, a preview
+         *           feature of the Java language. Preview features
+         *           may be removed in a future release, or upgraded to permanent
+         *           features of the Java language.}
+         *
          * Used for instances of {@link DeconstructionPatternTree}.
+         *
+         * @since 15
          */
         DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
 

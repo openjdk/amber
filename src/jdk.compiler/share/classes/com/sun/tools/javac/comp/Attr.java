@@ -3895,16 +3895,7 @@ public class Attr extends JCTree.Visitor {
                 if (preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF)) {
                     preview.warnPreview(tree.expr.pos(), Feature.REIFIABLE_TYPES_INSTANCEOF);
                 }
-                Warner warner = new Warner();
-                if (!types.isCastable(exprtype, clazztype, warner)) {
-                    chk.basicHandler.report(tree.expr.pos(),
-                                            diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
-                } else if (warner.hasLint(LintCategory.UNCHECKED)) {
-                    log.error(tree.expr.pos(),
-                              Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
-                } else {
-                    valid = true;
-                }
+                valid = verifyCastable(tree.expr.pos(), exprtype, clazztype);
             } else {
                 log.error(typeTree.pos(), Errors.IllegalGenericTypeForInstof);
             }
@@ -3956,6 +3947,7 @@ public class Attr extends JCTree.Visitor {
             boolean nestedIsValidPattern = !nestedPatterns.head.hasTag(BINDINGPATTERN) ||
                                            ((JCBindingPattern) nestedPatterns.head).vartype == null;
             attribExpr(nestedPatterns.head, env, nestedIsValidPattern ? recordTypes.head : Type.noType);
+            verifyCastable(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
             outBindings.addAll(matchBindings.bindingsWhenTrue);
             nestedPatterns = nestedPatterns.tail;
             recordTypes = recordTypes.tail;
@@ -3964,13 +3956,19 @@ public class Attr extends JCTree.Visitor {
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
     }
 
-    private boolean isSubTypesIgnoreNone(List<Type> ts, List<Type> ss) {
-        while (ts.tail != null && ss.tail != null &&
-               (ts.head == Type.noType || types.isSubtype(ts.head, ss.head))) {
-            ts = ts.tail;
-            ss = ss.tail;
+    private boolean verifyCastable(DiagnosticPosition pos, Type exprtype, Type clazztype) {
+        Warner warner = new Warner();
+        if (!types.isCastable(exprtype, clazztype, warner)) {
+            chk.basicHandler.report(pos,
+                                    diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
+            return false;
+        } else if (warner.hasLint(LintCategory.UNCHECKED)) {
+            log.error(pos,
+                      Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
+            return false;
+        } else {
+            return true;
         }
-        return ts.tail == null && ss.tail == null;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -5633,7 +5631,7 @@ public class Attr extends JCTree.Visitor {
             }
             super.visitBindingPattern(that);
         }
-        //XXX: DeconstructionPattern!!!!
+
         @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {
