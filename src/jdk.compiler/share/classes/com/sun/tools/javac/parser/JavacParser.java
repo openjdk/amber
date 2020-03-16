@@ -765,17 +765,10 @@ public class JavacParser implements Parser {
                 do {
                     nextToken();
                     JCPattern nestedPattern = parsePattern();
-                    if (nestedPattern.hasTag(BINDINGPATTERN) && ((JCBindingPattern) nestedPattern).vartype != null) {
-                        log.error(nestedPattern.pos(), Errors.DeconstructionPatternNoVar);
-                    }
                     nested.append(nestedPattern);
                 } while (token.kind == COMMA);
-                Name name = null;
-                if (token.kind == IDENTIFIER) {
-                    name = ident();
-                }
                 accept(RPAREN);
-                return toP(F.at(pos).DeconstructionPattern(name, e, nested.toList()));
+                return toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
             } else {
                 return toP(F.at(pos).BindingPattern(ident(), e));
             }
@@ -972,12 +965,8 @@ public class JavacParser implements Parser {
                         JCPattern nestedPattern = parsePattern();
                         nested.append(nestedPattern);
                     } while (token.kind == COMMA);
-                    Name name = null;
-                    if (token.kind == IDENTIFIER) {
-                        name = ident();
-                    }
                     accept(RPAREN);
-                    pattern = toP(F.at(pos).DeconstructionPattern(name, (JCExpression) pattern, nested.toList()));
+                    pattern = toP(F.at(pos).DeconstructionPattern((JCExpression) pattern, nested.toList()));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {

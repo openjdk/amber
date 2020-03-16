@@ -35,7 +35,6 @@ import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.List;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
-import com.sun.tools.javac.tree.JCTree;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 /** Prints out a tree as an indented Java source program.

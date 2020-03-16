@@ -55,6 +55,7 @@ import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -65,7 +66,6 @@ import static com.sun.tools.javac.code.TypeTag.BOT;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
-import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCPattern;
@@ -73,7 +73,6 @@ import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.util.List;
-import java.util.HashMap;
 
 /**
  * This pass translates pattern-matching constructs, such as instanceof <pattern>.
@@ -135,7 +134,6 @@ public class TransPatterns extends TreeTranslator {
 
     boolean debugTransPatterns;
 
-    private JCClassDecl currentClass;
     private Symbol currentOwnerSym = null;
 
     protected TransPatterns(Context context) {
@@ -168,16 +166,23 @@ public class TransPatterns extends TreeTranslator {
             Type castTargetType;
             //TODO: use rule switch (when boot JDK is 14):
             switch (tree.pattern.getTag()) {
-                case BINDINGPATTERN: castTargetType = ((JCBindingPattern)tree.pattern).symbol.type; break;
-                case DECONSTRUCTIONPATTERN: castTargetType = ((JCDeconstructionPattern)tree.pattern).type; break;
-                default: throw new AssertionError("Unexpected pattern type: " + tree.pattern.getTag());
+                case BINDINGPATTERN:
+                    castTargetType = ((JCBindingPattern)tree.pattern).symbol.type;
+                    break;
+                case DECONSTRUCTIONPATTERN:
+                    castTargetType = ((JCDeconstructionPattern)tree.pattern).type;
+                    break;
+                default:
+                    throw new AssertionError("Unexpected pattern type: " + tree.pattern.getTag());
             }
 
             castTargetType = types.boxedTypeOrType(types.erasure(castTargetType));
 
             result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
-            result = makeBinary(Tag.AND, (JCExpression)result, preparePatternExtractor(tree.getPattern(), temp, castTargetType));
-            result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr), (JCExpression)result).setType(syms.booleanType);
+            result = makeBinary(Tag.AND, (JCExpression)result,
+                                         preparePatternExtractor(tree.getPattern(), temp, castTargetType));
+            result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr),
+                                               (JCExpression)result).setType(syms.booleanType);
             ((LetExpr) result).needsCond = true;
         } else {
             super.visitTypeTest(tree);
@@ -199,7 +204,7 @@ public class TransPatterns extends TreeTranslator {
                 nestedLE.setType(syms.booleanType);
                 return nestedLE;
             }
-            return make.Literal(true);//XXX
+            return make.Literal(true);
         } else if (patt.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             JCDeconstructionPattern dpatt = (JCDeconstructionPattern) patt;
             List<? extends RecordComponent> components = dpatt.record.getRecordComponents();
@@ -212,12 +217,24 @@ public class TransPatterns extends TreeTranslator {
                     names.fromString("e" + target.syntheticNameChar() + nested.pos),
                                      component.erasure(types),
                                      currentOwnerSym);
-                Symbol accessor = dpatt.record.members().findFirst(component.name, s -> s.kind == Kind.MTH && ((MethodSymbol) s).params.isEmpty());
-                LetExpr getAndRun = make.LetExpr(make.VarDef(nestedTemp, make.App(make.Select(convert(make.Ident(temp), dpatt.type), accessor))), preparePatternExtractor(nested, nestedTemp, nested.type));
+                Symbol accessor = dpatt.record
+                                       .members()
+                                       .findFirst(component.name, s -> s.kind == Kind.MTH &&
+                                                                       ((MethodSymbol) s).params.isEmpty());
+                JCVariableDecl nestedTempVar =
+                        make.VarDef(nestedTemp,
+                                    make.App(make.Select(convert(make.Ident(temp), dpatt.type),
+                                                         accessor)));
+                LetExpr getAndRun =
+                        make.LetExpr(nestedTempVar,
+                                     preparePatternExtractor(nested, nestedTemp, nested.type));
                 getAndRun.needsCond = true;
                 getAndRun.setType(syms.booleanType);
-                if (!types.isAssignable(nestedTemp.type, nested.type)) { //TODO: erasure? primitives?
-                    getAndRun.expr = makeBinary(Tag.AND, makeTypeTest(make.Ident(nestedTemp), make.Type(nested.type)), getAndRun.expr);
+                if (!types.isAssignable(nestedTemp.type, nested.type)) {
+                    JCInstanceOf typeTest =
+                            makeTypeTest(make.Ident(nestedTemp),
+                                         make.Type(nested.type));
+                    getAndRun.expr = makeBinary(Tag.AND, typeTest, getAndRun.expr);
                 }
                 if (test == null) {
                     test = getAndRun;
@@ -297,17 +314,6 @@ public class TransPatterns extends TreeTranslator {
             result = bindingContext.decorateStatement(tree);
         } finally {
             bindingContext.pop();
-        }
-    }
-
-    @Override
-    public void visitClassDef(JCTree.JCClassDecl tree) {
-        JCClassDecl prevCurrentClass = currentClass;
-        try {
-            currentClass = tree;
-            super.visitClassDef(tree);
-        } finally {
-            currentClass = prevCurrentClass;
         }
     }
 
@@ -458,7 +464,7 @@ public class TransPatterns extends TreeTranslator {
         VarSymbol bindingDeclared(BindingSymbol varSymbol) {
             VarSymbol res = parent.bindingDeclared(varSymbol);
             if (res == null) {
-                res = new VarSymbol(varSymbol.flags() & ~Flags.MATCH_BINDING, varSymbol.name, varSymbol.type, varSymbol.owner);
+                res = new VarSymbol(varSymbol.flags(), varSymbol.name, varSymbol.type, varSymbol.owner);
                 res.setTypeAttributes(varSymbol.getRawTypeAttributes());
                 hoistedVarMap.put(varSymbol, res);
             }

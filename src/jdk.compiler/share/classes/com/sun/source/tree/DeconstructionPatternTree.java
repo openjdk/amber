@@ -25,32 +25,34 @@
 
 package com.sun.source.tree;
 
-import javax.lang.model.element.Name;
-
 import java.util.List;
 
 /**
- * XXX
+ * {@preview Associated with pattern matching for instanceof, a preview feature of
+ *           the Java language.
+ *
+ *           This interface is associated with <i>pattern matching for instanceof</i>, a preview
+ *           feature of the Java language. Preview features
+ *           may be removed in a future release, or upgraded to permanent
+ *           features of the Java language.}
+ *
+ * A deconstruction pattern tree
+ *
+ * @since 15
  */
 public interface DeconstructionPatternTree extends PatternTree {
 
     /**
-     * XXX
-     * @return XXX
+     * Returns the deconstructed type.
+     * @return the deconstructed type
      */
     Tree getDeconstructor();
 
     /**
-     * XXX
-     * @return XXX
+     * Returns the nested patterns.
+     * @return the nested patterns.
      */
     List<? extends PatternTree> getNestedPatterns();
-
-    /**
-     * A binding variable name.
-     * @return the name of the binding variable
-     */
-    Name getBinding();
 
 }
 

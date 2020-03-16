@@ -59,7 +59,7 @@ public class PrettyTest {
                       "    record R(String s) {}\n" +
                       "    record R2(R r, String s) {}\n" +
                       "}\n";
-        String pretty = parse(code).toString().replaceAll("(?m)^[ ]+$", "");
+        String pretty = parse(code).toString();
         String expected = """
                           \n\
                           class Test {

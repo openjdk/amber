@@ -82,7 +82,13 @@ public class SimpleDeconstructionPattern {
         if (!test8(new P4(new P3("")))) {
             throw new IllegalStateException();
         }
+        if (!test8a(new P4(new P3("")))) {
+            throw new IllegalStateException();
+        }
         if (test8(new P4(new P3("a")))) {
+            throw new IllegalStateException();
+        }
+        if (test8a(new P4(new P3("a")))) {
             throw new IllegalStateException();
         }
         if (!test9(new P5(new ArrayList<String>(Arrays.asList(""))))) {
@@ -137,6 +143,10 @@ public class SimpleDeconstructionPattern {
 
     private static boolean test8(Object o) throws Throwable {
         return o instanceof P4(P3(var s)) && "".equals(s);
+    }
+
+    private static boolean test8a(Object o) throws Throwable {
+        return o instanceof P4(P3(String s)) && "".equals(s);
     }
 
     private static boolean test9(Object o) throws Throwable {

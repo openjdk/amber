@@ -1,0 +1,11 @@
+SimpleDeconstructionPattern.java:107:27: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.deconstruction.patterns)
+SimpleDeconstructionPattern.java:156:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:159:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:162:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:165:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:167:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:170:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:171:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
+SimpleDeconstructionPattern.java:171:38: compiler.err.expected: ';'
+2 errors
+7 warnings

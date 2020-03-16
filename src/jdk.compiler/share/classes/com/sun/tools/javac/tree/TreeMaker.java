@@ -41,10 +41,6 @@ import com.sun.tools.javac.tree.JCTree.*;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
-import com.sun.tools.javac.tree.JCTree.JCExpression;
-import com.sun.tools.javac.tree.JCTree.JCPattern;
-import com.sun.tools.javac.util.List;
-import com.sun.tools.javac.util.Name;
 
 /** Factory class for trees.
  *
@@ -474,8 +470,8 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCDeconstructionPattern DeconstructionPattern(Name name, JCExpression deconstructor, List<JCPattern> nested) {
-        JCDeconstructionPattern tree = new JCDeconstructionPattern(name, deconstructor, nested);
+    public JCDeconstructionPattern DeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
+        JCDeconstructionPattern tree = new JCDeconstructionPattern(deconstructor, nested);
         tree.pos = pos;
         return tree;
     }
@@ -645,7 +641,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public LetExpr LetExpr(List<? extends JCStatement> defs, JCExpression expr) {
+    public LetExpr LetExpr(List<JCStatement> defs, JCExpression expr) {
         LetExpr tree = new LetExpr(defs, expr);
         tree.pos = pos;
         return tree;
