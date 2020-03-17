@@ -18,6 +18,11 @@ public class DeconstructionPatternErrors {
         if (p instanceof P5(int i));
         if (p instanceof P(String s));
         if (p instanceof P5(P(var v)));
+        if (p instanceof P2(var v1)); //too few nested patterns
+        if (p instanceof P2(Runnable v1)); //too few nested patterns
+        if (p instanceof P(var v1, var v2)); //too many nested patterns
+        if (p instanceof P(int v1, int v2)); //too many nested patterns
+        if (p instanceof P(int v1, Unresolvable v2)); //too many nested patterns
     }
 
     public record P(int i) {

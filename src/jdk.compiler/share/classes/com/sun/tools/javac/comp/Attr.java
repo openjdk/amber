@@ -3930,18 +3930,19 @@ public class Attr extends JCTree.Visitor {
     @Override
     public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
         Type site = tree.type = attribType(tree.deconstructor, env);
-        List<Type> recordTypes;
+        List<Type> expectedRecordTypes;
         if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
             ClassSymbol record = (ClassSymbol) site.tsym;
-            recordTypes = record.getRecordComponents().stream().map(rc -> rc.type).collect(List.collector());
+            expectedRecordTypes = record.getRecordComponents().stream().map(rc -> rc.type).collect(List.collector());
             tree.record = record;
         } else {
             log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
-            recordTypes = Stream.generate(() -> Type.noType)
+            expectedRecordTypes = Stream.generate(() -> Type.noType)
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
         }
         ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
+        List<Type> recordTypes = expectedRecordTypes;
         List<JCPattern> nestedPatterns = tree.nested;
         while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
             boolean nestedIsValidPattern = !nestedPatterns.head.hasTag(BINDINGPATTERN) ||
@@ -3951,6 +3952,17 @@ public class Attr extends JCTree.Visitor {
             outBindings.addAll(matchBindings.bindingsWhenTrue);
             nestedPatterns = nestedPatterns.tail;
             recordTypes = recordTypes.tail;
+        }
+        if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
+            while (nestedPatterns.nonEmpty()) {
+                attribExpr(nestedPatterns.head, env, Type.noType);
+                nestedPatterns = nestedPatterns.tail;
+            }
+            List<Type> nestedTypes =
+                    tree.nested.stream().map(p -> p.type).collect(List.collector());
+            log.error(tree.pos(),
+                      Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
+                                                             nestedTypes));
         }
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());

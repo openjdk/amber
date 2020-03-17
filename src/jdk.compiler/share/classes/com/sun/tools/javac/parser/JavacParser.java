@@ -966,7 +966,7 @@ public class JavacParser implements Parser {
                         nested.append(nestedPattern);
                     } while (token.kind == COMMA);
                     accept(RPAREN);
-                    pattern = toP(F.at(pos).DeconstructionPattern((JCExpression) pattern, nested.toList()));
+                    pattern = toP(F.at(pattern).DeconstructionPattern((JCExpression) pattern, nested.toList()));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
