@@ -56,9 +56,9 @@ import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.LinkedHashMap;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.RecordComponent;
@@ -162,7 +162,7 @@ public class TransPatterns extends TreeTranslator {
                     syms.objectType
                     : tree.expr.type;
             VarSymbol temp = new VarSymbol(Flags.SYNTHETIC,
-                    names.fromString("e" + target.syntheticNameChar() + tree.pos),
+                    names.fromString(target.syntheticNameChar() + "e" + target.syntheticNameChar()),
                     tempType,
                     currentOwnerSym);
             JCExpression translatedExpr = translate(tree.expr);
@@ -217,7 +217,7 @@ public class TransPatterns extends TreeTranslator {
                 RecordComponent component = components.head;
                 JCPattern nested = nestedPatterns.head;
                 VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
-                    names.fromString("e" + target.syntheticNameChar() + nested.pos),
+                    names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + component.name),
                                      component.erasure(types),
                                      currentOwnerSym);
                 Symbol accessor = dpatt.record
@@ -478,7 +478,7 @@ public class TransPatterns extends TreeTranslator {
 
         public BasicBindingContext() {
             this.parent = bindingContext;
-            this.hoistedVarMap = new HashMap<>();
+            this.hoistedVarMap = new LinkedHashMap<>();
         }
 
         @Override
