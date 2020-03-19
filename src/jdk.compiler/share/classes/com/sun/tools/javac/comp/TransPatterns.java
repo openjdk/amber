@@ -29,6 +29,7 @@ import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Kinds.Kind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.BindingSymbol;
+import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Types;
@@ -66,6 +67,7 @@ import static com.sun.tools.javac.code.TypeTag.BOT;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
+import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCPattern;
@@ -134,6 +136,7 @@ public class TransPatterns extends TreeTranslator {
 
     boolean debugTransPatterns;
 
+    private ClassSymbol currentClass;
     private Symbol currentOwnerSym = null;
 
     protected TransPatterns(Context context) {
@@ -180,7 +183,7 @@ public class TransPatterns extends TreeTranslator {
 
             result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
             result = makeBinary(Tag.AND, (JCExpression)result,
-                                         preparePatternExtractor(tree.getPattern(), temp, castTargetType));
+                                         preparePatternExtractor(tree, tree.getPattern(), temp, castTargetType));
             result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr),
                                                (JCExpression)result).setType(syms.booleanType);
             ((LetExpr) result).needsCond = true;
@@ -189,14 +192,14 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
-    private JCExpression preparePatternExtractor(JCPattern patt, VarSymbol temp, Type targetType) {
+    private JCExpression preparePatternExtractor(JCInstanceOf tree, JCPattern patt, VarSymbol temp, Type targetType) {
         if (targetType == syms.botType) {
             targetType = syms.objectType;
         }
         if (patt.hasTag(Tag.BINDINGPATTERN)) {
             VarSymbol bindingVar = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
             if (bindingVar != null) { //TODO: cannot be null here?
-                JCAssign fakeInit = (JCAssign)make.at(patt.pos).Assign(
+                JCAssign fakeInit = (JCAssign)make.at(tree.pos).Assign(
                         make.Ident(bindingVar), convert(make.Ident(temp), targetType)).setType(bindingVar.erasure(types));
                 LetExpr nestedLE = make.LetExpr(List.of(make.Exec(fakeInit)),
                                                 make.Literal(true));
@@ -227,7 +230,7 @@ public class TransPatterns extends TreeTranslator {
                                                          accessor)));
                 LetExpr getAndRun =
                         make.LetExpr(nestedTempVar,
-                                     preparePatternExtractor(nested, nestedTemp, nested.type));
+                                     preparePatternExtractor(tree, nested, nestedTemp, nested.type));
                 getAndRun.needsCond = true;
                 getAndRun.setType(syms.booleanType);
                 if (!types.isAssignable(nestedTemp.type, nested.type)) {
@@ -342,6 +345,17 @@ public class TransPatterns extends TreeTranslator {
     }
 
     @Override
+    public void visitClassDef(JCClassDecl tree) {
+        ClassSymbol prevCurrentClass = currentClass;
+        try {
+            currentClass = tree.sym;
+            super.visitClassDef(tree);
+        } finally {
+            currentClass = prevCurrentClass;
+        }
+    }
+
+    @Override
     public void visitIdent(JCIdent tree) {
         VarSymbol bindingVar = null;
         if ((tree.sym.flags() & Flags.MATCH_BINDING) != 0) {
@@ -378,7 +392,13 @@ public class TransPatterns extends TreeTranslator {
                 return true;
             }
         };
+        Symbol prevOwnerSym = currentOwnerSym;
         try {
+            if (currentOwnerSym == null) {
+                currentOwnerSym = new MethodSymbol(tree.flags | Flags.BLOCK,
+                                 names.empty, null,
+                                 currentClass);
+            }
             for (List<JCStatement> l = tree.stats; l.nonEmpty(); l = l.tail) {
                 statements.append(translate(l.head));
             }
@@ -387,6 +407,7 @@ public class TransPatterns extends TreeTranslator {
             result = tree;
         } finally {
             bindingContext.pop();
+            currentOwnerSym = prevOwnerSym;
         }
     }
 
