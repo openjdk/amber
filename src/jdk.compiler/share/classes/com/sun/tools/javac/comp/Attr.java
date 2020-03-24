@@ -3945,9 +3945,9 @@ public class Attr extends JCTree.Visitor {
         List<Type> recordTypes = expectedRecordTypes;
         List<JCPattern> nestedPatterns = tree.nested;
         while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
-            boolean nestedIsValidPattern = !nestedPatterns.head.hasTag(BINDINGPATTERN) ||
-                                           ((JCBindingPattern) nestedPatterns.head).vartype == null;
-            attribExpr(nestedPatterns.head, env, nestedIsValidPattern ? recordTypes.head : Type.noType);
+            boolean nestedIsVarPattern = nestedPatterns.head.hasTag(BINDINGPATTERN) &&
+                                         ((JCBindingPattern) nestedPatterns.head).vartype == null;
+            attribExpr(nestedPatterns.head, env, nestedIsVarPattern ? recordTypes.head : Type.noType);
             verifyCastable(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
             outBindings.addAll(matchBindings.bindingsWhenTrue);
             nestedPatterns = nestedPatterns.tail;
@@ -3970,9 +3970,7 @@ public class Attr extends JCTree.Visitor {
 
     private boolean verifyCastable(DiagnosticPosition pos, Type exprtype, Type clazztype) {
         Warner warner = new Warner();
-        if (!types.isCastable(exprtype, clazztype, warner)) {
-            chk.basicHandler.report(pos,
-                                    diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
+        if (!chk.checkCastable(pos, exprtype, clazztype, chk.basicHandler, warner)) {
             return false;
         } else if (warner.hasLint(LintCategory.UNCHECKED)) {
             log.error(pos,

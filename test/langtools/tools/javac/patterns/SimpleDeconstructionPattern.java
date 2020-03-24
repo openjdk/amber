@@ -97,6 +97,27 @@ public class SimpleDeconstructionPattern {
         if (test9(new P5(new LinkedList<String>(Arrays.asList(""))))) {
             throw new IllegalStateException();
         }
+        if (testA(new P6(null))) {
+            throw new IllegalStateException();
+        }
+        if (testA(new P6(new P3(null)))) {
+            throw new IllegalStateException();
+        }
+        if (testB(new P6(null))) {
+            throw new IllegalStateException();
+        }
+        if (testB(new P6(new P3(null)))) {
+            throw new IllegalStateException();
+        }
+        if (testC(new P6(null))) {
+            throw new IllegalStateException();
+        }
+        if (testC(new P6(new P3(null)))) {
+            throw new IllegalStateException();
+        }
+        if (!testC(new P6(new P3("")))) {
+            throw new IllegalStateException();
+        }
     }
 
 //    private static boolean test1(Object o) throws Throwable {
@@ -153,6 +174,18 @@ public class SimpleDeconstructionPattern {
         return o instanceof P5(ArrayList<String> l) && !l.isEmpty();
     }
 
+    private static boolean testA(Object o) throws Throwable {
+        return o instanceof P6(P3(var s));
+    }
+
+    private static boolean testB(Object o) throws Throwable {
+        return o instanceof P6(P3(String s));
+    }
+
+    private static boolean testC(Object o) throws Throwable {
+        return o instanceof P6(P3(String s)) && s.isEmpty();
+    }
+
     public record P(int i) {
     }
 
@@ -165,6 +198,7 @@ public class SimpleDeconstructionPattern {
     public record P4(Object o) {}
 
     public record P5(List<String> l) {}
+    public record P6(P3 p) {}
 
     public interface Base {}
     public record BaseUse(Base b) {}

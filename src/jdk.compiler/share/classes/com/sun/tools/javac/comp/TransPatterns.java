@@ -157,7 +157,7 @@ public class TransPatterns extends TreeTranslator {
         if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             //E instanceof T N
             //=>
-            //(let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp))
+            //(let T' N$temp = E; N$temp instanceof T && <nested-extractor>)
             Type tempType = tree.expr.type.hasTag(BOT) ?
                     syms.objectType
                     : tree.expr.type;
@@ -181,7 +181,7 @@ public class TransPatterns extends TreeTranslator {
 
             castTargetType = types.boxedTypeOrType(types.erasure(castTargetType));
 
-            result = makeTypeTest(make.Ident(temp), make.Type(castTargetType));
+            result = makeTypeTest(make.at(tree.pos).Ident(temp), make.Type(castTargetType));
             result = makeBinary(Tag.AND, (JCExpression)result,
                                          preparePatternExtractor(tree, tree.getPattern(), temp, castTargetType));
             result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr),
@@ -197,6 +197,9 @@ public class TransPatterns extends TreeTranslator {
             targetType = syms.objectType;
         }
         if (patt.hasTag(Tag.BINDINGPATTERN)) {
+            //type test already done, finish handling of type test patterns ("T N")
+            //=>
+            //(let N = (T) N$temp; true)
             VarSymbol bindingVar = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
             if (bindingVar != null) { //TODO: cannot be null here?
                 JCAssign fakeInit = (JCAssign)make.at(tree.pos).Assign(
@@ -209,11 +212,22 @@ public class TransPatterns extends TreeTranslator {
             }
             return make.Literal(true);
         } else if (patt.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
+            //type test already done, finish handling of deconstruction patterns ("T(PATT1, PATT2, ...)")
+            //=>
+            //<PATT1-handling> && <PATT2-handling> && ...
             JCDeconstructionPattern dpatt = (JCDeconstructionPattern) patt;
             List<? extends RecordComponent> components = dpatt.record.getRecordComponents();
             List<? extends JCPattern> nestedPatterns = dpatt.nested;
             JCExpression test = null;
             while (components.nonEmpty() && nestedPatterns.nonEmpty()) {
+                //PATTn for record component COMPn of type Tn;
+                //PATTn is a type test pattern or a deconstruction pattern:
+                //=>
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
+                //or
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <nested-extractor>)
+                //or
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <nested-extractor>)
                 RecordComponent component = components.head;
                 JCPattern nested = nestedPatterns.head;
                 VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
@@ -228,17 +242,21 @@ public class TransPatterns extends TreeTranslator {
                         make.VarDef(nestedTemp,
                                     make.App(make.Select(convert(make.Ident(temp), dpatt.type),
                                                          accessor)));
-                LetExpr getAndRun =
-                        make.LetExpr(nestedTempVar,
-                                     preparePatternExtractor(tree, nested, nestedTemp, nested.type));
+                JCExpression extracted =
+                        preparePatternExtractor(tree, nested, nestedTemp, nested.type);
+                JCExpression extraTest = null;
+                if (!types.isAssignable(nestedTemp.type, nested.type)) {
+                    extraTest = makeTypeTest(make.Ident(nestedTemp),
+                                             make.Type(nested.type));
+                } else if (nested.type.isReference()) {
+                    extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
+                }
+                if (extraTest != null) {
+                    extracted = makeBinary(Tag.AND, extraTest, extracted);
+                }
+                LetExpr getAndRun = make.LetExpr(nestedTempVar, extracted);
                 getAndRun.needsCond = true;
                 getAndRun.setType(syms.booleanType);
-                if (!types.isAssignable(nestedTemp.type, nested.type)) {
-                    JCInstanceOf typeTest =
-                            makeTypeTest(make.Ident(nestedTemp),
-                                         make.Type(nested.type));
-                    getAndRun.expr = makeBinary(Tag.AND, typeTest, getAndRun.expr);
-                }
                 if (test == null) {
                     test = getAndRun;
                 } else {
@@ -455,6 +473,22 @@ public class TransPatterns extends TreeTranslator {
         tree.operator = operators.resolveBinary(tree, optag, lhs.type, rhs.type);
         tree.type = tree.operator.type.getReturnType();
         return tree;
+    }
+
+    /** Make an attributed tree representing a literal. This will be an
+     *  Ident node in the case of boolean literals, a Literal node in all
+     *  other cases.
+     *  @param type       The literal's type.
+     *  @param value      The literal's value.
+     */
+    JCExpression makeLit(Type type, Object value) {
+        return make.Literal(type.getTag(), value).setType(type.constType(value));
+    }
+
+    /** Make an attributed tree representing null.
+     */
+    JCExpression makeNull() {
+        return makeLit(syms.botType, null);
     }
 
     JCExpression convert(JCExpression expr, Type target) {
