@@ -156,8 +156,9 @@ public class TransPatterns extends TreeTranslator {
     public void visitTypeTest(JCInstanceOf tree) {
         if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             //E instanceof T N
+            //E instanceof T(PATT1, PATT2, ...)
             //=>
-            //(let T' N$temp = E; N$temp instanceof T && <nested-extractor>)
+            //(let T' N$temp = E; N$temp instanceof T && <pattern extractor>)
             Type tempType = tree.expr.type.hasTag(BOT) ?
                     syms.objectType
                     : tree.expr.type;
@@ -225,9 +226,9 @@ public class TransPatterns extends TreeTranslator {
                 //=>
                 //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
                 //or
-                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <nested-extractor>)
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <PATTn extractor>)
                 //or
-                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <nested-extractor>)
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <PATTn extractor>)
                 RecordComponent component = components.head;
                 JCPattern nested = nestedPatterns.head;
                 VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
