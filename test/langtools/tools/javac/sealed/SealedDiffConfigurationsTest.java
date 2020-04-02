@@ -217,9 +217,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Test.java:4:24: compiler.err.cant.inherit.from.sealed: Test.Sealed",
-                "Test.java:4:5: compiler.err.non.sealed.sealed.or.final.expected",
-                "2 errors");
+                "Test.java:4:5: compiler.err.cant.inherit.from.sealed: Test.Sealed",
+                "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
         }
@@ -283,9 +282,8 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sub2.java:3:20: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
-                "Sub2.java:3:1: compiler.err.non.sealed.sealed.or.final.expected",
-                "2 errors"
+                "Sub2.java:3:1: compiler.err.cant.inherit.from.sealed: pkg.Sealed",
+                "1 error"
                 );
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
@@ -424,7 +422,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
 
         List<String> expected = List.of(
                 "Sealed.java:3:40: compiler.err.not.def.public.cant.access: pkg2.Sub1, pkg2",
-                "Sub1.java:3:30: compiler.err.cant.inherit.from.sealed: pkg1.Sealed",
+                "Sub1.java:3:7: compiler.err.cant.inherit.from.sealed: pkg1.Sealed",
                 "2 errors");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
