@@ -118,6 +118,27 @@ public class SimpleDeconstructionPattern {
         if (!testC(new P6(new P3("")))) {
             throw new IllegalStateException();
         }
+        if (!testGen1(new GenRecord1<>(1L, ""))) {
+            throw new IllegalStateException();
+        }
+        if (testGen1(new GenRecord1<>(1L, "a"))) {
+            throw new IllegalStateException();
+        }
+        if (testGen2(new GenRecord1<>(3L, ""))) {
+            throw new IllegalStateException();
+        }
+        if (!testGen2(new GenRecord1<>(3, ""))) {
+            throw new IllegalStateException();
+        }
+        if (testGen3(new GenRecord1<>(3L, ""))) {
+            throw new IllegalStateException();
+        }
+        if (!testGen3(new GenRecord1<>(3, ""))) {
+            throw new IllegalStateException();
+        }
+        if (!testGen3(new GenRecord1<>(3, ""))) {
+            throw new IllegalStateException();
+        }
     }
 
 //    private static boolean test1(Object o) throws Throwable {
@@ -186,6 +207,22 @@ public class SimpleDeconstructionPattern {
         return o instanceof P6(P3(String s)) && s.isEmpty();
     }
 
+    private static boolean testGen1(Object o) throws Throwable {
+        return o instanceof GenRecord1(var i, var s) && s.length() == 0;
+    }
+
+    private static boolean testGen2(Object o) throws Throwable {
+        return o instanceof GenRecord1(Integer i, var s) && i.intValue() == 3 && s.length() == 0;
+    }
+
+    private static boolean testGen3(Object o) throws Throwable {
+        return o instanceof GenRecord1<?, ?>(Integer i, var s) && i.intValue() == 3 && s.length() == 0;
+    }
+
+    private static boolean testGen4(GenBase<Integer, String> o) throws Throwable {
+        return o instanceof GenRecord1<Integer, String>(var i, var s) && i.intValue() == 3 && s.length() == 0;
+    }
+
     public record P(int i) {
     }
 
@@ -203,4 +240,7 @@ public class SimpleDeconstructionPattern {
     public interface Base {}
     public record BaseUse(Base b) {}
     public record BaseSubclass(int i) implements Base {}
+
+    public interface GenBase<T1, T2 extends CharSequence> {}
+    public record GenRecord1<T1, T2 extends CharSequence> (T1 i, T2 s) implements GenBase<T1, T2> {}
 }

@@ -11,6 +11,10 @@ DeconstructionPatternErrors.java:23:26: compiler.err.incorrect.number.of.nested.
 DeconstructionPatternErrors.java:24:26: compiler.err.incorrect.number.of.nested.patterns: int, int,int
 DeconstructionPatternErrors.java:25:36: compiler.err.cant.resolve.location: kindname.class, Unresolvable, , , (compiler.misc.location: kindname.class, DeconstructionPatternErrors, null)
 DeconstructionPatternErrors.java:25:26: compiler.err.incorrect.number.of.nested.patterns: int, int,Unresolvable
+DeconstructionPatternErrors.java:26:13: compiler.err.instanceof.reifiable.not.safe: java.lang.Object, DeconstructionPatternErrors.GenRecord<java.lang.String>
+DeconstructionPatternErrors.java:27:29: compiler.err.instanceof.reifiable.not.safe: java.lang.Object, DeconstructionPatternErrors.GenRecord<java.lang.String>
+DeconstructionPatternErrors.java:28:44: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Integer)
+DeconstructionPatternErrors.java:28:13: compiler.err.instanceof.reifiable.not.safe: java.lang.Object, DeconstructionPatternErrors.GenRecord<java.lang.String>
 - compiler.note.preview.filename: DeconstructionPatternErrors.java
 - compiler.note.preview.recompile
-13 errors
+17 errors

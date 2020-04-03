@@ -23,6 +23,9 @@ public class DeconstructionPatternErrors {
         if (p instanceof P(var v1, var v2)); //too many nested patterns
         if (p instanceof P(int v1, int v2)); //too many nested patterns
         if (p instanceof P(int v1, Unresolvable v2)); //too many nested patterns
+        if (p instanceof GenRecord<String>(var v)); //incorrect generic type
+        if (p instanceof P4(GenRecord<String>(var v))); //incorrect generic type
+        if (p instanceof GenRecord<String>(Integer v)); //inconsistency in types
     }
 
     public record P(int i) {
@@ -32,5 +35,6 @@ public class DeconstructionPatternErrors {
     public record P3(List<String> l) {}
     public record P4(Object o) {}
     public record P5(String s) {}
+    public record GenRecord<T>(T s) {}
 
 }

@@ -3929,11 +3929,12 @@ public class Attr extends JCTree.Visitor {
 
     @Override
     public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
-        Type site = tree.type = attribType(tree.deconstructor, env);
+        tree.type = attribType(tree.deconstructor, env);
+        Type site = types.removeWildcards(tree.type);
         List<Type> expectedRecordTypes;
         if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
             ClassSymbol record = (ClassSymbol) site.tsym;
-            expectedRecordTypes = record.getRecordComponents().stream().map(rc -> rc.type).collect(List.collector());
+            expectedRecordTypes = record.getRecordComponents().stream().map(rc -> types.memberType(site, rc)).collect(List.collector());
             tree.record = record;
         } else {
             log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
