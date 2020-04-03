@@ -111,8 +111,8 @@ public class getPermittedSubtypesTest {
         // Test class with PermittedSubtypes attribute but old class file version.
         testSealedInfo(oldClassFile.class, new String[] { });
 
-        // Test class with empty PermittedSubtypes attribute.
-        testSealedInfo(noSubtypes.class, new String[] { });
+        // Test class with an empty PermittedSubtypes attribute.
+        testBadSealedType("noSubtypes", "PermittedSubtypes attribute is empty");
 
         // Test returning names of non-existing classes.
         testSealedInfo(noLoadSubtypes.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
@@ -122,8 +122,8 @@ public class getPermittedSubtypesTest {
         testBadSealedType("badPermittedAttr",
                           "Permitted subtype class_info_index 15 has bad constant type");
 
-        // Test that loading a sealed final class with a non-empty PermittedSubtypes
+        // Test that loading a sealed final class with a PermittedSubtypes
         // attribute causes a ClassFormatError.
-        testBadSealedType("sealedButFinal", "PermittedSubtypes attribute in final class file");
+        testBadSealedType("sealedButFinal", "PermittedSubtypes attribute in final class");
     }
 }

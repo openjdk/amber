@@ -3214,6 +3214,9 @@ u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFile
     cfs->guarantee_more(2, CHECK_0);  // length
     length = cfs->get_u2_fast();
   }
+  if (length < 1) {
+    classfile_parse_error("PermittedSubtypes attribute is empty in class file %s", CHECK_0);
+  }
   const int size = length;
   Array<u2>* const permitted_subtypes = MetadataFactory::new_array<u2>(_loader_data, size, CHECK_0);
   _permitted_subtypes = permitted_subtypes;
@@ -3776,8 +3779,8 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
             if (tag == vmSymbols::tag_permitted_subtypes()) {
               if (supports_sealed_types()) {
                 // Check for PermittedSubtypes tag
-                // Classes with empty PermittedSubtype attributes are marked ACC_FINAL.
-                if (_access_flags.is_final() && attribute_length > 2) {
+                // Classes marked ACC_FINAL cannot have a PermittedSubtype attribute.
+                if (_access_flags.is_final()) {
                   classfile_parse_error("PermittedSubtypes attribute in final class file %s", CHECK);
                 }
                 if (parsed_permitted_subtypes_attribute) {
