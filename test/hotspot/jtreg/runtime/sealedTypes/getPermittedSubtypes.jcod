@@ -102,7 +102,7 @@ class noLoadSubtypes {
 
 
 // This class contains an empty PermittedSubtypes attribute.  Test that
-// this does not cause an exception to get thrown.
+// this causes an exception to get thrown.
 class noSubtypes {
   0xCAFEBABE;
   65535; // minor version
@@ -124,7 +124,7 @@ class noSubtypes {
     Utf8 "PermittedSubtypes"; // #13     at 0x81
   } // Constant Pool
 
-  0x0030; // access [ ACC_SUPER ACC_FINAL ]
+  0x0020; // access [ ACC_SUPER ]
   #7;// this_cpx
   #2;// super_cpx
 
@@ -327,7 +327,7 @@ class badPermittedAttr {
 } // end class badPermittedAttr
 
 
-// This class has a non-empty PermittedSubtypes attribute and is marked Final.
+// This class has a PermittedSubtypes attribute and is marked Final.
 // Loading this class should throw a ClassFormatError exception.
 //
 // sealed class sealedButFinal permits iDontExist, I/Dont/Exist/Either { }
