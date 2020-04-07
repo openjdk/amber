@@ -956,7 +956,7 @@ void DynamicArchiveBuilder::relocate_buffer_to_target() {
   RelocateBufferToTarget patcher(this, (address*)_alloc_bottom, _buffer_to_target_delta);
   ArchivePtrMarker::ptrmap()->iterate(&patcher);
 
-  Array<u8>* table = FileMapInfo::shared_path_table().table();
+  Array<u8>* table = FileMapInfo::saved_shared_path_table().table();
   SharedPathTable runtime_table(to_target(table), FileMapInfo::shared_path_table().size());
   _header->set_shared_path_table(runtime_table);
 
@@ -1020,7 +1020,7 @@ void DynamicArchiveBuilder::write_archive(char* serialized_data) {
   // Now write the archived data including the file offsets.
   const char* archive_name = Arguments::GetSharedDynamicArchivePath();
   dynamic_info->open_for_write(archive_name);
-  MetaspaceShared::write_core_archive_regions(dynamic_info);
+  MetaspaceShared::write_core_archive_regions(dynamic_info, NULL, NULL);
   dynamic_info->set_final_requested_base((char*)Arguments::default_SharedBaseAddress());
   dynamic_info->set_header_crc(dynamic_info->compute_header_crc());
   dynamic_info->write_header();
