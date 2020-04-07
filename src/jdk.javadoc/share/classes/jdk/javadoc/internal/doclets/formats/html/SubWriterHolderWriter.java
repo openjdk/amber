@@ -34,7 +34,7 @@ import com.sun.source.doctree.DocTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.BodyContents;
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
@@ -207,13 +207,32 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * @return a content tree for the member header
      */
     public Content getMemberTreeHeader() {
-        HtmlTree ul = new HtmlTree(HtmlTag.UL);
+        HtmlTree ul = new HtmlTree(TagName.UL);
         ul.setStyle(HtmlStyle.blockList);
         return ul;
     }
 
+    /**
+     * Returns a list to be used for the list of members of a given kind.
+     *
+     * @return a list to be used for the list of members of a given kind
+     */
+    public Content getMemberList() {
+        return new HtmlTree(TagName.UL).setStyle(HtmlStyle.memberList);
+    }
+
+    /**
+     * Returns an item for the list of elements of a given kind
+     *
+     * @param contentTree the tree used to generate the complete member tree
+     * @return an item for the list of elements of a given kind
+     */
+    public Content getMemberListItem(Content contentTree) {
+        return HtmlTree.LI(contentTree);
+    }
+
     public Content getMemberInheritedTree() {
-        HtmlTree div = new HtmlTree(HtmlTag.DIV);
+        HtmlTree div = new HtmlTree(TagName.DIV);
         div.setStyle(HtmlStyle.inheritedList);
         return div;
     }
@@ -238,7 +257,7 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * @return a content tree for the member
      */
     public Content getMemberTree(Content contentTree) {
-        return HtmlTree.LI(HtmlStyle.blockList, contentTree);
+        return HtmlTree.LI(contentTree);
     }
 
     /**
