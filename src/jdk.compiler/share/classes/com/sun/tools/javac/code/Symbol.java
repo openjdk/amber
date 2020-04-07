@@ -1491,7 +1491,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return null;
         }
 
-        public RecordComponent getRecordComponent(JCVariableDecl var, boolean addIfMissing) {
+        public RecordComponent getRecordComponent(JCVariableDecl var, boolean addIfMissing, List<JCAnnotation> annotations) {
             for (RecordComponent rc : recordComponents) {
                 if (rc.name == var.name) {
                     return rc;
@@ -1499,7 +1499,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             }
             RecordComponent rc = null;
             if (addIfMissing) {
-                recordComponents = recordComponents.append(rc = new RecordComponent(var));
+                recordComponents = recordComponents.append(rc = new RecordComponent(var, annotations));
             }
             return rc;
         }
@@ -1760,9 +1760,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /**
          * Construct a record component, given its flags, name, type and owner.
          */
-        public RecordComponent(JCVariableDecl fieldDecl) {
+        public RecordComponent(JCVariableDecl fieldDecl, List<JCAnnotation> annotations) {
             super(PUBLIC, fieldDecl.sym.name, fieldDecl.sym.type, fieldDecl.sym.owner);
-            this.originalAnnos = fieldDecl.mods.annotations;
+            this.originalAnnos = annotations;
         }
 
         public List<JCAnnotation> getOriginalAnnos() { return originalAnnos; }
