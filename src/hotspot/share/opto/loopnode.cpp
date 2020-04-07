@@ -31,12 +31,14 @@
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
+#include "opto/arraycopynode.hpp"
 #include "opto/callnode.hpp"
 #include "opto/connode.hpp"
 #include "opto/convertnode.hpp"
 #include "opto/divnode.hpp"
 #include "opto/idealGraphPrinter.hpp"
 #include "opto/loopnode.hpp"
+#include "opto/movenode.hpp"
 #include "opto/mulnode.hpp"
 #include "opto/rootnode.hpp"
 #include "opto/superword.hpp"
@@ -1588,7 +1590,13 @@ void OuterStripMinedLoopNode::adjust_strip_mined_loop(PhaseIterGVN* igvn) {
     } else {
       sub = igvn->transform(new SubINode(iv_phi, limit));
     }
-    Node* min = igvn->transform(new MinINode(sub, igvn->intcon(scaled_iters)));
+    // sub is positive and can be larger than the max signed int
+    // value. Use an unsigned min.
+    Node* const_iters = igvn->intcon(scaled_iters);
+    Node* cmp = igvn->transform(new CmpUNode(sub, const_iters));
+    Node* bol = igvn->transform(new BoolNode(cmp, BoolTest::lt));
+    Node* min = igvn->transform(new CMoveINode(bol, const_iters, sub, TypeInt::make(0, scaled_iters, Type::WidenMin)));
+
     Node* new_limit = NULL;
     if (stride > 0) {
       new_limit = igvn->transform(new AddINode(min, iv_phi));
@@ -4089,8 +4097,16 @@ Node *PhaseIdealLoop::get_late_ctrl( Node *n, Node *early ) {
           }
         } else {
           Node *sctrl = has_ctrl(s) ? get_ctrl(s) : s->in(0);
+          const TypePtr* adr_type = s->adr_type();
+          if (s->is_ArrayCopy()) {
+            // Copy to known instance needs destination type to test for aliasing
+            const TypePtr* dest_type = s->as_ArrayCopy()->_dest_type;
+            if (dest_type != TypeOopPtr::BOTTOM) {
+              adr_type = dest_type;
+            }
+          }
           assert(sctrl != NULL || !s->is_reachable_from_root(), "must have control");
-          if (sctrl != NULL && !sctrl->is_top() && C->can_alias(s->adr_type(), load_alias_idx) && is_dominator(early, sctrl)) {
+          if (sctrl != NULL && !sctrl->is_top() && C->can_alias(adr_type, load_alias_idx) && is_dominator(early, sctrl)) {
             LCA = dom_lca_for_get_late_ctrl(LCA, sctrl, n);
           }
         }

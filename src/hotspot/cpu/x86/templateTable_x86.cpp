@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2655,7 +2655,7 @@ void TemplateTable::_return(TosState state) {
     __ bind(skip_register_finalizer);
   }
 
-  if (SafepointMechanism::uses_thread_local_poll() && _desc->bytecode() != Bytecodes::_return_register_finalizer) {
+  if (_desc->bytecode() != Bytecodes::_return_register_finalizer) {
     Label no_safepoint;
     NOT_PRODUCT(__ block_comment("Thread-local Safepoint poll"));
 #ifdef _LP64
@@ -3743,7 +3743,6 @@ void TemplateTable::invokevirtual_helper(Register index,
   __ profile_virtual_call(rax, rlocals, rdx);
   // get target Method* & entry point
   __ lookup_virtual_method(rax, index, method);
-  __ profile_called_method(method, rdx, rbcp);
 
   __ profile_arguments_type(rdx, method, rbcp, true);
   __ jump_from_interpreted(method, rdx);
@@ -3895,7 +3894,6 @@ void TemplateTable::invokeinterface(int byte_no) {
   __ testptr(rbx, rbx);
   __ jcc(Assembler::zero, no_such_method);
 
-  __ profile_called_method(rbx, rbcp, rdx);
   __ profile_arguments_type(rdx, rbx, rbcp, true);
 
   // do the call

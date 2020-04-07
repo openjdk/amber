@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -432,12 +432,9 @@ int LIR_Assembler::emit_unwind_handler() {
   }
 
   if (compilation()->env()->dtrace_method_probes()) {
-    __ call_Unimplemented();
-#if 0
-    __ movptr(Address(rsp, 0), rax);
-    __ mov_metadata(Address(rsp, sizeof(void*)), method()->constant_encoding());
-    __ call(RuntimeAddress(CAST_FROM_FN_PTR(address, SharedRuntime::dtrace_method_exit)));
-#endif
+    __ mov(c_rarg0, rthread);
+    __ mov_metadata(c_rarg1, method()->constant_encoding());
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::dtrace_method_exit), c_rarg0, c_rarg1);
   }
 
   if (method()->is_synchronized() || compilation()->env()->dtrace_method_probes()) {
@@ -504,16 +501,13 @@ void LIR_Assembler::return_op(LIR_Opr result) {
     __ reserved_stack_check();
   }
 
-  address polling_page(os::get_polling_page());
-  __ read_polling_page(rscratch1, polling_page, relocInfo::poll_return_type);
+  __ fetch_and_read_polling_page(rscratch1, relocInfo::poll_return_type);
   __ ret(lr);
 }
 
 int LIR_Assembler::safepoint_poll(LIR_Opr tmp, CodeEmitInfo* info) {
-  address polling_page(os::get_polling_page());
   guarantee(info != NULL, "Shouldn't be NULL");
-  assert(os::is_poll_address(polling_page), "should be");
-  __ get_polling_page(rscratch1, polling_page, relocInfo::poll_type);
+  __ get_polling_page(rscratch1, relocInfo::poll_type);
   add_debug_info_for_branch(info);  // This isn't just debug info:
                                     // it's the oop map
   __ read_polling_page(rscratch1, relocInfo::poll_type);
