@@ -67,24 +67,11 @@ public class ClassBuilder extends AbstractBuilder {
     private final ClassWriter writer;
 
     /**
-     * Keep track of whether or not this typeElement is an interface.
-     */
-    private final boolean isInterface;
-
-    /**
-     * Keep track of whether or not this typeElement is an enum.
-     */
-    private final boolean isEnum;
-
-    /**
-     * Keep track of whether or not this typeElement is a record.
-     */
-    private final boolean isRecord;
-
-    /**
      * The content tree for the class documentation.
      */
     private Content contentTree;
+
+    private final Utils utils;
 
     /**
      * Construct a new ClassBuilder.
@@ -97,24 +84,15 @@ public class ClassBuilder extends AbstractBuilder {
         super(context);
         this.typeElement = typeElement;
         this.writer = writer;
-        if (utils.isInterface(typeElement)) {
-            isInterface = true;
-            isEnum = false;
-            isRecord = false;
-        } else if (utils.isEnum(typeElement)) {
-            isInterface = false;
-            isEnum = true;
-            isRecord = false;
+        this.utils = configuration.utils;
+        switch (typeElement.getKind()) {
+            case ENUM:
             setEnumDocumentation(typeElement);
-        } else if (utils.isRecord(typeElement)) {
-            isInterface = false;
-            isEnum = false;
-            isRecord = true;
+                break;
+
+            case RECORD:
             setRecordDocumentation(typeElement);
-        } else {
-            isInterface = false;
-            isEnum = false;
-            isRecord = false;
+                break;
         }
     }
 
@@ -142,14 +120,24 @@ public class ClassBuilder extends AbstractBuilder {
       */
      protected void buildClassDoc() throws DocletException {
         String key;
-        if (isInterface) {
+         switch (typeElement.getKind()) {
+             case INTERFACE:
             key = "doclet.Interface";
-        } else if (isEnum) {
+                 break;
+             case ENUM:
             key = "doclet.Enum";
-        } else if (isRecord) {
+                 break;
+             case RECORD:
             key = "doclet.Record";
-        } else {
+                 break;
+             case ANNOTATION_TYPE:
+                 key = "doclet.AnnotationType";
+                 break;
+             case CLASS:
             key = "doclet.Class";
+                 break;
+             default:
+                 throw new IllegalStateException(typeElement.getKind() + " " + typeElement);
         }
         Content contentTree = writer.getHeader(resources.getText(key) + " "
                 + utils.getSimpleName(typeElement));
@@ -353,6 +341,8 @@ public class ClassBuilder extends AbstractBuilder {
         buildPropertyDetails(memberDetailsTree);
         buildFieldDetails(memberDetailsTree);
         buildConstructorDetails(memberDetailsTree);
+        buildAnnotationTypeRequiredMemberDetails(memberDetailsTree);
+        buildAnnotationTypeOptionalMemberDetails(memberDetailsTree);
         buildMethodDetails(memberDetailsTree);
 
         classContentTree.add(writer.getMemberDetailsTree(memberDetailsTree));
@@ -406,6 +396,28 @@ public class ClassBuilder extends AbstractBuilder {
      */
     protected void buildMethodDetails(Content memberDetailsTree) throws DocletException {
         builderFactory.getMethodBuilder(writer).build(memberDetailsTree);
+    }
+
+    /**
+     * Build the annotation type optional member documentation.
+     *
+     * @param memberDetailsTree the content tree to which the documentation will be added
+     * @throws DocletException if there is a problem building the documentation
+     */
+    protected void buildAnnotationTypeOptionalMemberDetails(Content memberDetailsTree)
+            throws DocletException {
+        builderFactory.getAnnotationTypeOptionalMemberBuilder(writer).build(memberDetailsTree);
+    }
+
+    /**
+     * Build the annotation type required member documentation.
+     *
+     * @param memberDetailsTree the content tree to which the documentation will be added
+     * @throws DocletException if there is a problem building the documentation
+     */
+    protected void buildAnnotationTypeRequiredMemberDetails(Content memberDetailsTree)
+            throws DocletException {
+        builderFactory.getAnnotationTypeRequiredMemberBuilder(writer).build(memberDetailsTree);
     }
 
     /**
