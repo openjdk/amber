@@ -310,11 +310,6 @@ public class RecordCompilationTests extends CompilationTestCase {
                                 "public R(int _x, int _y) { this.x = _x; this.y = _y; }"))
             assertFail("compiler.err.invalid.canonical.constructor.in.record", "record R(int x, int y) { # }", s);
 
-        for (String s : List.of("", "protected", "private"))
-            assertOK("record R(int x, int y) { # }",
-                       "# R(int x, int y) { this.x = x; this.y = y; }",
-                       s);
-
         // ctor args must match types
         assertFail("compiler.err.invalid.canonical.constructor.in.record",
                 "import java.util.*;\n" +
@@ -998,6 +993,60 @@ public class RecordCompilationTests extends CompilationTestCase {
                         default -> { /* do nothing */ }
                     }
             }
+        }
+    }
+
+    private static final List<String> ACCESSIBILITY = List.of(
+            "public", "protected", "", "private");
+
+    public void testCanonicalAccessibility() throws Exception {
+        // accessibility of canonical can't be stronger than that of the record type
+        for (String a1 : ACCESSIBILITY) {
+            for (String a2 : ACCESSIBILITY) {
+                if (protection(a2) > protection(a1)) {
+                    assertFail("compiler.err.invalid.canonical.constructor.in.record", "class R {# record RR() { # RR {} } }", a1, a2);
+                } else {
+                    assertOK("class R {# record RR() { # RR {} } }", a1, a2);
+                }
+            }
+        }
+
+        // now lets check that when compiler the compiler generates the canonical, it has the same accessibility
+        // as the record type
+        for (String a : ACCESSIBILITY) {
+            File dir = assertOK(true, "class R {# record RR() {} }", a);
+            for (final File fileEntry : dir.listFiles()) {
+                if (fileEntry.getName().equals("R$RR.class")) {
+                    ClassFile classFile = ClassFile.read(fileEntry);
+                    for (Method method : classFile.methods)
+                        if (method.getName(classFile.constant_pool).equals("<init>")) {
+                            Assert.check(method.access_flags.flags == accessFlag(a),
+                                    "was expecting access flag " + accessFlag(a) + " but found " + method.access_flags.flags);
+                        }
+                }
+            }
+        }
+    }
+
+    private int protection(String access) {
+        switch (access) {
+            case "private": return 3;
+            case "protected": return 1;
+            case "public": return 0;
+            case "": return 2;
+            default:
+                throw new AssertionError();
+        }
+    }
+
+    private int accessFlag(String access) {
+        switch (access) {
+            case "private": return AccessFlags.ACC_PRIVATE;
+            case "protected": return AccessFlags.ACC_PROTECTED;
+            case "public": return AccessFlags.ACC_PUBLIC;
+            case "": return 0;
+            default:
+                throw new AssertionError();
         }
     }
 }
