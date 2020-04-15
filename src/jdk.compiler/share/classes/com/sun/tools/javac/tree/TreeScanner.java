@@ -302,6 +302,10 @@ public class TreeScanner extends Visitor {
         scan(tree.pattern);
     }
 
+    @Override
+    public void visitAnyPattern(JCTree.JCAnyPattern that) {
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         if (tree.vartype != null)
             scan(tree.vartype);
@@ -311,6 +315,10 @@ public class TreeScanner extends Visitor {
     public void visitDeconstructionPattern(JCDeconstructionPattern that) {
         scan(that.deconstructor);
         scan(that.nested);
+    }
+
+    public void visitLiteralPattern(JCLiteralPattern tree) {
+        scan(tree.value);
     }
 
     public void visitIndexed(JCArrayAccess tree) {

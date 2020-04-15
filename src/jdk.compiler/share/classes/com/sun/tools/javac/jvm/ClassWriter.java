@@ -913,6 +913,20 @@ public class ClassWriter extends ClassFile {
      */
     void writeBootstrapMethods() {
         int alenIdx = writeAttr(names.BootstrapMethods);
+        OUTER: while (true) {
+            int size = poolWriter.bootstrapMethods.size();
+            for (BsmKey bsmKey : poolWriter.bootstrapMethods.keySet()) {
+                //ensure all is in pool:
+                LoadableConstant[] uniqueArgs = bsmKey.staticArgs;
+                for (LoadableConstant arg : uniqueArgs) {
+                    poolWriter.putConstant(arg);
+                    if (size != poolWriter.bootstrapMethods.size()) {
+                        continue OUTER;
+                    }
+                }
+            }
+            break;
+        }
         databuf.appendChar(poolWriter.bootstrapMethods.size());
         for (BsmKey bsmKey : poolWriter.bootstrapMethods.keySet()) {
             //write BSM handle

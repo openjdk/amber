@@ -1815,7 +1815,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return aliases().containsAll(b.aliases());
         }
 
-        List<BindingSymbol> aliases() {
+        public List<BindingSymbol> aliases() {
             return List.of(this);
         }
 

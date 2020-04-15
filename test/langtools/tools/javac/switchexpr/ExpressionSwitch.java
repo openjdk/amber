@@ -23,6 +23,10 @@ public class ExpressionSwitch {
         assertEquals(scopesIsolated(T.B), "B");
         assertEquals(lambdas1(T.B).get(), "B");
         assertEquals(lambdas2(T.B).get(), "B");
+        assertEquals(stringSwitchExpr("A"), "0");
+        assertEquals(stringSwitchExpr("B"), "0");
+        assertEquals(stringSwitchExpr("C"), "1");
+        assertEquals(stringSwitchExpr("X"), "D");
         assertEquals(convert1("A"), 0);
         assertEquals(convert1("B"), 0);
         assertEquals(convert1("C"), 1);
@@ -83,6 +87,14 @@ public class ExpressionSwitch {
             case A: yield () -> "A";
             case B: { yield () -> "B"; }
             default: yield () -> "default";
+        };
+    }
+
+    private String stringSwitchExpr(String str) {
+        return switch (str) {
+            case "A", "B" -> { break "0"; }
+            case "C" -> "1";
+            default -> "D";
         };
     }
 

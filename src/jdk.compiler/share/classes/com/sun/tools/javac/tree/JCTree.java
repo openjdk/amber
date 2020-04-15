@@ -28,6 +28,7 @@ package com.sun.tools.javac.tree;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
@@ -47,6 +48,7 @@ import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
 
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.Directive.ExportsDirective;
 import com.sun.tools.javac.code.Directive.OpensDirective;
@@ -239,9 +241,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         /** Patterns.
          */
+        ANYPATTERN,
+
         BINDINGPATTERN,
 
         DECONSTRUCTIONPATTERN,
+        LITERALPATTERN,
 
         /** Indexed array expressions, of type Indexed.
          */
@@ -1225,12 +1230,24 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public interface GenericSwitch {
+        public enum SwitchKind {
+            ORDINARY,
+            STRING,
+            ENUM,
+            MATCHING;
+        }
+        public SwitchKind getSwitchKind();
+        public void setSelector(JCExpression selector);
+        public void setCases(List<JCCase> cases);
+    }
     /**
      * A "switch ( ) { }" construction.
      */
-    public static class JCSwitch extends JCStatement implements SwitchTree {
+    public static class JCSwitch extends JCStatement implements SwitchTree, GenericSwitch {
         public JCExpression selector;
         public List<JCCase> cases;
+        public SwitchKind kind;
         protected JCSwitch(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;
             this.cases = cases;
@@ -1252,6 +1269,18 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return SWITCH;
         }
+        @Override
+        public SwitchKind getSwitchKind() {
+            return kind;
+        }
+        @Override
+        public void setSelector(JCExpression selector) {
+            this.selector = selector;
+        }
+        @Override
+        public void setCases(List<JCCase> cases) {
+            this.cases = cases;
+        }
     }
 
     /**
@@ -1263,11 +1292,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public static final CaseKind STATEMENT = CaseKind.STATEMENT;
         public static final CaseKind RULE = CaseKind.RULE;
         public final CaseKind caseKind;
-        public List<JCExpression> pats;
+        public List<JCPattern> pats;
         public List<JCStatement> stats;
         public JCTree body;
         public boolean completesNormally;
-        protected JCCase(CaseKind caseKind, List<JCExpression> pats,
+        protected JCCase(CaseKind caseKind, List<JCPattern> pats,
                          List<JCStatement> stats, JCTree body) {
             Assert.checkNonNull(pats);
             Assert.check(pats.isEmpty() || pats.head != null);
@@ -1281,10 +1310,18 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public Kind getKind() { return Kind.CASE; }
-        @Override @Deprecated @DefinedBy(Api.COMPILER_TREE)
-        public JCExpression getExpression() { return pats.head; }
+        @DefinedBy(Api.COMPILER_TREE)
+        @Deprecated
+        public JCExpression getExpression() {
+            return pats.nonEmpty() ? pats.head.constExpression() : null;
+        }
         @Override @DefinedBy(Api.COMPILER_TREE)
-        public List<JCExpression> getExpressions() { return pats; }
+        public java.util.List<JCExpression> getExpressions() {
+            return pats.stream()
+                       .map(pat -> pat.constExpression())
+                       .collect(Collectors.toList());
+        }
+        public List<JCPattern> getPatterns() { return pats; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public List<JCStatement> getStatements() {
             return caseKind == CaseKind.STATEMENT ? stats : null;
@@ -1308,9 +1345,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * A "switch ( ) { }" construction.
      */
-    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree {
+    public static class JCSwitchExpression extends JCPolyExpression implements SwitchExpressionTree, GenericSwitch {
         public JCExpression selector;
         public List<JCCase> cases;
+        public SwitchKind kind;
         /** Position of closing brace, optional. */
         public int endpos = Position.NOPOS;
         protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
@@ -1333,6 +1371,18 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return SWITCH_EXPRESSION;
+        }
+        @Override
+        public SwitchKind getSwitchKind() {
+            return kind;
+        }
+        @Override
+        public void setSelector(JCExpression selector) {
+            this.selector = selector;
+        }
+        @Override
+        public void setCases(List<JCCase> cases) {
+            this.cases = cases;
         }
     }
 
@@ -2186,6 +2236,34 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public static class JCAnyPattern extends JCPattern
+            implements AnyPatternTree {
+
+        protected JCAnyPattern() {
+        }
+
+        @Override
+        public void accept(Visitor v) {
+            v.visitAnyPattern(this);
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return Kind.ANY_PATTERN;
+        }
+
+        @Override
+        @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
+            return v.visitAnyPattern(this, d);
+        }
+
+        @Override
+        public Tag getTag() {
+            return ANYPATTERN;
+        }
+    }
+
     public static class JCBindingPattern extends JCPattern
             implements BindingPatternTree {
         public Name name;
@@ -2234,7 +2312,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             implements DeconstructionPatternTree {
         public JCExpression deconstructor;
         public List<JCPattern> nested;
-        public ClassSymbol record;
+        public Symbol extractorResolver; //TODO: MethodSymbol?; TODO: rename to pattern(Sym?)
         public List<Type> innerTypes;
 
         protected JCDeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
@@ -2276,6 +2354,54 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return DECONSTRUCTIONPATTERN;
+        }
+    }
+
+    public static class JCLiteralPattern extends JCPattern
+            implements LiteralPatternTree {
+
+        public JCExpression value;
+        public LiteralPatternKind patternKind;
+
+        protected JCLiteralPattern(JCExpression value) {
+            Assert.checkNonNull(value);
+            this.value = value;
+        }
+
+        @Override
+        public void accept(Visitor v) {
+            v.visitLiteralPattern(this);
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return Kind.LITERAL_PATTERN;
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getValue() {
+            return value;
+        }
+
+        @Override
+        @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
+            return v.visitLiteralPattern(this, d);
+        }
+
+        @Override
+        public Tag getTag() {
+            return LITERALPATTERN;
+        }
+
+        @Override
+        public JCExpression constExpression() {
+            return value;
+        }
+
+        public enum LiteralPatternKind {
+            CONSTANTEXPRESSIONORNULL,
+            TYPE
         }
     }
 
@@ -3215,7 +3341,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
         JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
-        JCCase Case(CaseTree.CaseKind caseKind, List<JCExpression> pat,
+        JCCase Case(CaseKind caseKind, List<JCPattern> pat,
                     List<JCStatement> stats, JCTree body);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);
@@ -3254,6 +3380,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCTypeCast TypeCast(JCTree expr, JCExpression type);
         JCInstanceOf TypeTest(JCExpression expr, JCTree clazz);
         JCBindingPattern BindingPattern(Name name, JCTree vartype);
+        JCLiteralPattern LiteralPattern(JCExpression cexp);
         JCArrayAccess Indexed(JCExpression indexed, JCExpression index);
         JCFieldAccess Select(JCExpression selected, Name selector);
         JCIdent Ident(Name idname);
@@ -3318,8 +3445,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitBinary(JCBinary that)               { visitTree(that); }
         public void visitTypeCast(JCTypeCast that)           { visitTree(that); }
         public void visitTypeTest(JCInstanceOf that)         { visitTree(that); }
+        public void visitAnyPattern(JCAnyPattern that)       { visitTree(that); }
         public void visitBindingPattern(JCBindingPattern that) { visitTree(that); }
         public void visitDeconstructionPattern(JCDeconstructionPattern that) { visitTree(that); }
+        public void visitLiteralPattern(JCLiteralPattern that) { visitTree(that); }
         public void visitIndexed(JCArrayAccess that)         { visitTree(that); }
         public void visitSelect(JCFieldAccess that)          { visitTree(that); }
         public void visitReference(JCMemberReference that)   { visitTree(that); }

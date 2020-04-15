@@ -46,13 +46,17 @@ import com.sun.tools.javac.util.JCDiagnostic.Warning;
 
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
+import com.sun.tools.javac.code.Type.ClassType;
 import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
+import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
+import java.util.Iterator;
 
 /** This pass implements dataflow analysis for Java programs though
  *  different AST visitor steps. Liveness analysis (see AliveAnalyzer) checks that
@@ -651,39 +655,136 @@ public class Flow {
         }
 
         public void visitSwitch(JCSwitch tree) {
-            ListBuffer<PendingExit> prevPendingExits = pendingExits;
-            pendingExits = new ListBuffer<>();
-            scan(tree.selector);
-            boolean hasDefault = false;
-            for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
-                alive = Liveness.ALIVE;
-                JCCase c = l.head;
-                if (c.pats.isEmpty())
-                    hasDefault = true;
-                else {
-                    for (JCExpression pat : c.pats) {
-                        scan(pat);
-                    }
-                }
-                scanStats(c.stats);
-                c.completesNormally = alive != Liveness.DEAD;
-                if (alive != Liveness.DEAD && c.caseKind == JCCase.RULE) {
-                    scanSyntheticBreak(make, tree);
-                    alive = Liveness.DEAD;
-                }
-                // Warn about fall-through if lint switch fallthrough enabled.
-                if (alive == Liveness.ALIVE &&
-                    lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
-                    c.stats.nonEmpty() && l.tail.nonEmpty())
-                    log.warning(Lint.LintCategory.FALLTHROUGH,
-                                l.tail.head.pos(),
-                                Warnings.PossibleFallThroughIntoCase);
+            if (tree.kind == SwitchKind.MATCHING) {
+                visitMatchingSwitch(tree);
+            } else {
+                visitLegacySwitch(tree);
             }
-            if (!hasDefault) {
-                alive = Liveness.ALIVE;
-            }
-            alive = alive.or(resolveBreaks(tree, prevPendingExits));
         }
+            // where
+            private void visitMatchingSwitch(JCSwitch tree) {
+                ListBuffer<PendingExit> prevPendingExits = pendingExits;
+                pendingExits = new ListBuffer<>();
+                scan(tree.selector);
+                Liveness aliveInAnyArm = Liveness.DEAD;
+                boolean hasDefault = false;
+                for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                    JCCase c = l.head;
+                    alive = Liveness.ALIVE;
+                    if (c.pats.nonEmpty()) {
+                        for (JCPattern pat : c.pats) {
+                            if (patternDominated(tree.cases, pat, tree.selector.type)) {
+                                log.error(c, Errors.PatternDominated);
+                            }
+                            scan(pat);
+                        }
+                    } else {
+                        if (patternDominated(tree.cases, null, tree.selector.type)) {
+                            log.error(c, Errors.UnreachableStmt);
+                        }
+                        hasDefault = true;
+                    }
+                    scanStats(c.stats);
+                    aliveInAnyArm = aliveInAnyArm.or(alive);
+                }
+                alive = aliveInAnyArm.or(!hasDefault);
+                alive = alive.or(resolveBreaks(tree, prevPendingExits));
+            }
+            //where:
+                private boolean patternDominated(List<JCCase> clauses, JCPattern givenPattern, Type selectorType) {
+                    // TODO: This needs to evolve as we add more support for other pattern kinds.
+                    boolean assignableCaseFound = false;
+                    OUTTER: for (List<JCCase> l = clauses; l.nonEmpty(); l = l.tail) {
+                        JCCase c = l.head;
+                        if (c.pats.isEmpty()) {
+                            if (givenPattern == null) {
+                                break ;
+                            } else {
+                                // default clause must be the last
+                                return l.nonEmpty();
+                            }
+                        }
+                        for (JCPattern pat : c.pats) {
+                            if (pat == givenPattern) {
+                                break OUTTER;
+                            }
+                            switch (pat.getTag()) {
+                                case BINDINGPATTERN: {
+                                    JCBindingPattern vpatt = (JCBindingPattern)pat;
+                                    if (vpatt.vartype == null) {
+                                        assignableCaseFound = true;
+                                        if (givenPattern != null)
+                                            return true;
+                                    } else {
+                                        if (types.isAssignable(selectorType, vpatt.type))
+                                            assignableCaseFound = true;
+                                        if (givenPattern != null) {
+                                            switch (givenPattern.getTag()) {
+                                                case BINDINGPATTERN:
+                                                    JCBindingPattern currentPattern = (JCBindingPattern)givenPattern;
+                                                    if (currentPattern.vartype != null) {
+                                                        if (types.isAssignable(types.erasure(currentPattern.vartype.type), types.erasure(vpatt.type)))
+                                                            return true;
+                                                    }
+                                                    break;
+                                                case LITERALPATTERN:
+                                                    JCLiteralPattern literalPattern = (JCLiteralPattern) givenPattern;
+                                                    if (literalPattern.type.constValue()==null) {
+                                                        return false; // null pattern is not dominated by a type test pattern
+                                                    } else if (types.isAssignable(literalPattern.type, vpatt.type)) {
+                                                        return true;
+                                                    }
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                                case LITERALPATTERN: {
+                                    break;  // does not dominate any other pattern.
+                                }
+                                default: {
+                                    Assert.check(false);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return givenPattern != null ? assignableCaseFound : false;
+                }
+            private void visitLegacySwitch(JCSwitch tree) {
+                ListBuffer<PendingExit> prevPendingExits = pendingExits;
+                pendingExits = new ListBuffer<>();
+                scan(tree.selector);
+                boolean hasDefault = false;
+                for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
+                    alive = Liveness.ALIVE;
+                    JCCase c = l.head;
+                    if (c.pats.isEmpty())
+                        hasDefault = true;
+                    else {
+                        for (JCPattern pat : c.pats) {
+                            scan(pat);
+                        }
+                    }
+                    scanStats(c.stats);
+                    if (alive != Liveness.DEAD && c.caseKind == JCCase.RULE) {
+                        scanSyntheticBreak(make, tree);
+                        alive = Liveness.DEAD;
+                    }
+                    // Warn about fall-through if lint switch fallthrough enabled.
+                    if (alive == Liveness.ALIVE &&
+                        lint.isEnabled(Lint.LintCategory.FALLTHROUGH) &&
+                        c.stats.nonEmpty() && l.tail.nonEmpty())
+                        log.warning(Lint.LintCategory.FALLTHROUGH,
+                                    l.tail.head.pos(),
+                                    Warnings.PossibleFallThroughIntoCase);
+                }
+                if (!hasDefault) {
+                    alive = Liveness.ALIVE;
+                }
+                alive = alive.or(resolveBreaks(tree, prevPendingExits));
+            }
 
         @Override
         public void visitSwitchExpression(JCSwitchExpression tree) {
@@ -705,13 +806,14 @@ public class Flow {
                 if (c.pats.isEmpty())
                     hasDefault = true;
                 else {
-                    for (JCExpression pat : c.pats) {
+                    for (JCPattern pat : c.pats) {
                         scan(pat);
-                        if (constants != null) {
-                            if (pat.hasTag(IDENT))
-                                constants.remove(((JCIdent) pat).name);
-                            if (pat.type != null)
-                                constants.remove(pat.type.constValue());
+                        if (constants != null && pat.hasTag(LITERALPATTERN)) {
+                            JCExpression lit = ((JCLiteralPattern) pat).value;
+                            if (lit.hasTag(IDENT))
+                                constants.remove(((JCIdent) lit).name);
+                            if (lit.type != null)
+                                constants.remove(lit.type.constValue());
                         }
                     }
                 }
@@ -725,7 +827,6 @@ public class Flow {
                                   Errors.SwitchExpressionCompletesNormally);
                     }
                 }
-                c.completesNormally = alive != Liveness.DEAD;
             }
             if ((constants == null || !constants.isEmpty()) && !hasDefault) {
                 log.error(tree, Errors.NotExhaustive);
@@ -870,12 +971,15 @@ public class Flow {
             analyzeTree(env, env.tree, make);
         }
         public void analyzeTree(Env<AttrContext> env, JCTree tree, TreeMaker make) {
+            analyzeTree(env, List.of(tree), make);
+        }
+        public void analyzeTree(Env<AttrContext> env, List<? extends JCTree> trees, TreeMaker make) {
             try {
                 attrEnv = env;
                 Flow.this.make = make;
                 pendingExits = new ListBuffer<>();
                 alive = Liveness.ALIVE;
-                scan(tree);
+                scan(trees);
             } finally {
                 pendingExits = null;
                 Flow.this.make = null;
@@ -2356,7 +2460,7 @@ public class Flow {
                 if (c.pats.isEmpty()) {
                     hasDefault = true;
                 } else {
-                    for (JCExpression pat : c.pats) {
+                    for (JCPattern pat : c.pats) {
                         scanExpr(pat);
                     }
                 }

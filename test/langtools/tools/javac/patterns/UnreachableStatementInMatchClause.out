@@ -1,0 +1,3 @@
+UnreachableStatementInMatchClause.java:13:17: compiler.err.unreachable.stmt
+UnreachableStatementInMatchClause.java:17:17: compiler.err.unreachable.stmt
+2 errors

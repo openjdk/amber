@@ -258,6 +258,14 @@ public interface TreeVisitor<R,P> {
     R visitLiteral(LiteralTree node, P p);
 
     /**
+     * Visits an AnyPattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitAnyPattern(AnyPatternTree node, P p);
+
+    /**
      * {@preview Associated with pattern matching for instanceof, a preview feature of
      *           the Java language.
      *
@@ -290,6 +298,14 @@ public interface TreeVisitor<R,P> {
      * @since 15
      */
     R visitDeconstructionPattern(DeconstructionPatternTree node, P p);
+
+    /**
+     * Visits a LiteralPattern node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitLiteralPattern(LiteralPatternTree node, P p);
 
     /**
      * Visits a MethodTree node.

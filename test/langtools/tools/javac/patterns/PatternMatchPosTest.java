@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,10 +23,9 @@
 
 /*
  * @test
- * @bug 8231827
  * @summary Check proper positions.
  * @build PatternMatchPosTest
- * @compile/ref=PatternMatchPosTest.out -processor PatternMatchPosTest -Xlint:unchecked -XDrawDiagnostics --enable-preview -source ${jdk.version} PatternMatchPosTestData.java
+ * @compile/ref=PatternMatchPosTest.out -processor PatternMatchPosTest -Xlint:unchecked PatternMatchPosTest.java
  */
 
 import java.io.IOException;
@@ -38,13 +37,13 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.TypeElement;
 
+import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.IfTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
-import javax.tools.Diagnostic;
 
 @SupportedAnnotationTypes("*")
 public class PatternMatchPosTest extends AbstractProcessor {
@@ -78,6 +77,19 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     scan(node.getElseStatement(), p);
                     return null;
                 }
+
+                @Override
+                public Void visitCase(CaseTree node, Void p) {
+                    boolean prevPrint = print;
+                    try {
+                        print = true;
+                        scan(node.getPatterns(), p);
+                    } finally {
+                        print = prevPrint;
+                    }
+                    scan(node.getStatements(), p);
+                    return null;
+                }
                 @Override
                 public Void scan(Tree tree, Void p) {
                     if (tree == null)
@@ -85,8 +97,10 @@ public class PatternMatchPosTest extends AbstractProcessor {
                     if (print) {
                         int start = (int) sp.getStartPosition(dataPath.getCompilationUnit(), tree);
                         int end = (int) sp.getEndPosition(dataPath.getCompilationUnit(), tree);
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                                                                 text.substring(start, end));
+                        if (start == (-1)) {
+                            System.err.println("!");
+                        }
+                        System.out.println(text.substring(start, end));
                     }
                     return super.scan(tree, p);
                 }
@@ -102,4 +116,21 @@ public class PatternMatchPosTest extends AbstractProcessor {
         return SourceVersion.latestSupported();
     }
 
+}
+
+class PatternMatchPosTestData {
+    void data(Object o) {
+        //no constants in instanceof
+//        if (o instanceof 1) { }
+        //no var in instanceof:
+//        if (o instanceof var s) { }
+        if (o instanceof String s) { }
+        if (o instanceof java.lang.String s) { }
+        switch (o) {
+            case 1: break;
+            case String s: break;
+            case java.lang.Integer i: break;
+            case var s: break;
+        }
+    }
 }

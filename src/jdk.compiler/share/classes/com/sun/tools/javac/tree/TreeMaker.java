@@ -28,6 +28,7 @@ package com.sun.tools.javac.tree;
 import java.util.Iterator;
 
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Attribute.UnresolvedClass;
@@ -273,7 +274,7 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCCase Case(CaseTree.CaseKind caseKind, List<JCExpression> pats,
+    public JCCase Case(CaseKind caseKind, List<JCPattern> pats,
                        List<JCStatement> stats, JCTree body) {
         JCCase tree = new JCCase(caseKind, pats, stats, body);
         tree.pos = pos;
@@ -464,6 +465,12 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCAnyPattern AnyPattern() {
+        JCAnyPattern tree = new JCAnyPattern();
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCBindingPattern BindingPattern(Name name, JCTree vartype) {
         JCBindingPattern tree = new JCBindingPattern(name, null, vartype);
         tree.pos = pos;
@@ -472,6 +479,12 @@ public class TreeMaker implements JCTree.Factory {
 
     public JCDeconstructionPattern DeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
         JCDeconstructionPattern tree = new JCDeconstructionPattern(deconstructor, nested);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCLiteralPattern LiteralPattern(JCExpression cexp) {
+        JCLiteralPattern tree = new JCLiteralPattern(cexp);
         tree.pos = pos;
         return tree;
     }

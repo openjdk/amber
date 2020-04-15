@@ -26,7 +26,8 @@
 package com.sun.tools.javac.comp;
 
 import com.sun.tools.javac.code.Flags;
-import com.sun.tools.javac.code.Kinds.Kind;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
+import com.sun.tools.javac.code.Symbol.MethodHandleSymbol;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.BindingSymbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -61,19 +62,32 @@ import java.util.Map.Entry;
 import java.util.LinkedHashMap;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
-import com.sun.tools.javac.code.Symbol.RecordComponent;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.ClassType;
+import com.sun.tools.javac.code.Type.MethodType;
+import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import com.sun.tools.javac.jvm.ClassFile;
+import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.jvm.Target;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
+import com.sun.tools.javac.tree.JCTree.JCAssignOp;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
+import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern;
 import com.sun.tools.javac.tree.JCTree.JCPattern;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
+import com.sun.tools.javac.tree.JCTree.JCSwitch;
 import com.sun.tools.javac.tree.JCTree.LetExpr;
+import static com.sun.tools.javac.tree.JCTree.Tag.SWITCH;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
 /**
@@ -96,8 +110,10 @@ public class TransPatterns extends TreeTranslator {
     private final Log log;
     private final ConstFold constFold;
     private final Names names;
+    private final Resolve rs;
     private final Target target;
     private TreeMaker make;
+    private Env<AttrContext> env;
 
     BindingContext bindingContext = new BindingContext() {
         @Override
@@ -136,8 +152,12 @@ public class TransPatterns extends TreeTranslator {
 
     boolean debugTransPatterns;
 
-    private ClassSymbol currentClass;
+    private JCClassDecl currentClass;
     private Symbol currentOwnerSym = null;
+    private List<JCTree> condyableMethods = List.nil();
+    private MethodSymbol nullBootstrap; //hack: for ofConstant(null).
+    private JCMethodDecl nullBootstrapTree;
+    private MethodSymbol currentMethodSym = null;
 
     protected TransPatterns(Context context) {
         context.put(transPatternsKey, this);
@@ -148,17 +168,20 @@ public class TransPatterns extends TreeTranslator {
         log = Log.instance(context);
         constFold = ConstFold.instance(context);
         names = Names.instance(context);
+        rs = Resolve.instance(context);
         target = Target.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
     }
 
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
-        if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
+        if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN) || tree.pattern.hasTag(Tag.LITERALPATTERN)) {
             //E instanceof T N
             //E instanceof T(PATT1, PATT2, ...)
             //=>
-            //(let T' N$temp = E; N$temp instanceof T && <pattern extractor>)
+            //(let T' N$temp = E; N$temp instanceof T && (N = (T) N$temp == (T) N$temp))
+            JCPattern patt = (JCPattern) tree.pattern;
+            ListBuffer<JCStatement> statements = new ListBuffer<>();
             Type tempType = tree.expr.type.hasTag(BOT) ?
                     syms.objectType
                     : tree.expr.type;
@@ -167,111 +190,357 @@ public class TransPatterns extends TreeTranslator {
                     tempType,
                     currentOwnerSym);
             JCExpression translatedExpr = translate(tree.expr);
-            Type castTargetType;
-            //TODO: use rule switch (when boot JDK is 14):
-            switch (tree.pattern.getTag()) {
-                case BINDINGPATTERN:
-                    castTargetType = ((JCBindingPattern)tree.pattern).symbol.type;
-                    break;
-                case DECONSTRUCTIONPATTERN:
-                    castTargetType = ((JCDeconstructionPattern)tree.pattern).type;
-                    break;
-                default:
-                    throw new AssertionError("Unexpected pattern type: " + tree.pattern.getTag());
+            statements.append(make.at(tree.pos).VarDef(temp, translatedExpr));
+            ListBuffer<VarSymbol> bindingVars = new ListBuffer<>();
+            Symbol.DynamicVarSymbol extractor = preparePatternExtractor(patt, tree.expr.type, bindingVars);
+            JCIdent qualifier = make.Ident(patt.type.tsym);
+            qualifier.sym = extractor;
+            qualifier.type = extractor.type;
+            VarSymbol e = new VarSymbol(0,
+                    names.fromString("$e$" + tree.pos),
+                    syms.patternHandleType,
+                    currentOwnerSym);
+            statements.add(make.VarDef(e, qualifier));
+            
+            VarSymbol tryMatch = new VarSymbol(0,
+                    names.fromString("$tryMatch$" + tree.pos),
+                    syms.methodHandleType,
+                    currentOwnerSym);
+            MethodSymbol tryMatchMethod = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandleType, names.fromString("tryMatch"), List.nil(), List.nil());
+            statements.append(make.VarDef(tryMatch, makeApply(make.Ident(e), tryMatchMethod, List.nil())));
+            VarSymbol carrierMatch = new VarSymbol(0,
+                    names.fromString("$carrier$" + tree.pos),
+                    syms.objectType,
+                    currentOwnerSym);
+            MethodSymbol invokeMethodObject = rs.resolveInternalMethod(patt.pos(), env, syms.methodHandleType, names.fromString("invoke"), List.of(syms.objectType), List.nil());
+            statements.append(make.VarDef(carrierMatch, makeApply(make.Ident(tryMatch), invokeMethodObject, List.of(translate(tree.expr)))));
+            result = makeBinary(Tag.NE, make.Ident(carrierMatch), makeNull());
+
+            int idx = 0;
+            for (VarSymbol bindingVar : bindingVars) {
+                if (bindingVar != syms.lengthVar) {
+                    VarSymbol component = new VarSymbol(0,
+                            names.fromString("$component$" + tree.pos + "$" + idx),
+                            syms.methodHandleType,
+                            currentOwnerSym);
+                    MethodSymbol componentMethod = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandleType, names.fromString("component"), List.of(syms.intType), List.nil());
+                    statements.append(make.VarDef(component, makeApply(make.Ident(e), componentMethod, List.of(make.Literal(idx)))));
+                    Type componentType = types.erasure(bindingVar.type.baseType());
+                    JCTree oldNextTree = env.next.tree;
+                    JCTree oldTree = env.tree;
+                    MethodSymbol invokeMethodForComponent;
+                    try {
+                        env.next.tree = make.TypeCast(componentType, (JCExpression) (env.tree = make.Erroneous()));
+                        invokeMethodForComponent = rs.resolveInternalMethod(patt.pos(), env, syms.methodHandleType, names.fromString("invoke"), List.of(syms.objectType), List.nil());
+                    } finally {
+                        env.next.tree = oldNextTree;
+                        env.tree = oldTree;
+                    }
+                    Type castTargetType = bindingVar.erasure(types);
+                    JCAssign bindingInit = (JCAssign)make.at(tree.pos).Assign(
+                            make.Ident(bindingVar), convert(makeApply(make.Ident(component), invokeMethodForComponent, List.of(make.Ident(carrierMatch))), castTargetType)).setType(bindingVar.erasure(types));
+                    JCExpression assignBoolExpr = make.at(tree.pos).LetExpr(List.of(make.Exec(bindingInit)), make.Literal(true)).setType(syms.booleanType);
+                    result = makeBinary(Tag.AND, (JCExpression)result, assignBoolExpr);
+                }
+                idx++;
             }
-
-            castTargetType = types.boxedTypeOrType(types.erasure(castTargetType));
-
-            result = makeTypeTest(make.at(tree.pos).Ident(temp), make.Type(castTargetType));
-            result = makeBinary(Tag.AND, (JCExpression)result,
-                                         preparePatternExtractor(tree, tree.getPattern(), temp, castTargetType));
-            result = make.at(tree.pos).LetExpr(make.VarDef(temp, translatedExpr),
-                                               (JCExpression)result).setType(syms.booleanType);
+            result = make.at(tree.pos).LetExpr(statements.toList(), (JCExpression)result).setType(syms.booleanType);
             ((LetExpr) result).needsCond = true;
         } else {
             super.visitTypeTest(tree);
         }
     }
-
-    private JCExpression preparePatternExtractor(JCInstanceOf tree, JCPattern patt, VarSymbol temp, Type targetType) {
-        if (targetType == syms.botType) {
-            targetType = syms.objectType;
+    
+    private Symbol.DynamicVarSymbol preparePatternExtractor(JCPattern patt, Type target, ListBuffer<VarSymbol> bindingVars) {
+        if (target == syms.botType) {
+            target = syms.objectType;
         }
         if (patt.hasTag(Tag.BINDINGPATTERN)) {
-            //type test already done, finish handling of type test patterns ("T N")
-            //=>
-            //(let N = (T) N$temp; true)
-            VarSymbol bindingVar = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
-            if (bindingVar != null) { //TODO: cannot be null here?
-                JCAssign fakeInit = (JCAssign)make.at(tree.pos).Assign(
-                        make.Ident(bindingVar), convert(make.Ident(temp), targetType)).setType(bindingVar.erasure(types));
-                LetExpr nestedLE = make.LetExpr(List.of(make.Exec(fakeInit)),
-                                                make.Literal(true));
-                nestedLE.needsCond = true;
-                nestedLE.setType(syms.booleanType);
-                return nestedLE;
+            Type tempType = patt.type.hasTag(BOT) ?
+                    syms.objectType
+                    : patt.type;
+            List<Type> bsm_staticArgs = List.of(new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(tempType),
+                                                              syms.classType.tsym));
+
+            if (!tempType.isPrimitive()) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
             }
-            return make.Literal(true);
+
+            MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofType"), bsm_staticArgs, List.nil());
+
+            VarSymbol binding = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
+            
+            if (binding != null) {
+                bindingVars.append(binding);
+            }
+
+            if (tempType.isPrimitive()) {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {loadPrimitiveClass(patt.pos(), tempType)});
+            } else {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (ClassType) target});
+            }
         } else if (patt.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
             //type test already done, finish handling of deconstruction patterns ("T(PATT1, PATT2, ...)")
             //=>
             //<PATT1-handling> && <PATT2-handling> && ...
             JCDeconstructionPattern dpatt = (JCDeconstructionPattern) patt;
-            List<? extends RecordComponent> components = dpatt.record.getRecordComponents();
-            List<? extends JCPattern> nestedPatterns = dpatt.nested;
-            JCExpression test = null;
-            while (components.nonEmpty() && nestedPatterns.nonEmpty()) {
-                //PATTn for record component COMPn of type Tn;
-                //PATTn is a type test pattern or a deconstruction pattern:
-                //=>
-                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
-                //or
-                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <PATTn extractor>)
-                //or
-                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <PATTn extractor>)
-                RecordComponent component = components.head;
-                JCPattern nested = nestedPatterns.head;
-                VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
-                    names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + component.name),
-                                     component.erasure(types),
-                                     currentOwnerSym);
-                Symbol accessor = dpatt.record
-                                       .members()
-                                       .findFirst(component.name, s -> s.kind == Kind.MTH &&
-                                                                       ((MethodSymbol) s).params.isEmpty());
-                JCVariableDecl nestedTempVar =
-                        make.VarDef(nestedTemp,
-                                    make.App(make.Select(convert(make.Ident(temp), dpatt.type),
-                                                         accessor)));
-                JCExpression extracted =
-                        preparePatternExtractor(tree, nested, nestedTemp, nested.type);
-                JCExpression extraTest = null;
-                if (!types.isAssignable(nestedTemp.type, nested.type)) {
-                    extraTest = makeTypeTest(make.Ident(nestedTemp),
-                                             make.Type(nested.type));
-                } else if (nested.type.isReference()) {
-                    extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
-                }
-                if (extraTest != null) {
-                    extracted = makeBinary(Tag.AND, extraTest, extracted);
-                }
-                LetExpr getAndRun = make.LetExpr(nestedTempVar, extracted);
-                getAndRun.needsCond = true;
-                getAndRun.setType(syms.booleanType);
-                if (test == null) {
-                    test = getAndRun;
+            Type tempType = patt.type.hasTag(BOT) ?
+                    syms.objectType
+                    : patt.type;
+            Type indyType = syms.objectType;
+            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                                syms.stringType,
+                                                new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(syms.patternHandleType),
+                                                              syms.classType.tsym),
+                                                new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(tempType),
+                                                              syms.classType.tsym),
+                                                syms.methodTypeType,
+                                                syms.stringType,
+                                                syms.intType);
+            
+            Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofNamed"), bsm_staticArgs, List.nil());
+
+            Symbol.DynamicVarSymbol outter = new Symbol.DynamicVarSymbol(names.fromString("ofNamed"),
+                    syms.noSymbol,
+                    new Symbol.MethodHandleSymbol(ofType),
+                    indyType,
+                    new LoadableConstant[] {(ClassType) tempType,
+                                            new MethodType(dpatt.innerTypes, syms.voidType, List.nil(), syms.methodClass),
+                                            LoadableConstant.String(dpatt.extractorResolver.name.toString()),
+                                            LoadableConstant.Int(ClassFile.REF_newInvokeSpecial)});
+
+            DynamicVarSymbol[] params = new DynamicVarSymbol[((JCDeconstructionPattern) patt).getNestedPatterns().size() + 1];
+            params[0] = outter;
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            ListBuffer<VarSymbol>[] nestedBindings = new ListBuffer[((JCDeconstructionPattern) patt).getNestedPatterns().size()];
+
+            for (int i = 0; i < ((JCDeconstructionPattern) patt).getNestedPatterns().size(); i++) {
+                JCPattern nested = ((JCDeconstructionPattern) patt).getNestedPatterns().get(i);
+                params[i + 1] = preparePatternExtractor(nested, nested.type, nestedBindings[i] = new ListBuffer<>());
+                if (nested.hasTag(Tag.BINDINGPATTERN)) {
+                    bindingVars.appendList(nestedBindings[i].toList());
+                    nestedBindings[i].clear();
                 } else {
-                    test = makeBinary(Tag.AND, test, getAndRun);
+                    bindingVars.append(syms.lengthVar);
                 }
-                components = components.tail;
-                nestedPatterns = nestedPatterns.tail;
             }
-            Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
-            return test != null ? test : make.Literal(true);
+            
+            for (ListBuffer<VarSymbol> nested : nestedBindings) {
+                if (nested.isEmpty())
+                    continue;
+                bindingVars.appendList(nested.toList());
+            }
+
+            List<Type> bsm_staticArgsNested = List.of(syms.patternHandleType,
+                                                      types.makeArrayType(syms.patternHandleType));
+
+            MethodSymbol ofNested = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("nested"), bsm_staticArgsNested, List.nil());
+            
+            return makeCondyable(patt.pos(), ofNested, params);
+        } else if (patt.hasTag(Tag.ANYPATTERN)) {
+            Type tempType = patt.type.hasTag(BOT) ?
+                    syms.objectType
+                    : patt.type;
+            List<Type> bsm_staticArgs = List.of(new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(tempType),
+                                                              syms.classType.tsym));
+            
+            if (!tempType.isPrimitive()) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
+            }
+
+            MethodSymbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofType"), bsm_staticArgs, List.nil());
+
+            if (tempType.isPrimitive()) {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {loadPrimitiveClass(patt.pos(), tempType)});
+            } else {
+                return makeCondyable(patt.pos(), ofType, new LoadableConstant[] {(ClassType) tempType, (ClassType) target});
+            }
+        } else if (patt.hasTag(Tag.LITERALPATTERN)) {
+            JCLiteralPattern lpatt = (JCLiteralPattern) patt;
+            boolean adapt = types.boxedTypeOrType(target) == target;
+            List<Type> bsm_staticArgs = List.of(syms.objectType);
+            
+            if (adapt) {
+                bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
+                                                                     List.of(target),
+                                                                     syms.classType.tsym));
+            }
+
+            MethodSymbol ofConstant = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
+                    names.fromString("ofConstant"), bsm_staticArgs, List.nil());
+
+            LoadableConstant lc;
+            Object constValue = lpatt.value.type.constValue();
+            if (constValue instanceof Double) {
+                lc = LoadableConstant.Double((Double) constValue);
+            } else if (constValue instanceof Float) {
+                lc = LoadableConstant.Float((Float) constValue);
+            } else  if (constValue instanceof Integer) {
+                lc = LoadableConstant.Int((Integer) constValue);
+            } else if (constValue instanceof Long) {
+                lc = LoadableConstant.Long((Long) constValue);
+            } else if (constValue instanceof String) {
+                lc = LoadableConstant.String((String) constValue);
+            } else if (constValue == null) {
+                lc = nullBootstrap();
+            } else {
+                Assert.error(constValue.getClass().getName());
+                throw new InternalError();
+            }
+
+            if (adapt) {
+                return makeCondyable(patt.pos(), ofConstant, new LoadableConstant[] {lc, (ClassType) target});
+            } else {
+                return makeCondyable(patt.pos(), ofConstant, new LoadableConstant[] {lc});
+            }
         } else {
             throw new IllegalStateException();
         }
     }
+
+    private Symbol.DynamicVarSymbol makeCondyable(DiagnosticPosition pos, MethodSymbol targetMethod, LoadableConstant[] parameters) {
+        Assert.checkNonNull(currentClass);
+
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                            syms.stringType,
+                                            new ClassType(syms.classType.getEnclosingType(),
+                                                          List.of(syms.patternHandlesType),
+                                                          syms.classType.tsym));
+        bsm_staticArgs = bsm_staticArgs.appendList(targetMethod.type.getParameterTypes());
+
+        MethodType indyType = new MethodType(bsm_staticArgs, targetMethod.type.getReturnType(), List.nil(), syms.methodClass);
+
+        MethodSymbol condyable = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$condyable$" + pos.getPreferredPosition()), indyType, currentClass.sym);
+
+        if ((targetMethod.flags() & Flags.VARARGS) != 0) {
+            condyable.flags_field |= Flags.VARARGS;
+        }
+
+        currentClass.sym.members().enter(condyable);
+
+        condyableMethods = condyableMethods.prepend(
+                make.MethodDef(condyable,
+                               condyable.externalType(types),
+                               make.Block(0, List.of(make.Return(make.Apply(List.nil(), make.QualIdent(targetMethod), condyable.params().stream().skip(3).map(p -> make.Ident(p)).collect(List.collector())).setType(syms.patternHandleType))))));
+
+        return new Symbol.DynamicVarSymbol(condyable.name,
+                                           syms.noSymbol,
+                                           new MethodHandleSymbol(condyable),
+                                           targetMethod.type.getReturnType(),
+                                           parameters);
+    }
+
+    private Symbol.DynamicVarSymbol loadPrimitiveClass(DiagnosticPosition pos, Type primitive) {
+        Assert.checkNonNull(currentClass);
+        final Type.ClassType primitiveClass = new ClassType(syms.classType.getEnclosingType(),
+                List.of(primitive),
+                syms.classType.tsym);
+
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                            syms.stringType, primitiveClass);
+        VarSymbol TYPE = rs.resolveInternalField(pos, env, types.boxedTypeOrType(primitive),
+                names.fromString("TYPE"));
+        MethodType indyType = new MethodType(bsm_staticArgs, primitiveClass, List.nil(), syms.methodClass);
+
+        MethodSymbol loadPrimitiveClass = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$primitiveClass$" + pos.getPreferredPosition()), indyType, currentClass.sym);
+
+        currentClass.sym.members().enter(loadPrimitiveClass);
+
+        condyableMethods = condyableMethods.prepend(
+                make.MethodDef(loadPrimitiveClass,
+                               loadPrimitiveClass.externalType(types),
+                               make.Block(0, List.of(make.Return(make.QualIdent(TYPE))))));
+
+        return new Symbol.DynamicVarSymbol(loadPrimitiveClass.name,
+                                           syms.noSymbol,
+                                           new MethodHandleSymbol(loadPrimitiveClass),
+                                           primitiveClass,
+                                           new LoadableConstant[] {});
+    }
+
+    private Symbol.DynamicVarSymbol nullBootstrap() {
+        Assert.checkNonNull(currentClass);
+
+        if (nullBootstrap == null) {
+            List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                                                syms.stringType,
+                                                new ClassType(syms.classType.getEnclosingType(),
+                                                              List.of(syms.objectType),
+                                                              syms.classType.tsym));
+
+            MethodType indyType = new MethodType(bsm_staticArgs, syms.objectType, List.nil(), syms.methodClass);
+
+            nullBootstrap = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$null$bootstrap"), indyType, currentClass.sym);
+
+            currentClass.sym.members().enter(nullBootstrap);
+
+            nullBootstrapTree = make.MethodDef(nullBootstrap,
+                                               nullBootstrap.externalType(types),
+                                               make.Block(0, List.of(make.Return(make.Literal(BOT, null).setType(syms.botType)))));
+        }
+
+        return new Symbol.DynamicVarSymbol(nullBootstrap.name,
+                                           syms.noSymbol,
+                                           new MethodHandleSymbol(nullBootstrap),
+                                           syms.objectType,
+                                           new LoadableConstant[0]);
+    }
+
+    private JCExpression makeApply(JCExpression site, Symbol method, List<JCExpression> params) {
+        JCFieldAccess acc = make.Select(site, method.name);
+        acc.sym = method;
+        acc.type = method.type;
+        return make.Apply(List.nil(), acc, params).setType(acc.type.getReturnType());
+    }
+
+    //from Lower:
+    /** Make an attributed tree representing a literal. This will be an
+     *  Ident node in the case of boolean literals, a Literal node in all
+     *  other cases.
+     *  @param type       The literal's type.
+     *  @param value      The literal's value.
+     */
+    JCExpression makeLit(Type type, Object value) {
+        return make.Literal(type.getTag(), value).setType(type.constType(value));
+    }
+
+    /** Make an attributed tree representing null.
+     */
+    JCExpression makeNull() {
+        return makeLit(syms.botType, null);
+    }
+    
+    /** Make an attributed assignop expression.
+     *  @param optag    The operators tree tag.
+     *  @param lhs      The operator's left argument.
+     *  @param rhs      The operator's right argument.
+     */
+    JCAssignOp makeAssignop(JCTree.Tag optag, JCTree lhs, JCTree rhs) {
+        JCAssignOp tree = make.Assignop(optag, lhs, rhs);
+        tree.operator = operators.resolveBinary(tree, tree.getTag().noAssignOp(), lhs.type, rhs.type);
+        tree.type = lhs.type;
+        return tree;
+    }
+    
+//    JCNewArray makeArray(Type type, JCExpression... elements) {
+//        JCNewArray newArray = make.NewArray(make.Type(types.erasure(type)),
+//                                          List.nil(),
+//                                          List.from(elements));
+//        newArray.type = types.makeArrayType(newArray.elemtype.type);
+//        return newArray;
+//    }
 
     @Override
     public void visitBinary(JCBinary tree) {
@@ -281,6 +550,17 @@ public class TransPatterns extends TreeTranslator {
             result = bindingContext.decorateExpression(tree);
         } finally {
             bindingContext.pop();
+        }
+    }
+
+    @Override
+    public void visitBreak(JCBreak tree) {
+        if (tree.target.hasTag(SWITCH) && ((JCSwitch) tree.target).kind == SwitchKind.MATCHING) {
+            Assert.checkNonNull(pendingMatchLabel);
+            tree.target = pendingMatchLabel;
+            result = tree;
+        } else {
+            super.visitBreak(tree);
         }
     }
 
@@ -340,37 +620,87 @@ public class TransPatterns extends TreeTranslator {
     }
 
     @Override
-    public void visitMethodDef(JCMethodDecl tree) {
-        Symbol prevOwnerSym = currentOwnerSym;
-        try {
-            currentOwnerSym = tree.sym;
-            super.visitMethodDef(tree);
-        } finally {
-            currentOwnerSym = prevOwnerSym;
-        }
-    }
+    public void visitSwitch(JCSwitch tree) {
+        if (tree.kind == SwitchKind.MATCHING) {
+            JCLabeledStatement prevMatchLabel = pendingMatchLabel;
+            try {
+                pendingMatchLabel = make.Labelled(names.fromString("match$" + tree.pos), null);
+                VarSymbol fallthroughSym = new VarSymbol(0, names.fromString("fallthrough$" + tree.pos), syms.booleanType, currentMethodSym);
 
-    @Override
-    public void visitVarDef(JCVariableDecl tree) {
-        Symbol prevOwnerSym = currentOwnerSym;
-        try {
-            if (tree.sym.owner.kind == Kind.TYP) {
-                currentOwnerSym = tree.sym;
+                boolean hasFallThrough = false;
+                boolean wasFallThrough = false;
+
+                List<JCStatement> resultStatements = List.nil();
+
+                for (JCCase clause : tree.cases) {
+                    Assert.check(clause.pats.size() <= 1);
+                    final JCExpression jcMatches = clause.pats.nonEmpty() ? make.TypeTest(tree.selector, clause.pats.head) : make.Literal(BOOLEAN, 1);
+                    jcMatches.setType(syms.booleanType);
+                    JCStatement body;
+                    List<JCStatement> stats = clause.stats;
+                    if (clause.completesNormally) {
+                        stats = stats.append(make.at(tree.pos).Exec(make.Assign(make.Ident(fallthroughSym), make.Literal(BOOLEAN, 1).setType(syms.booleanType)).setType(syms.booleanType)));
+                    }
+                    body = make.Block(0, stats);
+                    JCStatement translatedIf = translate(make.If(jcMatches, body, null));
+                    JCIf testStatement = translatedIf.hasTag(Tag.IF) ? (JCIf)translatedIf : (JCIf) ((JCBlock)translatedIf).stats.tail.head;
+
+                    if (wasFallThrough) {
+                        testStatement.cond = makeBinary(Tag.OR,
+                                make.Ident(fallthroughSym),
+                                testStatement.cond);
+                    }
+
+                    hasFallThrough |= wasFallThrough = clause.completesNormally;
+                    resultStatements = resultStatements.append(translatedIf);
+                }
+                if (hasFallThrough) {
+                    resultStatements = resultStatements.prepend(make.at(tree.pos)
+                                                                    .VarDef(fallthroughSym,
+                                                                            make.Literal(BOOLEAN, 0).setType(syms.booleanType)));
+                }
+                pendingMatchLabel.body = make.Block(0, resultStatements);
+                result = pendingMatchLabel;
+            } finally {
+                pendingMatchLabel = prevMatchLabel;
             }
-            super.visitVarDef(tree);
-        } finally {
-            currentOwnerSym = prevOwnerSym;
+        } else {
+            super.visitSwitch(tree);
         }
     }
 
     @Override
-    public void visitClassDef(JCClassDecl tree) {
-        ClassSymbol prevCurrentClass = currentClass;
+    public void visitClassDef(JCTree.JCClassDecl tree) {
+        JCClassDecl prevCurrentClass = currentClass;
+        List<JCTree> prevCondyableMethods = condyableMethods;
+        MethodSymbol prevNullBootstrap = nullBootstrap;
+        JCMethodDecl prevNullBootstrapTree = nullBootstrapTree;
         try {
-            currentClass = tree.sym;
+            currentClass = tree;
+            condyableMethods = List.nil();
+            nullBootstrap = null;
+            nullBootstrapTree = null;
             super.visitClassDef(tree);
         } finally {
+            currentClass.defs = currentClass.defs.prependList(condyableMethods);
+            if (nullBootstrapTree != null) {
+                currentClass.defs = currentClass.defs.prepend(nullBootstrapTree);
+            }
             currentClass = prevCurrentClass;
+            condyableMethods = prevCondyableMethods;
+            nullBootstrap = prevNullBootstrap;
+            nullBootstrapTree = prevNullBootstrapTree;
+        }
+    }
+
+    @Override
+    public void visitMethodDef(JCMethodDecl tree) {
+        MethodSymbol prevMethodSym = currentMethodSym;
+        try {
+            currentMethodSym = tree.sym;
+            super.visitMethodDef(tree);
+        } finally {
+            currentMethodSym = prevMethodSym;
         }
     }
 
@@ -416,7 +746,7 @@ public class TransPatterns extends TreeTranslator {
             if (currentOwnerSym == null) {
                 currentOwnerSym = new MethodSymbol(tree.flags | Flags.BLOCK,
                                  names.empty, null,
-                                 currentClass);
+                                 currentClass.sym);
             }
             for (List<JCStatement> l = tree.stats; l.nonEmpty(); l = l.tail) {
                 statements.append(translate(l.head));
@@ -444,10 +774,12 @@ public class TransPatterns extends TreeTranslator {
     public JCTree translateTopLevelClass(Env<AttrContext> env, JCTree cdef, TreeMaker make) {
         try {
             this.make = make;
+            this.env = env;
             translate(cdef);
         } finally {
             // note that recursive invocations of this method fail hard
             this.make = null;
+            this.env = null;
         }
 
         return cdef;
@@ -474,22 +806,6 @@ public class TransPatterns extends TreeTranslator {
         tree.operator = operators.resolveBinary(tree, optag, lhs.type, rhs.type);
         tree.type = tree.operator.type.getReturnType();
         return tree;
-    }
-
-    /** Make an attributed tree representing a literal. This will be an
-     *  Ident node in the case of boolean literals, a Literal node in all
-     *  other cases.
-     *  @param type       The literal's type.
-     *  @param value      The literal's value.
-     */
-    JCExpression makeLit(Type type, Object value) {
-        return make.Literal(type.getTag(), value).setType(type.constType(value));
-    }
-
-    /** Make an attributed tree representing null.
-     */
-    JCExpression makeNull() {
-        return makeLit(syms.botType, null);
     }
 
     JCExpression convert(JCExpression expr, Type target) {

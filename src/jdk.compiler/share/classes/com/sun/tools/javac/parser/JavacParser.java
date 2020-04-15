@@ -750,12 +750,16 @@ public class JavacParser implements Parser {
         return term(EXPR);
     }
 
+
     /** parses patterns.
      */
 
     public JCPattern parsePattern() {
         int pos = token.pos;
-        if (token.kind == IDENTIFIER && token.name() == names.var) {
+        if (token.kind == UNDERSCORE) {
+            nextToken();
+            return toP(F.at(pos).AnyPattern());
+        } else if (token.kind == IDENTIFIER && token.name() == names.var) {
             nextToken();
             return toP(F.at(pos).BindingPattern(ident(), null));
         } else {
@@ -769,8 +773,10 @@ public class JavacParser implements Parser {
                 } while (token.kind == COMMA);
                 accept(RPAREN);
                 return toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
-            } else {
+            } else if (token.kind == IDENTIFIER) {
                 return toP(F.at(pos).BindingPattern(ident(), e));
+            } else {
+                return toP(F.at(pos).LiteralPattern(e));
             }
         }
     }
@@ -953,9 +959,14 @@ public class JavacParser implements Parser {
             if (token.kind == INSTANCEOF) {
                 int pos = token.pos;
                 nextToken();
-                JCTree pattern = parseType();
+                JCTree pattern = parseType(true);
                 if (token.kind == IDENTIFIER) {
                     checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
+                    Source source = restrictedTypeNameStartingAtSource(((JCIdent) pattern).name, pattern.pos, true);
+                    if (pattern.hasTag(IDENT) && source != null) {
+                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, source));
+                        pattern = null;
+                    }
                     pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
                 } else if (token.kind == LPAREN) {
                     checkSourceLevel(Feature.DECONSTRUCTION_PATTERNS);
@@ -1459,14 +1470,14 @@ public class JavacParser implements Parser {
     private List<JCCase> switchExpressionStatementGroup() {
         ListBuffer<JCCase> caseExprs = new ListBuffer<>();
         int casePos = token.pos;
-        ListBuffer<JCExpression> pats = new ListBuffer<>();
+        ListBuffer<JCPattern> pats = new ListBuffer<>();
 
         if (token.kind == DEFAULT) {
             nextToken();
         } else {
             accept(CASE);
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
@@ -2909,7 +2920,7 @@ public class JavacParser implements Parser {
 
     /** SwitchBlockStatementGroups = { SwitchBlockStatementGroup }
      *  SwitchBlockStatementGroup = SwitchLabel BlockStatements
-     *  SwitchLabel = CASE ConstantExpression ":" | DEFAULT ":"
+     *  SwitchLabel = CASE Pattern ":" | DEFAULT ":"
      */
     List<JCCase> switchBlockStatementGroups() {
         ListBuffer<JCCase> cases = new ListBuffer<>();
@@ -2937,9 +2948,9 @@ public class JavacParser implements Parser {
         switch (token.kind) {
         case CASE: {
             nextToken();
-            ListBuffer<JCExpression> pats = new ListBuffer<>();
+            ListBuffer<JCPattern> pats = new ListBuffer<>();
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);

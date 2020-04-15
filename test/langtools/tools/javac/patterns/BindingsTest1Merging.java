@@ -2,7 +2,8 @@
  * @test /nodynamiccopyright/
  * @bug 8231827
  * @summary Basic tests for bindings from instanceof - tests for merging pattern variables
- * @compile/fail/ref=BindingsTest1Merging.out -XDrawDiagnostics --enable-preview -source ${jdk.version} BindingsTest1Merging.java
+ * @compile --enable-preview -source ${jdk.version} BindingsTest1Merging.java
+ * @run main/othervm --enable-preview BindingsTest1Merging
  */
 
 public class BindingsTest1Merging {
@@ -21,7 +22,7 @@ public class BindingsTest1Merging {
         }
 
         // Test for (e1 || e2).T = intersect(e1.T, e2.T)
-        if (o1 instanceof String s || o3 instanceof String s){
+        if (o1 instanceof String s || o3 instanceof String s) {
             System.out.println(s); // ?
         }
 

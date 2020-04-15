@@ -1,30 +1,6 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- */
-
-/*
  * @test
- * @bug 8231827
- * @summary All example code from "Pattern Matching for Java" document, released April 2017, adjusted to current state (no switches, etc)
+ * @summary All example code from "Pattern Matching for Java" document, released April 2017 (with switch renamed as match)
  * @compile --enable-preview -source ${jdk.version} ExamplesFromProposal.java
  * @run main/othervm --enable-preview ExamplesFromProposal
  */
@@ -73,48 +49,50 @@ public class ExamplesFromProposal {
     }
 
     public static int eval(Node n) {
-        if (n instanceof IntNode in) return in.value;
-        else if (n instanceof NegNode nn) return -eval(nn.node);
-        else if (n instanceof AddNode an) return eval(an.left) + eval(an.right);
-        else if (n instanceof MulNode mn) return eval(mn.left) * eval(mn.right);
-        else {
-            // should never happen
-            throw new AssertionError("broken");
-        }
+        switch (n) {
+            case IntNode in: return in.value;
+            case NegNode nn: return -eval(nn.node);
+            case AddNode an: return eval(an.left) + eval(an.right);
+            case MulNode mn: return eval(mn.left) * eval(mn.right);
+        };
+        // should never happen
+        throw new AssertionError("broken");
     }
 
     public static String toString(Node n) {
-        if (n instanceof IntNode in) return String.valueOf(in.value);
-        else if (n instanceof NegNode nn) return "-"+eval(nn.node);
-        else if (n instanceof AddNode an) return eval(an.left) + " + " + eval(an.right);
-        else if (n instanceof MulNode mn) return eval(mn.left) + " * " + eval(mn.right);
-        else {
-            // should never happen
-            throw new AssertionError("broken");
-        }
+        switch (n) {
+            case IntNode in: return String.valueOf(in.value);
+            case NegNode nn: return "-"+eval(nn.node);
+            case AddNode an: return eval(an.left) + " + " + eval(an.right);
+            case MulNode mn: return eval(mn.left) + " * " + eval(mn.right);
+        };
+        // should never happen
+        throw new AssertionError("broken");
     }
 
     public static Node simplify(Node n) {
-        if (n instanceof IntNode in) {
-            return n;
-        } else if (n instanceof NegNode nn) {
-            return new NegNode(simplify(nn.node));
-        } else if (n instanceof AddNode ad) {
-            n = simplify(ad.left);
-            if (n instanceof IntNode intn) {
-                if (intn.value == 0)
-                    return simplify(ad.right);
-                else
-                    return new AddNode(intn, simplify(ad.right));
-            } else {
-                return new AddNode(simplify(ad.left), simplify(ad.right));
+        switch (n) {
+            case IntNode in:
+                return n;
+
+            case NegNode nn:
+                return new NegNode(simplify(nn.node));
+
+            case AddNode ad: switch (simplify(ad.left)) {
+                case IntNode intn:
+                    if (intn.value == 0)
+                        return simplify(ad.right);
+                    else
+                        return new AddNode(intn, simplify(ad.right));
+                default:
+                    return new AddNode(simplify(ad.left), simplify(ad.right));
             }
-        } else if (n instanceof MulNode mn) {
-            return new MulNode(simplify(mn.left), simplify(mn.right));
-        } else {
-            //should never happen
-            throw new AssertionError("broken");
+
+            case MulNode mn:
+                return new MulNode(simplify(mn.left), simplify(mn.right));
         }
+        //should never happen
+        throw new AssertionError("broken");
     }
 
     public static void testNode(Node n, int expected) {
@@ -150,13 +128,30 @@ public class ExamplesFromProposal {
         }
         System.out.println(formatted);
 
-        if (obj instanceof Integer i) formatted = String.format("int %d", i);
-        else if (obj instanceof Byte b) formatted = String.format("byte %d", b);
-        else if (obj instanceof Long l) formatted = String.format("long %d", l);
-        else if (obj instanceof Double d) formatted = String.format("double %f", d);
-        else if (obj instanceof String s) formatted = String.format("String %s", s);
-        else formatted = String.format("Something else "+ obj.toString());
+        formatted="";
+        switch (obj) {
+            case Integer i: formatted = String.format("int %d", i); break;
+            case Byte b:    formatted = String.format("byte %d", b); break;
+            case Long l:    formatted = String.format("long %d", l); break;
+            case Double d:  formatted = String.format("double %f", d); break;
+            case String s:  formatted = String.format("String %s", s); break;
+            default:        formatted = String.format("Something else "+ obj.toString()); break;
+        }
         System.out.println(formatted);
+
+        // Rewritten from an expression switch
+        String s="";
+        short srt = 100;
+        int num = (int)srt;
+
+        switch (num) {
+            case 0: s = "zero"; break;
+            case 1: s = "one"; break;
+        //    case int i: s = "some other integer";
+            default: s = "not an Integer"; break;
+        }
+        System.out.println(s);
+
 
         Node zero = new IntNode(0);
         Node one = new IntNode(1);

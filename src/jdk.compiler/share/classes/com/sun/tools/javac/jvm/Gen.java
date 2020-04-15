@@ -339,6 +339,9 @@ public class Gen extends JCTree.Visitor {
      *  Mark beginning of gap in catch all range for finalizer.
      */
     void genFinalizer(Env<GenContext> env) {
+        if (code == null || env == null || env.info == null) {
+            System.err.println("");
+        }
         if (code.isAlive() && env.info.finalize != null)
             env.info.finalize.gen();
     }
@@ -1286,7 +1289,7 @@ public class Gen extends JCTree.Visitor {
             for (int i = 0; i < labels.length; i++) {
                 if (l.head.pats.nonEmpty()) {
                     Assert.check(l.head.pats.size() == 1);
-                    int val = ((Number)l.head.pats.head.type.constValue()).intValue();
+                    int val = ((Number)l.head.pats.head.constExpression().type.constValue()).intValue();
                     labels[i] = val;
                     if (val < lo) lo = val;
                     if (hi < val) hi = val;
@@ -1691,6 +1694,9 @@ public class Gen extends JCTree.Visitor {
         CondItem c = genCond(TreeInfo.skipParens(tree.cond),
                              CRT_FLOW_CONTROLLER);
         Chain elseChain = c.jumpFalse();
+        if (!code.isStatementStart()) {
+            System.err.println("G");
+        }
         Assert.check(code.isStatementStart());
         if (!c.isFalse()) {
             code.resolve(c.trueJumps);
