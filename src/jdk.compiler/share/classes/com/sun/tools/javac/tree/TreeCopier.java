@@ -511,7 +511,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCExpression value = copy(t.value, p);
         return M.at(t.pos).LiteralPattern(value);
     }
-    
+
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitUnary(UnaryTree node, P p) {
         JCUnary t = (JCUnary) node;

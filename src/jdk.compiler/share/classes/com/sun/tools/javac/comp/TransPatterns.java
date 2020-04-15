@@ -201,7 +201,7 @@ public class TransPatterns extends TreeTranslator {
                     syms.patternHandleType,
                     currentOwnerSym);
             statements.add(make.VarDef(e, qualifier));
-            
+
             VarSymbol tryMatch = new VarSymbol(0,
                     names.fromString("$tryMatch$" + tree.pos),
                     syms.methodHandleType,
@@ -250,7 +250,7 @@ public class TransPatterns extends TreeTranslator {
             super.visitTypeTest(tree);
         }
     }
-    
+
     private Symbol.DynamicVarSymbol preparePatternExtractor(JCPattern patt, Type target, ListBuffer<VarSymbol> bindingVars) {
         if (target == syms.botType) {
             target = syms.objectType;
@@ -273,7 +273,7 @@ public class TransPatterns extends TreeTranslator {
                     names.fromString("ofType"), bsm_staticArgs, List.nil());
 
             VarSymbol binding = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
-            
+
             if (binding != null) {
                 bindingVars.append(binding);
             }
@@ -303,7 +303,7 @@ public class TransPatterns extends TreeTranslator {
                                                 syms.methodTypeType,
                                                 syms.stringType,
                                                 syms.intType);
-            
+
             Symbol ofType = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("ofNamed"), bsm_staticArgs, List.nil());
 
@@ -331,7 +331,7 @@ public class TransPatterns extends TreeTranslator {
                     bindingVars.append(syms.lengthVar);
                 }
             }
-            
+
             for (ListBuffer<VarSymbol> nested : nestedBindings) {
                 if (nested.isEmpty())
                     continue;
@@ -343,7 +343,7 @@ public class TransPatterns extends TreeTranslator {
 
             MethodSymbol ofNested = rs.resolveInternalMethod(patt.pos(), env, syms.patternHandlesType,
                     names.fromString("nested"), bsm_staticArgsNested, List.nil());
-            
+
             return makeCondyable(patt.pos(), ofNested, params);
         } else if (patt.hasTag(Tag.ANYPATTERN)) {
             Type tempType = patt.type.hasTag(BOT) ?
@@ -352,7 +352,7 @@ public class TransPatterns extends TreeTranslator {
             List<Type> bsm_staticArgs = List.of(new ClassType(syms.classType.getEnclosingType(),
                                                               List.of(tempType),
                                                               syms.classType.tsym));
-            
+
             if (!tempType.isPrimitive()) {
                 bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
                                                                      List.of(target),
@@ -371,7 +371,7 @@ public class TransPatterns extends TreeTranslator {
             JCLiteralPattern lpatt = (JCLiteralPattern) patt;
             boolean adapt = types.boxedTypeOrType(target) == target;
             List<Type> bsm_staticArgs = List.of(syms.objectType);
-            
+
             if (adapt) {
                 bsm_staticArgs = bsm_staticArgs.append(new ClassType(syms.classType.getEnclosingType(),
                                                                      List.of(target),
@@ -521,7 +521,7 @@ public class TransPatterns extends TreeTranslator {
     JCExpression makeNull() {
         return makeLit(syms.botType, null);
     }
-    
+
     /** Make an attributed assignop expression.
      *  @param optag    The operators tree tag.
      *  @param lhs      The operator's left argument.
@@ -533,7 +533,7 @@ public class TransPatterns extends TreeTranslator {
         tree.type = lhs.type;
         return tree;
     }
-    
+
 //    JCNewArray makeArray(Type type, JCExpression... elements) {
 //        JCNewArray newArray = make.NewArray(make.Type(types.erasure(type)),
 //                                          List.nil(),
