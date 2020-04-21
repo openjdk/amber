@@ -430,13 +430,7 @@ public class RecordCompilationTests extends CompilationTestCase {
         assertFail("compiler.err.already.defined", template);
     }
 
-    public void testLocalRecords() {
-        assertOK("class R { \n" +
-                "    void m() { \n" +
-                "        record RR(int x) { };\n" +
-                "    }\n" +
-                "}");
-
+    public void testStaticLocalTypes() {
         // local records can also be final
         assertOK("class R { \n" +
                 "    void m() { \n" +
@@ -484,22 +478,16 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "        record RR(int x) { public int x() { return z; }};\n" +
                 "    }\n" +
                 "}");
-        // can be contained inside a lambda
-        assertOK("""
-                class Outer {
-                    Runnable run = () -> {
-                        record TestRecord(int i) {}
-                    };
-                }
-                """);
-
         // Can't self-shadow
         assertFail("compiler.err.already.defined",
-                   "class R { \n" +
-                   "    void m() { \n" +
-                   "        record R(int x) { };\n" +
-                   "    }\n" +
-                   "}");
+                """
+                class R {
+                    void m() {
+                        record R(int x) { };
+                    }
+                }
+                """
+        );
     }
 
     public void testCompactDADU() {
@@ -557,13 +545,16 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testRecordsInsideInner() {
-        assertFail("compiler.err.record.declaration.not.allowed.in.inner.classes",
-                "class Outer {\n" +
-                "    class Inner {\n" +
-                "        record R(int a) {}\n" +
-                "    }\n" +
-                "}");
-        assertFail("compiler.err.record.declaration.not.allowed.in.inner.classes",
+        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+                """
+                class Outer {
+                    class Inner {
+                        record R(int a) {}
+                    }
+                }
+                """
+        );
+        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
                 """
                 class Outer {
                     public void test() {
@@ -573,7 +564,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     }
                 }
                 """);
-        assertFail("compiler.err.record.declaration.not.allowed.in.inner.classes",
+        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
                 """
                 class Outer {
                     Runnable run = new Runnable() {
@@ -582,7 +573,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     };
                 }
                 """);
-        assertFail("compiler.err.record.declaration.not.allowed.in.inner.classes",
+        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
                 """
                 class Outer {
                     void m() {

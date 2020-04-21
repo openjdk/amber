@@ -21,7 +21,7 @@
  * questions.
  */
 
-// key: compiler.err.enums.must.be.static
+// key: compiler.err.static.declaration.not.allowed.in.inner.classes
 
 class EnumsMustBeStatic {
     class Nested {

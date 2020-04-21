@@ -1211,26 +1211,23 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
-                if ((flags & RECORD) != 0) {
-                    implicit = STATIC;
+                boolean implicitlyStatic = !sym.isAnonymous() &&
+                        ((flags & RECORD) != 0 || (flags & ENUM) != 0 || (flags & INTERFACE) != 0);
+                boolean staticOrImplicitlyStatic = (flags & STATIC) != 0 || implicitlyStatic;
+                mask = staticOrImplicitlyStatic ? StaticLocalFlags : LocalClassFlags;
+                implicit = implicitlyStatic ? STATIC : implicit;
+                if (implicitlyStatic || (flags & STATIC) != 0) {
                     if (sym.owner.kind == TYP) {
-                        log.error(pos, Errors.RecordDeclarationNotAllowedInInnerClasses);
+                        log.error(pos, Errors.StaticDeclarationNotAllowedInInnerClasses);
                     }
-                }
-                if ((sym.owner.flags_field & STATIC) == 0 &&
-                    (flags & ENUM) != 0) {
-                    log.error(pos, Errors.EnumsMustBeStatic);
                 }
             } else if (sym.owner.kind == TYP) {
                 mask = (flags & RECORD) != 0 ? MemberRecordFlags : MemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
-                else if ((flags & ENUM) != 0) {
-                    log.error(pos, Errors.EnumsMustBeStatic);
-                } else if ((flags & RECORD) != 0) {
-                    log.error(pos, Errors.RecordDeclarationNotAllowedInInnerClasses);
+                else if ((flags & ENUM) != 0 || (flags & RECORD) != 0) {
+                    log.error(pos, Errors.StaticDeclarationNotAllowedInInnerClasses);
                 }
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM | RECORD)) != 0 ) implicit = STATIC;
@@ -1258,14 +1255,8 @@ public class Check {
         }
         long illegal = flags & ExtendedStandardFlags & ~mask;
         if (illegal != 0) {
-            if ((illegal & INTERFACE) != 0) {
-                log.error(pos, ((flags & ANNOTATION) != 0) ? Errors.AnnotationDeclNotAllowedHere : Errors.IntfNotAllowedHere);
-                mask |= INTERFACE;
-            }
-            else {
-                log.error(pos,
-                          Errors.ModNotAllowedHere(asFlagSet(illegal)));
-            }
+            log.error(pos,
+                      Errors.ModNotAllowedHere(asFlagSet(illegal)));
         }
         else if ((sym.kind == TYP ||
                   // ISSUE: Disallowing abstract&private is no longer appropriate

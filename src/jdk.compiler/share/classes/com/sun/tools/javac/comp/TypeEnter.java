@@ -25,7 +25,6 @@
 
 package com.sun.tools.javac.comp;
 
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
