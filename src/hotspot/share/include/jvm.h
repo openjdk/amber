@@ -539,10 +539,6 @@ JVM_GetNestHost(JNIEnv *env, jclass current);
 JNIEXPORT jobjectArray JNICALL
 JVM_GetNestMembers(JNIEnv *env, jclass current);
 
-/* Sealed types - since JDK 15 */
-JNIEXPORT jobjectArray JNICALL
-JVM_GetPermittedSubtypes(JNIEnv *env, jclass current);
-
 /* Records - since JDK 14 */
 
 JNIEXPORT jboolean JNICALL
