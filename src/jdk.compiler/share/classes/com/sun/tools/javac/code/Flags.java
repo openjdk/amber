@@ -508,7 +508,12 @@ public class Flags {
         MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER),
         RECORD(Flags.RECORD),
         SEALED(Flags.SEALED),
-        NON_SEALED(Flags.NON_SEALED);
+        NON_SEALED(Flags.NON_SEALED) {
+            @Override
+            public String toString() {
+                return "non-sealed";
+            }
+        };
 
         Flag(long flag) {
             this.value = flag;
