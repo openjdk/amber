@@ -85,8 +85,8 @@ ShenandoahGCPauseMark::ShenandoahGCPauseMark(uint gc_id, SvcGCMarker::reason_typ
   );
 }
 
-ShenandoahPausePhase::ShenandoahPausePhase(const char* title) :
-  _tracer(title),
+ShenandoahPausePhase::ShenandoahPausePhase(const char* title, bool log_heap_usage) :
+  _tracer(title, NULL, GCCause::_no_gc, log_heap_usage),
   _timer(ShenandoahHeap::heap()->gc_timer()) {
   _timer->register_gc_pause_start(title);
 }
@@ -132,7 +132,9 @@ bool ShenandoahGCPhase::is_root_work_phase() {
     case ShenandoahPhaseTimings::init_evac:
     case ShenandoahPhaseTimings::final_update_refs_roots:
     case ShenandoahPhaseTimings::degen_gc_update_roots:
-    case ShenandoahPhaseTimings::full_gc_roots:
+    case ShenandoahPhaseTimings::full_gc_scan_roots:
+    case ShenandoahPhaseTimings::full_gc_update_roots:
+    case ShenandoahPhaseTimings::full_gc_adjust_roots:
       return true;
     default:
       return false;

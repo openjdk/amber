@@ -32,6 +32,8 @@
 #include "classfile/vmSymbols.hpp"
 #include "interpreter/bootstrapInfo.hpp"
 #include "interpreter/linkResolver.hpp"
+#include "logging/log.hpp"
+#include "logging/logStream.hpp"
 #include "memory/allocation.inline.hpp"
 #include "memory/heapShared.hpp"
 #include "memory/metadataFactory.hpp"
@@ -61,6 +63,20 @@ ConstantPool* ConstantPool::allocate(ClassLoaderData* loader_data, int length, T
   Array<u1>* tags = MetadataFactory::new_array<u1>(loader_data, length, 0, CHECK_NULL);
   int size = ConstantPool::size(length);
   return new (loader_data, size, MetaspaceObj::ConstantPoolType, THREAD) ConstantPool(tags);
+}
+
+void ConstantPool::copy_fields(const ConstantPool* orig) {
+  // Preserve dynamic constant information from the original pool
+  if (orig->has_dynamic_constant()) {
+    set_has_dynamic_constant();
+  }
+
+  // Copy class version
+  set_major_version(orig->major_version());
+  set_minor_version(orig->minor_version());
+
+  set_source_file_name_index(orig->source_file_name_index());
+  set_generic_signature_index(orig->generic_signature_index());
 }
 
 #ifdef ASSERT
@@ -941,7 +957,7 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
       // (invocation of the BSM), of JVMS Section 5.4.3.6 occur within invoke_bootstrap_method()
       // for the bootstrap_specifier created above.
       SystemDictionary::invoke_bootstrap_method(bootstrap_specifier, THREAD);
-      Exceptions::wrap_dynamic_exception(THREAD);
+      Exceptions::wrap_dynamic_exception(/* is_indy */ false, THREAD);
       if (HAS_PENDING_EXCEPTION) {
         // Resolution failure of the dynamically-computed constant, save_and_throw_exception
         // will check for a LinkageError and store a DynamicConstantInError.
@@ -969,8 +985,10 @@ oop ConstantPool::resolve_constant_at_impl(const constantPoolHandle& this_cp,
         }
       }
 
-      if (TraceMethodHandles) {
-        bootstrap_specifier.print_msg_on(tty, "resolve_constant_at_impl");
+      LogTarget(Debug, methodhandles, condy) lt_condy;
+      if (lt_condy.is_enabled()) {
+        LogStream ls(lt_condy);
+        bootstrap_specifier.print_msg_on(&ls, "resolve_constant_at_impl");
       }
       break;
     }
