@@ -2380,6 +2380,7 @@ public class Attr extends JCTree.Visitor {
                 checkId(tree.meth, site, sym, localEnv,
                         new ResultInfo(kind, mpt));
             }
+            // Otherwise, `site' is an error type and we do nothing
             result = tree.type = syms.voidType;
         } else {
             // Otherwise, we are seeing a regular method call.
