@@ -484,6 +484,7 @@ public class Utils {
         modifiers.remove(NATIVE);
         modifiers.remove(STRICTFP);
         modifiers.remove(SYNCHRONIZED);
+        modifiers.remove(SEALED);
 
         return new ElementKindVisitor14<String, SortedSet<Modifier>>() {
             final StringBuilder sb = new StringBuilder();
@@ -502,6 +503,24 @@ public class Utils {
                 if (modifiers.contains(STATIC)) {
                     append("static");
                 }
+            }
+
+            void addSealed(TypeElement e) {
+                if (elementUtils.isSealed(e)) {
+                    append("sealed");
+                } else if (anySupertypeSealed(e) && !e.getModifiers().contains(FINAL)) {
+                    append("non-sealed");
+                }
+            }
+
+            boolean anySupertypeSealed(TypeElement te) {
+                return isSealed(te.getSuperclass())
+                        || te.getInterfaces().stream().anyMatch(this::isSealed);
+            }
+
+            boolean isSealed(TypeMirror tm) {
+                return tm.getKind() == DECLARED
+                        && elementUtils.isSealed((TypeElement) (typeUtils.asElement(tm)));
             }
 
             void addModifiers(Set<Modifier> modifiers) {
@@ -527,6 +546,7 @@ public class Utils {
             public String visitTypeAsInterface(TypeElement e, SortedSet<Modifier> mods) {
                 addVisibilityModifier(mods);
                 addStatic(mods);
+                addSealed(e);
                 return finalString("interface");
             }
 
@@ -553,7 +573,20 @@ public class Utils {
             @Override
             @SuppressWarnings("preview")
             public String visitTypeAsClass(TypeElement e, SortedSet<Modifier> mods) {
-                addModifiers(mods);
+                Set<Modifier> beforeSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> afterSealed = EnumSet.noneOf(Modifier.class);
+                Set<Modifier> set = beforeSealed;
+                for (Modifier m : Modifier.values()) {
+                    if (m == SEALED) {
+                        set = afterSealed;
+                    }
+                    if (mods.contains(m)) {
+                        set.add(m);
+                    }
+                }
+                addModifiers(beforeSealed);
+                addSealed(e);
+                addModifiers(afterSealed);
                 String keyword = e.getKind() == ElementKind.RECORD ? "record" : "class";
                 return finalString(keyword);
             }

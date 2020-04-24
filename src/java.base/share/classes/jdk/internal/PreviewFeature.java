@@ -63,6 +63,7 @@ public @interface PreviewFeature {
         // necessary for PreviewFeature in JDK 15 to declare the enum constant.
         TEXT_BLOCKS,
         RECORDS,
+        SEALED_TYPES,
         ;
     }
 }

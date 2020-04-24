@@ -562,12 +562,10 @@ public class JavacTrees extends DocTrees {
         return null;
     }
 
-    /** @see com.sun.tools.javadoc.ClassDocImpl#findField */
     private VarSymbol findField(ClassSymbol tsym, Name fieldName) {
         return searchField(tsym, fieldName, new HashSet<>());
     }
 
-    /** @see com.sun.tools.javadoc.ClassDocImpl#searchField */
     private VarSymbol searchField(ClassSymbol tsym, Name fieldName, Set<ClassSymbol> searched) {
         if (searched.contains(tsym)) {
             return null;

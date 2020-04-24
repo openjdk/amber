@@ -670,4 +670,23 @@ public interface Elements {
         }
         return null;
     }
+
+    /**
+     * Return {@code true} if the type element is sealed, {@code
+     * false} otherwise. This method takes into account non-sealing of
+     * types.
+     *
+     * @implSpec The default implementation of this method returns
+     * {@code false}.
+     *
+     * @param type the type element being examined
+     * @return {@code true} if the type element is sealed, {@code false} otherwise
+     *
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+            essentialAPI=false)
+    default boolean isSealed(TypeElement type) {
+        return false;
+    }
 }

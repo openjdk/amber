@@ -1211,7 +1211,7 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
                 if ((flags & RECORD) != 0) {
                     implicit = STATIC;
                     if (sym.owner.kind == TYP) {
@@ -1223,7 +1223,7 @@ public class Check {
                     log.error(pos, Errors.EnumsMustBeStatic);
                 }
             } else if (sym.owner.kind == TYP) {
-                mask = (flags & RECORD) != 0 ? MemberRecordFlags : MemberClassFlags;
+                mask = (flags & RECORD) != 0 ? MemberRecordFlags : ExtendedMemberClassFlags;
                 if (sym.owner.owner.kind == PCK ||
                     (sym.owner.flags_field & STATIC) != 0)
                     mask |= STATIC;
@@ -1235,14 +1235,14 @@ public class Check {
                 // Nested interfaces and enums are always STATIC (Spec ???)
                 if ((flags & (INTERFACE | ENUM | RECORD)) != 0 ) implicit = STATIC;
             } else {
-                mask = ClassFlags;
+                mask = ExtendedClassFlags;
             }
             // Interfaces are always ABSTRACT
             if ((flags & INTERFACE) != 0) implicit |= ABSTRACT;
 
             if ((flags & ENUM) != 0) {
-                // enums can't be declared abstract or final
-                mask &= ~(ABSTRACT | FINAL);
+                // enums can't be declared abstract, final, sealed or non-sealed
+                mask &= ~(ABSTRACT | FINAL | SEALED | NON_SEALED);
                 implicit |= implicitEnumFinalFlag(tree);
             }
             if ((flags & RECORD) != 0) {
@@ -1297,7 +1297,13 @@ public class Check {
                  (sym.kind == TYP ||
                   checkDisjoint(pos, flags,
                                 ABSTRACT | NATIVE,
-                                STRICTFP))) {
+                                STRICTFP))
+                 && checkDisjoint(pos, flags,
+                                FINAL,
+                           SEALED | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                           FINAL | NON_SEALED)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;
@@ -1337,7 +1343,7 @@ public class Check {
         JCClassDecl cdef = (JCClassDecl) tree;
         for (JCTree defs: cdef.defs) {
             defs.accept(sts);
-            if (sts.specialized) return 0;
+            if (sts.specialized) return SEALED;
         }
         return FINAL;
     }

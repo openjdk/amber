@@ -64,6 +64,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.StringJoiner;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -4223,12 +4225,12 @@ public final class Class<T> implements java.io.Serializable,
      * this class or interface
      *
      * @throws SecurityException
-     * If any returned class is not the current class, and
-     * if a security manager, <i>s</i>, is present and the caller's
-     * class loader is not the same as or an ancestor of the class
-     * loader for that returned class and invocation of {@link
-     * SecurityManager#checkPackageAccess s.checkPackageAccess()}
-     * denies access to the package of that returned class
+     *         If any returned class is not the current class, and
+     *         if a security manager, <i>s</i>, is present and the caller's
+     *         class loader is not the same as or an ancestor of the class
+     *         loader for that returned class and invocation of {@link
+     *         SecurityManager#checkPackageAccess s.checkPackageAccess()}
+     *         denies access to the package of that returned class
      *
      * @since 11
      * @see #getNestHost()
@@ -4369,7 +4371,7 @@ public final class Class<T> implements java.io.Serializable,
         Class<?> c = isArray() ? elementType() : this;
         return c.isHidden() ? Optional.empty()
                             : Optional.of(ClassDesc.ofDescriptor(descriptorString()));
-   }
+    }
 
     /**
      * Returns {@code true} if and only if the underlying class is a hidden class.
@@ -4381,5 +4383,63 @@ public final class Class<T> implements java.io.Serializable,
      */
     @HotSpotIntrinsicCandidate
     public native boolean isHidden();
+
+    /**
+     * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns an array containing {@code ClassDesc} objects representing all the
+     * permitted subtypes of this {@linkplain Class} if it is sealed. Returns an empty array if this
+     * {@linkplain Class} is not sealed.
+     *
+     * @return an array of class descriptors of all the permitted subtypes of this class
+     * @throws IllegalArgumentException if a class descriptor is not in the correct format
+     *
+     * @jls 8.1 Class Declarations
+     * @jls 9.1 Interface Declarations
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
+    public ClassDesc[] getPermittedSubtypes() {
+        String[] descriptors = getPermittedSubtypes0();
+        if (descriptors == null || descriptors.length == 0) {
+            return new ClassDesc[0];
+        }
+        ClassDesc[] constants = new ClassDesc[descriptors.length];
+        int i = 0;
+        for (String descriptor : descriptors) {
+            ClassDesc cd = ClassDesc.of(descriptor.replace('/', '.'));
+            constants[i++] = cd;
+        }
+        return constants;
+    }
+
+    /**
+     * * {@preview Associated with sealed types, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>sealed types</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Returns true if this {@linkplain Class} is sealed.
+     *
+     * @return returns true if this class is sealed
+     *
+     * @jls 8.1 Class Declarations
+     * @jls 9.1 Interface Declarations
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
+    @SuppressWarnings("preview")
+    public boolean isSealed() {
+        return getPermittedSubtypes().length != 0;
+    }
+
+    private native String[] getPermittedSubtypes0();
 
 }

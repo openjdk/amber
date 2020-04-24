@@ -93,6 +93,7 @@ public abstract class Dependencies {
         MEMBER_ENTER,
         RECORD_PHASE,
         MEMBERS_PHASE,
+        PERMITS_PHASE,
         OTHER;
     }
 

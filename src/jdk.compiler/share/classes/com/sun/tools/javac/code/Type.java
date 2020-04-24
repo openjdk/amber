@@ -26,10 +26,7 @@
 package com.sun.tools.javac.code;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 
 import javax.lang.model.type.*;
 
@@ -42,6 +39,7 @@ import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.PoolConstant;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
+import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.BoundKind.*;
 import static com.sun.tools.javac.code.Flags.*;
@@ -974,6 +972,18 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
          */
         public List<Type> all_interfaces_field;
 
+        /** The classes, or interfaces, permitted to extend this class, or interface
+         */
+        public List<Type> permitted;
+
+        /** The class, or interfaces, that are sealed supertypes of this class or interface
+         */
+        public java.util.Set<Type> sealedSupers = Set.of();
+
+        public boolean isPermittedExplicit = false;
+
+        public boolean hasSealedSuperInSameCU;
+
         public ClassType(Type outer, List<Type> typarams, TypeSymbol tsym) {
             this(outer, typarams, tsym, TypeMetadata.EMPTY);
         }
@@ -986,6 +996,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             this.allparams_field = null;
             this.supertype_field = null;
             this.interfaces_field = null;
+            this.permitted = List.nil();
         }
 
         public int poolTag() {

@@ -105,6 +105,10 @@ public class ClassReader {
      */
     boolean allowModules;
 
+    /** Switch: allow sealed
+     */
+    boolean allowSealedTypes;
+
     /** Switch: allow records
      */
     boolean allowRecords;
@@ -270,6 +274,8 @@ public class ClassReader {
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
+        allowSealedTypes = (!preview.isPreview(Feature.SEALED_TYPES) || preview.isEnabled()) &&
+                Feature.SEALED_TYPES.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -1202,7 +1208,25 @@ public class ClassReader {
                     }
                     bp = bp + attrLen;
                 }
-            }
+            },
+            new AttributeReader(names.PermittedSubtypes, V58, CLASS_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowSealedTypes;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == TYP) {
+                        ClassType sealed = (ClassType)sym.type;
+                        ListBuffer<Type> subtypes = new ListBuffer<>();
+                        int numberOfPermittedSubtypes = nextChar();
+                        for (int i = 0; i < numberOfPermittedSubtypes; i++) {
+                            Type ct = poolReader.getClass(nextChar()).erasure(types);
+                            subtypes.add(ct);
+                        }
+                        sealed.permitted = subtypes.toList();
+                    }
+                }
+            },
         };
 
         for (AttributeReader r: readers)
@@ -2469,6 +2493,10 @@ public class ClassReader {
         char methodCount = nextChar();
         for (int i = 0; i < methodCount; i++) skipMember();
         readClassAttrs(c);
+
+        if (ct.permitted != null && !ct.permitted.isEmpty()) {
+            c.flags_field |= SEALED;
+        }
 
         // reset and read rest of classinfo
         bp = startbp;

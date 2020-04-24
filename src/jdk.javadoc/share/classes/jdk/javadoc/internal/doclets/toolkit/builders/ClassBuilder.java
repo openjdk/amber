@@ -87,11 +87,11 @@ public class ClassBuilder extends AbstractBuilder {
         this.utils = configuration.utils;
         switch (typeElement.getKind()) {
             case ENUM:
-                setEnumDocumentation(typeElement);
+            setEnumDocumentation(typeElement);
                 break;
 
             case RECORD:
-                setRecordDocumentation(typeElement);
+            setRecordDocumentation(typeElement);
                 break;
         }
     }
@@ -122,23 +122,23 @@ public class ClassBuilder extends AbstractBuilder {
         String key;
          switch (typeElement.getKind()) {
              case INTERFACE:
-                 key = "doclet.Interface";
+            key = "doclet.Interface";
                  break;
              case ENUM:
-                 key = "doclet.Enum";
+            key = "doclet.Enum";
                  break;
              case RECORD:
-                 key = "doclet.Record";
+            key = "doclet.Record";
                  break;
              case ANNOTATION_TYPE:
                  key = "doclet.AnnotationType";
                  break;
              case CLASS:
-                 key = "doclet.Class";
+            key = "doclet.Class";
                  break;
              default:
                  throw new IllegalStateException(typeElement.getKind() + " " + typeElement);
-         }
+        }
         Content contentTree = writer.getHeader(resources.getText(key) + " "
                 + utils.getSimpleName(typeElement));
         Content classContentTree = writer.getClassContentHeader();

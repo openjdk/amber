@@ -733,10 +733,22 @@ public class TreeInfo {
                 if (that.type != null && that.type.tsym == sym) result = that;
                 else super.visitTypeParameter(that);
             }
+            public void visitIdent(JCIdent that) {
+                if (that.sym == sym) result = that;
+                else super.visitIdent(that);
+            }
+            public void visitSelect(JCFieldAccess that) {
+                if (that.sym == sym) result = that;
+                else super.visitSelect(that);
+            }
         }
         DeclScanner s = new DeclScanner();
         tree.accept(s);
         return s.result;
+    }
+
+    public static JCTree declarationFor(final Symbol sym, final List<? extends JCTree> trees) {
+        return trees.stream().map(t -> TreeInfo.declarationFor(sym, t)).filter(t -> t != null).findFirst().get();
     }
 
     public static Env<AttrContext> scopeFor(JCTree node, JCCompilationUnit unit) {

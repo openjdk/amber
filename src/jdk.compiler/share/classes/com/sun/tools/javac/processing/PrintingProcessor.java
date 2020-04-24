@@ -248,6 +248,7 @@ public class PrintingProcessor extends AbstractProcessor {
                 }
 
                 printInterfaces(e);
+                printPermittedSubtypes(e);
             }
             writer.println(" {");
             indentation++;
@@ -599,6 +600,17 @@ public class PrintingProcessor extends AbstractProcessor {
                                  .map(TypeMirror::toString)
                                  .collect(Collectors.joining(", ")));
                 }
+            }
+        }
+
+        private void printPermittedSubtypes(TypeElement e) {
+            List<? extends TypeMirror> subtypes = e.getPermittedSubtypes();
+            if (!subtypes.isEmpty()) { // could remove this check with more complicated joining call
+                writer.print(" permits ");
+                writer.print(subtypes
+                             .stream()
+                             .map(subtype -> subtype.toString())
+                             .collect(Collectors.joining(", ")));
             }
         }
 
