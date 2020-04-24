@@ -157,6 +157,9 @@ public class Check {
                 enforceMandatoryWarnings, "sunapi", null);
 
         deferredLintHandler = DeferredLintHandler.instance(context);
+
+        allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
+                Feature.RECORDS.allowedInSource(source);
     }
 
     /** Character for synthetic names
@@ -187,6 +190,10 @@ public class Check {
     /** A handler for deferred lint warnings.
      */
     private DeferredLintHandler deferredLintHandler;
+
+    /** Are records allowed
+     */
+    private final boolean allowRecords;
 
 /* *************************************************************************
  * Errors and Warnings
@@ -616,11 +623,20 @@ public class Check {
         return checkCastable(pos, found, req, basicHandler);
     }
     Type checkCastable(DiagnosticPosition pos, Type found, Type req, CheckContext checkContext) {
-        if (types.isCastable(found, req, castWarner(pos, found, req))) {
+        if (checkCastable(pos, found, req, checkContext, castWarner(pos, found, req))) {
             return req;
         } else {
-            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
             return types.createErrorType(found);
+        }
+    }
+
+    boolean checkCastable(DiagnosticPosition pos, Type found, Type req,
+                          CheckContext checkContext, Warner warner) {
+        if (types.isCastable(found, req, warner)) {
+            return true;
+        } else {
+            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
+            return false;
         }
     }
 
@@ -3164,7 +3180,9 @@ public class Check {
             targets.add(names.ANNOTATION_TYPE);
             targets.add(names.CONSTRUCTOR);
             targets.add(names.FIELD);
-            targets.add(names.RECORD_COMPONENT);
+            if (allowRecords) {
+                targets.add(names.RECORD_COMPONENT);
+            }
             targets.add(names.LOCAL_VARIABLE);
             targets.add(names.METHOD);
             targets.add(names.PACKAGE);

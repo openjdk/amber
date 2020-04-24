@@ -502,7 +502,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCDeconstructionPattern t = (JCDeconstructionPattern) node;
         JCExpression deconstructor = copy(t.deconstructor, p);
         List<JCPattern> nested = copy(t.nested, p);
-        return M.at(t.pos).DeconstructionPattern(t.name, deconstructor, nested);
+        return M.at(t.pos).DeconstructionPattern(deconstructor, nested);
     }
 
     @DefinedBy(Api.COMPILER_TREE)
@@ -511,7 +511,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCExpression value = copy(t.value, p);
         return M.at(t.pos).LiteralPattern(value);
     }
-    
+
     @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitUnary(UnaryTree node, P p) {
         JCUnary t = (JCUnary) node;
@@ -602,7 +602,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         switch (tree.getTag()) {
             case LETEXPR: {
                 LetExpr t = (LetExpr) node;
-                List<? extends JCStatement> defs = copy(t.defs, p);
+                List<JCStatement> defs = copy(t.defs, p);
                 JCExpression expr = copy(t.expr, p);
                 return M.at(t.pos).LetExpr(defs, expr);
             }

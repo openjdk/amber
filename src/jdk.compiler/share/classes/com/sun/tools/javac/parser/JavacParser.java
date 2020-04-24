@@ -233,6 +233,7 @@ public class JavacParser implements Parser {
      *     mode = NOPARAMS    : no parameters allowed for type
      *     mode = TYPEARG     : type argument
      *     mode |= NOLAMBDA   : lambdas are not allowed
+     *     mode |= NOINVOCATION : method invocations are not allowed
      */
     protected static final int EXPR = 0x1;
     protected static final int TYPE = 0x2;
@@ -240,16 +241,14 @@ public class JavacParser implements Parser {
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
     protected static final int NOLAMBDA = 0x20;
-    protected static final int NOINVOCATION = 0x20;
+    protected static final int NOINVOCATION = 0x40;
 
     protected void selectExprMode() {
-        //TODO: copy NOINVOCATION
-        mode = (mode & NOLAMBDA) | EXPR;
+        mode = (mode & (NOLAMBDA | NOINVOCATION)) | EXPR;
     }
 
     protected void selectTypeMode() {
-        //TODO: copy NOINVOCATION
-        mode = (mode & NOLAMBDA) | TYPE;
+        mode = (mode & (NOLAMBDA|NOINVOCATION)) | TYPE;
     }
 
     /** The current mode.
@@ -772,12 +771,8 @@ public class JavacParser implements Parser {
                     JCPattern nestedPattern = parsePattern();
                     nested.append(nestedPattern);
                 } while (token.kind == COMMA);
-                Name name = null;
-                if (token.kind == IDENTIFIER) {
-                    name = ident();
-                }
                 accept(RPAREN);
-                return toP(F.at(pos).DeconstructionPattern(name, e, nested.toList()));
+                return toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
             } else if (token.kind == IDENTIFIER) {
                 return toP(F.at(pos).BindingPattern(ident(), e));
             } else {
@@ -967,24 +962,22 @@ public class JavacParser implements Parser {
                 JCTree pattern = parseType(true);
                 if (token.kind == IDENTIFIER) {
                     checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
-                    if (pattern.hasTag(IDENT) && isRestrictedTypeName(((JCIdent) pattern).name, pattern.pos, true)) {
-                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, ((JCIdent) pattern).name == names.var ? Source.JDK10 : Source.JDK13));
+                    Source source = restrictedTypeNameStartingAtSource(((JCIdent) pattern).name, pattern.pos, true);
+                    if (pattern.hasTag(IDENT) && source != null) {
+                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, source));
                         pattern = null;
                     }
                     pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
                 } else if (token.kind == LPAREN) {
+                    checkSourceLevel(Feature.DECONSTRUCTION_PATTERNS);
                     ListBuffer<JCPattern> nested = new ListBuffer<>();
                     do {
                         nextToken();
                         JCPattern nestedPattern = parsePattern();
                         nested.append(nestedPattern);
                     } while (token.kind == COMMA);
-                    Name name = null;
-                    if (token.kind == IDENTIFIER) {
-                        name = ident();
-                    }
                     accept(RPAREN);
-                    pattern = toP(F.at(pos).DeconstructionPattern(name, (JCExpression) pattern, nested.toList()));
+                    pattern = toP(F.at(pattern).DeconstructionPattern((JCExpression) pattern, nested.toList()));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
@@ -2637,7 +2630,7 @@ public class JavacParser implements Parser {
                 boolean isYieldStatement;
                 switch (next.kind) {
                     case PLUS: case SUB: case STRINGLITERAL: case CHARLITERAL:
-                    case INTLITERAL: case FLOATLITERAL: case DOUBLELITERAL:
+                    case INTLITERAL: case LONGLITERAL: case FLOATLITERAL: case DOUBLELITERAL:
                     case NULL: case IDENTIFIER: case TRUE: case FALSE:
                     case NEW: case SWITCH: case THIS: case SUPER:
                         isYieldStatement = true;

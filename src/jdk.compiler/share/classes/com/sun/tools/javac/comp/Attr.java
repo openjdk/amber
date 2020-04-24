@@ -29,7 +29,7 @@ import sun.invoke.util.BytecodeName;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -3959,16 +3959,7 @@ public class Attr extends JCTree.Visitor {
                 if (preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF)) {
                     preview.warnPreview(tree.expr.pos(), Feature.REIFIABLE_TYPES_INSTANCEOF);
                 }
-                Warner warner = new Warner();
-                if (!types.isCastable(exprtype, clazztype, warner)) {
-                    chk.basicHandler.report(tree.expr.pos(),
-                                            diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
-                } else if (warner.hasLint(LintCategory.UNCHECKED)) {
-                    log.error(tree.expr.pos(),
-                              Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
-                } else {
-                    valid = true;
-                }
+                valid = verifyCastable(tree.expr.pos(), exprtype, clazztype);
             } else {
                 log.error(typeTree.pos(), Errors.IllegalGenericTypeForInstof);
             }
@@ -4070,6 +4061,19 @@ public class Attr extends JCTree.Visitor {
             ss = ss.tail;
         }
         return ts.tail == null && ss.tail == null;
+    }
+
+    private boolean verifyCastable(DiagnosticPosition pos, Type exprtype, Type clazztype) {
+        Warner warner = new Warner();
+        if (!chk.checkCastable(pos, exprtype, clazztype, chk.basicHandler, warner)) {
+            return false;
+        } else if (warner.hasLint(LintCategory.UNCHECKED)) {
+            log.error(pos,
+                      Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
+            return false;
+        } else {
+            return true;
+        }
     }
 
     public void visitLiteralPattern(JCLiteralPattern tree) {
@@ -5761,7 +5765,7 @@ public class Attr extends JCTree.Visitor {
             }
             super.visitBindingPattern(that);
         }
-        //XXX: DeconstructionPattern!!!!
+
         @Override
         public void visitNewClass(JCNewClass that) {
             if (that.constructor == null) {

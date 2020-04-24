@@ -105,11 +105,11 @@ public class AnnotationTypeRequiredMemberWriterImpl extends AbstractMemberWriter
     public Content getAnnotationDocTreeHeader(Element member) {
         String simpleName = name(member);
         Content annotationDocTree = new ContentBuilder();
-        Content heading = new HtmlTree(Headings.TypeDeclaration.MEMBER_HEADING,
+        Content heading = HtmlTree.HEADING(Headings.TypeDeclaration.MEMBER_HEADING,
                 new StringContent(simpleName));
         annotationDocTree.add(heading);
         return HtmlTree.SECTION(HtmlStyle.detail, annotationDocTree)
-                .setId(simpleName + utils.signature((ExecutableElement) member));
+                .setId(simpleName + utils.signature((ExecutableElement) member, typeElement));
     }
 
     @Override
@@ -138,11 +138,6 @@ public class AnnotationTypeRequiredMemberWriterImpl extends AbstractMemberWriter
     public Content getAnnotationDetails(Content annotationDetailsTreeHeader, Content annotationDetailsTree) {
         Content annotationDetails = new ContentBuilder(annotationDetailsTreeHeader, annotationDetailsTree);
         return getMemberTree(HtmlTree.SECTION(HtmlStyle.memberDetails, annotationDetails));
-    }
-
-    @Override
-    public Content getAnnotationDoc(Content annotationDocTree) {
-        return getMemberTree(annotationDocTree);
     }
 
     @Override

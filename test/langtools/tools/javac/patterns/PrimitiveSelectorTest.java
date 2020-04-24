@@ -39,7 +39,7 @@ public class PrimitiveSelectorTest {
             default:
                 worked = false;
                 break;
-		}
+        }
         if (!worked)
             throw new AssertionError("Unexpected control flow");
     }

@@ -166,8 +166,8 @@ public class Preview {
      */
     public boolean isPreview(Feature feature) {
         if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
+            feature == Feature.DECONSTRUCTION_PATTERNS ||
             feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
-            feature == Feature.TEXT_BLOCKS ||
             feature == Feature.RECORDS)
             return true;
         //Note: this is a backdoor which allows to optionally treat all features as 'preview' (for testing).

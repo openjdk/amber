@@ -104,7 +104,7 @@ public class MethodWriterImpl extends AbstractExecutableMemberWriter
     public Content getMethodDocTreeHeader(ExecutableElement method) {
         String erasureAnchor;
         Content methodDocTree = new ContentBuilder();
-        HtmlTree heading = new HtmlTree(Headings.TypeDeclaration.MEMBER_HEADING,
+        HtmlTree heading = HtmlTree.HEADING(Headings.TypeDeclaration.MEMBER_HEADING,
                 new StringContent(name(method)));
         if ((erasureAnchor = getErasureAnchor(method)) != null) {
             heading.setId(erasureAnchor);
@@ -174,11 +174,6 @@ public class MethodWriterImpl extends AbstractExecutableMemberWriter
         Content methodDetails = new ContentBuilder(methodDetailsTreeHeader, methodDetailsTree);
         return getMemberTree(HtmlTree.SECTION(HtmlStyle.methodDetails, methodDetails)
                 .setId(SectionName.METHOD_DETAIL.getName()));
-    }
-
-    @Override
-    public Content getMethodDoc(Content methodDocTree) {
-        return getMemberTree(methodDocTree);
     }
 
     @Override
@@ -319,7 +314,7 @@ public class MethodWriterImpl extends AbstractExecutableMemberWriter
         VisibleMemberTable vmt = writer.configuration
                 .getVisibleMemberTable(utils.getEnclosingTypeElement(method));
         SortedSet<ExecutableElement> implementedMethods =
-                new TreeSet<>(utils.makeOverrideUseComparator());
+                new TreeSet<>(utils.comparators.makeOverrideUseComparator());
         implementedMethods.addAll(vmt.getImplementedMethods(method));
         for (ExecutableElement implementedMeth : implementedMethods) {
             TypeMirror intfac = vmt.getImplementedMethodHolder(method, implementedMeth);

@@ -6,7 +6,7 @@
 
 class FlowAnalysisTest {
     void foo(Object object) {
-        
+
         switch (object) {
             case Object o: break;
             case String s: break;

@@ -39,10 +39,9 @@ import javax.lang.model.element.PackageElement;
 import com.sun.source.doctree.DocTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.ContentBuilder;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
-import jdk.javadoc.internal.doclets.formats.html.markup.Navigation;
-import jdk.javadoc.internal.doclets.formats.html.markup.Navigation.PageMode;
+import jdk.javadoc.internal.doclets.formats.html.Navigation.PageMode;
 import jdk.javadoc.internal.doclets.formats.html.markup.StringContent;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 import jdk.javadoc.internal.doclets.toolkit.util.DeprecatedAPIListBuilder;
@@ -298,11 +297,11 @@ public class DeprecatedListWriter extends SubWriterHolderWriter {
         bodyContents.addMainContent(content);
         HtmlTree htmlTree = HtmlTree.FOOTER();
         navBar.setUserFooter(getUserHeaderFooter(false));
-        htmlTree.add(navBar.getContent(false));
+        htmlTree.add(navBar.getContent(Navigation.Position.BOTTOM));
         addBottom(htmlTree);
         bodyContents.setFooter(htmlTree);
         String description = "deprecated elements";
-        body.add(bodyContents.toContent());
+        body.add(bodyContents);
         printHtmlDocument(null, description, body);
     }
 
@@ -330,13 +329,13 @@ public class DeprecatedListWriter extends SubWriterHolderWriter {
      */
     public Content getContentsList(DeprecatedAPIListBuilder deprapi) {
         Content headContent = contents.deprecatedAPI;
-        Content heading = HtmlTree.HEADING(Headings.PAGE_TITLE_HEADING, true,
+        Content heading = HtmlTree.HEADING_TITLE(Headings.PAGE_TITLE_HEADING,
                 HtmlStyle.title, headContent);
         Content div = HtmlTree.DIV(HtmlStyle.header, heading);
         Content headingContent = contents.contentsHeading;
-        div.add(HtmlTree.HEADING(Headings.CONTENT_HEADING, true,
+        div.add(HtmlTree.HEADING_TITLE(Headings.CONTENT_HEADING,
                 headingContent));
-        Content ul = new HtmlTree(HtmlTag.UL);
+        Content ul = new HtmlTree(TagName.UL);
         for (DeprElementKind kind : DeprElementKind.values()) {
             addIndexLink(deprapi, kind, ul);
         }
@@ -355,7 +354,7 @@ public class DeprecatedListWriter extends SubWriterHolderWriter {
         Content headerContent = new ContentBuilder();
         addTop(headerContent);
         navBar.setUserHeader(getUserHeaderFooter(true));
-        headerContent.add(navBar.getContent(true));
+        headerContent.add(navBar.getContent(Navigation.Position.TOP));
         bodyContents.setHeader(headerContent);
         return bodyTree;
     }
@@ -402,9 +401,8 @@ public class DeprecatedListWriter extends SubWriterHolderWriter {
                 }
                 table.addRow(link, desc);
             }
-            Content li = HtmlTree.LI(HtmlStyle.blockList, table.toContent());
-            Content ul = HtmlTree.UL(HtmlStyle.blockList, li);
-            contentTree.add(ul);
+            // note: singleton list
+            contentTree.add(HtmlTree.UL(HtmlStyle.blockList, HtmlTree.LI(table)));
         }
     }
 

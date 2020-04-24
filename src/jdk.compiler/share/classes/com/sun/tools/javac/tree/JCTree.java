@@ -2310,22 +2310,19 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     public static class JCDeconstructionPattern extends JCPattern
             implements DeconstructionPatternTree {
-        public Name name; //possibly null
-//        public BindingSymbol symbol;
         public JCExpression deconstructor;
         public List<JCPattern> nested;
         public Symbol extractorResolver; //TODO: MethodSymbol?; TODO: rename to pattern(Sym?)
         public List<Type> innerTypes;
 
-        protected JCDeconstructionPattern(Name name, JCExpression deconstructor, List<JCPattern> nested) {
-            this.name = name;
+        protected JCDeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
             this.deconstructor = deconstructor;
             this.nested = nested;
         }
 
         @DefinedBy(Api.COMPILER_TREE)
         public Name getBinding() {
-            return name;
+            return null;
         }
 
         @Override @DefinedBy(Api.COMPILER_TREE)
@@ -3281,11 +3278,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     /** (let int x = 3; in x+2) */
     public static class LetExpr extends JCExpression {
-        public List<? extends JCStatement> defs;
+        public List<JCStatement> defs;
         public JCExpression expr;
         /**true if a expr should be run through Gen.genCond:*/
         public boolean needsCond;
-        protected LetExpr(List<? extends JCStatement> defs, JCExpression expr) {
+        protected LetExpr(List<JCStatement> defs, JCExpression expr) {
             this.defs = defs;
             this.expr = expr;
         }
@@ -3403,7 +3400,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCProvides Provides(JCExpression serviceName, List<JCExpression> implNames);
         JCRequires Requires(boolean isTransitive, boolean isStaticPhase, JCExpression qualId);
         JCUses Uses(JCExpression qualId);
-        LetExpr LetExpr(List<? extends JCStatement> defs, JCExpression expr);
+        LetExpr LetExpr(List<JCStatement> defs, JCExpression expr);
     }
 
     /** A generic visitor class for trees.
