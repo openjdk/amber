@@ -1067,16 +1067,8 @@ public class Attr extends JCTree.Visitor {
                 }
 
                 if (tree.name == names.init) {
-                    // if this a constructor other than the canonical one
-                    if ((tree.sym.flags_field & RECORD) == 0) {
-                        JCMethodInvocation app = TreeInfo.firstConstructorCall(tree);
-                        if (app == null ||
-                                TreeInfo.name(app.meth) != names._this ||
-                                !checkFirstConstructorStat(app, tree, false)) {
-                            log.error(tree, Errors.FirstStatementMustBeCallToAnotherConstructor);
-                        }
-                    } else {
-                        // but if it is the canonical:
+                    if ((tree.sym.flags_field & RECORD) != 0) {
+                        // if it is the canonical constructor:
 
                         // if user generated, then it shouldn't explicitly invoke any other constructor
                         if ((tree.sym.flags_field & GENERATEDCONSTR) == 0) {
@@ -1158,8 +1150,11 @@ public class Attr extends JCTree.Visitor {
                 // or we are compiling class java.lang.Object.
                 if (tree.name == names.init && owner.type != syms.objectType) {
                     JCBlock body = tree.body;
-                    if (body.stats.isEmpty() ||
-                            TreeInfo.getConstructorInvocationName(body.stats, names) == names.empty) {
+                    int numberOfCallsToThisSuper = numberOfCallsToThisSuper(body.stats);
+                    if (numberOfCallsToThisSuper > 1) {
+                        log.error(tree.pos(), Errors.OnlyOneCallToSuperOrThisInConstructor);
+                    }
+                    if (body.stats.isEmpty() || numberOfCallsToThisSuper == 0) {
                         JCStatement supCall = make.at(body.pos).Exec(make.Apply(List.nil(),
                                 make.Ident(names._super), make.Idents(List.nil())));
                         body.stats = body.stats.prepend(supCall);
@@ -1210,6 +1205,30 @@ public class Attr extends JCTree.Visitor {
             chk.setLint(prevLint);
             chk.setMethod(prevMethod);
         }
+    }
+
+        /** Check that given application node appears as first statement
+         *  in a constructor call.
+         *  @param tree          The application node
+         *  @param enclMethod    The enclosing method of the application.
+         *  @param error         Should an error be issued?
+         */
+        boolean checkFirstConstructorStat(JCMethodInvocation tree, JCMethodDecl enclMethod, boolean error) {
+            if (enclMethod != null && enclMethod.name == names.init) {
+                JCBlock body = enclMethod.body;
+                if (body.stats.head.hasTag(EXEC) &&
+                    ((JCExpressionStatement) body.stats.head).expr == tree)
+                    return true;
+            }
+            if (error) {
+                log.error(tree.pos(),
+                        Errors.CallMustBeFirstStmtInCtor(TreeInfo.name(tree.meth)));
+            }
+            return false;
+        }
+
+    private int numberOfCallsToThisSuper(List<JCStatement> stats) {
+        return (int)stats.stream().filter(s -> TreeInfo.isSelfCall(s)).count();
     }
 
     public void visitVarDef(JCVariableDecl tree) {
@@ -2288,8 +2307,6 @@ public class Attr extends JCTree.Visitor {
         if (isConstructorCall) {
             // We are seeing a ...this(...) or ...super(...) call.
             // Check that this is the first statement in a constructor.
-            checkFirstConstructorStat(tree, env.enclMethod, true);
-
             // Record the fact
             // that this is a constructor call (using isSelfCall).
             localEnv.info.isSelfCall = true;
@@ -2422,26 +2439,6 @@ public class Attr extends JCTree.Visitor {
             } else {
                 return restype;
             }
-        }
-
-        /** Check that given application node appears as first statement
-         *  in a constructor call.
-         *  @param tree          The application node
-         *  @param enclMethod    The enclosing method of the application.
-         *  @param error         Should an error be issued?
-         */
-        boolean checkFirstConstructorStat(JCMethodInvocation tree, JCMethodDecl enclMethod, boolean error) {
-            if (enclMethod != null && enclMethod.name == names.init) {
-                JCBlock body = enclMethod.body;
-                if (body.stats.head.hasTag(EXEC) &&
-                    ((JCExpressionStatement) body.stats.head).expr == tree)
-                    return true;
-            }
-            if (error) {
-                log.error(tree.pos(),
-                        Errors.CallMustBeFirstStmtInCtor(TreeInfo.name(tree.meth)));
-            }
-            return false;
         }
 
         /** Obtain a method type with given argument types.
