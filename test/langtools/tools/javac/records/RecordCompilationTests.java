@@ -36,7 +36,8 @@
  *      jdk.jdeps/com.sun.tools.classfile
  * @build JavacTestingAbstractProcessor
  * @compile --enable-preview -source ${jdk.version} RecordCompilationTests.java
- * @run testng/othervm --enable-preview RecordCompilationTests
+ * @run testng/othervm -DuseAP=false --enable-preview RecordCompilationTests
+ * @run testng/othervm -DuseAP=true --enable-preview RecordCompilationTests
  */
 
 import java.io.File;
@@ -101,19 +102,51 @@ import tools.javac.combo.CompilationTestCase;
 import static java.lang.annotation.ElementType.*;
 import static org.testng.Assert.assertEquals;
 
+/** Records are the first feature which sports automatic injection of (declarative and type) annotations : from a
+ *  given record component to one or more record members, if applicable.
+ *  This implies that the record's implementation can be stressed with the presence of annotation processors. Which is
+ *  something the implementator could easily skip. For this reason this test is executed twice, once without the
+ *  presence of any annotation processor and one with a simple annotation processor (which does not annotation processing
+ *  at all) just to force at least a round of annotation processing.
+ *
+ *  Tests needing special compilation options need to store current options, set its customs options by invoking method
+ *  `setCompileOptions` and then reset the previous compilation options for other tests. To see an example of this check
+ *  method: testAnnos()
+ */
+
 @Test
 public class RecordCompilationTests extends CompilationTestCase {
     // @@@ When records become a permanent feature, we don't need these any more
-    private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
-                                               Integer.toString(Runtime.version().feature())};
+    private static String[] PREVIEW_OPTIONS = {
+            "--enable-preview",
+            "-source", Integer.toString(Runtime.version().feature())
+    };
+
+    private static String[] PREVIEW_OPTIONS_WITH_AP = {
+            "--enable-preview",
+            "-source", Integer.toString(Runtime.version().feature()),
+            "-processor", SimplestAP.class.getName()
+    };
 
     private static final List<String> BAD_COMPONENT_NAMES = List.of(
             "clone", "finalize", "getClass", "hashCode",
             "notify", "notifyAll", "toString", "wait");
 
+    /* simplest annotation processor just to force a round of annotation processing for all tests
+     */
+    @SupportedAnnotationTypes("*")
+    public static class SimplestAP extends AbstractProcessor {
+        @Override
+        public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+            return true;
+        }
+    }
+
     public RecordCompilationTests() {
+        boolean useAP = System.getProperty("useAP") == null ? false : System.getProperty("useAP").equals("true");
         setDefaultFilename("R.java");
-        setCompileOptions(PREVIEW_OPTIONS);
+        setCompileOptions(useAP ? PREVIEW_OPTIONS_WITH_AP : PREVIEW_OPTIONS);
+        System.out.println(useAP ? "running all tests using an annotation processor" : "running all tests without annotation processor");
     }
 
     public void testMalformedDeclarations() {
@@ -1042,14 +1075,6 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testSameArity() {
-        String[] sameArityTestOptions = {
-                "--enable-preview",
-                "-source", Integer.toString(Runtime.version().feature()),
-                "-processor", SimplestProcessor.class.getName(),
-        };
-
-        setCompileOptions(sameArityTestOptions);
-
         for (String source : List.of(
                 """
                 record R(int... args) {
@@ -1100,71 +1125,6 @@ public class RecordCompilationTests extends CompilationTestCase {
                 """
         )) {
             assertFail("compiler.err.invalid.canonical.constructor.in.record", source);
-        }
-
-        setCompileOptions(PREVIEW_OPTIONS);
-        // now run again without the annotation processor
-        for (String source : List.of(
-                """
-                record R(int... args) {
-                    public R(int... args) {
-                        this.args = args;
-                    }
-                }
-                """,
-                """
-                record R(int[] args) {
-                            public R(int[] args) {
-                        this.args = args;
-                    }
-                }
-                """
-                )) {
-                    assertOK(source);
-                }
-
-                for (String source : List.of(
-                        """
-                        record R(int... args) {
-                            public R(int[] args) {
-                        this.args = args;
-                    }
-                }
-                """,
-                """
-                record R(int... args) {
-                            public R(int[] args) {
-                        this.args = args;
-                    }
-                }
-                """,
-                """
-                record R(String... args) {
-                            public R(String[] args) {
-                        this.args = args;
-                    }
-                }
-                """,
-                """
-                record R(String... args) {
-                            public R(String[] args) {
-                        this.args = args;
-                    }
-                }
-                """
-                )) {
-                    assertFail("compiler.err.invalid.canonical.constructor.in.record", source);
-                }
-    }
-
-    /* this processor is here just to provoke a round of AP for tests needing it, some record changes in the past
-     * have provoked regressions when AP are present
-     */
-    @SupportedAnnotationTypes("*")
-    public static class SimplestProcessor extends AbstractProcessor {
-        @Override
-        public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-            return true;
         }
     }
 }
