@@ -57,7 +57,6 @@ import static com.sun.tools.javac.code.TypeTag.ERROR;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 import static com.sun.tools.javac.code.TypeTag.*;
-import static com.sun.tools.javac.code.TypeTag.BOT;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;
@@ -1342,20 +1341,26 @@ public class TypeEnter implements Completer {
 
     class RecordConstructorHelper extends BasicConstructorHelper {
 
-        List<VarSymbol> recordFieldSymbols;
+        List<Boolean> isVarargs;
         List<JCVariableDecl> recordFieldDecls;
 
-        RecordConstructorHelper(TypeSymbol owner, List<JCVariableDecl> recordFieldDecls) {
+        RecordConstructorHelper(ClassSymbol owner, List<JCVariableDecl> recordFieldDecls) {
             super(owner);
             this.recordFieldDecls = recordFieldDecls;
-            this.recordFieldSymbols = recordFieldDecls.map(vd -> vd.sym);
+            this.isVarargs = owner.getRecordComponents().map(rc -> rc.isVarargs);
         }
 
         @Override
         public Type constructorType() {
             if (constructorType == null) {
-                List<Type> argtypes = recordFieldSymbols.map(v -> (v.flags_field & Flags.VARARGS) != 0 ? types.elemtype(v.type) : v.type);
-                constructorType = new MethodType(argtypes, syms.voidType, List.nil(), syms.methodClass);
+                ListBuffer<Type> argtypes = new ListBuffer<>();
+                List<Boolean> tmpIsVarargs = isVarargs;
+                for (JCVariableDecl variableDecl : recordFieldDecls) {
+                    argtypes.add(tmpIsVarargs.head ? types.elemtype(variableDecl.sym.type) : variableDecl.sym.type);
+                    tmpIsVarargs = tmpIsVarargs.tail;
+                }
+
+                constructorType = new MethodType(argtypes.toList(), syms.voidType, List.nil(), syms.methodClass);
             }
             return constructorType;
         }
@@ -1368,8 +1373,10 @@ public class TypeEnter implements Completer {
              */
             csym.flags_field |= Flags.COMPACT_RECORD_CONSTRUCTOR | GENERATEDCONSTR;
             ListBuffer<VarSymbol> params = new ListBuffer<>();
-            for (VarSymbol p : recordFieldSymbols) {
-                params.add(new VarSymbol(GENERATED_MEMBER | PARAMETER | RECORD | ((p.flags_field & Flags.VARARGS) != 0 ? Flags.VARARGS : 0), p.name, p.type, csym));
+            List<Boolean> tmpIsVarargs = isVarargs;
+            for (JCVariableDecl variableDecl : recordFieldDecls) {
+                params.add(new VarSymbol(GENERATED_MEMBER | PARAMETER | RECORD | (tmpIsVarargs.head ? Flags.VARARGS : 0), variableDecl.name, variableDecl.sym.type, csym));
+                tmpIsVarargs = tmpIsVarargs.tail;
             }
             csym.params = params.toList();
             csym.flags_field |= RECORD;

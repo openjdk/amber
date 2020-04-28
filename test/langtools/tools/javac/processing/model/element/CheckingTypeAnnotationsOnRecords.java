@@ -88,7 +88,6 @@ public class CheckingTypeAnnotationsOnRecords extends TestRunner {
     }
 
     public static void main(String... args) throws Exception {
-        System.out.println(System.getProperties());
         new CheckingTypeAnnotationsOnRecords().runTests();
     }
 

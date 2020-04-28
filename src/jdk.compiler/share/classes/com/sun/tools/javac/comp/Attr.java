@@ -1119,13 +1119,18 @@ public class Attr extends JCTree.Visitor {
                         /* and now we need to check that the constructor's arguments are exactly the same as those of the
                          * record components
                          */
-                        List<Type> recordComponentTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
+                        List<? extends RecordComponent> recordComponents = env.enclClass.sym.getRecordComponents();
+                        List<Type> recordFieldTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
                         for (JCVariableDecl param: tree.params) {
-                            if (!types.isSameType(param.type, recordComponentTypes.head)) {
+                            boolean paramIsVarArgs = (param.sym.flags_field & VARARGS) != 0;
+                            if (!types.isSameType(param.type, recordFieldTypes.head) ||
+                                    (recordComponents.head.isVarargs != paramIsVarArgs)) {
                                 log.error(param, Errors.InvalidCanonicalConstructorInRecord(
-                                        Fragments.Canonical, env.enclClass.sym.name, Fragments.TypeMustBeIdenticalToCorrespondingRecordComponentType));
+                                        Fragments.Canonical, env.enclClass.sym.name,
+                                        Fragments.TypeMustBeIdenticalToCorrespondingRecordComponentType));
                             }
-                            recordComponentTypes = recordComponentTypes.tail;
+                            recordComponents = recordComponents.tail;
+                            recordFieldTypes = recordFieldTypes.tail;
                         }
                     }
                 }

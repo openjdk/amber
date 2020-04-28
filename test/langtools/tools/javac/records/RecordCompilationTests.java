@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 
 import com.sun.tools.javac.util.Assert;
 
+import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 
@@ -102,7 +103,6 @@ import static org.testng.Assert.assertEquals;
 
 @Test
 public class RecordCompilationTests extends CompilationTestCase {
-
     // @@@ When records become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
                                                Integer.toString(Runtime.version().feature())};
@@ -111,7 +111,7 @@ public class RecordCompilationTests extends CompilationTestCase {
             "clone", "finalize", "getClass", "hashCode",
             "notify", "notifyAll", "toString", "wait");
 
-    {
+    public RecordCompilationTests() {
         setDefaultFilename("R.java");
         setCompileOptions(PREVIEW_OPTIONS);
     }
@@ -1038,6 +1038,133 @@ public class RecordCompilationTests extends CompilationTestCase {
             case "": return 0;
             default:
                 throw new AssertionError();
+        }
+    }
+
+    public void testSameArity() {
+        String[] sameArityTestOptions = {
+                "--enable-preview",
+                "-source", Integer.toString(Runtime.version().feature()),
+                "-processor", SimplestProcessor.class.getName(),
+        };
+
+        setCompileOptions(sameArityTestOptions);
+
+        for (String source : List.of(
+                """
+                record R(int... args) {
+                    public R(int... args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(int[] args) {
+                    public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """
+        )) {
+            assertOK(source);
+        }
+
+        for (String source : List.of(
+                """
+                record R(int... args) {
+                    public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(int... args) {
+                    public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(String... args) {
+                    public R(String[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(String... args) {
+                    public R(String[] args) {
+                        this.args = args;
+                    }
+                }
+                """
+        )) {
+            assertFail("compiler.err.invalid.canonical.constructor.in.record", source);
+        }
+
+        setCompileOptions(PREVIEW_OPTIONS);
+        // now run again without the annotation processor
+        for (String source : List.of(
+                """
+                record R(int... args) {
+                    public R(int... args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(int[] args) {
+                            public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """
+                )) {
+                    assertOK(source);
+                }
+
+                for (String source : List.of(
+                        """
+                        record R(int... args) {
+                            public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(int... args) {
+                            public R(int[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(String... args) {
+                            public R(String[] args) {
+                        this.args = args;
+                    }
+                }
+                """,
+                """
+                record R(String... args) {
+                            public R(String[] args) {
+                        this.args = args;
+                    }
+                }
+                """
+                )) {
+                    assertFail("compiler.err.invalid.canonical.constructor.in.record", source);
+                }
+    }
+
+    /* this processor is here just to provoke a round of AP for tests needing it, some record changes in the past
+     * have provoked regressions when AP are present
+     */
+    @SupportedAnnotationTypes("*")
+    public static class SimplestProcessor extends AbstractProcessor {
+        @Override
+        public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+            return true;
         }
     }
 }

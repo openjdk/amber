@@ -1491,7 +1491,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public RecordComponent getRecordComponent(JCVariableDecl var, boolean addIfMissing, List<JCAnnotation> annotations) {
             for (RecordComponent rc : recordComponents) {
-                if (rc.name == var.name) {
+                if (rc.name == var.name && var.pos == rc.pos) {
                     return rc;
                 }
             }
@@ -1754,6 +1754,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public MethodSymbol accessor;
         public JCTree.JCMethodDecl accessorMeth;
         private final List<JCAnnotation> originalAnnos;
+        public final boolean isVarargs;
+        /* if the user happens to erroneously declare two components with the same name, we need a way to differentiate
+         * them, the code will fail anyway but we need to keep the information for better error recovery
+         */
+        private final int pos;
 
         /**
          * Construct a record component, given its flags, name, type and owner.
@@ -1761,6 +1766,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public RecordComponent(JCVariableDecl fieldDecl, List<JCAnnotation> annotations) {
             super(PUBLIC, fieldDecl.sym.name, fieldDecl.sym.type, fieldDecl.sym.owner);
             this.originalAnnos = annotations;
+            this.isVarargs = (fieldDecl.mods.flags & VARARGS) != 0;
+            this.pos = fieldDecl.pos;
         }
 
         public List<JCAnnotation> getOriginalAnnos() { return originalAnnos; }
