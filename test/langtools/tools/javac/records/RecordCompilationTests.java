@@ -1156,4 +1156,42 @@ public class RecordCompilationTests extends CompilationTestCase {
                 """
         );
     }
+
+    public void testOverrideAtAccessor() {
+        assertOK(
+                """
+                record R(int i) {
+                    @Override
+                    public int i() { return i; }
+                }
+                """,
+                """
+                record R(int i, int j) {
+                    @Override
+                    public int i() { return i; }
+                    public int j() { return j; }
+                }
+                """,
+                """
+                interface I { int i(); }
+                record R(int i) implements I {
+                    @Override
+                    public int i() { return i; }
+                }
+                """,
+                """
+                interface I { int i(); }
+                record R(int i) implements I {
+                    public int i() { return i; }
+                }
+                """,
+                """
+                interface I { default int i() { return 0; } }
+                record R(int i) implements I {
+                    @Override
+                    public int i() { return i; }
+                }
+                """
+        );
+    }
 }
