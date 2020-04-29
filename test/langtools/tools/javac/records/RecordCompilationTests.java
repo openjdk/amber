@@ -523,6 +523,16 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
+        // can't be explicitly static
+        assertFail("compiler.err.illegal.start.of.expr",
+                """
+                class R {
+                    void m() {
+                        static record RR(int x) { };
+                    }
+                }
+                """
+        );
     }
 
     public void testCompactDADU() {
