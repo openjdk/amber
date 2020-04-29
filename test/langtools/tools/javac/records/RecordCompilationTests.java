@@ -119,13 +119,15 @@ public class RecordCompilationTests extends CompilationTestCase {
     // @@@ When records become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {
             "--enable-preview",
-            "-source", Integer.toString(Runtime.version().feature())
+            "-source", Integer.toString(Runtime.version().feature()),
+            "-Werror"
     };
 
     private static String[] PREVIEW_OPTIONS_WITH_AP = {
             "--enable-preview",
             "-source", Integer.toString(Runtime.version().feature()),
-            "-processor", SimplestAP.class.getName()
+            "-processor", SimplestAP.class.getName(),
+            "-Werror"
     };
 
     private static final List<String> BAD_COMPONENT_NAMES = List.of(
@@ -1126,5 +1128,32 @@ public class RecordCompilationTests extends CompilationTestCase {
         )) {
             assertFail("compiler.err.invalid.canonical.constructor.in.record", source);
         }
+    }
+
+    public void testSafeVararsAnno() {
+        assertFail("compiler.err.annotation.type.not.applicable",
+                """
+                @SafeVarargs
+                record R<T>(T... t) {}
+                """,
+                """
+                @SafeVarargs
+                record R<T>(T... t) {
+                    R(T... t) {
+                        this.t = t;
+                    }
+                }
+                """
+        );
+        assertOK(
+                """
+                record R<T>(T... t) {
+                    @SafeVarargs
+                    R(T... t) {
+                        this.t = t;
+                    }
+                }
+                """
+        );
     }
 }
