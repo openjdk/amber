@@ -1491,6 +1491,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         public RecordComponent getRecordComponent(JCVariableDecl var, boolean addIfMissing, List<JCAnnotation> annotations) {
             for (RecordComponent rc : recordComponents) {
+                /* it could be that a record erroneously declares two record components with the same name, in that
+                 * case we need to use the position to disambiguate
+                 */
                 if (rc.name == var.name && var.pos == rc.pos) {
                     return rc;
                 }
@@ -1753,7 +1756,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     public static class RecordComponent extends VarSymbol implements RecordComponentElement {
         public MethodSymbol accessor;
         public JCTree.JCMethodDecl accessorMeth;
+        /* the original annotations applied to the record component
+         */
         private final List<JCAnnotation> originalAnnos;
+        /* was this record component declared as a varargs
+         */
         public final boolean isVarargs;
         /* if the user happens to erroneously declare two components with the same name, we need a way to differentiate
          * them, the code will fail anyway but we need to keep the information for better error recovery

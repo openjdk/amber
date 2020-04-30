@@ -1736,14 +1736,6 @@ public class Check {
                        MethodSymbol m,
                        MethodSymbol other,
                        ClassSymbol origin) {
-        checkOverride(tree, m, other, origin, true);
-    }
-
-    void checkOverride(JCTree tree,
-                       MethodSymbol m,
-                       MethodSymbol other,
-                       ClassSymbol origin,
-                       boolean issueErrorsAndWarnings) {
         // Don't check overriding of synthetic methods or by bridge methods.
         if ((m.flags() & (SYNTHETIC|BRIDGE)) != 0 || (other.flags() & SYNTHETIC) != 0) {
             return;
@@ -1752,9 +1744,8 @@ public class Check {
         // Error if static method overrides instance method (JLS 8.4.6.2).
         if ((m.flags() & STATIC) != 0 &&
                    (other.flags() & STATIC) == 0) {
-            if (issueErrorsAndWarnings)
-                log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                          Errors.OverrideStatic(cannotOverride(m, other)));
+            log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                      Errors.OverrideStatic(cannotOverride(m, other)));
             m.flags_field |= BAD_OVERRIDE;
             return;
         }
@@ -1764,10 +1755,9 @@ public class Check {
         if ((other.flags() & FINAL) != 0 ||
                  (m.flags() & STATIC) == 0 &&
                  (other.flags() & STATIC) != 0) {
-            if (issueErrorsAndWarnings)
-                log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                          Errors.OverrideMeth(cannotOverride(m, other),
-                                              asFlagSet(other.flags() & (FINAL | STATIC))));
+            log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                      Errors.OverrideMeth(cannotOverride(m, other),
+                                          asFlagSet(other.flags() & (FINAL | STATIC))));
             m.flags_field |= BAD_OVERRIDE;
             return;
         }
@@ -1779,13 +1769,12 @@ public class Check {
 
         // Error if overriding method has weaker access (JLS 8.4.6.3).
         if (protection(m.flags()) > protection(other.flags())) {
-            if (issueErrorsAndWarnings)
-                log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                          (other.flags() & AccessFlags) == 0 ?
-                                  Errors.OverrideWeakerAccess(cannotOverride(m, other),
-                                                              "package") :
-                                  Errors.OverrideWeakerAccess(cannotOverride(m, other),
-                                                              asFlagSet(other.flags() & AccessFlags)));
+            log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                      (other.flags() & AccessFlags) == 0 ?
+                              Errors.OverrideWeakerAccess(cannotOverride(m, other),
+                                                          "package") :
+                              Errors.OverrideWeakerAccess(cannotOverride(m, other),
+                                                          asFlagSet(other.flags() & AccessFlags)));
             m.flags_field |= BAD_OVERRIDE;
             return;
         }
@@ -1806,22 +1795,19 @@ public class Check {
             types.returnTypeSubstitutable(mt, ot, otres, overrideWarner);
         if (!resultTypesOK) {
             if ((m.flags() & STATIC) != 0 && (other.flags() & STATIC) != 0) {
-                if (issueErrorsAndWarnings)
-                    log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                              Errors.OverrideIncompatibleRet(Fragments.CantHide(m, m.location(), other,
-                                            other.location()), mtres, otres));
+                log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                          Errors.OverrideIncompatibleRet(Fragments.CantHide(m, m.location(), other,
+                                        other.location()), mtres, otres));
                 m.flags_field |= BAD_OVERRIDE;
             } else {
-                if (issueErrorsAndWarnings)
-                    log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                              Errors.OverrideIncompatibleRet(cannotOverride(m, other), mtres, otres));
+                log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                          Errors.OverrideIncompatibleRet(cannotOverride(m, other), mtres, otres));
                 m.flags_field |= BAD_OVERRIDE;
             }
             return;
         } else if (overrideWarner.hasNonSilentLint(LintCategory.UNCHECKED)) {
-            if (issueErrorsAndWarnings)
-                warnUnchecked(TreeInfo.diagnosticPositionFor(m, tree),
-                        Warnings.OverrideUncheckedRet(uncheckedOverrides(m, other), mtres, otres));
+            warnUnchecked(TreeInfo.diagnosticPositionFor(m, tree),
+                    Warnings.OverrideUncheckedRet(uncheckedOverrides(m, other), mtres, otres));
         }
 
         // Error if overriding method throws an exception not reported
@@ -1830,34 +1816,30 @@ public class Check {
         List<Type> unhandledErased = unhandled(mt.getThrownTypes(), types.erasure(otthrown));
         List<Type> unhandledUnerased = unhandled(mt.getThrownTypes(), otthrown);
         if (unhandledErased.nonEmpty()) {
-            if (issueErrorsAndWarnings)
-                log.error(TreeInfo.diagnosticPositionFor(m, tree),
-                          Errors.OverrideMethDoesntThrow(cannotOverride(m, other), unhandledUnerased.head));
+            log.error(TreeInfo.diagnosticPositionFor(m, tree),
+                      Errors.OverrideMethDoesntThrow(cannotOverride(m, other), unhandledUnerased.head));
             m.flags_field |= BAD_OVERRIDE;
             return;
         }
         else if (unhandledUnerased.nonEmpty()) {
-            if (issueErrorsAndWarnings)
-                warnUnchecked(TreeInfo.diagnosticPositionFor(m, tree),
-                              Warnings.OverrideUncheckedThrown(cannotOverride(m, other), unhandledUnerased.head));
+            warnUnchecked(TreeInfo.diagnosticPositionFor(m, tree),
+                          Warnings.OverrideUncheckedThrown(cannotOverride(m, other), unhandledUnerased.head));
             return;
         }
 
         // Optional warning if varargs don't agree
         if ((((m.flags() ^ other.flags()) & Flags.VARARGS) != 0)
             && lint.isEnabled(LintCategory.OVERRIDES)) {
-            if (issueErrorsAndWarnings)
-                log.warning(TreeInfo.diagnosticPositionFor(m, tree),
-                            ((m.flags() & Flags.VARARGS) != 0)
-                            ? Warnings.OverrideVarargsMissing(varargsOverrides(m, other))
-                            : Warnings.OverrideVarargsExtra(varargsOverrides(m, other)));
+            log.warning(TreeInfo.diagnosticPositionFor(m, tree),
+                        ((m.flags() & Flags.VARARGS) != 0)
+                        ? Warnings.OverrideVarargsMissing(varargsOverrides(m, other))
+                        : Warnings.OverrideVarargsExtra(varargsOverrides(m, other)));
         }
 
         // Warn if instance method overrides bridge method (compiler spec ??)
         if ((other.flags() & BRIDGE) != 0) {
-            if (issueErrorsAndWarnings)
-                log.warning(TreeInfo.diagnosticPositionFor(m, tree),
-                            Warnings.OverrideBridge(uncheckedOverrides(m, other)));
+            log.warning(TreeInfo.diagnosticPositionFor(m, tree),
+                        Warnings.OverrideBridge(uncheckedOverrides(m, other)));
         }
 
         // Warn if a deprecated method overridden by a non-deprecated one.
