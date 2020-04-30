@@ -77,9 +77,12 @@ import com.sun.tools.classfile.Annotation;
 import com.sun.tools.classfile.Attribute;
 import com.sun.tools.classfile.Attributes;
 import com.sun.tools.classfile.ClassFile;
+import com.sun.tools.classfile.Code_attribute;
 import com.sun.tools.classfile.ConstantPool;
+import com.sun.tools.classfile.ConstantPool.CONSTANT_Fieldref_info;
 import com.sun.tools.classfile.ConstantPool.CPInfo;
 import com.sun.tools.classfile.Field;
+import com.sun.tools.classfile.Instruction;
 import com.sun.tools.classfile.Method;
 import com.sun.tools.classfile.Record_attribute;
 import com.sun.tools.classfile.Record_attribute.ComponentInfo;
@@ -119,15 +122,13 @@ public class RecordCompilationTests extends CompilationTestCase {
     // @@@ When records become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {
             "--enable-preview",
-            "-source", Integer.toString(Runtime.version().feature()),
-            "-Werror"
+            "-source", Integer.toString(Runtime.version().feature())
     };
 
     private static String[] PREVIEW_OPTIONS_WITH_AP = {
             "--enable-preview",
             "-source", Integer.toString(Runtime.version().feature()),
-            "-processor", SimplestAP.class.getName(),
-            "-Werror"
+            "-processor", SimplestAP.class.getName()
     };
 
     private static final List<String> BAD_COMPONENT_NAMES = List.of(
@@ -247,7 +248,14 @@ public class RecordCompilationTests extends CompilationTestCase {
 
     public void testNoExtendRecord() {
         assertFail("compiler.err.invalid.supertype.record",
-                   "class R extends Record { public String toString() { return null; } public int hashCode() { return 0; } public boolean equals(Object o) { return false; } } }");
+                   """
+                   class R extends Record {
+                       public String toString() { return null; }
+                       public int hashCode() { return 0; }
+                       public boolean equals(Object o) { return false; }
+                   }
+                   """
+        );
     }
 
     public void testFieldDeclarations() {
@@ -281,6 +289,14 @@ public class RecordCompilationTests extends CompilationTestCase {
     public void testAccessorRedeclaration() {
         assertOK("public record R(int x) {\n" +
                 "    public int x() { return x; };" +
+                "}");
+
+        assertOK("public record R(int... x) {\n" +
+                "    public int[] x() { return x; };" +
+                "}");
+
+        assertOK("public record R(int x) {\n" +
+                "    public final int x() { return 0; };" +
                 "}");
 
         assertOK("public record R(int x) {\n" +
@@ -676,6 +692,47 @@ public class RecordCompilationTests extends CompilationTestCase {
             }
         }
         Assert.check(numberOfFieldRefs == 1);
+    }
+
+    /*  check that fields are initialized in a canonical constructor in the same declaration order as the corresponding
+     *  record component
+     */
+    public void testCheckInitializationOrderInCompactConstructor() throws Exception {
+        int putField1 = -1;
+        int putField2 = -1;
+        File dir = assertOK(true, "record R(int i, String s) { R {} }");
+        for (final File fileEntry : dir.listFiles()) {
+            if (fileEntry.getName().equals("R.class")) {
+                ClassFile classFile = ClassFile.read(fileEntry);
+                for (Method method : classFile.methods) {
+                    if (method.getName(classFile.constant_pool).equals("<init>")) {
+                        Code_attribute code_attribute = (Code_attribute) method.attributes.get("Code");
+                        for (Instruction instruction : code_attribute.getInstructions()) {
+                            if (instruction.getMnemonic().equals("putfield")) {
+                                if (putField1 != -1 && putField2 != -1) {
+                                    throw new AssertionError("was expecting only two putfield instructions in this method");
+                                }
+                                if (putField1 == -1) {
+                                    putField1 = instruction.getShort(1);
+                                } else if (putField2 == -1) {
+                                    putField2 = instruction.getShort(1);
+                                }
+                            }
+                        }
+                        // now we need to check that we are assigning to `i` first and to `s` afterwards
+                        CONSTANT_Fieldref_info fieldref_info1 = (CONSTANT_Fieldref_info)classFile.constant_pool.get(putField1);
+                        if (!fieldref_info1.getNameAndTypeInfo().getName().equals("i")) {
+                            throw new AssertionError("was expecting variable name 'i'");
+                        }
+
+                        CONSTANT_Fieldref_info fieldref_info2 = (CONSTANT_Fieldref_info)classFile.constant_pool.get(putField2);
+                        if (!fieldref_info2.getNameAndTypeInfo().getName().equals("s")) {
+                            throw new AssertionError("was expecting variable name 's'");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void testAcceptRecordId() {
@@ -1155,10 +1212,45 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
+
         assertOK(
                 """
                 record R<T>(T... t) {
                     @SafeVarargs
+                    R(T... t) {
+                        this.t = t;
+                    }
+                }
+                """
+        );
+
+        appendCompileOptions("-Xlint:unchecked");
+        assertOKWithWarning("compiler.warn.unchecked.varargs.non.reifiable.type",
+                """
+                record R<T>(T... t) {
+                    R(T... t) {
+                        this.t = t;
+                    }
+                }
+                """
+        );
+        removeLastCompileOptions(1);
+
+        assertOK(
+                """
+                @SuppressWarnings("unchecked")
+                record R<T>(T... t) {
+                    R(T... t) {
+                        this.t = t;
+                    }
+                }
+                """
+        );
+
+        assertOK(
+                """
+                record R<T>(T... t) {
+                    @SuppressWarnings("unchecked")
                     R(T... t) {
                         this.t = t;
                     }
