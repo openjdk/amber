@@ -1293,6 +1293,19 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         private List<RecordComponent> recordComponents = List.nil();
 
+        // sealed classes related fields
+        /** The classes, or interfaces, permitted to extend this class, or interface
+         */
+        public List<Symbol> permitted;
+
+        /** The class, or interfaces, that are sealed supertypes of this class or interface
+         */
+        public java.util.Set<ClassSymbol> sealedSupers = Set.of();
+
+        public boolean isPermittedExplicit = false;
+
+        public boolean hasSealedSuperInSameCU;
+
         public ClassSymbol(long flags, Name name, Type type, Symbol owner) {
             super(TYP, flags, name, type, owner);
             this.members_field = null;
@@ -1301,6 +1314,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             this.sourcefile = null;
             this.classfile = null;
             this.annotationTypeMetadata = AnnotationTypeMetadata.notAnAnnotationType();
+            this.permitted = List.nil();
         }
 
         public ClassSymbol(long flags, Name name, Symbol owner) {
@@ -1609,7 +1623,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<Type> getPermittedSubtypes() {
-            return ((ClassType)type).permitted;
+            return permitted.map(s -> s.type);
         }
     }
 

@@ -715,12 +715,12 @@ public class TypeEnter implements Completer {
             }
 
             // Determine permits.
-            ListBuffer<Type> permittedSubtypes = new ListBuffer<>();
+            ListBuffer<Symbol> permittedSubtypeSymbols = new ListBuffer<>();
             List<JCExpression> permittedTrees = tree.permitting;
             for (JCExpression permitted : permittedTrees) {
                 permitted = clearTypeParams(permitted);
                 Type pt = attr.attribBase(permitted, sym, baseEnv, false, false, false);
-                permittedSubtypes.append(pt);
+                permittedSubtypeSymbols.append(pt.tsym);
             }
 
             if ((sym.flags_field & ANNOTATION) != 0) {
@@ -732,8 +732,8 @@ public class TypeEnter implements Completer {
                         ? ct.interfaces_field : all_interfaces.toList();
             }
 
-            ct.permitted = permittedSubtypes.toList();
-            ct.isPermittedExplicit = !permittedSubtypes.isEmpty();
+            sym.permitted = permittedSubtypeSymbols.toList();
+            sym.isPermittedExplicit = !permittedSubtypeSymbols.isEmpty();
         }
             //where:
             protected JCExpression clearTypeParams(JCExpression superType) {
@@ -844,27 +844,27 @@ public class TypeEnter implements Completer {
 
                 boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();
                 if (anySuperInSameCUIsSealed) {
-                    java.util.Set<Type> potentiallySealedSuperTypes = superTypesInASealedHierarchy(tree.sym, env, true);
+                    java.util.Set<ClassSymbol> potentiallySealedSuperTypes = superTypeSymsInASealedHierarchy(tree.sym, env, true);
                     if (!potentiallySealedSuperTypes.isEmpty()) {
-                        for (Type supertype : potentiallySealedSuperTypes) {
-                            if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(tree.sym.type.tsym)) {
-                                if (!((ClassType)supertype.tsym.type).isPermittedExplicit) {
+                        for (ClassSymbol supertype : potentiallySealedSuperTypes) {
+                            if (!supertype.permitted.contains(tree.sym.type.tsym)) {
+                                if (!supertype.isPermittedExplicit) {
                                     if (!tree.sym.isAnonymous() || tree.sym.isEnum()) {
-                                        ((ClassType)supertype).permitted = ((ClassType)supertype).permitted.append(tree.sym.type);
-                                        ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
+                                        supertype.permitted = supertype.permitted.append(tree.sym);
+                                        tree.sym.hasSealedSuperInSameCU = true;
                                     }
                                 }
                             } else {
-                                ((ClassType)tree.sym.type).hasSealedSuperInSameCU = true;
+                                tree.sym.hasSealedSuperInSameCU = true;
                             }
                         }
                     }
                 }
 
-                java.util.Set<Type> sealedSupers = superTypesInASealedHierarchy(tree.sym, env, false);
-                boolean hasSuperTypesInSealedHierarchy = !sealedSupers.isEmpty();
+                java.util.Set<ClassSymbol> sealedSuperSyms = superTypeSymsInASealedHierarchy(tree.sym, env, false);
+                boolean hasSuperTypesInSealedHierarchy = !sealedSuperSyms.isEmpty();
                 if (hasSuperTypesInSealedHierarchy) {
-                    ((ClassType)tree.sym.type).sealedSupers = sealedSupers;
+                    tree.sym.sealedSupers = sealedSuperSyms;
                 }
             }
         }
@@ -886,14 +886,14 @@ public class TypeEnter implements Completer {
                     TreeInfo.declarationFor(sym2.outermostClass(), env.toplevel) != null;
         }
 
-        java.util.Set<Type> superTypesInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
+        java.util.Set<ClassSymbol> superTypeSymsInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
             if (csym == null) {
                 return Set.of();
             }
 
             Type supertype = csym.type != null ?
                     types.supertype(csym.type) : null;
-            java.util.Set<Type> supertypes = new HashSet<>();
+            java.util.Set<ClassSymbol> supertypes = new HashSet<>();
 
             if (supertype != null &&
                     supertype.tsym != null &&
@@ -901,22 +901,22 @@ public class TypeEnter implements Completer {
                     supertype.tsym != null &&
                     !supertype.tsym.isNonSealed() &&
                     (inSameCUOnly && areInSameCU(csym, supertype.tsym, env) || !inSameCUOnly)) {
-                supertypes.add(supertype);
+                supertypes.add((ClassSymbol) supertype.tsym);
             }
 
             if (csym.getInterfaces() != null) {
                 for (Type intf : csym.getInterfaces()) {
                     if (intf != null && intf.tsym != null && intf.tsym != null && !intf.tsym.isNonSealed() &&
                             (inSameCUOnly && areInSameCU(csym, intf.tsym, env) || !inSameCUOnly)) {
-                        supertypes.add(intf);
+                        supertypes.add((ClassSymbol) intf.tsym);
                     }
                 }
             }
 
-            for (Type sup : new ArrayList<>(supertypes)) {
-                if (sup.tsym instanceof ClassSymbol) {
-                    java.util.Set<Type> supers = superTypesInASealedHierarchy((ClassSymbol)sup.tsym, env, inSameCUOnly);
-                    if ((supers == null || supers.isEmpty()) && !sup.tsym.isSealed()) {
+            for (ClassSymbol sup : new ArrayList<>(supertypes)) {
+                if (sup instanceof ClassSymbol) {
+                    java.util.Set<ClassSymbol> supers = superTypeSymsInASealedHierarchy(sup, env, inSameCUOnly);
+                    if ((supers == null || supers.isEmpty()) && !sup.isSealed()) {
                         supertypes.remove(sup);
                     }
                 } else {

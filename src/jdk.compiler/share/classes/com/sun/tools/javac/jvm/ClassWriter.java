@@ -912,12 +912,11 @@ public class ClassWriter extends ClassFile {
     /** Write "PermittedSubtypes" attribute.
      */
     int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
-        ClassType ct = (ClassType)csym.type;
-        if (ct.permitted.nonEmpty()) {
+        if (csym.permitted.nonEmpty()) {
             int alenIdx = writeAttr(names.PermittedSubtypes);
-            databuf.appendChar(ct.permitted.size());
-            for (Type t : ct.permitted) {
-                databuf.appendChar(poolWriter.putClass((ClassSymbol)t.tsym));
+            databuf.appendChar(csym.permitted.size());
+            for (Symbol c : csym.permitted) {
+                databuf.appendChar(poolWriter.putClass((ClassSymbol) c));
             }
             endAttr(alenIdx);
             return 1;
@@ -1539,7 +1538,7 @@ public class ClassWriter extends ClassFile {
             flags = adjustFlags(c.flags() & ~DEFAULT);
             if (c.isSealed()) {
                 flags &= ~SEALED;
-                if (((ClassType)c.type).permitted.isEmpty()) {
+                if (c.permitted.isEmpty()) {
                     flags |= FINAL;
                 }
             }

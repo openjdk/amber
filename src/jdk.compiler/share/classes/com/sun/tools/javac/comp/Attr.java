@@ -5014,60 +5014,57 @@ public class Attr extends JCTree.Visitor {
 
             if (c.isSealed() &&
                     !c.isEnum() &&
-                    !((ClassType)c.type).isPermittedExplicit &&
-                    ((ClassType)c.type).permitted.isEmpty()) {
+                    !c.isPermittedExplicit &&
+                    c.permitted.isEmpty()) {
                 log.error(env.tree, Errors.SealedTypeMustHaveSubtypes);
             }
 
-            if (c.isSealed() && !((ClassType)c.type).permitted.isEmpty()) {
-                Set<Type> permittedTypes = new HashSet<>();
+            if (c.isSealed() && !c.permitted.isEmpty()) {
+                Set<Symbol> permittedTypes = new HashSet<>();
                 boolean sealedInUnnamed = c.packge().modle == syms.unnamedModule || c.packge().modle == syms.noModule;
-                for (Type subType : ((ClassType)c.type).permitted) {
-                    if (subType.getTag() == TYPEVAR) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.TypeVarListedInPermits);
+                for (Symbol subTypeSym : c.permitted) {
+                    boolean isTypeVar = false;
+                    if (subTypeSym.type.getTag() == TYPEVAR) {
+                        isTypeVar = true;
+                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.TypeVarListedInPermits);
                     }
-                    if (subType.tsym.isAnonymous() && !c.isEnum()) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                    if (subTypeSym.isAnonymous() && !c.isEnum()) {
+                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
-                    if (permittedTypes.contains(subType)) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.DuplicatedTypeInPermits(subType));
+                    if (permittedTypes.contains(subTypeSym)) {
+                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.DuplicatedTypeInPermits(subTypeSym.type));
                     } else {
-                        permittedTypes.add(subType);
+                        permittedTypes.add(subTypeSym);
                     }
                     if (sealedInUnnamed) {
-                        if (subType.tsym.packge() != c.packge()) {
-                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                        if (subTypeSym.packge() != c.packge()) {
+                            log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                         }
-                    } else if (subType.tsym.packge().modle != c.packge().modle) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree), Errors.CantInheritFromSealed(c));
+                    } else if (subTypeSym.packge().modle != c.packge().modle) {
+                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
-                    if (subType.tsym == c.type.tsym || types.isSuperType(subType, c.type)) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, ((JCClassDecl)env.tree).permitting),
-                                Errors.TypeListedInPermitsIsSameClassOrSupertype(subType.tsym == c.type.tsym ?
+                    if (subTypeSym == c.type.tsym || types.isSuperType(subTypeSym.type, c.type)) {
+                        log.error(TreeInfo.declarationFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
+                                Errors.TypeListedInPermitsIsSameClassOrSupertype(subTypeSym == c.type.tsym ?
                                         Fragments.SameClass : Fragments.Supertype));
-                    } else if (c.isInterface()) {
-                        if (!types.interfaces(subType).map(t -> t.tsym).contains(c.type.tsym)) {
-                            log.error(TreeInfo.declarationFor(subType.tsym, env.tree),
-                                    Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
+                    } else {
+                        if (!isTypeVar && !((ClassSymbol)subTypeSym).sealedSupers.contains(c.type.tsym)) {
+                            log.error(TreeInfo.declarationFor(subTypeSym, env.tree),
+                                    Errors.SubtypeListedInPermitsDoesntExtendSealed(subTypeSym.type, c.type));
                         }
-                    } else if (((ClassType)subType).supertype_field.tsym != c.type.tsym) {
-                        log.error(TreeInfo.declarationFor(subType.tsym, env.tree),
-                                Errors.SubtypeListedInPermitsDoesntExtendSealed(subType, c.type));
                     }
                 }
             }
 
-            ClassType ct = (ClassType)c.type;
-
-            if (!ct.sealedSupers.isEmpty() && c.isLocal() && !c.isEnum()) {
+            if (!c.sealedSupers.isEmpty() && c.isLocal() && !c.isEnum()) {
                 log.error(TreeInfo.declarationFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
             }
 
-            if (!ct.sealedSupers.isEmpty()) {
-                for (Type supertype : ct.sealedSupers) {
-                    if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(c.type.tsym)) {
-                        if (((ClassType)supertype.tsym.type).isPermittedExplicit) {
-                            log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertype.tsym));
+            if (!c.sealedSupers.isEmpty()) {
+                for (ClassSymbol supertypeSym : c.sealedSupers) {
+                    if (!supertypeSym.permitted.contains(c.type.tsym)) {
+                        if (supertypeSym.isPermittedExplicit) {
+                            log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertypeSym));
                         }
                     }
                 }
@@ -5075,7 +5072,7 @@ public class Attr extends JCTree.Visitor {
                     log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
                 }
 
-                if (!ct.hasSealedSuperInSameCU) {
+                if (!c.hasSealedSuperInSameCU) {
                     // that supertype most have a permits clause allowing this class to extend it
                     List<Type> closureOutsideOfSameCU = types.closure(c.type).stream()
                             .filter(supertype ->
@@ -5085,7 +5082,7 @@ public class Attr extends JCTree.Visitor {
                     Set<Type> explicitlySealedSuperTypesOutsideOfCU = closureOutsideOfSameCU.stream()
                             .filter(type -> type != c.type && type.tsym.isSealed()).collect(Collectors.toSet());
                     for (Type supertype : explicitlySealedSuperTypesOutsideOfCU) {
-                        if (!((ClassType)supertype).permitted.map(t -> t.tsym).contains(c.type.tsym)) {
+                        if (!((ClassSymbol)supertype.tsym).permitted.contains(c.type.tsym)) {
                             log.error(TreeInfo.declarationFor(c, env.tree), Errors.CantInheritFromSealed(supertype.tsym));
                         }
                     }
@@ -5096,7 +5093,7 @@ public class Attr extends JCTree.Visitor {
                 }
             }
 
-            if ((c.flags_field & Flags.NON_SEALED) != 0 && ct.sealedSupers.isEmpty()) {
+            if ((c.flags_field & Flags.NON_SEALED) != 0 && c.sealedSupers.isEmpty()) {
                 log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
             }
 
