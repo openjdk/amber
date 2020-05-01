@@ -73,16 +73,47 @@ public class SealedCompilationTests extends CompilationTestCase {
             sealed class Sup # { }
             # class Sub extends Sup { }
             """;
+
+        String CC2 =
+                """
+                sealed class Sup<T> # { }
+                # class Sub<T> extends Sup<T> { }
+                """;
+        String CC3 =
+                """
+                sealed class Sup<T> # { }
+                    # class Sub extends Sup<String> { }
+                """;
         String AC1 =
             """
             sealed abstract class Sup # { }
             # class Sub extends Sup { }
             """;
+        String AC2 =
+                """
+                sealed abstract class Sup<T> # { }
+                    # class Sub<T> extends Sup<T> { }
+                """;
+        String AC3 =
+                """
+                sealed abstract class Sup<T> # { }
+                    # class Sub extends Sup<String> { }
+                """;
         String I1 =
             """
             sealed interface Sup # { }
             # class Sub implements Sup { }
             """;
+        String I11 =
+                """
+                sealed interface Sup<T> # { }
+                # class Sub<T> implements Sup<T> { }
+                """;
+        String I12 =
+                """
+                sealed interface Sup<T> # { }
+                # class Sub<T> implements Sup<String> { }
+                """;
         String I2 =
             """
             sealed interface Sup # { }
@@ -94,7 +125,7 @@ public class SealedCompilationTests extends CompilationTestCase {
         // { class, abs class, interface } x { implicit permits, explicit permits }
         //                                 x { final, non-sealed subtype }
         for (String shell : SHELLS)
-            for (String b : List.of(CC1, AC1, I1))
+            for (String b : List.of(CC1, CC2, CC3, AC1, AC2, AC3, I1, I11, I12))
                 for (String p : List.of("", "permits Sub"))
                     for (String m : List.of("final", "non-sealed"))
                         assertOK(shell, b, p, m);
@@ -108,7 +139,7 @@ public class SealedCompilationTests extends CompilationTestCase {
 
         // Expect failure if there is no explicit final / sealed / non-sealed
         for (String shell : SHELLS)
-            for (String b : List.of(CC1, AC1, I1))
+            for (String b : List.of(CC1, CC2, CC3, AC1, AC2, AC3, I1, I11, I12))
                 for (String p : List.of("", "permits Sub"))
                     for (String m : List.of(""))
                         assertFail("compiler.err.non.sealed.sealed.or.final.expected", shell, expandMarkers(b, p, m));

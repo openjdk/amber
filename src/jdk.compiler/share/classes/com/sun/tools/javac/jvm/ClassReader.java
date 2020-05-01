@@ -1216,14 +1216,12 @@ public class ClassReader {
                 }
                 protected void read(Symbol sym, int attrLen) {
                     if (sym.kind == TYP) {
-                        ClassType sealed = (ClassType)sym.type;
-                        ListBuffer<Type> subtypes = new ListBuffer<>();
+                        ListBuffer<Symbol> subtypes = new ListBuffer<>();
                         int numberOfPermittedSubtypes = nextChar();
                         for (int i = 0; i < numberOfPermittedSubtypes; i++) {
-                            Type ct = poolReader.getClass(nextChar()).erasure(types);
-                            subtypes.add(ct);
+                            subtypes.add(poolReader.getClass(nextChar()));
                         }
-                        sealed.permitted = subtypes.toList();
+                        ((ClassSymbol)sym).permitted = subtypes.toList();
                     }
                 }
             },
@@ -2494,7 +2492,7 @@ public class ClassReader {
         for (int i = 0; i < methodCount; i++) skipMember();
         readClassAttrs(c);
 
-        if (ct.permitted != null && !ct.permitted.isEmpty()) {
+        if (c.permitted != null && !c.permitted.isEmpty()) {
             c.flags_field |= SEALED;
         }
 
