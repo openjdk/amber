@@ -346,8 +346,7 @@ public class RecordCompilationTests extends CompilationTestCase {
         for (String goodCtor : List.of(
                 "public R(int x) { this(x, 0); }",
                 "public R(int x, int y) { this.x = x; this.y = y; }",
-                "public R { }",
-                "public R { this.x = 0; }"))
+                "public R { }"))
             assertOK("record R(int x, int y) { # }", goodCtor);
 
         assertOK("import java.util.*; record R(String x, String y) {  public R { Objects.requireNonNull(x); Objects.requireNonNull(y); } }");
@@ -549,33 +548,6 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
-    }
-
-    public void testCompactDADU() {
-        // trivial cases
-        assertOK("record R() { public R {} }");
-        assertOK("record R(int x) { public R {} }");
-
-        // throwing an unchecked exception
-        assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");
-
-        assertOK("record R(int x) { public R { if (x < 0) { this.x = x; throw new RuntimeException(); }} }");
-
-        // x is not DA nor DU in the body of the constructor hence error
-        assertFail("compiler.err.var.might.not.have.been.initialized", "record R(int x) { # }",
-                "public R { if (x < 0) { this.x = -x; } }");
-
-        // if static fields are not DA then error
-        assertFail("compiler.err.var.might.not.have.been.initialized",
-                "record R() { # }", "static final String x;");
-
-        // ditto
-        assertFail("compiler.err.var.might.not.have.been.initialized",
-                "record R() { # }", "static final String x; public R {}");
-
-        // ditto
-        assertFail("compiler.err.var.might.not.have.been.initialized",
-                "record R(int i) { # }", "static final String x; public R {}");
     }
 
     public void testReturnInCanonical_Compact() {
@@ -1292,6 +1264,27 @@ public class RecordCompilationTests extends CompilationTestCase {
                 record R(int i) implements I {
                     @Override
                     public int i() { return i; }
+                }
+                """
+        );
+    }
+
+    public void testNoAssigmentInsideCompactRecord() {
+        assertFail("compiler.err.cant.assign.val.to.final.var",
+                """
+                record R(int i) {
+                    R {
+                        this.i = i;
+                    }
+                }
+                """
+        );
+        assertFail("compiler.err.cant.assign.val.to.final.var",
+                """
+                record R(int i) {
+                    R {
+                        (this).i = i;
+                    }
                 }
                 """
         );
