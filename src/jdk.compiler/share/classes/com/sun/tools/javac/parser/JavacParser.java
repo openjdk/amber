@@ -2573,6 +2573,9 @@ public class JavacParser implements Parser {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
+            if (!allowRecords) {
+                log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
+            }
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case IDENTIFIER:
@@ -3897,7 +3900,7 @@ public class JavacParser implements Parser {
         // if we are seeing a record declaration inside of an enum we want the same error message as expected for a
         // let's say an interface declaration inside an enum
         if (token.kind == TokenKind.IDENTIFIER && token.name() != enumName &&
-                (allowRecords && !isRecordStart() || !allowRecords)) {
+                (!allowRecords || !isRecordStart())) {
             Token next = S.token(1);
             switch (next.kind) {
                 case LPAREN: case LBRACE: case COMMA: case SEMI:

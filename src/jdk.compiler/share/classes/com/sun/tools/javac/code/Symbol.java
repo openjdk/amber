@@ -1759,9 +1759,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /* the original annotations applied to the record component
          */
         private final List<JCAnnotation> originalAnnos;
-        /* was this record component declared as a varargs
-         */
-        public final boolean isVarargs;
         /* if the user happens to erroneously declare two components with the same name, we need a way to differentiate
          * them, the code will fail anyway but we need to keep the information for better error recovery
          */
@@ -1773,11 +1770,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public RecordComponent(JCVariableDecl fieldDecl, List<JCAnnotation> annotations) {
             super(PUBLIC, fieldDecl.sym.name, fieldDecl.sym.type, fieldDecl.sym.owner);
             this.originalAnnos = annotations;
-            this.isVarargs = (fieldDecl.mods.flags & VARARGS) != 0;
             this.pos = fieldDecl.pos;
         }
 
         public List<JCAnnotation> getOriginalAnnos() { return originalAnnos; }
+
+        public boolean isVarargs() {
+            return type.hasTag(TypeTag.ARRAY) && ((ArrayType)type).isVarargs();
+        }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
         @SuppressWarnings("preview")

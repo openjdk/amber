@@ -57,8 +57,21 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
             class Test {
                 int INSTANCE_FIELD = 0;
                 static int STATIC_FIELD = 0;
-                { int LOCAL_VARIABLE = 0; #{CONTAINER} }
-                void m() { int LOCAL_VARIABLE = 0; #{CONTAINER} }
+                // instance initializer
+                { int LOCAL_VARIABLE = 0;
+                    #{CONTAINER}
+                }
+                Test() {
+                    #{CONTAINER}
+                }
+                void m() {
+                    int LOCAL_VARIABLE = 0;
+                    #{CONTAINER}
+                }
+                static void foo() {
+                    int LOCAL_VARIABLE = 0;
+                    #{CONTAINER}
+                }
             }
             """;
 
@@ -66,7 +79,20 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
         NO_CONTAINER("#{STATIC_LOCAL}"),
         INTERFACE("interface CI { #{STATIC_LOCAL} }"),
         ANNOTATION("@interface CA { #{STATIC_LOCAL} }"),
-        ANONYMOUS("new Object() { { #{STATIC_LOCAL} } };"),
+        ANONYMOUS(
+                """
+                    new Object() {
+                        // instance initializer
+                        {
+                            #{STATIC_LOCAL}
+                        }
+
+                        void m() {
+                            #{STATIC_LOCAL}
+                        }
+                    };
+                """
+        ),
         RECORD("record CR() { #{STATIC_LOCAL} }"),
         CLASS("class CC { #{STATIC_LOCAL} }"),
         ENUM("enum CE { #{STATIC_LOCAL} }"),
@@ -158,9 +184,9 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
 
     boolean notTriviallyIncorrect() {
         return decl == StaticLocalDecl.INTERFACE && (member == Member.DEFAULT_METHOD || member == Member.NONE) ||
-                decl != StaticLocalDecl.INTERFACE && (member == Member.METHOD || member == Member.NONE) &&
-                ((decl != StaticLocalDecl.ANNOTATION) ||
-                (decl == StaticLocalDecl.ANNOTATION && member == Member.NONE));
+               decl != StaticLocalDecl.INTERFACE && (member == Member.METHOD || member == Member.NONE) &&
+               ((decl != StaticLocalDecl.ANNOTATION) ||
+               (decl == StaticLocalDecl.ANNOTATION && member == Member.NONE));
     }
 
     void check(ComboTask.Result<Iterable<? extends JavaFileObject>> result) {

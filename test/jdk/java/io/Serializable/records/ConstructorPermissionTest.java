@@ -72,7 +72,6 @@ public class ConstructorPermissionTest {
                 try { new Socket("localhost", 8080); }
                 catch (IOException unexpected) { throw new AssertionError(unexpected); }
             }
-            this.x = x;
         }
     }
 
@@ -80,7 +79,6 @@ public class ConstructorPermissionTest {
         public R3 {
             if (firstDataSetCreated)
                 ProcessHandle.current();
-            this.args = args;
         }
     }
 

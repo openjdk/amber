@@ -1214,9 +1214,9 @@ public class Check {
                 boolean implicitlyStatic = !sym.isAnonymous() &&
                         ((flags & RECORD) != 0 || (flags & ENUM) != 0 || (flags & INTERFACE) != 0);
                 boolean staticOrImplicitlyStatic = (flags & STATIC) != 0 || implicitlyStatic;
-                mask = staticOrImplicitlyStatic ? StaticLocalFlags : LocalClassFlags;
+                mask = staticOrImplicitlyStatic && allowRecords ? StaticLocalFlags : LocalClassFlags;
                 implicit = implicitlyStatic ? STATIC : implicit;
-                if (implicitlyStatic || (flags & STATIC) != 0) {
+                if (staticOrImplicitlyStatic) {
                     if (sym.owner.kind == TYP) {
                         log.error(pos, Errors.StaticDeclarationNotAllowedInInnerClasses);
                     }
@@ -1255,8 +1255,14 @@ public class Check {
         }
         long illegal = flags & ExtendedStandardFlags & ~mask;
         if (illegal != 0) {
-            log.error(pos,
-                      Errors.ModNotAllowedHere(asFlagSet(illegal)));
+            if ((illegal & INTERFACE) != 0) {
+                log.error(pos, ((flags & ANNOTATION) != 0) ? Errors.AnnotationDeclNotAllowedHere : Errors.IntfNotAllowedHere);
+                mask |= INTERFACE;
+            }
+            else {
+                log.error(pos,
+                        Errors.ModNotAllowedHere(asFlagSet(illegal)));
+            }
         }
         else if ((sym.kind == TYP ||
                   // ISSUE: Disallowing abstract&private is no longer appropriate
