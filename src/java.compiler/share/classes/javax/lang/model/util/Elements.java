@@ -673,8 +673,7 @@ public interface Elements {
 
     /**
      * Return {@code true} if the type element is sealed, {@code
-     * false} otherwise. This method takes into account non-sealing of
-     * types.
+     * false} otherwise.
      *
      * @implSpec The default implementation of this method returns
      * {@code false}.
