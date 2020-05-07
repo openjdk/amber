@@ -48,7 +48,7 @@ public class invocationC1Tests {
     public static void runTest(String whichTests, String classFileVersion) throws Throwable {
         System.out.println("\nC1 invocation tests, Tests: " + whichTests +
                            ", class file version: " + classFileVersion);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(false, "-Xmx128M",
+        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder("-Xmx128M",
             "-Xcomp", "-XX:TieredStopAtLevel=1",
             "--add-exports", "java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED",
             whichTests, "--classfile_version=" + classFileVersion);
@@ -77,8 +77,6 @@ public class invocationC1Tests {
         int major_version = klassbuf[6] << 8 | klassbuf[7];
         runTest("invokespecial.Generator", String.valueOf(major_version));
         runTest("invokeinterface.Generator", String.valueOf(major_version));
-
-      // Uncomment this test once JDK-8226588 is fixed
-        // runTest("invokevirtual.Generator", String.valueOf(major_version));
+        runTest("invokevirtual.Generator", String.valueOf(major_version));
     }
 }
