@@ -603,7 +603,7 @@ public final class JPackageCommand extends CommandArguments<JPackageCommand> {
 
         if (isImagePackageType()) {
             TKit.deleteDirectoryContentsRecursive(outputDir());
-        } else if (ThrowingSupplier.toSupplier(() -> Files.deleteIfExists(
+        } else if (ThrowingSupplier.toSupplier(() -> TKit.deleteIfExists(
                 outputBundle())).get()) {
             TKit.trace(
                     String.format("Deleted [%s] file before running jpackage",
@@ -725,6 +725,19 @@ public final class JPackageCommand extends CommandArguments<JPackageCommand> {
         }
         return ThrowingFunction.toFunction(CfgFile::readFromFile).apply(
                 appLauncherCfgPath(launcherName));
+    }
+
+    public List<String> readRuntimeReleaseFile() {
+        verifyIsOfType(PackageType.IMAGE);
+        if (isRuntime()) {
+            return null;
+        }
+        Path release = appLayout().runtimeRelease();
+        try {
+            return Files.readAllLines(release);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
     }
 
     public static String escapeAndJoin(String... args) {
