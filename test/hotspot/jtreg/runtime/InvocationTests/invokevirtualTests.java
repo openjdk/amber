@@ -46,7 +46,7 @@ public class invokevirtualTests {
     public static void runTest(String classFileVersion, String option) throws Throwable {
         System.out.println("\ninvokevirtual invocation tests, option: " + option +
                            ", class file version: " + classFileVersion);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(false, "-Xmx128M", option,
+        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder("-Xmx128M", option,
             "--add-exports", "java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED",
             "invokevirtual.Generator", "--classfile_version=" + classFileVersion);
         OutputAnalyzer output = new OutputAnalyzer(pb.start());
@@ -73,8 +73,7 @@ public class invokevirtualTests {
         byte klassbuf[] = InMemoryJavaCompiler.compile("blah", "public class blah { }");
         int major_version = klassbuf[6] << 8 | klassbuf[7];
         runTest(String.valueOf(major_version), "-Xint");
-// Uncomment the below test once JDK-8226588 is fixed
-//      runTest(String.valueOf(major_version), "-Xcomp");
+        runTest(String.valueOf(major_version), "-Xcomp");
 
         // Test old class file version.
         runTest("51", "-Xint"); // JDK-7
