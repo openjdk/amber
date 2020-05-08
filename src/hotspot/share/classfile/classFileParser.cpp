@@ -3212,22 +3212,22 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
   return length;
 }
 
-u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFileStream* const cfs,
-                                                           const u1* const permitted_subtypes_attribute_start,
+u2 ClassFileParser::parse_classfile_permitted_subclasses_attribute(const ClassFileStream* const cfs,
+                                                           const u1* const permitted_subclasses_attribute_start,
                                                            TRAPS) {
   const u1* const current_mark = cfs->current();
   u2 length = 0;
-  if (permitted_subtypes_attribute_start != NULL) {
-    cfs->set_current(permitted_subtypes_attribute_start);
+  if (permitted_subclasses_attribute_start != NULL) {
+    cfs->set_current(permitted_subclasses_attribute_start);
     cfs->guarantee_more(2, CHECK_0);  // length
     length = cfs->get_u2_fast();
   }
   if (length < 1) {
-    classfile_parse_error("PermittedSubtypes attribute is empty in class file %s", CHECK_0);
+    classfile_parse_error("PermittedSubclasses attribute is empty in class file %s", CHECK_0);
   }
   const int size = length;
-  Array<u2>* const permitted_subtypes = MetadataFactory::new_array<u2>(_loader_data, size, CHECK_0);
-  _permitted_subtypes = permitted_subtypes;
+  Array<u2>* const permitted_subclasses = MetadataFactory::new_array<u2>(_loader_data, size, CHECK_0);
+  _permitted_subclasses = permitted_subclasses;
 
   int index = 0;
   cfs->guarantee_more(2 * length, CHECK_0);
@@ -3235,9 +3235,9 @@ u2 ClassFileParser::parse_classfile_permitted_subtypes_attribute(const ClassFile
     const u2 class_info_index = cfs->get_u2_fast();
     check_property(
       valid_klass_reference_at(class_info_index),
-      "Permitted subtype class_info_index %u has bad constant type in class file %s",
+      "Permitted subclass class_info_index %u has bad constant type in class file %s",
       class_info_index, CHECK_0);
-    permitted_subtypes->at_put(index++, class_info_index);
+    permitted_subclasses->at_put(index++, class_info_index);
   }
   assert(index == size, "wrong size");
 
@@ -3535,14 +3535,14 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   _inner_classes = Universe::the_empty_short_array();
   // Set nest members attribute to default sentinel
   _nest_members = Universe::the_empty_short_array();
-  // Set _permitted_subtypes attribute to default sentinel
-  _permitted_subtypes = Universe::the_empty_short_array();
+  // Set _permitted_subclasses attribute to default sentinel
+  _permitted_subclasses = Universe::the_empty_short_array();
   cfs->guarantee_more(2, CHECK);  // attributes_count
   u2 attributes_count = cfs->get_u2_fast();
   bool parsed_sourcefile_attribute = false;
   bool parsed_innerclasses_attribute = false;
   bool parsed_nest_members_attribute = false;
-  bool parsed_permitted_subtypes_attribute = false;
+  bool parsed_permitted_subclasses_attribute = false;
   bool parsed_nest_host_attribute = false;
   bool parsed_record_attribute = false;
   bool parsed_enclosingmethod_attribute = false;
@@ -3566,8 +3566,8 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   u4  nest_members_attribute_length = 0;
   const u1* record_attribute_start = NULL;
   u4  record_attribute_length = 0;
-  const u1* permitted_subtypes_attribute_start = NULL;
-  u4  permitted_subtypes_attribute_length = 0;
+  const u1* permitted_subclasses_attribute_start = NULL;
+  u4  permitted_subclasses_attribute_length = 0;
 
   // Iterate over attributes
   while (attributes_count--) {
@@ -3785,20 +3785,20 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
             }
             cfs->skip_u1(attribute_length, CHECK);
           } else if (_major_version >= JAVA_15_VERSION) {
-            if (tag == vmSymbols::tag_permitted_subtypes()) {
+            if (tag == vmSymbols::tag_permitted_subclasses()) {
               if (supports_sealed_types()) {
-                // Check for PermittedSubtypes tag
-                // Classes marked ACC_FINAL cannot have a PermittedSubtype attribute.
+                // Check for PermittedSubclasses tag
+                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
                 if (_access_flags.is_final()) {
-                  classfile_parse_error("PermittedSubtypes attribute in final class file %s", CHECK);
+                  classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
                 }
-                if (parsed_permitted_subtypes_attribute) {
-                  classfile_parse_error("Multiple PermittedSubtypes attributes in class file %s", CHECK);
+                if (parsed_permitted_subclasses_attribute) {
+                  classfile_parse_error("Multiple PermittedSubclasses attributes in class file %s", CHECK);
                 } else {
-                  parsed_permitted_subtypes_attribute = true;
+                  parsed_permitted_subclasses_attribute = true;
                 }
-                permitted_subtypes_attribute_start = cfs->current();
-                permitted_subtypes_attribute_length = attribute_length;
+                permitted_subclasses_attribute_start = cfs->current();
+                permitted_subclasses_attribute_length = attribute_length;
               }
               cfs->skip_u1(attribute_length, CHECK);
             } else {
@@ -3873,15 +3873,16 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
     }
   }
 
-  if (parsed_permitted_subtypes_attribute) {
-    const u2 num_of_subtypes = parse_classfile_permitted_subtypes_attribute(
-                            cfs,
-                            permitted_subtypes_attribute_start,
-                            CHECK);
+  if (parsed_permitted_subclasses_attribute) {
+    const u2 num_of_subclasses = parse_classfile_permitted_subclasses_attribute(
+                                   cfs,
+                                   permitted_subclasses_attribute_start,
+                                   CHECK);
     if (_need_verify) {
       guarantee_property(
-        permitted_subtypes_attribute_length == sizeof(num_of_subtypes) + sizeof(u2) * num_of_subtypes,
-        "Wrong PermittedSubtypes attribute length in class file %s", CHECK);
+        permitted_subclasses_attribute_length ==
+          sizeof(num_of_subclasses) + sizeof(u2) * num_of_subclasses,
+        "Wrong PermittedSubclasses attribute length in class file %s", CHECK);
     }
   }
 
@@ -3952,7 +3953,7 @@ void ClassFileParser::apply_parsed_class_metadata(
   this_klass->set_nest_host_index(_nest_host);
   this_klass->set_local_interfaces(_local_interfaces);
   this_klass->set_annotations(_combined_annotations);
-  this_klass->set_permitted_subtypes(_permitted_subtypes);
+  this_klass->set_permitted_subclasses(_permitted_subclasses);
   this_klass->set_record_components(_record_components);
   // Delay the setting of _transitive_interfaces until after initialize_supers() in
   // fill_instance_klass(). It is because the _transitive_interfaces may be shared with
@@ -4793,8 +4794,8 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
     }
 
     if (super_ik->is_sealed()) {
-      bool is_permitted_subtype = super_ik->has_as_permitted_subtype(this_klass, CHECK);
-      if (!is_permitted_subtype) {
+      bool is_permitted_subclass = super_ik->has_as_permitted_subclass(this_klass, CHECK);
+      if (!is_permitted_subclass) {
         ResourceMark rm(THREAD);
         Exceptions::fthrow(
           THREAD_AND_LOCATION,
@@ -4867,8 +4868,8 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
     assert (k != NULL && k->is_interface(), "invalid interface");
 
     if (k->is_sealed()) {
-      bool is_permitted_subtype = k->has_as_permitted_subtype(this_klass, CHECK);
-      if (!is_permitted_subtype) {
+      bool is_permitted_subclass = k->has_as_permitted_subclass(this_klass, CHECK);
+      if (!is_permitted_subclass) {
         ResourceMark rm(THREAD);
         Exceptions::fthrow(
           THREAD_AND_LOCATION,
@@ -5816,7 +5817,7 @@ void ClassFileParser::fill_instance_klass(InstanceKlass* ik,
   assert(NULL == _local_interfaces, "invariant");
   assert(NULL == _combined_annotations, "invariant");
   assert(NULL == _record_components, "invariant");
-  assert(NULL == _permitted_subtypes, "invariant");
+  assert(NULL == _permitted_subclasses, "invariant");
 
   if (_has_final_method) {
     ik->set_has_final_method();
@@ -6105,7 +6106,7 @@ ClassFileParser::ClassFileParser(ClassFileStream* stream,
   _inner_classes(NULL),
   _nest_members(NULL),
   _nest_host(0),
-  _permitted_subtypes(NULL),
+  _permitted_subclasses(NULL),
   _record_components(NULL),
   _local_interfaces(NULL),
   _transitive_interfaces(NULL),
@@ -6214,7 +6215,7 @@ void ClassFileParser::clear_class_metadata() {
   _methods = NULL;
   _inner_classes = NULL;
   _nest_members = NULL;
-  _permitted_subtypes = NULL;
+  _permitted_subclasses = NULL;
   _local_interfaces = NULL;
   _combined_annotations = NULL;
   _class_annotations = _class_type_annotations = NULL;
@@ -6251,8 +6252,8 @@ ClassFileParser::~ClassFileParser() {
     InstanceKlass::deallocate_record_components(_loader_data, _record_components);
   }
 
-  if (_permitted_subtypes != NULL && _permitted_subtypes != Universe::the_empty_short_array()) {
-    MetadataFactory::free_array<u2>(_loader_data, _permitted_subtypes);
+  if (_permitted_subclasses != NULL && _permitted_subclasses != Universe::the_empty_short_array()) {
+    MetadataFactory::free_array<u2>(_loader_data, _permitted_subclasses);
   }
 
   // Free interfaces
@@ -6670,9 +6671,9 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
-  bool is_sealed = _permitted_subtypes != NULL &&
-                   _permitted_subtypes != Universe::the_empty_short_array() &&
-                   _permitted_subtypes->length() > 0;
+  bool is_sealed = _permitted_subclasses != NULL &&
+                   _permitted_subclasses != Universe::the_empty_short_array() &&
+                   _permitted_subclasses->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,

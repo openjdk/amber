@@ -186,8 +186,8 @@ public class JavacParser implements Parser {
                 Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
-        this.allowSealedTypes = (!preview.isPreview(Feature.SEALED_TYPES) || preview.isEnabled()) &&
-                Feature.SEALED_TYPES.allowedInSource(source);
+        this.allowSealedTypes = (!preview.isPreview(Feature.SEALED_CLASSES) || preview.isEnabled()) &&
+                Feature.SEALED_CLASSES.allowedInSource(source);
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -2635,7 +2635,7 @@ public class JavacParser implements Parser {
                             tokenSub.endPos == tokenSealed.pos &&
                             tokenSealed.name() == names.sealed &&
                             S.token(3).kind == TokenKind.CLASS) {
-                        checkSourceLevel(Feature.SEALED_TYPES);
+                        checkSourceLevel(Feature.SEALED_CLASSES);
                         log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
                         nextToken();
                         nextToken();
@@ -2643,7 +2643,7 @@ public class JavacParser implements Parser {
                         return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), token.comment(CommentStyle.JAVADOC)));
                     }
                 } else if (token.name() == names.sealed && S.token(1).kind == TokenKind.CLASS) {
-                    checkSourceLevel(Feature.SEALED_TYPES);
+                    checkSourceLevel(Feature.SEALED_CLASSES);
                     log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
                     nextToken();
                     return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), token.comment(CommentStyle.JAVADOC)));
@@ -3100,7 +3100,7 @@ public class JavacParser implements Parser {
             case IDENTIFIER  : {
                 if (allowSealedTypes) {
                     if (token.name() == names.non && peekToken(0, TokenKind.SUB, TokenKind.IDENTIFIER)) {
-                        checkSourceLevel(Feature.SEALED_TYPES);
+                        checkSourceLevel(Feature.SEALED_CLASSES);
                         Token tokenSub = S.token(1);
                         Token tokenSealed = S.token(2);
                         if (token.endPos == tokenSub.pos && tokenSub.endPos == tokenSealed.pos && tokenSealed.name() == names.sealed) {
@@ -3111,7 +3111,7 @@ public class JavacParser implements Parser {
                         }
                     }
                     if (token.name() == names.sealed) {
-                        checkSourceLevel(Feature.SEALED_TYPES);
+                        checkSourceLevel(Feature.SEALED_CLASSES);
                         flag = Flags.SEALED;
                         break;
                     }
@@ -3762,7 +3762,7 @@ public class JavacParser implements Parser {
         }
         List<JCExpression> permitting = List.nil();
         if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
-            checkSourceLevel(Feature.SEALED_TYPES);
+            checkSourceLevel(Feature.SEALED_CLASSES);
             if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
             }
@@ -3850,7 +3850,7 @@ public class JavacParser implements Parser {
         }
         List<JCExpression> permitting = List.nil();
         if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
-            checkSourceLevel(Feature.SEALED_TYPES);
+            checkSourceLevel(Feature.SEALED_CLASSES);
             if ((mods.flags & Flags.SEALED) == 0) {
                 log.error(token.pos, Errors.PermitsInNoSealedClass);
             }

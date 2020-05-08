@@ -909,11 +909,11 @@ public class ClassWriter extends ClassFile {
         }
     }
 
-    /** Write "PermittedSubtypes" attribute.
+    /** Write "PermittedSubclasses" attribute.
      */
-    int writePermittedSubtypesIfNeeded(ClassSymbol csym) {
+    int writePermittedSubclassesIfNeeded(ClassSymbol csym) {
         if (csym.permitted.nonEmpty()) {
-            int alenIdx = writeAttr(names.PermittedSubtypes);
+            int alenIdx = writeAttr(names.PermittedSubclasses);
             databuf.appendChar(csym.permitted.size());
             for (Symbol c : csym.permitted) {
                 databuf.appendChar(poolWriter.putClass((ClassSymbol) c));
@@ -1656,8 +1656,8 @@ public class ClassWriter extends ClassFile {
             acount += writeRecordAttribute(c);
         }
 
-        if (target.hasSealedTypes()) {
-            acount += writePermittedSubtypesIfNeeded(c);
+        if (target.hasSealedClasses()) {
+            acount += writePermittedSubclassesIfNeeded(c);
         }
 
         if (!poolWriter.bootstrapMethods.isEmpty()) {

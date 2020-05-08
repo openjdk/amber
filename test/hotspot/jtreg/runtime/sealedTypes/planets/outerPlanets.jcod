@@ -43,7 +43,7 @@ class planets/outerPlanets {
     Utf8 "LineNumberTable"; // #10     at 0x5A
     Utf8 "SourceFile"; // #11     at 0x6C
     Utf8 "outerPlanets.java"; // #12     at 0x79
-    Utf8 "PermittedSubtypes"; // #13     at 0x8D
+    Utf8 "PermittedSubclasses"; // #13     at 0x8D
     class #15; // #14     at 0xA1
     Utf8 "planets/Neptune"; // #15     at 0xA4
     class #17; // #16     at 0xB6
@@ -91,8 +91,8 @@ class planets/outerPlanets {
       #12;
     } // end SourceFile
     ;
-    Attr(#13, 6) { // PermittedSubtypes at 0x010C
+    Attr(#13, 6) { // PermittedSubclasses at 0x010C
       0x0002000E0010;
-    } // end PermittedSubtypes
+    } // end PermittedSubclasses
   } // Attributes
 } // end class planets/outerPlanets

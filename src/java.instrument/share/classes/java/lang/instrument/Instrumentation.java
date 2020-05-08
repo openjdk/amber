@@ -227,7 +227,7 @@ public interface Instrumentation {
      * The retransformation must not add, remove or rename fields or methods, change the
      * signatures of methods, or change inheritance.
      * The retransformation must not change the <code>NestHost</code>, <code>NestMembers</code>,
-     * <code>PermittedSubtypes</code>, or <code>Record</code> attributes.
+     * <code>PermittedSubclasses</code>, or <code>Record</code> attributes.
      * These restrictions may be lifted in future versions.
      * The class file bytes are not checked, verified and installed
      * until after the transformations have been applied, if the resultant bytes are in
@@ -318,7 +318,7 @@ public interface Instrumentation {
      * The redefinition must not add, remove or rename fields or methods, change the
      * signatures of methods, or change inheritance.
      * The redefinition must not change the <code>NestHost</code>, <code>NestMembers</code>,
-     * <code>PermittedSubtypes</code>, or <code>Record</code> attributes.
+     * <code>PermittedSubclasses</code>, or <code>Record</code> attributes.
      * These restrictions may be lifted in future versions.
      * The class file bytes are not checked, verified and installed
      * until after the transformations have been applied, if the resultant bytes are in

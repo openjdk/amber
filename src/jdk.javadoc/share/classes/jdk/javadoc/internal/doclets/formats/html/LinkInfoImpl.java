@@ -168,9 +168,9 @@ public class LinkInfoImpl extends LinkInfo {
         CLASS_SIGNATURE_PARENT_NAME,
 
         /**
-         * Permitted subtypes of a sealed type.
+         * Permitted subclasses of a sealed type.
          */
-        PERMITTED_SUBTYPES,
+        PERMITTED_SUBCLASSES,
 
         /**
          * The header for method documentation copied from parent.
@@ -377,7 +377,7 @@ public class LinkInfoImpl extends LinkInfo {
             case CLASS_TREE_PARENT:
             case TREE:
             case CLASS_SIGNATURE_PARENT_NAME:
-            case PERMITTED_SUBTYPES:
+            case PERMITTED_SUBCLASSES:
                 excludeTypeParameterLinks = true;
                 excludeTypeBounds = true;
                 includeTypeInClassLinkLabel = false;

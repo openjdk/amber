@@ -133,10 +133,10 @@ public class SealedDiffConfigurationsTest extends TestRunner {
     private void checkSealedClassFile(Path out, String cfName, List<String> expectedSubTypeNames) throws ConstantPoolException, Exception {
         ClassFile sealedCF = ClassFile.read(out.resolve(cfName));
         Assert.check((sealedCF.access_flags.flags & Flags.FINAL) == 0, String.format("class at file %s must not be final", cfName));
-        PermittedSubtypes_attribute permittedSubtypes = (PermittedSubtypes_attribute)sealedCF.attributes.get("PermittedSubtypes");
-        Assert.check(permittedSubtypes.subtypes.length == expectedSubTypeNames.size());
+        PermittedSubclasses_attribute permittedSubclasses = (PermittedSubclasses_attribute)sealedCF.attributes.get("PermittedSubclasses");
+        Assert.check(permittedSubclasses.subtypes.length == expectedSubTypeNames.size());
         List<String> subtypeNames = new ArrayList<>();
-        IntStream.of(permittedSubtypes.subtypes).forEach(i -> {
+        IntStream.of(permittedSubclasses.subtypes).forEach(i -> {
             try {
                 subtypeNames.add(((CONSTANT_Class_info)sealedCF.constant_pool.get(i)).getName());
             } catch (ConstantPoolException ex) {
@@ -153,7 +153,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
         if (shouldBeFinal) {
             Assert.check((subCF1.access_flags.flags & Flags.FINAL) != 0, String.format("class at file %s must be final", cfName));
         }
-        Assert.checkNull((PermittedSubtypes_attribute)subCF1.attributes.get("PermittedSubtypes"));
+        Assert.checkNull((PermittedSubclasses_attribute)subCF1.attributes.get("PermittedSubclasses"));
         Assert.check(((CONSTANT_Class_info)subCF1.constant_pool.get(subCF1.super_class)).getName().equals(superClassName));
     }
 

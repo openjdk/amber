@@ -274,8 +274,8 @@ public class ClassReader {
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
-        allowSealedTypes = (!preview.isPreview(Feature.SEALED_TYPES) || preview.isEnabled()) &&
-                Feature.SEALED_TYPES.allowedInSource(source);
+        allowSealedTypes = (!preview.isPreview(Feature.SEALED_CLASSES) || preview.isEnabled()) &&
+                Feature.SEALED_CLASSES.allowedInSource(source);
 
         saveParameterNames = options.isSet(PARAMETERS);
 
@@ -1209,7 +1209,7 @@ public class ClassReader {
                     bp = bp + attrLen;
                 }
             },
-            new AttributeReader(names.PermittedSubtypes, V58, CLASS_ATTRIBUTE) {
+            new AttributeReader(names.PermittedSubclasses, V58, CLASS_ATTRIBUTE) {
                 @Override
                 protected boolean accepts(AttributeKind kind) {
                     return super.accepts(kind) && allowSealedTypes;

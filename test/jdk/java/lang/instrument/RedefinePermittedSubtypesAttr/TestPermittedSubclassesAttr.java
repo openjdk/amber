@@ -23,9 +23,9 @@
 
 /*
  * @test
- * @summary Class redefinition must preclude changes to PermittedSubtypes attributes
+ * @summary Class redefinition must preclude changes to PermittedSubclasses attributes
  * @comment This is a copy of test/jdk/java/lang/instrument/RedefineNestmateAttr/
- * @comment modified for sealed types and the PermittedSubtypes attribute.
+ * @comment modified for sealed classes and the PermittedSubclasses attribute.
  *
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
@@ -34,24 +34,24 @@
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
  * @compile --enable-preview --source ${jdk.version} Host/Host.java classOne.java classTwo.java classThree.java classFour.java
- * @compile --enable-preview --source ${jdk.version} TestPermittedSubtypesAttr.java
- * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubtypesAttr Host
+ * @compile --enable-preview --source ${jdk.version} TestPermittedSubclassesAttr.java
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubclassesAttr Host
  * @compile --enable-preview --source ${jdk.version} HostA/Host.java
- * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubtypesAttr HostA
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubclassesAttr HostA
  * @compile --enable-preview --source ${jdk.version} HostAB/Host.java
- * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubtypesAttr HostAB
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubclassesAttr HostAB
  * @compile --enable-preview --source ${jdk.version} HostABC/Host.java
- * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubtypesAttr HostABC
+ * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubclassesAttr HostABC
  */
 
 /* Test Description
 
 The basic test class is called Host and we have variants that have zero or more
-permitted subtypes classOne, classTwo, classThree, and classFour. Each variant
+permitted subclasses classOne, classTwo, classThree, and classFour. Each variant
 of Host is defined in source code in its own directory i.e.
 
 Host/Host.java defines zero permitted classes
-Sealed type HostA/Host.java permits classOne
+Sealed class HostA/Host.java permits classOne
 Sealed HostAB/Host.java permits classOne and classTwo (in that order)
 Sealed HostABC/Host.java permits classOne, classTwo, and classThree (in that order)
 etc.
@@ -75,20 +75,20 @@ combinations as follows:
 
 Host:
   Host -> Host'  - succeeds m() returns 2
-  Host -> HostA' - fails - added a permitted subtype
+  Host -> HostA' - fails - added a permitted subclass
 
 HostA:
   HostA -> HostA'  - succeeds m() returns 2
-  HostA -> Host'   - fails - removed a permitted subtype
-  HostA -> HostAB' - fails - added a permitted subtype
-  HostA -> HostB'  - fails - replaced a permitted subtype
+  HostA -> Host'   - fails - removed a permitted subclass
+  HostA -> HostAB' - fails - added a permitted subclass
+  HostA -> HostB'  - fails - replaced a permitted subclass
 
 HostAB:
   HostAB -> HostAB'  - succeeds m() returns 2
   HostAB -> HostBA'  - succeeds m() returns 2
-  HostAB -> HostA'   - fails - removed a permitted subtype
-  HostAB -> HostABC' - fails - added a permitted subtype
-  HostAB -> HostAC'  - fails - replaced a permitted subtype
+  HostAB -> HostA'   - fails - removed a permitted subclass
+  HostAB -> HostABC' - fails - added a permitted subclass
+  HostAB -> HostAC'  - fails - replaced a permitted subclass
 
 HostABC:
   HostABC -> HostABC'  - succeeds m() returns 2
@@ -97,11 +97,11 @@ HostABC:
   HostABC -> HostBCA'  - succeeds m() returns 2
   HostABC -> HostCAB'  - succeeds m() returns 2
   HostABC -> HostCBA'  - succeeds m() returns 2
-  HostABC -> HostAB'   - fails - removed a permitted subtype
-  HostABC -> HostABCD' - fails - added a permitted subtype
-  HostABC -> HostABD'  - fails - replaced a permitted subtype
+  HostABC -> HostAB'   - fails - removed a permitted subclass
+  HostABC -> HostABCD' - fails - added a permitted subclass
+  HostABC -> HostABD'  - fails - replaced a permitted subclass
 
-More than three permitted subtypes doesn't add to the code coverage so
+More than three permitted subclasses doesn't add to the code coverage so
 we stop here.
 
 Note that we always try to load the redefined version even when we expect it
@@ -113,11 +113,11 @@ requesting a different primary directory. We chose the latter using
 multiple @run tags. So we preceed as follows:
 
  @compile Host/Host.java
- @run TestPermittedSubtypesAttr Host
+ @run TestPermittedSubclassesAttr Host
  @compile HostA/Host.java  - replaces previous Host.class
- @run TestPermittedSubtypesAttr HostA
+ @run TestPermittedSubclassesAttr HostA
  @compile HostAB/Host.java  - replaces previous Host.class
- @run TestPermittedSubtypesAttr HostAB
+ @run TestPermittedSubclassesAttr HostAB
 etc.
 
 Within the test we directly compile redefined versions of the classes,
@@ -133,7 +133,7 @@ import jdk.test.lib.compiler.CompilerUtils;
 import jdk.test.lib.compiler.InMemoryJavaCompiler;
 import static jdk.test.lib.Asserts.assertTrue;
 
-public class TestPermittedSubtypesAttr {
+public class TestPermittedSubclassesAttr {
 
     static final String SRC = System.getProperty("test.src");
     static final String DEST = System.getProperty("test.classes");
@@ -156,7 +156,7 @@ public class TestPermittedSubtypesAttr {
         switch (origin) {
         case "Host":
             badTransforms = new String[] {
-                "HostA" // add permitted subtype
+                "HostA" // add permitted subclass
             };
             goodTransforms = new String[] {
                 origin
@@ -165,9 +165,9 @@ public class TestPermittedSubtypesAttr {
 
         case "HostA":
             badTransforms = new String[] {
-                "Host",   // remove permitted subtype
-                "HostAB", // add permitted subtype
-                "HostB"   // change permitted subtype
+                "Host",   // remove permitted subclass
+                "HostAB", // add permitted subclass
+                "HostB"   // change permitted subclass
             };
             goodTransforms = new String[] {
                 origin
@@ -176,29 +176,29 @@ public class TestPermittedSubtypesAttr {
 
         case "HostAB":
             badTransforms = new String[] {
-                "HostA",   // remove permitted subtype
-                "HostABC", // add permitted subtype
-                "HostAC"   // change permitted subtype
+                "HostA",   // remove permitted subclass
+                "HostABC", // add permitted subclass
+                "HostAC"   // change permitted subclass
             };
             goodTransforms = new String[] {
                 origin,
-                "HostBA"  // reorder permitted subtypes
+                "HostBA"  // reorder permitted subclasses
             };
             break;
 
         case "HostABC":
             badTransforms = new String[] {
-                "HostAB",   // remove permitted subtype
-                "HostABCD", // add permitted subtype
-                "HostABD"   // change permitted subtype
+                "HostAB",   // remove permitted subclass
+                "HostABCD", // add permitted subclass
+                "HostABD"   // change permitted subclass
             };
             goodTransforms = new String[] {
                 origin,
-                "HostACB",  // reorder permitted subtypes
-                "HostBAC",  // reorder permitted subtypes
-                "HostBCA",  // reorder permitted subtypes
-                "HostCAB",  // reorder permitted subtypes
-                "HostCBA"   // reorder permitted subtypes
+                "HostACB",  // reorder permitted subclasses
+                "HostBAC",  // reorder permitted subclasses
+                "HostBCA",  // reorder permitted subclasses
+                "HostCAB",  // reorder permitted subclasses
+                "HostCBA"   // reorder permitted subclasses
             };
             break;
 
@@ -239,7 +239,7 @@ public class TestPermittedSubtypesAttr {
             }
             catch (UnsupportedOperationException uoe) {
                 if (uoe.getMessage().contains("attempted to change the class") &&
-                    uoe.getMessage().contains(" PermittedSubtypes")) {
+                    uoe.getMessage().contains(" PermittedSubclasses")) {
                     System.out.println("Got expected exception " + uoe);
                 }
                 else throw new Error("Wrong UnsupportedOperationException", uoe);

@@ -24,7 +24,7 @@
 /*
  * @test
  * @library /test/lib
- * @summary Test that a class that is a sealed type can be redefined.
+ * @summary Test that a class that is a sealed class can be redefined.
  * @modules java.base/jdk.internal.misc
  * @modules java.instrument
  *          jdk.jartool/sun.tools.jar

@@ -1363,7 +1363,7 @@ public class ClassfileInspector {
         }
 
         @Override
-        public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, T p) {
+        public Void visitPermittedSubclasses(PermittedSubclasses_attribute attr, T p) {
             return null;
         }
 

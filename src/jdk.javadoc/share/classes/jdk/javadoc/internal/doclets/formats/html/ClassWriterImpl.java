@@ -249,7 +249,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                 }
             }
         }
-        List<? extends TypeMirror> permits = typeElement.getPermittedSubtypes();
+        List<? extends TypeMirror> permits = typeElement.getPermittedSubclasses();
         List<? extends TypeMirror> linkablePermits = permits.stream()
                 .filter(t -> utils.isLinkable(utils.asTypeElement(t)))
                 .collect(Collectors.toList());
@@ -265,7 +265,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                     pre.add(", ");
                 }
                 Content link = getLink(new LinkInfoImpl(configuration,
-                        LinkInfoImpl.Kind.PERMITTED_SUBTYPES,
+                        LinkInfoImpl.Kind.PERMITTED_SUBCLASSES,
                         type));
                 pre.add(link);
             }

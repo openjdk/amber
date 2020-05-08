@@ -30,11 +30,11 @@ import java.util.stream.IntStream;
 
 import com.sun.tools.classfile.ConstantPool.CONSTANT_Class_info;
 
-public class PermittedSubtypes_attribute extends Attribute {
+public class PermittedSubclasses_attribute extends Attribute {
 
     public int[] subtypes;
 
-    PermittedSubtypes_attribute(ClassReader cr, int name_index, int length) throws IOException {
+    PermittedSubclasses_attribute(ClassReader cr, int name_index, int length) throws IOException {
         super(name_index, length);
         int number_of_classes = cr.readUnsignedShort();
         subtypes = new int[number_of_classes];
@@ -42,7 +42,7 @@ public class PermittedSubtypes_attribute extends Attribute {
             subtypes[i] = cr.readUnsignedShort();
     }
 
-    public PermittedSubtypes_attribute(int name_index, int[] subtypes) {
+    public PermittedSubclasses_attribute(int name_index, int[] subtypes) {
         super(name_index, 2);
         this.subtypes = subtypes;
     }
@@ -60,6 +60,6 @@ public class PermittedSubtypes_attribute extends Attribute {
 
     @Override
     public <R, D> R accept(Visitor<R, D> visitor, D data) {
-        return visitor.visitPermittedSubtypes(this, data);
+        return visitor.visitPermittedSubclasses(this, data);
     }
 }

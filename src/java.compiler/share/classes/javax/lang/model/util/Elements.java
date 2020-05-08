@@ -683,7 +683,7 @@ public interface Elements {
      *
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
             essentialAPI=false)
     default boolean isSealed(TypeElement type) {
         return false;

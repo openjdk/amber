@@ -30,7 +30,6 @@ import javax.lang.model.*;
 import javax.lang.model.element.*;
 import static javax.lang.model.element.ElementKind.*;
 import static javax.lang.model.element.NestingKind.*;
-import static javax.lang.model.element.ModuleElement.DirectiveKind.*;
 import static javax.lang.model.element.ModuleElement.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.*;
@@ -39,7 +38,6 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 import com.sun.tools.javac.util.DefinedBy;
@@ -248,7 +246,7 @@ public class PrintingProcessor extends AbstractProcessor {
                 }
 
                 printInterfaces(e);
-                printPermittedSubtypes(e);
+                printPermittedSubclasses(e);
             }
             writer.println(" {");
             indentation++;
@@ -603,8 +601,8 @@ public class PrintingProcessor extends AbstractProcessor {
             }
         }
 
-        private void printPermittedSubtypes(TypeElement e) {
-            List<? extends TypeMirror> subtypes = e.getPermittedSubtypes();
+        private void printPermittedSubclasses(TypeElement e) {
+            List<? extends TypeMirror> subtypes = e.getPermittedSubclasses();
             if (!subtypes.isEmpty()) { // could remove this check with more complicated joining call
                 writer.print(" permits ");
                 writer.print(subtypes

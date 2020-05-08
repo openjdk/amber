@@ -469,7 +469,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "<li>deleting a method</li>"
         "<li>changing class modifiers</li>"
         "<li>changing method modifiers</li>"
-        "<li>changing the <code>NestHost</code>, <code>NestMembers</code>, <code>PermittedSubtypes</code>, or <code>Record</code> class attributes</li>"
+        "<li>changing the <code>NestHost</code>, <code>NestMembers</code>, <code>PermittedSubclasses</code>, or <code>Record</code> class attributes</li>"
         "</ul>"
         "<p>"
         "Requires canRedefineClasses capability - see "
@@ -3167,7 +3167,7 @@ JDWP "Java(tm) Debug Wire Protocol"
                                           "canUnrestrictedlyRedefineClasses is false.")
     (Constant CLASS_ATTRIBUTE_CHANGE_NOT_IMPLEMENTED
                                      =72  "The new class version has a different NestHost, "
-                                          "NestMembers, PermittedSubtypes, or Record class attribute "
+                                          "NestMembers, PermittedSubclasses, or Record class attribute "
                                           "and canUnrestrictedlyRedefineClasses is false.")
     (Constant NOT_IMPLEMENTED        =99  "The functionality is not implemented in "
                                           "this virtual machine.")

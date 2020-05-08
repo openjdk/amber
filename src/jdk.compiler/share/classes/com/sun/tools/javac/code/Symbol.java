@@ -1622,7 +1622,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
-        public List<Type> getPermittedSubtypes() {
+        public List<Type> getPermittedSubclasses() {
             return permitted.map(s -> s.type);
         }
     }

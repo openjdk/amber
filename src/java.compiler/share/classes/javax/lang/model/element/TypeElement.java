@@ -205,25 +205,25 @@ public interface TypeElement extends Element, Parameterizable, QualifiedNameable
     }
 
     /**
-     * {@preview Associated with sealed types, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This method is associated with <i>sealed types</i>, a preview
+     *           This method is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
-     * Returns the permitted subtypes of this type element in
+     * Returns the permitted classes of this type element in
      * declaration order.
      *
      * @implSpec The default implementations of this method returns an
      * empty and unmodifiable list.
      *
-     * @return the permitted subtypes, or an empty list if there are none
+     * @return the permitted classes, or an empty list if there are none
      *
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
                                  essentialAPI=false)
-    default List<? extends TypeMirror> getPermittedSubtypes() {
+    default List<? extends TypeMirror> getPermittedSubclasses() {
         return List.of();
     }
 

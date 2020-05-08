@@ -22,7 +22,7 @@
  */
 
 // This class was written using jcod because it implements sealed interface
-// sealedInterface but is not listed in its PermittedSubtypes attribute.
+// sealedInterface but is not listed in its PermittedSubclasses attribute.
 // It consists of the following:
 //
 //    package Pkg;

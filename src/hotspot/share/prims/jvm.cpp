@@ -2142,24 +2142,24 @@ JVM_ENTRY(jobjectArray, JVM_GetNestMembers(JNIEnv* env, jclass current))
 }
 JVM_END
 
-JVM_ENTRY(jobjectArray, JVM_GetPermittedSubtypes(JNIEnv* env, jclass current))
+JVM_ENTRY(jobjectArray, JVM_GetPermittedSubclasses(JNIEnv* env, jclass current))
 {
-  JVMWrapper("JVM_GetPermittedSubtypes");
+  JVMWrapper("JVM_GetPermittedSubclasses");
   Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
   assert(c->is_instance_klass(), "must be");
   InstanceKlass* ik = InstanceKlass::cast(c);
 
   {
     JvmtiVMObjectAllocEventCollector oam;
-    Array<u2>* subtypes = ik->permitted_subtypes();
-    int length = subtypes == NULL ? 0 : subtypes->length();
+    Array<u2>* subclasses = ik->permitted_subclasses();
+    int length = subclasses == NULL ? 0 : subclasses->length();
     if (length != 0) {
       objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(),
                                                length, CHECK_NULL);
       objArrayHandle result (THREAD, r);
       int i;
       for (i = 0; i < length; i++) {
-        int cp_index = subtypes->at(i);
+        int cp_index = subclasses->at(i);
         // This returns <package-name>/<class-name>.
         Symbol* klass_name = ik->constants()->klass_name_at(cp_index);
         assert(klass_name != NULL, "Unexpected null klass_name");
