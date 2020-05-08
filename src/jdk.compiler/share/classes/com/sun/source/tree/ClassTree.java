@@ -87,22 +87,22 @@ public interface ClassTree extends StatementTree {
     List<? extends Tree> getImplementsClause();
 
     /**
-     * {@preview Associated with sealed types, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This method is associated with <i>sealed types</i>, a preview
+     *           This method is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
-     * Returns the subtypes permitted by this type declaration.
+     * Returns the subclasses permitted by this type declaration.
      *
      * @implSpec this implementation returns an empty list
      *
-     * @return the subtypes
+     * @return the subclasses
      *
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
                                              essentialAPI=false)
     default List<? extends Tree> getPermitsClause() {
         return Collections.emptyList();

@@ -75,9 +75,9 @@ public class TestSealed extends JavacTestingAbstractProcessor {
                if (!element.getModifiers().contains(Modifier.SEALED)) {
                    throw new RuntimeException("sealed modifier expected");
                }
-               List<? extends TypeMirror> permittedSubtypes = element.getPermittedSubtypes();
-               if (permittedSubtypes.size() != 2) {
-                   throw new RuntimeException("unexpected number of permitted subtypes");
+               List<? extends TypeMirror> permittedSubclasses = element.getPermittedSubclasses();
+               if (permittedSubclasses.size() != 2) {
+                   throw new RuntimeException("unexpected number of permitted subclasses");
                }
            }
            return super.visitType(element, p);

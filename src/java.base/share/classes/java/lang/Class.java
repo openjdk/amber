@@ -4385,27 +4385,27 @@ public final class Class<T> implements java.io.Serializable,
     public native boolean isHidden();
 
     /**
-     * {@preview Associated with sealed types, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This method is associated with <i>sealed types</i>, a preview
+     *           This method is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
      * Returns an array containing {@code ClassDesc} objects representing all the
-     * permitted subtypes of this {@linkplain Class} if it is sealed. Returns an empty array if this
+     * permitted subclasses of this {@linkplain Class} if it is sealed. Returns an empty array if this
      * {@linkplain Class} is not sealed.
      *
-     * @return an array of class descriptors of all the permitted subtypes of this class
+     * @return an array of class descriptors of all the permitted subclasses of this class
      * @throws IllegalArgumentException if a class descriptor is not in the correct format
      *
      * @jls 8.1 Class Declarations
      * @jls 9.1 Interface Declarations
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
-    public ClassDesc[] getPermittedSubtypes() {
-        String[] descriptors = getPermittedSubtypes0();
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
+    public ClassDesc[] getPermittedSubclasses() {
+        String[] descriptors = getPermittedSubclasses0();
         if (descriptors == null || descriptors.length == 0) {
             return new ClassDesc[0];
         }
@@ -4419,9 +4419,9 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * * {@preview Associated with sealed types, a preview feature of the Java language.
+     * * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This method is associated with <i>sealed types</i>, a preview
+     *           This method is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
@@ -4434,12 +4434,12 @@ public final class Class<T> implements java.io.Serializable,
      * @jls 9.1 Interface Declarations
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES, essentialAPI=false)
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
     @SuppressWarnings("preview")
     public boolean isSealed() {
-        return getPermittedSubtypes().length != 0;
+        return getPermittedSubclasses().length != 0;
     }
 
-    private native String[] getPermittedSubtypes0();
+    private native String[] getPermittedSubclasses0();
 
 }

@@ -22,7 +22,7 @@
  */
 
 // This class was written using jcod because it extends sealed class
-// planets.outerPlanets but is not listed in its PermittedSubtypes
+// planets.outerPlanets but is not listed in its PermittedSubclasses
 // attribute.  It consists of the following:
 //
 //    package planets;

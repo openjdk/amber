@@ -424,22 +424,22 @@ void JvmtiClassFileReconstituter::write_nest_members_attribute() {
   }
 }
 
-//  PermittedSubtypes {
+//  PermittedSubclasses {
 //    u2 attribute_name_index;
 //    u4 attribute_length;
 //    u2 number_of_classes;
 //    u2 classes[number_of_classes];
 //  }
-void JvmtiClassFileReconstituter::write_permitted_subtypes_attribute() {
-  Array<u2>* permitted_subtypes = ik()->permitted_subtypes();
-  int number_of_classes = permitted_subtypes->length();
+void JvmtiClassFileReconstituter::write_permitted_subclasses_attribute() {
+  Array<u2>* permitted_subclasses = ik()->permitted_subclasses();
+  int number_of_classes = permitted_subclasses->length();
   int length = sizeof(u2) * (1 + number_of_classes); // '1 +' is for number_of_classes field
 
-  write_attribute_name_index("PermittedSubtypes");
+  write_attribute_name_index("PermittedSubclasses");
   write_u4(length);
   write_u2(number_of_classes);
   for (int i = 0; i < number_of_classes; i++) {
-    u2 class_cp_index = permitted_subtypes->at(i);
+    u2 class_cp_index = permitted_subclasses->at(i);
     write_u2(class_cp_index);
   }
 }
@@ -771,7 +771,7 @@ void JvmtiClassFileReconstituter::write_class_attributes() {
   if (ik()->nest_members() != Universe::the_empty_short_array()) {
     ++attr_count;
   }
-  if (ik()->permitted_subtypes() != Universe::the_empty_short_array()) {
+  if (ik()->permitted_subclasses() != Universe::the_empty_short_array()) {
     ++attr_count;
   }
   if (ik()->record_components() != NULL) {
@@ -807,8 +807,8 @@ void JvmtiClassFileReconstituter::write_class_attributes() {
   if (ik()->nest_members() != Universe::the_empty_short_array()) {
     write_nest_members_attribute();
   }
-  if (ik()->permitted_subtypes() != Universe::the_empty_short_array()) {
-    write_permitted_subtypes_attribute();
+  if (ik()->permitted_subclasses() != Universe::the_empty_short_array()) {
+    write_permitted_subclasses_attribute();
   }
   if (ik()->record_components() != NULL) {
     write_record_attribute();

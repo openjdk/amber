@@ -185,7 +185,7 @@ public enum Target {
 
     /** Does the target VM support sealed types
      */
-    public boolean hasSealedTypes() {
-        return compareTo(JDK1_14) >= 0;
+    public boolean hasSealedClasses() {
+        return compareTo(JDK1_15) >= 0;
     }
 }

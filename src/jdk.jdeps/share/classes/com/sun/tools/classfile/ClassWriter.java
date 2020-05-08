@@ -696,7 +696,7 @@ public class ClassWriter {
         }
 
         @Override
-        public Void visitPermittedSubtypes(PermittedSubtypes_attribute attr, ClassOutputStream out) {
+        public Void visitPermittedSubclasses(PermittedSubclasses_attribute attr, ClassOutputStream out) {
             int n = attr.subtypes.length;
             out.writeShort(n);
             for (int i = 0 ; i < n ; i++) {

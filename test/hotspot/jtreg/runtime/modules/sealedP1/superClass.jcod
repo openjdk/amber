@@ -45,7 +45,7 @@ class sealedP1/superClass {
     Utf8 "LineNumberTable"; // #10     at 0x59
     Utf8 "SourceFile"; // #11     at 0x6B
     Utf8 "superClass.java"; // #12     at 0x78
-    Utf8 "PermittedSubtypes"; // #13     at 0x8A
+    Utf8 "PermittedSubclasses"; // #13     at 0x8A
     class #15; // #14     at 0x9E
     Utf8 "sealedP1/c1"; // #15     at 0xA1
     class #17; // #16     at 0xAF
@@ -95,8 +95,8 @@ class sealedP1/superClass {
       #12;
     } // end SourceFile
     ;
-    Attr(#13, 8) { // PermittedSubtypes at 0x0112
+    Attr(#13, 8) { // PermittedSubclasses at 0x0112
       0x0003000E00100012;
-    } // end PermittedSubtypes
+    } // end PermittedSubclasses
   } // Attributes
 } // end class sealedP1/superClass

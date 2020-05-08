@@ -36,11 +36,11 @@ public class SealedUnnamedModuleIntfTest {
         // sealed interface sealedInterface.
         // Interface sealedInterface permits classes Permitted and wrongPackage.
 
-        // Test permitted subtype and supertype in unnamed module and same package.
+        // Test permitted subclass and superclass in unnamed module and same package.
         // This should succeed.
         Class permitted = Class.forName("Pkg.Permitted");
 
-        // Test unpermitted subtype and supertype in unnamed module and same package.
+        // Test unpermitted subclass and superclass in unnamed module and same package.
         // This should throw an exception.
         try {
             Class notPermitted = Class.forName("Pkg.notPermitted");
@@ -51,7 +51,7 @@ public class SealedUnnamedModuleIntfTest {
             }
         }
 
-        // Test both permitted subtype and supertype in unnamed module but in different
+        // Test both permitted subclass and superclass in unnamed module but in different
         // packages.  This should throw an exception.
         try {
             Class wrongPkg = Class.forName("otherPkg.wrongPackage");

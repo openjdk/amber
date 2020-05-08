@@ -61,11 +61,11 @@ public class CheckingAttributeAtRuntimeTest {
     private void assertSealed(Class<?> c,
                               Set<ClassDesc> expectedPermits) {
         assertTrue(c.isSealed());
-        assertEquals(c.getPermittedSubtypes().length, expectedPermits.size());
-        assertEquals(Set.of(c.getPermittedSubtypes()), expectedPermits);
+        assertEquals(c.getPermittedSubclasses().length, expectedPermits.size());
+        assertEquals(Set.of(c.getPermittedSubclasses()), expectedPermits);
     }
 
-    public void testPermittedSubtypes() {
+    public void testPermittedSubclasses() {
         assertSealed(Sealed1.class,
                 Set.of(TEST_CLASS.nested("Sub1")));
 

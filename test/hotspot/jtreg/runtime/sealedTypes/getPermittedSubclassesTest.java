@@ -23,16 +23,16 @@
 
 /*
  * @test
- * @compile getPermittedSubtypes.jcod
- * @compile --enable-preview -source ${jdk.version} getPermittedSubtypesTest.java
- * @run main/othervm --enable-preview getPermittedSubtypesTest
+ * @compile getPermittedSubclasses.jcod
+ * @compile --enable-preview -source ${jdk.version} getPermittedSubclassesTest.java
+ * @run main/othervm --enable-preview getPermittedSubclassesTest
  */
 
 import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 
 // Test Class.getPermittedSubtpes() and Class.isSealed() APIs.
-public class getPermittedSubtypesTest {
+public class getPermittedSubclassesTest {
 
     sealed class Sealed1 permits Sub1 {}
 
@@ -49,19 +49,19 @@ public class getPermittedSubtypesTest {
     final class Final4 {}
 
     public static void testSealedInfo(Class<?> c, String[] expected) {
-        Object[] permitted = c.getPermittedSubtypes();
+        Object[] permitted = c.getPermittedSubclasses();
 
         if (permitted.length != expected.length) {
             throw new RuntimeException(
-                "Unexpected number of permitted subtypes for: " + c.toString());
+                "Unexpected number of permitted subclasses for: " + c.toString());
         }
 
         if (permitted.length > 0) {
             if (!c.isSealed()) {
-                throw new RuntimeException("Expected sealed type: " + c.toString());
+                throw new RuntimeException("Expected sealed class: " + c.toString());
             }
 
-            // Create ArrayList of permitted subtypes class names.
+            // Create ArrayList of permitted subclasses class names.
             ArrayList<String> permittedNames = new ArrayList<String>();
             for (int i = 0; i < permitted.length; i++) {
                 permittedNames.add(((ClassDesc)permitted[i]).descriptorString());
@@ -72,58 +72,58 @@ public class getPermittedSubtypesTest {
                     "Unexpected number of permitted names for: " + c.toString());
             }
 
-            // Check that expected class names are in the permitted subtypes list.
+            // Check that expected class names are in the permitted subclasses list.
             for (int i = 0; i < expected.length; i++) {
                 if (!permittedNames.contains(expected[i])) {
                     throw new RuntimeException(
-                         "Expected class not found in permitted subtypes list, super type: " +
+                         "Expected class not found in permitted subclases list, super class: " +
                          c.getName() + ", expected class: " + expected[i]);
                 }
             }
         } else {
-            // Must not be sealed if no permitted subtypes.
+            // Must not be sealed if no permitted subclasses.
             if (c.isSealed()) {
-                throw new RuntimeException("Unexpected sealed type: " + c.toString());
+                throw new RuntimeException("Unexpected sealed class: " + c.toString());
             }
         }
     }
 
-    public static void testBadSealedType(String typeName, String expectedCFEMessage) throws Throwable {
+    public static void testBadSealedClass(String className, String expectedCFEMessage) throws Throwable {
         try {
-            Class.forName(typeName);
-            throw new RuntimeException("Expected ClasFormatError exception not thrown for " + typeName);
+            Class.forName(className);
+            throw new RuntimeException("Expected ClasFormatError exception not thrown for " + className);
         } catch (ClassFormatError cfe) {
             if (!cfe.getMessage().contains(expectedCFEMessage)) {
                 throw new RuntimeException(
-                    "Type " + typeName + " got unexpected ClassFormatError exception: " + cfe.getMessage());
+                    "Class " + className + " got unexpected ClassFormatError exception: " + cfe.getMessage());
             }
         }
     }
 
     public static void main(String... args) throws Throwable {
-        testSealedInfo(SealedI1.class, new String[] {"LgetPermittedSubtypesTest$notSealed;",
-                                                     "LgetPermittedSubtypesTest$Sub1;",
-                                                     "LgetPermittedSubtypesTest$Extender;"});
-        testSealedInfo(Sealed1.class, new String[] {"LgetPermittedSubtypesTest$Sub1;"});
+        testSealedInfo(SealedI1.class, new String[] {"LgetPermittedSubclassesTest$notSealed;",
+                                                     "LgetPermittedSubclassesTest$Sub1;",
+                                                     "LgetPermittedSubclassesTest$Extender;"});
+        testSealedInfo(Sealed1.class, new String[] {"LgetPermittedSubclassesTest$Sub1;"});
         testSealedInfo(Final4.class, new String[] { });
         testSealedInfo(notSealed.class, new String[] { });
 
-        // Test class with PermittedSubtypes attribute but old class file version.
+        // Test class with PermittedSubclasses attribute but old class file version.
         testSealedInfo(oldClassFile.class, new String[] { });
 
-        // Test class with an empty PermittedSubtypes attribute.
-        testBadSealedType("noSubtypes", "PermittedSubtypes attribute is empty");
+        // Test class with an empty PermittedSubclasses attribute.
+        testBadSealedClass("noSubclasses", "PermittedSubclasses attribute is empty");
 
         // Test returning names of non-existing classes.
-        testSealedInfo(noLoadSubtypes.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
+        testSealedInfo(noLoadSubclasses.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
 
-        // Test that loading a class with a corrupted PermittedSubtypes attribute
+        // Test that loading a class with a corrupted PermittedSubclasses attribute
         // causes a ClassFormatError.
-        testBadSealedType("badPermittedAttr",
-                          "Permitted subtype class_info_index 15 has bad constant type");
+        testBadSealedClass("badPermittedAttr",
+                          "Permitted subclass class_info_index 15 has bad constant type");
 
-        // Test that loading a sealed final class with a PermittedSubtypes
+        // Test that loading a sealed final class with a PermittedSubclasses
         // attribute causes a ClassFormatError.
-        testBadSealedType("sealedButFinal", "PermittedSubtypes attribute in final class");
+        testBadSealedClass("sealedButFinal", "PermittedSubclasses attribute in final class");
     }
 }

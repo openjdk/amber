@@ -198,9 +198,9 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
-  // The PermittedSubtypes attribute. An array of shorts, where each is a
-  // class info index for the class that is a permitted subtype.
-  Array<jushort>* _permitted_subtypes;
+  // The PermittedSubclasses attribute. An array of shorts, where each is a
+  // class info index for the class that is a permitted subclass.
+  Array<jushort>* _permitted_subclasses;
 
   // The contents of the Record attribute.
   Array<RecordComponent*>* _record_components;
@@ -473,9 +473,9 @@ class InstanceKlass: public Klass {
   }
   bool is_record() const { return _record_components != NULL; }
 
-  // permitted subtypes
-  Array<u2>* permitted_subtypes() const     { return _permitted_subtypes; }
-  void set_permitted_subtypes(Array<u2>* s) { _permitted_subtypes = s; }
+  // permitted subclasses
+  Array<u2>* permitted_subclasses() const     { return _permitted_subclasses; }
+  void set_permitted_subclasses(Array<u2>* s) { _permitted_subclasses = s; }
 
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
@@ -492,8 +492,8 @@ public:
   // Check if this klass is a nestmate of k - resolves this nest-host and k's
   bool has_nestmate_access_to(InstanceKlass* k, TRAPS);
 
-  // Called to verify that k is a permitted subtype of this class
-  bool has_as_permitted_subtype(const InstanceKlass* k, TRAPS) const;
+  // Called to verify that k is a permitted subclass of this class
+  bool has_as_permitted_subclass(const InstanceKlass* k, TRAPS) const;
 
   enum InnerClassAttributeOffset {
     // From http://mirror.eng/products/jdk/1.1/docs/guide/innerclasses/spec/innerclasses.doc10.html#18814

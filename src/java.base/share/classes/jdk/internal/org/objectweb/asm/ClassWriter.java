@@ -208,10 +208,10 @@ public class ClassWriter extends ClassVisitor {
     /** The 'classes' array of the NestMembers attribute, or {@literal null}. */
     private ByteVector nestMemberClasses;
 
-    /** The number_of_classes field of the PermittedSubtypes attribute, or 0. */
+    /** The number_of_classes field of the PermittedSubclasses attribute, or 0. */
     private int numberOfPermittedSubtypeClasses;
 
-    /** The 'classes' array of the PermittedSubtypes attribute, or {@literal null}. */
+    /** The 'classes' array of the PermittedSubclasses attribute, or {@literal null}. */
     private ByteVector permittedSubtypeClasses;
 
     /**
@@ -610,7 +610,7 @@ public class ClassWriter extends ClassVisitor {
         if (permittedSubtypeClasses != null) {
             ++attributesCount;
             size += 8 + permittedSubtypeClasses.length;
-            symbolTable.addConstantUtf8(Constants.PERMITTED_SUBTYPES);
+            symbolTable.addConstantUtf8(Constants.PERMITTED_SUBCLASSES);
         }
         int recordComponentCount = 0;
         int recordSize = 0;
@@ -731,7 +731,7 @@ public class ClassWriter extends ClassVisitor {
         }
         if (permittedSubtypeClasses != null) {
             result
-                    .putShort(symbolTable.addConstantUtf8(Constants.PERMITTED_SUBTYPES))
+                    .putShort(symbolTable.addConstantUtf8(Constants.PERMITTED_SUBCLASSES))
                     .putInt(permittedSubtypeClasses.length + 2)
                     .putShort(numberOfPermittedSubtypeClasses)
                     .putByteArray(permittedSubtypeClasses.data, 0, permittedSubtypeClasses.length);

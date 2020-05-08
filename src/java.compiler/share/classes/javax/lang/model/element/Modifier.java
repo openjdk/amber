@@ -61,9 +61,9 @@ public enum Modifier {
     /** The modifier {@code static} */          STATIC,
 
     /**
-     * {@preview Associated with sealed types, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This enum constant is associated with <i>sealed types</i>, a preview
+     *           This enum constant is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
@@ -71,14 +71,14 @@ public enum Modifier {
      * The modifier {@code sealed}
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
                                              essentialAPI=false)
     SEALED,
 
     /**
-     * {@preview Associated with sealed types, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
-     *           This enum constant is associated with <i>sealed types</i>, a preview
+     *           This enum constant is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
@@ -86,7 +86,7 @@ public enum Modifier {
      * The modifier {@code non-sealed}
      * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_TYPES,
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
             essentialAPI=false)
     NON_SEALED,
     /** The modifier {@code final} */           FINAL,

@@ -34,9 +34,16 @@
  * @run testng/othervm --enable-preview SealedCompilationTests
  */
 
+import java.lang.constant.ClassDesc;
+
+import java.io.File;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import tools.javac.combo.CompilationTestCase;
 
@@ -447,4 +454,42 @@ public class SealedCompilationTests extends CompilationTestCase {
             assertFail("compiler.err.subtype.listed.in.permits.doesnt.extend.sealed", s);
         }
     }
+
+    /*
+    public void testCheckPermittedSubtypesAttr() {
+        File dir = assertOK(true,
+            """
+            sealed class Sealed1 permits Sub1 {}
+            final class Sub1 extends Sealed1 {}
+
+            sealed interface SealedI1 permits Sub2 {}
+            final class Sub2 implements SealedI1 {}
+
+            sealed class Sealed2 {}
+            final class Sub3 extends Sealed2 {}
+            final class Sub4 extends Sealed2 {}
+
+            sealed interface SealedI2 {}
+            final class Sub5 implements SealedI2 {}
+            non-sealed interface Int1 extends SealedI2 {}
+            non-sealed class Sub6 implements SealedI2 {}
+
+            sealed class Sealed3 permits Sub7 { }
+            final class Sub7 extends Sealed3 { }
+            """
+        );
+        for (final File fileEntry : dir.listFiles()) {
+            if (fileEntry.getName().equals("Sealed1.class")) {
+                System.out.println("-------------------------  class found");
+                assertSealed(Sealed1.class, Set.of(TEST_CLASS.nested("Sub1")));
+            }
+        }
+    }
+
+    private void assertSealed(Class<?> c, Set<ClassDesc> expectedPermits) {
+        assertTrue(c.isSealed());
+        assertEquals(c.getPermittedSubtypes().length, expectedPermits.size());
+        assertEquals(Set.of(c.getPermittedSubtypes()), expectedPermits);
+    }
+    */
 }

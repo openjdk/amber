@@ -499,7 +499,7 @@ public class ClassReader {
         String nestHostClass = null;
         // - The offset of the NestMembers attribute, or 0.
         int nestMembersOffset = 0;
-        // - The offset of the PermittedSubtypes attribute, or 0
+        // - The offset of the PermittedSubclasses attribute, or 0
         int permittedSubtypesOffset = 0;
         // - The offset of the Record attribute, or 0.
         int recordOffset = 0;
@@ -525,7 +525,7 @@ public class ClassReader {
                 nestHostClass = readClass(currentAttributeOffset, charBuffer);
             } else if (Constants.NEST_MEMBERS.equals(attributeName)) {
                 nestMembersOffset = currentAttributeOffset;
-            } else if (Constants.PERMITTED_SUBTYPES.equals(attributeName)) {
+            } else if (Constants.PERMITTED_SUBCLASSES.equals(attributeName)) {
                 permittedSubtypesOffset = currentAttributeOffset;
             } else if (Constants.SIGNATURE.equals(attributeName)) {
                 signature = readUTF8(currentAttributeOffset, charBuffer);
@@ -704,7 +704,7 @@ public class ClassReader {
             }
         }
 
-        // Visit the PermittedSubtypes attribute.
+        // Visit the PermittedSubclasses attribute.
         if (permittedSubtypesOffset != 0) {
             int numberOfPermittedSubtypes = readUnsignedShort(permittedSubtypesOffset);
             int currentPermittedSubtypeOffset = permittedSubtypesOffset + 2;

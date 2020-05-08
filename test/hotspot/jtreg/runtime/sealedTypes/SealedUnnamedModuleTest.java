@@ -35,11 +35,11 @@ public class SealedUnnamedModuleTest {
         // Classes Neptune, Mars, and Pluto all try to extend sealed class outerPlanets.
         // Class outerPlanets permits Nepturn and Pluto.
 
-        // Test permitted subtype and supertype in unnamed module and same package.
+        // Test permitted subclass and superclass in unnamed module and same package.
         // This should succeed.
         Class neptune = Class.forName("planets.Neptune");
 
-        // Test unpermitted subtype and supertype in unnamed module and same package.
+        // Test unpermitted subclass and superclass in unnamed module and same package.
         // This should fail.
         try {
             Class mars = Class.forName("planets.Mars");
@@ -50,7 +50,7 @@ public class SealedUnnamedModuleTest {
             }
         }
 
-        // Test both permitted subtype and supertype in unnamed module but in different
+        // Test both permitted subclass and superclass in unnamed module but in different
         // packages.  This should fail.
         try {
             Class pluto = Class.forName("asteroids.Pluto");
