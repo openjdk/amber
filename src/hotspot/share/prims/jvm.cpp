@@ -2145,6 +2145,11 @@ JVM_END
 JVM_ENTRY(jobjectArray, JVM_GetPermittedSubclasses(JNIEnv* env, jclass current))
 {
   JVMWrapper("JVM_GetPermittedSubclasses");
+  // return an emtpy array if it the current class is primitive or array
+  if (java_lang_Class::is_primitive(JNIHandles::resolve_non_null(current))) {
+    objArrayOop result = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
+    return (jobjectArray)JNIHandles::make_local(env, result);
+  }
   Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(current));
   assert(c->is_instance_klass(), "must be");
   InstanceKlass* ik = InstanceKlass::cast(c);

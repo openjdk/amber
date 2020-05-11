@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.sun.tools.javac.util.Assert;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
@@ -452,6 +454,15 @@ public class SealedCompilationTests extends CompilationTestCase {
             """
             )) {
             assertFail("compiler.err.subtype.listed.in.permits.doesnt.extend.sealed", s);
+        }
+    }
+
+    public void testAPIForPrimitiveAndArrayClasses() {
+        for (Class<?> c : new Class[]{byte.class, byte[].class, short.class, short[].class, int.class, int[].class, long.class, long[].class,
+            float.class, float[].class, double.class, double[].class, char.class, char[].class, boolean.class, boolean[].class, void.class,
+            String[].class}) {
+            Assert.check(!c.isSealed());
+            Assert.check(c.getPermittedSubclasses().length == 0);
         }
     }
 
