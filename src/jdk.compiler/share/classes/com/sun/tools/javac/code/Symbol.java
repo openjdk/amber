@@ -1298,13 +1298,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public List<Symbol> permitted;
 
-        /** The class, or interfaces, that are sealed supertypes of this class or interface
-         */
-        public java.util.Set<ClassSymbol> sealedSupers = Set.of();
-
         public boolean isPermittedExplicit = false;
-
-        public boolean hasSealedSuperInSameCU;
 
         public ClassSymbol(long flags, Name name, Type type, Symbol owner) {
             super(TYP, flags, name, type, owner);
