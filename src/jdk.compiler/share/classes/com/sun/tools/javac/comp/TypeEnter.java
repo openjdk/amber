@@ -60,6 +60,8 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import com.sun.tools.javac.comp.AttrContext;
+import com.sun.tools.javac.comp.Env;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;
@@ -827,105 +829,22 @@ public class TypeEnter implements Completer {
         @Override
         protected void runPhase(Env<AttrContext> env) {
             JCClassDecl tree = env.enclClass;
-            if (tree.sym.type != syms.objectType) {
-                List<Type> directSuperTypes = (types.supertype(tree.sym.type) != null ?
-                        List.of(types.supertype(tree.sym.type)) :
-                        List.nil());
-                directSuperTypes = directSuperTypes.appendList(types.interfaces(tree.sym.type));
-                List<Type> directSuperTypesInSameCU = directSuperTypes.stream()
-                        .filter(supertype ->
-                                TreeInfo.declarationFor(supertype.tsym, env.toplevel) != null &&
-                                        TreeInfo.declarationFor(tree.sym.outermostClass(), env.toplevel) != null)
-                        .collect(List.collector());
-                Set<Type> explicitlySealedSuperTypesInCU = directSuperTypesInSameCU.stream()
-                            .filter(type -> type != tree.sym.type &&
-                                    type.tsym != null &&
-                                    type.tsym.isSealed()).collect(Collectors.toSet());
-
-                boolean anySuperInSameCUIsSealed = !explicitlySealedSuperTypesInCU.isEmpty();
-                if (anySuperInSameCUIsSealed) {
-                    java.util.Set<ClassSymbol> potentiallySealedSuperTypes = superTypeSymsInASealedHierarchy(tree.sym, env, true);
-                    if (!potentiallySealedSuperTypes.isEmpty()) {
-                        for (ClassSymbol supertype : potentiallySealedSuperTypes) {
-                            if (!supertype.permitted.contains(tree.sym.type.tsym)) {
-                                if (!supertype.isPermittedExplicit) {
-                                    if (!tree.sym.isAnonymous() || tree.sym.isEnum()) {
-                                        supertype.permitted = supertype.permitted.append(tree.sym);
-                                        tree.sym.hasSealedSuperInSameCU = true;
-                                    }
-                                }
-                            } else {
-                                tree.sym.hasSealedSuperInSameCU = true;
-                            }
+            if (!tree.sym.isAnonymous() || tree.sym.isEnum()) {
+                for (Type supertype : types.directSupertypes(tree.sym.type)) {
+                    if (supertype.tsym.kind == TYP) {
+                        ClassSymbol supClass = (ClassSymbol) supertype.tsym;
+                        Env<AttrContext> supClassEnv = enter.getEnv(supClass);
+                        if (supClass.isSealed() &&
+                            !supClass.isPermittedExplicit &&
+                            supClassEnv != null &&
+                            supClassEnv.toplevel == env.toplevel) {
+                            supClass.permitted = supClass.permitted.append(tree.sym);
                         }
                     }
                 }
-
-                java.util.Set<ClassSymbol> sealedSuperSyms = superTypeSymsInASealedHierarchy(tree.sym, env, false);
-                boolean hasSuperTypesInSealedHierarchy = !sealedSuperSyms.isEmpty();
-                if (hasSuperTypesInSealedHierarchy) {
-                    tree.sym.sealedSupers = sealedSuperSyms;
-                }
             }
         }
 
-        JCTree findTreeReferringSym(JCClassDecl tree, Symbol sym) {
-            if (tree.extending != null && tree.extending.type.tsym == sym) {
-                return tree.extending;
-            }
-            for (JCExpression implementing: tree.implementing) {
-                if (implementing.type.tsym == sym) {
-                    return implementing;
-                }
-            }
-            return tree;
-        }
-
-        boolean areInSameCU(Symbol sym1, Symbol sym2, Env<AttrContext> env) {
-            return TreeInfo.declarationFor(sym1, env.toplevel) != null &&
-                    TreeInfo.declarationFor(sym2.outermostClass(), env.toplevel) != null;
-        }
-
-        java.util.Set<ClassSymbol> superTypeSymsInASealedHierarchy(ClassSymbol csym, Env<AttrContext> env, boolean inSameCUOnly) {
-            if (csym == null) {
-                return Set.of();
-            }
-
-            Type supertype = csym.type != null ?
-                    types.supertype(csym.type) : null;
-            java.util.Set<ClassSymbol> supertypes = new HashSet<>();
-
-            if (supertype != null &&
-                    supertype.tsym != null &&
-                    supertype != syms.objectType &&
-                    supertype.tsym != null &&
-                    !supertype.tsym.isNonSealed() &&
-                    (inSameCUOnly && areInSameCU(csym, supertype.tsym, env) || !inSameCUOnly)) {
-                supertypes.add((ClassSymbol) supertype.tsym);
-            }
-
-            if (csym.getInterfaces() != null) {
-                for (Type intf : csym.getInterfaces()) {
-                    if (intf != null && intf.tsym != null && intf.tsym != null && !intf.tsym.isNonSealed() &&
-                            (inSameCUOnly && areInSameCU(csym, intf.tsym, env) || !inSameCUOnly)) {
-                        supertypes.add((ClassSymbol) intf.tsym);
-                    }
-                }
-            }
-
-            for (ClassSymbol sup : new ArrayList<>(supertypes)) {
-                if (sup instanceof ClassSymbol) {
-                    java.util.Set<ClassSymbol> supers = superTypeSymsInASealedHierarchy(sup, env, inSameCUOnly);
-                    if ((supers == null || supers.isEmpty()) && !sup.isSealed()) {
-                        supertypes.remove(sup);
-                    }
-                } else {
-                    supertypes.remove(sup);
-                }
-            }
-
-            return supertypes;
-        }
     }
 
     private final class HeaderPhase extends AbstractHeaderPhase {

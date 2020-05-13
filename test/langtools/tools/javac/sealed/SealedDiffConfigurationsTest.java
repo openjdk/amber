@@ -566,4 +566,71 @@ public class SealedDiffConfigurationsTest extends TestRunner {
             throw new AssertionError("Expected output not found. Found: " + error);
         }
     }
+
+    @Test
+    public void testSeparateCompilation(Path base) throws Exception {
+        Path src = base.resolve("src");
+        Path src_m = src.resolve("m");
+        tb.writeJavaFiles(src_m,
+                "module m {}",
+                "package pkg.a; public sealed interface Sealed permits pkg.b.Sub {}",
+                "package pkg.b; public final class Sub implements pkg.a.Sealed {}");
+        Path classes = base.resolve("classes");
+        tb.createDirectories(classes);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--module-source-path",
+                        src.toString(), "--enable-preview",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src_m))
+                .run()
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--module-source-path",
+                        src.toString(), "--enable-preview", "-doe",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src_m.resolve("pkg").resolve("a")))
+                .run()
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--module-source-path",
+                        src.toString(), "--enable-preview", "-doe",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src_m.resolve("pkg").resolve("b")))
+                .run()
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        tb.cleanDirectory(classes);
+
+        //implicit compilations:
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--module-source-path",
+                        src.toString(), "--enable-preview", "-doe",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src_m.resolve("pkg").resolve("a")))
+                .run()
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        tb.cleanDirectory(classes);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--module-source-path",
+                        src.toString(), "--enable-preview", "-doe",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src_m.resolve("pkg").resolve("b")))
+                .run()
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+    }
 }

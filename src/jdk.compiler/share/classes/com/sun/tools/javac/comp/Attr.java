@@ -5019,13 +5019,13 @@ public class Attr extends JCTree.Visitor {
                 log.error(env.tree, Errors.SealedTypeMustHaveSubtypes);
             }
 
-            if (c.isSealed() && !c.permitted.isEmpty()) {
+            if (c.isSealed()) {
                 Set<Symbol> permittedTypes = new HashSet<>();
                 boolean sealedInUnnamed = c.packge().modle == syms.unnamedModule || c.packge().modle == syms.noModule;
                 for (Symbol subTypeSym : c.permitted) {
                     boolean isTypeVar = false;
                     if (subTypeSym.type.getTag() == TYPEVAR) {
-                        isTypeVar = true;
+                        isTypeVar = true; //error recovery
                         log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.TypeVarListedInPermits);
                     }
                     if (subTypeSym.isAnonymous() && !c.isEnum()) {
@@ -5047,8 +5047,11 @@ public class Attr extends JCTree.Visitor {
                         log.error(TreeInfo.declarationFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
                                 Errors.TypeListedInPermitsIsSameClassOrSupertype(subTypeSym == c.type.tsym ?
                                         Fragments.SameClass : Fragments.Supertype));
-                    } else {
-                        if (!isTypeVar && !((ClassSymbol)subTypeSym).sealedSupers.contains(c.type.tsym)) {
+                    } else if (!isTypeVar) {
+                        boolean thisIsASuper = types.directSupertypes(subTypeSym.type)
+                                                    .stream()
+                                                    .anyMatch(d -> d.tsym == c);
+                        if (!thisIsASuper) {
                             log.error(TreeInfo.declarationFor(subTypeSym, env.tree),
                                     Errors.SubtypeListedInPermitsDoesntExtendSealed(subTypeSym.type, c.type));
                         }
@@ -5056,45 +5059,29 @@ public class Attr extends JCTree.Visitor {
                 }
             }
 
-            if (!c.sealedSupers.isEmpty() && c.isLocal() && !c.isEnum()) {
-                log.error(TreeInfo.declarationFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
-            }
+            List<ClassSymbol> sealedSupers = types.directSupertypes(c.type)
+                                                  .stream()
+                                                  .filter(s -> s.tsym.isSealed())
+                                                  .map(s -> (ClassSymbol) s.tsym)
+                                                  .collect(List.collector());
 
-            if (!c.sealedSupers.isEmpty()) {
-                for (ClassSymbol supertypeSym : c.sealedSupers) {
+            if (sealedSupers.isEmpty()) {
+                if ((c.flags_field & Flags.NON_SEALED) != 0) {
+                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
+                }
+            } else {
+                if (c.isLocal() && !c.isEnum()) {
+                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
+                }
+
+                for (ClassSymbol supertypeSym : sealedSupers) {
                     if (!supertypeSym.permitted.contains(c.type.tsym)) {
-                        if (supertypeSym.isPermittedExplicit) {
-                            log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertypeSym));
-                        }
+                        log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertypeSym));
                     }
                 }
                 if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
                     log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
                 }
-
-                if (!c.hasSealedSuperInSameCU) {
-                    // that supertype most have a permits clause allowing this class to extend it
-                    List<Type> closureOutsideOfSameCU = types.closure(c.type).stream()
-                            .filter(supertype ->
-                                    TreeInfo.declarationFor(supertype.tsym, env.toplevel) == null ||
-                                            TreeInfo.declarationFor(c.outermostClass(), env.toplevel) == null)
-                            .collect(List.collector());
-                    Set<Type> explicitlySealedSuperTypesOutsideOfCU = closureOutsideOfSameCU.stream()
-                            .filter(type -> type != c.type && type.tsym.isSealed()).collect(Collectors.toSet());
-                    for (Type supertype : explicitlySealedSuperTypesOutsideOfCU) {
-                        if (!((ClassSymbol)supertype.tsym).permitted.contains(c.type.tsym)) {
-                            log.error(TreeInfo.declarationFor(c, env.tree), Errors.CantInheritFromSealed(supertype.tsym));
-                        }
-                    }
-
-                    if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
-                        log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
-                    }
-                }
-            }
-
-            if ((c.flags_field & Flags.NON_SEALED) != 0 && c.sealedSupers.isEmpty()) {
-                log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
             }
 
             // The info.lint field in the envs stored in typeEnvs is deliberately uninitialized,
