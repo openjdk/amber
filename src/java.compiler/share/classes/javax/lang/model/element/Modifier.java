@@ -88,7 +88,11 @@ public enum Modifier {
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
             essentialAPI=false)
-    NON_SEALED,
+    NON_SEALED {
+        public String toString() {
+            return "non-sealed";
+        }
+    },
     /** The modifier {@code final} */           FINAL,
     /** The modifier {@code transient} */       TRANSIENT,
     /** The modifier {@code volatile} */        VOLATILE,
