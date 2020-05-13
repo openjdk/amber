@@ -28,9 +28,9 @@
  * @modules java.base/jdk.internal.misc
  * @modules java.instrument
  *          jdk.jartool/sun.tools.jar
- * @compile --enable-preview -source ${jdk.version} RedefineSealedType.java
- * @run main/othervm --enable-preview RedefineSealedType buildagent
- * @run main/othervm/timeout=6000 --enable-preview RedefineSealedType runtest
+ * @compile --enable-preview -source ${jdk.version} RedefineSealedClass.java
+ * @run main/othervm --enable-preview RedefineSealedClass buildagent
+ * @run main/othervm/timeout=6000 --enable-preview RedefineSealedClass runtest
  */
 
 import java.io.FileNotFoundException;
@@ -43,7 +43,7 @@ import java.lang.instrument.IllegalClassFormatException;
 import jdk.test.lib.process.ProcessTools;
 import jdk.test.lib.process.OutputAnalyzer;
 
-public class RedefineSealedType {
+public class RedefineSealedClass {
 
     final class A extends Tester { }
     final class B extends Tester { }
@@ -65,22 +65,22 @@ public class RedefineSealedType {
         LoggingTransformer t = new LoggingTransformer();
         inst.addTransformer(t, true);
         {
-            Class demoClass = Class.forName("RedefineSealedType$Tester");
+            Class demoClass = Class.forName("RedefineSealedClass$Tester");
             inst.retransformClasses(demoClass);
         }
     }
 
     private static void buildAgent() {
         try {
-            ClassFileInstaller.main("RedefineSealedType");
+            ClassFileInstaller.main("RedefineSealedClass");
         } catch (Exception e) {
             throw new RuntimeException("Could not write agent classfile", e);
         }
 
         try {
             PrintWriter pw = new PrintWriter("MANIFEST.MF");
-            pw.println("Premain-Class: RedefineSealedType");
-            pw.println("Agent-Class: RedefineSealedType");
+            pw.println("Premain-Class: RedefineSealedClass");
+            pw.println("Agent-Class: RedefineSealedClass");
             pw.println("Can-Redefine-Classes: true");
             pw.println("Can-Retransform-Classes: true");
             pw.close();
@@ -89,7 +89,7 @@ public class RedefineSealedType {
         }
 
         sun.tools.jar.Main jarTool = new sun.tools.jar.Main(System.out, System.err, "jar");
-        if (!jarTool.run(new String[] { "-cmf", "MANIFEST.MF", "redefineagent.jar", "RedefineSealedType.class" })) {
+        if (!jarTool.run(new String[] { "-cmf", "MANIFEST.MF", "redefineagent.jar", "RedefineSealedClass.class" })) {
             throw new RuntimeException("Could not write the agent jar file");
         }
     }
@@ -102,7 +102,7 @@ public class RedefineSealedType {
         if (argv.length == 1 && argv[0].equals("runtest")) {
             String[] javaArgs1 = { "-XX:MetaspaceSize=12m", "-XX:MaxMetaspaceSize=12m",
                                    "-javaagent:redefineagent.jar", "--enable-preview",
-                                   "RedefineSealedType"};
+                                   "RedefineSealedClass"};
             ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(javaArgs1);
             OutputAnalyzer output = new OutputAnalyzer(pb.start());
             output.shouldNotContain("processing of -javaagent failed");
