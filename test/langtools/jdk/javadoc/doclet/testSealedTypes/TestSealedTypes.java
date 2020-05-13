@@ -59,7 +59,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed class <span class=\"typeNameLabel\">A</span>");
+                "public sealed class <span class=\"type-name-label\">A</span>");
     }
 
     @Test
@@ -75,7 +75,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed interface <span class=\"typeNameLabel\">A</span>");
+                "public sealed interface <span class=\"type-name-label\">A</span>");
     }
 
     @Test
@@ -92,10 +92,10 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed class <span class=\"typeNameLabel\">A</span>");
+                "public sealed class <span class=\"type-name-label\">A</span>");
 
         checkOutput("p/B.html", true,
-                "public non-sealed class <span class=\"typeNameLabel\">B</span>");
+                "public non-sealed class <span class=\"type-name-label\">B</span>");
     }
 
     @Test
@@ -112,10 +112,10 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed interface <span class=\"typeNameLabel\">A</span>");
+                "public sealed interface <span class=\"type-name-label\">A</span>");
 
         checkOutput("p/B.html", true,
-                "public non-sealed interface <span class=\"typeNameLabel\">B</span>");
+                "public non-sealed interface <span class=\"type-name-label\">B</span>");
     }
 
     @Test
@@ -132,10 +132,10 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed class <span class=\"typeNameLabel\">A</span>");
+                "public sealed class <span class=\"type-name-label\">A</span>");
 
         checkOutput("p/B.html", true,
-                "public abstract sealed class <span class=\"typeNameLabel\">B</span>");
+                "public abstract sealed class <span class=\"type-name-label\">B</span>");
     }
 
     @Test
@@ -152,10 +152,10 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "public sealed interface <span class=\"typeNameLabel\">A</span>");
+                "public sealed interface <span class=\"type-name-label\">A</span>");
 
         checkOutput("p/B.html", true,
-                "public sealed interface <span class=\"typeNameLabel\">B</span>");
+                "public sealed interface <span class=\"type-name-label\">B</span>");
     }
 
     @Test
@@ -172,7 +172,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a></pre>");
     }
@@ -193,7 +193,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a>, "
@@ -216,11 +216,11 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a> "
-		+ "<span class=\"permitsNote\">(not exhaustive)</span></pre>");
+		+ "<span class=\"permits-note\">(not exhaustive)</span></pre>");
     }
 
     // @Test // javac incorrectly rejects the source
@@ -241,7 +241,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a>, p.D</pre>");
@@ -265,11 +265,11 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a> "
-		+ "<span class=\"permitsNote\">(not exhaustive)</span></pre>");
+		+ "<span class=\"permits-note\">(not exhaustive)</span></pre>");
     }
 
     @Test
@@ -289,7 +289,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a>, "
@@ -313,7 +313,7 @@ public class TestSealedTypes extends JavadocTester {
         checkExit(Exit.OK);
 
         checkOutput("p/A.html", true,
-                "<pre>public sealed class <span class=\"typeNameLabel\">A</span>\n"
+                "<pre>public sealed class <span class=\"type-name-label\">A</span>\n"
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"A.B.html\" title=\"class in p\">A.B</a>, "
                 + "<a href=\"A.C.html\" title=\"class in p\">A.C</a>, "
