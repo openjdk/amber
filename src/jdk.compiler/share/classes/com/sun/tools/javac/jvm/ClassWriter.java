@@ -1536,12 +1536,7 @@ public class ClassWriter extends ClassFile {
             flags = ACC_MODULE;
         } else {
             flags = adjustFlags(c.flags() & ~DEFAULT);
-            if (c.isSealed()) {
-                flags &= ~SEALED;
-                if (c.permitted.isEmpty()) {
-                    flags |= FINAL;
-                }
-            }
+            if (c.isSealed()) flags &= ~SEALED;
             if ((flags & PROTECTED) != 0) flags |= PUBLIC;
             flags = flags & ClassFlags & ~STRICTFP;
             if ((flags & INTERFACE) == 0) flags |= ACC_SUPER;

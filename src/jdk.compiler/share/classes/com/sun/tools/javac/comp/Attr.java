@@ -869,7 +869,6 @@ public class Attr extends JCTree.Visitor {
      *  @param interfaceExpected true if only an interface is expected here.
      */
     Type attribBase(JCTree tree,
-                    ClassSymbol subType,
                     Env<AttrContext> env,
                     boolean classExpected,
                     boolean interfaceExpected,
@@ -877,10 +876,9 @@ public class Attr extends JCTree.Visitor {
         Type t = tree.type != null ?
             tree.type :
             attribType(tree, env);
-        return checkBase(t, subType, tree, env, classExpected, interfaceExpected, checkExtensible);
+        return checkBase(t, tree, env, classExpected, interfaceExpected, checkExtensible);
     }
     Type checkBase(Type t,
-                   ClassSymbol subType,
                    JCTree tree,
                    Env<AttrContext> env,
                    boolean classExpected,
@@ -4803,7 +4801,7 @@ public class Attr extends JCTree.Visitor {
         Set<Type> boundSet = new HashSet<>();
         if (bounds.nonEmpty()) {
             // accept class or interface or typevar as first bound.
-            bounds.head.type = checkBase(bounds.head.type, syms.unknownSymbol, bounds.head, env, false, false, false);
+            bounds.head.type = checkBase(bounds.head.type, bounds.head, env, false, false, false);
             boundSet.add(types.erasure(bounds.head.type));
             if (bounds.head.type.isErroneous()) {
                 return bounds.head.type;
@@ -4819,7 +4817,7 @@ public class Attr extends JCTree.Visitor {
                 // if first bound was a class or interface, accept only interfaces
                 // as further bounds.
                 for (JCExpression bound : bounds.tail) {
-                    bound.type = checkBase(bound.type, syms.unknownSymbol, bound, env, false, true, false);
+                    bound.type = checkBase(bound.type, bound, env, false, true, false);
                     if (bound.type.isErroneous()) {
                         bounds = List.of(bound);
                     }
@@ -5232,13 +5230,13 @@ public class Attr extends JCTree.Visitor {
             // Check that declarations in inner classes are not static (JLS 8.1.2)
             // Make an exception for static constants.
             if (c.owner.kind != PCK &&
-                    ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
-                    (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
+                ((c.flags() & STATIC) == 0 || c.name == names.empty) &&
+                (TreeInfo.flags(l.head) & (STATIC | INTERFACE)) != 0) {
                 Symbol sym = null;
                 if (l.head.hasTag(VARDEF)) sym = ((JCVariableDecl) l.head).sym;
                 if (sym == null ||
-                        sym.kind != VAR ||
-                        ((VarSymbol) sym).getConstValue() == null)
+                    sym.kind != VAR ||
+                    ((VarSymbol) sym).getConstValue() == null)
                     log.error(l.head.pos(), Errors.IclsCantHaveStaticDecl(c));
             }
         }
