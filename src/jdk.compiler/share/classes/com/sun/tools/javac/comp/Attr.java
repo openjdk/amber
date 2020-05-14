@@ -5026,25 +5026,25 @@ public class Attr extends JCTree.Visitor {
                     boolean isTypeVar = false;
                     if (subTypeSym.type.getTag() == TYPEVAR) {
                         isTypeVar = true; //error recovery
-                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.TypeVarListedInPermits);
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.TypeVarListedInPermits);
                     }
                     if (subTypeSym.isAnonymous() && !c.isEnum()) {
-                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
                     if (permittedTypes.contains(subTypeSym)) {
-                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.DuplicatedTypeInPermits(subTypeSym.type));
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.DuplicatedTypeInPermits(subTypeSym.type));
                     } else {
                         permittedTypes.add(subTypeSym);
                     }
                     if (sealedInUnnamed) {
                         if (subTypeSym.packge() != c.packge()) {
-                            log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
+                            log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                         }
                     } else if (subTypeSym.packge().modle != c.packge().modle) {
-                        log.error(TreeInfo.declarationFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
                     if (subTypeSym == c.type.tsym || types.isSuperType(subTypeSym.type, c.type)) {
-                        log.error(TreeInfo.declarationFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
                                 Errors.TypeListedInPermitsIsSameClassOrSupertype(subTypeSym == c.type.tsym ?
                                         Fragments.SameClass : Fragments.Supertype));
                     } else if (!isTypeVar) {
@@ -5052,7 +5052,7 @@ public class Attr extends JCTree.Visitor {
                                                     .stream()
                                                     .anyMatch(d -> d.tsym == c);
                         if (!thisIsASuper) {
-                            log.error(TreeInfo.declarationFor(subTypeSym, env.tree),
+                            log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree),
                                     Errors.SubtypeListedInPermitsDoesntExtendSealed(subTypeSym.type, c.type));
                         }
                     }
@@ -5067,20 +5067,20 @@ public class Attr extends JCTree.Visitor {
 
             if (sealedSupers.isEmpty()) {
                 if ((c.flags_field & Flags.NON_SEALED) != 0) {
-                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
+                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
                 }
             } else {
                 if (c.isLocal() && !c.isEnum()) {
-                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
+                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.LocalClassesCantExtendSealed);
                 }
 
                 for (ClassSymbol supertypeSym : sealedSupers) {
                     if (!supertypeSym.permitted.contains(c.type.tsym)) {
-                        log.error(TreeInfo.declarationFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertypeSym));
+                        log.error(TreeInfo.diagnosticPositionFor(c.type.tsym, env.tree), Errors.CantInheritFromSealed(supertypeSym));
                     }
                 }
                 if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
-                    log.error(TreeInfo.declarationFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
+                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
                 }
             }
 
