@@ -91,14 +91,14 @@ public class ListModuleDeps {
     @DataProvider(name = "jdkModules")
     public Object[][] jdkModules() {
         return new Object[][]{
-                {"jdk.compiler", new String[]{
-                        "java.base/jdk.internal",
-                        "java.base/jdk.internal.jmod",
-                        "java.base/jdk.internal.misc",
-                        "java.base/sun.reflect.annotation",
-                        "java.compiler",
-                }
-                },
+            {"jdk.compiler", new String[]{
+                                "java.base/jdk.internal",
+                                "java.base/jdk.internal.jmod",
+                                "java.base/jdk.internal.misc",
+                                "java.base/sun.reflect.annotation",
+                                "java.compiler",
+                             }
+            },
         };
     }
 

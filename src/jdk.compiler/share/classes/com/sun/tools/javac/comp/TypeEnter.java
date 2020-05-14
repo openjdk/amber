@@ -684,14 +684,14 @@ public class TypeEnter implements Completer {
 
             if (tree.extending != null) {
                 extending = clearTypeParams(tree.extending);
-                supertype = attr.attribBase(extending, sym, baseEnv, true, false, true);
+                supertype = attr.attribBase(extending, baseEnv, true, false, true);
                 if (supertype == syms.recordType) {
                     log.error(tree, Errors.InvalidSupertypeRecord(supertype.tsym));
                 }
             } else {
                 extending = null;
                 supertype = ((tree.mods.flags & Flags.ENUM) != 0)
-                ? attr.attribBase(enumBase(tree.pos, sym), sym, baseEnv,
+                ? attr.attribBase(enumBase(tree.pos, sym), baseEnv,
                                   true, false, false)
                 : (sym.fullname == names.java_lang_Object)
                 ? Type.noType
@@ -705,7 +705,7 @@ public class TypeEnter implements Completer {
             List<JCExpression> interfaceTrees = tree.implementing;
             for (JCExpression iface : interfaceTrees) {
                 iface = clearTypeParams(iface);
-                Type it = attr.attribBase(iface, sym, baseEnv, false, true, true);
+                Type it = attr.attribBase(iface, baseEnv, false, true, true);
                 if (it.hasTag(CLASS)) {
                     interfaces.append(it);
                     if (all_interfaces != null) all_interfaces.append(it);
@@ -721,7 +721,7 @@ public class TypeEnter implements Completer {
             List<JCExpression> permittedTrees = tree.permitting;
             for (JCExpression permitted : permittedTrees) {
                 permitted = clearTypeParams(permitted);
-                Type pt = attr.attribBase(permitted, sym, baseEnv, false, false, false);
+                Type pt = attr.attribBase(permitted, baseEnv, false, false, false);
                 permittedSubtypeSymbols.append(pt.tsym);
             }
 
@@ -1414,7 +1414,7 @@ public class TypeEnter implements Completer {
         MethodSymbol initSym = helper.constructorSymbol();
         ListBuffer<JCStatement> stats = new ListBuffer<>();
         if (helper.owner().type != syms.objectType) {
-        JCExpression meth;
+            JCExpression meth;
             if (!helper.enclosingType().hasTag(NONE)) {
                 meth = make.Select(make.Ident(initSym.params.head), names._super);
             } else {

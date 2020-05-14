@@ -26,7 +26,10 @@
 package com.sun.tools.javac.code;
 
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 
 import javax.lang.model.type.*;
 
@@ -39,7 +42,6 @@ import com.sun.tools.javac.jvm.ClassFile;
 import com.sun.tools.javac.jvm.PoolConstant;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
-import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.BoundKind.*;
 import static com.sun.tools.javac.code.Flags.*;

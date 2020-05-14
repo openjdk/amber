@@ -64,8 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.StringJoiner;
-import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -4225,12 +4223,12 @@ public final class Class<T> implements java.io.Serializable,
      * this class or interface
      *
      * @throws SecurityException
-     *         If any returned class is not the current class, and
-     *         if a security manager, <i>s</i>, is present and the caller's
-     *         class loader is not the same as or an ancestor of the class
-     *         loader for that returned class and invocation of {@link
-     *         SecurityManager#checkPackageAccess s.checkPackageAccess()}
-     *         denies access to the package of that returned class
+     * If any returned class is not the current class, and
+     * if a security manager, <i>s</i>, is present and the caller's
+     * class loader is not the same as or an ancestor of the class
+     * loader for that returned class and invocation of {@link
+     * SecurityManager#checkPackageAccess s.checkPackageAccess()}
+     * denies access to the package of that returned class
      *
      * @since 11
      * @see #getNestHost()
@@ -4371,7 +4369,7 @@ public final class Class<T> implements java.io.Serializable,
         Class<?> c = isArray() ? elementType() : this;
         return c.isHidden() ? Optional.empty()
                             : Optional.of(ClassDesc.ofDescriptor(descriptorString()));
-    }
+   }
 
     /**
      * Returns {@code true} if and only if the underlying class is a hidden class.
