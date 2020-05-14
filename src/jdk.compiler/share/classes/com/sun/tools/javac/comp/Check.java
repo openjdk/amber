@@ -160,6 +160,8 @@ public class Check {
 
         allowRecords = (!preview.isPreview(Feature.RECORDS) || preview.isEnabled()) &&
                 Feature.RECORDS.allowedInSource(source);
+        allowSealed = (!preview.isPreview(Feature.SEALED_CLASSES) || preview.isEnabled()) &&
+                Feature.SEALED_CLASSES.allowedInSource(source);
     }
 
     /** Character for synthetic names
@@ -194,6 +196,10 @@ public class Check {
     /** Are records allowed
      */
     private final boolean allowRecords;
+
+    /** Are sealed classes allowed
+     */
+    private final boolean allowSealed;
 
 /* *************************************************************************
  * Errors and Warnings
@@ -1343,7 +1349,7 @@ public class Check {
         JCClassDecl cdef = (JCClassDecl) tree;
         for (JCTree defs: cdef.defs) {
             defs.accept(sts);
-            if (sts.specialized) return SEALED;
+            if (sts.specialized) return allowSealed ? SEALED : 0;
         }
         return FINAL;
     }
