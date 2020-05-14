@@ -692,47 +692,11 @@ public class TreeInfo {
     /** Find the position for reporting an error about a symbol, where
      *  that symbol is defined somewhere in the given tree. */
     public static DiagnosticPosition diagnosticPositionFor(final Symbol sym, final JCTree tree) {
-        JCTree decl = declarationFor(sym, tree);
-        return ((decl != null) ? decl : tree).pos();
-    }
+        class DiagScanner extends DeclScanner {
+            DiagScanner(Symbol sym) {
+                super(sym);
+            }
 
-    /** Find the declaration for a symbol, where
-     *  that symbol is defined somewhere in the given tree. */
-    public static JCTree declarationFor(final Symbol sym, final JCTree tree) {
-        class DeclScanner extends TreeScanner {
-            JCTree result = null;
-            public void scan(JCTree tree) {
-                if (tree!=null && result==null)
-                    tree.accept(this);
-            }
-            public void visitTopLevel(JCCompilationUnit that) {
-                if (that.packge == sym) result = that;
-                else super.visitTopLevel(that);
-            }
-            public void visitModuleDef(JCModuleDecl that) {
-                if (that.sym == sym) result = that;
-                // no need to scan within module declaration
-            }
-            public void visitPackageDef(JCPackageDecl that) {
-                if (that.packge == sym) result = that;
-                else super.visitPackageDef(that);
-            }
-            public void visitClassDef(JCClassDecl that) {
-                if (that.sym == sym) result = that;
-                else super.visitClassDef(that);
-            }
-            public void visitMethodDef(JCMethodDecl that) {
-                if (that.sym == sym) result = that;
-                else super.visitMethodDef(that);
-            }
-            public void visitVarDef(JCVariableDecl that) {
-                if (that.sym == sym) result = that;
-                else super.visitVarDef(that);
-            }
-            public void visitTypeParameter(JCTypeParameter that) {
-                if (that.type != null && that.type.tsym == sym) result = that;
-                else super.visitTypeParameter(that);
-            }
             public void visitIdent(JCIdent that) {
                 if (that.sym == sym) result = that;
                 else super.visitIdent(that);
@@ -742,13 +706,64 @@ public class TreeInfo {
                 else super.visitSelect(that);
             }
         }
-        DeclScanner s = new DeclScanner();
+        DiagScanner s = new DiagScanner(sym);
         tree.accept(s);
-        return s.result;
+        JCTree decl = s.result;
+        return ((decl != null) ? decl : tree).pos();
     }
 
-    public static JCTree declarationFor(final Symbol sym, final List<? extends JCTree> trees) {
-        return trees.stream().map(t -> TreeInfo.declarationFor(sym, t)).filter(t -> t != null).findFirst().get();
+    public static DiagnosticPosition diagnosticPositionFor(final Symbol sym, final List<? extends JCTree> trees) {
+        return trees.stream().map(t -> TreeInfo.diagnosticPositionFor(sym, t)).filter(t -> t != null).findFirst().get();
+    }
+
+    private static class DeclScanner extends TreeScanner {
+        final Symbol sym;
+
+        DeclScanner(final Symbol sym) {
+            this.sym = sym;
+        }
+
+        JCTree result = null;
+        public void scan(JCTree tree) {
+            if (tree!=null && result==null)
+                tree.accept(this);
+        }
+        public void visitTopLevel(JCCompilationUnit that) {
+            if (that.packge == sym) result = that;
+            else super.visitTopLevel(that);
+        }
+        public void visitModuleDef(JCModuleDecl that) {
+            if (that.sym == sym) result = that;
+            // no need to scan within module declaration
+        }
+        public void visitPackageDef(JCPackageDecl that) {
+            if (that.packge == sym) result = that;
+            else super.visitPackageDef(that);
+        }
+        public void visitClassDef(JCClassDecl that) {
+            if (that.sym == sym) result = that;
+            else super.visitClassDef(that);
+        }
+        public void visitMethodDef(JCMethodDecl that) {
+            if (that.sym == sym) result = that;
+            else super.visitMethodDef(that);
+        }
+        public void visitVarDef(JCVariableDecl that) {
+            if (that.sym == sym) result = that;
+            else super.visitVarDef(that);
+        }
+        public void visitTypeParameter(JCTypeParameter that) {
+            if (that.type != null && that.type.tsym == sym) result = that;
+            else super.visitTypeParameter(that);
+        }
+    }
+
+    /** Find the declaration for a symbol, where
+     *  that symbol is defined somewhere in the given tree. */
+    public static JCTree declarationFor(final Symbol sym, final JCTree tree) {
+        DeclScanner s = new DeclScanner(sym);
+        tree.accept(s);
+        return s.result;
     }
 
     public static Env<AttrContext> scopeFor(JCTree node, JCCompilationUnit unit) {
