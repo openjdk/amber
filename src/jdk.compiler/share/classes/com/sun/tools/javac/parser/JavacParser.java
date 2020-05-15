@@ -2633,8 +2633,7 @@ public class JavacParser implements Parser {
                     Token tokenSealed = S.token(2);
                     if (token.endPos == tokenSub.pos &&
                             tokenSub.endPos == tokenSealed.pos &&
-                            tokenSealed.name() == names.sealed &&
-                            S.token(3).kind == TokenKind.CLASS) {
+                            tokenSealed.name() == names.sealed) {
                         checkSourceLevel(Feature.SEALED_CLASSES);
                         log.error(token.pos, Errors.SealedOrNonSealedLocalClassesNotAllowed);
                         nextToken();
