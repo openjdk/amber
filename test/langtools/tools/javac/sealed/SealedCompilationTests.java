@@ -28,8 +28,12 @@
  *
  * @test
  * @summary Negative compilation tests, and positive compilation (smoke) tests for sealed types
- * @library /lib/combo
- * @modules jdk.compiler/com.sun.tools.javac.util
+ * @library /lib/combo /tools/lib
+ * @modules
+ *     jdk.compiler/com.sun.tools.javac.util
+ *     jdk.compiler/com.sun.tools.javac.api
+ *     jdk.compiler/com.sun.tools.javac.main
+ * @build toolbox.ToolBox toolbox.JavacTask
  * @compile --enable-preview -source ${jdk.version} SealedCompilationTests.java
  * @run testng/othervm --enable-preview SealedCompilationTests
  */
@@ -37,6 +41,11 @@
 import java.lang.constant.ClassDesc;
 
 import java.io.File;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +58,15 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import tools.javac.combo.CompilationTestCase;
 
+import toolbox.ToolBox;
+import toolbox.JavacTask;
+import toolbox.Task;
+import toolbox.Task.OutputKind;
+
 @Test
 public class SealedCompilationTests extends CompilationTestCase {
+
+    ToolBox tb = new ToolBox();
 
     // @@@ When sealed types become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
@@ -464,6 +480,148 @@ public class SealedCompilationTests extends CompilationTestCase {
             Assert.check(!c.isSealed());
             Assert.check(c.getPermittedSubclasses().length == 0);
         }
+    }
+
+    public void testPrinting() throws Exception {
+        Path base = Paths.get("testPrinting");
+        Path src = base.resolve("src");
+        Path test = src.resolve("Test");
+
+        tb.writeJavaFiles(test,
+            """
+            sealed class SealedClassNoPermits {}
+
+            final class FinalSubClass extends SealedClassNoPermits {}
+
+            non-sealed class NonSealedSubClass extends SealedClassNoPermits {}
+
+            sealed interface SealedInterfaceNoPermits {}
+
+            non-sealed interface NonSealedInterface extends SealedInterfaceNoPermits {}
+
+            final class FinalSubClass2 implements SealedInterfaceNoPermits {}
+
+
+            sealed class SealedClassWithPermits permits SealedClassWithPermits, NonSealedSubClass2 {}
+
+            final class FinalSubClass3 extends SealedClassWithPermits {}
+
+            non-sealed class NonSealedSubClass2 extends SealedClassWithPermits {}
+
+            sealed interface SealedInterfaceWithPermits permits NonSealedInterface2, FinalSubClass4 {}
+
+            non-sealed interface NonSealedInterface2 extends SealedInterfaceWithPermits {}
+
+            final class FinalSubClass4 implements SealedInterfaceWithPermits {}
+
+
+            enum SealedEnum {
+                E {}
+            }
+
+            enum Enum {
+                E
+            }
+            """
+        );
+
+        Path out = base.resolve("out");
+
+        Files.createDirectories(out);
+
+        List<String> output = new JavacTask(tb)
+            .outdir(out)
+            .options("--enable-preview", "-source", Integer.toString(Runtime.version().feature()), "-Xprint")
+            .files(findJavaFiles(test))
+            .run()
+            .writeAll()
+            .getOutputLines(OutputKind.STDOUT);
+
+        List<String> expected = List.of(
+            "",
+            "sealed class SealedClassNoPermits permits FinalSubClass, NonSealedSubClass {",
+            "",
+            "  SealedClassNoPermits();",
+            "}",
+            "",
+            "final class FinalSubClass extends SealedClassNoPermits {",
+            "",
+            "  FinalSubClass();",
+            "}",
+            "",
+            "non-sealed class NonSealedSubClass extends SealedClassNoPermits {",
+            "",
+            "  NonSealedSubClass();",
+            "}",
+            "",
+            "sealed interface SealedInterfaceNoPermits permits NonSealedInterface, FinalSubClass2 {",
+            "}",
+            "",
+            "non-sealed interface NonSealedInterface extends SealedInterfaceNoPermits {",
+            "}",
+            "",
+            "final class FinalSubClass2 implements SealedInterfaceNoPermits {",
+            "",
+            "  FinalSubClass2();",
+            "}",
+            "",
+            "sealed class SealedClassWithPermits permits SealedClassWithPermits, NonSealedSubClass2 {",
+            "",
+            "  SealedClassWithPermits();",
+            "}",
+            "",
+            "final class FinalSubClass3 extends SealedClassWithPermits {",
+            "",
+            "  FinalSubClass3();",
+            "}",
+            "",
+            "non-sealed class NonSealedSubClass2 extends SealedClassWithPermits {",
+            "",
+            "  NonSealedSubClass2();",
+            "}",
+            "",
+            "sealed interface SealedInterfaceWithPermits permits NonSealedInterface2, FinalSubClass4 {",
+            "}",
+            "",
+            "non-sealed interface NonSealedInterface2 extends SealedInterfaceWithPermits {",
+            "}",
+            "",
+            "final class FinalSubClass4 implements SealedInterfaceWithPermits {",
+            "",
+            "  FinalSubClass4();",
+            "}",
+            "",
+            "sealed enum SealedEnum {",
+            "",
+            "  E;",
+            "",
+            "",
+            "  public static SealedEnum[] values();",
+            "",
+            "  public static SealedEnum valueOf(java.lang.String name);",
+            "",
+            "  private SealedEnum();",
+            "}",
+            "",
+            "enum Enum {",
+            "",
+            "  E;",
+            "",
+            "",
+            "  public static Enum[] values();",
+            "",
+            "  public static Enum valueOf(java.lang.String name);",
+            "",
+            "  private Enum();",
+            "}"
+        );
+        if (!output.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Expected: " + expected);
+        }
+    }
+
+    private Path[] findJavaFiles(Path... paths) throws IOException {
+        return tb.findJavaFiles(paths);
     }
 
     /*
