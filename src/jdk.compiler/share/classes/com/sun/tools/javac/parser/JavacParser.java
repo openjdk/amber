@@ -3763,7 +3763,7 @@ public class JavacParser implements Parser {
         if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
             checkSourceLevel(Feature.SEALED_CLASSES);
             if ((mods.flags & Flags.SEALED) == 0) {
-                log.error(token.pos, Errors.PermitsInNoSealedClass);
+                log.error(token.pos, Errors.InvalidPermitsClause(Fragments.ClassIsNotSealed));
             }
             nextToken();
             permitting = typeList();
@@ -3851,7 +3851,7 @@ public class JavacParser implements Parser {
         if (allowSealedTypes && token.kind == IDENTIFIER && token.name() == names.permits) {
             checkSourceLevel(Feature.SEALED_CLASSES);
             if ((mods.flags & Flags.SEALED) == 0) {
-                log.error(token.pos, Errors.PermitsInNoSealedClass);
+                log.error(token.pos, Errors.InvalidPermitsClause(Fragments.ClassIsNotSealed));
             }
             nextToken();
             permitting = typeList();

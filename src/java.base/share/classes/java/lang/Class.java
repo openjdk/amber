@@ -4439,5 +4439,4 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     private native String[] getPermittedSubclasses0();
-
 }

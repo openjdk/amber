@@ -21,8 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.type.listed.in.permits.is.same.class.or.supertype
-// key: compiler.misc.supertype
+// key: compiler.err.invalid.permits.clause
+// key: compiler.misc.must.not.be.supertype
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}

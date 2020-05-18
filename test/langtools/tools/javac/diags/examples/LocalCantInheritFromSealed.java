@@ -22,7 +22,7 @@
  */
 
 // key: compiler.err.local.classes.cant.extend.sealed
-// key: compiler.err.sealed.type.must.have.subtypes
+// key: compiler.err.sealed.class.must.have.subclasses
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}

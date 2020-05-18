@@ -5014,7 +5014,7 @@ public class Attr extends JCTree.Visitor {
                     !c.isEnum() &&
                     !c.isPermittedExplicit &&
                     c.permitted.isEmpty()) {
-                log.error(env.tree, Errors.SealedTypeMustHaveSubtypes);
+                log.error(env.tree, Errors.SealedClassMustHaveSubclasses);
             }
 
             if (c.isSealed()) {
@@ -5024,13 +5024,15 @@ public class Attr extends JCTree.Visitor {
                     boolean isTypeVar = false;
                     if (subTypeSym.type.getTag() == TYPEVAR) {
                         isTypeVar = true; //error recovery
-                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.TypeVarListedInPermits);
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree),
+                                Errors.InvalidPermitsClause(Fragments.IsATypeVariable(subTypeSym.type)));
                     }
                     if (subTypeSym.isAnonymous() && !c.isEnum()) {
                         log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
                     if (permittedTypes.contains(subTypeSym)) {
-                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.DuplicatedTypeInPermits(subTypeSym.type));
+                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree),
+                                Errors.InvalidPermitsClause(Fragments.IsDuplicated(subTypeSym.type)));
                     } else {
                         permittedTypes.add(subTypeSym);
                     }
@@ -5043,15 +5045,19 @@ public class Attr extends JCTree.Visitor {
                     }
                     if (subTypeSym == c.type.tsym || types.isSuperType(subTypeSym.type, c.type)) {
                         log.error(TreeInfo.diagnosticPositionFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
-                                Errors.TypeListedInPermitsIsSameClassOrSupertype(subTypeSym == c.type.tsym ?
-                                        Fragments.SameClass : Fragments.Supertype));
+                                Errors.InvalidPermitsClause(
+                                        subTypeSym == c.type.tsym ?
+                                                Fragments.MustNotBeSameClass(subTypeSym.type) :
+                                                Fragments.MustNotBeSupertype(subTypeSym.type)
+                                )
+                        );
                     } else if (!isTypeVar) {
                         boolean thisIsASuper = types.directSupertypes(subTypeSym.type)
                                                     .stream()
                                                     .anyMatch(d -> d.tsym == c);
                         if (!thisIsASuper) {
                             log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree),
-                                    Errors.SubtypeListedInPermitsDoesntExtendSealed(subTypeSym.type, c.type));
+                                    Errors.InvalidPermitsClause(Fragments.DoesntExtendSealed(subTypeSym.type)));
                         }
                     }
                 }

@@ -27,7 +27,7 @@
  * SealedCompilationTests
  *
  * @test
- * @summary Negative compilation tests, and positive compilation (smoke) tests for sealed types
+ * @summary Negative compilation tests, and positive compilation (smoke) tests for sealed classes
  * @library /lib/combo /tools/lib
  * @modules
  *     jdk.compiler/com.sun.tools.javac.util
@@ -68,7 +68,7 @@ public class SealedCompilationTests extends CompilationTestCase {
 
     ToolBox tb = new ToolBox();
 
-    // @@@ When sealed types become a permanent feature, we don't need these any more
+    // When sealed classes become a permanent feature, we don't need these any more
     private static String[] PREVIEW_OPTIONS = {"--enable-preview", "-source",
                                                Integer.toString(Runtime.version().feature())};
 
@@ -230,12 +230,12 @@ public class SealedCompilationTests extends CompilationTestCase {
     }
 
     public void testRejectPermitsInNonSealedClass() {
-        assertFail("compiler.err.permits.in.no.sealed.class",
+        assertFail("compiler.err.invalid.permits.clause",
                 "class SealedTest {\n" +
                 "    class NotSealed permits Sub {}\n" +
                 "    class Sub extends NotSealed {}\n" +
                 "}");
-        assertFail("compiler.err.permits.in.no.sealed.class",
+        assertFail("compiler.err.invalid.permits.clause",
                 "class SealedTest {\n" +
                 "    interface NotSealed permits Sub {}\n" +
                 "    class Sub implements NotSealed {}\n" +
@@ -243,18 +243,18 @@ public class SealedCompilationTests extends CompilationTestCase {
     }
 
     public void testTypeInPermitsIsSameClassOrSuper() {
-        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+        assertFail("compiler.err.invalid.permits.clause",
                 """
                 sealed class Sealed permits Sealed {}
                 """
                 );
-        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+        assertFail("compiler.err.invalid.permits.clause",
                 """
                 interface I {}
                 sealed class Sealed implements I permits I {}
                 """
                 );
-        assertFail("compiler.err.type.listed.in.permits.is.same.class.or.supertype",
+        assertFail("compiler.err.invalid.permits.clause",
                 """
                 interface I {}
                 interface I2 extends I {}
@@ -348,7 +348,7 @@ public class SealedCompilationTests extends CompilationTestCase {
                 """
                 sealed class C {}
                 """))
-            assertFail("compiler.err.sealed.type.must.have.subtypes", s);
+            assertFail("compiler.err.sealed.class.must.have.subclasses", s);
 
         for (String s : List.of(
                 """
@@ -434,7 +434,7 @@ public class SealedCompilationTests extends CompilationTestCase {
                 sealed class C permits T  {}
             }
             """)) {
-            assertFail("compiler.err.type.var.listed.in.permits", s);
+            assertFail("compiler.err.invalid.permits.clause", s);
         }
     }
 
@@ -445,7 +445,7 @@ public class SealedCompilationTests extends CompilationTestCase {
 
             final class Sub extends C {}
             """)) {
-            assertFail("compiler.err.duplicated.type.in.permits", s);
+            assertFail("compiler.err.invalid.permits.clause", s);
         }
     }
 
@@ -469,7 +469,7 @@ public class SealedCompilationTests extends CompilationTestCase {
             final class Sub2 extends Sub1 {}
             """
             )) {
-            assertFail("compiler.err.subtype.listed.in.permits.doesnt.extend.sealed", s);
+            assertFail("compiler.err.invalid.permits.clause", s);
         }
     }
 
@@ -623,42 +623,4 @@ public class SealedCompilationTests extends CompilationTestCase {
     private Path[] findJavaFiles(Path... paths) throws IOException {
         return tb.findJavaFiles(paths);
     }
-
-    /*
-    public void testCheckPermittedSubtypesAttr() {
-        File dir = assertOK(true,
-            """
-            sealed class Sealed1 permits Sub1 {}
-            final class Sub1 extends Sealed1 {}
-
-            sealed interface SealedI1 permits Sub2 {}
-            final class Sub2 implements SealedI1 {}
-
-            sealed class Sealed2 {}
-            final class Sub3 extends Sealed2 {}
-            final class Sub4 extends Sealed2 {}
-
-            sealed interface SealedI2 {}
-            final class Sub5 implements SealedI2 {}
-            non-sealed interface Int1 extends SealedI2 {}
-            non-sealed class Sub6 implements SealedI2 {}
-
-            sealed class Sealed3 permits Sub7 { }
-            final class Sub7 extends Sealed3 { }
-            """
-        );
-        for (final File fileEntry : dir.listFiles()) {
-            if (fileEntry.getName().equals("Sealed1.class")) {
-                System.out.println("-------------------------  class found");
-                assertSealed(Sealed1.class, Set.of(TEST_CLASS.nested("Sub1")));
-            }
-        }
-    }
-
-    private void assertSealed(Class<?> c, Set<ClassDesc> expectedPermits) {
-        assertTrue(c.isSealed());
-        assertEquals(c.getPermittedSubtypes().length, expectedPermits.size());
-        assertEquals(Set.of(c.getPermittedSubtypes()), expectedPermits);
-    }
-    */
 }

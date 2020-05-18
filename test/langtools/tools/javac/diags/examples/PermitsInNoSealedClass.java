@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.permits.in.no.sealed.class
+// key: compiler.err.invalid.permits.clause
+// key: compiler.misc.class.is.not.sealed
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}
