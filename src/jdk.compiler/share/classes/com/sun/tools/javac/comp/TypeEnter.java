@@ -60,8 +60,6 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.BOT;
-import com.sun.tools.javac.comp.AttrContext;
-import com.sun.tools.javac.comp.Env;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import com.sun.tools.javac.util.Dependencies.CompletionCause;

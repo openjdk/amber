@@ -396,7 +396,6 @@ public class Flags {
                                 SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
         ExtendedStandardFlags       = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
-        ExtendedLocalClassFlags     = (long)LocalClassFlags | SEALED | NON_SEALED,
         ExtendedMemberClassFlags    = (long)MemberClassFlags | SEALED | NON_SEALED,
         ExtendedClassFlags          = (long)ClassFlags | SEALED | NON_SEALED,
         ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED,
