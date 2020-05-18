@@ -5014,7 +5014,7 @@ public class Attr extends JCTree.Visitor {
                     !c.isEnum() &&
                     !c.isPermittedExplicit &&
                     c.permitted.isEmpty()) {
-                log.error(env.tree, Errors.SealedClassMustHaveSubclasses);
+                log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.SealedClassMustHaveSubclasses);
             }
 
             if (c.isSealed()) {

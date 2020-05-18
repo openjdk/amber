@@ -1217,7 +1217,7 @@ public class Check {
             break;
         case TYP:
             if (sym.isLocal()) {
-                mask = (flags & RECORD) != 0 ? LocalRecordFlags : ExtendedLocalClassFlags;
+                mask = (flags & RECORD) != 0 ? LocalRecordFlags : LocalClassFlags;
                 if ((flags & RECORD) != 0) {
                     implicit = STATIC;
                     if (sym.owner.kind == TYP) {
