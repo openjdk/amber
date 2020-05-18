@@ -529,7 +529,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sealed.java:1:52: compiler.err.subtype.listed.in.permits.doesnt.extend.sealed: pkg.Sub, pkg.Sealed",
+                "Sealed.java:1:52: compiler.err.invalid.permits.clause: (compiler.misc.doesnt.extend.sealed: pkg.Sub)",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Found: " + error);
@@ -560,7 +560,7 @@ public class SealedDiffConfigurationsTest extends TestRunner {
                 .getOutputLines(OutputKind.DIRECT);
 
         List<String> expected = List.of(
-                "Sealed.java:1:66: compiler.err.subtype.listed.in.permits.doesnt.extend.sealed: pkg.Sub2, pkg.Sealed",
+                "Sealed.java:1:66: compiler.err.invalid.permits.clause: (compiler.misc.doesnt.extend.sealed: pkg.Sub2)",
                 "1 error");
         if (!error.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Found: " + error);

@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.type.var.listed.in.permits
+// key: compiler.err.invalid.permits.clause
+// key: compiler.misc.is.a.type.variable
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}

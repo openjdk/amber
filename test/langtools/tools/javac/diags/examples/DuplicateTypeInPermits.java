@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.duplicated.type.in.permits
+// key: compiler.err.invalid.permits.clause
+// key: compiler.misc.is.duplicated
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}

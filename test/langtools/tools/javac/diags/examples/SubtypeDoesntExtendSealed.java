@@ -21,7 +21,8 @@
  * questions.
  */
 
-// key: compiler.err.subtype.listed.in.permits.doesnt.extend.sealed
+// key: compiler.err.invalid.permits.clause
+// key: compiler.misc.doesnt.extend.sealed
 // key: compiler.note.preview.filename
 // key: compiler.note.preview.recompile
 // options: --enable-preview -source ${jdk.version}

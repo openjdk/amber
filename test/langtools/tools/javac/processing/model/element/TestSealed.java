@@ -24,7 +24,7 @@
 /*
  * @test
  * @bug 8227046
- * @summary Test basic modeling of a sealed type
+ * @summary Test basic modeling for sealed classes
  * @library /tools/lib /tools/javac/lib
  * @modules
  *     jdk.compiler/com.sun.tools.javac.api
