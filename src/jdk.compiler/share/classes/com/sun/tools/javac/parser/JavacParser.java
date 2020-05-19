@@ -2610,7 +2610,9 @@ public class JavacParser implements Parser {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case ENUM:
-            log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
+            if (!allowRecords) {
+                log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.LocalEnum);
+            }
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case IDENTIFIER:
@@ -3932,7 +3934,10 @@ public class JavacParser implements Parser {
     }
 
     private EnumeratorEstimate estimateEnumeratorOrMember(Name enumName) {
-        if (token.kind == TokenKind.IDENTIFIER && token.name() != enumName) {
+        // if we are seeing a record declaration inside of an enum we want the same error message as expected for a
+        // let's say an interface declaration inside an enum
+        if (token.kind == TokenKind.IDENTIFIER && token.name() != enumName &&
+                (!allowRecords || !isRecordStart())) {
             Token next = S.token(1);
             switch (next.kind) {
                 case LPAREN: case LBRACE: case COMMA: case SEMI:
@@ -3941,6 +3946,11 @@ public class JavacParser implements Parser {
         }
         switch (token.kind) {
             case IDENTIFIER: case MONKEYS_AT: case LT:
+                if (token.kind == IDENTIFIER) {
+                    if (allowRecords && isRecordStart()) {
+                        return EnumeratorEstimate.MEMBER;
+                    }
+                }
                 return EnumeratorEstimate.UNKNOWN;
             default:
                 return EnumeratorEstimate.MEMBER;
