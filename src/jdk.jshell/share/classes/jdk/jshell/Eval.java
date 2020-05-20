@@ -1215,7 +1215,7 @@ class Eval {
     }
 
     private DiagList modifierDiagnostics(ModifiersTree modtree,
-                                         final TreeDissector dis, boolean isAbstractProhibited) {
+                                         final TreeDissector dis, boolean isNotClass) {
 
         List<Modifier> list = new ArrayList<>();
         boolean fatal = false;
@@ -1227,7 +1227,7 @@ class Eval {
                     fatal = true;
                     break;
                 case ABSTRACT:
-                    if (isAbstractProhibited) {
+                    if (isNotClass) {
                         list.add(mod);
                         fatal = true;
                     }
@@ -1237,8 +1237,14 @@ class Eval {
                 case PRIVATE:
                     // quietly ignore, user cannot see effects one way or the other
                     break;
-                case STATIC:
                 case FINAL:
+                    if (isNotClass) {
+                        //OK to declare a class final, to aid sealed classes
+                        list.add(mod);
+                        break;
+                    }
+                    break;
+                case STATIC:
                     list.add(mod);
                     break;
             }
