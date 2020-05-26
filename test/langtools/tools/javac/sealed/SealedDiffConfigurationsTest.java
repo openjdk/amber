@@ -568,6 +568,50 @@ public class SealedDiffConfigurationsTest extends TestRunner {
     }
 
     @Test
+    public void testDifferentModuleNeg(Path base) throws Exception {
+        // check that a subclass in one module can't extend a sealed class in another module
+        Path src = base.resolve("src");
+        Path src_m1 = src.resolve("mSealed");
+        tb.writeJavaFiles(src_m1,
+                "module mSealed { exports a; }",
+                "package a; public sealed class Base permits b.Impl {}"
+        );
+
+        Path src_m2 = src.resolve("mSub");
+        tb.writeJavaFiles(src_m2,
+                "module mSub { exports b; requires mSealed; }",
+                "package b; public final class Impl extends a.Base {}"
+        );
+
+        Path classes = base.resolve("classes");
+        tb.createDirectories(classes);
+
+
+        List<String> error =
+            new JavacTask(tb)
+                .options("-XDrawDiagnostics",
+                        "--module-source-path", src.toString(),
+                        "--add-reads", "mSealed=mSub",
+                        "--enable-preview",
+                        "-source", Integer.toString(Runtime.version().feature()))
+                .outdir(classes)
+                .files(findJavaFiles(src))
+                .run(Task.Expect.FAIL)
+                .writeAll()
+                .getOutputLines(OutputKind.DIRECT);
+
+        List<String> expected = List.of(
+            "Base.java:1:46: compiler.err.cant.inherit.from.sealed: a.Base",
+            "- compiler.note.preview.filename: Base.java",
+            "- compiler.note.preview.recompile",
+            "1 error"
+        );
+        if (!error.containsAll(expected)) {
+            throw new AssertionError("Expected output not found. Found: " + error);
+        }
+    }
+
+    @Test
     public void testSeparateCompilation(Path base) throws Exception {
         Path src = base.resolve("src");
         Path src_m = src.resolve("m");

@@ -2928,10 +2928,6 @@ public class Attr extends JCTree.Visitor {
             Type currentTarget = targetInfo.target;
             Type lambdaType = targetInfo.descriptor;
 
-            if (currentTarget.tsym != null && ((ClassSymbol)currentTarget.tsym).isSealed()) {
-                log.error(that, Errors.CantInheritFromSealed(currentTarget.tsym));
-            }
-
             if (currentTarget.isErroneous()) {
                 result = that.type = currentTarget;
                 return;
@@ -5052,8 +5048,11 @@ public class Attr extends JCTree.Visitor {
                         log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree), Errors.CantInheritFromSealed(c));
                     }
                     if (permittedTypes.contains(subTypeSym)) {
-                        log.error(TreeInfo.diagnosticPositionFor(subTypeSym, env.tree),
-                                Errors.InvalidPermitsClause(Fragments.IsDuplicated(subTypeSym.type)));
+                        DiagnosticPosition pos =
+                                env.enclClass.permitting.stream()
+                                        .filter(permittedExpr -> TreeInfo.diagnosticPositionFor(subTypeSym, permittedExpr, true) != null)
+                                        .limit(2).collect(List.collector()).get(1);
+                        log.error(pos, Errors.InvalidPermitsClause(Fragments.IsDuplicated(subTypeSym.type)));
                     } else {
                         permittedTypes.add(subTypeSym);
                     }
@@ -5068,7 +5067,7 @@ public class Attr extends JCTree.Visitor {
                         log.error(TreeInfo.diagnosticPositionFor(subTypeSym, ((JCClassDecl)env.tree).permitting),
                                 Errors.InvalidPermitsClause(
                                         subTypeSym == c.type.tsym ?
-                                                Fragments.MustNotBeSameClass(subTypeSym.type) :
+                                                Fragments.MustNotBeSameClass :
                                                 Fragments.MustNotBeSupertype(subTypeSym.type)
                                 )
                         );
@@ -5092,7 +5091,7 @@ public class Attr extends JCTree.Visitor {
 
             if (sealedSupers.isEmpty()) {
                 if ((c.flags_field & Flags.NON_SEALED) != 0) {
-                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
+                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype(c));
                 }
             } else {
                 if (c.isLocal() && !c.isEnum()) {
