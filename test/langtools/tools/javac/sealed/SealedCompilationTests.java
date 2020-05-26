@@ -153,14 +153,14 @@ public class SealedCompilationTests extends CompilationTestCase {
         for (String shell : SHELLS)
             for (String b : List.of(CC1, CC2, CC3, AC1, AC2, AC3, I1, I11, I12))
                 for (String p : List.of("", "permits Sub"))
-                    for (String m : List.of("final", "non-sealed"))
+                    for (String m : List.of("final", "non-sealed", "non\u002Dsealed"))
                         assertOK(shell, b, p, m);
 
 
         // Same for type with two subtypes
         for (String shell : SHELLS)
             for (String p : List.of("", "permits Sub1, Sub2"))
-                for (String m : List.of("final", "non-sealed"))
+                for (String m : List.of("final", "non-sealed", "non\u002Dsealed"))
                     assertOK(shell, expandMarkers(I2, p, m, m));
 
         // Expect failure if there is no explicit final / sealed / non-sealed
@@ -224,10 +224,41 @@ public class SealedCompilationTests extends CompilationTestCase {
                 "class SealedTest { int sealed = 0; int non = 0; int ns = non-sealed; }",
                 "class SealedTest { void test(String sealed) { } }",
                 "class SealedTest { void sealed(String sealed) { } }",
-                "class SealedTest { void test() { String sealed = null; } }",
-                "class sealed {}")) {
+                "class SealedTest { void test() { String sealed = null; } }"
+        )) {
             assertOK(s);
         }
+
+        for (String s : List.of(
+                "class sealed {}",
+                "interface sealed {}",
+                "@interface sealed {}"
+        )) {
+            assertFail("compiler.err.restricted.type.not.allowed", s);
+        }
+
+        for (String s : List.of(
+                "class Foo { sealed m() {} }",
+                "class Foo { sealed i; }",
+                "class Foo { void m(sealed i) {} }"
+                )) {
+            assertFail("compiler.err.restricted.type.not.allowed.here", s);
+        }
+
+        String[] testOptions = {/* no options */};
+        setCompileOptions(testOptions);
+        // now testing with preview disabled
+        for (String s : List.of(
+                "sealed class S {}",
+                "class Outer { sealed class S {} }",
+                "class Outer { void m() { sealed class S {} } }",
+                "non-sealed class S {}",
+                "class Outer { non-sealed class S {} }",
+                "class Outer { void m() { non-sealed class S {} } }"
+        )) {
+            assertFail("compiler.err.preview.feature.disabled.plural", s);
+        }
+        setCompileOptions(PREVIEW_OPTIONS);
     }
 
     public void testRejectPermitsInNonSealedClass() {
@@ -284,27 +315,63 @@ public class SealedCompilationTests extends CompilationTestCase {
             assertFail("compiler.err.illegal.combination.of.modifiers", s);
     }
 
-    public void testAnonymousAndLambdaCantExtendSealed() {
+    public void testAnonymous_FunctionalExpr_and_Sealed() {
         for (String s : List.of(
                 """
-                sealed interface I1 extends Runnable {
-                    public static I1 i = () -> {};
+                sealed interface I extends Runnable {
+                    public static I i = () -> {};
+                }
+
+                final class Sub implements I {}
+                """,
+                """
+                sealed interface I extends Runnable {}
+
+                final class Sub implements I {
+                    I a = Sub::action;
+                    static void action() {}
                 }
                 """
                 ))
-            assertFail("compiler.err.cant.inherit.from.sealed", s);
+            assertFail("compiler.err.prob.found.req", s);
 
         for (String s : List.of(
                 """
-                sealed interface I2 extends Runnable {
-                    public static void foo() { new I2() { public void run() { } }; }
+                @FunctionalInterface
+                sealed interface Action {
+                    void doAction();
                 }
-                final class C implements I2 {
+
+                final class C implements Action {
+                    public void doAction() {}
+                }
+                """
+                ))
+            assertFail("compiler.err.bad.functional.intf.anno.1", s);
+
+        for (String s : List.of(
+                """
+                sealed interface I extends Runnable {
+                    public static I i = new I() { public void run() { } };
+                }
+                final class C implements I {
                     @Override public void run() {}
                 }
                 """
                 ))
-                assertFail("compiler.err.local.classes.cant.extend.sealed", s);
+            assertFail("compiler.err.local.classes.cant.extend.sealed", s);
+
+        for (String s : List.of(
+                """
+                sealed interface I extends Runnable {
+                    public static void foo() { new I() { public void run() { } }; }
+                }
+                final class C implements I {
+                    @Override public void run() {}
+                }
+                """
+                ))
+        assertFail("compiler.err.local.classes.cant.extend.sealed", s);
     }
 
     public void testNoLocalSealedClasses() {
@@ -424,7 +491,7 @@ public class SealedCompilationTests extends CompilationTestCase {
             sealed class C permits {}
             non-sealed class Sub extends C {}
             """)) {
-            assertFail("compiler.err.illegal.start.of.type", s);
+            assertFail("compiler.err.expected", s);
         }
     }
 
@@ -631,6 +698,44 @@ public class SealedCompilationTests extends CompilationTestCase {
                    """
                    non-sealed class C extends Undefined {}
                    """);
+    }
+
+    public void testIllFormedNonSealed() {
+        for (String s : List.of(
+            """
+            sealed class C permits Sub {}
+            non -sealed class Sub extends C {}
+            """,
+            """
+            sealed class C permits Sub {}
+            non sealed class Sub extends C {}
+            """,
+            """
+            sealed class C permits Sub {}
+            non - sealed class Sub extends C {}
+            """,
+            """
+            sealed class C permits Sub {}
+            non/**/sealed class Sub extends C {}
+            """
+            )) {
+            assertFail("compiler.err.expected4", s);
+        }
+    }
+
+    public void testParameterizedPermitted() {
+        for (String s : List.of(
+            """
+            sealed class C<T> permits Sub<T> {}
+            final class Sub<T> extends C<T> {}
+            """,
+            """
+            sealed class C permits Sub<String> {}
+            final class Sub<T> extends C {}
+            """
+            )) {
+            assertFail("compiler.err.expected", s);
+        }
     }
 
     private Path[] findJavaFiles(Path... paths) throws IOException {

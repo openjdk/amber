@@ -692,6 +692,10 @@ public class TreeInfo {
     /** Find the position for reporting an error about a symbol, where
      *  that symbol is defined somewhere in the given tree. */
     public static DiagnosticPosition diagnosticPositionFor(final Symbol sym, final JCTree tree) {
+        return diagnosticPositionFor(sym, tree, false);
+    }
+
+    public static DiagnosticPosition diagnosticPositionFor(final Symbol sym, final JCTree tree, boolean returnNullIfNotFound) {
         class DiagScanner extends DeclScanner {
             DiagScanner(Symbol sym) {
                 super(sym);
@@ -709,6 +713,7 @@ public class TreeInfo {
         DiagScanner s = new DiagScanner(sym);
         tree.accept(s);
         JCTree decl = s.result;
+        if (decl == null && returnNullIfNotFound) { return null; }
         return ((decl != null) ? decl : tree).pos();
     }
 

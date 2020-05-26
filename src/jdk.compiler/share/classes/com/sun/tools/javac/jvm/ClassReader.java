@@ -1209,7 +1209,7 @@ public class ClassReader {
                     bp = bp + attrLen;
                 }
             },
-            new AttributeReader(names.PermittedSubclasses, V58, CLASS_ATTRIBUTE) {
+            new AttributeReader(names.PermittedSubclasses, V59, CLASS_ATTRIBUTE) {
                 @Override
                 protected boolean accepts(AttributeKind kind) {
                     return super.accepts(kind) && allowSealedTypes;
