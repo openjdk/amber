@@ -5071,7 +5071,12 @@ public class Attr extends JCTree.Visitor {
 
             if (sealedSupers.isEmpty()) {
                 if ((c.flags_field & Flags.NON_SEALED) != 0) {
-                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
+                    boolean hasErrorSuper = types.directSupertypes(c.type)
+                                                 .stream()
+                                                 .anyMatch(s -> s.tsym.kind == Kind.ERR);
+                    if (!hasErrorSuper) {
+                        log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedWithNoSealedSupertype);
+                    }
                 }
             } else {
                 if (c.isLocal() && !c.isEnum()) {

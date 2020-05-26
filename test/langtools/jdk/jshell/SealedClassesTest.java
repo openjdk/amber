@@ -23,7 +23,6 @@
 
 /*
  * @test
- * @bug 9999999
  * @summary Test sealed class in jshell
  * @modules jdk.jshell
  * @build KullaTesting TestingInputStream ExpectedDiagnostic
@@ -50,6 +49,18 @@ public class SealedClassesTest extends KullaTesting {
         assertEval("final class I extends B {}",
                    added(VALID),
                    ste(base, Status.RECOVERABLE_NOT_DEFINED, Status.VALID, true, null));
+        assertEval("new I()");
+    }
+
+    public void testNonSealed() {
+        TypeDeclSnippet base = classKey(
+                assertEval("sealed class B permits I {}",
+                           ste(MAIN_SNIPPET, Status.NONEXISTENT, Status.RECOVERABLE_NOT_DEFINED, false, null)));
+        assertEval("non-sealed class I extends B {}",
+                   added(VALID),
+                   ste(base, Status.RECOVERABLE_NOT_DEFINED, Status.VALID, true, null));
+        assertEval("class I2 extends I {}");
+        assertEval("new I2()");
     }
 
     @BeforeMethod

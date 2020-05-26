@@ -55,6 +55,7 @@ import com.sun.tools.javac.util.Assert;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 import org.testng.annotations.Test;
 import tools.javac.combo.CompilationTestCase;
 
@@ -618,6 +619,18 @@ public class SealedCompilationTests extends CompilationTestCase {
         if (!output.containsAll(expected)) {
             throw new AssertionError("Expected output not found. Expected: " + expected);
         }
+    }
+
+    public void testNonSealedErroneousSuper() {
+        assertFail("compiler.err.cant.resolve",
+                   d -> {
+                       if (diags.keys().size() != 1) {
+                           fail("Unexpected errors: " + diags.keys());
+                       }
+                   },
+                   """
+                   non-sealed class C extends Undefined {}
+                   """);
     }
 
     private Path[] findJavaFiles(Path... paths) throws IOException {
