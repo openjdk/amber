@@ -21,4 +21,4 @@
  * questions.
  */
 
-final public class classFour extends Host { }
+final public class ClassFour extends Host { }

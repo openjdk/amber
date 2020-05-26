@@ -21,4 +21,9 @@
  * questions.
  */
 
-final public class classOne extends Host { }
+// Small class used by SealedModuleTest
+package sealedP2;
+
+public final class C2 extends sealedP1.SuperClass {
+    public void method2() { }
+}

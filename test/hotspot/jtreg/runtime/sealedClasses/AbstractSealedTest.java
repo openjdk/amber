@@ -21,9 +21,25 @@
  * questions.
  */
 
-// Small class used by SealedModuleTest
-package sealedP3;
+/*
+ * @test
+ * @bug 8225056
+ * @compile --enable-preview -source ${jdk.version} AbstractSealedTest.java
+ * @run main/othervm --enable-preview AbstractSealedTest
+ */
 
-public final class c3 extends sealedP1.superClass {
-    public void method3() { }
+// Test that a sealed class can be abstract
+public class AbstractSealedTest {
+
+    abstract sealed class AbstractShape permits Circle {
+        abstract void draw();
+    }
+
+    final class Circle extends AbstractShape {
+        void draw() {}
+    }
+
+    Circle circle = new Circle();
+
+    public static void main(String... args) { }
 }

@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8225056
  * @library /test/lib
  * @summary Test that a class that is a sealed class can be redefined.
  * @modules java.base/jdk.internal.misc

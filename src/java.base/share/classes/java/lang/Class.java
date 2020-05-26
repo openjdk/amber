@@ -3106,6 +3106,7 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
         volatile Class<?>[] interfaces;
+        volatile ClassDesc[] permittedSubclasses;
 
         // Cached names
         String simpleName;
@@ -4391,28 +4392,41 @@ public final class Class<T> implements java.io.Serializable,
      *           features of the Java language.}
      *
      * Returns an array containing {@code ClassDesc} objects representing all the
-     * permitted subclasses of this {@linkplain Class} if it is sealed. Returns an empty array if this
-     * {@linkplain Class} is not sealed.
+     * permitted subclasses of this {@code Class} if it is sealed. Returns an empty array if this
+     * {@code Class} is not sealed.
      *
      * @return an array of class descriptors of all the permitted subclasses of this class
-     * @throws IllegalArgumentException if a class descriptor is not in the correct format
      *
      * @jls 8.1 Class Declarations
      * @jls 9.1 Interface Declarations
      * @since 15
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
-    public ClassDesc[] getPermittedSubclasses() {
-        String[] descriptors = getPermittedSubclasses0();
-        if (descriptors == null || descriptors.length == 0) {
-            return new ClassDesc[0];
+    public ClassDesc[] permittedSubclasses() {
+        ReflectionData<T> rd = reflectionData();
+        if (rd.permittedSubclasses != null) {
+            return rd.permittedSubclasses;
         }
-        ClassDesc[] constants = new ClassDesc[descriptors.length];
+
+        if (isArray() || isPrimitive()) {
+            rd.permittedSubclasses = new ClassDesc[0];
+            return rd.permittedSubclasses;
+        }
+        String[] subclassNames = getPermittedSubclasses0();
+        if (subclassNames.length == 0) {
+            rd.permittedSubclasses = new ClassDesc[0];
+            return rd.permittedSubclasses;
+        }
+        ClassDesc[] constants = new ClassDesc[subclassNames.length];
         int i = 0;
-        for (String descriptor : descriptors) {
-            ClassDesc cd = ClassDesc.of(descriptor.replace('/', '.'));
-            constants[i++] = cd;
+        for (String subclassName : subclassNames) {
+            try {
+                constants[i++] = ClassDesc.of(subclassName.replace('/', '.'));
+            } catch (IllegalArgumentException iae) {
+                throw new InternalError("Invalid type in permitted subclasses information: " + subclassName, iae);
+            }
         }
+        rd.permittedSubclasses = constants;
         return constants;
     }
 
@@ -4435,7 +4449,7 @@ public final class Class<T> implements java.io.Serializable,
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
     @SuppressWarnings("preview")
     public boolean isSealed() {
-        return getPermittedSubclasses().length != 0;
+        return permittedSubclasses().length != 0;
     }
 
     private native String[] getPermittedSubclasses0();

@@ -23,8 +23,9 @@
 
 /*
  * @test
- * @compile Pkg/sealedInterface.jcod Pkg/notPermitted.jcod
- * @compile --enable-preview -source ${jdk.version} Pkg/Permitted.java otherPkg/wrongPackage.java
+ * @bug 8225056
+ * @compile Pkg/SealedInterface.jcod Pkg/NotPermitted.jcod
+ * @compile --enable-preview -source ${jdk.version} Pkg/Permitted.java otherPkg/WrongPackage.java
  * @run main/othervm --enable-preview SealedUnnamedModuleIntfTest
  */
 
@@ -32,9 +33,9 @@ public class SealedUnnamedModuleIntfTest {
 
     public static void main(String args[]) throws Throwable {
 
-        // Classes Permitted, notPermitted, and wrongPackage all try to implement
-        // sealed interface sealedInterface.
-        // Interface sealedInterface permits classes Permitted and wrongPackage.
+        // Classes Permitted, NotPermitted, and WrongPackage all try to implement
+        // sealed interface SealedInterface.
+        // Interface SealedInterface permits classes Permitted and WrongPackage.
 
         // Test permitted subclass and superclass in unnamed module and same package.
         // This should succeed.
@@ -43,7 +44,7 @@ public class SealedUnnamedModuleIntfTest {
         // Test unpermitted subclass and superclass in unnamed module and same package.
         // This should throw an exception.
         try {
-            Class notPermitted = Class.forName("Pkg.notPermitted");
+            Class notPermitted = Class.forName("Pkg.NotPermitted");
             throw new RuntimeException("Expected VerifyError exception not thrown");
         } catch (VerifyError e) {
             if (!e.getMessage().contains("cannot implement sealed interface")) {
@@ -52,13 +53,7 @@ public class SealedUnnamedModuleIntfTest {
         }
 
         // Test both permitted subclass and superclass in unnamed module but in different
-        // packages.  This should throw an exception.
-        try {
-            Class wrongPkg = Class.forName("otherPkg.wrongPackage");
-        } catch (VerifyError e) {
-            if (!e.getMessage().contains("cannot implement sealed interface")) {
-                throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
-            }
-        }
+        // packages.  This should not throw an exception.
+        Class wrongPkg = Class.forName("otherPkg.WrongPackage");
     }
 }

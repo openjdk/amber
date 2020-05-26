@@ -500,7 +500,7 @@ public class ClassReader {
         // - The offset of the NestMembers attribute, or 0.
         int nestMembersOffset = 0;
         // - The offset of the PermittedSubclasses attribute, or 0
-        int permittedSubtypesOffset = 0;
+        int permittedSubclassesOffset = 0;
         // - The offset of the Record attribute, or 0.
         int recordOffset = 0;
         // - The non standard attributes (linked with their {@link Attribute#nextAttribute} field).
@@ -526,7 +526,7 @@ public class ClassReader {
             } else if (Constants.NEST_MEMBERS.equals(attributeName)) {
                 nestMembersOffset = currentAttributeOffset;
             } else if (Constants.PERMITTED_SUBCLASSES.equals(attributeName)) {
-                permittedSubtypesOffset = currentAttributeOffset;
+                permittedSubclassesOffset = currentAttributeOffset;
             } else if (Constants.SIGNATURE.equals(attributeName)) {
                 signature = readUTF8(currentAttributeOffset, charBuffer);
             } else if (Constants.RUNTIME_VISIBLE_ANNOTATIONS.equals(attributeName)) {
@@ -705,13 +705,13 @@ public class ClassReader {
         }
 
         // Visit the PermittedSubclasses attribute.
-        if (permittedSubtypesOffset != 0) {
-            int numberOfPermittedSubtypes = readUnsignedShort(permittedSubtypesOffset);
-            int currentPermittedSubtypeOffset = permittedSubtypesOffset + 2;
-            while (numberOfPermittedSubtypes-- > 0) {
-                classVisitor.visitPermittedSubtypeExperimental(
-                        readClass(currentPermittedSubtypeOffset, charBuffer));
-                currentPermittedSubtypeOffset += 2;
+        if (permittedSubclassesOffset != 0) {
+            int numberOfPermittedSubclasses = readUnsignedShort(permittedSubclassesOffset);
+            int currentPermittedSubclassOffset = permittedSubclassesOffset + 2;
+            while (numberOfPermittedSubclasses-- > 0) {
+                classVisitor.visitPermittedSubclassExperimental(
+                        readClass(currentPermittedSubclassOffset, charBuffer));
+                currentPermittedSubclassOffset += 2;
             }
         }
 

@@ -23,12 +23,13 @@
 
 /*
  * @test
- * @compile --enable-preview -source ${jdk.version} overrideSealedTest.java
- * @run main/othervm --enable-preview overrideSealedTest
+ * @bug 8225056
+ * @compile --enable-preview -source ${jdk.version} OverrideSealedTest.java
+ * @run main/othervm --enable-preview OverrideSealedTest
  */
 
 // Test that a method in a sealed class or interface can be overridden.
-public class overrideSealedTest {
+public class OverrideSealedTest {
 
     sealed class Rectangle permits Square {
         public String draw() { return "rectangle"; }
@@ -56,7 +57,7 @@ public class overrideSealedTest {
 
 
     public static void main(String... args) {
-        overrideSealedTest ost = new overrideSealedTest();
+        OverrideSealedTest ost = new OverrideSealedTest();
         if (ost.r.draw() != "rectangle")
             throw new RuntimeException("Bad value returned by draw(): " + ost.r.draw());
         if (ost.rs.draw() != "square")

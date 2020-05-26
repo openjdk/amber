@@ -23,33 +23,34 @@
 
 /*
  * @test
- * @compile getPermittedSubclasses.jcod
- * @compile --enable-preview -source ${jdk.version} getPermittedSubclassesTest.java
- * @run main/othervm --enable-preview getPermittedSubclassesTest
+ * @bug 8225056
+ * @compile GetPermittedSubclasses.jcod
+ * @compile --enable-preview -source ${jdk.version} GetPermittedSubclassesTest.java
+ * @run main/othervm --enable-preview GetPermittedSubclassesTest
  */
 
 import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 
-// Test Class.getPermittedSubtpes() and Class.isSealed() APIs.
-public class getPermittedSubclassesTest {
+// Test Class GetPermittedSubtpes() and Class.isSealed() APIs.
+public class GetPermittedSubclassesTest {
 
     sealed class Sealed1 permits Sub1 {}
 
     final class Sub1 extends Sealed1 implements SealedI1 {}
 
-    sealed interface SealedI1 permits notSealed, Sub1, Extender {}
+    sealed interface SealedI1 permits NotSealed, Sub1, Extender {}
 
     non-sealed interface Extender extends SealedI1 { }
 
-    final class finalC implements Extender {}
+    final class FinalC implements Extender {}
 
-    final class notSealed implements SealedI1 {}
+    final class NotSealed implements SealedI1 {}
 
     final class Final4 {}
 
     public static void testSealedInfo(Class<?> c, String[] expected) {
-        Object[] permitted = c.getPermittedSubclasses();
+        Object[] permitted = c.permittedSubclasses();
 
         if (permitted.length != expected.length) {
             throw new RuntimeException(
@@ -91,7 +92,7 @@ public class getPermittedSubclassesTest {
     public static void testBadSealedClass(String className, String expectedCFEMessage) throws Throwable {
         try {
             Class.forName(className);
-            throw new RuntimeException("Expected ClasFormatError exception not thrown for " + className);
+            throw new RuntimeException("Expected ClassFormatError exception not thrown for " + className);
         } catch (ClassFormatError cfe) {
             if (!cfe.getMessage().contains(expectedCFEMessage)) {
                 throw new RuntimeException(
@@ -101,29 +102,37 @@ public class getPermittedSubclassesTest {
     }
 
     public static void main(String... args) throws Throwable {
-        testSealedInfo(SealedI1.class, new String[] {"LgetPermittedSubclassesTest$notSealed;",
-                                                     "LgetPermittedSubclassesTest$Sub1;",
-                                                     "LgetPermittedSubclassesTest$Extender;"});
-        testSealedInfo(Sealed1.class, new String[] {"LgetPermittedSubclassesTest$Sub1;"});
+        testSealedInfo(SealedI1.class, new String[] {"LGetPermittedSubclassesTest$NotSealed;",
+                                                     "LGetPermittedSubclassesTest$Sub1;",
+                                                     "LGetPermittedSubclassesTest$Extender;"});
+        testSealedInfo(Sealed1.class, new String[] {"LGetPermittedSubclassesTest$Sub1;"});
         testSealedInfo(Final4.class, new String[] { });
-        testSealedInfo(notSealed.class, new String[] { });
+        testSealedInfo(NotSealed.class, new String[] { });
 
         // Test class with PermittedSubclasses attribute but old class file version.
-        testSealedInfo(oldClassFile.class, new String[] { });
+        testSealedInfo(OldClassFile.class, new String[] { });
 
         // Test class with an empty PermittedSubclasses attribute.
-        testBadSealedClass("noSubclasses", "PermittedSubclasses attribute is empty");
+        testBadSealedClass("NoSubclasses", "PermittedSubclasses attribute is empty");
 
         // Test returning names of non-existing classes.
-        testSealedInfo(noLoadSubclasses.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
+        testSealedInfo(NoLoadSubclasses.class, new String[]{"LiDontExist;", "LI/Dont/Exist/Either;"});
 
         // Test that loading a class with a corrupted PermittedSubclasses attribute
         // causes a ClassFormatError.
-        testBadSealedClass("badPermittedAttr",
+        testBadSealedClass("BadPermittedAttr",
                           "Permitted subclass class_info_index 15 has bad constant type");
 
         // Test that loading a sealed final class with a PermittedSubclasses
         // attribute causes a ClassFormatError.
-        testBadSealedClass("sealedButFinal", "PermittedSubclasses attribute in final class");
+        testBadSealedClass("SealedButFinal", "PermittedSubclasses attribute in final class");
+
+        // Test that loading a sealed class with a bad class name in its PermittedSubclasses
+        // attribute causes a ClassFormatError.
+        testBadSealedClass("BadPermittedSubclassEntry", "Illegal class name \"iDont;;Exist\" in class file");
+
+        // Test that loading a sealed class with an empty class name in its PermittedSubclasses
+        // attribute causes a ClassFormatError.
+        testBadSealedClass("EmptyPermittedSubclassEntry", "Illegal class name \"\" in class file");
     }
 }

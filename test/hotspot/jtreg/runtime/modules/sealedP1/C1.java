@@ -21,28 +21,10 @@
  * questions.
  */
 
-/*
- * @test
- * @compile --enable-preview -source ${jdk.version} sealedTest.java
- * @run main/othervm --enable-preview sealedTest
- */
+// Small class used by SealedModuleTest
+package sealedP1;
 
-public class sealedTest {
+public final class C1 extends sealedP1.SuperClass {
 
-    sealed class Sealed1 permits Sub1 {}
-
-    final class Sub1 extends Sealed1 {}
-
-    sealed interface SealedI1 permits Sub2 {}
-
-    final class Sub2 extends Sealed2 implements SealedI1 {}
-
-    sealed class Sealed2 permits Sub2 {}
-
-    Sub1 sub1 = new Sub1();
-    Sub2 sub2 = new Sub2();
-
-    public static void main(String... args) {
-        System.out.println("Basic testing of sealed types");
-    }
+    public C1() { }
 }

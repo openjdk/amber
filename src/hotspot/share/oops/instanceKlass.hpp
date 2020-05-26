@@ -493,7 +493,7 @@ public:
   bool has_nestmate_access_to(InstanceKlass* k, TRAPS);
 
   // Called to verify that k is a permitted subclass of this class
-  bool has_as_permitted_subclass(const InstanceKlass* k, TRAPS) const;
+  bool has_as_permitted_subclass(const InstanceKlass* k) const;
 
   enum InnerClassAttributeOffset {
     // From http://mirror.eng/products/jdk/1.1/docs/guide/innerclasses/spec/innerclasses.doc10.html#18814

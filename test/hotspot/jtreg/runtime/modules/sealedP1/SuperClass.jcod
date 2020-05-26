@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,15 +21,20 @@
  * questions.
  */
 
-// package planets;
+// This sealed class cannot be a java file because its permits clause names
+// a class in another package causing javac to issue a compilation error.
 //
-// sealed public class outerPlanets permits Neptune, asteroids.Pluto { }
+// Sealed super class used by SealedModuleTest.
+//
+// package sealedP1;
+//
+// public sealed class SuperClass permits sealedP1.C1, sealedP2.C2, sealedP3.C3 { }
 
-class planets/outerPlanets {
+class sealedP1/SuperClass {
   0xCAFEBABE;
   65535; // minor version
   59; // version
-  [18] { // Constant Pool
+  [20] { // Constant Pool
     ; // first element is empty
     Method #2 #3; // #1     at 0x0A
     class #4; // #2     at 0x0F
@@ -38,16 +43,18 @@ class planets/outerPlanets {
     Utf8 "<init>"; // #5     at 0x2A
     Utf8 "()V"; // #6     at 0x33
     class #8; // #7     at 0x39
-    Utf8 "planets/outerPlanets"; // #8     at 0x3C
-    Utf8 "Code"; // #9     at 0x53
-    Utf8 "LineNumberTable"; // #10     at 0x5A
-    Utf8 "SourceFile"; // #11     at 0x6C
-    Utf8 "outerPlanets.java"; // #12     at 0x79
-    Utf8 "PermittedSubclasses"; // #13     at 0x8D
-    class #15; // #14     at 0xA1
-    Utf8 "planets/Neptune"; // #15     at 0xA4
-    class #17; // #16     at 0xB6
-    Utf8 "asteroids/Pluto"; // #17     at 0xB9
+    Utf8 "sealedP1/SuperClass"; // #8     at 0x3C
+    Utf8 "Code"; // #9     at 0x52
+    Utf8 "LineNumberTable"; // #10     at 0x59
+    Utf8 "SourceFile"; // #11     at 0x6B
+    Utf8 "SuperClass.java"; // #12     at 0x78
+    Utf8 "PermittedSubclasses"; // #13     at 0x8A
+    class #15; // #14     at 0x9E
+    Utf8 "sealedP1/C1"; // #15     at 0xA1
+    class #17; // #16     at 0xAF
+    Utf8 "sealedP2/C2"; // #17     at 0xB2
+    class #19; // #18     at 0xC0
+    Utf8 "sealedP3/C3"; // #19     at 0xC3
   } // Constant Pool
 
   0x0021; // access [ ACC_PUBLIC ACC_SUPER ]
@@ -61,12 +68,12 @@ class planets/outerPlanets {
   } // fields
 
   [1] { // methods
-    { // Member at 0xD7
+    { // Member at 0xDD
       0x0001; // access
       #5; // name_cpx
       #6; // sig_cpx
       [1] { // Attributes
-        Attr(#9, 29) { // Code at 0xDF
+        Attr(#9, 29) { // Code at 0xE5
           1; // max_stack
           1; // max_locals
           Bytes[5]{
@@ -75,9 +82,9 @@ class planets/outerPlanets {
           [0] { // Traps
           } // end Traps
           [1] { // Attributes
-            Attr(#10, 6) { // LineNumberTable at 0xF6
+            Attr(#10, 6) { // LineNumberTable at 0xFC
               [1] { // LineNumberTable
-                0  26; //  at 0x0102
+                0  28; //  at 0x0108
               }
             } // end LineNumberTable
           } // Attributes
@@ -87,12 +94,12 @@ class planets/outerPlanets {
   } // methods
 
   [2] { // Attributes
-    Attr(#11, 2) { // SourceFile at 0x0104
+    Attr(#11, 2) { // SourceFile at 0x010A
       #12;
     } // end SourceFile
     ;
-    Attr(#13, 6) { // PermittedSubclasses at 0x010C
-      0x0002000E0010;
+    Attr(#13, 8) { // PermittedSubclasses at 0x0112
+      0x0003000E00100012;
     } // end PermittedSubclasses
   } // Attributes
-} // end class planets/outerPlanets
+} // end class sealedP1/SuperClass

@@ -21,10 +21,4 @@
  * questions.
  */
 
-// Small class used by SealedModuleTest
-package sealedP1;
-
-public final class c1 extends sealedP1.superClass {
-
-    public c1 () { }
-}
+final public class ClassOne extends Host { }

@@ -637,7 +637,7 @@ public:
 
   // checks method and its method holder
   bool is_final_method() const;
-  bool is_final_method(AccessFlags class_access_flags, bool has_sealed_holder) const;
+  bool is_final_method(AccessFlags class_access_flags) const;
   // interface method declared with 'default' - excludes private interface methods
   bool is_default_method() const;
 
