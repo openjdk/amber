@@ -23,6 +23,7 @@
 
 /*
  * @test
+ * @bug 8225056
  * @summary Class redefinition must preclude changes to PermittedSubclasses attributes
  * @comment This is a copy of test/jdk/java/lang/instrument/RedefineNestmateAttr/
  * @comment modified for sealed classes and the PermittedSubclasses attribute.
@@ -33,7 +34,7 @@
  *          java.instrument
  * @compile ../NamedBuffer.java
  * @run main RedefineClassHelper
- * @compile --enable-preview --source ${jdk.version} Host/Host.java classOne.java classTwo.java classThree.java classFour.java
+ * @compile --enable-preview --source ${jdk.version} Host/Host.java ClassOne.java ClassTwo.java ClassThree.java ClassFour.java
  * @compile --enable-preview --source ${jdk.version} TestPermittedSubclassesAttr.java
  * @run main/othervm -javaagent:redefineagent.jar --enable-preview -Xlog:redefine+class+sealed=trace TestPermittedSubclassesAttr Host
  * @compile --enable-preview --source ${jdk.version} HostA/Host.java
@@ -47,13 +48,13 @@
 /* Test Description
 
 The basic test class is called Host and we have variants that have zero or more
-permitted subclasses classOne, classTwo, classThree, and classFour. Each variant
+permitted subclasses ClassOne, ClassTwo, ClassThree, and ClassFour. Each variant
 of Host is defined in source code in its own directory i.e.
 
 Host/Host.java defines zero permitted classes
-Sealed class HostA/Host.java permits classOne
-Sealed HostAB/Host.java permits classOne and classTwo (in that order)
-Sealed HostABC/Host.java permits classOne, classTwo, and classThree (in that order)
+Sealed class HostA/Host.java permits ClassOne
+Sealed HostAB/Host.java permits ClassOne and ClassTwo (in that order)
+Sealed HostABC/Host.java permits ClassOne, ClassTwo, and ClassThree (in that order)
 etc.
 
 Each Host class has the form:

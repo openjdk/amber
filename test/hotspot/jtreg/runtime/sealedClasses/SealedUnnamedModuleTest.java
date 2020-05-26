@@ -23,7 +23,8 @@
 
 /*
  * @test
- * @compile planets/outerPlanets.jcod planets/Mars.jcod
+ * @bug 8225056
+ * @compile planets/OuterPlanets.jcod planets/Mars.jcod
  * @compile --enable-preview -source ${jdk.version} planets/Neptune.java asteroids/Pluto.java
  * @run main/othervm --enable-preview SealedUnnamedModuleTest
  */
@@ -32,8 +33,8 @@ public class SealedUnnamedModuleTest {
 
     public static void main(String args[]) throws Throwable {
 
-        // Classes Neptune, Mars, and Pluto all try to extend sealed class outerPlanets.
-        // Class outerPlanets permits Nepturn and Pluto.
+        // Classes Neptune, Mars, and Pluto all try to extend sealed class OuterPlanets.
+        // Class OuterPlanets permits Nepturn and Pluto.
 
         // Test permitted subclass and superclass in unnamed module and same package.
         // This should succeed.

@@ -22,11 +22,11 @@
  */
 
 // This class was written using jcod because it extends sealed class
-// planets.outerPlanets but is not listed in its PermittedSubclasses
+// planets.OuterPlanets but is not listed in its PermittedSubclasses
 // attribute.  It consists of the following:
 //
 //    package planets;
-//    public class Mars extends outerPlanets { }
+//    public class Mars extends OuterPlanets { }
 //
 class planets/Mars {
   0xCAFEBABE;
@@ -37,7 +37,7 @@ class planets/Mars {
     Method #2 #3; // #1     at 0x0A
     class #4; // #2     at 0x0F
     NameAndType #5 #6; // #3     at 0x12
-    Utf8 "planets/outerPlanets"; // #4     at 0x17
+    Utf8 "planets/OuterPlanets"; // #4     at 0x17
     Utf8 "<init>"; // #5     at 0x2E
     Utf8 "()V"; // #6     at 0x37
     class #8; // #7     at 0x3D

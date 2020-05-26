@@ -21,7 +21,7 @@
  * questions.
  */
 
-public sealed class Host permits classOne,classTwo {
+public sealed class Host permits ClassOne,ClassTwo {
     public static String getID() { return "HostAB/Host.java";}
     public int m() {
         return 1; // original class

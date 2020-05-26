@@ -3213,8 +3213,8 @@ u2 ClassFileParser::parse_classfile_nest_members_attribute(const ClassFileStream
 }
 
 u2 ClassFileParser::parse_classfile_permitted_subclasses_attribute(const ClassFileStream* const cfs,
-                                                           const u1* const permitted_subclasses_attribute_start,
-                                                           TRAPS) {
+                                                                   const u1* const permitted_subclasses_attribute_start,
+                                                                   TRAPS) {
   const u1* const current_mark = cfs->current();
   u2 length = 0;
   if (permitted_subclasses_attribute_start != NULL) {
@@ -3513,8 +3513,8 @@ void ClassFileParser::parse_classfile_bootstrap_methods_attribute(const ClassFil
 
 bool ClassFileParser::supports_sealed_types() {
   return _major_version == JVM_CLASSFILE_MAJOR_VERSION &&
-             _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
-             Arguments::enable_preview();
+    _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
+    Arguments::enable_preview();
 }
 
 bool ClassFileParser::supports_records() {
@@ -3785,15 +3785,14 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
             }
             cfs->skip_u1(attribute_length, CHECK);
           } else if (_major_version >= JAVA_15_VERSION) {
+            // Check for PermittedSubclasses tag
             if (tag == vmSymbols::tag_permitted_subclasses()) {
               if (supports_sealed_types()) {
-                // Check for PermittedSubclasses tag
-                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
-                if (_access_flags.is_final()) {
-                  classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
-                }
                 if (parsed_permitted_subclasses_attribute) {
                   classfile_parse_error("Multiple PermittedSubclasses attributes in class file %s", CHECK);
+                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
+                } else if (_access_flags.is_final()) {
+                  classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
                 } else {
                   parsed_permitted_subclasses_attribute = true;
                 }
@@ -3874,14 +3873,13 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
   }
 
   if (parsed_permitted_subclasses_attribute) {
-    const u2 num_of_subclasses = parse_classfile_permitted_subclasses_attribute(
-                                   cfs,
-                                   permitted_subclasses_attribute_start,
-                                   CHECK);
+    const u2 num_subclasses = parse_classfile_permitted_subclasses_attribute(
+                            cfs,
+                            permitted_subclasses_attribute_start,
+                            CHECK);
     if (_need_verify) {
       guarantee_property(
-        permitted_subclasses_attribute_length ==
-          sizeof(num_of_subclasses) + sizeof(u2) * num_of_subclasses,
+        permitted_subclasses_attribute_length == sizeof(num_subclasses) + sizeof(u2) * num_subclasses,
         "Wrong PermittedSubclasses attribute length in class file %s", CHECK);
     }
   }
@@ -4776,18 +4774,15 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
       return;
     }
 
-    if (super_ik->is_sealed()) {
-      bool is_permitted_subclass = super_ik->has_as_permitted_subclass(this_klass, CHECK);
-      if (!is_permitted_subclass) {
-        ResourceMark rm(THREAD);
-        Exceptions::fthrow(
-          THREAD_AND_LOCATION,
-          vmSymbols::java_lang_VerifyError(),
-          "class %s cannot inherit from sealed class %s",
-          this_klass->external_name(),
-          super_ik->external_name());
-        return;
-      }
+    if (super_ik->is_sealed() && !super_ik->has_as_permitted_subclass(this_klass)) {
+      ResourceMark rm(THREAD);
+      Exceptions::fthrow(
+        THREAD_AND_LOCATION,
+        vmSymbols::java_lang_VerifyError(),
+        "class %s cannot inherit from sealed class %s",
+        this_klass->external_name(),
+        super_ik->external_name());
+      return;
     }
 
     // If the loader is not the boot loader then throw an exception if its
@@ -4850,19 +4845,16 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
     InstanceKlass* const k = local_interfaces->at(i);
     assert (k != NULL && k->is_interface(), "invalid interface");
 
-    if (k->is_sealed()) {
-      bool is_permitted_subclass = k->has_as_permitted_subclass(this_klass, CHECK);
-      if (!is_permitted_subclass) {
-        ResourceMark rm(THREAD);
-        Exceptions::fthrow(
-          THREAD_AND_LOCATION,
-          vmSymbols::java_lang_VerifyError(),
-          "class %s cannot %s sealed interface %s",
-          this_klass->external_name(),
-          this_klass->is_interface() ? "extend" : "implement",
-          k->external_name());
-        return;
-      }
+    if (k->is_sealed() && !k->has_as_permitted_subclass(this_klass)) {
+      ResourceMark rm(THREAD);
+      Exceptions::fthrow(
+        THREAD_AND_LOCATION,
+        vmSymbols::java_lang_VerifyError(),
+        "class %s cannot %s sealed interface %s",
+        this_klass->external_name(),
+        this_klass->is_interface() ? "extend" : "implement",
+        k->external_name());
+      return;
     }
 
     Reflection::VerifyClassAccessResults vca_result =
@@ -6654,16 +6646,12 @@ void ClassFileParser::post_process_parsed_stream(const ClassFileStream* const st
   _all_mirandas = new GrowableArray<Method*>(20);
 
   Handle loader(THREAD, _loader_data->class_loader());
-  bool is_sealed = _permitted_subclasses != NULL &&
-                   _permitted_subclasses != Universe::the_empty_short_array() &&
-                   _permitted_subclasses->length() > 0;
   klassVtable::compute_vtable_size_and_num_mirandas(&_vtable_size,
                                                     &_num_miranda_methods,
                                                     _all_mirandas,
                                                     _super_klass,
                                                     _methods,
                                                     _access_flags,
-                                                    is_sealed,
                                                     _major_version,
                                                     loader,
                                                     _class_name,

@@ -6900,7 +6900,7 @@ class C2 extends C1 implements I2 {
       <synopsis>Get Classloader Classes</synopsis>
       <description>
         Returns an array of all classes which this class loader
-        can find by name via 
+        can find by name via
         <externallink id="../api/java.base/java/lang/ClassLoader.html#loadClass(java.lang.String,boolean)">ClassLoader::loadClass</externallink>,
         <externallink id="../api/java.base/java/lang/Class.html#forName(java.lang.String,boolean,java.lang.ClassLoader)">Class::forName</externallink> and bytecode linkage.
         That is, all classes for which <code>initiating_loader</code>
@@ -15030,7 +15030,7 @@ typedef void (JNICALL *jvmtiEventVMInit)
         - Specify that RedefineClasses and RetransformClasses are not allowed
           to change the class file Record attribute.
   </change>
-  <change date="22 July 2019" version="14.0.0">
+  <change date="13 May 2020" version="15.0.0">
       Minor update for new class file PermittedSubclasses attribute:
         - Specify that RedefineClasses and RetransformClasses are not allowed
           to change the class file PermittedSubclasses attribute.

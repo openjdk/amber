@@ -21,17 +21,18 @@
  * questions.
  */
 
-// Sealed super class used by SealedModuleTest.
+// This class was written using jcod because it implements sealed interface
+// SealedInterface but is not listed in its PermittedSubclasses attribute.
+// It consists of the following:
 //
-// package sealedP1;
+//    package Pkg;
+//    public class NotPermitted implements SealedInterface { }
 //
-// public sealed class superClass permits sealedP1.c1, sealedP2.c2, sealedP3.c3 { }
-
-class sealedP1/superClass {
+class Pkg/NotPermitted {
   0xCAFEBABE;
-  65535; // minor version
+  0; // minor version
   59; // version
-  [20] { // Constant Pool
+  [15] { // Constant Pool
     ; // first element is empty
     Method #2 #3; // #1     at 0x0A
     class #4; // #2     at 0x0F
@@ -40,48 +41,44 @@ class sealedP1/superClass {
     Utf8 "<init>"; // #5     at 0x2A
     Utf8 "()V"; // #6     at 0x33
     class #8; // #7     at 0x39
-    Utf8 "sealedP1/superClass"; // #8     at 0x3C
-    Utf8 "Code"; // #9     at 0x52
-    Utf8 "LineNumberTable"; // #10     at 0x59
-    Utf8 "SourceFile"; // #11     at 0x6B
-    Utf8 "superClass.java"; // #12     at 0x78
-    Utf8 "PermittedSubclasses"; // #13     at 0x8A
-    class #15; // #14     at 0x9E
-    Utf8 "sealedP1/c1"; // #15     at 0xA1
-    class #17; // #16     at 0xAF
-    Utf8 "sealedP2/c2"; // #17     at 0xB2
-    class #19; // #18     at 0xC0
-    Utf8 "sealedP3/c3"; // #19     at 0xC3
+    Utf8 "Pkg/NotPermitted"; // #8     at 0x3C
+    class #10; // #9     at 0x4C
+    Utf8 "Pkg/SealedInterface"; // #10     at 0x4F
+    Utf8 "Code"; // #11     at 0x65
+    Utf8 "LineNumberTable"; // #12     at 0x6C
+    Utf8 "SourceFile"; // #13     at 0x7E
+    Utf8 "NotPermitted.java"; // #14     at 0x8B
   } // Constant Pool
 
-  0x0021; // access [ ACC_PUBLIC ACC_SUPER ]
+  0x0031; // access [ ACC_PUBLIC ACC_SUPER ACC_FINAL ]
   #7;// this_cpx
   #2;// super_cpx
 
-  [0] { // Interfaces
+  [1] { // Interfaces
+    #9;
   } // Interfaces
 
   [0] { // fields
   } // fields
 
   [1] { // methods
-    { // Member at 0xDD
+    { // Member at 0xAA
       0x0001; // access
       #5; // name_cpx
       #6; // sig_cpx
       [1] { // Attributes
-        Attr(#9, 29) { // Code at 0xE5
+        Attr(#11, 29) { // Code at 0xB2
           1; // max_stack
           1; // max_locals
           Bytes[5]{
             0x2AB70001B1;
-          }
+          };
           [0] { // Traps
           } // end Traps
           [1] { // Attributes
-            Attr(#10, 6) { // LineNumberTable at 0xFC
+            Attr(#12, 6) { // LineNumberTable at 0xC9
               [1] { // LineNumberTable
-                0  28; //  at 0x0108
+                0  26; //  at 0xD5
               }
             } // end LineNumberTable
           } // Attributes
@@ -90,13 +87,9 @@ class sealedP1/superClass {
     } // Member
   } // methods
 
-  [2] { // Attributes
-    Attr(#11, 2) { // SourceFile at 0x010A
-      #12;
+  [1] { // Attributes
+    Attr(#13, 2) { // SourceFile at 0xD7
+      #14;
     } // end SourceFile
-    ;
-    Attr(#13, 8) { // PermittedSubclasses at 0x0112
-      0x0003000E00100012;
-    } // end PermittedSubclasses
   } // Attributes
-} // end class sealedP1/superClass
+} // end class Pkg/NotPermitted

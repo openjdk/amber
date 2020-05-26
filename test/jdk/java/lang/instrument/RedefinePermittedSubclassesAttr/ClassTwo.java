@@ -21,6 +21,4 @@
  * questions.
  */
 
-package otherPkg;
-
-public final class wrongPackage implements Pkg.sealedInterface { }
+final public class ClassTwo extends Host { }

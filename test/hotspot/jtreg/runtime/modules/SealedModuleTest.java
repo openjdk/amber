@@ -23,22 +23,22 @@
 
 /*
  * @test
+ * @bug 8225056
  * @modules java.base/jdk.internal.misc
  * @library /test/lib ..
- * @compile sealedP1/superClass.jcod
- * @compile --enable-preview --source ${jdk.version} sealedP1/c1.java sealedP2/c2.java sealedP3/c3.java
+ * @compile sealedP1/SuperClass.jcod
+ * @compile --enable-preview --source ${jdk.version} sealedP1/C1.java sealedP2/C2.java sealedP3/C3.java
  * @build sun.hotspot.WhiteBox
  * @compile/module=java.base java/lang/ModuleHelper.java
  * @run driver ClassFileInstaller sun.hotspot.WhiteBox
- *                              sun.hotspot.WhiteBox$WhiteBoxPermission
  * @run main/othervm -Xbootclasspath/a:. --enable-preview -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI SealedModuleTest
  */
 
 public class SealedModuleTest {
 
     // Test sub-classing a sealed super class in a named module. In this test,
-    // sealed class sealedP1/superClass permits sealedP1.c1, sealedP2.c2, and
-    // sealedP3.c3.  All three of those classes extend sealedP1/superClass.
+    // sealed class sealedP1/SuperClass permits sealedP1.C1, sealedP2.C2, and
+    // sealedP3.C3.  All three of those classes extend sealedP1/SuperClass.
 
     public static void main(String args[]) throws Throwable {
         Object m1x, m2x;
@@ -58,25 +58,25 @@ public class SealedModuleTest {
         ModuleHelper.DefineModule(m2x, false, "9.0", "m2x/there", new String[] { "sealedP3" });
 
         // Make package sealedP1 in m1x visible to everyone because it contains
-        // the super class for c1, c2, and c3.
+        // the super class for C1, C2, and C3.
         ModuleHelper.AddModuleExportsToAll(m1x, "sealedP1");
         ModuleHelper.AddReadsModule(m2x, m1x);
 
         // Test subtype in the same named package and named module as its super
         // class.  This should succeed.
-        // Class sealedP1.c1 extends class sealedP1.superClass.
-        Class p1_c1_class = Class.forName("sealedP1.c1");
+        // Class sealedP1.C1 extends class sealedP1.SuperClass.
+        Class p1_C1_class = Class.forName("sealedP1.C1");
 
         // Test subtype in different named package but same named module as its
         // super class. This should succeed.
-        // Class sealedP2.c2 extends class sealedP1.superClass.
-        Class p2_c2_class = Class.forName("sealedP2.c2");
+        // Class sealedP2.C2 extends class sealedP1.SuperClass.
+        Class p2_C2_class = Class.forName("sealedP2.C2");
 
         // Test subtype in a different module than its super type.  This should
         // fail even though they have the same class loader.
-        // Class sealedP3.c3 extends class sealedP1.superClass.
+        // Class sealedP3.C3 extends class sealedP1.SuperClass.
         try {
-            Class p3_c3_class = Class.forName("sealedP3.c3");
+            Class p3_C3_class = Class.forName("sealedP3.C3");
             throw new RuntimeException("Expected VerifyError exception not thrown");
         } catch (VerifyError e) {
             if (!e.getMessage().contains("cannot inherit from sealed class")) {

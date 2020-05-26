@@ -219,35 +219,16 @@ bool InstanceKlass::has_nest_member(InstanceKlass* k, TRAPS) const {
 }
 
 // Called to verify that k is a permitted subclass of this class
-bool InstanceKlass::has_as_permitted_subclass(const InstanceKlass* k, TRAPS) const {
-  if (k == NULL) {
-    if (log_is_enabled(Trace, class, sealed)) {
-      ResourceMark rm(THREAD);
-      log_trace(class, sealed)("Checked for permitted subclass of %s with a NULL instance class", this->external_name());
-    }
-    return false;
-  }
-  if (_permitted_subclasses == NULL || _permitted_subclasses == Universe::the_empty_short_array()) {
-    if (log_is_enabled(Trace, class, sealed)) {
-      ResourceMark rm(THREAD);
-      log_trace(class, sealed)("Checked for permitted subclass of %s in non-sealed class %s",
-                               k->external_name(), this->external_name());
-    }
-    return false;
-  }
+bool InstanceKlass::has_as_permitted_subclass(const InstanceKlass* k) const {
+  Thread* THREAD = Thread::current();
+  assert(k != NULL, "sanity check");
+  assert(_permitted_subclasses != NULL && _permitted_subclasses != Universe::the_empty_short_array(),
+         "unexpected empty _permitted_subclasses array");
 
   if (log_is_enabled(Trace, class, sealed)) {
     ResourceMark rm(THREAD);
     log_trace(class, sealed)("Checking for permitted subclass of %s in %s",
                              k->external_name(), this->external_name());
-  }
-
-  oop classloader1 = this->class_loader();
-  oop classloader2 = k->class_loader();
-  if (classloader1 != classloader2) {
-      log_trace(class, sealed)("Check failed for same class loader of permitted subclass of %s and sealed class %s",
-                               k->external_name(), this->external_name());
-      return false;
   }
 
   // Check that the class and its super are in the same module.
@@ -262,7 +243,8 @@ bool InstanceKlass::has_as_permitted_subclass(const InstanceKlass* k, TRAPS) con
   for (int i = 0; i < _permitted_subclasses->length(); i++) {
     int cp_index = _permitted_subclasses->at(i);
     if (_constants->tag_at(cp_index).is_klass()) {
-      Klass* k2 = _constants->klass_at(cp_index, CHECK_false);
+      Klass* k2 = _constants->klass_at(cp_index, THREAD);
+      assert(!HAS_PENDING_EXCEPTION, "Unexpected exception");
       if (k2 == k) {
         log_trace(class, sealed)("- class is listed at permitted_subclasses[%d] => cp[%d]", i, cp_index);
         return true;

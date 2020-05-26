@@ -329,15 +329,14 @@ class ClassFileParser {
                                             TRAPS);
 
   u2 parse_classfile_permitted_subclasses_attribute(const ClassFileStream* const cfs,
-                                            const u1* const permitted_subclasses_attribute_start,
-                                            TRAPS);
+                                                    const u1* const permitted_subclasses_attribute_start,
+                                                    TRAPS);
 
   u2 parse_classfile_record_attribute(const ClassFileStream* const cfs,
                                       const ConstantPool* cp,
                                       const u1* const record_attribute_start,
                                       TRAPS);
 
-  // TBD: do these need to be in header file?
   bool supports_sealed_types();
   bool supports_records();
 
