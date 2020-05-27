@@ -5104,7 +5104,10 @@ public class Attr extends JCTree.Visitor {
                     }
                 }
                 if (!c.isNonSealed() && !c.isFinal() && !c.isSealed()) {
-                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree), Errors.NonSealedSealedOrFinalExpected);
+                    log.error(TreeInfo.diagnosticPositionFor(c, env.tree),
+                            c.isInterface() ?
+                                    Errors.NonSealedOrSealedExpected :
+                                    Errors.NonSealedSealedOrFinalExpected);
                 }
             }
 

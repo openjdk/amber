@@ -471,6 +471,7 @@ public class PrintingProcessor extends AbstractProcessor {
             case ENUM:
                 modifiers.remove(Modifier.FINAL);
                 modifiers.remove(Modifier.ABSTRACT);
+                modifiers.remove(Modifier.SEALED);
                 break;
 
             case RECORD:

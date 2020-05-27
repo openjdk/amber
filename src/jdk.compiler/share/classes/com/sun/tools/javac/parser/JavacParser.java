@@ -4214,7 +4214,7 @@ public class JavacParser implements Parser {
     protected boolean isNonSealedClassStart(boolean local) {
         if (isNonSealedIdentifier(token, 0)) {
             Token next = S.token(3);
-            return allowedAfterSealedOrNonSealed(next, local);
+            return allowedAfterSealedOrNonSealed(next, local, true);
         }
         return false;
     }
@@ -4236,7 +4236,7 @@ public class JavacParser implements Parser {
     protected boolean isSealedClassStart(boolean local) {
         if (token.name() == names.sealed) {
             Token next = S.token(1);
-            if (allowedAfterSealedOrNonSealed(next, local)) {
+            if (allowedAfterSealedOrNonSealed(next, local, false)) {
                 checkSourceLevel(Feature.SEALED_CLASSES);
                 return true;
             }
@@ -4244,15 +4244,15 @@ public class JavacParser implements Parser {
         return false;
     }
 
-    private boolean allowedAfterSealedOrNonSealed(Token next, boolean local) {
+    private boolean allowedAfterSealedOrNonSealed(Token next, boolean local, boolean currentIsNonSealed) {
         return local ?
             switch (next.kind) {
-                case ABSTRACT, FINAL, STRICTFP, CLASS, INTERFACE, ENUM -> true;
+                case MONKEYS_AT, ABSTRACT, FINAL, STRICTFP, CLASS, INTERFACE, ENUM -> true;
                 default -> false;
             } :
             switch (next.kind) {
-                case PUBLIC, PROTECTED, PRIVATE, ABSTRACT, STATIC, FINAL, STRICTFP, CLASS, INTERFACE, ENUM -> true;
-                case IDENTIFIER -> isNonSealedIdentifier(next, 1) || next.name() == names.sealed;
+                case MONKEYS_AT, PUBLIC, PROTECTED, PRIVATE, ABSTRACT, STATIC, FINAL, STRICTFP, CLASS, INTERFACE, ENUM -> true;
+                case IDENTIFIER -> isNonSealedIdentifier(next, currentIsNonSealed ? 3 : 1) || next.name() == names.sealed;
                 default -> false;
             };
     }
