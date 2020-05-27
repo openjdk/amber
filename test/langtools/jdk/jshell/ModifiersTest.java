@@ -44,7 +44,7 @@ public class ModifiersTest extends KullaTesting {
     public Object[][] getTestCases() {
         List<Object[]> testCases = new ArrayList<>();
         String[] ignoredModifiers = new String[] {
-            "static", "final"
+            "static"
         };
         String[] silentlyIgnoredModifiers = new String[] {
             "public", "protected", "private"

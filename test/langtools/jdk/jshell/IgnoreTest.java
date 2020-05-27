@@ -121,8 +121,8 @@ public class IgnoreTest extends KullaTesting {
     public void testClassModifier() {
         TypeDeclSnippet c4 = (TypeDeclSnippet) assertDeclareWarn1("static class C4 {}", "jdk.eval.warn.illegal.modifiers");
         assertTypeDeclSnippet(c4, "C4", VALID, CLASS_SUBKIND, 0, 1);
-        TypeDeclSnippet c5 = (TypeDeclSnippet) assertDeclareWarn1("final class C5 {}", "jdk.eval.warn.illegal.modifiers");
-        assertTypeDeclSnippet(c5, "C5", VALID, CLASS_SUBKIND, 0, 1);
+        TypeDeclSnippet c5 = classKey(assertEval("final class C5 {}"));
+        assertTypeDeclSnippet(c5, "C5", VALID, CLASS_SUBKIND, 0, 0);
     }
 
     public void testInsideModifier() {

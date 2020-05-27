@@ -82,6 +82,9 @@ public class ErrorTranslationTest extends ReplToolTesting {
         for (int i = 0; i < mods.length; ++i) {
             for (String code : new String[] {"class A {}", "void f() {}", "int a;"}) {
                 final int finalI = i;
+                if ("final".equals(mods[finalI]) && "class A {}".equals(code)) {
+                    continue; //skip, final classes are allowed
+                }
                 list.add(a -> assertDiagnostic(a, mods[finalI] + " " + code, diagnostics[finalI]));
             }
         }

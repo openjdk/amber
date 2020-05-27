@@ -79,6 +79,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.Collections.singletonList;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
+import java.util.EnumSet;
 import static jdk.internal.jshell.debug.InternalDebugControl.DBG_GEN;
 import static jdk.jshell.Util.DOIT_METHOD_NAME;
 import static jdk.jshell.Util.PREFIX_PATTERN;
@@ -190,7 +191,7 @@ class Eval {
      * @return usually a singleton list of Snippet, but may be empty or multiple
      */
     private List<Snippet> sourceToSnippets(String userSource) {
-        String compileSource = Util.trimEnd(new MaskCommentsAndModifiers(userSource, false).cleared());
+        String compileSource = Util.trimEnd(new MaskCommentsAndModifiers(userSource, false, false).cleared());
         if (compileSource.length() == 0) {
             return Collections.emptyList();
         }
@@ -211,7 +212,7 @@ class Eval {
             }
 
             // Erase illegal/ignored modifiers
-            String compileSourceInt = new MaskCommentsAndModifiers(compileSource, true).cleared();
+            String compileSourceInt = new MaskCommentsAndModifiers(compileSource, true, CLASS_LIKE_KINDS.contains(unitTree.getKind())).cleared();
 
             state.debug(DBG_GEN, "Kind: %s -- %s\n", unitTree.getKind(), unitTree);
             switch (unitTree.getKind()) {
@@ -240,6 +241,11 @@ class Eval {
             }
         });
     }
+
+    @SuppressWarnings("preview")
+    private static final Set<Tree.Kind> CLASS_LIKE_KINDS =
+            EnumSet.of(Tree.Kind.ANNOTATION_TYPE, Tree.Kind.CLASS, Tree.Kind.ENUM,
+                       Tree.Kind.INTERFACE, Tree.Kind.RECORD);
 
     private List<Snippet> processImport(String userSource, String compileSource) {
         Wrap guts = Wrap.simpleWrap(compileSource);
@@ -816,7 +822,7 @@ class Eval {
         snip.setFailed(diags);
 
         // Install  wrapper for query by SourceCodeAnalysis.wrapper
-        String compileSource = Util.trimEnd(new MaskCommentsAndModifiers(userSource, true).cleared());
+        String compileSource = Util.trimEnd(new MaskCommentsAndModifiers(userSource, true, probableKind == Kind.TYPE_DECL).cleared());
         OuterWrap outer;
         switch (probableKind) {
             case IMPORT:

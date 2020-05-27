@@ -169,7 +169,7 @@ class SourceCodeAnalysisImpl extends SourceCodeAnalysis {
 
     @Override
     public CompletionInfo analyzeCompletion(String srcInput) {
-        MaskCommentsAndModifiers mcm = new MaskCommentsAndModifiers(srcInput, false);
+        MaskCommentsAndModifiers mcm = new MaskCommentsAndModifiers(srcInput, false, false);
         if (mcm.endsWithOpenToken()) {
             proc.debug(DBG_COMPA, "Incomplete (open comment): %s\n", srcInput);
             return new CompletionInfoImpl(DEFINITELY_INCOMPLETE, null, srcInput + '\n');

@@ -66,13 +66,17 @@ class MaskCommentsAndModifiers {
     // initial modifier section
     private boolean maskModifiers;
 
+    //is modifier "final" allowed?
+    private final boolean finalAllowed;
+
     // Does the string end with an unclosed '/*' style comment?
     private boolean openToken = false;
 
-    MaskCommentsAndModifiers(String s, boolean maskModifiers) {
+    MaskCommentsAndModifiers(String s, boolean maskModifiers, boolean finalAllowed) {
         this.str = s;
         this.length = s.length();
         this.maskModifiers = maskModifiers;
+        this.finalAllowed = finalAllowed;
         read();
         while (c >= 0) {
             next();
@@ -250,7 +254,7 @@ class MaskCommentsAndModifiers {
                     } while (Character.isJavaIdentifierPart(c));
                     unread();
                     String id = sb.toString();
-                    if (maskModifiers && IGNORED_MODIFIERS.contains(id)) {
+                    if (maskModifiers && (IGNORED_MODIFIERS.contains(id) || (!finalAllowed && "final".equals(id)))) {
                         writeMask(sb);
                     } else {
                         write(sb);
