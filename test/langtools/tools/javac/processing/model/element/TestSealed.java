@@ -166,7 +166,6 @@ public class TestSealed extends TestRunner {
         }
     }
 
-    @SupportedAnnotationTypes("*")
     public static final class SealedClassesProcessor extends JavacTestingAbstractProcessor {
 
         @Override
@@ -179,11 +178,6 @@ public class TestSealed extends TestRunner {
                 }
             }
             return true;
-        }
-
-        @Override
-        public SourceVersion getSupportedSourceVersion() {
-            return SourceVersion.latest();
         }
 
         class SealedScanner extends ElementScanner<Void, Void> {

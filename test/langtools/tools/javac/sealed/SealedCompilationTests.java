@@ -50,6 +50,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.sun.tools.javac.util.Assert;
 
@@ -605,84 +606,62 @@ public class SealedCompilationTests extends CompilationTestCase {
             .getOutputLines(OutputKind.STDOUT);
 
         List<String> expected = List.of(
-            "",
             "sealed class SealedClassNoPermits permits FinalSubClass, NonSealedSubClass {",
-            "",
             "  SealedClassNoPermits();",
             "}",
-            "",
             "final class FinalSubClass extends SealedClassNoPermits {",
-            "",
             "  FinalSubClass();",
             "}",
-            "",
             "non-sealed class NonSealedSubClass extends SealedClassNoPermits {",
-            "",
             "  NonSealedSubClass();",
             "}",
-            "",
             "sealed interface SealedInterfaceNoPermits permits NonSealedInterface, FinalSubClass2 {",
             "}",
-            "",
             "non-sealed interface NonSealedInterface extends SealedInterfaceNoPermits {",
             "}",
-            "",
             "final class FinalSubClass2 implements SealedInterfaceNoPermits {",
-            "",
             "  FinalSubClass2();",
             "}",
-            "",
             "sealed class SealedClassWithPermits permits SealedClassWithPermits, NonSealedSubClass2 {",
-            "",
             "  SealedClassWithPermits();",
             "}",
-            "",
             "final class FinalSubClass3 extends SealedClassWithPermits {",
-            "",
             "  FinalSubClass3();",
             "}",
-            "",
             "non-sealed class NonSealedSubClass2 extends SealedClassWithPermits {",
-            "",
             "  NonSealedSubClass2();",
             "}",
-            "",
             "sealed interface SealedInterfaceWithPermits permits NonSealedInterface2, FinalSubClass4 {",
             "}",
-            "",
             "non-sealed interface NonSealedInterface2 extends SealedInterfaceWithPermits {",
             "}",
-            "",
             "final class FinalSubClass4 implements SealedInterfaceWithPermits {",
-            "",
             "  FinalSubClass4();",
             "}",
-            "",
-            "sealed enum SealedEnum {",
-            "",
+            "enum SealedEnum {",
             "  E;",
-            "",
-            "",
             "  public static SealedEnum[] values();",
-            "",
             "  public static SealedEnum valueOf(java.lang.String name);",
-            "",
             "  private SealedEnum();",
             "}",
-            "",
             "enum Enum {",
-            "",
             "  E;",
-            "",
-            "",
             "  public static Enum[] values();",
-            "",
             "  public static Enum valueOf(java.lang.String name);",
-            "",
             "  private Enum();",
             "}"
         );
+        // remove empty strings
+        String newLine = System.getProperty("line.separator");
+        output = output.stream().filter(s -> !s.isEmpty()).map(s -> s.replaceAll(newLine, "\n").replaceAll("\n", "")).collect(Collectors.toList());
         if (!output.containsAll(expected)) {
+            for (int i = 0; i < output.size(); i++) {
+                if (!output.get(i).equals(expected.get(i))) {
+                    System.out.println("failing at index " + i);
+                    System.out.println("expected:" + expected.get(i));
+                    System.out.println("found:" + output.get(i));
+                }
+            }
             throw new AssertionError("Expected output not found. Expected: " + expected);
         }
     }
@@ -727,5 +706,48 @@ public class SealedCompilationTests extends CompilationTestCase {
 
     private Path[] findJavaFiles(Path... paths) throws IOException {
         return tb.findJavaFiles(paths);
+    }
+
+    public void testSealedNonSealedWithOtherModifiers() {
+        String template1 =
+            """
+            @interface A {}
+
+            class Outer {
+                sealed class Sup { }
+                # # class Sub extends Sup {}
+                final class Sub2 extends Sub {}
+            }
+            """;
+
+        String template2 =
+            """
+            @interface A {}
+
+            class Outer {
+                sealed interface Sup { }
+                # # interface Sub extends Sup {}
+                final class Sub2 implements Sub {}
+            }
+            """;
+
+        List<String> templateList = List.of(template1, template2);
+        List<String> otherModifiers = List.of(
+                "@A", "public", "protected", "private", "abstract", "static", "strictfp", "final", "sealed", "non-sealed"
+        );
+
+        for (String template : templateList) {
+            for (String sealed_non_sealed : List.of("sealed", "non-sealed")) {
+                for (String modifier : otherModifiers) {
+                    if (sealed_non_sealed.equals(modifier)) {
+                        assertFail("compiler.err.repeated.modifier", template, sealed_non_sealed, modifier);
+                    } else if (modifier.equals("final") || modifier.equals("sealed") || modifier.equals("non-sealed")) {
+                        assertFail("compiler.err.illegal.combination.of.modifiers", template, sealed_non_sealed, modifier);
+                    } else {
+                        assertOK(template, sealed_non_sealed, modifier);
+                    }
+                }
+            }
+        }
     }
 }
