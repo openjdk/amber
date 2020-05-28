@@ -2704,7 +2704,7 @@ public class Check {
                             types.findDescriptorType(t).getParameterTypes().length()) {
                         potentiallyAmbiguous = true;
                     } else {
-                        break;
+                        return;
                     }
                 }
                 args1 = args1.tail;
