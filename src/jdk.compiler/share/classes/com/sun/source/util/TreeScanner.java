@@ -178,12 +178,14 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param p  {@inheritDoc}
      * @return the result of scanning
      */
+    @SuppressWarnings("preview")
     @Override
     public R visitClass(ClassTree node, P p) {
         R r = scan(node.getModifiers(), p);
         r = scanAndReduce(node.getTypeParameters(), p, r);
         r = scanAndReduce(node.getExtendsClause(), p, r);
         r = scanAndReduce(node.getImplementsClause(), p, r);
+        r = scanAndReduce(node.getPermitsClause(), p, r);
         r = scanAndReduce(node.getMembers(), p, r);
         return r;
     }

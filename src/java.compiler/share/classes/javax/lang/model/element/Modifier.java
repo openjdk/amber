@@ -59,6 +59,40 @@ public enum Modifier {
      */
      DEFAULT,
     /** The modifier {@code static} */          STATIC,
+
+    /**
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>sealed classes</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * The modifier {@code sealed}
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
+                                             essentialAPI=false)
+    SEALED,
+
+    /**
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
+     *
+     *           This enum constant is associated with <i>sealed classes</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * The modifier {@code non-sealed}
+     * @since 15
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES,
+            essentialAPI=false)
+    NON_SEALED {
+        public String toString() {
+            return "non-sealed";
+        }
+    },
     /** The modifier {@code final} */           FINAL,
     /** The modifier {@code transient} */       TRANSIENT,
     /** The modifier {@code volatile} */        VOLATILE,
