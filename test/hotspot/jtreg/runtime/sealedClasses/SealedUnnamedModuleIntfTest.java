@@ -37,23 +37,23 @@ public class SealedUnnamedModuleIntfTest {
         // sealed interface SealedInterface.
         // Interface SealedInterface permits classes Permitted and WrongPackage.
 
-        // Test permitted subclass and superclass in unnamed module and same package.
-        // This should succeed.
+        // Test non-public permitted subclass and superclass in unnamed module and
+        // same package.  This should succeed.
         Class permitted = Class.forName("Pkg.Permitted");
 
         // Test unpermitted subclass and superclass in unnamed module and same package.
         // This should throw an exception.
         try {
             Class notPermitted = Class.forName("Pkg.NotPermitted");
-            throw new RuntimeException("Expected VerifyError exception not thrown");
-        } catch (VerifyError e) {
+            throw new RuntimeException("Expected IncompatibleClassChangeError exception not thrown");
+        } catch (IncompatibleClassChangeError e) {
             if (!e.getMessage().contains("cannot implement sealed interface")) {
-                throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
+                throw new RuntimeException("Wrong IncompatibleClassChangeError exception thrown: " + e.getMessage());
             }
         }
 
-        // Test both permitted subclass and superclass in unnamed module but in different
-        // packages.  This should not throw an exception.
+        // Test public permitted subclass and superclass in same unnamed module but in
+        // different packages.  This should not throw an exception.
         Class wrongPkg = Class.forName("otherPkg.WrongPackage");
     }
 }

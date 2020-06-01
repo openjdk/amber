@@ -67,20 +67,27 @@ public class SealedModuleTest {
         // Class sealedP1.C1 extends class sealedP1.SuperClass.
         Class p1_C1_class = Class.forName("sealedP1.C1");
 
-        // Test subtype in different named package but same named module as its
-        // super class. This should succeed.
+        // Test non-public class in same module but different package than its
+        // super class. This should throw ICCE.
         // Class sealedP2.C2 extends class sealedP1.SuperClass.
-        Class p2_C2_class = Class.forName("sealedP2.C2");
+        try {
+            Class p2_C2_class = Class.forName("sealedP2.C2");
+            throw new RuntimeException("Expected IncompatibleClassChangeError exception not thrown");
+        } catch (IncompatibleClassChangeError e) {
+            if (!e.getMessage().contains("cannot inherit from sealed class")) {
+                throw new RuntimeException("Wrong IncompatibleClassChangeError exception thrown: " + e.getMessage());
+            }
+        }
 
         // Test subtype in a different module than its super type.  This should
         // fail even though they have the same class loader.
         // Class sealedP3.C3 extends class sealedP1.SuperClass.
         try {
             Class p3_C3_class = Class.forName("sealedP3.C3");
-            throw new RuntimeException("Expected VerifyError exception not thrown");
-        } catch (VerifyError e) {
+            throw new RuntimeException("Expected IncompatibleClassChangeError exception not thrown");
+        } catch (IncompatibleClassChangeError e) {
             if (!e.getMessage().contains("cannot inherit from sealed class")) {
-                throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
+                throw new RuntimeException("Wrong IncompatibleClassChangeError exception thrown: " + e.getMessage());
             }
         }
 

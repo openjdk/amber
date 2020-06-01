@@ -201,6 +201,8 @@ public final class Class<T> implements java.io.Serializable,
     private static final int ENUM      = 0x00004000;
     private static final int SYNTHETIC = 0x00001000;
 
+    private static final ClassDesc[] EMPTY_CLASS_DESC_ARRAY = new ClassDesc[0];
+
     private static native void registerNatives();
     static {
         registerNatives();
@@ -3106,7 +3108,6 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
         volatile Class<?>[] interfaces;
-        volatile ClassDesc[] permittedSubclasses;
 
         // Cached names
         String simpleName;
@@ -4392,10 +4393,10 @@ public final class Class<T> implements java.io.Serializable,
      *           features of the Java language.}
      *
      * Returns an array containing {@code ClassDesc} objects representing all the
-     * permitted subclasses of this {@code Class} if it is sealed. Returns an empty array if this
-     * {@code Class} is not sealed.
+     * direct subclasses or direct implementation classes permitted to extend or implement this class or interface
+     * if it is sealed. Returns an empty array if this class or interface is not sealed.
      *
-     * @return an array of class descriptors of all the permitted subclasses of this class
+     * @return an array of class descriptors of all the permitted subclasses of this class or interface
      *
      * @jls 8.1 Class Declarations
      * @jls 9.1 Interface Declarations
@@ -4403,19 +4404,9 @@ public final class Class<T> implements java.io.Serializable,
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
     public ClassDesc[] permittedSubclasses() {
-        ReflectionData<T> rd = reflectionData();
-        if (rd.permittedSubclasses != null) {
-            return rd.permittedSubclasses;
-        }
-
-        if (isArray() || isPrimitive()) {
-            rd.permittedSubclasses = new ClassDesc[0];
-            return rd.permittedSubclasses;
-        }
-        String[] subclassNames = getPermittedSubclasses0();
-        if (subclassNames.length == 0) {
-            rd.permittedSubclasses = new ClassDesc[0];
-            return rd.permittedSubclasses;
+        String[] subclassNames;
+        if (isArray() || isPrimitive() || (subclassNames = getPermittedSubclasses0()).length == 0) {
+            return EMPTY_CLASS_DESC_ARRAY;
         }
         ClassDesc[] constants = new ClassDesc[subclassNames.length];
         int i = 0;
@@ -4426,7 +4417,6 @@ public final class Class<T> implements java.io.Serializable,
                 throw new InternalError("Invalid type in permitted subclasses information: " + subclassName, iae);
             }
         }
-        rd.permittedSubclasses = constants;
         return constants;
     }
 
@@ -4438,9 +4428,9 @@ public final class Class<T> implements java.io.Serializable,
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
-     * Returns true if this {@linkplain Class} is sealed.
+     * Returns {@code true} if and only if this {@code Class} object represents a sealed class or interface.
      *
-     * @return returns true if this class is sealed
+     * @return {@code true} if and only if this {@code Class} object represents a sealed class or interface.
      *
      * @jls 8.1 Class Declarations
      * @jls 9.1 Interface Declarations
@@ -4449,6 +4439,9 @@ public final class Class<T> implements java.io.Serializable,
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
     @SuppressWarnings("preview")
     public boolean isSealed() {
+        if (isArray() || isPrimitive()) {
+            return false;
+        }
         return permittedSubclasses().length != 0;
     }
 
