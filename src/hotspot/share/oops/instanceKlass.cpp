@@ -233,7 +233,15 @@ bool InstanceKlass::has_as_permitted_subclass(const InstanceKlass* k) const {
 
   // Check that the class and its super are in the same module.
   if (k->module() != this->module()) {
-    log_trace(class, sealed)("Check failed for same module of permitted subclass of %s and sealed class %s",
+    ResourceMark rm(THREAD);
+    log_trace(class, sealed)("Check failed for same module of permitted subclass %s and sealed class %s",
+                             k->external_name(), this->external_name());
+    return false;
+  }
+
+  if (!k->is_public() && !is_same_class_package(k)) {
+    ResourceMark rm(THREAD);
+    log_trace(class, sealed)("Check failed, subclass %s not public and not in the same package as sealed class %s",
                              k->external_name(), this->external_name());
     return false;
   }
@@ -729,8 +737,8 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
 
 bool InstanceKlass::is_sealed() const {
   return _permitted_subclasses != NULL &&
-        _permitted_subclasses != Universe::the_empty_short_array() &&
-        _permitted_subclasses->length() > 0;
+         _permitted_subclasses != Universe::the_empty_short_array() &&
+         _permitted_subclasses->length() > 0;
 }
 
 bool InstanceKlass::should_be_initialized() const {

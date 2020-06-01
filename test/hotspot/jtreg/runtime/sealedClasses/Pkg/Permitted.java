@@ -23,4 +23,4 @@
 
 package Pkg;
 
-public final class Permitted implements SealedInterface { }
+final class Permitted implements SealedInterface { }

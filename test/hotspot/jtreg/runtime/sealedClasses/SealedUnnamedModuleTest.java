@@ -44,20 +44,21 @@ public class SealedUnnamedModuleTest {
         // This should fail.
         try {
             Class mars = Class.forName("planets.Mars");
-            throw new RuntimeException("Expected VerifyError exception not thrown");
-        } catch (VerifyError e) {
+            throw new RuntimeException("Expected IncompatibleClassChangeError exception not thrown");
+        } catch (IncompatibleClassChangeError e) {
             if (!e.getMessage().contains("cannot inherit from sealed class")) {
-                throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
+                throw new RuntimeException("Wrong IncompatibleClassChangeError exception thrown: " + e.getMessage());
             }
         }
 
-        // Test both permitted subclass and superclass in unnamed module but in different
-        // packages.  This should fail.
+        // Test non-public permitted subclass and superclass in same unnamed module but
+        // in different packages.  This should fail.
         try {
             Class pluto = Class.forName("asteroids.Pluto");
-        } catch (VerifyError e) {
+            throw new RuntimeException("Expected IncompatibleClassChangeError exception not thrown");
+        } catch (IncompatibleClassChangeError e) {
             if (!e.getMessage().contains("cannot inherit from sealed class")) {
-                throw new RuntimeException("Wrong VerifyError exception thrown: " + e.getMessage());
+                throw new RuntimeException("Wrong IncompatibleClassChangeError exception thrown: " + e.getMessage());
             }
         }
     }
