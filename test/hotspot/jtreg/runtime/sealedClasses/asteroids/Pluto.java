@@ -23,5 +23,5 @@
 
 package asteroids;
 
-public final class Pluto extends planets.OuterPlanets { }
+final class Pluto extends planets.OuterPlanets { }
 

@@ -3513,14 +3513,14 @@ void ClassFileParser::parse_classfile_bootstrap_methods_attribute(const ClassFil
 
 bool ClassFileParser::supports_sealed_types() {
   return _major_version == JVM_CLASSFILE_MAJOR_VERSION &&
-    _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
-    Arguments::enable_preview();
+         _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
+         Arguments::enable_preview();
 }
 
 bool ClassFileParser::supports_records() {
   return _major_version == JVM_CLASSFILE_MAJOR_VERSION &&
-    _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
-    Arguments::enable_preview();
+         _minor_version == JAVA_PREVIEW_MINOR_VERSION &&
+         Arguments::enable_preview();
 }
 
 void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cfs,
@@ -3790,12 +3790,12 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
               if (supports_sealed_types()) {
                 if (parsed_permitted_subclasses_attribute) {
                   classfile_parse_error("Multiple PermittedSubclasses attributes in class file %s", CHECK);
-                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
-                } else if (_access_flags.is_final()) {
-                  classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
-                } else {
-                  parsed_permitted_subclasses_attribute = true;
                 }
+                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
+                if (_access_flags.is_final()) {
+                  classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
+                }
+                parsed_permitted_subclasses_attribute = true;
                 permitted_subclasses_attribute_start = cfs->current();
                 permitted_subclasses_attribute_length = attribute_length;
               }
@@ -4760,7 +4760,6 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
   const Klass* const super = this_klass->super();
 
   if (super != NULL) {
-    assert(super->is_instance_klass(), "super is not instance klass");
     const InstanceKlass* super_ik = InstanceKlass::cast(super);
 
     if (super->is_final()) {
@@ -4778,7 +4777,7 @@ static void check_super_class_access(const InstanceKlass* this_klass, TRAPS) {
       ResourceMark rm(THREAD);
       Exceptions::fthrow(
         THREAD_AND_LOCATION,
-        vmSymbols::java_lang_VerifyError(),
+        vmSymbols::java_lang_IncompatibleClassChangeError(),
         "class %s cannot inherit from sealed class %s",
         this_klass->external_name(),
         super_ik->external_name());
@@ -4849,7 +4848,7 @@ static void check_super_interface_access(const InstanceKlass* this_klass, TRAPS)
       ResourceMark rm(THREAD);
       Exceptions::fthrow(
         THREAD_AND_LOCATION,
-        vmSymbols::java_lang_VerifyError(),
+        vmSymbols::java_lang_IncompatibleClassChangeError(),
         "class %s cannot %s sealed interface %s",
         this_klass->external_name(),
         this_klass->is_interface() ? "extend" : "implement",

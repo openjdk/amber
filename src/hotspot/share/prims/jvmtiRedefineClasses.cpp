@@ -855,8 +855,10 @@ static jvmtiError check_record_attribute(InstanceKlass* the_class, InstanceKlass
 
 
 static jvmtiError check_permitted_subclasses_attribute(InstanceKlass* the_class,
-                                                     InstanceKlass* scratch_class) {
+                                                       InstanceKlass* scratch_class) {
   // Check whether the class PermittedSubclasses attribute has been changed.
+  Thread* thread = Thread::current();
+  ResourceMark rm(thread);
   Array<u2>* the_permitted_subclasses = the_class->permitted_subclasses();
   Array<u2>* scr_permitted_subclasses = scratch_class->permitted_subclasses();
   bool the_subclasses_exist = the_permitted_subclasses != Universe::the_empty_short_array();
@@ -2004,11 +2006,10 @@ bool VM_RedefineClasses::rewrite_cp_refs_in_permitted_subclasses_attribute(
        InstanceKlass* scratch_class) {
 
   Array<u2>* permitted_subclasses = scratch_class->permitted_subclasses();
-  if (permitted_subclasses != NULL) {
-    for (int i = 0; i < permitted_subclasses->length(); i++) {
-      u2 cp_index = permitted_subclasses->at(i);
-      permitted_subclasses->at_put(i, find_new_index(cp_index));
-    }
+  assert(permitted_subclasses != NULL, "unexpected null permitted_subclasses");
+  for (int i = 0; i < permitted_subclasses->length(); i++) {
+    u2 cp_index = permitted_subclasses->at(i);
+    permitted_subclasses->at_put(i, find_new_index(cp_index));
   }
   return true;
 }

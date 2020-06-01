@@ -2112,25 +2112,19 @@ JVM_ENTRY(jobjectArray, JVM_GetPermittedSubclasses(JNIEnv* env, jclass current))
     JvmtiVMObjectAllocEventCollector oam;
     Array<u2>* subclasses = ik->permitted_subclasses();
     int length = subclasses == NULL ? 0 : subclasses->length();
-    if (length != 0) {
-      objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(),
-                                               length, CHECK_NULL);
-      objArrayHandle result (THREAD, r);
-      int i;
-      for (i = 0; i < length; i++) {
-        int cp_index = subclasses->at(i);
-        // This returns <package-name>/<class-name>.
-        Symbol* klass_name = ik->constants()->klass_name_at(cp_index);
-        assert(klass_name != NULL, "Unexpected null klass_name");
-        Handle perm_subtype_h = java_lang_String::create_from_symbol(klass_name, CHECK_NULL);
-        result->obj_at_put(i, perm_subtype_h());
-      }
-      return (jobjectArray)JNIHandles::make_local(THREAD, result());
+    objArrayOop r = oopFactory::new_objArray(SystemDictionary::String_klass(),
+                                             length, CHECK_NULL);
+    objArrayHandle result(THREAD, r);
+    for (int i = 0; i < length; i++) {
+      int cp_index = subclasses->at(i);
+      // This returns <package-name>/<class-name>.
+      Symbol* klass_name = ik->constants()->klass_name_at(cp_index);
+      assert(klass_name != NULL, "Unexpected null klass_name");
+      Handle perm_subtype_h = java_lang_String::create_from_symbol(klass_name, CHECK_NULL);
+      result->obj_at_put(i, perm_subtype_h());
     }
+    return (jobjectArray)JNIHandles::make_local(THREAD, result());
   }
-  // if it gets to here return an empty array, cases will be: the class is primitive, or an array, or just not sealed
-  objArrayOop result = oopFactory::new_objArray(SystemDictionary::String_klass(), 0, CHECK_NULL);
-  return (jobjectArray)JNIHandles::make_local(env, result);
 }
 JVM_END
 
