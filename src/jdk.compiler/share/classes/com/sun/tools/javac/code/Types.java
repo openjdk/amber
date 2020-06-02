@@ -2227,7 +2227,7 @@ public class Types {
      * @param sym a symbol
      */
     public Type memberType(Type t, Symbol sym) {
-        return (sym.flags() & STATIC) != 0
+        return ((sym.flags() & STATIC) != 0 || (sym.owner.kind == MTH))
             ? sym.type
             : memberType.visit(t, sym);
         }
