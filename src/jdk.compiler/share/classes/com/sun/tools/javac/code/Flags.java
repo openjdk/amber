@@ -367,14 +367,24 @@ public class Flags {
     public static final int GENERATED_MEMBER = 1<<24; // MethodSymbols and VarSymbols
 
     /**
+     * Flag to indicate sealed class/interface declaration.
+     */
+    public static final long SEALED = 1L<<62; // ClassSymbols
+
+    /**
+     * Flag to indicate that the class/interface was declared with the non-sealed modifier.
+     */
+    public static final long NON_SEALED = 1L<<63; // ClassSymbols
+
+    /**
      * Flag for concise methods `=`
      */
-    public static final long CONCISE_EQUAL = 1L<<61;
+    public static final long CONCISE_EQUAL = 1L<<62; // MethodSymbols
 
     /**
      * Flag for concise methods `->`
      */
-    public static final long CONCISE_ARROW = 1L<<62;
+    public static final long CONCISE_ARROW = 1L<<63; // MethodSymbols
 
     /** Modifier masks.
      */
@@ -395,14 +405,16 @@ public class Flags {
         RecordMethodFlags     = AccessFlags | ABSTRACT | STATIC |
                                 SYNCHRONIZED | FINAL | STRICTFP;
     public static final long
-        ExtendedStandardFlags       = (long)StandardFlags | DEFAULT,
-        ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT,
+        ExtendedStandardFlags       = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
+        ExtendedMemberClassFlags    = (long)MemberClassFlags | SEALED | NON_SEALED,
+        ExtendedClassFlags          = (long)ClassFlags | SEALED | NON_SEALED,
+        ModifierFlags               = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED,
         InterfaceMethodMask         = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
         AnnotationTypeElementMask   = ABSTRACT | PUBLIC,
         LocalVarFlags               = FINAL | PARAMETER,
         ReceiverParamFlags          = PARAMETER;
 
-
+    @SuppressWarnings("preview")
     public static Set<Modifier> asModifierSet(long flags) {
         Set<Modifier> modifiers = modifierSets.get(flags);
         if (modifiers == null) {
@@ -412,6 +424,9 @@ public class Flags {
             if (0 != (flags & PRIVATE))   modifiers.add(Modifier.PRIVATE);
             if (0 != (flags & ABSTRACT))  modifiers.add(Modifier.ABSTRACT);
             if (0 != (flags & STATIC))    modifiers.add(Modifier.STATIC);
+            if (0 != (flags & SEALED))    modifiers.add(Modifier.SEALED);
+            if (0 != (flags & NON_SEALED))
+                                          modifiers.add(Modifier.NON_SEALED);
             if (0 != (flags & FINAL))     modifiers.add(Modifier.FINAL);
             if (0 != (flags & TRANSIENT)) modifiers.add(Modifier.TRANSIENT);
             if (0 != (flags & VOLATILE))  modifiers.add(Modifier.VOLATILE);
@@ -503,6 +518,13 @@ public class Flags {
         MATCH_BINDING(Flags.MATCH_BINDING),
         MATCH_BINDING_TO_OUTER(Flags.MATCH_BINDING_TO_OUTER),
         RECORD(Flags.RECORD),
+        SEALED(Flags.SEALED),
+        NON_SEALED(Flags.NON_SEALED) {
+            @Override
+            public String toString() {
+                return "non-sealed";
+            }
+        },
         CONCISE_EQUAL(Flags.CONCISE_EQUAL),
         CONCISE_ARROW(Flags.CONCISE_ARROW);
 
