@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -168,7 +168,8 @@ public class Preview {
         if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
             feature == Feature.DECONSTRUCTION_PATTERNS ||
             feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
-            feature == Feature.RECORDS)
+            feature == Feature.RECORDS ||
+            feature == Feature.SEALED_CLASSES)
             return true;
         //Note: this is a backdoor which allows to optionally treat all features as 'preview' (for testing).
         //When real preview features will be added, this method can be implemented to return 'true'
