@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -220,7 +220,7 @@ public class TestSealedTypes extends JavadocTester {
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a> "
-		+ "<span class=\"permits-note\">(not exhaustive)</span></pre>");
+                + "<span class=\"permits-note\">(not exhaustive)</span></pre>");
     }
 
     // @Test // javac incorrectly rejects the source
@@ -269,7 +269,7 @@ public class TestSealedTypes extends JavadocTester {
                 + "extends java.lang.Object\n"
                 + "permits <a href=\"B.html\" title=\"class in p\">B</a>, "
                 + "<a href=\"C.html\" title=\"class in p\">C</a> "
-		+ "<span class=\"permits-note\">(not exhaustive)</span></pre>");
+                + "<span class=\"permits-note\">(not exhaustive)</span></pre>");
     }
 
     @Test

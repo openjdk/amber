@@ -48,11 +48,6 @@ public class LinkInfoImpl extends LinkInfo {
         DEFAULT,
 
         /**
-         * Indicate that the link appears in a class list.
-         */
-        ALL_CLASSES_FRAME,
-
-        /**
          * Indicate that the link appears in a class documentation.
          */
         CLASS,
@@ -191,11 +186,6 @@ public class LinkInfoImpl extends LinkInfo {
          * Annotation link.
          */
         ANNOTATION,
-
-        /**
-         * The header for field documentation copied from parent.
-         */
-        VARIABLE_ELEMENT_COPY,
 
         /**
          * The parent nodes in the class tree.
@@ -355,12 +345,10 @@ public class LinkInfoImpl extends LinkInfo {
     public final void setContext(Kind c) {
         //NOTE:  Put context specific link code here.
         switch (c) {
-            case ALL_CLASSES_FRAME:
             case PACKAGE_FRAME:
             case IMPLEMENTED_CLASSES:
             case SUBCLASSES:
             case EXECUTABLE_ELEMENT_COPY:
-            case VARIABLE_ELEMENT_COPY:
             case PROPERTY_COPY:
             case CLASS_USE_HEADER:
                 includeTypeInClassLinkLabel = false;
