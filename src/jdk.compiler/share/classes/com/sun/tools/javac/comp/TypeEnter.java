@@ -114,6 +114,7 @@ public class TypeEnter implements Completer {
     private final Lint lint;
     private final TypeEnvs typeEnvs;
     private final Dependencies dependencies;
+    private final EnumTypeStrategy enumTypeStrategy;
 
     public static TypeEnter instance(Context context) {
         TypeEnter instance = context.get(typeEnterKey);
@@ -144,6 +145,7 @@ public class TypeEnter implements Completer {
         Source source = Source.instance(context);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
         allowDeprecationOnImport = Feature.DEPRECATION_ON_IMPORT.allowedInSource(source);
+        enumTypeStrategy = EnumTypeStrategy.from(Options.instance(context).get("enumTypeStrategy"));
     }
 
     /** Switch: support type annotations.
@@ -546,7 +548,7 @@ public class TypeEnter implements Completer {
         protected  JCExpression enumBase(int pos, ClassSymbol c) {
             JCExpression result = make.at(pos).
                 TypeApply(make.QualIdent(syms.enumSym),
-                          List.of(make.Type(c.type)));
+                          List.of(make.Type(enumTypeStrategy.adapt(TypeEnter.this, c.type.tsym))));
             return result;
         }
 
@@ -1022,7 +1024,7 @@ public class TypeEnter implements Completer {
             boolean isRecord = sym.isRecord();
             if (isClassWithoutInit && !isRecord) {
                 helper = new BasicConstructorHelper(sym);
-                if (sym.name.isEmpty()) {
+                if (sym.name.isEmpty() || (sym.flags() & ENUM_CONSTANT_CLASS) != 0) {
                     JCNewClass nc = (JCNewClass)env.next.tree;
                     if (nc.constructor != null) {
                         if (nc.constructor.kind != ERR) {
@@ -1112,7 +1114,7 @@ public class TypeEnter implements Completer {
          *  to the symbol table.
          */
         private void addEnumMembers(JCClassDecl tree, Env<AttrContext> env) {
-            JCExpression valuesType = make.Type(new ArrayType(tree.sym.type, syms.arrayClass));
+            JCExpression valuesType = make.Type(new ArrayType(enumTypeStrategy.adapt(TypeEnter.this, tree.sym), syms.arrayClass));
 
             JCMethodDecl values = make.
                 MethodDef(make.Modifiers(Flags.PUBLIC|Flags.STATIC),
@@ -1128,7 +1130,7 @@ public class TypeEnter implements Completer {
             JCMethodDecl valueOf = make.
                 MethodDef(make.Modifiers(Flags.PUBLIC|Flags.STATIC),
                           names.valueOf,
-                          make.Type(tree.sym.type),
+                          make.Type(enumTypeStrategy.adapt(TypeEnter.this, tree.sym)),
                           List.nil(),
                           List.of(make.VarDef(make.Modifiers(Flags.PARAMETER |
                                                              Flags.MANDATED),
@@ -1264,6 +1266,9 @@ public class TypeEnter implements Completer {
                     flags = PRIVATE | GENERATEDCONSTR;
                 } else {
                     flags = (owner().flags() & AccessFlags) | GENERATEDCONSTR;
+                    if ((owner().flags() & ENUM) != 0) {
+                        flags &= ~PUBLIC;
+                    }
                 }
                 constructorSymbol = new MethodSymbol(flags, names.init,
                     constructorType(), owner());
@@ -1472,4 +1477,39 @@ public class TypeEnter implements Completer {
                         }
                     });
         }
+
+    enum EnumTypeStrategy {
+        RAW("raw") {
+            @Override
+            Type adapt(TypeEnter enter, TypeSymbol sym) {
+                return enter.types.erasure(sym.type);
+            }
+        },
+        WILD("wild") {
+            @Override
+            Type adapt(TypeEnter enter, TypeSymbol sym) {
+                List<Type> actuals = sym.type.getTypeArguments().stream()
+                        .map(a -> new WildcardType(enter.syms.objectType, BoundKind.UNBOUND, enter.syms.boundClass, (TypeVar)a))
+                        .collect(List.collector());
+                return new ClassType(Type.noType, actuals, sym);
+            }
+        };
+
+        final String name;
+
+        EnumTypeStrategy(String name) {
+            this.name = name;
+        }
+
+        static EnumTypeStrategy from(String s) {
+            for (EnumTypeStrategy st : values()) {
+                if (st.name.equals(s)) {
+                    return st;
+                }
+            }
+            return EnumTypeStrategy.RAW;
+        }
+
+        abstract Type adapt(TypeEnter enter, TypeSymbol sym);
+    }
 }

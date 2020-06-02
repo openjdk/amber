@@ -201,5 +201,11 @@ public class JavadocMemberEnter extends MemberEnter {
                     maybeConstantExpr = false;
             }
         }
+
+        @Override
+        public void visitNewClass(JCNewClass that) {
+            maybeConstantExpr = that.def != null &&
+                    (that.def.mods.flags & ENUM_CONSTANT_CLASS) != 0;
+        }
     }
 }

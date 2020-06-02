@@ -1,0 +1,5 @@
+RawEnumTest.java:28:10: compiler.err.cant.apply.symbols: kindname.method, m, int,{(compiler.misc.inapplicable.method: kindname.method, RawEnumTest.Foo, m(), (compiler.misc.arg.length.mismatch)),(compiler.misc.inapplicable.method: kindname.method, RawEnumTest.Foo, m(java.lang.String), (compiler.misc.no.conforming.assignment.exists: (compiler.misc.inconvertible.types: int, java.lang.String)))}
+RawEnumTest.java:29:15: compiler.warn.unchecked.call.mbr.of.raw.type: list(java.util.List<X>), RawEnumTest.Foo
+RawEnumTest.java:32:26: compiler.warn.prob.found.req: (compiler.misc.unchecked.assign), RawEnumTest.Foo, RawEnumTest.Foo<java.lang.String>
+1 error
+2 warnings

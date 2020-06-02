@@ -1,0 +1,2 @@
+SharperTypeTest.java:29:41: compiler.err.cant.resolve.location.args: kindname.method, mod, , int,int, (compiler.misc.location.1: kindname.variable, FLOAT, SharperTypeTest.Primitive<java.lang.Float>)
+1 error

@@ -1,0 +1,2 @@
+NoWildcardInEnumConstantsTest.java:9:5: compiler.err.type.found.req: ?, (compiler.misc.type.req.exact)
+1 error

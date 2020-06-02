@@ -138,6 +138,13 @@ public enum Target {
         return '$';
     }
 
+    /** Return the string to be used in constructing synthetic
+     *  enum identifiers, where not specified by the JLS.
+     */
+    public String syntheticEnumNameStr() {
+        return compareTo(JDK1_10) >= 0 ? "$$" : "$";
+    }
+
     /** Does the target VM expect MethodParameters attributes?
      */
     public boolean hasMethodParameters() {
