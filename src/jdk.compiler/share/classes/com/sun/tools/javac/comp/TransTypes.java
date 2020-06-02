@@ -585,6 +585,13 @@ public class TransTypes extends TreeTranslator {
         result = retype(tree, tree.type, pt);
     }
 
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        tree.deconstructor = translate(tree.deconstructor, null);
+        tree.nested = translate(tree.nested, null);
+        result = tree;
+    }
+
     public void visitSynchronized(JCSynchronized tree) {
         tree.lock = translate(tree.lock, erasure(tree.lock.type));
         tree.body = translate(tree.body);
