@@ -3,7 +3,8 @@
  * @bug 8003280
  * @summary Add lambda tests
  *  check that lambda cannot shadow variables from enclosing scope
- * @compile/fail/ref=LambdaScope04.out -XDrawDiagnostics LambdaScope04.java
+ * @compile/fail/ref=LambdaScope04_Source9.out -source 9 -Xlint:-options -XDrawDiagnostics LambdaScope04.java
+ * @compile/fail/ref=LambdaScope04_Source10.out -Xlint:-options -XDrawDiagnostics LambdaScope04.java
  */
 
 class LambdaScope04 {

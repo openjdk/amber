@@ -288,7 +288,7 @@ public class LambdaParserTest extends ComboInstance<LambdaParserTest> {
         }
 
         errorExpected |= pn == LambdaParameterName.UNDERSCORE &&
-                lk.arity() > 0;
+                lk.arity() > 0 && sk == SourceKind.SOURCE_9;
 
         for (int i = 0; i < lk.arity(); i++) {
             if (!lk.isShort() &&
