@@ -210,6 +210,7 @@ public enum Source {
         REIFIABLE_TYPES_INSTANCEOF(JDK15, Fragments.FeatureReifiableTypesInstanceof, DiagKind.PLURAL),
         RECORDS(JDK15, Fragments.FeatureRecords, DiagKind.PLURAL),
         SEALED_CLASSES(JDK15, Fragments.FeatureSealedClasses, DiagKind.PLURAL),
+        CONCISE_METHOD_BODIES(JDK15, Fragments.FeatureConciseMethodBodies, DiagKind.PLURAL);
         ;
 
         enum DiagKind {

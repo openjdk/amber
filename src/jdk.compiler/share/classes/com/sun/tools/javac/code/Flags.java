@@ -376,6 +376,16 @@ public class Flags {
      */
     public static final long NON_SEALED = 1L<<63; // ClassSymbols
 
+    /**
+     * Flag for concise methods `=`
+     */
+    public static final long CONCISE_EQUAL = 1L<<62; // MethodSymbols
+
+    /**
+     * Flag for concise methods `->`
+     */
+    public static final long CONCISE_ARROW = 1L<<63; // MethodSymbols
+
     /** Modifier masks.
      */
     public static final int
@@ -514,7 +524,9 @@ public class Flags {
             public String toString() {
                 return "non-sealed";
             }
-        };
+        },
+        CONCISE_EQUAL(Flags.CONCISE_EQUAL),
+        CONCISE_ARROW(Flags.CONCISE_ARROW);
 
         Flag(long flag) {
             this.value = flag;
