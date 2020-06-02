@@ -1556,6 +1556,12 @@ public class JavaCompiler {
             env.tree = transTypes.translateTopLevelClass(env.tree, localMake);
             compileStates.put(env, CompileState.TRANSTYPES);
 
+            if (shouldStop(CompileState.TRANSSWITCHES))
+                return;
+
+            env.tree = TransSwitches.instance(context).translateTopLevelClass(env, env.tree, localMake);
+            compileStates.put(env, CompileState.TRANSSWITCHES);
+
             if (shouldStop(CompileState.TRANSPATTERNS))
                 return;
 

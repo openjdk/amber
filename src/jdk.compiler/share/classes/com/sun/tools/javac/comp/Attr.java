@@ -25,14 +25,17 @@
 
 package com.sun.tools.javac.comp;
 
+import sun.invoke.util.BytecodeName;
+
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
 
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.MemberSelectTree;
@@ -59,6 +62,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.tree.JCTree.JCLiteralPattern.LiteralPatternKind;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -75,6 +79,8 @@ import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.TypeTag.WILDCARD;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
+import com.sun.tools.javac.comp.Analyzer.AnalyzerMode;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 
@@ -119,6 +125,7 @@ public class Attr extends JCTree.Visitor {
     final Dependencies dependencies;
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
+    final ClassReader reader;
     final MatchBindingsComputer matchBindingsComputer;
 
     public static Attr instance(Context context) {
@@ -156,6 +163,7 @@ public class Attr extends JCTree.Visitor {
         typeEnvs = TypeEnvs.instance(context);
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
+        reader = ClassReader.instance(context);
         matchBindingsComputer = MatchBindingsComputer.instance(context);
 
         Options options = Options.instance(context);
@@ -1497,7 +1505,7 @@ public class Attr extends JCTree.Visitor {
             result = null;
         }
         finally {
-            loopEnv.info.scope.leave();
+            loopEnv.info.scope.leave(); // all injected match bindings vanish here.
         }
         if (!breaksOutOf(tree, tree.body)) {
             //include condition's body when false after the while, if cannot get out of the loop
@@ -1564,7 +1572,7 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitSwitch(JCSwitch tree) {
-        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> ((JCSwitch) t).kind = k, (c, caseEnv) -> {
             attribStats(c.stats, caseEnv);
         });
         result = null;
@@ -1588,7 +1596,7 @@ public class Attr extends JCTree.Visitor {
         ListBuffer<DiagnosticPosition> caseTypePositions = new ListBuffer<>();
         ListBuffer<Type> caseTypes = new ListBuffer<>();
 
-        handleSwitch(tree, tree.selector, tree.cases, (c, caseEnv) -> {
+        handleSwitch(tree, tree.selector, tree.cases, (t, k) -> ((JCSwitchExpression) t).kind = k, (c, caseEnv) -> {
             caseEnv.info.yieldResult = condInfo;
             attribStats(c.stats, caseEnv);
             new TreeScanner() {
@@ -1634,6 +1642,7 @@ public class Attr extends JCTree.Visitor {
     private void handleSwitch(JCTree switchTree,
                               JCExpression selector,
                               List<JCCase> cases,
+                              BiConsumer<JCTree, SwitchKind> kindSetter,
                               BiConsumer<JCCase, Env<AttrContext>> attribCase) {
         Type seltype = attribExpr(selector, env);
 
@@ -1641,16 +1650,33 @@ public class Attr extends JCTree.Visitor {
             env.dup(switchTree, env.info.dup(env.info.scope.dup()));
 
         try {
-            boolean enumSwitch = (seltype.tsym.flags() & Flags.ENUM) != 0;
-            boolean stringSwitch = types.isSameType(seltype, syms.stringType);
-            if (!enumSwitch && !stringSwitch)
+            boolean hasPatternCases = cases.stream()
+                                           .flatMap(c -> c.pats.stream())
+                                           .anyMatch(pat -> pat.constExpression() == null); //XXX: null handling???
+            SwitchKind kind;
+            if (hasPatternCases) {
+                //TODO: check source level
+                kind = SwitchKind.MATCHING;
+            } else if ((seltype.tsym.flags() & Flags.ENUM) != 0) {
+                kind = SwitchKind.ENUM;
+            } else if (types.isSameType(seltype, syms.stringType)) {
+                kind = SwitchKind.STRING;
+            } else if (!types.isAssignable(seltype, syms.intType) &&
+                       !types.isSameType(seltype, syms.voidType)) {
+                //TODO: check source level
+                kind = SwitchKind.MATCHING;
+            } else {
                 seltype = chk.checkType(selector.pos(), seltype, syms.intType);
-
+                kind = SwitchKind.ORDINARY;
+            }
+            kindSetter.accept(switchTree, kind);
             // Attribute all cases and
             // check that there are no duplicate case labels or default clauses.
             Set<Object> labels = new HashSet<>(); // The set of case labels.
             boolean hasDefault = false;      // Is there a default label?
-            CaseTree.CaseKind caseKind = null;
+            MatchBindings prevBindings = null;
+            @SuppressWarnings("removal")
+            CaseKind caseKind = null;
             boolean wasError = false;
             for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
@@ -1661,43 +1687,74 @@ public class Attr extends JCTree.Visitor {
                               Errors.SwitchMixingCaseTypes);
                     wasError = true;
                 }
-                if (c.getExpressions().nonEmpty()) {
-                    for (JCExpression pat : c.getExpressions()) {
+                MatchBindings currentBindings = prevBindings;
+                if (c.getPatterns().nonEmpty()) {
+                    for (JCPattern pat : c.getPatterns()) {
                         if (TreeInfo.isNull(pat)) {
                             log.error(pat.pos(),
                                       Errors.SwitchNullNotAllowed);
-                        } else if (enumSwitch) {
-                            Symbol sym = enumConstant(pat, seltype);
-                            if (sym == null) {
-                                log.error(pat.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
-                            } else if (!labels.add(sym)) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
-                            }
-                        } else {
-                            Type pattype = attribExpr(pat, switchEnv, seltype);
-                            if (!pattype.hasTag(ERROR)) {
-                                if (pattype.constValue() == null) {
-                                    log.error(pat.pos(),
-                                              (stringSwitch ? Errors.StringConstReq : Errors.ConstExprReq));
-                                } else if (!labels.add(pattype.constValue())) {
+                            continue;
+                        }
+                        switch (kind) {
+                            case MATCHING:
+                                ResultInfo castInfo = unknownExprInfo;
+                                if (pat.getTag() == BINDINGPATTERN) {
+                                    JCBindingPattern bindingPattern = (JCBindingPattern) pat;
+                                    if (bindingPattern.vartype == null)
+                                        castInfo = castInfo(seltype);
+                                }
+                                Type patType = attribTree(pat, switchEnv, castInfo);
+                                chk.checkCastable(selector.pos(), seltype, patType);
+                                if (pat.getTag() == LITERALPATTERN && !labels.add(patType.constValue())) {
                                     log.error(c.pos(), Errors.DuplicateCaseLabel);
                                 }
-                            }
+                                break;
+                            case ENUM:
+                                Symbol sym = enumConstant(pat.constExpression(), seltype);
+                                if (sym == null) {
+                                    log.error(pat.constExpression().pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
+                                } else if (!labels.add(sym)) {
+                                    log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                }
+                                break;
+                            default:
+                                Type pattype = attribExpr(pat.constExpression(), switchEnv, seltype);
+                                if (!pattype.hasTag(ERROR)) {
+                                    if (pattype.constValue() == null) {
+                                        log.error(pat.constExpression().pos(),
+                                                  (kind == SwitchKind.STRING ? Errors.StringConstReq
+                                                                                  : Errors.ConstExprReq));
+                                    } else if (!labels.add(pattype.constValue())) {
+                                        log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                    }
+                                }
+                                break;
                         }
+                        currentBindings = matchBindingsComputer.switchCase(pat, currentBindings, matchBindings);
                     }
-                } else if (hasDefault) {
-                    log.error(c.pos(), Errors.DuplicateDefaultLabel);
                 } else {
-                    hasDefault = true;
+                    if (hasDefault) {
+                        log.error(c.pos(), Errors.DuplicateDefaultLabel);
+                    } else {
+                        hasDefault = true;
+                    }
+                    currentBindings = MatchBindingsComputer.EMPTY;
                 }
-                Env<AttrContext> caseEnv =
-                    switchEnv.dup(c, env.info.dup(switchEnv.info.scope.dup()));
+
+                Env<AttrContext> caseEnv = bindingEnv(switchEnv, currentBindings.bindingsWhenTrue);
+
+                caseEnv.tree = c;
+
                 try {
                     attribCase.accept(c, caseEnv);
                 } finally {
                     caseEnv.info.scope.leave();
                 }
+
                 addVars(c.stats, switchEnv.info.scope);
+
+                c.completesNormally = flow.aliveAfter(caseEnv, c, make);
+                prevBindings = c.completesNormally ? matchBindings : null;
             }
         } finally {
             switchEnv.info.scope.leave();
@@ -1730,6 +1787,19 @@ public class Attr extends JCTree.Visitor {
         }
         return null;
     }
+
+    ResultInfo castInfo(Type target) {
+        return target.isErroneous()
+                ? unknownExprInfo
+                : new ResultInfo(KindSelector.VAL, target,
+                        new Check.NestedCheckContext(resultInfo.checkContext) {
+                            @Override
+                            public boolean compatible(Type found, Type req, Warner warn) {
+                                return types.isCastable(found, req, warn);
+                            }
+                });
+    }
+
 
     public void visitSynchronized(JCSynchronized tree) {
         chk.checkRefType(tree.pos(), attribExpr(tree.lock, env));
@@ -3869,13 +3939,7 @@ public class Attr extends JCTree.Visitor {
         boolean isPoly = allowPoly && (expr.hasTag(LAMBDA) || expr.hasTag(REFERENCE));
         if (isPoly) {
             //expression is a poly - we need to propagate target type info
-            castInfo = new ResultInfo(KindSelector.VAL, clazztype,
-                                      new Check.NestedCheckContext(resultInfo.checkContext) {
-                @Override
-                public boolean compatible(Type found, Type req, Warner warn) {
-                    return types.isCastable(found, req, warn);
-                }
-            });
+            castInfo = castInfo(clazztype);
         } else {
             //standalone cast - target-type info is not propagated
             castInfo = unknownExprInfo;
@@ -3915,16 +3979,7 @@ public class Attr extends JCTree.Visitor {
                 if (preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF)) {
                     preview.warnPreview(tree.expr.pos(), Feature.REIFIABLE_TYPES_INSTANCEOF);
                 }
-                Warner warner = new Warner();
-                if (!types.isCastable(exprtype, clazztype, warner)) {
-                    chk.basicHandler.report(tree.expr.pos(),
-                                            diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
-                } else if (warner.hasLint(LintCategory.UNCHECKED)) {
-                    log.error(tree.expr.pos(),
-                              Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
-                } else {
-                    valid = true;
-                }
+                valid = verifyCastable(tree.expr.pos(), exprtype, clazztype);
             } else {
                 log.error(typeTree.pos(), Errors.IllegalGenericTypeForInstof);
             }
@@ -3937,17 +3992,137 @@ public class Attr extends JCTree.Visitor {
         result = check(tree, syms.booleanType, KindSelector.VAL, resultInfo);
     }
 
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
+        tree.type = resultInfo.pt;
+        result = tree.type;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
-        ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
-        tree.type = attribTree(tree.vartype, env, varInfo);
-        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype.type, env.info.scope.owner);
+        if (tree.vartype != null) {
+            ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
+            tree.type = attribTree(tree.vartype, env, varInfo);
+        } else {
+            tree.type = resultInfo.pt;
+        }
+        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype != null ? tree.vartype.type : (tree.type.hasTag(BOT) ? syms.objectType : tree.type), env.info.scope.owner);
         if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
             chk.checkTransparentVar(tree.pos(), v, env.info.scope);
         }
-        annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
-        annotate.flush();
+        if (tree.vartype != null) {
+            annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
+            annotate.flush();
+        }
         result = tree.type;
         matchBindings = new MatchBindings(List.of(tree.symbol), List.nil());
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        Type site = tree.type = attribType(tree.deconstructor, env);
+        ListBuffer<Type> components = new ListBuffer<>();
+        Map<JCPattern, MatchBindings> nestedBindings = new HashMap<>();
+        for (JCPattern n : tree.nested) {
+            if ((n.hasTag(BINDINGPATTERN) && ((JCBindingPattern) n).vartype == null) || n.hasTag(ANYPATTERN)) {
+                components.append(Type.noType);
+            } else {
+                components.append(attribExpr(n, env));
+                nestedBindings.put(n, matchBindings);
+            }
+        }
+        Iterable<Symbol> patterns = site.tsym.members().getSymbols(sym -> sym.kind == Kind.MTH && sym.name.startsWith(names.fromString("\\%pattern\\%")));
+        List<Pair<MethodSymbol, List<Type>>> foundPatterns = List.nil();
+        for (Symbol pattern : patterns) {
+            String[] parts = BytecodeName.toSourceName(pattern.name.toString()).split("\\$", 4);
+            if (!parts[2].contentEquals(site.tsym.name))
+                continue;
+            ListBuffer<Type> patternComponents = new ListBuffer<>();
+            byte[] sig = Convert.string2utf(parts[3]);
+            int[] idx = {1};
+            while (sig[idx[0]] != ')') {//TODO: handle errors
+                patternComponents.append(reader.decodeType(env.toplevel.modle, sig, idx));
+            }
+            if (isSubTypesIgnoreNone(components.toList(), patternComponents.toList())) {
+                //found a pattern:
+                foundPatterns = foundPatterns.prepend(Pair.of((MethodSymbol) pattern, patternComponents.toList()));
+            }
+        }
+        ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
+        if (foundPatterns.size() == 1) {
+            tree.extractorResolver = foundPatterns.head.fst;
+            List<Type> currentTypes;
+            tree.innerTypes = currentTypes = foundPatterns.head.snd;
+            //fix var/any patterns:
+            for (JCPattern nestedPattern : tree.nested) {
+                MatchBindings currentBindings;
+                if (nestedPattern.type == null) {
+                    attribExpr(nestedPattern, env, currentTypes.head);
+                    currentBindings = matchBindings;
+                } else {
+                    currentBindings = nestedBindings.get(nestedPattern);
+                    Assert.checkNonNull(currentBindings);
+                }
+                Assert.check(currentBindings.bindingsWhenFalse.isEmpty());
+                outBindings.appendList(currentBindings.bindingsWhenTrue);
+                currentTypes = currentTypes.tail;
+            }
+        } else {
+            //TODO: error:
+        }
+//        //TODO: some checks....
+        result = tree.type;
+        matchBindings = new MatchBindings(outBindings.toList(), List.nil());
+    }
+
+    private boolean isSubTypesIgnoreNone(List<Type> ts, List<Type> ss) {
+        while (ts.tail != null && ss.tail != null &&
+               (ts.head == Type.noType || types.isSubtype(ts.head, ss.head))) {
+            ts = ts.tail;
+            ss = ss.tail;
+        }
+        return ts.tail == null && ss.tail == null;
+    }
+
+    private boolean verifyCastable(DiagnosticPosition pos, Type exprtype, Type clazztype) {
+        Warner warner = new Warner();
+        if (!chk.checkCastable(pos, exprtype, clazztype, chk.basicHandler, warner)) {
+            return false;
+        } else if (warner.hasLint(LintCategory.UNCHECKED)) {
+            log.error(pos,
+                      Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public void visitLiteralPattern(JCLiteralPattern tree) {
+        Type patType = attribTree(tree.value, env, resultInfo);
+
+        if (tree.value.hasTag(IDENT)) {
+            // Pattern is an identifier
+            JCIdent ident = (JCIdent)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else if (tree.value.hasTag(SELECT)) {
+            // Pattern is a compound name
+            JCFieldAccess ident = (JCFieldAccess)tree.value;
+            if (ident.sym.kind==TYP) {
+                tree.patternKind = LiteralPatternKind.TYPE;
+            } else {
+                tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            }
+        } else {
+            // Pattern must be null literal or a constant expression
+            tree.patternKind = LiteralPatternKind.CONSTANTEXPRESSIONORNULL;
+            if (!patType.isErroneous() && !patType.hasTag(BOT) && patType.constValue() == null) {
+                log.error(tree.pos(), Errors.ConstExprReq);
+            }
+        }
+        tree.type = patType;
     }
 
     public void visitIndexed(JCArrayAccess tree) {

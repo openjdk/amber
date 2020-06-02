@@ -1,6 +1,5 @@
 /*
  * @test /nodynamiccopyright/
- * @bug 8231827
  * @summary Basic pattern bindings scope test
  * @compile/fail/ref=MatchBindingScopeTest.out -XDrawDiagnostics --enable-preview -source ${jdk.version} MatchBindingScopeTest.java
  */
@@ -36,7 +35,7 @@ public class MatchBindingScopeTest {
         }
 
         if (o1 instanceof String j || o2 instanceof Integer j) { // NOT OK, types differ
-            System.out.println(j);
+            System.out.println(j); // NOT OK
         } else {
             System.out.println(j); // NOT OK.
         }
@@ -55,6 +54,15 @@ public class MatchBindingScopeTest {
 
         for (; o1 instanceof String j || true; j.length()) { // NOT OK
             System.out.println(j); // Not OK
+        }
+
+        switch (o1) {
+            case String x:
+                    x.length(); // OK.
+                    break;
+            default:
+                    x.length(); // NOT OK.
+                    break;
         }
 
         int x = o1 instanceof String j ?

@@ -51,6 +51,7 @@ import com.sun.tools.javac.tree.EndPosTable;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
+import com.sun.tools.javac.code.Kinds.Kind;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
@@ -60,6 +61,8 @@ import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch;
+import com.sun.tools.javac.tree.JCTree.GenericSwitch.SwitchKind;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
@@ -2469,7 +2472,8 @@ public class Lower extends TreeTranslator {
         tree.defs = tree.defs.appendList(List.of(
                 generateRecordMethod(tree, names.toString, vars, getterMethHandles),
                 generateRecordMethod(tree, names.hashCode, vars, getterMethHandles),
-                generateRecordMethod(tree, names.equals, vars, getterMethHandles)
+                generateRecordMethod(tree, names.equals, vars, getterMethHandles),
+                recordExtractor(tree, getterMethHandles)
         ));
     }
 
@@ -2527,45 +2531,41 @@ public class Lower extends TreeTranslator {
         }
     }
 
-    private String argsTypeSig(List<Type> typeList) {
-        LowerSignatureGenerator sg = new LowerSignatureGenerator();
-        sg.assembleSig(typeList);
-        return sg.toString();
-    }
+    JCTree recordExtractor(JCClassDecl tree, MethodHandleSymbol[] getterMethHandles) {
+        make_at(tree.pos());
 
-    /**
-     * Signature Generation
-     */
-    private class LowerSignatureGenerator extends Types.SignatureGenerator {
+        MethodSymbol extractorSym =
+                (MethodSymbol) tree.sym.members().getSymbols(sym -> sym.kind == Kind.MTH && (sym.flags() & Flags.RECORD) != 0).iterator().next();
 
-        /**
-         * An output buffer for type signatures.
-         */
-        StringBuilder sb = new StringBuilder();
+        // let's create the condy now
+        Name bsmName = names.ofLazyProjection;
+        List<Type> staticArgTypes = List.of(syms.classType,
+                new ArrayType(syms.methodHandleType, syms.arrayClass));
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                syms.classType).appendList(staticArgTypes);
 
-        LowerSignatureGenerator() {
-            super(types);
+        Symbol bsm = rs.resolveInternalMethod(tree, attrEnv, syms.patternHandlesType,
+                bsmName, bsm_staticArgs, List.nil());
+
+        LoadableConstant[] staticArgs = new LoadableConstant[1 + getterMethHandles.length];
+        staticArgs[0] = (ClassType)tree.sym.type;
+        int index = 1;
+        for (MethodHandleSymbol mho : getterMethHandles) {
+            staticArgs[index] = mho;
+            index++;
         }
 
-        @Override
-        protected void append(char ch) {
-            sb.append(ch);
-        }
+        Symbol.DynamicVarSymbol dynSym = new Symbol.DynamicVarSymbol(extractorSym.name,
+                syms.noSymbol,
+                ((MethodSymbol)bsm).asHandle(),
+                syms.patternHandleType,
+                staticArgs);
+        JCIdent ident = make.Ident(dynSym);
+        ident.type = syms.patternHandleType;
 
-        @Override
-        protected void append(byte[] ba) {
-            sb.append(new String(ba));
-        }
-
-        @Override
-        protected void append(Name name) {
-            sb.append(name.toString());
-        }
-
-        @Override
-        public String toString() {
-            return sb.toString();
-        }
+        // public PatternHandle extractorName () { return ???; }
+        return make.MethodDef(extractorSym, make.Block(0, List.of(make.Return(ident))));
     }
 
     /**
@@ -3599,70 +3599,26 @@ public class Lower extends TreeTranslator {
         handleSwitch(tree, tree.selector, tree.cases);
     }
 
-    private void handleSwitch(JCTree tree, JCExpression selector, List<JCCase> cases) {
-        //expand multiple label cases:
-        ListBuffer<JCCase> convertedCases = new ListBuffer<>();
-
-        for (JCCase c : cases) {
-            switch (c.pats.size()) {
-                case 0: //default
-                case 1: //single label
-                    convertedCases.append(c);
-                    break;
-                default: //multiple labels, expand:
-                    //case C1, C2, C3: ...
-                    //=>
-                    //case C1:
-                    //case C2:
-                    //case C3: ...
-                    List<JCExpression> patterns = c.pats;
-                    while (patterns.tail.nonEmpty()) {
-                        convertedCases.append(make_at(c.pos()).Case(JCCase.STATEMENT,
-                                                           List.of(patterns.head),
-                                                           List.nil(),
-                                                           null));
-                        patterns = patterns.tail;
-                    }
-                    c.pats = patterns;
-                    convertedCases.append(c);
-                    break;
-            }
+    private <T extends JCTree & GenericSwitch> void handleSwitch(T tree, JCExpression selector, List<JCCase> cases) {
+        Type target;
+        switch (tree.getSwitchKind()) {
+            case ENUM: target = selector.type; break;
+            case STRING: target = syms.stringType; break;
+            case ORDINARY: target = syms.intType; break;
+            default:
+                Assert.error("Should not get here, kind: " + tree.getSwitchKind());
+                throw new InternalError();
         }
-
-        for (JCCase c : convertedCases) {
-            if (c.caseKind == JCCase.RULE && c.completesNormally) {
-                JCBreak b = make_at(c.pos()).Break(null);
-                b.target = tree;
-                c.stats = c.stats.append(b);
-            }
-        }
-
-        cases = convertedCases.toList();
-
-        Type selsuper = types.supertype(selector.type);
-        boolean enumSwitch = selsuper != null &&
-            (selector.type.tsym.flags() & ENUM) != 0;
-        boolean stringSwitch = selsuper != null &&
-            types.isSameType(selector.type, syms.stringType);
-        Type target = enumSwitch ? selector.type :
-            (stringSwitch? syms.stringType : syms.intType);
         selector = translate(selector, target);
         cases = translateCases(cases);
-        if (tree.hasTag(SWITCH)) {
-            ((JCSwitch) tree).selector = selector;
-            ((JCSwitch) tree).cases = cases;
-        } else if (tree.hasTag(SWITCH_EXPRESSION)) {
-            ((JCSwitchExpression) tree).selector = selector;
-            ((JCSwitchExpression) tree).cases = cases;
-        } else {
-            Assert.error();
-        }
-        if (enumSwitch) {
-            result = visitEnumSwitch(tree, selector, cases);
-        } else if (stringSwitch) {
-            result = visitStringSwitch(tree, selector, cases);
-        } else {
-            result = tree;
+        tree.setSelector(selector);
+        tree.setCases(cases);
+        switch (tree.getSwitchKind()) {
+            case ENUM: result = visitEnumSwitch(tree, selector, cases); break;
+            case STRING: result = visitStringSwitch(tree, selector, cases); break;
+            case ORDINARY: result = tree; break;
+            default:
+                Assert.error("Should not get here, kind: " + tree.getSwitchKind());
         }
     }
 
@@ -3680,8 +3636,9 @@ public class Lower extends TreeTranslator {
         ListBuffer<JCCase> newCases = new ListBuffer<>();
         for (JCCase c : cases) {
             if (c.pats.nonEmpty()) {
-                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pats.head);
-                JCLiteral pat = map.forConstant(label);
+                VarSymbol label = (VarSymbol)TreeInfo.symbol(c.pats.head.constExpression());
+                JCLiteral value = map.forConstant(label);
+                JCPattern pat = make.LiteralPattern(value);
                 newCases.append(make.Case(JCCase.STATEMENT, List.of(pat), c.stats, null));
             } else {
                 newCases.append(c);
@@ -3690,9 +3647,11 @@ public class Lower extends TreeTranslator {
         JCTree enumSwitch;
         if (tree.hasTag(SWITCH)) {
             enumSwitch = make.Switch(newSelector, newCases.toList());
+            ((JCSwitch) enumSwitch).kind = SwitchKind.ORDINARY;
         } else if (tree.hasTag(SWITCH_EXPRESSION)) {
             enumSwitch = make.SwitchExpression(newSelector, newCases.toList());
             enumSwitch.setType(tree.type);
+            ((JCSwitchExpression) enumSwitch).kind = SwitchKind.ORDINARY;
         } else {
             Assert.error();
             throw new AssertionError();
@@ -3761,7 +3720,7 @@ public class Lower extends TreeTranslator {
 
             for(JCCase oneCase : caseList) {
                 if (oneCase.pats.nonEmpty()) { // pats is empty for a "default" case
-                    JCExpression expression = oneCase.pats.head;
+                    JCExpression expression = oneCase.pats.head.constExpression();
                     String labelExpr = (String) expression.type.constValue();
                     Integer mapping = caseLabelToPosition.put(labelExpr, casePosition);
                     Assert.checkNull(mapping);
@@ -3823,6 +3782,7 @@ public class Lower extends TreeTranslator {
                                                        List.nil()).setType(syms.intType);
             JCSwitch switch1 = make.Switch(hashCodeCall,
                                         caseBuffer.toList());
+            switch1.kind = SwitchKind.ORDINARY;
             for(Map.Entry<Integer, Set<String>> entry : hashToString.entrySet()) {
                 int hashCode = entry.getKey();
                 Set<String> stringsWithHashCode = entry.getValue();
@@ -3845,7 +3805,7 @@ public class Lower extends TreeTranslator {
                 breakStmt.target = switch1;
                 lb.append(elsepart).append(breakStmt);
 
-                caseBuffer.append(make.Case(JCCase.STATEMENT, List.of(make.Literal(hashCode)), lb.toList(), null));
+                caseBuffer.append(make.Case(JCCase.STATEMENT, List.of(make.LiteralPattern(make.Literal(hashCode))), lb.toList(), null));
             }
 
             switch1.cases = caseBuffer.toList();
@@ -3862,16 +3822,19 @@ public class Lower extends TreeTranslator {
                 if (isDefault)
                     caseExpr = null;
                 else {
-                    caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.pats.head).
+                    caseExpr = make.Literal(caseLabelToPosition.get((String)TreeInfo.skipParens(oneCase.pats.head.constExpression()).
                                                                     type.constValue()));
                 }
 
-                lb.append(make.Case(JCCase.STATEMENT, caseExpr == null ? List.nil() : List.of(caseExpr),
+                lb.append(make.Case(JCCase.STATEMENT, caseExpr == null ? List.nil() : List.of(make.LiteralPattern(caseExpr)),
                                     oneCase.stats, null));
             }
 
             if (tree.hasTag(SWITCH)) {
                 JCSwitch switch2 = make.Switch(make.Ident(dollar_tmp), lb.toList());
+
+                switch2.kind = SwitchKind.ORDINARY;
+
                 // Rewire up old unlabeled break statements to the
                 // replacement switch being created.
                 patchTargets(switch2, tree, switch2);
@@ -3881,6 +3844,8 @@ public class Lower extends TreeTranslator {
                 return make.Block(0L, stmtList.toList());
             } else {
                 JCSwitchExpression switch2 = make.SwitchExpression(make.Ident(dollar_tmp), lb.toList());
+
+                switch2.kind = SwitchKind.ORDINARY;
 
                 // Rewire up old unlabeled break statements to the
                 // replacement switch being created.

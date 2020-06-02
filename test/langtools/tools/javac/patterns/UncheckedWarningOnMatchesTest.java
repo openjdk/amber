@@ -14,5 +14,10 @@ public class UncheckedWarningOnMatchesTest {
         if (o instanceof ArrayList<Integer> ai) {  // unchecked conversion
             System.out.println("Blah");
         }
+        switch (o) {
+            case ArrayList<Integer> ai:  // unchecked conversion XXX: should be an error! (presumably)
+                System.out.println("ArrayList<Integer>");
+                break;
+        }
     }
 }

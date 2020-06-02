@@ -358,8 +358,19 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
+        result = tree;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
-        tree.vartype = translate(tree.vartype);
+        if (tree.vartype != null) {
+            tree.vartype = translate(tree.vartype);
+        }
+        result = tree;
+    }
+
+    public void visitLiteralPattern(JCLiteralPattern tree) {
         result = tree;
     }
 
@@ -454,6 +465,13 @@ public class TreeTranslator extends JCTree.Visitor {
     public void visitAnnotatedType(JCAnnotatedType tree) {
         tree.annotations = translate(tree.annotations);
         tree.underlyingType = translate(tree.underlyingType);
+        result = tree;
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        tree.deconstructor = translate(tree.deconstructor);
+        tree.nested = translate(tree.nested);
         result = tree;
     }
 

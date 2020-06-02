@@ -200,6 +200,7 @@ public class Names {
     // record related
     // members of java.lang.runtime.ObjectMethods
     public final Name bootstrap;
+    public final Name ofLazyProjection;
 
     public final Name record;
     public final Name non;
@@ -371,6 +372,7 @@ public class Names {
         makeConcatWithConstants = fromString("makeConcatWithConstants");
 
         bootstrap = fromString("bootstrap");
+        ofLazyProjection = fromString("ofLazyProjection");
         record = fromString("record");
         non = fromString("non");
 

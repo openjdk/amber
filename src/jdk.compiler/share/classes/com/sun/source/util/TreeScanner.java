@@ -26,6 +26,7 @@
 package com.sun.source.util;
 
 import com.sun.source.tree.*;
+import com.sun.source.tree.CaseTree.CaseKind;
 
 /**
  * A TreeVisitor that visits all the child tree nodes.
@@ -358,8 +359,8 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      */
     @Override
     public R visitCase(CaseTree node, P p) {
-        R r = scan(node.getExpressions(), p);
-        if (node.getCaseKind() == CaseTree.CaseKind.RULE)
+        R r = scan(node.getPatterns(), p);
+        if (node.getCaseKind() == CaseKind.RULE)
             r = scanAndReduce(node.getBody(), p, r);
         else
             r = scanAndReduce(node.getStatements(), p, r);
@@ -686,8 +687,46 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @since 14
      */
     @Override
+    public R visitAnyPattern(AnyPatternTree node, P p) {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
     public R visitBindingPattern(BindingPatternTree node, P p) {
         return scan(node.getType(), p);
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     * @since 15
+     */
+    @Override
+    public R visitDeconstructionPattern(DeconstructionPatternTree node, P p) {
+        R r = scan(node.getDeconstructor(), p);
+        return scanAndReduce(node.getNestedPatterns(), p, r);
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    @Override
+    public R visitLiteralPattern(LiteralPatternTree node, P p) {
+        return scan(node.getValue(), p);
     }
 
     /**

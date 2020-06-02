@@ -1,3 +1,27 @@
+<<<<<<< working copy
+(o instanceof String s)
+o instanceof String s
+o
+String s
+String
+(o instanceof java.lang.String s)
+o instanceof java.lang.String s
+o
+java.lang.String s
+java.lang.String
+java.lang
+java
+1
+1
+String s
+String
+java.lang.Integer i
+java.lang.Integer
+java.lang
+java
+var s
+||||||| base
+=======
 - compiler.note.proc.messager: (o instanceof String s)
 - compiler.note.proc.messager: o instanceof String s
 - compiler.note.proc.messager: o
@@ -12,3 +36,4 @@
 - compiler.note.proc.messager: java
 - compiler.note.preview.filename: PatternMatchPosTestData.java
 - compiler.note.preview.recompile
+>>>>>>> merge rev

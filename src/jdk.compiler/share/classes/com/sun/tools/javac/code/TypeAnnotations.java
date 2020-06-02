@@ -77,6 +77,7 @@ import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Names;
 
 import static com.sun.tools.javac.code.Kinds.Kind.*;
+import com.sun.tools.javac.tree.JCTree;
 
 /**
  * Contains operations specific to processing type annotations.

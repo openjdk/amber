@@ -27,6 +27,7 @@ package com.sun.tools.javac.comp;
 
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.BindingSymbol;
+import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.Tag;
@@ -45,6 +46,7 @@ public class MatchBindingsComputer extends TreeScanner {
     protected static final Context.Key<MatchBindingsComputer> matchBindingsComputerKey = new Context.Key<>();
 
     private final Log log;
+    private final Types types;
 
     public static MatchBindingsComputer instance(Context context) {
         MatchBindingsComputer instance = context.get(matchBindingsComputerKey);
@@ -55,6 +57,7 @@ public class MatchBindingsComputer extends TreeScanner {
 
     protected MatchBindingsComputer(Context context) {
         this.log = Log.instance(context);
+        this.types = Types.instance(context);
     }
 
     public MatchBindings conditional(JCTree tree, MatchBindings condBindings, MatchBindings trueBindings, MatchBindings falseBindings) {
@@ -78,7 +81,6 @@ public class MatchBindingsComputer extends TreeScanner {
          //A pattern variable is introduced both by b when false, and by c when false:
         List<BindingSymbol> yFzF = intersection(pos, trueBindings.bindingsWhenFalse, falseBindings.bindingsWhenFalse);
 
-        //error recovery:
         /* if e = "x ? y : z", then:
                e.T = union(intersect(y.T, z.T), intersect(x.T, z.T), intersect(x.F, y.T))
                e.F = union(intersect(y.F, z.F), intersect(x.T, z.F), intersect(x.F, y.F))
@@ -97,17 +99,17 @@ public class MatchBindingsComputer extends TreeScanner {
         switch (tree.getTag()) {
             case AND: {
                 // e.T = union(x.T, y.T)
-                // e.F = intersection(x.F, y.F) (error recovery)
+                // e.F = intersection(x.F, y.F)
                 List<BindingSymbol> bindingsWhenTrue =
                         union(tree.pos(), lhsBindings.bindingsWhenTrue, rhsBindings.bindingsWhenTrue);
-                List<BindingSymbol> bindingsWhenFalse = //error recovery
+                List<BindingSymbol> bindingsWhenFalse =
                         intersection(tree.pos(), lhsBindings.bindingsWhenFalse, rhsBindings.bindingsWhenFalse);
                 return new MatchBindings(bindingsWhenTrue, bindingsWhenFalse);
             }
             case OR: {
-                // e.T = intersection(x.T, y.T) (error recovery)
+                // e.T = intersection(x.T, y.T)
                 // e.F = union(x.F, y.F)
-                List<BindingSymbol> bindingsWhenTrue = //error recovery
+                List<BindingSymbol> bindingsWhenTrue =
                         intersection(tree.pos(), lhsBindings.bindingsWhenTrue, rhsBindings.bindingsWhenTrue);
                 List<Symbol.BindingSymbol> bindingsWhenFalse =
                         union(tree.pos(), lhsBindings.bindingsWhenFalse, rhsBindings.bindingsWhenFalse);
@@ -117,11 +119,18 @@ public class MatchBindingsComputer extends TreeScanner {
         return EMPTY;
     }
 
+    public MatchBindings switchCase(JCTree tree, MatchBindings prevBindings, MatchBindings currentBindings) {
+        if (prevBindings == null)
+            return currentBindings;
+        return new MatchBindings(intersection(tree.pos(), prevBindings.bindingsWhenTrue, prevBindings.bindingsWhenTrue),
+                                 intersection(tree.pos(), prevBindings.bindingsWhenFalse, prevBindings.bindingsWhenFalse));
+    }
+
     public MatchBindings finishBindings(JCTree tree, MatchBindings matchBindings) {
         switch (tree.getTag()) {
             case NOT: case AND: case OR: case BINDINGPATTERN:
-            case PARENS: case TYPETEST:
-            case CONDEXPR: //error recovery:
+            case PARENS: case TYPETEST: case DECONSTRUCTIONPATTERN:
+            case CONDEXPR:
                 return matchBindings;
             default:
                 return MatchBindingsComputer.EMPTY;
@@ -144,11 +153,14 @@ public class MatchBindingsComputer extends TreeScanner {
         List<BindingSymbol> list = List.nil();
         for (BindingSymbol v1 : lhsBindings) {
             for (BindingSymbol v2 : rhsBindings) {
-                if (v1.name == v2.name &&
-                    (v1.flags() & CLASH) == 0 &&
-                    (v2.flags() & CLASH) == 0) {
-                    log.error(pos, Errors.MatchBindingExists);
-                    list = list.append(v2);
+                if (v1.name == v2.name) {
+                    if (types.isSameType(v1.type, v2.type)) {
+                        list = list.append(new IntersectionBindingSymbol(List.of(v1, v2)));
+                    } else if ((v1.flags() & CLASH) == 0 &&
+                               (v2.flags() & CLASH) == 0) {
+                        log.error(pos, Errors.MatchBindingExists);
+                        list = list.append(v2);
+                    }
                 }
             }
         }
@@ -172,5 +184,30 @@ public class MatchBindingsComputer extends TreeScanner {
             }
         }
         return list;
+    }
+    public static class IntersectionBindingSymbol extends BindingSymbol {
+
+        List<BindingSymbol> aliases = List.nil();
+
+        public IntersectionBindingSymbol(List<BindingSymbol> aliases) {
+            super(aliases.head.name, aliases.head.type, aliases.head.owner);
+            this.aliases = aliases.stream()
+                    .flatMap(b -> b.aliases().stream())
+                    .collect(List.collector());
+        }
+
+        @Override
+        public List<BindingSymbol> aliases() {
+            return aliases;
+        }
+
+        @Override
+        public void preserveBinding() {
+            aliases.stream().forEach(BindingSymbol::preserveBinding);
+        }
+
+        public boolean isPreserved() {
+            return aliases.stream().allMatch(BindingSymbol::isPreserved);
+        }
     }
 }

@@ -1,0 +1,4 @@
+FlowAnalysisTest.java:12:13: compiler.err.pattern.dominated
+FlowAnalysisTest.java:16:13: compiler.err.pattern.dominated
+FlowAnalysisTest.java:17:13: compiler.err.pattern.dominated
+3 errors

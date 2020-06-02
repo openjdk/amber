@@ -239,6 +239,7 @@ public class JavacParser implements Parser {
      *     mode = NOPARAMS    : no parameters allowed for type
      *     mode = TYPEARG     : type argument
      *     mode |= NOLAMBDA   : lambdas are not allowed
+     *     mode |= NOINVOCATION : method invocations are not allowed
      */
     protected static final int EXPR = 0x1;
     protected static final int TYPE = 0x2;
@@ -246,13 +247,14 @@ public class JavacParser implements Parser {
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
     protected static final int NOLAMBDA = 0x20;
+    protected static final int NOINVOCATION = 0x40;
 
     protected void selectExprMode() {
-        mode = (mode & NOLAMBDA) | EXPR;
+        mode = (mode & (NOLAMBDA | NOINVOCATION)) | EXPR;
     }
 
     protected void selectTypeMode() {
-        mode = (mode & NOLAMBDA) | TYPE;
+        mode = (mode & (NOLAMBDA|NOINVOCATION)) | TYPE;
     }
 
     /** The current mode.
@@ -754,6 +756,37 @@ public class JavacParser implements Parser {
         return term(EXPR);
     }
 
+
+    /** parses patterns.
+     */
+
+    public JCPattern parsePattern() {
+        int pos = token.pos;
+        if (token.kind == UNDERSCORE) {
+            nextToken();
+            return toP(F.at(pos).AnyPattern());
+        } else if (token.kind == IDENTIFIER && token.name() == names.var) {
+            nextToken();
+            return toP(F.at(pos).BindingPattern(ident(), null));
+        } else {
+            JCExpression e = term(EXPR | TYPE | NOLAMBDA | NOINVOCATION);
+            if (token.kind == LPAREN) {
+                ListBuffer<JCPattern> nested = new ListBuffer<>();
+                do {
+                    nextToken();
+                    JCPattern nestedPattern = parsePattern();
+                    nested.append(nestedPattern);
+                } while (token.kind == COMMA);
+                accept(RPAREN);
+                return toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
+            } else if (token.kind == IDENTIFIER) {
+                return toP(F.at(pos).BindingPattern(ident(), e));
+            } else {
+                return toP(F.at(pos).LiteralPattern(e));
+            }
+        }
+    }
+
     /**
      * parses (optional) type annotations followed by a type. If the
      * annotations are present before the type and are not consumed during array
@@ -932,10 +965,25 @@ public class JavacParser implements Parser {
             if (token.kind == INSTANCEOF) {
                 int pos = token.pos;
                 nextToken();
-                JCTree pattern = parseType();
+                JCTree pattern = parseType(true);
                 if (token.kind == IDENTIFIER) {
                     checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
+                    Source source = restrictedTypeNameStartingAtSource(((JCIdent) pattern).name, pattern.pos, true);
+                    if (pattern.hasTag(IDENT) && source != null) {
+                        reportSyntaxError(pos, Errors.RestrictedTypeNotAllowed(((JCIdent) pattern).name, source));
+                        pattern = null;
+                    }
                     pattern = toP(F.at(token.pos).BindingPattern(ident(), pattern));
+                } else if (token.kind == LPAREN) {
+                    checkSourceLevel(Feature.DECONSTRUCTION_PATTERNS);
+                    ListBuffer<JCPattern> nested = new ListBuffer<>();
+                    do {
+                        nextToken();
+                        JCPattern nestedPattern = parsePattern();
+                        nested.append(nestedPattern);
+                    } while (token.kind == COMMA);
+                    accept(RPAREN);
+                    pattern = toP(F.at(pattern).DeconstructionPattern((JCExpression) pattern, nested.toList()));
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
@@ -1265,7 +1313,7 @@ public class JavacParser implements Parser {
                         }
                         break loop;
                     case LPAREN:
-                        if ((mode & EXPR) != 0) {
+                        if ((mode & EXPR) != 0 && (mode & NOINVOCATION) == 0) {
                             selectExprMode();
                             t = arguments(typeArgs, t);
                             if (!annos.isEmpty()) t = illegal(annos.head.pos);
@@ -1428,14 +1476,14 @@ public class JavacParser implements Parser {
     private List<JCCase> switchExpressionStatementGroup() {
         ListBuffer<JCCase> caseExprs = new ListBuffer<>();
         int casePos = token.pos;
-        ListBuffer<JCExpression> pats = new ListBuffer<>();
+        ListBuffer<JCPattern> pats = new ListBuffer<>();
 
         if (token.kind == DEFAULT) {
             nextToken();
         } else {
             accept(CASE);
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
                 nextToken();
@@ -2893,7 +2941,7 @@ public class JavacParser implements Parser {
 
     /** SwitchBlockStatementGroups = { SwitchBlockStatementGroup }
      *  SwitchBlockStatementGroup = SwitchLabel BlockStatements
-     *  SwitchLabel = CASE ConstantExpression ":" | DEFAULT ":"
+     *  SwitchLabel = CASE Pattern ":" | DEFAULT ":"
      */
     List<JCCase> switchBlockStatementGroups() {
         ListBuffer<JCCase> cases = new ListBuffer<>();
@@ -2921,9 +2969,9 @@ public class JavacParser implements Parser {
         switch (token.kind) {
         case CASE: {
             nextToken();
-            ListBuffer<JCExpression> pats = new ListBuffer<>();
+            ListBuffer<JCPattern> pats = new ListBuffer<>();
             while (true) {
-                pats.append(term(EXPR | NOLAMBDA));
+                pats.append(parsePattern());
                 if (token.kind != COMMA) break;
                 nextToken();
                 checkSourceLevel(Feature.SWITCH_MULTIPLE_CASE_LABELS);
