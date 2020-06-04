@@ -205,8 +205,11 @@ public:
 };
 
 class ShenandoahConcurrentStringDedupRoots {
+private:
+  ShenandoahPhaseTimings::Phase _phase;
+
 public:
-  ShenandoahConcurrentStringDedupRoots();
+  ShenandoahConcurrentStringDedupRoots(ShenandoahPhaseTimings::Phase phase);
   ~ShenandoahConcurrentStringDedupRoots();
 
   void oops_do(BoolObjectClosure* is_alive, OopClosure* keep_alive, uint worker_id);
@@ -259,13 +262,11 @@ class ShenandoahRootScanner : public ShenandoahRootProcessor {
 private:
   ShenandoahSerialRoots                                     _serial_roots;
   ShenandoahThreadRoots                                     _thread_roots;
-  ShenandoahCodeCacheRoots                                  _code_roots;
-  ShenandoahVMRoots<false /*concurrent*/ >                  _vm_roots;
   ShenandoahStringDedupRoots                                _dedup_roots;
-  ShenandoahClassLoaderDataRoots<false /*concurrent*/, false /*single threaded*/>
-                                                            _cld_roots;
+
 public:
   ShenandoahRootScanner(uint n_workers, ShenandoahPhaseTimings::Phase phase);
+  ~ShenandoahRootScanner();
 
   // Apply oops, clds and blobs to all strongly reachable roots in the system,
   // during class unloading cycle
@@ -276,6 +277,22 @@ public:
   // roots when class unloading is disabled during this cycle
   void roots_do(uint worker_id, OopClosure* cl);
   void roots_do(uint worker_id, OopClosure* oops, CLDClosure* clds, CodeBlobClosure* code, ThreadClosure* tc = NULL);
+};
+
+template <bool CONCURRENT>
+class ShenandoahConcurrentRootScanner {
+private:
+  ShenandoahVMRoots<CONCURRENT>            _vm_roots;
+  ShenandoahClassLoaderDataRoots<CONCURRENT, false /* single-threaded*/>
+                                           _cld_roots;
+  ShenandoahNMethodTableSnapshot*          _codecache_snapshot;
+  ShenandoahPhaseTimings::Phase            _phase;
+
+public:
+  ShenandoahConcurrentRootScanner(uint n_workers, ShenandoahPhaseTimings::Phase phase);
+  ~ShenandoahConcurrentRootScanner();
+
+  void oops_do(OopClosure* oops, uint worker_id);
 };
 
 // This scanner is only for SH::object_iteration() and only supports single-threaded
