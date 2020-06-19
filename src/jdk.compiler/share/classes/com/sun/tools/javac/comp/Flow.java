@@ -554,6 +554,7 @@ public class Flow {
         public void visitMethodDef(JCMethodDecl tree) {
             if (tree.body == null) return;
             Lint lintPrev = lint;
+            Liveness prevAlive = alive;
 
             lint = lint.augment(tree.sym);
 
@@ -570,6 +571,7 @@ public class Flow {
                 clearPendingExits(true);
             } finally {
                 lint = lintPrev;
+                alive = prevAlive;
             }
         }
 
@@ -2847,6 +2849,7 @@ public class Flow {
                             }
                             break;
                         }
+                    case METHODDEF:
                     case LAMBDA:
                         if ((sym.flags() & (EFFECTIVELY_FINAL | FINAL)) == 0) {
                            reportEffectivelyFinalError(pos, sym);
@@ -2870,6 +2873,7 @@ public class Flow {
                                 reportInnerClsNeedsFinalError(tree, sym);
                                 break;
                             }
+                        case METHODDEF:
                         case LAMBDA:
                             reportEffectivelyFinalError(tree, sym);
                     }
@@ -2878,8 +2882,14 @@ public class Flow {
         }
 
         void reportEffectivelyFinalError(DiagnosticPosition pos, Symbol sym) {
-            String subKey = currentTree.hasTag(LAMBDA) ?
-                  "lambda"  : "inner.cls";
+            String subKey;
+            switch (currentTree.getTag()) {
+                case LAMBDA: subKey = "lambda"; break;
+                case CLASSDEF: subKey = "inner.cls"; break;
+                case METHODDEF: subKey = "local.meth"; break;
+                default:
+                    throw new AssertionError();
+            }
             log.error(pos, Errors.CantRefNonEffectivelyFinalVar(sym, diags.fragment(subKey)));
         }
 
@@ -2912,6 +2922,22 @@ public class Flow {
                 super.visitLambda(tree);
             } finally {
                 currentTree = prevTree;
+            }
+        }
+
+        @Override
+        public void visitMethodDef(JCMethodDecl tree) {
+            if (tree.sym.owner.kind == MTH) {
+                //local method!
+                JCTree prevTree = currentTree;
+                try {
+                    currentTree = tree;
+                    super.visitMethodDef(tree);
+                } finally {
+                    currentTree = prevTree;
+                }
+            } else {
+                super.visitMethodDef(tree);
             }
         }
 

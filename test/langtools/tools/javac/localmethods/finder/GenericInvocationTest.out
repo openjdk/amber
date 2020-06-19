@@ -1,0 +1,7 @@
+GenericInvocationTest.java:9:26: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, GenericInvocationTest
+GenericInvocationTest.java:13:26: compiler.warn.method.could.be.declared.local: main(java.lang.String[]), kindname.class, GenericInvocationTest
+- compiler.err.warnings.and.werror
+- compiler.note.unchecked.filename: GenericInvocationTest.java
+- compiler.note.unchecked.recompile
+1 error
+2 warnings

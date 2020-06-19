@@ -1,0 +1,4 @@
+EffectivelyFinalTest.java:13:13: compiler.err.cant.ref.non.effectively.final.var: x, (compiler.misc.local.meth)
+EffectivelyFinalTest.java:18:12: compiler.err.cant.ref.non.effectively.final.var: args, (compiler.misc.local.meth)
+EffectivelyFinalTest.java:34:19: compiler.err.cant.ref.non.effectively.final.var: q, (compiler.misc.local.meth)
+3 errors
