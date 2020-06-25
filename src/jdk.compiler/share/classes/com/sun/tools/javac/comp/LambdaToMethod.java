@@ -1065,7 +1065,10 @@ public class LambdaToMethod extends TreeTranslator {
         private JCExpression makeReceiver(VarSymbol rcvr) {
             if (rcvr == null) return null;
             JCExpression rcvrExpr = make.Ident(rcvr);
-            Type rcvrType = tree.ownerAccessible ? tree.sym.enclClass().type : tree.expr.type;
+            boolean protAccess =
+                    isProtectedInSuperClassOfEnclosingClassInOtherPackage(tree.sym, owner);
+            Type rcvrType = tree.ownerAccessible && !protAccess ? tree.sym.enclClass().type
+                                                                : tree.expr.type;
             if (rcvrType == syms.arrayClass.type) {
                 // Map the receiver type to the actually type, not just "array"
                 rcvrType = tree.getQualifierExpression().type;
@@ -2394,11 +2397,6 @@ public class LambdaToMethod extends TreeTranslator {
                               types.erasure(owner.enclClass().asType()));
             }
 
-            boolean isProtectedInSuperClassOfEnclosingClassInOtherPackage() {
-                return ((tree.sym.flags() & PROTECTED) != 0 &&
-                        tree.sym.packge() != owner.packge());
-            }
-
             /**
              * Erasure destroys the implementation parameter subtype
              * relationship for intersection types.
@@ -2435,7 +2433,7 @@ public class LambdaToMethod extends TreeTranslator {
                         needsVarArgsConversion() ||
                         isArrayOp() ||
                         (!nestmateLambdas && isPrivateInOtherClass()) ||
-                        isProtectedInSuperClassOfEnclosingClassInOtherPackage() ||
+                        isProtectedInSuperClassOfEnclosingClassInOtherPackage(tree.sym, owner) ||
                         !receiverAccessible() ||
                         (tree.getMode() == ReferenceMode.NEW &&
                           tree.kind != ReferenceKind.ARRAY_CTOR &&
@@ -2544,6 +2542,12 @@ public class LambdaToMethod extends TreeTranslator {
             log.error(Errors.CannotGenerateClass(c, Fragments.IllegalSignature(c, ex.type())));
             return "<ERRONEOUS>";
         }
+    }
+
+    private boolean isProtectedInSuperClassOfEnclosingClassInOtherPackage(Symbol targetReference,
+                                                                          Symbol currentClass) {
+        return ((targetReference.flags() & PROTECTED) != 0 &&
+                targetReference.packge() != currentClass.packge());
     }
 
     /**
