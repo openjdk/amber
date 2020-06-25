@@ -3072,7 +3072,14 @@ public class Attr extends JCTree.Visitor {
         } finally {
             localEnv.info.scope.leave();
             if (needsRecovery) {
-                attribTree(that, env, recoveryInfo);
+                Type prevResult = result;
+                try {
+                    attribTree(that, env, recoveryInfo);
+                } finally {
+                    if (result == Type.recoveryType) {
+                        result = prevResult;
+                    }
+                }
             }
         }
     }
