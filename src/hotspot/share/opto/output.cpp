@@ -2021,8 +2021,8 @@ void PhaseOutput::ScheduleAndBundle() {
   if (!C->do_scheduling())
     return;
 
-  // Scheduling code works only with pairs (16 bytes) maximum.
-  if (C->max_vector_size() > 16)
+  // Scheduling code works only with pairs (8 bytes) maximum.
+  if (C->max_vector_size() > 8)
     return;
 
   Compile::TracePhase tp("isched", &timers[_t_instrSched]);
@@ -3260,7 +3260,9 @@ uint PhaseOutput::scratch_emit_size(const Node* n) {
 }
 
 void PhaseOutput::install() {
-  if (C->stub_function() != NULL) {
+  if (!C->should_install_code()) {
+    return;
+  } else if (C->stub_function() != NULL) {
     install_stub(C->stub_name(),
                  C->save_argument_registers());
   } else {
