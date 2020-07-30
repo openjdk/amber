@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,28 +21,15 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
- *
  */
 
-#ifndef OS_CPU_WINDOWS_X86_OS_WINDOWS_X86_HPP
-#define OS_CPU_WINDOWS_X86_OS_WINDOWS_X86_HPP
+#include "jni.h"
+#include "jvm.h"
 
-  //
-  // NOTE: we are back in class os here, not win32
-  //
+#include "jdk_internal_platform_CgroupMetrics.h"
 
-  static void setup_fpu();
-  static bool supports_sse() { return true; }
-  static juint cpu_microcode_revision();
-
-  static jlong rdtsc();
-
-  static bool      register_code_area(char *low, char *high);
-
-#ifdef AMD64
-#define PLATFORM_PRINT_NATIVE_STACK 1
-static bool platform_print_native_stack(outputStream* st, const void* context,
-                                        char *buf, int buf_size);
-#endif
-
-#endif // OS_CPU_WINDOWS_X86_OS_WINDOWS_X86_HPP
+JNIEXPORT jboolean JNICALL
+Java_jdk_internal_platform_CgroupMetrics_isUseContainerSupport(JNIEnv *env, jclass ignored)
+{
+    return JVM_IsUseContainerSupport();
+}
