@@ -539,9 +539,7 @@ public class TestGetScopeResult {
             }
             Context ctx = new Context();
             TestAnalyzer.preRegister(ctx);
-            List<String> options = List.of("--enable-preview",
-                                           "-source", System.getProperty("java.specification.version"));
-            JavacTask t = (JavacTask) c.getTask(null, fm, null, options, null,
+            JavacTask t = (JavacTask) c.getTask(null, fm, null, null, null,
                                                 List.of(new MyFileObject()), ctx);
             CompilationUnitTree cut = t.parse().iterator().next();
             t.analyze();
@@ -616,9 +614,7 @@ public class TestGetScopeResult {
                 }
                 Context ctx = new Context();
                 TestAnalyzer.preRegister(ctx);
-                List<String> options = List.of("--enable-preview",
-                                               "-source", System.getProperty("java.specification.version"));
-                JavacTask t = (JavacTask) c.getTask(null, fm, null, options, null,
+                JavacTask t = (JavacTask) c.getTask(null, fm, null, null, null,
                                                     List.of(new MyFileObject()), ctx);
                 CompilationUnitTree cut = t.parse().iterator().next();
                 t.analyze();
