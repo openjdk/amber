@@ -601,10 +601,10 @@ public class JavacParser implements Parser {
                 if (Feature.UNDERSCORE_AS_PARAM_NAME.allowedInSource(source)) {
                     log.error(token.pos, Errors.UnderscoreNotAllowed);
                 } else {
-                    if (Feature.UNDERSCORE_IDENTIFIER.allowedInSource(source)) {
-                        log.warning(token.pos, Warnings.UnderscoreAsIdentifier);
-                    } else {
-                        log.error(token.pos, Errors.UnderscoreAsIdentifier);
+		    if (Feature.UNDERSCORE_IDENTIFIER.allowedInSource(source)) {
+		        log.warning(token.pos, Warnings.UnderscoreAsIdentifier);
+		    } else {
+                        log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.UnderscoreAsIdentifier);
                     }
                 }
             }
@@ -3470,6 +3470,10 @@ public class JavacParser implements Parser {
                 token.kind == LBRACKET) {
             log.error(token.pos, Errors.VarargsAndOldArraySyntax);
         }
+        if (parameterKind == FormalParameterKind.RECORD && token.kind == LBRACKET) {
+            log.error(token.pos, Errors.RecordComponentAndOldArraySyntax);
+        }
+
         int dimensionsPos = token.pos;
         JCExpression typeWithDimensions = bracketsOpt(type);
         if (allowUnderscoreAsFormal && isUnderscore && typeWithDimensions != type) {
