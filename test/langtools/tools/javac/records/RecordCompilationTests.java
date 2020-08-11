@@ -864,7 +864,7 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testRecordsInsideInner() {
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     class Inner {
@@ -873,7 +873,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     public void test() {
@@ -883,7 +883,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     }
                 }
                 """);
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     Runnable run = new Runnable() {
@@ -892,7 +892,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     };
                 }
                 """);
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     void m() {
