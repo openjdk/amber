@@ -146,7 +146,7 @@ public class RecordCompilationTests extends CompilationTestCase {
 
     public void testMalformedDeclarations() {
         assertFail("compiler.err.premature.eof", "record R()");
-        assertFail("compiler.err.premature.eof", "record R();");
+        assertFail("compiler.err.expected", "record R();");
         assertFail("compiler.err.illegal.start.of.type", "record R(,) { }");
         assertFail("compiler.err.illegal.start.of.type", "record R((int x)) { }");
         assertFail("compiler.err.record.header.expected", "record R { }");
