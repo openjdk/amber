@@ -3550,7 +3550,7 @@ public class JavacParser implements Parser {
             List<JCAnnotation> annotations = List.nil();
             seenPackage = true;
             if (mods != null) {
-                checkNoMods(mods.flags);
+                checkNoMods(mods.flags & ~Flags.DEPRECATED);
                 annotations = mods.annotations;
                 mods = null;
             }
