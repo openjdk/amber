@@ -2213,6 +2213,7 @@ public class ClassReader {
                                    Integer.toString(minorVersion));
             }
         }
+        validateMethodType(name, type);
         if (name == names.init && currentOwner.hasOuterInstance()) {
             // Sometimes anonymous classes don't have an outer
             // instance, however, there is no reliable way to tell so
@@ -2240,6 +2241,7 @@ public class ClassReader {
         } finally {
             currentOwner = prevOwner;
         }
+        validateMethodType(name, m.type);
         setParameters(m, type);
 
         if ((flags & VARARGS) != 0) {
@@ -2251,6 +2253,13 @@ public class ClassReader {
         }
 
         return m;
+    }
+
+    void validateMethodType(Name name, Type t) {
+        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL)) ||
+            (name == names.init && !t.getReturnType().hasTag(TypeTag.VOID))) {
+            throw badClassFile("method.descriptor.invalid", name);
+        }
     }
 
     private List<Type> adjustMethodParams(long flags, List<Type> args) {
@@ -2477,6 +2486,9 @@ public class ClassReader {
                         Integer.toString(minorVersion));
             }
             c.flags_field = flags;
+            if (c.owner.kind != MDL) {
+                throw badClassFile("module.info.definition.expected");
+            }
             currentModule = (ModuleSymbol) c.owner;
             int this_class = nextChar();
             // temp, no check on this_class
