@@ -241,6 +241,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         BINDINGPATTERN,
 
+        DECONSTRUCTIONPATTERN,
+
         /** Indexed array expressions, of type Indexed.
          */
         INDEXED,
@@ -2237,6 +2239,55 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
+    public static class JCDeconstructionPattern extends JCPattern
+            implements DeconstructionPatternTree {
+        public JCExpression deconstructor;
+        public List<JCPattern> nested;
+        public ClassSymbol record;
+        public List<Type> innerTypes;
+
+        protected JCDeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
+            this.deconstructor = deconstructor;
+            this.nested = nested;
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Name getBinding() {
+            return null;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public Tree getDeconstructor() {
+            return deconstructor;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public List<? extends JCPattern> getNestedPatterns() {
+            return nested;
+        }
+
+        @Override
+        public void accept(Visitor v) {
+            v.visitDeconstructionPattern(this);
+        }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return Kind.DECONSTRUCTION_PATTERN;
+        }
+
+        @Override
+        @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
+            return v.visitDeconstructionPattern(this, d);
+        }
+
+        @Override
+        public Tag getTag() {
+            return DECONSTRUCTIONPATTERN;
+        }
+    }
+
     /**
      * An array selection
      */
@@ -3277,6 +3328,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitTypeCast(JCTypeCast that)           { visitTree(that); }
         public void visitTypeTest(JCInstanceOf that)         { visitTree(that); }
         public void visitBindingPattern(JCBindingPattern that) { visitTree(that); }
+        public void visitDeconstructionPattern(JCDeconstructionPattern that) { visitTree(that); }
         public void visitIndexed(JCArrayAccess that)         { visitTree(that); }
         public void visitSelect(JCFieldAccess that)          { visitTree(that); }
         public void visitReference(JCMemberReference that)   { visitTree(that); }

@@ -120,7 +120,7 @@ public class MatchBindingsComputer extends TreeScanner {
     public MatchBindings finishBindings(JCTree tree, MatchBindings matchBindings) {
         switch (tree.getTag()) {
             case NOT: case AND: case OR: case BINDINGPATTERN:
-            case PARENS: case TYPETEST:
+            case PARENS: case TYPETEST: case DECONSTRUCTIONPATTERN:
             case CONDEXPR: //error recovery:
                 return matchBindings;
             default:
