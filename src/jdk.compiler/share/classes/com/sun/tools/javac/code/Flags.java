@@ -376,6 +376,11 @@ public class Flags {
      */
     public static final long NON_SEALED = 1L<<63; // ClassSymbols
 
+    /**
+     * Flag to indicate enum constant class
+     */
+    public static final long ENUM_CONSTANT_CLASS = 1L<<31; // ClassSymbols
+
     /** Modifier masks.
      */
     public static final int
@@ -503,6 +508,7 @@ public class Flags {
         POTENTIALLY_AMBIGUOUS(Flags.POTENTIALLY_AMBIGUOUS),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
+        ENUM_CONSTANT_CLASS(Flags.ENUM_CONSTANT_CLASS),
         PREVIEW_API(Flags.PREVIEW_API),
         PREVIEW_ESSENTIAL_API(Flags.PREVIEW_ESSENTIAL_API),
         MATCH_BINDING(Flags.MATCH_BINDING),
