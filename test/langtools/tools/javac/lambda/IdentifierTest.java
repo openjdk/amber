@@ -4,7 +4,8 @@
  * @author sogoel
  * @summary Test generation of warnings when '_' is used an identifier
  * @compile/fail/ref=IdentifierTest8.out -source 8 -Xlint:-options -Werror -XDrawDiagnostics IdentifierTest.java
- * @compile/fail/ref=IdentifierTest9.out -XDrawDiagnostics IdentifierTest.java
+ * @compile/fail/ref=IdentifierTest9.out -source 9 -Xlint:-options -XDrawDiagnostics IdentifierTest.java
+ * @compile/fail/ref=IdentifierTest10.out -Xlint:-options -XDrawDiagnostics IdentifierTest.java
  */
 
 import java.util.List;
@@ -180,4 +181,3 @@ public class IdentifierTest {
 interface _ {
     void mI();
 }
-

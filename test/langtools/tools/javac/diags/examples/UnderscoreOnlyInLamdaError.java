@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,9 +21,10 @@
  * questions.
  */
 
-// key: compiler.err.underscore.as.identifier.in.lambda
-// options: -source 9 -Xlint:-options
+// key: compiler.err.underscore.not.allowed
 
-public class UnderscoreInLambdaExpression {
-    java.util.function.Function<String,String> f = _ -> "x";
+import java.util.function.*;
+
+class UnderscoreAsIdentifierError {
+    BiFunction<Integer, String, String> biss = (i, j) -> String.valueOf(_);
 }
