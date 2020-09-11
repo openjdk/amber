@@ -218,6 +218,7 @@ public enum Source {
         REIFIABLE_TYPES_INSTANCEOF(JDK16, Fragments.FeatureReifiableTypesInstanceof, DiagKind.PLURAL),
         RECORDS(JDK16, Fragments.FeatureRecords, DiagKind.PLURAL),
         SEALED_CLASSES(JDK16, Fragments.FeatureSealedClasses, DiagKind.PLURAL),
+        CONCISE_METHOD_BODIES(JDK15, Fragments.FeatureConciseMethodBodies, DiagKind.PLURAL),
         ;
 
         enum DiagKind {
