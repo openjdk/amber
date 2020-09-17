@@ -951,6 +951,31 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
+
+        // inner classes can contain static methods too
+        assertOK(
+                """
+                class C {
+                    class Inner {
+                        // static method inside inner class
+                        static void m() {}
+                    }
+                }
+                """
+        );
+
+        assertOK(
+                """
+                class C {
+                     void m() {
+                         new Object() {
+                            // static method inside inner class
+                            static void m() {}
+                         };
+                     }
+                }
+                """
+        );
     }
 
     public void testReturnInCanonical_Compact() {
