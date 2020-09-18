@@ -1316,7 +1316,10 @@ public class Check {
                            SEALED | NON_SEALED)
                  && checkDisjoint(pos, flags,
                                 SEALED,
-                           FINAL | NON_SEALED)) {
+                           FINAL | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                                ANNOTATION)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;

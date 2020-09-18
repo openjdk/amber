@@ -186,6 +186,7 @@ public class Names {
     public final Name module_info;
     public final Name package_info;
     public final Name requireNonNull;
+    public final Name underscore;
 
     // lambda-related
     public final Name lambda;
@@ -361,6 +362,7 @@ public class Names {
         module_info = fromString("module-info");
         package_info = fromString("package-info");
         requireNonNull = fromString("requireNonNull");
+        underscore = fromString("_");
 
         //lambda-related
         lambda = fromString("lambda$");
