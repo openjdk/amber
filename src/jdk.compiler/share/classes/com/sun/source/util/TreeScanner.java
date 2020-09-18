@@ -700,6 +700,20 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
+     * @since 15
+     */
+    @Override
+    public R visitDeconstructionPattern(DeconstructionPatternTree node, P p) {
+        R r = scan(node.getDeconstructor(), p);
+        return scanAndReduce(node.getNestedPatterns(), p, r);
+    }
+
+    /**
+     * {@inheritDoc} This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
      */
     @Override
     public R visitArrayAccess(ArrayAccessTree node, P p) {

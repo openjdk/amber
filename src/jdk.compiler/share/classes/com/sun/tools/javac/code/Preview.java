@@ -166,6 +166,7 @@ public class Preview {
      */
     public boolean isPreview(Feature feature) {
         if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
+            feature == Feature.DECONSTRUCTION_PATTERNS ||
             feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
             feature == Feature.RECORDS ||
             feature == Feature.SEALED_CLASSES)
