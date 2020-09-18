@@ -220,6 +220,7 @@ public enum Source {
         SEALED_CLASSES(JDK16, Fragments.FeatureSealedClasses, DiagKind.PLURAL),
         LAMBDA_PARAMETER_SHADOWING(JDK16),
         UNDERSCORE_AS_PARAM_NAME(JDK16),
+        DECONSTRUCTION_PATTERNS(JDK16, Fragments.FeatureDeconstructionPatterns, DiagKind.PLURAL),
         ;
 
         enum DiagKind {
