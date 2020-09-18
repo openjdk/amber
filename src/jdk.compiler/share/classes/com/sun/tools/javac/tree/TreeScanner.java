@@ -308,6 +308,12 @@ public class TreeScanner extends Visitor {
             scan(tree.vartype);
     }
 
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern that) {
+        scan(that.deconstructor);
+        scan(that.nested);
+    }
+
     public void visitIndexed(JCArrayAccess tree) {
         scan(tree.indexed);
         scan(tree.index);

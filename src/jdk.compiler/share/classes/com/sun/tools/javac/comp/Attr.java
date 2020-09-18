@@ -27,7 +27,7 @@ package com.sun.tools.javac.comp;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -120,6 +120,7 @@ public class Attr extends JCTree.Visitor {
     final Annotate annotate;
     final ArgumentAttr argumentAttr;
     final MatchBindingsComputer matchBindingsComputer;
+    final AttrRecover attrRecover;
 
     public static Attr instance(Context context) {
         Attr instance = context.get(attrKey);
@@ -157,6 +158,7 @@ public class Attr extends JCTree.Visitor {
         dependencies = Dependencies.instance(context);
         argumentAttr = ArgumentAttr.instance(context);
         matchBindingsComputer = MatchBindingsComputer.instance(context);
+        attrRecover = AttrRecover.instance(context);
 
         Options options = Options.instance(context);
 
@@ -166,6 +168,7 @@ public class Attr extends JCTree.Visitor {
         allowLambda = Feature.LAMBDA.allowedInSource(source);
         allowDefaultMethods = Feature.DEFAULT_METHODS.allowedInSource(source);
         allowStaticInterfaceMethods = Feature.STATIC_INTERFACE_METHODS.allowedInSource(source);
+        allowShadowingOfLambdaParameters = Feature.LAMBDA_PARAMETER_SHADOWING.allowedInSource(source);
         allowReifiableTypesInInstanceof =
                 Feature.REIFIABLE_TYPES_INSTANCEOF.allowedInSource(source) &&
                 (!preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF) || preview.isEnabled());
@@ -210,6 +213,11 @@ public class Attr extends JCTree.Visitor {
      * RFE: 6425594
      */
     boolean useBeforeDeclarationWarning;
+
+    /**
+     * Switch: allow shadowing of lambda parameters?
+     */
+    boolean allowShadowingOfLambdaParameters;
 
     /**
      * Switch: name of source level; used for error reporting.
@@ -419,8 +427,9 @@ public class Attr extends JCTree.Visitor {
         JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
         try {
             deferredAttr.attribSpeculative(root, env, resultInfo,
-                    null, DeferredAttr.AttributionMode.ANALYZER,
+                    null, DeferredAttr.AttributionMode.ATTRIB_TO_TREE,
                     argumentAttr.withLocalCacheContext());
+            attrRecover.doRecovery();
         } catch (BreakAttr b) {
             return b.env;
         } catch (AssertionError ae) {
@@ -738,6 +747,7 @@ public class Attr extends JCTree.Visitor {
         Env<AttrContext> analyzeEnv = analyzer.copyEnvIfNeeded(tree, env);
         Type result = attribTree(tree, env, statInfo);
         analyzer.analyzeIfNeeded(tree, analyzeEnv);
+        attrRecover.doRecovery();
         return result;
     }
 
@@ -1323,6 +1333,12 @@ public class Attr extends JCTree.Visitor {
                 }
             }
             result = tree.type = v.type;
+            if (tree.name == names.underscore) {
+                WriteableScope enclScope = enter.enterScope(env);
+                if (enclScope != null) {
+                    enclScope.remove(tree.sym);
+                }
+            }
             if (env.enclClass.sym.isRecord() && tree.sym.owner.kind == TYP && !v.isStatic()) {
                 if (isNonArgsMethodInObject(v.name)) {
                     log.error(tree, Errors.IllegalRecordComponentName(v));
@@ -1419,7 +1435,7 @@ public class Attr extends JCTree.Visitor {
             // created BLOCK-method.
             Symbol fakeOwner =
                 new MethodSymbol(tree.flags | BLOCK |
-                    env.info.scope.owner.flags() & STRICTFP, names.empty, null,
+                    env.info.scope.owner.flags() & STRICTFP, names.empty, syms.blockScopeMethodType,
                     env.info.scope.owner);
             final Env<AttrContext> localEnv =
                 env.dup(tree, env.info.dup(env.info.scope.dupUnshared(fakeOwner)));
@@ -2106,6 +2122,7 @@ public class Attr extends JCTree.Visitor {
     }
 
         void preFlow(JCTree tree) {
+            attrRecover.doRecovery();
             new PostAttrAnalyzer() {
                 @Override
                 public void scan(JCTree tree) {
@@ -3128,6 +3145,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         void preFlow(JCLambda tree) {
+            attrRecover.doRecovery();
             new PostAttrAnalyzer() {
                 @Override
                 public void scan(JCTree tree) {
@@ -3338,10 +3356,11 @@ public class Attr extends JCTree.Visitor {
         public Env<AttrContext> lambdaEnv(JCLambda that, Env<AttrContext> env) {
             Env<AttrContext> lambdaEnv;
             Symbol owner = env.info.scope.owner;
+            ClassSymbol enclClass = owner.enclClass();
+            Symbol newScopeOwner = null;
             if (owner.kind == VAR && owner.owner.kind == TYP) {
                 //field initializer
-                ClassSymbol enclClass = owner.enclClass();
-                Symbol newScopeOwner = env.info.scope.owner;
+                newScopeOwner = env.info.scope.owner;
                 /* if the field isn't static, then we can get the first constructor
                  * and use it as the owner of the environment. This is what
                  * LTM code is doing to look for type annotations so we are fine.
@@ -3366,6 +3385,16 @@ public class Attr extends JCTree.Visitor {
                     }
                     newScopeOwner = clinit;
                 }
+            } else {
+                if (allowShadowingOfLambdaParameters) {
+                    newScopeOwner = new MethodSymbol(
+                        HYPOTHETICAL,
+                        names.empty,
+                        syms.lambdaScopeMethodType,
+                        owner);
+                }
+            }
+            if (newScopeOwner != null) {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dupUnshared(newScopeOwner)));
             } else {
                 lambdaEnv = env.dup(that, env.info.dup(env.info.scope.dup()));
@@ -3936,16 +3965,7 @@ public class Attr extends JCTree.Visitor {
                 if (preview.isPreview(Feature.REIFIABLE_TYPES_INSTANCEOF)) {
                     preview.warnPreview(tree.expr.pos(), Feature.REIFIABLE_TYPES_INSTANCEOF);
                 }
-                Warner warner = new Warner();
-                if (!types.isCastable(exprtype, clazztype, warner)) {
-                    chk.basicHandler.report(tree.expr.pos(),
-                                            diags.fragment(Fragments.InconvertibleTypes(exprtype, clazztype)));
-                } else if (warner.hasLint(LintCategory.UNCHECKED)) {
-                    log.error(tree.expr.pos(),
-                              Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
-                } else {
-                    valid = true;
-                }
+                valid = verifyCastable(tree.expr.pos(), exprtype, clazztype);
             } else {
                 log.error(typeTree.pos(), Errors.IllegalGenericTypeForInstof);
             }
@@ -3959,16 +3979,77 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitBindingPattern(JCBindingPattern tree) {
-        ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
-        tree.type = attribTree(tree.vartype, env, varInfo);
-        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype.type, env.info.scope.owner);
+        if (tree.vartype != null) {
+            ResultInfo varInfo = new ResultInfo(KindSelector.TYP, resultInfo.pt, resultInfo.checkContext);
+            tree.type = attribTree(tree.vartype, env, varInfo);
+        } else {
+            tree.type = resultInfo.pt;
+        }
+        VarSymbol v = tree.symbol = new BindingSymbol(tree.name, tree.vartype != null ? tree.vartype.type : (tree.type.hasTag(BOT) ? syms.objectType : tree.type), env.info.scope.owner);
         if (chk.checkUnique(tree.pos(), v, env.info.scope)) {
             chk.checkTransparentVar(tree.pos(), v, env.info.scope);
         }
-        annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
-        annotate.flush();
+        if (tree.vartype != null) {
+            annotate.queueScanTreeAndTypeAnnotate(tree.vartype, env, v, tree.pos());
+            annotate.flush();
+        }
         result = tree.type;
         matchBindings = new MatchBindings(List.of(tree.symbol), List.nil());
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        tree.type = attribType(tree.deconstructor, env);
+        Type site = types.removeWildcards(tree.type);
+        List<Type> expectedRecordTypes;
+        if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
+            ClassSymbol record = (ClassSymbol) site.tsym;
+            expectedRecordTypes = record.getRecordComponents().stream().map(rc -> types.memberType(site, rc)).collect(List.collector());
+            tree.record = record;
+        } else {
+            log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
+            expectedRecordTypes = Stream.generate(() -> Type.noType)
+                                .limit(tree.nested.size())
+                                .collect(List.collector());
+        }
+        ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
+        List<Type> recordTypes = expectedRecordTypes;
+        List<JCPattern> nestedPatterns = tree.nested;
+        while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
+            boolean nestedIsVarPattern = nestedPatterns.head.hasTag(BINDINGPATTERN) &&
+                                         ((JCBindingPattern) nestedPatterns.head).vartype == null;
+            attribExpr(nestedPatterns.head, env, nestedIsVarPattern ? recordTypes.head : Type.noType);
+            verifyCastable(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
+            outBindings.addAll(matchBindings.bindingsWhenTrue);
+            nestedPatterns = nestedPatterns.tail;
+            recordTypes = recordTypes.tail;
+        }
+        if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
+            while (nestedPatterns.nonEmpty()) {
+                attribExpr(nestedPatterns.head, env, Type.noType);
+                nestedPatterns = nestedPatterns.tail;
+            }
+            List<Type> nestedTypes =
+                    tree.nested.stream().map(p -> p.type).collect(List.collector());
+            log.error(tree.pos(),
+                      Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
+                                                             nestedTypes));
+        }
+        result = tree.type;
+        matchBindings = new MatchBindings(outBindings.toList(), List.nil());
+    }
+
+    private boolean verifyCastable(DiagnosticPosition pos, Type exprtype, Type clazztype) {
+        Warner warner = new Warner();
+        if (!chk.checkCastable(pos, exprtype, clazztype, chk.basicHandler, warner)) {
+            return false;
+        } else if (warner.hasLint(LintCategory.UNCHECKED)) {
+            log.error(pos,
+                      Errors.InstanceofReifiableNotSafe(exprtype, clazztype));
+            return false;
+        } else {
+            return true;
+        }
     }
 
     public void visitIndexed(JCArrayAccess tree) {
@@ -4321,10 +4402,7 @@ public class Attr extends JCTree.Visitor {
                      Env<AttrContext> env,
                      ResultInfo resultInfo) {
             if (resultInfo.pkind.contains(KindSelector.POLY)) {
-                Type pt = resultInfo.pt.map(deferredAttr.new RecoveryDeferredTypeMap(AttrMode.SPECULATIVE, sym, env.info.pendingResolutionPhase));
-                Type owntype = checkIdInternal(tree, site, sym, pt, env, resultInfo);
-                resultInfo.pt.map(deferredAttr.new RecoveryDeferredTypeMap(AttrMode.CHECK, sym, env.info.pendingResolutionPhase));
-                return owntype;
+                return attrRecover.recoverMethodInvocation(tree, site, sym, env, resultInfo);
             } else {
                 return checkIdInternal(tree, site, sym, resultInfo.pt, env, resultInfo);
             }
@@ -4942,9 +5020,12 @@ public class Attr extends JCTree.Visitor {
     }
 
     public void visitErroneous(JCErroneous tree) {
-        if (tree.errs != null)
+        if (tree.errs != null) {
+            Env<AttrContext> errEnv = env.dup(env.tree);
+            errEnv.info.returnResult = unknownExprInfo;
             for (JCTree err : tree.errs)
-                attribTree(err, env, new ResultInfo(KindSelector.ERR, pt()));
+                attribTree(err, errEnv, new ResultInfo(KindSelector.ERR, pt()));
+        }
         result = tree.type = syms.errType;
     }
 

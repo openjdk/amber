@@ -642,11 +642,20 @@ public class Check {
         return checkCastable(pos, found, req, basicHandler);
     }
     Type checkCastable(DiagnosticPosition pos, Type found, Type req, CheckContext checkContext) {
-        if (types.isCastable(found, req, castWarner(pos, found, req))) {
+        if (checkCastable(pos, found, req, checkContext, castWarner(pos, found, req))) {
             return req;
         } else {
-            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
             return types.createErrorType(found);
+        }
+    }
+
+    boolean checkCastable(DiagnosticPosition pos, Type found, Type req,
+                          CheckContext checkContext, Warner warner) {
+        if (types.isCastable(found, req, warner)) {
+            return true;
+        } else {
+            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
+            return false;
         }
     }
 
@@ -1324,7 +1333,10 @@ public class Check {
                            SEALED | NON_SEALED)
                  && checkDisjoint(pos, flags,
                                 SEALED,
-                           FINAL | NON_SEALED)) {
+                           FINAL | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                                ANNOTATION)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;
