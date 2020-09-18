@@ -956,4 +956,15 @@ public class SealedCompilationTests extends CompilationTestCase {
             assertOK(s);
         }
     }
+
+    public void testDoNotAllowSealedAnnotation() {
+        for (String s : List.of(
+            """
+            sealed @interface A {}
+            non-sealed interface I extends A {}
+            """
+        )) {
+            assertFail("compiler.err.expected4", s);
+        }
+    }
 }
