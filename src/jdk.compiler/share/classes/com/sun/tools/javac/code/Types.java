@@ -36,6 +36,7 @@ import java.util.WeakHashMap;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collector;
+import java.util.stream.Stream;
 
 import javax.tools.JavaFileObject;
 
@@ -2269,7 +2270,8 @@ public class Types {
                         if (ownerParams.nonEmpty()) {
                             if (baseParams.isEmpty()) {
                                 // then base is a raw type
-                                return erasure(sym.type);
+                                return (owner.isEnum() && !isParameterizedWith(sym.type, ownerParams)) ?
+                                    sym.type : erasure(sym.type);
                             } else {
                                 return subst(sym.type, ownerParams, baseParams);
                             }
@@ -2277,6 +2279,17 @@ public class Types {
                     }
                 }
                 return sym.type;
+            }
+
+            private boolean isParameterizedWith(Type t, List<Type> tvars) {
+                if (t.hasTag(FORALL)) {
+                    ForAll fa = (ForAll)t;
+                    return fa.containsAny(tvars) ||
+                            fa.tvars.stream()
+                                    .anyMatch(tv -> Type.containsAny(getBounds((TypeVar)tv), tvars));
+                } else {
+                    return t.containsAny(tvars);
+                }
             }
 
             @Override
@@ -2490,11 +2503,12 @@ public class Types {
                         List<Type> actuals = classBound(t).allparams();
                         List<Type> formals = t.tsym.type.allparams();
                         if (t.hasErasedSupertypes()) {
-                            t.supertype_field = erasureRecursive(supertype);
+                            Type sup = (t.tsym.isEnum() && !supertype.containsAny(formals)) ?
+                                    supertype : erasureRecursive(supertype);
+                            t.supertype_field = sup;
                         } else if (formals.nonEmpty()) {
                             t.supertype_field = subst(supertype, formals, actuals);
-                        }
-                        else {
+                        } else {
                             t.supertype_field = supertype;
                         }
                     }
@@ -2570,14 +2584,19 @@ public class Types {
                         Assert.check(t != t.tsym.type, t);
                         List<Type> actuals = t.allparams();
                         List<Type> formals = t.tsym.type.allparams();
-                        if (t.hasErasedSupertypes()) {
-                            t.interfaces_field = erasureRecursive(interfaces);
-                        } else if (formals.nonEmpty()) {
-                            t.interfaces_field = subst(interfaces, formals, actuals);
+                        ListBuffer<Type> interfacesBuf = new ListBuffer<>();
+                        for (Type i : interfaces) {
+                            if (t.hasErasedSupertypes()) {
+                                Type sup = (t.tsym.isEnum() && !i.containsAny(formals)) ?
+                                        i : erasureRecursive(i);
+                                interfacesBuf.add(sup);
+                            } else if (formals.nonEmpty()) {
+                                interfacesBuf.add(subst(i, formals, actuals));
+                            } else {
+                                interfacesBuf.add(i);
+                            }
                         }
-                        else {
-                            t.interfaces_field = interfaces;
-                        }
+                        t.interfaces_field = interfacesBuf.toList();
                     }
                 }
                 return t.interfaces_field;

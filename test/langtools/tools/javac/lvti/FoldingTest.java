@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @bug 8177466
  * @summary Add compiler support for local variable type-inference
- * @compile/fail/ref=FoldingTest.out -XDrawDiagnostics FoldingTest.java
+ * @compile/fail/ref=FoldingTest.out -XDdev -XDrawDiagnostics FoldingTest.java
  */
 class FoldingTest {
 

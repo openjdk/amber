@@ -1725,8 +1725,19 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                                       final Attr attr,
                                       final JCVariableDecl variable)
         {
-            setData((Callable<Object>)() -> attr.attribLazyConstantValue(env, variable, type));
+            setData((Callable<Object>)() -> {
+                Object res = attr.attribLazyConstantValue(env, variable, type);
+                initType = variable.init.type;
+                return res;
+            });
         }
+
+        public Type getLazyInitType() {
+            getConstValue();
+            return initType;
+        }
+
+        Type initType;
 
         /**
          * The variable's constant value, if this is a constant.
