@@ -29,6 +29,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.comp.DeferredAttr.AttributionMode;
 
 /** Contains information specific to the attribute and enter
@@ -122,6 +123,10 @@ public class AttrContext {
      */
     JCTree preferredTreeForDiagnostics;
 
+    /** method that acts as a wrapper for a method reference
+     */
+    JCMethodDecl conciseMethod;
+
     /** Duplicate this context, replacing scope field and copying all others.
      */
     AttrContext dup(WriteableScope scope) {
@@ -144,6 +149,7 @@ public class AttrContext {
         info.isNewClass = isNewClass;
         info.preferredTreeForDiagnostics = preferredTreeForDiagnostics;
         info.visitingServiceImplementation = visitingServiceImplementation;
+        info.conciseMethod = conciseMethod;
         return info;
     }
 

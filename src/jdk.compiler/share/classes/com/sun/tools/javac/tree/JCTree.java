@@ -862,6 +862,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCExpression defaultValue;
         /** method symbol */
         public MethodSymbol sym;
+        /** is this a concise method? reserved for those concise methods which are just wrappers
+         *  around a method reference
+         */
+        public JCExpression conciseMethodRef;
+
         /** does this method completes normally */
         public boolean completesNormally;
 
@@ -874,7 +879,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
                             List<JCExpression> thrown,
                             JCBlock body,
                             JCExpression defaultValue,
-                            MethodSymbol sym)
+                            MethodSymbol sym,
+                            JCExpression conciseMethodRef)
         {
             this.mods = mods;
             this.name = name;
@@ -888,6 +894,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             this.body = body;
             this.defaultValue = defaultValue;
             this.sym = sym;
+            this.conciseMethodRef = conciseMethodRef;
         }
         @Override
         public void accept(Visitor v) { v.visitMethodDef(this); }
@@ -929,6 +936,34 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return METHODDEF;
         }
+
+        @Override
+        public BodyKind getBodyKind() {
+            if ((mods.flags & Flags.CONCISE_ARROW) != 0)
+                return BodyKind.EXPRESSION;
+            if ((mods.flags & Flags.CONCISE_EQUAL) != 0)
+                return BodyKind.REFERENCE;
+            return BodyKind.BLOCK;
+        }
+
+        @Override
+        public Tree getBodyTree() {
+            if ((mods.flags & Flags.CONCISE_ARROW) != 0) {
+                JCStatement first = body.stats.head;
+                if (first.hasTag(RETURN)) {
+                    return ((JCReturn) first).expr;
+                } else if (first.hasTag(EXEC)) {
+                    return ((JCExpressionStatement) first).expr;
+                } else {
+                    Assert.error("Unknown kind: " + first.getTag());
+                    return null;
+                }
+            }
+            if ((mods.flags & Flags.CONCISE_EQUAL) != 0)
+                return conciseMethodRef;
+            return body;
+        }
+
   }
 
     /**
