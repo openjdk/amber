@@ -192,6 +192,7 @@ public class Names {
     public final Name metafactory;
     public final Name altMetafactory;
     public final Name dollarThis;
+    public final Name local;
 
     // string concat
     public final Name makeConcat;
@@ -365,6 +366,7 @@ public class Names {
         lambda = fromString("lambda$");
         metafactory = fromString("metafactory");
         altMetafactory = fromString("altMetafactory");
+        local = fromString("local$");
 
         // string concat
         makeConcat = fromString("makeConcat");
