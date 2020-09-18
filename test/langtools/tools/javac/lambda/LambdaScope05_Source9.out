@@ -1,0 +1,7 @@
+LambdaScope05.java:14:47: compiler.err.already.defined.in.clinit: kindname.variable, p, kindname.static.init, kindname.class, LambdaScope05
+LambdaScope05.java:15:40: compiler.err.already.defined: kindname.variable, p, kindname.constructor, LambdaScope05()
+LambdaScope05.java:18:43: compiler.err.already.defined.in.clinit: kindname.variable, p, kindname.static.init, kindname.class, LambdaScope05
+LambdaScope05.java:22:43: compiler.err.already.defined.in.clinit: kindname.variable, p, kindname.instance.init, kindname.class, LambdaScope05
+LambdaScope05.java:26:43: compiler.err.already.defined: kindname.variable, p, kindname.method, m_static()
+LambdaScope05.java:30:43: compiler.err.already.defined: kindname.variable, p, kindname.method, m()
+6 errors
