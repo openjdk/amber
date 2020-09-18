@@ -34,4 +34,20 @@ version=0
 domain=openjdk.org
 
 [checks "whitespace"]
-files=.*\.cpp|.*\.hpp|.*\.c|.*\.h|.*\.java
+files=.*\.cpp|.*\.hpp|.*\.c|.*\.h|.*\.java|.*\.cc|.*\.hh|.*\.m|.*\.mm
+
+[checks "merge"]
+message=Merge
+
+[checks "reviewers"]
+reviewers=1
+ignore=duke
+
+[checks "committer"]
+role=committer
+
+[checks "issues"]
+pattern=^([124-8][0-9]{6}): (\S.*)$
+
+[checks "problemlists"]
+dirs=test/jdk|test/langtools|test/lib-test|test/hotspot/jtreg|test/jaxp
