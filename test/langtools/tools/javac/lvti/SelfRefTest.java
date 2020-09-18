@@ -14,7 +14,7 @@ class SelfRefTest {
 
     void test(boolean cond) {
        var x = cond ? x : x; //error - self reference
-       var y = (Function<Integer, Integer>)(Integer y) -> y; //error - bad shadowing
+       var y = (Function<Integer, Integer>)(Integer y) -> y; //error - bad shadowing - but ok in lambda leftovers!
        var z = (Runnable)() -> { int z2 = m(z); }; //error - self reference
        var w = new Object() { int w = 42; void test() { int w2 = w; } }; //ok
        int u = u; //ok
