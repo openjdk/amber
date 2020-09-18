@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,9 +21,19 @@
  * questions.
  */
 
-// key: compiler.err.underscore.as.identifier.in.lambda
-// options: -source 9 -Xlint:-options
+/*
+ * @test
+ * @bug 8173061
+ * @summary Shadowing of lambda parameters
+ * @compile ShadowParametersTest01.java
+ */
 
-public class UnderscoreInLambdaExpression {
-    java.util.function.Function<String,String> f = _ -> "x";
+import java.util.*;
+
+public class ShadowParametersTest01 {
+    void foo() {
+        Map<String, Integer> msi = null;
+        String key = "333";
+        msi.computeIfAbsent(key, key -> key.length());
+    }
 }
