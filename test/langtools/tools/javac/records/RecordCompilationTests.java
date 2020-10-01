@@ -26,7 +26,7 @@
 /**
  * RecordCompilationTests
  *
- * @test 8250629 8252307 8247352
+ * @test 8250629 8252307 8247352 8241151
  * @summary Negative compilation tests, and positive compilation (smoke) tests for records
  * @library /lib/combo /tools/lib /tools/javac/lib
  * @modules
@@ -135,8 +135,10 @@ public class RecordCompilationTests extends CompilationTestCase {
         }
     }
 
+    boolean useAP;
+
     public RecordCompilationTests() {
-        boolean useAP = System.getProperty("useAP") == null ? false : System.getProperty("useAP").equals("true");
+        useAP = System.getProperty("useAP", "false").equals("true");
         setDefaultFilename("R.java");
         if (useAP) {
             setCompileOptions(OPTIONS_WITH_AP);
@@ -1792,5 +1794,21 @@ public class RecordCompilationTests extends CompilationTestCase {
                 record R<T>(T t[]) {}
                 """
         );
+    }
+
+    public void testNoWarningForSerializableRecords() {
+        if (!useAP) {
+            /* dont execute this test when the default annotation processor is on as it will fail due to
+             * spurious warnings
+             */
+            appendCompileOptions("-Werror", "-Xlint:serial");
+            assertOK(
+                    """
+                    import java.io.*;
+                    record R() implements java.io.Serializable {}
+                    """
+            );
+            removeLastCompileOptions(2);
+        }
     }
 }
