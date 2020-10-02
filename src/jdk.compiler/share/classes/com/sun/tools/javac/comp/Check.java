@@ -139,6 +139,7 @@ public class Check {
 
         Target target = Target.instance(context);
         syntheticNameChar = target.syntheticNameChar();
+        syntheticEnumNameStr = target.syntheticEnumNameStr();
 
         profile = Profile.instance(context);
         preview = Preview.instance(context);
@@ -168,6 +169,10 @@ public class Check {
     /** Character for synthetic names
      */
     char syntheticNameChar;
+
+    /** String for synthetic enum names
+     */
+    String syntheticEnumNameStr;
 
     /** A table mapping flat names of all compiled classes for each module in this run
      *  to their symbols; maintained from outside.
@@ -418,16 +423,19 @@ public class Check {
      *  @param name          The class name.
      *  @param s             The enclosing scope.
      */
-    boolean checkUniqueClassName(DiagnosticPosition pos, Name name, Scope s) {
+    boolean checkUniqueClassName(JCClassDecl tree, Name name, Scope s) {
+        if ((tree.mods.flags & Flags.ENUM_CONSTANT_CLASS) != 0) {
+            return true;
+        }
         for (Symbol sym : s.getSymbolsByName(name, NON_RECURSIVE)) {
             if (sym.kind == TYP && sym.name != names.error) {
-                duplicateError(pos, sym);
+                duplicateError(tree.pos(), sym);
                 return false;
             }
         }
         for (Symbol sym = s.owner; sym != null; sym = sym.owner) {
             if (sym.kind == TYP && sym.name == name && sym.name != names.error) {
-                duplicateError(pos, sym);
+                duplicateError(tree.pos(), sym);
                 return true;
             }
         }
@@ -447,11 +455,14 @@ public class Check {
      *    enclClass is the flat name of the enclosing class,
      *    classname is the simple name of the local class
      */
-    public Name localClassName(ClassSymbol c) {
+    public Name localClassName(ClassSymbol c, long flags) {
         Name enclFlatname = c.owner.enclClass().flatname;
         String enclFlatnameStr = enclFlatname.toString();
         Pair<Name, Name> key = new Pair<>(enclFlatname, c.name);
         Integer index = localClassNameIndexes.get(key);
+        if ((flags & Flags.ENUM_CONSTANT_CLASS) != 0) {
+            return names.fromString(enclFlatnameStr + syntheticEnumNameStr + c.name);
+        } else {
         for (int i = (index == null) ? 1 : index; ; i++) {
             Name flatname = names.fromString(enclFlatnameStr
                     + syntheticNameChar + i + c.name);
@@ -460,6 +471,7 @@ public class Check {
                 return flatname;
             }
         }
+    }
     }
 
     public void clearLocalClassNameIndexes(ClassSymbol c) {
@@ -630,11 +642,20 @@ public class Check {
         return checkCastable(pos, found, req, basicHandler);
     }
     Type checkCastable(DiagnosticPosition pos, Type found, Type req, CheckContext checkContext) {
-        if (types.isCastable(found, req, castWarner(pos, found, req))) {
+        if (checkCastable(pos, found, req, checkContext, castWarner(pos, found, req))) {
             return req;
         } else {
-            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
             return types.createErrorType(found);
+        }
+    }
+
+    boolean checkCastable(DiagnosticPosition pos, Type found, Type req,
+                          CheckContext checkContext, Warner warner) {
+        if (types.isCastable(found, req, warner)) {
+            return true;
+        } else {
+            checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
+            return false;
         }
     }
 
@@ -1247,7 +1268,12 @@ public class Check {
             if ((flags & ENUM) != 0) {
                 // enums can't be declared abstract, final, sealed or non-sealed
                 mask &= ~(ABSTRACT | FINAL | SEALED | NON_SEALED);
-                implicit |= implicitEnumFinalFlag(tree);
+                if ((flags & ENUM_CONSTANT_CLASS) != 0) {
+                    mask |= PUBLIC;
+                }
+                implicit |= (flags & ENUM_CONSTANT_CLASS) != 0 ?
+                        PUBLIC :
+                        implicitEnumFinalFlag(tree);
             }
             if ((flags & RECORD) != 0) {
                 // records can't be declared abstract
@@ -1307,7 +1333,10 @@ public class Check {
                            SEALED | NON_SEALED)
                  && checkDisjoint(pos, flags,
                                 SEALED,
-                           FINAL | NON_SEALED)) {
+                           FINAL | NON_SEALED)
+                 && checkDisjoint(pos, flags,
+                                SEALED,
+                                ANNOTATION)) {
             // skip
         }
         return flags & (mask | ~ExtendedStandardFlags) | implicit;
@@ -1527,6 +1556,7 @@ public class Check {
             tree.type.hasTag(CLASS) &&
             !TreeInfo.isDiamond(tree) &&
             !withinAnonConstr(env) &&
+            !tree.type.tsym.isEnum() &&
             tree.type.isRaw()) {
             log.warning(LintCategory.RAW,
                     tree.pos(), Warnings.RawClassUse(tree.type, tree.type.tsym.type));

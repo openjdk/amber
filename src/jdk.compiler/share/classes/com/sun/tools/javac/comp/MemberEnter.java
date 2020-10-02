@@ -26,10 +26,12 @@
 package com.sun.tools.javac.comp;
 
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import com.sun.tools.javac.main.Option;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
@@ -261,7 +263,7 @@ public class MemberEnter extends JCTree.Visitor {
 
         try {
             if (TreeInfo.isEnumInit(tree)) {
-                attr.attribIdentAsEnumType(localEnv, (JCIdent)tree.vartype);
+                attr.attribExprAsEnumType(localEnv, tree.vartype);
             } else if (!tree.isImplicitlyTyped()) {
                 attr.attribType(tree.vartype, localEnv);
                 if (TreeInfo.isReceiverParam(tree))
@@ -408,6 +410,12 @@ public class MemberEnter extends JCTree.Visitor {
         @Override
         public void visitSelect(JCFieldAccess tree) {
             tree.selected.accept(this);
+        }
+
+        @Override
+        public void visitNewClass(JCNewClass that) {
+            result = that.def != null &&
+                    (that.def.mods.flags & ENUM_CONSTANT_CLASS) != 0;
         }
     }
 

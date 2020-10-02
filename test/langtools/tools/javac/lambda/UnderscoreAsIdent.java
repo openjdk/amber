@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,7 @@
  * @test
  * @summary Check usages of underscore as identifier generate warnings
  * @compile/fail/ref=UnderscoreAsIdent8.out -source 8 -Xlint:-options -XDrawDiagnostics -Werror UnderscoreAsIdent.java
- * @compile/fail/ref=UnderscoreAsIdent9.out -XDrawDiagnostics -Werror UnderscoreAsIdent.java
+ * @compile/fail/ref=UnderscoreAsIdent9.out -source 9 -Xlint:-options -XDrawDiagnostics -Werror UnderscoreAsIdent.java
  */
 package _._;
 
