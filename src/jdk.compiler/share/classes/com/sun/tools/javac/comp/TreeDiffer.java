@@ -45,6 +45,7 @@ import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
 import com.sun.tools.javac.tree.JCTree.JCContinue;
+import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCEnhancedForLoop;
 import com.sun.tools.javac.tree.JCTree.JCErroneous;
@@ -264,6 +265,14 @@ public class TreeDiffer extends TreeScanner {
             return;
         }
         equiv.put(tree.symbol, that.symbol);
+    }
+
+    @Override
+    public void visitDeconstructionPattern(JCTree.JCDeconstructionPattern tree) {
+        JCDeconstructionPattern that = (JCDeconstructionPattern) parameter;
+        result =
+                scan(tree.deconstructor, that.deconstructor)
+                        && scan(tree.nested, that.nested);
     }
 
     @Override
