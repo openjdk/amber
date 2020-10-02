@@ -4424,16 +4424,21 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
-     * * {@preview Associated with sealed classes, a preview feature of the Java language.
+     * {@preview Associated with sealed classes, a preview feature of the Java language.
      *
      *           This method is associated with <i>sealed classes</i>, a preview
      *           feature of the Java language. Preview features
      *           may be removed in a future release, or upgraded to permanent
      *           features of the Java language.}
      *
-     * Returns {@code true} if and only if this {@code Class} object represents a sealed class or interface.
-     * If this {@code Class} object represents a primitive type, {@code void}, or an array type, this method returns
+     * Returns {@code true} if and only if this {@code Class} object represents
+     * a sealed class or interface. If this {@code Class} object represents a
+     * primitive type, {@code void}, or an array type, this method returns
      * {@code false}.
+     *
+     * @apiNote
+     * This method reports on a distinct concept of sealing from
+     * {@link Package#isSealed() Package::isSealed}.
      *
      * @return {@code true} if and only if this {@code Class} object represents a sealed class or interface.
      *
