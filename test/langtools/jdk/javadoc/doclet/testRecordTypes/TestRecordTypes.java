@@ -340,6 +340,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", base.resolve("out").toString(),
                 "-quiet", "-noindex",
+                "--no-platform-links",
                 "-sourcepath", src.toString(),
                 "p");
         checkExit(Exit.OK);
@@ -452,6 +453,7 @@ public class TestRecordTypes extends JavadocTester {
 
         javadoc("-d", dir.resolve("out").toString(),
                 "-quiet", "-noindex",
+                "--no-platform-links",
                 "-sourcepath", src.toString(),
                 "-private",
                 "p");
