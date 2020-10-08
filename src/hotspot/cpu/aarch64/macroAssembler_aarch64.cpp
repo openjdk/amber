@@ -2651,9 +2651,17 @@ void MacroAssembler::debug64(char* msg, int64_t pc, int64_t regs[])
   fatal("DEBUG MESSAGE: %s", msg);
 }
 
+RegSet MacroAssembler::call_clobbered_registers() {
+  RegSet regs = RegSet::range(r0, r17) - RegSet::of(rscratch1, rscratch2);
+#ifndef R18_RESERVED
+  regs += r18_tls;
+#endif
+  return regs;
+}
+
 void MacroAssembler::push_call_clobbered_registers_except(RegSet exclude) {
   int step = 4 * wordSize;
-  push(RegSet::range(r0, r18) - RegSet::of(rscratch1, rscratch2) - exclude, sp);
+  push(call_clobbered_registers() - exclude, sp);
   sub(sp, sp, step);
   mov(rscratch1, -step);
   // Push v0-v7, v16-v31.
@@ -2673,7 +2681,7 @@ void MacroAssembler::pop_call_clobbered_registers_except(RegSet exclude) {
           as_FloatRegister(i+3), T1D, Address(post(sp, 4 * wordSize)));
   }
 
-  pop(RegSet::range(r0, r18) - RegSet::of(rscratch1, rscratch2) - exclude, sp);
+  pop(call_clobbered_registers() - exclude, sp);
 }
 
 void MacroAssembler::push_CPU_state(bool save_vectors, bool use_sve,
@@ -4384,7 +4392,7 @@ void MacroAssembler::bang_stack_size(Register size, Register tmp) {
   // was post-decremented.)  Skip this address by starting at i=1, and
   // touch a few more pages below.  N.B.  It is important to touch all
   // the way down to and including i=StackShadowPages.
-  for (int i = 0; i < (int)(JavaThread::stack_shadow_zone_size() / os::vm_page_size()) - 1; i++) {
+  for (int i = 0; i < (int)(StackOverflow::stack_shadow_zone_size() / os::vm_page_size()) - 1; i++) {
     // this could be any sized move but this is can be a debugging crumb
     // so the bigger the better.
     lea(tmp, Address(tmp, -os::vm_page_size()));
