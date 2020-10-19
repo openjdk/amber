@@ -187,8 +187,7 @@ class JvmtiTagHashmap : public CHeapObj<mtInternal> {
 
   // hash a given key (oop) with the specified size
   static unsigned int hash(oop key, int size) {
-    const oop obj = Access<>::resolve(key);
-    const unsigned int hash = Universe::heap()->hash_oop(obj);
+    const unsigned int hash = Universe::heap()->hash_oop(key);
     return hash % size;
   }
 
@@ -804,9 +803,6 @@ class ClassFieldMap: public CHeapObj<mtInternal> {
 
   // add a field
   void add(int index, char type, int offset);
-
-  // returns the field count for the given class
-  static int compute_field_count(InstanceKlass* ik);
 
  public:
   ~ClassFieldMap();

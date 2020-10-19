@@ -569,11 +569,11 @@ public class JavacParser implements Parser {
         return ident(false, false);
     }
 
-    protected Name ident(boolean advanceOnErrors) {
-        return ident(advanceOnErrors, false);
+    protected Name ident(boolean allowClass) {
+        return ident(allowClass, false);
     }
 
-    protected Name ident(boolean advanceOnErrors, boolean underscoreAllowed) {
+    protected Name ident(boolean allowClass, boolean underscoreAllowed) {
         if (token.kind == IDENTIFIER) {
             Name name = token.name();
             nextToken();
@@ -615,8 +615,9 @@ public class JavacParser implements Parser {
             return name;
         } else {
             accept(IDENTIFIER);
-            if (advanceOnErrors) {
+            if (allowClass && token.kind == CLASS) {
                 nextToken();
+                return names._class;
             }
             return names.error;
         }
