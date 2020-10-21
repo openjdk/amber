@@ -217,8 +217,8 @@ public class SealedClassesReflectionTest {
         assertTrue(sealedClass.isSealed());
         assertTrue(sealedClass.permittedSubclasses().length == numberOfSubclasses);
         int i = 0;
-        for (ClassDesc cd : sealedClass.permittedSubclasses()) {
-            assertTrue(cd.displayName().equals(subclassDescriptors[i]), "expected: " + subclassDescriptors[i] + " found: " + cd.displayName());
+        for (Class<?> cd : sealedClass.permittedSubclasses()) {
+            assertTrue(cd.getName().equals(subclassDescriptors[i]), "expected: " + subclassDescriptors[i] + " found: " + cd.getName());
             i++;
         }
         i = 0;
