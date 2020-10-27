@@ -86,8 +86,8 @@ public class SealedClassesReflectionTest {
     public void testSealedClasses(Class<?> cls) {
         assertTrue(cls.isSealed());
         assertTrue(!Modifier.isFinal(cls.getModifiers()));
-        assertTrue(cls.permittedSubclasses() != null);
-        assertTrue(cls.permittedSubclasses().length > 0);
+        assertTrue(cls.getPermittedSubclasses() != null);
+        assertTrue(cls.getPermittedSubclasses().length > 0);
     }
 
     @DataProvider(name = "notSealedClasses")
@@ -110,8 +110,8 @@ public class SealedClassesReflectionTest {
     @Test(dataProvider = "notSealedClasses")
     public void testNotSealedClasses(Class<?> cls) {
         assertTrue(!cls.isSealed());
-        assertTrue(cls.permittedSubclasses() != null);
-        assertTrue(cls.permittedSubclasses().length == 0);
+        assertTrue(cls.getPermittedSubclasses() != null);
+        assertTrue(cls.getPermittedSubclasses().length == 0);
     }
 
     @DataProvider(name = "non_sealedClasses")
@@ -128,8 +128,8 @@ public class SealedClassesReflectionTest {
         assertTrue(!cls.isSealed());
         assertTrue(!Modifier.isFinal(cls.getModifiers()));
         assertTrue((cls.getSuperclass() != null && cls.getSuperclass().isSealed()) || Arrays.stream(cls.getInterfaces()).anyMatch(Class::isSealed));
-        assertTrue(cls.permittedSubclasses() != null);
-        assertTrue(cls.permittedSubclasses().length == 0);
+        assertTrue(cls.getPermittedSubclasses() != null);
+        assertTrue(cls.getPermittedSubclasses().length == 0);
     }
 
     @DataProvider(name = "reflectionData")
@@ -215,9 +215,9 @@ public class SealedClassesReflectionTest {
             throws ReflectiveOperationException
     {
         assertTrue(sealedClass.isSealed());
-        assertTrue(sealedClass.permittedSubclasses().length == numberOfSubclasses);
+        assertTrue(sealedClass.getPermittedSubclasses().length == numberOfSubclasses);
         int i = 0;
-        for (Class<?> cd : sealedClass.permittedSubclasses()) {
+        for (Class<?> cd : sealedClass.getPermittedSubclasses()) {
             assertTrue(cd.getName().equals(subclassDescriptors[i]), "expected: " + subclassDescriptors[i] + " found: " + cd.getName());
             i++;
         }

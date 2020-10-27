@@ -4398,7 +4398,7 @@ public final class Class<T> implements java.io.Serializable,
      * @since 15
      */
     @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.SEALED_CLASSES, essentialAPI=false)
-    public Class<?>[] permittedSubclasses() {
+    public Class<?>[] getPermittedSubclasses() {
         Class<?>[] subClasses;
         if (isArray() || isPrimitive() || (subClasses = getPermittedSubclasses0()).length == 0) {
             return EMPTY_CLASS_ARRAY;
@@ -4435,7 +4435,7 @@ public final class Class<T> implements java.io.Serializable,
         if (isArray() || isPrimitive()) {
             return false;
         }
-        return permittedSubclasses().length != 0;
+        return getPermittedSubclasses().length != 0;
     }
 
     private native Class<?>[] getPermittedSubclasses0();

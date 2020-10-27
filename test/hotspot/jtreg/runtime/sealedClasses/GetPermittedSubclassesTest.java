@@ -50,7 +50,7 @@ public class GetPermittedSubclassesTest {
     final class Final4 {}
 
     public static void testSealedInfo(Class<?> c, String[] expected) {
-        Object[] permitted = c.permittedSubclasses();
+        Object[] permitted = c.getPermittedSubclasses();
 
         if (permitted.length != expected.length) {
             throw new RuntimeException(
