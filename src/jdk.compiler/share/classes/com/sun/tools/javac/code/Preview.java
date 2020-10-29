@@ -168,7 +168,6 @@ public class Preview {
         if (feature == Feature.PATTERN_MATCHING_IN_INSTANCEOF ||
             feature == Feature.DECONSTRUCTION_PATTERNS ||
             feature == Feature.REIFIABLE_TYPES_INSTANCEOF ||
-            feature == Feature.RECORDS ||
             feature == Feature.SEALED_CLASSES)
             return true;
         //Note: this is a backdoor which allows to optionally treat all features as 'preview' (for testing).
