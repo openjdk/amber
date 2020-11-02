@@ -24,6 +24,8 @@
  */
 
 /**
+ * RecordMemberTests
+ *
  * @test
  * @bug 8246774
  * @summary test several assertions on record classes members

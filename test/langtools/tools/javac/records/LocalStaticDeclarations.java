@@ -93,7 +93,7 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
         ),
         RECORD("record CR() { #{STATIC_LOCAL} }"),
         CLASS("class CC { #{STATIC_LOCAL} }"),
-        ENUM("enum CE { #{STATIC_LOCAL} }"),
+        ENUM("enum CE { CE1; #{STATIC_LOCAL} }"),
         LAMBDA("Runnable run = () -> { #{STATIC_LOCAL} };");
 
         String container;
@@ -124,7 +124,6 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
     }
 
     enum Member implements ComboParameter {
-        NONE(""),
         METHOD("int foo() { return #{EXPR}; }"),
         DEFAULT_METHOD("default int foo() { return #{EXPR}; }");
 

@@ -839,6 +839,31 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
+
+        // inner classes can contain static methods too
+        assertOK(
+                """
+                class C {
+                    class Inner {
+                        // static method inside inner class
+                        static void m() {}
+                    }
+                }
+                """
+        );
+
+        assertOK(
+                """
+                class C {
+                     void m() {
+                         new Object() {
+                            // static method inside inner class
+                            static void m() {}
+                         };
+                     }
+                }
+                """
+        );
     }
 
     public void testReturnInCanonical_Compact() {
@@ -869,7 +894,7 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testRecordsInsideInner() {
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     class Inner {
@@ -878,7 +903,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                 }
                 """
         );
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     public void test() {
@@ -888,7 +913,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     }
                 }
                 """);
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     Runnable run = new Runnable() {
@@ -897,7 +922,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                     };
                 }
                 """);
-        assertFail("compiler.err.static.declaration.not.allowed.in.inner.classes",
+        assertOK(
                 """
                 class Outer {
                     void m() {
