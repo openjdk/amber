@@ -110,13 +110,13 @@ public enum ElementKind {
 
     /**
      * A record type.
-     * @since 14
+     * @since 16
      */
     RECORD,
 
     /**
      * A record component of a {@code record}.
-     * @since 14
+     * @since 16
      */
     RECORD_COMPONENT,
 

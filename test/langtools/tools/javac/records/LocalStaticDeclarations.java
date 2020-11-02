@@ -23,14 +23,13 @@
 
 /*
  * @test
- * @bug 8242293
+ * @bug 8242293 8246774
  * @summary allow for local interfaces and enums plus nested records, interfaces and enums
  * @library /tools/javac/lib
  * @modules jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.file
  *          jdk.compiler/com.sun.tools.javac.util
  * @build combo.ComboTestHelper
- * @compile LocalStaticDeclarations.java
  * @run main LocalStaticDeclarations
  */
 
@@ -58,12 +57,10 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
                 int INSTANCE_FIELD = 0;
                 static int STATIC_FIELD = 0;
                 // instance initializer
-                {
-                    int LOCAL_VARIABLE = 0;
+                { int LOCAL_VARIABLE = 0;
                     #{CONTAINER}
                 }
                 Test() {
-                    int LOCAL_VARIABLE = 0;
                     #{CONTAINER}
                 }
                 void m() {
@@ -142,14 +139,14 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
     }
 
     enum Expression implements ComboParameter {
-        LITERAL("1"),
-        STATIC_FIELD("STATIC_FIELD"),
-        LOCAL_VARIABLE("LOCAL_VARIABLE"),
-        INSTANCE_FIELD("INSTANCE_FIELD");
+         LITERAL("1"),
+         STATIC_FIELD("STATIC_FIELD"),
+         LOCAL_VARIABLE("LOCAL_VARIABLE"),
+         INSTANCE_FIELD("INSTANCE_FIELD");
 
-        String expr;
+         String expr;
 
-        Expression(String expr) {
+         Expression(String expr) {
              this.expr = expr;
          }
 
@@ -181,13 +178,13 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
     }
 
     boolean notTriviallyIncorrect() {
-        return decl == StaticLocalDecl.INTERFACE && member == Member.DEFAULT_METHOD ||
-               decl != StaticLocalDecl.INTERFACE && member == Member.METHOD;
+        return decl == StaticLocalDecl.INTERFACE && (member == Member.DEFAULT_METHOD || member == Member.NONE) ||
+               decl != StaticLocalDecl.INTERFACE && (member == Member.METHOD || member == Member.NONE);
     }
 
     void check(ComboTask.Result<Iterable<? extends JavaFileObject>> result) {
         if (shouldFail()) {
-            Assert.check(result.hasErrors(), "unexpected compilation\n" + result.compilationInfo());
+            Assert.check(result.hasErrors(), result.compilationInfo());
             if (!expectedDiagFound(result)) {
                 fail("test failing with unexpected error message\n" + result.compilationInfo());
             }
@@ -197,7 +194,10 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
     }
 
     boolean shouldFail() {
-        return (expr == Expression.LOCAL_VARIABLE || expr == Expression.INSTANCE_FIELD);
+        return ((container != Container.NO_CONTAINER &&
+                container != Container.LAMBDA &&
+                container != Container.ANONYMOUS)) ||
+                (member != Member.NONE && !acceptableExpr());
     }
 
     boolean acceptableExpr() {
@@ -205,9 +205,14 @@ public class LocalStaticDeclarations extends ComboInstance<LocalStaticDeclaratio
     }
 
     boolean expectedDiagFound(ComboTask.Result<Iterable<? extends JavaFileObject>> result) {
-        if (expr == Expression.LOCAL_VARIABLE || expr == Expression.INSTANCE_FIELD) {
+        if ((container == Container.NO_CONTAINER ||
+                container == Container.LAMBDA ||
+                container == Container.ANONYMOUS) &&
+                !acceptableExpr()) {
             return result.containsKey("compiler.err.non-static.cant.be.ref");
+        } else if (container == Container.ENUM) {
+            return result.containsKey("compiler.err.enum.constant.expected" );
         }
-        return false;
+        return result.containsKey("compiler.err.static.declaration.not.allowed.in.inner.classes" );
     }
 }
