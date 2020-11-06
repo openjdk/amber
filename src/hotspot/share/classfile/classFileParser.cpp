@@ -3917,9 +3917,9 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
               permitted_subclasses_attribute_start = cfs->current();
               permitted_subclasses_attribute_length = attribute_length;
             }
-          }
+              }
           // Skip attribute_length for any attribute where major_verson >= JAVA_16_VERSION
-          cfs->skip_u1(attribute_length, CHECK);
+            cfs->skip_u1(attribute_length, CHECK);
         } else {
           // Unknown attribute
           cfs->skip_u1(attribute_length, CHECK);
