@@ -3893,40 +3893,33 @@ void ClassFileParser::parse_classfile_attributes(const ClassFileStream* const cf
                          class_info_index, CHECK);
           _nest_host = class_info_index;
 
-          } else if (_major_version >= JAVA_15_VERSION) {
-            // Check for PermittedSubclasses tag
-            if (tag == vmSymbols::tag_permitted_subclasses()) {
-              if (supports_sealed_types()) {
-                if (parsed_permitted_subclasses_attribute) {
+        } else if (_major_version >= JAVA_16_VERSION) {
+          if (tag == vmSymbols::tag_record()) {
+            if (parsed_record_attribute) {
+              classfile_parse_error("Multiple Record attributes in class file %s", THREAD);
+              return;
+            }
+            parsed_record_attribute = true;
+            record_attribute_start = cfs->current();
+            record_attribute_length = attribute_length;
+          } else if (tag == vmSymbols::tag_permitted_subclasses()) {
+            if (supports_sealed_types()) {
+              if (parsed_permitted_subclasses_attribute) {
                 classfile_parse_error("Multiple PermittedSubclasses attributes in class file %s", CHECK);
-                  return;
-                }
-                // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
-                if (_access_flags.is_final()) {
-                classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
-                  return;
-                }
-                parsed_permitted_subclasses_attribute = true;
-                permitted_subclasses_attribute_start = cfs->current();
-                permitted_subclasses_attribute_length = attribute_length;
-              }
-              cfs->skip_u1(attribute_length, CHECK);
-
-          } else if (_major_version >= JAVA_16_VERSION) {
-            if (tag == vmSymbols::tag_record()) {
-              if (parsed_record_attribute) {
-                classfile_parse_error("Multiple Record attributes in class file %s", THREAD);
                 return;
               }
-              parsed_record_attribute = true;
-              record_attribute_start = cfs->current();
-              record_attribute_length = attribute_length;
+              // Classes marked ACC_FINAL cannot have a PermittedSubclasses attribute.
+              if (_access_flags.is_final()) {
+                classfile_parse_error("PermittedSubclasses attribute in final class file %s", CHECK);
+                return;
               }
-              cfs->skip_u1(attribute_length, CHECK);
-          } else {
-            // Unknown attribute
+              parsed_permitted_subclasses_attribute = true;
+              permitted_subclasses_attribute_start = cfs->current();
+              permitted_subclasses_attribute_length = attribute_length;
+            }
+              }
+          // Skip attribute_length for any attribute where major_verson >= JAVA_16_VERSION
             cfs->skip_u1(attribute_length, CHECK);
-          }
         } else {
           // Unknown attribute
           cfs->skip_u1(attribute_length, CHECK);
@@ -4567,9 +4560,9 @@ static void check_final_method_override(const InstanceKlass* this_klass, TRAPS) 
               ResourceMark rm(THREAD);
               THROW_MSG(vmSymbols::java_lang_IncompatibleClassChangeError(),
                         err_msg("class %s overrides final method %s.%s%s",
-                                 this_klass->external_name(),
-                                 super_m->method_holder()->external_name(),
-                                 name->as_C_string(),
+                                this_klass->external_name(),
+                                super_m->method_holder()->external_name(),
+                                name->as_C_string(),
                                 signature->as_C_string()));
             }
           }
