@@ -564,7 +564,7 @@ public class Flow {
                 scanStat(tree.body);
                 tree.completesNormally = alive != Liveness.DEAD;
 
-                if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID))
+                if (tree.conciseMethodRef == null && alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID))
                     log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingRetStmt);
 
                 clearPendingExits(true);
