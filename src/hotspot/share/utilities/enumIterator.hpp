@@ -40,7 +40,6 @@
 //
 // case 2:
 // enum has sequential values, with U start and U end (exclusive).
-// WeakProcessorPhases is an example because of oopstorage.
 // This can be mapped onto case 1 by casting start/(end-1).
 //
 // case 3:
@@ -60,7 +59,7 @@
 // Example:
 //
 // /* With range-base for (recommended) */
-// for (vmSymbolID index : EnumRange<vmSymbolID>{}) {
+// for (auto index : EnumRange<vmSymbolID>{}) {
 //    ....
 // }
 //

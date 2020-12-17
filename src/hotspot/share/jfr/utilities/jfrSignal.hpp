@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -19,16 +19,33 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
+ *
  */
 
-public class Test {
-    public static void main(String... args) {
-        SecurityManager sm = System.getSecurityManager();
-        Module module = sm.getClass().getModule();
-        String s = System.getProperty("java.security.manager");
-        String expected = s.isEmpty() ? "java.base" : "m";
-        if (!module.isNamed() || !module.getName().equals(expected)) {
-            throw new RuntimeException(module + " expected module m instead");
-        }
+#ifndef SHARE_JFR_UTILITIES_JFRSIGNAL_HPP
+#define SHARE_JFR_UTILITIES_JFRSIGNAL_HPP
+
+#include "runtime/atomic.hpp"
+
+class JfrSignal {
+ private:
+  mutable volatile bool _signaled;
+ public:
+  JfrSignal() : _signaled(false) {}
+
+  void signal() const {
+    if (!Atomic::load_acquire(&_signaled)) {
+      Atomic::release_store(&_signaled, true);
     }
-}
+  }
+
+  bool is_signaled() const {
+    if (Atomic::load_acquire(&_signaled)) {
+      Atomic::release_store(&_signaled, false); // auto-reset
+      return true;
+    }
+    return false;
+  }
+};
+
+#endif // SHARE_JFR_UTILITIES_JFRSIGNAL_HPP
