@@ -5398,7 +5398,7 @@ public class Attr extends JCTree.Visitor {
                 && isSerializable(c.type)
                 && (c.flags() & (Flags.ENUM | Flags.INTERFACE)) == 0
                 && !c.isAnonymous()) {
-            checkSerialVersionUID(tree, c);
+            checkSerialVersionUID(tree, c, env);
         }
         if (allowTypeAnnos) {
             // Correctly organize the positions of the type annotations
@@ -5431,7 +5431,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         /** Check that an appropriate serialVersionUID member is defined. */
-        private void checkSerialVersionUID(JCClassDecl tree, ClassSymbol c) {
+        private void checkSerialVersionUID(JCClassDecl tree, ClassSymbol c, Env<AttrContext> env) {
 
             // check for presence of serialVersionUID
             VarSymbol svuid = null;
@@ -5445,6 +5445,13 @@ public class Attr extends JCTree.Visitor {
             if (svuid == null) {
                 if (!c.isRecord())
                     log.warning(LintCategory.SERIAL, tree.pos(), Warnings.MissingSVUID(c));
+                return;
+            }
+
+            // Check if @SuppressWarnings("serial") is an annotation of serialVersionUID.
+            // See JDK-8231622 for more information.
+            Lint lint = env.info.lint.augment(svuid);
+            if (lint.isSuppressed(LintCategory.SERIAL)) {
                 return;
             }
 
