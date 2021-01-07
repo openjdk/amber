@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
+ * published by the Free Software Foundation.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -23,27 +21,22 @@
  * questions.
  */
 
-package jdk.javadoc.internal.doclint;
+import java.awt.Component;
+import java.awt.Image;
+import java.awt.MediaTracker;
+import java.awt.Toolkit;
 
-/**
- * Enum representing HTML version of the documentation comment.
- *
- * @author Bhavesh Patel
- */
-public enum HtmlVersion {
+public class GetImageJNICheck extends Component {
 
-    HTML4,
-    HTML5,
-    ALL;
-
-    public static HtmlVersion getHtmlVersion(String argsVersion) {
-        switch (argsVersion) {
-            case "html4":
-                return HtmlVersion.HTML4;
-            case "html5":
-                return HtmlVersion.HTML5;
-            default:
-                return null;
-        }
-    }
+     public static void main(String[] args) throws Exception {
+        System.setProperty("java.awt.headless", "true");
+        Toolkit tk = Toolkit.getDefaultToolkit();
+        String testPath = System.getProperty("test.src", ".");
+        String imgFile = testPath + java.io.File.separator + "duke.jpg";
+        Image image = tk.getImage(imgFile);
+        MediaTracker mt = new MediaTracker(new GetImageJNICheck() );
+        mt.addImage(image, 0);
+        mt.waitForAll();
+        System.exit(0);
+     }
 }

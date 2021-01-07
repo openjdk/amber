@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,21 +21,25 @@
  * questions.
  */
 
-/*
+/**
  * @test
- * @bug 8072945
- * @summary test HTML version
- * @library ..
- * @modules jdk.javadoc/jdk.javadoc.internal.doclint
- * @build DocLintTester
- * @run main DocLintTester -XhtmlVersion:html5 HtmlVersionTest.java
- * @run main DocLintTester -XhtmlVersion:html4 HtmlVersionTest.java
- * @run main DocLintTester -badargs -XhtmlVersion: HtmlVersionTest.java
- * @run main DocLintTester HtmlVersionTest.java
+ * @bug 8213032
+ * @summary program fails with LambdaConversionException at execution time
  */
 
-/**
- * Test HTML version option.
- */
-public class HtmlVersionTest {
+import java.util.stream.*;
+
+public class MethodReferenceIntersection4 {
+    interface I {}
+    static abstract class C { }
+    static class A extends C implements I { }
+    static class B extends C implements I { }
+
+    static String f(I i) { return null; }
+
+    public static void main(String[] args) {
+        Stream.of(new A(), new B())
+                .map(MethodReferenceIntersection4::f)
+                .forEach(System.out::println);
+    }
 }
