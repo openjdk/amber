@@ -25,10 +25,10 @@
 #ifndef SHARE_CLASSFILE_SYSTEMDICTIONARY_HPP
 #define SHARE_CLASSFILE_SYSTEMDICTIONARY_HPP
 
-#include "classfile/vmSymbols.hpp"
 #include "oops/oopHandle.hpp"
 #include "runtime/handles.hpp"
 #include "runtime/signature.hpp"
+#include "utilities/vmEnums.hpp"
 
 // The dictionary in each ClassLoaderData stores all loaded classes, either
 // initiatied by its class loader or defined by its class loader:
@@ -126,6 +126,7 @@ class TableStatistics;
   do_klass(ClassCastException_klass,                    java_lang_ClassCastException                          ) \
   do_klass(ArrayStoreException_klass,                   java_lang_ArrayStoreException                         ) \
   do_klass(VirtualMachineError_klass,                   java_lang_VirtualMachineError                         ) \
+  do_klass(InternalError_klass,                         java_lang_InternalError                               ) \
   do_klass(OutOfMemoryError_klass,                      java_lang_OutOfMemoryError                            ) \
   do_klass(StackOverflowError_klass,                    java_lang_StackOverflowError                          ) \
   do_klass(IllegalMonitorStateException_klass,          java_lang_IllegalMonitorStateException                ) \
@@ -170,6 +171,7 @@ class TableStatistics;
   do_klass(MethodType_klass,                            java_lang_invoke_MethodType                           ) \
   do_klass(BootstrapMethodError_klass,                  java_lang_BootstrapMethodError                        ) \
   do_klass(CallSite_klass,                              java_lang_invoke_CallSite                             ) \
+  do_klass(NativeEntryPoint_klass,                      jdk_internal_invoke_NativeEntryPoint                  ) \
   do_klass(Context_klass,                               java_lang_invoke_MethodHandleNatives_CallSiteContext  ) \
   do_klass(ConstantCallSite_klass,                      java_lang_invoke_ConstantCallSite                     ) \
   do_klass(MutableCallSite_klass,                       java_lang_invoke_MutableCallSite                      ) \
@@ -187,10 +189,13 @@ class TableStatistics;
   do_klass(ByteArrayInputStream_klass,                  java_io_ByteArrayInputStream                          ) \
   do_klass(URL_klass,                                   java_net_URL                                          ) \
   do_klass(Jar_Manifest_klass,                          java_util_jar_Manifest                                ) \
+  do_klass(jdk_internal_loader_BuiltinClassLoader_klass,jdk_internal_loader_BuiltinClassLoader                ) \
   do_klass(jdk_internal_loader_ClassLoaders_klass,      jdk_internal_loader_ClassLoaders                      ) \
   do_klass(jdk_internal_loader_ClassLoaders_AppClassLoader_klass,      jdk_internal_loader_ClassLoaders_AppClassLoader) \
   do_klass(jdk_internal_loader_ClassLoaders_PlatformClassLoader_klass, jdk_internal_loader_ClassLoaders_PlatformClassLoader) \
   do_klass(CodeSource_klass,                            java_security_CodeSource                              ) \
+  do_klass(ConcurrentHashMap_klass,                     java_util_concurrent_ConcurrentHashMap                ) \
+  do_klass(ArrayList_klass,                             java_util_ArrayList                                   ) \
                                                                                                                 \
   do_klass(StackTraceElement_klass,                     java_lang_StackTraceElement                           ) \
                                                                                                                 \
@@ -221,6 +226,13 @@ class TableStatistics;
                                                                                                                 \
   /* support for records */                                                                                     \
   do_klass(RecordComponent_klass,                       java_lang_reflect_RecordComponent                     ) \
+                                                                                                                \
+  /* support for vectors*/                                                                                      \
+  do_klass(vector_VectorSupport_klass,                  jdk_internal_vm_vector_VectorSupport                  ) \
+  do_klass(vector_VectorPayload_klass,                  jdk_internal_vm_vector_VectorPayload                  ) \
+  do_klass(vector_Vector_klass,                         jdk_internal_vm_vector_Vector                         ) \
+  do_klass(vector_VectorMask_klass,                     jdk_internal_vm_vector_VectorMask                     ) \
+  do_klass(vector_VectorShuffle_klass,                  jdk_internal_vm_vector_VectorShuffle                  ) \
                                                                                                                 \
   /*end*/
 
@@ -452,7 +464,7 @@ public:
                                             TRAPS);
   // for a given signature, find the internal MethodHandle method (linkTo* or invokeBasic)
   // (does not ask Java, since this is a low-level intrinsic defined by the JVM)
-  static Method* find_method_handle_intrinsic(vmIntrinsics::ID iid,
+  static Method* find_method_handle_intrinsic(vmIntrinsicID iid,
                                               Symbol* signature,
                                               TRAPS);
 
@@ -566,7 +578,7 @@ protected:
   // waiting; relocks lockObject with correct recursion count
   // after waiting, but before reentering SystemDictionary_lock
   // to preserve lock order semantics.
-  static void double_lock_wait(Handle lockObject, TRAPS);
+  static void double_lock_wait(Thread* thread, Handle lockObject);
   static void define_instance_class(InstanceKlass* k, TRAPS);
   static InstanceKlass* find_or_define_instance_class(Symbol* class_name,
                                                 Handle class_loader,
@@ -600,8 +612,8 @@ protected:
                                                PackageEntry* pkg_entry,
                                                TRAPS);
   static InstanceKlass* load_instance_class(Symbol* class_name, Handle class_loader, TRAPS);
-  static Handle compute_loader_lock_object(Handle class_loader, TRAPS);
-  static void check_loader_lock_contention(Handle loader_lock, TRAPS);
+  static Handle compute_loader_lock_object(Thread* thread, Handle class_loader);
+  static void check_loader_lock_contention(Thread* thread, Handle loader_lock);
   static bool is_parallelCapable(Handle class_loader);
   static bool is_parallelDefine(Handle class_loader);
 
@@ -620,13 +632,11 @@ public:
   // Return Symbol or throw exception if name given is can not be a valid Symbol.
   static Symbol* class_name_symbol(const char* name, Symbol* exception, TRAPS);
 
-protected:
   // Setup link to hierarchy
-  static void add_to_hierarchy(InstanceKlass* k, TRAPS);
+  static void add_to_hierarchy(InstanceKlass* k);
+protected:
 
   // Basic find on loaded classes
-  static InstanceKlass* find_class(unsigned int hash,
-                                   Symbol* name, Dictionary* dictionary);
   static InstanceKlass* find_class(Symbol* class_name, ClassLoaderData* loader_data);
 
   // Basic find on classes in the midst of being loaded
@@ -641,10 +651,8 @@ protected:
   static void check_constraints(unsigned int hash,
                                 InstanceKlass* k, Handle loader,
                                 bool defining, TRAPS);
-  static void update_dictionary(unsigned int d_hash,
-                                int p_index, unsigned int p_hash,
-                                InstanceKlass* k, Handle loader,
-                                TRAPS);
+  static void update_dictionary(unsigned int hash,
+                                InstanceKlass* k, Handle loader);
 
   static InstanceKlass* _well_known_klasses[];
 

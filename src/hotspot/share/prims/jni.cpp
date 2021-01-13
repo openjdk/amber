@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012 Red Hat, Inc.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -32,11 +32,13 @@
 #include "classfile/classLoader.hpp"
 #include "classfile/javaClasses.hpp"
 #include "classfile/javaClasses.inline.hpp"
+#include "classfile/javaThreadStatus.hpp"
 #include "classfile/moduleEntry.hpp"
 #include "classfile/modules.hpp"
 #include "classfile/symbolTable.hpp"
 #include "classfile/systemDictionary.hpp"
 #include "classfile/vmSymbols.hpp"
+#include "compiler/compiler_globals.hpp"
 #include "gc/shared/gcLocker.inline.hpp"
 #include "interpreter/linkResolver.hpp"
 #include "jfr/jfrEvents.hpp"
@@ -48,9 +50,10 @@
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/access.inline.hpp"
-#include "oops/arrayOop.inline.hpp"
+#include "oops/arrayOop.hpp"
 #include "oops/instanceKlass.inline.hpp"
 #include "oops/instanceOop.hpp"
+#include "oops/klass.inline.hpp"
 #include "oops/markWord.hpp"
 #include "oops/method.hpp"
 #include "oops/objArrayKlass.hpp"
@@ -93,7 +96,7 @@
 
 static jint CurrentVersion = JNI_VERSION_10;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_VECTORED_EXCEPTION_HANDLING)
 extern LONG WINAPI topLevelExceptionFilter(_EXCEPTION_POINTERS* );
 #endif
 
@@ -329,7 +332,7 @@ JNI_ENTRY(jclass, jni_DefineClass(JNIEnv *env, const char *name, jobject loaderR
     // check whether the current caller thread holds the lock or not.
     // If not, increment the corresponding counter
     if (ObjectSynchronizer::
-        query_lock_ownership((JavaThread*)THREAD, class_loader) !=
+        query_lock_ownership(thread, class_loader) !=
         ObjectSynchronizer::owner_self) {
       ClassLoader::sync_JNIDefineClassLockFreeCounter()->inc();
     }
@@ -868,7 +871,6 @@ class JNI_ArgumentPusher : public SignatureIterator {
 
 
 class JNI_ArgumentPusherVaArg : public JNI_ArgumentPusher {
- protected:
   va_list _ap;
 
   void set_ap(va_list rap) {
@@ -902,6 +904,10 @@ class JNI_ArgumentPusherVaArg : public JNI_ArgumentPusher {
   JNI_ArgumentPusherVaArg(jmethodID method_id, va_list rap)
       : JNI_ArgumentPusher(Method::resolve_jmethod_id(method_id)) {
     set_ap(rap);
+  }
+
+  ~JNI_ArgumentPusherVaArg() {
+    va_end(_ap);
   }
 
   virtual void push_arguments_on(JavaCallArguments* arguments) {
@@ -1935,8 +1941,6 @@ JNI_ENTRY_NO_PRESERVE(Return, jni_Get##Result##Field(JNIEnv *env, jobject obj, j
   Klass* k = o->klass(); \
   int offset = jfieldIDWorkaround::from_instance_jfieldID(k, fieldID);  \
   /* Keep JVMTI addition small and only check enabled flag here.       */ \
-  /* jni_GetField_probe_nh() assumes that is not okay to create handles */ \
-  /* and creates a ResetNoHandleMark.                                   */ \
   if (JvmtiExport::should_post_field_access()) { \
     o = JvmtiExport::jni_GetField_probe_nh(thread, obj, o, k, fieldID, false); \
   } \
@@ -2002,8 +2006,6 @@ JNI_ENTRY_NO_PRESERVE(void, jni_SetObjectField(JNIEnv *env, jobject obj, jfieldI
   Klass* k = o->klass();
   int offset = jfieldIDWorkaround::from_instance_jfieldID(k, fieldID);
   // Keep JVMTI addition small and only check enabled flag here.
-  // jni_SetField_probe_nh() assumes that is not okay to create handles
-  // and creates a ResetNoHandleMark.
   if (JvmtiExport::should_post_field_modification()) {
     jvalue field_value;
     field_value.l = value;
@@ -2026,8 +2028,6 @@ JNI_ENTRY_NO_PRESERVE(void, jni_Set##Result##Field(JNIEnv *env, jobject obj, jfi
   Klass* k = o->klass(); \
   int offset = jfieldIDWorkaround::from_instance_jfieldID(k, fieldID);  \
   /* Keep JVMTI addition small and only check enabled flag here.       */ \
-  /* jni_SetField_probe_nh() assumes that is not okay to create handles */ \
-  /* and creates a ResetNoHandleMark.                                   */ \
   if (JvmtiExport::should_post_field_modification()) { \
     jvalue field_value; \
     field_value.unionType = value; \
@@ -3795,10 +3795,14 @@ static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
 
 #ifndef PRODUCT
     if (ReplayCompiles) ciReplay::replay(thread);
+#endif
 
+#ifdef ASSERT
     // Some platforms (like Win*) need a wrapper around these test
     // functions in order to properly handle error conditions.
-    VMError::test_error_handler();
+    if (ErrorHandlerTest != 0) {
+      VMError::controlled_crash(ErrorHandlerTest);
+    }
 #endif
 
     // Since this is not a JVM_ENTRY we have to set the thread state manually before leaving.
@@ -3841,11 +3845,11 @@ static jint JNI_CreateJavaVM_inner(JavaVM **vm, void **penv, void *args) {
 _JNI_IMPORT_OR_EXPORT_ jint JNICALL JNI_CreateJavaVM(JavaVM **vm, void **penv, void *args) {
   jint result = JNI_ERR;
   // On Windows, let CreateJavaVM run with SEH protection
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_VECTORED_EXCEPTION_HANDLING)
   __try {
 #endif
     result = JNI_CreateJavaVM_inner(vm, penv, args);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_VECTORED_EXCEPTION_HANDLING)
   } __except(topLevelExceptionFilter((_EXCEPTION_POINTERS*)_exception_info())) {
     // Nothing to do.
   }
@@ -3913,11 +3917,11 @@ static jint JNICALL jni_DestroyJavaVM_inner(JavaVM *vm) {
 jint JNICALL jni_DestroyJavaVM(JavaVM *vm) {
   jint result = JNI_ERR;
   // On Windows, we need SEH protection
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_VECTORED_EXCEPTION_HANDLING)
   __try {
 #endif
     result = jni_DestroyJavaVM_inner(vm);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_VECTORED_EXCEPTION_HANDLING)
   } __except(topLevelExceptionFilter((_EXCEPTION_POINTERS*)_exception_info())) {
     // Nothing to do.
   }
@@ -3940,7 +3944,7 @@ static jint attach_current_thread(JavaVM *vm, void **penv, void *_args, bool dae
     // If executing from an atexit hook we may be in the VMThread.
     if (t->is_Java_thread()) {
       // If the thread has been attached this operation is a no-op
-      *(JNIEnv**)penv = ((JavaThread*) t)->jni_environment();
+      *(JNIEnv**)penv = t->as_Java_thread()->jni_environment();
       return JNI_OK;
     } else {
       return JNI_ERR;
@@ -3964,7 +3968,7 @@ static jint attach_current_thread(JavaVM *vm, void **penv, void *_args, bool dae
     return JNI_ERR;
   }
   // Enable stack overflow checks
-  thread->create_stack_guard_pages();
+  thread->stack_overflow_state()->create_stack_guard_pages();
 
   thread->initialize_tlab();
 
@@ -4014,7 +4018,7 @@ static jint attach_current_thread(JavaVM *vm, void **penv, void *_args, bool dae
 
   // Set java thread status.
   java_lang_Thread::set_thread_status(thread->threadObj(),
-              java_lang_Thread::RUNNABLE);
+              JavaThreadStatus::RUNNABLE);
 
   // Notify the debugger
   if (JvmtiExport::should_post_thread_life()) {
@@ -4078,7 +4082,7 @@ jint JNICALL jni_DetachCurrentThread(JavaVM *vm)  {
 
   VM_Exit::block_if_vm_exited();
 
-  JavaThread* thread = (JavaThread*) current;
+  JavaThread* thread = current->as_Java_thread();
   if (thread->has_last_Java_frame()) {
     HOTSPOT_JNI_DETACHCURRENTTHREAD_RETURN((uint32_t) JNI_ERR);
     // Can't detach a thread that's running java, that can't work.
@@ -4133,7 +4137,7 @@ jint JNICALL jni_GetEnv(JavaVM *vm, void **penv, jint version) {
   Thread* thread = Thread::current_or_null();
   if (thread != NULL && thread->is_Java_thread()) {
     if (Threads::is_supported_jni_version_including_1_1(version)) {
-      *(JNIEnv**)penv = ((JavaThread*) thread)->jni_environment();
+      *(JNIEnv**)penv = thread->as_Java_thread()->jni_environment();
       ret = JNI_OK;
       return ret;
 

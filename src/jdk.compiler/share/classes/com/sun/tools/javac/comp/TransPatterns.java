@@ -171,7 +171,7 @@ public class TransPatterns extends TreeTranslator {
             //TODO: use rule switch (when boot JDK is 14):
             switch (tree.pattern.getTag()) {
                 case BINDINGPATTERN:
-                    castTargetType = ((JCBindingPattern)tree.pattern).symbol.type;
+                    castTargetType = ((JCBindingPattern)tree.pattern).var.sym.type;
                     break;
                 case DECONSTRUCTIONPATTERN:
                     castTargetType = ((JCDeconstructionPattern)tree.pattern).type;
@@ -201,7 +201,7 @@ public class TransPatterns extends TreeTranslator {
             //type test already done, finish handling of type test patterns ("T N")
             //=>
             //(let N = (T) N$temp; true)
-            VarSymbol bindingVar = bindingContext.bindingDeclared(((JCBindingPattern) patt).symbol);
+            VarSymbol bindingVar = bindingContext.bindingDeclared((BindingSymbol) ((JCBindingPattern) patt).var.sym);
             if (bindingVar != null) { //TODO: cannot be null here?
                 JCAssign fakeInit = (JCAssign)make.at(tree.pos).Assign(
                         make.Ident(bindingVar), convert(make.Ident(temp), targetType)).setType(bindingVar.erasure(types));

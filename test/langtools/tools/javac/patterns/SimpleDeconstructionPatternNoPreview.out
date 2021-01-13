@@ -1,17 +1,2 @@
 SimpleDeconstructionPattern.java:149:27: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.deconstruction.patterns)
-SimpleDeconstructionPattern.java:226:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:229:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:232:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:235:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:237:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:238:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:241:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:242:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:242:38: compiler.err.expected: ';'
-SimpleDeconstructionPattern.java:245:12: compiler.warn.restricted.type.not.allowed.preview: record, 14
-SimpleDeconstructionPattern.java:245:29: compiler.err.expected: ';'
-SimpleDeconstructionPattern.java:245:59: compiler.err.illegal.start.of.type
-SimpleDeconstructionPattern.java:245:71: compiler.err.expected: ';'
-SimpleDeconstructionPattern.java:245:99: compiler.err.illegal.start.of.type
-6 errors
-9 warnings
+1 error

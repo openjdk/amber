@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2021, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2013, 2020 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,6 +26,7 @@
 #include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
+#include "gc/shared/tlab_globals.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/interpreterRuntime.hpp"
 #include "interpreter/interp_masm.hpp"
@@ -36,6 +37,7 @@
 #include "oops/methodData.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "oops/oop.inline.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "prims/methodHandles.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/safepointMechanism.hpp"
@@ -78,13 +80,6 @@ static void do_oop_load(InterpreterMacroAssembler* _masm,
   assert_different_registers(base, tmp1, tmp2);
   assert_different_registers(dst, tmp1, tmp2);
   __ load_heap_oop(dst, offset, base, tmp1, tmp2, false, decorators);
-}
-
-// ============================================================================
-// Platform-dependent initialization
-
-void TemplateTable::pd_initialize() {
-  // No ppc64 specific initialization.
 }
 
 Address TemplateTable::at_bcp(int offset) {
@@ -1597,10 +1592,7 @@ void TemplateTable::lcmp() {
   __ pop_l(Rscratch); // first operand, deeper in stack
 
   __ cmpd(CCR0, Rscratch, R17_tos); // compare
-  __ mfcr(R17_tos); // set bit 32..33 as follows: <: 0b10, =: 0b00, >: 0b01
-  __ srwi(Rscratch, R17_tos, 30);
-  __ srawi(R17_tos, R17_tos, 31);
-  __ orr(R17_tos, Rscratch, R17_tos); // set result as follows: <: -1, =: 0, >: 1
+  __ set_cmp3(R17_tos); // set result as follows: <: -1, =: 0, >: 1
 }
 
 // fcmpl/fcmpg and dcmpl/dcmpg bytecodes
@@ -1617,21 +1609,10 @@ void TemplateTable::float_cmp(bool is_float, int unordered_result) {
     __ pop_d(Rfirst);
   }
 
-  Label Lunordered, Ldone;
   __ fcmpu(CCR0, Rfirst, Rsecond); // compare
-  if (unordered_result) {
-    __ bso(CCR0, Lunordered);
-  }
-  __ mfcr(R17_tos); // set bit 32..33 as follows: <: 0b10, =: 0b00, >: 0b01
-  __ srwi(Rscratch, R17_tos, 30);
-  __ srawi(R17_tos, R17_tos, 31);
-  __ orr(R17_tos, Rscratch, R17_tos); // set result as follows: <: -1, =: 0, >: 1
-  if (unordered_result) {
-    __ b(Ldone);
-    __ bind(Lunordered);
-    __ load_const_optimized(R17_tos, unordered_result);
-  }
-  __ bind(Ldone);
+  // if unordered_result is 1, treat unordered_result like 'greater than'
+  assert(unordered_result == 1 || unordered_result == -1, "unordered_result can be either 1 or -1");
+  __ set_cmpu3(R17_tos, unordered_result != 1);
 }
 
 // Branch_conditional which takes TemplateTable::Condition.
@@ -1917,7 +1898,7 @@ void TemplateTable::tableswitch() {
 
   // Align bcp.
   __ addi(Rdef_offset_addr, R14_bcp, BytesPerInt);
-  __ clrrdi(Rdef_offset_addr, Rdef_offset_addr, log2_long((jlong)BytesPerInt));
+  __ clrrdi(Rdef_offset_addr, Rdef_offset_addr, LogBytesPerInt);
 
   // Load lo & hi.
   __ get_u4(Rlow_byte, Rdef_offset_addr, BytesPerInt, InterpreterMacroAssembler::Unsigned);
@@ -1976,7 +1957,7 @@ void TemplateTable::fast_linearswitch() {
 
   // Align bcp.
   __ addi(Rdef_offset_addr, R14_bcp, BytesPerInt);
-  __ clrrdi(Rdef_offset_addr, Rdef_offset_addr, log2_long((jlong)BytesPerInt));
+  __ clrrdi(Rdef_offset_addr, Rdef_offset_addr, LogBytesPerInt);
 
   // Setup loop counter and limit.
   __ get_u4(Rcount, Rdef_offset_addr, BytesPerInt, InterpreterMacroAssembler::Unsigned);
@@ -2064,7 +2045,7 @@ void TemplateTable::fast_binaryswitch() {
 
   // Find Array start,
   __ addi(Rarray, R14_bcp, 3 * BytesPerInt);
-  __ clrrdi(Rarray, Rarray, log2_long((jlong)BytesPerInt));
+  __ clrrdi(Rarray, Rarray, LogBytesPerInt);
 
   // initialize i & j
   __ li(Ri,0);
@@ -2180,7 +2161,7 @@ void TemplateTable::_return(TosState state) {
 
   if (_desc->bytecode() != Bytecodes::_return_register_finalizer) {
     Label no_safepoint;
-    __ ld(R11_scratch1, in_bytes(Thread::polling_page_offset()), R16_thread);
+    __ ld(R11_scratch1, in_bytes(Thread::polling_word_offset()), R16_thread);
     __ andi_(R11_scratch1, R11_scratch1, SafepointMechanism::poll_bit());
     __ beq(CCR0, no_safepoint);
     __ push(state);

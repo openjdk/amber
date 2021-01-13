@@ -37,7 +37,7 @@
 // parts of the memory system may require additional alignment
 // and are responsible for those alignments.
 #ifdef _LP64
-#define ScaleForWordSize(x) align_down_((x) * 13 / 10, HeapWordSize)
+#define ScaleForWordSize(x) align_down((x) * 13 / 10, HeapWordSize)
 #else
 #define ScaleForWordSize(x) (x)
 #endif
@@ -77,135 +77,34 @@
 // Only materialize src code for contraint checking when required, ignore otherwise
 #define IGNORE_CONSTRAINT(func,type)
 
-#define VM_FLAGS(             \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    manageable,               \
-    product_rw,               \
-    lp64_product,             \
-    range,                    \
-    constraint)               \
-                              \
-  RUNTIME_FLAGS(              \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    manageable,               \
-    product_rw,               \
-    lp64_product,             \
-    range,                    \
-    constraint)               \
-                              \
-  GC_FLAGS(                   \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    manageable,               \
-    product_rw,               \
-    lp64_product,             \
-    range,                    \
-    constraint)               \
+#define IGNORE_FLAG(...)
 
+#define DECLARE_PRODUCT_FLAG(type, name, value, ...)      extern "C" type name;
+#define DECLARE_PD_PRODUCT_FLAG(type, name, ...)          extern "C" type name;
+#ifdef PRODUCT
+#define DECLARE_DEVELOPER_FLAG(type, name, value, ...)    const type name = value;
+#define DECLARE_PD_DEVELOPER_FLAG(type, name, ...)        const type name = pd_##name;
+#define DECLARE_NOTPRODUCT_FLAG(type, name, value, ...)   const type name = value;
+#else
+#define DECLARE_DEVELOPER_FLAG(type, name, value, ...)    extern "C" type name;
+#define DECLARE_PD_DEVELOPER_FLAG(type, name, ...)        extern "C" type name;
+#define DECLARE_NOTPRODUCT_FLAG(type, name, value, ...)   extern "C" type name;
+#endif // PRODUCT
 
-#define ALL_FLAGS(            \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    manageable,               \
-    product_rw,               \
-    lp64_product,             \
-    range,                    \
-    constraint)               \
-                              \
-  VM_FLAGS(                   \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    manageable,               \
-    product_rw,               \
-    lp64_product,             \
-    range,                    \
-    constraint)               \
-                              \
-  RUNTIME_OS_FLAGS(           \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    notproduct,               \
-    range,                    \
-    constraint)               \
-                              \
-  JVMCI_ONLY(JVMCI_FLAGS(     \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    range,                    \
-    constraint))              \
-                              \
-  COMPILER1_PRESENT(C1_FLAGS( \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    notproduct,               \
-    range,                    \
-    constraint))              \
-                              \
-  COMPILER2_PRESENT(C2_FLAGS( \
-    develop,                  \
-    develop_pd,               \
-    product,                  \
-    product_pd,               \
-    diagnostic,               \
-    diagnostic_pd,            \
-    experimental,             \
-    notproduct,               \
-    range,                    \
-    constraint))              \
-                              \
-  ARCH_FLAGS(                 \
-    develop,                  \
-    product,                  \
-    diagnostic,               \
-    experimental,             \
-    notproduct,               \
-    range,                    \
-    constraint)
+#define DECLARE_FLAGS(flag_group)         \
+    flag_group(DECLARE_DEVELOPER_FLAG,    \
+               DECLARE_PD_DEVELOPER_FLAG, \
+               DECLARE_PRODUCT_FLAG,      \
+               DECLARE_PD_PRODUCT_FLAG,   \
+               DECLARE_NOTPRODUCT_FLAG,   \
+               IGNORE_RANGE,              \
+               IGNORE_CONSTRAINT)
+
+#define DECLARE_ARCH_FLAGS(flag_group)    \
+    flag_group(DECLARE_DEVELOPER_FLAG,    \
+               DECLARE_PRODUCT_FLAG,      \
+               DECLARE_NOTPRODUCT_FLAG,   \
+               IGNORE_RANGE, \
+               IGNORE_CONSTRAINT)
 
 #endif // SHARE_RUNTIME_GLOBALS_SHARED_HPP
