@@ -241,6 +241,8 @@ public interface Tree {
          */
         DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
 
+        ARRAY_PATTERN(ArrayPatternTree.class),
+
         /**
          * Used for instances of {@link PrimitiveTypeTree}.
          */

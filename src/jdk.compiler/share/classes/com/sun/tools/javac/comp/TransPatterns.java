@@ -66,6 +66,7 @@ import com.sun.tools.javac.code.Type;
 import static com.sun.tools.javac.code.TypeTag.BOT;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCArrayPattern;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCClassDecl;
 import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
@@ -154,7 +155,7 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
-        if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
+        if (tree.pattern.hasTag(Tag.BINDINGPATTERN) || tree.pattern.hasTag(Tag.DECONSTRUCTIONPATTERN) || tree.pattern.hasTag(Tag.ARRAYPATTERN)) {
             //E instanceof T N
             //E instanceof T(PATT1, PATT2, ...)
             //=>
@@ -175,6 +176,9 @@ public class TransPatterns extends TreeTranslator {
                     break;
                 case DECONSTRUCTIONPATTERN:
                     castTargetType = ((JCDeconstructionPattern)tree.pattern).type;
+                    break;
+                case ARRAYPATTERN:
+                    castTargetType = ((JCArrayPattern)tree.pattern).type;
                     break;
                 default:
                     throw new AssertionError("Unexpected pattern type: " + tree.pattern.getTag());
@@ -268,6 +272,55 @@ public class TransPatterns extends TreeTranslator {
             }
             Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
             return test != null ? test : make.Literal(true);
+        } else if (patt.hasTag(Tag.ARRAYPATTERN)) {
+            //XXX: type test already done, finish handling of deconstruction patterns ("T(PATT1, PATT2, ...)")
+            //=>
+            //<PATT1-handling> && <PATT2-handling> && ...
+            JCArrayPattern apatt = (JCArrayPattern) patt;
+            Type elementType = types.elemtype(apatt.type);
+            List<? extends JCPattern> nestedPatterns = apatt.nested;
+            JCExpression test = makeBinary(apatt.orMore ? Tag.GE : Tag.EQ,
+                                    make.Select(convert(make.Ident(temp), apatt.type), syms.lengthVar),
+                                    make.Literal(nestedPatterns.size()));
+
+            int i = 0;
+            while (nestedPatterns.nonEmpty()) {
+                //PATTn for record component COMPn of type Tn;
+                //PATTn is a type test pattern or a deconstruction pattern:
+                //=>
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
+                //or
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <PATTn extractor>)
+                //or
+                //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <PATTn extractor>)
+                JCPattern nested = nestedPatterns.head;
+                VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
+                    names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + i),
+                                     types.erasure(elementType),
+                                     currentOwnerSym);
+                JCVariableDecl nestedTempVar =
+                        make.VarDef(nestedTemp,
+                                    make.Indexed(convert(make.Ident(temp), apatt.type), make.Literal(i)).setType(elementType));
+                JCExpression extracted =
+                        preparePatternExtractor(tree, nested, nestedTemp, nested.type);
+                JCExpression extraTest = null;
+                if (!types.isAssignable(nestedTemp.type, nested.type)) {
+                    extraTest = makeTypeTest(make.Ident(nestedTemp),
+                                             make.Type(nested.type));
+                } else if (nested.type.isReference()) {
+                    extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
+                }
+                if (extraTest != null) {
+                    extracted = makeBinary(Tag.AND, extraTest, extracted);
+                }
+                LetExpr getAndRun = make.LetExpr(nestedTempVar, extracted);
+                getAndRun.needsCond = true;
+                getAndRun.setType(syms.booleanType);
+                test = makeBinary(Tag.AND, test, getAndRun);
+                i++;
+                nestedPatterns = nestedPatterns.tail;
+            }
+            return test;
         } else {
             throw new IllegalStateException();
         }

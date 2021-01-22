@@ -121,7 +121,7 @@ public class MatchBindingsComputer extends TreeScanner {
         switch (tree.getTag()) {
             case NOT: case AND: case OR: case BINDINGPATTERN:
             case PARENS: case TYPETEST: case DECONSTRUCTIONPATTERN:
-            case CONDEXPR: //error recovery:
+            case ARRAYPATTERN: case CONDEXPR: //error recovery:
                 return matchBindings;
             default:
                 return MatchBindingsComputer.EMPTY;

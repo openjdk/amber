@@ -4031,8 +4031,11 @@ public class Attr extends JCTree.Visitor {
         List<Type> recordTypes = expectedRecordTypes;
         List<JCPattern> nestedPatterns = tree.nested;
         while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
-            boolean nestedIsVarPattern = nestedPatterns.head.hasTag(BINDINGPATTERN) &&
-                                         ((JCBindingPattern) nestedPatterns.head).var.vartype == null;
+            boolean nestedIsVarPattern = false;
+            nestedIsVarPattern |= nestedPatterns.head.hasTag(BINDINGPATTERN) &&
+                                  ((JCBindingPattern) nestedPatterns.head).var.vartype == null;
+            nestedIsVarPattern |= nestedPatterns.head.hasTag(ARRAYPATTERN) &&
+                                  ((JCArrayPattern) nestedPatterns.head).patternType == null;
             attribExpr(nestedPatterns.head, env, nestedIsVarPattern ? recordTypes.head : Type.noType);
             verifyCastable(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
             outBindings.addAll(matchBindings.bindingsWhenTrue);
@@ -4049,6 +4052,35 @@ public class Attr extends JCTree.Visitor {
             log.error(tree.pos(),
                       Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
                                                              nestedTypes));
+        }
+        result = tree.type;
+        matchBindings = new MatchBindings(outBindings.toList(), List.nil());
+    }
+
+    @Override
+    public void visitArrayPattern(JCArrayPattern tree) {
+        //XXX: validate resultInfo.pt reasonable, use error otherwise:
+        tree.type = tree.patternType == null ? resultInfo.pt
+                                              : attribType(tree.patternType, env);
+        Type site = types.removeWildcards(tree.type);//TODO?
+        Type expectedElementType;
+        if (site.tsym.kind == Kind.TYP && tree.type.hasTag(ARRAY)) {
+            expectedElementType = types.elemtype(tree.type);
+        } else {
+            if (!tree.type.hasTag(ERROR)) {
+                log.error(tree.pos(), Errors.ArrayPatternNotArray(site.tsym));
+            }
+            expectedElementType = Type.noType;
+        }
+        ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
+        List<JCPattern> nestedPatterns = tree.nested;
+        while (nestedPatterns.nonEmpty()) {
+            boolean nestedIsVarPattern = nestedPatterns.head.hasTag(BINDINGPATTERN) &&
+                                         ((JCBindingPattern) nestedPatterns.head).var.vartype == null;
+            attribExpr(nestedPatterns.head, env, nestedIsVarPattern ? expectedElementType : Type.noType);
+            verifyCastable(nestedPatterns.head.pos(), expectedElementType, nestedPatterns.head.type);
+            outBindings.addAll(matchBindings.bindingsWhenTrue);
+            nestedPatterns = nestedPatterns.tail;
         }
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());

@@ -284,6 +284,23 @@ public interface TreeVisitor<R,P> {
     R visitDeconstructionPattern(DeconstructionPatternTree node, P p);
 
     /**
+     * {@preview Associated with pattern matching for instanceof, a preview feature of
+     *           the Java language.
+     *
+     *           This method is associated with <i>pattern matching for instanceof</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Visits an ArrayPatternTree node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 15
+     */
+    R visitArrayPattern(ArrayPatternTree node, P p);
+
+    /**
      * Visits a MethodTree node.
      * @param node the node being visited
      * @param p a parameter value
