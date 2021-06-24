@@ -76,7 +76,6 @@
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/arguments.hpp"
 #include "runtime/atomic.hpp"
-#include "runtime/biasedLocking.hpp"
 #include "runtime/fieldDescriptor.inline.hpp"
 #include "runtime/flags/jvmFlagLimit.hpp"
 #include "runtime/deoptimization.hpp"
@@ -184,37 +183,13 @@ THREAD_LOCAL Thread* Thread::_thr_current = NULL;
 #endif
 
 // ======= Thread ========
-// Support for forcing alignment of thread objects for biased locking
 void* Thread::allocate(size_t size, bool throw_excpt, MEMFLAGS flags) {
-  if (UseBiasedLocking) {
-    const size_t alignment = markWord::biased_lock_alignment;
-    size_t aligned_size = size + (alignment - sizeof(intptr_t));
-    void* real_malloc_addr = throw_excpt? AllocateHeap(aligned_size, flags, CURRENT_PC)
-                                          : AllocateHeap(aligned_size, flags, CURRENT_PC,
-                                                         AllocFailStrategy::RETURN_NULL);
-    void* aligned_addr     = align_up(real_malloc_addr, alignment);
-    assert(((uintptr_t) aligned_addr + (uintptr_t) size) <=
-           ((uintptr_t) real_malloc_addr + (uintptr_t) aligned_size),
-           "JavaThread alignment code overflowed allocated storage");
-    if (aligned_addr != real_malloc_addr) {
-      log_info(biasedlocking)("Aligned thread " INTPTR_FORMAT " to " INTPTR_FORMAT,
-                              p2i(real_malloc_addr),
-                              p2i(aligned_addr));
-    }
-    ((Thread*) aligned_addr)->_real_malloc_address = real_malloc_addr;
-    return aligned_addr;
-  } else {
-    return throw_excpt? AllocateHeap(size, flags, CURRENT_PC)
+  return throw_excpt ? AllocateHeap(size, flags, CURRENT_PC)
                        : AllocateHeap(size, flags, CURRENT_PC, AllocFailStrategy::RETURN_NULL);
-  }
 }
 
 void Thread::operator delete(void* p) {
-  if (UseBiasedLocking) {
-    FreeHeap(((Thread*) p)->_real_malloc_address);
-  } else {
-    FreeHeap(p);
-  }
+  FreeHeap(p);
 }
 
 void JavaThread::smr_delete() {
@@ -288,14 +263,6 @@ Thread::Thread() {
     _unhandled_oops = new UnhandledOops(this);
   }
 #endif // CHECK_UNHANDLED_OOPS
-#ifdef ASSERT
-  if (UseBiasedLocking) {
-    assert(is_aligned(this, markWord::biased_lock_alignment), "forced alignment of thread object failed");
-    assert(this == _real_malloc_address ||
-           this == align_up(_real_malloc_address, markWord::biased_lock_alignment),
-           "bug in forced alignment of thread objects");
-  }
-#endif // ASSERT
 
   // Notify the barrier set that a thread is being created. The initial
   // thread is created before the barrier set is available.  The call to
@@ -349,7 +316,7 @@ void Thread::record_stack_base_and_size() {
 
   // Set stack limits after thread is initialized.
   if (is_Java_thread()) {
-    as_Java_thread()->stack_overflow_state()->initialize(stack_base(), stack_end());
+    JavaThread::cast(this)->stack_overflow_state()->initialize(stack_base(), stack_end());
   }
 }
 
@@ -461,10 +428,10 @@ Thread::~Thread() {
 // the current thread, it is not on a ThreadsList, or not at safepoint.
 void Thread::check_for_dangling_thread_pointer(Thread *thread) {
   assert(!thread->is_Java_thread() ||
-         thread->as_Java_thread()->is_handshake_safe_for(Thread::current()) ||
-         !thread->as_Java_thread()->on_thread_list() ||
+         JavaThread::cast(thread)->is_handshake_safe_for(Thread::current()) ||
+         !JavaThread::cast(thread)->on_thread_list() ||
          SafepointSynchronize::is_at_safepoint() ||
-         ThreadsSMRSupport::is_a_protected_JavaThread_with_lock(thread->as_Java_thread()),
+         ThreadsSMRSupport::is_a_protected_JavaThread_with_lock(JavaThread::cast(thread)),
          "possibility of dangling Thread pointer");
 }
 #endif
@@ -536,7 +503,7 @@ void Thread::start(Thread* thread) {
     // Can not set it after the thread started because we do not know the
     // exact thread state at that time. It could be in MONITOR_WAIT or
     // in SLEEPING or some other state.
-    java_lang_Thread::set_thread_status(thread->as_Java_thread()->threadObj(),
+    java_lang_Thread::set_thread_status(JavaThread::cast(thread)->threadObj(),
                                         JavaThreadStatus::RUNNABLE);
   }
   os::start_thread(thread);
@@ -705,7 +672,7 @@ bool Thread::set_as_starting_thread() {
          "_starting_thread=" INTPTR_FORMAT, p2i(_starting_thread));
   // NOTE: this must be called inside the main thread.
   DEBUG_ONLY(_starting_thread = this;)
-  return os::create_main_thread(this->as_Java_thread());
+  return os::create_main_thread(JavaThread::cast(this));
 }
 
 static void initialize_class(Symbol* class_name, TRAPS) {
@@ -1081,7 +1048,6 @@ JavaThread::JavaThread() :
   _thread_stat(new ThreadStatistics()),
 
   _parker(),
-  _cached_monitor_info(nullptr),
 
   _class_to_be_initialized(nullptr),
 
@@ -1547,11 +1513,11 @@ void JavaThread::cleanup_failed_attach_current_thread(bool is_daemon) {
 JavaThread* JavaThread::active() {
   Thread* thread = Thread::current();
   if (thread->is_Java_thread()) {
-    return thread->as_Java_thread();
+    return JavaThread::cast(thread);
   } else {
     assert(thread->is_VM_thread(), "this must be a vm thread");
     VM_Operation* op = ((VMThread*) thread)->vm_operation();
-    JavaThread *ret = op == NULL ? NULL : op->calling_thread()->as_Java_thread();
+    JavaThread *ret = op == NULL ? NULL : JavaThread::cast(op->calling_thread());
     return ret;
   }
 }
@@ -1709,7 +1675,7 @@ public:
   InstallAsyncExceptionClosure(Handle throwable) : HandshakeClosure("InstallAsyncException"), _throwable(throwable) {}
 
   void do_thread(Thread* thr) {
-    JavaThread* target = thr->as_Java_thread();
+    JavaThread* target = JavaThread::cast(thr);
     // Note that this now allows multiple ThreadDeath exceptions to be
     // thrown at a thread.
     // The target thread has run and has not exited yet.
@@ -3049,8 +3015,6 @@ jint Threads::create_vm(JavaVMInitArgs* args, bool* canTryAgain) {
 
   StatSampler::engage();
   if (CheckJNICalls)                  JniPeriodicChecker::engage();
-
-  BiasedLocking::init();
 
 #if INCLUDE_RTM_OPT
   RTMLockingCounters::init();

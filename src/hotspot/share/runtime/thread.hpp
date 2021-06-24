@@ -164,9 +164,6 @@ class Thread: public ThreadShadow {
 
   DEBUG_ONLY(static Thread* _starting_thread;)
 
-  // Support for forcing alignment of thread objects for biased locking
-  void*       _real_malloc_address;
-
   // JavaThread lifecycle support:
   friend class SafeThreadsListPtr;  // for _threads_list_ptr, cmpxchg_threads_hazard_ptr(), {dec_,inc_,}nested_threads_hazard_ptr_cnt(), {g,s}et_threads_hazard_ptr(), inc_nested_handle_cnt(), tag_hazard_ptr() access
   friend class ScanHazardPtrGatherProtectedThreadsClosure;  // for cmpxchg_threads_hazard_ptr(), get_threads_hazard_ptr(), is_hazard_ptr_tagged() access
@@ -354,10 +351,6 @@ class Thread: public ThreadShadow {
   // Is this a JavaThread that is on the VM's current ThreadsList?
   // If so it must participate in the safepoint protocol.
   virtual bool is_active_Java_thread() const         { return false; }
-
-  // Casts
-  inline JavaThread* as_Java_thread();
-  inline const JavaThread* as_Java_thread() const;
 
   virtual char* name() const { return (char*)"Unknown thread"; }
 
@@ -1420,7 +1413,20 @@ class JavaThread: public Thread {
 
  public:
   // Returns the running thread as a JavaThread
-  static inline JavaThread* current();
+  static JavaThread* current() {
+    return JavaThread::cast(Thread::current());
+  }
+
+  // Casts
+  static JavaThread* cast(Thread* t) {
+    assert(t->is_Java_thread(), "incorrect cast to JavaThread");
+    return static_cast<JavaThread*>(t);
+  }
+
+  static const JavaThread* cast(const Thread* t) {
+    assert(t->is_Java_thread(), "incorrect cast to const JavaThread");
+    return static_cast<const JavaThread*>(t);
+  }
 
   // Returns the active Java thread.  Do not use this if you know you are calling
   // from a JavaThread, as it's slower than JavaThread::current.  If called from
@@ -1551,13 +1557,7 @@ class JavaThread: public Thread {
  public:
   Parker* parker() { return &_parker; }
 
-  // Biased locking support
- private:
-  GrowableArray<MonitorInfo*>* _cached_monitor_info;
  public:
-  GrowableArray<MonitorInfo*>* cached_monitor_info() { return _cached_monitor_info; }
-  void set_cached_monitor_info(GrowableArray<MonitorInfo*>* info) { _cached_monitor_info = info; }
-
   // clearing/querying jni attach status
   bool is_attaching_via_jni() const { return _jni_attach_state == _attaching_via_jni; }
   bool has_attached_via_jni() const { return is_attaching_via_jni() || _jni_attach_state == _attached_via_jni; }
@@ -1585,21 +1585,6 @@ public:
 
   static void verify_cross_modify_fence_failure(JavaThread *thread) PRODUCT_RETURN;
 };
-
-// Inline implementation of JavaThread::current
-inline JavaThread* JavaThread::current() {
-  return Thread::current()->as_Java_thread();
-}
-
-inline JavaThread* Thread::as_Java_thread() {
-  assert(is_Java_thread(), "incorrect cast to JavaThread");
-  return static_cast<JavaThread*>(this);
-}
-
-inline const JavaThread* Thread::as_Java_thread() const {
-  assert(is_Java_thread(), "incorrect cast to const JavaThread");
-  return static_cast<const JavaThread*>(this);
-}
 
 // The active thread queue. It also keeps track of the current used
 // thread priorities.
