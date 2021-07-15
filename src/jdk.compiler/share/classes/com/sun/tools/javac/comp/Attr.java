@@ -1711,7 +1711,6 @@ public class Attr extends JCTree.Visitor {
             CaseTree.CaseKind caseKind = null;
             boolean wasError = false;
             MatchBindings prevBindings = null;
-            boolean prevCompletedNormally = false;
             for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
                 if (caseKind == null) {
@@ -1729,9 +1728,9 @@ public class Attr extends JCTree.Visitor {
                         if (TreeInfo.isNull(expr)) {
                             preview.checkSourceLevel(expr.pos(), Feature.CASE_NULL);
                             if (hasNullPattern) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                log.error(pat.pos(), Errors.DuplicateCaseLabel);
                             } else if (wasTotalPattern) {
-                                log.error(c.pos(), Errors.PatternDominated);
+                                log.error(pat.pos(), Errors.PatternDominated);
                             }
                             hasNullPattern = true;
                             attribExpr(expr, switchEnv, seltype);
@@ -1741,7 +1740,7 @@ public class Attr extends JCTree.Visitor {
                             if (sym == null) {
                                 log.error(expr.pos(), Errors.EnumLabelMustBeUnqualifiedEnum);
                             } else if (!labels.add(sym)) {
-                                log.error(c.pos(), Errors.DuplicateCaseLabel);
+                                log.error(pat.pos(), Errors.DuplicateCaseLabel);
                             } else {
                                 checkCaseLabelDominated(pat.pos(), coveredTypes, sym.type);
                             }
@@ -1785,16 +1784,10 @@ public class Attr extends JCTree.Visitor {
                             log.error(pat.pos(), Errors.DuplicateDefaultLabel);
                         } else if (hasTotalPattern) {
                             log.error(pat.pos(), Errors.TotalPatternAndDefault);
-                        } else if (matchBindings.bindingsWhenTrue.nonEmpty()) {
-                            //there was a pattern, and the execution flows into a default:
-                            log.error(pat.pos(), Errors.FlowsThroughFromPattern);
                         }
                         hasDefault = true;
                         matchBindings = MatchBindingsComputer.EMPTY;
                     } else {
-                        if (prevCompletedNormally) {
-                            log.error(pat.pos(), Errors.FlowsThroughToPattern);
-                        }
                         //binding pattern
                         attribExpr(pat, switchEnv);
                         var primary = TreeInfo.primaryPatternType((JCPattern) pat);
@@ -1821,7 +1814,6 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
                     currentBindings = matchBindingsComputer.switchCase(pat, currentBindings, matchBindings);
-                    prevCompletedNormally = !TreeInfo.isNull(pat);
                 }
                 Env<AttrContext> caseEnv =
                         bindingEnv(switchEnv, c, currentBindings.bindingsWhenTrue);
@@ -1832,12 +1824,13 @@ public class Attr extends JCTree.Visitor {
                 }
                 addVars(c.stats, switchEnv.info.scope);
 
-                boolean completesNormally = c.caseKind == CaseTree.CaseKind.STATEMENT ? flow.aliveAfter(caseEnv, c, make) : false;
-                prevBindings = completesNormally ? currentBindings : null;
-                prevCompletedNormally =
-                        completesNormally &&
-                        !(c.labels.size() == 1 &&
-                          TreeInfo.isNull(c.labels.head) && c.stats.isEmpty());
+                c.completesNormally = flow.aliveAfter(caseEnv, c, make);
+
+                prevBindings = c.caseKind == CaseTree.CaseKind.STATEMENT && c.completesNormally ? currentBindings
+                                                                                                : null;
+            }
+            if (patternSwitch) {
+                chk.checkSwitchCaseStructure(cases);
             }
             if (switchTree.hasTag(SWITCH)) {
                 ((JCSwitch) switchTree).hasTotalPattern = hasDefault || hasTotalPattern;
@@ -4351,11 +4344,14 @@ public class Attr extends JCTree.Visitor {
         }
 
         if (isType(sitesym)) {
-            if (sym.name == names._this) {
+            if (sym.name == names._this || sym.name == names._super) {
                 // If `C' is the currently compiled class, check that
-                // C.this' does not appear in a call to a super(...)
+                // `C.this' does not appear in an explicit call to a constructor
+                // also make sure that `super` is not used in constructor invocations
                 if (env.info.isSelfCall &&
-                    site.tsym == env.enclClass.sym) {
+                        ((sym.name == names._this &&
+                        site.tsym == env.enclClass.sym) ||
+                        sym.name == names._super)) {
                     chk.earlyRefError(tree.pos(), sym);
                 }
             } else {
