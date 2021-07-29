@@ -1782,6 +1782,10 @@ jint G1CollectedHeap::initialize() {
   return JNI_OK;
 }
 
+bool G1CollectedHeap::concurrent_mark_is_terminating() const {
+  return _cm_thread->should_terminate();
+}
+
 void G1CollectedHeap::stop() {
   // Stop all concurrent threads. We do this to make sure these threads
   // do not continue to execute and access resources (e.g. logging)
@@ -1844,8 +1848,10 @@ void G1CollectedHeap::ref_processing_init() {
   _ref_processor_cm =
     new ReferenceProcessor(&_is_subject_to_discovery_cm,
                            ParallelGCThreads,                              // degree of mt processing
-                           (ConcGCThreads > 1),                            // mt discovery
-                           ConcGCThreads,                                  // degree of mt discovery
+                           // We discover with the gc worker threads during Remark, so both
+                           // thread counts must be considered for discovery.
+                           (ParallelGCThreads > 1) || (ConcGCThreads > 1), // mt discovery
+                           MAX2(ParallelGCThreads, ConcGCThreads),         // degree of mt discovery
                            false,                                          // Reference discovery is not atomic
                            &_is_alive_closure_cm);                         // is alive closure
 
@@ -3001,24 +3007,6 @@ public:
   }
 };
 
-bool G1CollectedHeap::determine_start_concurrent_mark_gc(){
-  // We should not be doing concurrent start unless the concurrent mark thread is running
-  if (!_cm_thread->should_terminate()) {
-    // This call will decide whether this pause is a concurrent start
-    // pause. If it is, in_concurrent_start_gc() will return true
-    // for the duration of this pause.
-    policy()->decide_on_conc_mark_initiation();
-  }
-
-  // We do not allow concurrent start to be piggy-backed on a mixed GC.
-  assert(!collector_state()->in_concurrent_start_gc() ||
-         collector_state()->in_young_only_phase(), "sanity");
-  // We also do not allow mixed GCs during marking.
-  assert(!collector_state()->mark_or_rebuild_in_progress() || collector_state()->in_young_only_phase(), "sanity");
-
-  return collector_state()->in_concurrent_start_gc();
-}
-
 void G1CollectedHeap::set_young_collection_default_active_worker_threads(){
   uint active_workers = WorkerPolicy::calc_active_workers(workers()->total_workers(),
                                                           workers()->active_workers(),
@@ -3055,10 +3043,11 @@ void G1CollectedHeap::do_collection_pause_at_safepoint_helper(double target_paus
 
   GCTraceCPUTime tcpu;
 
+  policy()->decide_on_concurrent_start_pause();
   // Record whether this pause may need to trigger a concurrent operation. Later,
   // when we signal the G1ConcurrentMarkThread, the collector state has already
   // been reset for the next pause.
-  bool should_start_concurrent_mark_operation = determine_start_concurrent_mark_gc();
+  bool should_start_concurrent_mark_operation = collector_state()->in_concurrent_start_gc();
   bool concurrent_operation_is_full_mark = false;
 
   // Verification may use the gang workers, so they must be set up before.
