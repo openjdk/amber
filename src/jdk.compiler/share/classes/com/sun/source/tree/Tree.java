@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * Common interface for all nodes in an abstract syntax tree.
  *
@@ -227,20 +229,42 @@ public interface Tree {
         BINDING_PATTERN(BindingPatternTree.class),
 
         /**
-         * {@preview Associated with pattern matching for instanceof, a preview feature of
-         *           the Java language.
+         * Used for instances of {@link GuardedPatternTree}.
          *
-         *           This enum constant is associated with <i>pattern matching for instanceof</i>, a preview
-         *           feature of the Java language. Preview features
-         *           may be removed in a future release, or upgraded to permanent
-         *           features of the Java language.}
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        GUARDED_PATTERN(GuardedPatternTree.class),
+
+        /**
+         * Used for instances of {@link ParenthesizedPatternTree}.
          *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        PARENTHESIZED_PATTERN(ParenthesizedPatternTree.class),
+
+        /**
+         * Used for instances of {@link DefaultCaseLabelTree}.
+         *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        DEFAULT_CASE_LABEL(DefaultCaseLabelTree.class),
+
+        /**
          * Used for instances of {@link DeconstructionPatternTree}.
          *
-         * @since 15
+         * @since 18
          */
+        @PreviewFeature(feature=PreviewFeature.Feature.DECONSTRUCTION_PATTERNS, reflective=true)
         DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
 
+        /**
+         * Used for instances of {@link ArrayPatternTree}.
+         *
+         * @since 18
+         */
         ARRAY_PATTERN(ArrayPatternTree.class),
 
         /**
