@@ -1363,8 +1363,8 @@ public class TreeInfo {
                 yield new PatternPrimaryType(nested.type(), unconditional);
             }
             case PARENTHESIZEDPATTERN -> primaryPatternType(((JCParenthesizedPattern) pat).pattern);
-            case DECONSTRUCTIONPATTERN -> new PatternPrimaryType(((JCDeconstructionPattern) pat).type, true); //XXX: unconditional!!!!
-            case ARRAYPATTERN -> new PatternPrimaryType(((JCArrayPattern) pat).type, true); //XXX: unconditional!!!!
+            case DECONSTRUCTIONPATTERN -> new PatternPrimaryType(((JCDeconstructionPattern) pat).type, false);
+            case ARRAYPATTERN -> new PatternPrimaryType(((JCArrayPattern) pat).type, false);
             default -> throw new AssertionError();
         };
     }

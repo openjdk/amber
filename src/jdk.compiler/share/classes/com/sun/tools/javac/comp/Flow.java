@@ -27,9 +27,12 @@
 
 package com.sun.tools.javac.comp;
 
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
@@ -668,13 +671,11 @@ public class Flow {
                                        tree.cases.stream()
                                                  .flatMap(c -> c.labels.stream())
                                                  .anyMatch(l -> TreeInfo.isNull(l));
-            Set<Symbol> constants = exhaustiveSwitch ? new HashSet<>() : null;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
-                    handleConstantCaseLabel(constants, pat);
                 }
                 scanStats(c.stats);
                 if (alive != Liveness.DEAD && c.caseKind == JCCase.RULE) {
@@ -689,6 +690,7 @@ public class Flow {
                                 l.tail.head.pos(),
                                 Warnings.PossibleFallThroughIntoCase);
             }
+            Set<Symbol> constants = coveredSymbols(tree.cases.stream().flatMap(c -> c.labels.stream()).collect(Collectors.toCollection(HashSet::new)));
             if (!tree.hasTotalPattern && exhaustiveSwitch &&
                 !TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) &&
                 (constants == null || !isExhaustive(tree.selector.type, constants))) {
@@ -705,14 +707,12 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
-            Set<Symbol> constants = new HashSet<>();
             Liveness prevAlive = alive;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
-                    handleConstantCaseLabel(constants, pat);
                 }
                 scanStats(c.stats);
                 if (alive == Liveness.ALIVE) {
@@ -725,6 +725,7 @@ public class Flow {
                     }
                 }
             }
+            Set<Symbol> constants = coveredSymbols(tree.cases.stream().flatMap(c -> c.labels.stream()).collect(Collectors.toCollection(HashSet::new)));
             if (!tree.hasTotalPattern && !TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) &&
                 !isExhaustive(tree.selector.type, constants)) {
                 log.error(tree, Errors.NotExhaustive);
@@ -733,20 +734,90 @@ public class Flow {
             alive = alive.or(resolveYields(tree, prevPendingExits));
         }
 
-        private void handleConstantCaseLabel(Set<Symbol> constants, JCCaseLabel pat) {
-            if (constants != null) {
-                if (pat.isExpression()) {
-                    JCExpression expr = (JCExpression) pat;
-                    if (expr.hasTag(IDENT) && ((JCIdent) expr).sym.isEnum())
-                        constants.add(((JCIdent) expr).sym);
-                } else if (pat.isPattern()) {
-                    PatternPrimaryType patternType = TreeInfo.primaryPatternType((JCPattern) pat);
+        private Set<Symbol> coveredSymbols(Iterable<? extends JCCaseLabel> labels) {
+            Set<Symbol> constants = new HashSet<>();
+            Map<Symbol, List<JCDeconstructionPattern>> categorizedDeconstructionPatterns = new HashMap<>();
 
-                    if (patternType.unconditional()) {
-                        constants.add(patternType.type().tsym);
+            for (JCCaseLabel label : labels) {
+                switch (label.getTag()) {
+                    case BINDINGPATTERN, GUARDPATTERN, PARENTHESIZEDPATTERN -> {
+                        PatternPrimaryType primaryPatternType = TreeInfo.primaryPatternType((JCPattern) label);
+                        if (primaryPatternType.unconditional()) {
+                            constants.add(primaryPatternType.type().tsym);
+                        }
+                    }
+                    case DECONSTRUCTIONPATTERN -> {
+                        Symbol type = ((JCDeconstructionPattern) label).record;
+
+                        categorizedDeconstructionPatterns.put(type, categorizedDeconstructionPatterns.getOrDefault(type, List.nil()).prepend((JCDeconstructionPattern) label));
+                    }
+                    case ARRAYPATTERN -> {
+                        //TODO: exhaustiveness for array patterns
+                    }
+                    default -> {
+                        if (label.isExpression()) {
+                            JCExpression expr = (JCExpression) label;
+                            if (expr.hasTag(IDENT) && ((JCIdent) expr).sym.isEnum())
+                                constants.add(((JCIdent) expr).sym);
+                        } else {
+                            throw new AssertionError();
+                        }
                     }
                 }
             }
+            for (Entry<Symbol, List<JCDeconstructionPattern>> e : categorizedDeconstructionPatterns.entrySet()) {
+                if (coversDeconstructionStartingFromComponent(e.getValue(), 0)) {
+                    constants.add(e.getKey());
+                }
+            }
+            return constants;
+        }
+
+        private boolean coversDeconstructionStartingFromComponent(List<JCDeconstructionPattern> patterns, int component) {
+            if (patterns.head.record.getRecordComponents().size() == component) {
+                return true;
+            }
+
+            List<JCPattern> nestedComponentPatterns = patterns.map(d -> d.nested.get(component));
+            Set<Symbol> nestedCovered = coveredSymbols(nestedComponentPatterns);
+            Map<Symbol, List<JCDeconstructionPattern>> componentType2Patterns = new HashMap<>();
+            Set<Symbol> covered = new HashSet<>();
+
+            for (JCDeconstructionPattern subTypeCandidate : patterns) {
+                JCPattern nestedPattern = subTypeCandidate.nested.get(component);
+                Symbol currentPatternType;
+                switch (nestedPattern.getTag()) {
+                    case BINDINGPATTERN, GUARDPATTERN, PARENTHESIZEDPATTERN -> {
+                        PatternPrimaryType primaryPatternType = TreeInfo.primaryPatternType(nestedPattern);
+                        if (primaryPatternType.unconditional()) {
+                            currentPatternType = primaryPatternType.type().tsym;
+                        } else {
+                            continue;
+                        }
+                    }
+                    case DECONSTRUCTIONPATTERN -> {
+                        currentPatternType = ((JCDeconstructionPattern) nestedPattern).record;
+                    }
+                    case ARRAYPATTERN -> {
+                        //TODO: exhaustiveness for array patterns
+                        continue;
+                    }
+                    default -> { continue; }
+                }
+                for (Symbol currentType : nestedCovered) {
+                    if (types.isSubtype(currentType.erasure(types), currentPatternType.erasure(types))) {
+                        componentType2Patterns.put(currentType, componentType2Patterns.getOrDefault(currentType, List.nil()).prepend(subTypeCandidate));
+                    }
+                }
+            }
+
+            for (Entry<Symbol, List<JCDeconstructionPattern>> e : componentType2Patterns.entrySet()) {
+                if (coversDeconstructionStartingFromComponent(e.getValue(), component + 1)) {
+                    covered.add(e.getKey());
+                }
+            }
+
+            return isExhaustive(patterns.head.record.getRecordComponents().get(component).type, covered);
         }
 
         private void transitiveCovers(Set<Symbol> covered) {
