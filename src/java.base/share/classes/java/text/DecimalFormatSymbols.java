@@ -189,6 +189,15 @@ public class DecimalFormatSymbols implements Cloneable, Serializable {
     }
 
     /**
+     * Gets the locale used to create this table.
+     *
+     * @return the the locale used to create this table
+     */
+    public Locale getLocale() {
+        return locale;
+    }
+
+    /**
      * Gets the character used for zero. Different for Arabic, etc.
      *
      * @return the character used for zero
