@@ -342,6 +342,11 @@ public class TreeScanner extends Visitor {
     public void visitLiteral(JCLiteral tree) {
     }
 
+    public void visitTemplatedString(JCTemplatedString tree) {
+        scan(tree.policy);
+        scan(tree.expressions);
+    }
+
     public void visitTypeIdent(JCPrimitiveTypeTree tree) {
     }
 

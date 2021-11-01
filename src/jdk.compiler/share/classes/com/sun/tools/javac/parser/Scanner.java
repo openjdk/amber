@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import com.sun.tools.javac.util.Position.LineMap;
-import com.sun.tools.javac.parser.JavaTokenizer.*;
-
 import static com.sun.tools.javac.parser.Tokens.*;
 
 /** The lexical analyzer maps an input stream consisting of
@@ -44,7 +42,7 @@ import static com.sun.tools.javac.parser.Tokens.*;
  */
 public class Scanner implements Lexer {
 
-    private Tokens tokens;
+    private final Tokens tokens;
 
     /** The token, set by nextToken().
      */
@@ -56,9 +54,9 @@ public class Scanner implements Lexer {
 
     /** Buffer of saved tokens (used during lookahead)
      */
-    private List<Token> savedTokens = new ArrayList<>();
+    private final List<Token> savedTokens = new ArrayList<>();
 
-    private JavaTokenizer tokenizer;
+    private final JavaTokenizer tokenizer;
 
     /**
      * Create a scanner from the input array.  This method might
@@ -84,6 +82,11 @@ public class Scanner implements Lexer {
         token = prevToken = DUMMY;
     }
 
+    protected void templatedString(Token stringToken) {
+        List<Token> tokens = tokenizer.templatedString(stringToken);
+        savedTokens.addAll(tokens);
+    }
+
     public Token token() {
         return token(0);
     }
@@ -98,8 +101,12 @@ public class Scanner implements Lexer {
     }
     //where
         private void ensureLookahead(int lookahead) {
-            for (int i = savedTokens.size() ; i < lookahead ; i ++) {
-                savedTokens.add(tokenizer.readToken());
+            for (int i = savedTokens.size() ; i < lookahead ; i++) {
+                Token ahead = tokenizer.readToken();
+                savedTokens.add(ahead);
+                if (ahead.kind == TokenKind.TEMPLATEDSTRING) {
+                    templatedString(ahead);
+                }
             }
         }
 
@@ -113,6 +120,9 @@ public class Scanner implements Lexer {
             token = savedTokens.remove(0);
         } else {
             token = tokenizer.readToken();
+            if (token.kind == TokenKind.TEMPLATEDSTRING) {
+                templatedString(token);
+            }
         }
     }
 

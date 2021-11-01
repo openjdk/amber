@@ -220,6 +220,22 @@ public class Names {
     public final Name typeSwitch;
     public final Name enumSwitch;
 
+    // templated string
+    public final Name templatedStringBSM;
+    public final Name apply;
+    public final Name asList;
+    public final Name methodType;
+    public final Name findGetter;
+    public final Name findVirtual;
+    public final Name lookup;
+    public final Name split;
+    public final Name concat;
+    public final Name template;
+    public final Name templateUpper;
+    public final Name segments;
+    public final Name segmentsUpper;
+    public final Name vars;
+
     public final Name.Table table;
 
     public Names(Context context) {
@@ -390,6 +406,22 @@ public class Names {
         // sealed types
         permits = fromString("permits");
         sealed = fromString("sealed");
+
+        // templated string
+        templatedStringBSM = fromString("templatedStringBSM");
+        apply = fromString("apply");
+        asList = fromString("asList");
+        methodType = fromString("methodType");
+        findGetter = fromString("findGetter");
+        findVirtual = fromString("findVirtual");
+        lookup = fromString("lookup");
+        split = fromString("split");
+        concat = fromString("concat");
+        template = fromString("template");
+        templateUpper = fromString("TEMPLATE");
+        segments = fromString("segments");
+        segmentsUpper = fromString("SEGMENTS");
+        vars = fromString("vars");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

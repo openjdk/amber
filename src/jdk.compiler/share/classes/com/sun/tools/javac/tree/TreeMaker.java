@@ -537,6 +537,14 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCTemplatedString TemplatedString(JCExpression policy,
+                                             JCExpression string,
+                                             List<JCExpression> expressions) {
+        JCTemplatedString tree = new JCTemplatedString(policy, string, expressions);
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCPrimitiveTypeTree TypeIdent(TypeTag typetag) {
         JCPrimitiveTypeTree tree = new JCPrimitiveTypeTree(typetag);
         tree.pos = pos;
