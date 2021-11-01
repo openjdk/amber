@@ -36,6 +36,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -2761,8 +2762,7 @@ public final class Formatter implements Closeable, Flushable {
         int lasto = -1;
 
         List<FormatString> fsa = parse(format);
-        for (int i = 0; i < fsa.size(); i++) {
-            var fs = fsa.get(i);
+        for (FormatString fs : fsa) {
             int index = fs.index();
             try {
                 switch (index) {
@@ -2780,7 +2780,7 @@ public final class Formatter implements Closeable, Flushable {
                             throw new MissingFormatArgumentException(fs.toString());
                         fs.print(this, (args == null ? null : args[lasto]), l);
                     }
-                    default -> {  // explicit index
+                    default -> { // explicit index
                         last = index - 1;
                         if (args != null && last > args.length - 1)
                             throw new MissingFormatArgumentException(fs.toString());
@@ -2794,6 +2794,73 @@ public final class Formatter implements Closeable, Flushable {
         return this;
     }
 
+    /**
+     * Writes a formatted string to this object's destination using the
+     * specified format string and values gleaned from a {@link TemplatedString}.
+     * The locale used is the one defined during the construction of this formatter.
+     *
+     * @param  templatedString
+     *         Containing format string and values.
+     *         The format string as described in <a href="#syntax">Format string
+     *         syntax</a>.
+     *
+     * @throws  IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a href="#detail">Details</a>
+     *          section of the formatter class specification.
+     *
+     * @throws  FormatterClosedException
+     *          If this formatter has been closed by invoking its {@link
+     *          #close()} method
+     *
+     * @return  This formatter
+     */
+    public Formatter format(TemplatedString templatedString) {
+        String format = templatedStringFormat(templatedString.template());
+        Object[] values = templatedString.values().stream().toArray();
+
+        return format(l, format, values);
+    }
+
+    /**
+     * Writes a formatted string to this object's destination using the
+     * specified locale and {@link TemplatedString}.
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.  This does not change this object's locale that was
+     *         set during construction.
+     *
+     * @param  templatedString
+     *         Containing format string and values.
+     *         The format string as described in <a href="#syntax">Format string
+     *         syntax</a>.
+     *
+     * @throws  IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a href="#detail">Details</a>
+     *          section of the formatter class specification.
+     *
+     * @throws  FormatterClosedException
+     *          If this formatter has been closed by invoking its {@link
+     *          #close()} method
+     *
+     * @return  This formatter
+     */
+    public Formatter format(Locale l, TemplatedString templatedString) {
+        String format = templatedStringFormat(templatedString.template());
+        Object[] values = templatedString.values().stream().toArray();
+
+        return format(l, format, values);
+    }
+
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final String formatSpecifier
         = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
@@ -2803,7 +2870,7 @@ public final class Formatter implements Closeable, Flushable {
     /**
      * Finds format specifiers in the format string.
      */
-    private List<FormatString> parse(String s) {
+    static List<FormatString> parse(String s) {
         ArrayList<FormatString> al = new ArrayList<>();
         int i = 0;
         int max = s.length();
@@ -2846,7 +2913,7 @@ public final class Formatter implements Closeable, Flushable {
         return al;
     }
 
-    private interface FormatString {
+    interface FormatString {
         int index();
         void print(Formatter fmt, Object arg, Locale l) throws IOException;
         String toString();
@@ -2882,14 +2949,15 @@ public final class Formatter implements Closeable, Flushable {
         DECIMAL_FLOAT
     };
 
-    private static class FormatSpecifier implements FormatString {
+    static class FormatSpecifier implements FormatString {
+        private static final double SCALEUP = Math.scalb(1.0, 54);
 
-        private int index = 0;
-        private int flags = Flags.NONE;
-        private int width = -1;
-        private int precision = -1;
-        private boolean dt = false;
-        private char c;
+        int index = 0;
+        int flags = Flags.NONE;
+        int width = -1;
+        int precision = -1;
+        boolean dt = false;
+        char c;
 
         private void index(String s, int start, int end) {
             if (start >= 0) {
@@ -3542,8 +3610,8 @@ public final class Formatter implements Closeable, Flushable {
                 if (width != -1) {
                     newW = adjustWidth(width - exp.length - 1, flags, neg);
                 }
-                localizedMagnitude(fmt, sb, mant, 0, flags, newW, l);
 
+                localizedMagnitude(fmt, sb, mant, 0, flags, newW, l);
                 sb.append(Flags.contains(flags, Flags.UPPERCASE) ? 'E' : 'e');
 
                 char sign = exp[0];
@@ -3715,8 +3783,7 @@ public final class Formatter implements Closeable, Flushable {
                 // If this is subnormal input so normalize (could be faster to
                 // do as integer operation).
                 if (subnormal) {
-                    double scaleUp = Math.scalb(1.0, 54);
-                    d *= scaleUp;
+                    d *= SCALEUP;
                     // Calculate the exponent.  This is not just exponent + 54
                     // since the former is not the normalized exponent.
                     exponent = Math.getExponent(d);
@@ -4620,7 +4687,7 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private static class Flags {
+    static class Flags {
 
         static final int NONE          = 0;      // ''
 
@@ -4698,7 +4765,7 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private static class Conversion {
+    static class Conversion {
         // Byte, Short, Integer, Long, BigInteger
         // (and associated primitives due to autoboxing)
         static final char DECIMAL_INTEGER     = 'd';
@@ -4823,7 +4890,7 @@ public final class Formatter implements Closeable, Flushable {
         }
     }
 
-    private static class DateTime {
+    static class DateTime {
         static final char HOUR_OF_DAY_0 = 'H'; // (00 - 23)
         static final char HOUR_0        = 'I'; // (01 - 12)
         static final char HOUR_OF_DAY   = 'k'; // (0 - 23) -- like H
@@ -4874,4 +4941,87 @@ public final class Formatter implements Closeable, Flushable {
             };
         }
     }
+
+    /**
+     * Convert a {@link TemplatedString} template, containing format specifications,
+     * to a form that can be passed on to {@link Formatter}. The method scans a template,
+     * matching up formatter specifications with placeholders (expressions), then removing
+     * the placeholder. If no specification is found before a placeholder, the method
+     * inserts "%s".
+     *
+     * @param template  template string with placeholders
+     *
+     * @return  format string
+     */
+    static String templatedStringFormat(String template) {
+        StringBuilder sb = new StringBuilder();
+        Matcher matcher = fsPattern.matcher(template);
+        char placeholderCharacter = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
+        int length = template.length();
+
+        for (int i = 0; i < length; i++) {
+            char ch = template.charAt(i);
+
+            if (ch == '%') {
+                matcher.region(i, length);
+
+                if (matcher.lookingAt()) {
+                    String group = matcher.group();
+                    int next = i + group.length();
+                    char placeholder = next < length ? template.charAt(next) : '\0';
+
+                    if (group.endsWith("n") || group.endsWith("%")) {
+                        sb.append(group);
+                        i = next - 1;
+                    } else if (placeholder == placeholderCharacter) {
+                        sb.append(group);
+                        i = next;
+                    } else {
+                        sb.append("null");
+                        i = next - 1;
+                    }
+                } else {
+                    sb.append(ch);
+                }
+            } else if (ch == placeholderCharacter) {
+                sb.append("%s");
+            } else {
+                sb.append(ch);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Construct a {@link MethodHandle} that uses and precompiled version of the
+     * format. The resulting MethodHandle does not require boxing of primitive
+     * values.
+     *
+     * @implNote the use of index specifiers causes a {@link MissingFormatArgumentException}
+     * to be thrown.
+     *
+     * @param  format  a format string as described in <a href="#syntax">Format
+     * string syntax</a>.
+     * @param  locale  specialization locale (use Locale.ROOT for generic)
+     * @param  ptypes  parameter types of the resulting {@link MethodHandle}.
+     * If the first argument is of type {@link Locale} then locale must be
+     * provided when invoking.
+     *
+     * @return {@link MethodHandle}that applies the format to the supplied arguments.
+     *
+     * @throws NullPointerException  if any of the arguments is null
+     * @throws MissingFormatArgumentException  if a format specification is invalid
+     * @throws IllegalArgumentException  if the ptypes has greater than 200 elements
+     */
+    public static MethodHandle formatFactory(String format, Locale locale,
+                                             Class<?>... ptypes) {
+        Objects.requireNonNull(format, "missing format");
+        Objects.requireNonNull(locale, "missing format");
+        Objects.requireNonNull(ptypes, "missing parameter types");
+        FormatBuilder fmh = new FormatBuilder(format, locale, ptypes);
+
+        return fmh.build();
+    }
+
 }
