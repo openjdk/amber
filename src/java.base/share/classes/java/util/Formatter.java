@@ -2973,6 +2973,10 @@ public final class Formatter implements Closeable, Flushable {
             }
         }
 
+        public boolean isSimple() {
+            return width == -1 && f.valueOf() == Flags.NONE.valueOf();
+        }
+
         public int index() {
             return index;
         }
@@ -3420,7 +3424,6 @@ public final class Formatter implements Closeable, Flushable {
         }
 
         private void print(Formatter fmt, long value, Locale l) throws IOException {
-
             StringBuilder sb = new StringBuilder();
 
             if (c == Conversion.DECIMAL_INTEGER) {
