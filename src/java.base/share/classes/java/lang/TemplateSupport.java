@@ -44,17 +44,13 @@ final class TemplateSupport {
      * Initialize MethodHandle constant
      */
     static {
-        MethodHandle applyMH = null;
-
         try {
             Lookup lookup = MethodHandles.lookup();
-            applyMH = lookup.findVirtual(TemplatePolicy.class, "apply",
+            APPLY_MH = lookup.findVirtual(TemplatePolicy.class, "apply",
                     MethodType.methodType(Object.class, TemplatedString.class));
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         }
-
-         APPLY_MH = applyMH;
     }
 
     /**
@@ -112,18 +108,14 @@ final class TemplateSupport {
              * Initialize MethodHandle constant
              */
             static {
-                MethodHandle callsiteMH = null;
-
                 try {
                     Lookup lookup = MethodHandles.lookup();
-                    callsiteMH = lookup.findVirtual(TemplateCallSite.class, "callsite",
+                    CALLSITE_MH = lookup.findVirtual(TemplateCallSite.class, "callsite",
                             MethodType.methodType(Object.class, Class.class, MethodHandle.class,
                                     TemplatePolicy.class, TemplatedString.class));
                 } catch (ReflectiveOperationException ex) {
                     throw new RuntimeException(ex);
                 }
-
-                CALLSITE_MH = callsiteMH;
             }
 
             /**

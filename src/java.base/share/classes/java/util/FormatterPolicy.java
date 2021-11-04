@@ -59,21 +59,15 @@ public final class FormatterPolicy implements TemplatePolicy<String, RuntimeExce
      * Initialize MethodHandle constants
      */
     static {
-        MethodHandle localeMH = null;
-        MethodHandle applyMH = null;
-
         try {
             Lookup lookup = MethodHandles.lookup();
-            localeMH = lookup.findVirtual(FormatterPolicy.class, "locale",
+            LOCALE_MH = lookup.findVirtual(FormatterPolicy.class, "locale",
                     MethodType.methodType(Locale.class));
-            applyMH = lookup.findVirtual(TemplatePolicy.class, "apply",
+            APPLY_MH = lookup.findVirtual(TemplatePolicy.class, "apply",
                     MethodType.methodType(Object.class, TemplatedString.class));
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         }
-
-        LOCALE_MH = localeMH;
-        APPLY_MH = applyMH;
     }
 
     /**
