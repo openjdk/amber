@@ -740,27 +740,27 @@ public final class Carrier {
      * @param methodType {@link MethodType} providing types for the carrier's
      *                   components.
      *
-     * @return  list of get component {@link MethodHandle MethodHandles}
+     * @return  array of get component {@link MethodHandle MethodHandles}
      *
      * @throws NullPointerException is methodType is null
      * @throws IllegalArgumentException if number of component slots exceeds maximum
      *
      */
-    public static List<MethodHandle> components(MethodType methodType) {
+    public static MethodHandle[] components(MethodType methodType) {
         Objects.requireNonNull(methodType);
         Class<?>[] ptypes = methodType.parameterArray();
-        CarrierShape carrierShape = getCarrierShape(ptypes);
+        java.lang.runtime.Carrier.CarrierShape carrierShape = getCarrierShape(ptypes);
         int slotCount = carrierShape.slotCount();
         MethodHandle[] components;
 
         if (slotCount <= MAX_OBJECT_COMPONENTS) {
-            CarrierClass carrierClass = findCarrierClass(carrierShape);
+            java.lang.runtime.Carrier.CarrierClass carrierClass = findCarrierClass(carrierShape);
             components = components(ptypes, carrierShape, carrierClass.components());
         } else {
-            components = CarrierArrayFactory.components(ptypes);
+            components = java.lang.runtime.Carrier.CarrierArrayFactory.components(ptypes);
         }
 
-        return List.of(components);
+        return components;
     }
 
     /**
