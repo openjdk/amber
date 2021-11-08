@@ -60,24 +60,24 @@ public class CarrierTest {
                 'C', 0xFFFFFFFF, 0xFFFFFFFFFFFFFFFFL,
                 1.0f / 3.0f, 1.0 / 3.0,
                 true, "abcde");
-        List<MethodHandle> components = Carrier.components(methodType);
-        assertTrue((byte)components.get(0).invokeExact(object) == (byte)0xFF,
+        MethodHandle[] components = Carrier.components(methodType);
+        assertTrue((byte)components[0].invokeExact(object) == (byte)0xFF,
                 "primitive byte test failure");
-        assertTrue((short)components.get(1).invokeExact(object) == (short)0xFFFF,
+        assertTrue((short)components[1].invokeExact(object) == (short)0xFFFF,
                 "primitive short test failure");
-        assertTrue((char)components.get(2).invokeExact(object) == 'C',
+        assertTrue((char)components[2].invokeExact(object) == 'C',
                 "primitive char test failure");
-        assertTrue((int)components.get(3).invokeExact(object) == 0xFFFFFFFF,
+        assertTrue((int)components[3].invokeExact(object) == 0xFFFFFFFF,
                 "primitive int test failure");
-        assertTrue((long)components.get(4).invokeExact(object) == 0xFFFFFFFFFFFFFFFFL,
+        assertTrue((long)components[4].invokeExact(object) == 0xFFFFFFFFFFFFFFFFL,
                 "primitive long test failure");
-        assertTrue((float)components.get(5).invokeExact(object) == 1.0f / 3.0f,
+        assertTrue((float)components[5].invokeExact(object) == 1.0f / 3.0f,
                 "primitive float test failure");
-        assertTrue((double)components.get(6).invokeExact(object) == 1.0 / 3.0,
+        assertTrue((double)components[6].invokeExact(object) == 1.0 / 3.0,
                 "primitive double test failure");
-        assertTrue((boolean)components.get(7).invokeExact(object),
+        assertTrue((boolean)components[7].invokeExact(object),
                 "primitive boolean test failure");
-        assertTrue("abcde".equals((String)components.get(8).invokeExact(object)),
+        assertTrue("abcde".equals((String)components[8].invokeExact(object)),
                 "primitive String test failure");
     }
 
@@ -108,24 +108,24 @@ public class CarrierTest {
                 (Object)null, (Object)null, (Object)null, (Object)null,
                 (Object)null, (Object)null, (Object)null, (Object)null
                 );
-        List<MethodHandle> components = Carrier.components(methodType);
-        assertTrue((byte)components.get(0).invokeExact(object) == (byte)0xFF,
+        MethodHandle[] components = Carrier.components(methodType);
+        assertTrue((byte)components[0].invokeExact(object) == (byte)0xFF,
                 "primitive in array byte test failure");
-        assertTrue((short)components.get(1).invokeExact(object) == (short)0xFFFF,
+        assertTrue((short)components[1].invokeExact(object) == (short)0xFFFF,
                 "primitive in array short test failure");
-        assertTrue((char)components.get(2).invokeExact(object) == 'C',
+        assertTrue((char)components[2].invokeExact(object) == 'C',
                 "primitive in array char test failure");
-        assertTrue((int)components.get(3).invokeExact(object) == 0xFFFFFFFF,
+        assertTrue((int)components[3].invokeExact(object) == 0xFFFFFFFF,
                 "primitive in array int test failure");
-        assertTrue((long)components.get(4).invokeExact(object) == 0xFFFFFFFFFFFFFFFFL,
+        assertTrue((long)components[4].invokeExact(object) == 0xFFFFFFFFFFFFFFFFL,
                 "primitive in array long test failure");
-        assertTrue((float)components.get(5).invokeExact(object) == 1.0f / 3.0f,
+        assertTrue((float)components[5].invokeExact(object) == 1.0f / 3.0f,
                 "primitive in array float test failure");
-        assertTrue((double)components.get(6).invokeExact(object) == 1.0 / 3.0,
+        assertTrue((double)components[6].invokeExact(object) == 1.0 / 3.0,
                 "primitive in array double test failure");
-        assertTrue((boolean)components.get(7).invokeExact(object),
+        assertTrue((boolean)components[7].invokeExact(object),
                 "primitive in array boolean test failure");
-        assertTrue("abcde".equals((String)components.get(8).invokeExact(object)),
+        assertTrue("abcde".equals((String)components[8].invokeExact(object)),
                 "primitive in array String test failure");
     }
 

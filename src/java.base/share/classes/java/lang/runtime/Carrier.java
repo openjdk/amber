@@ -27,11 +27,10 @@ package java.lang.runtime;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.MethodHandles.Lookup.ClassOption;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,7 +48,7 @@ public final class Carrier {
     /**
      * Lookup used to define and reference the carrier object classes.
      */
-    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final Lookup LOOKUP;
 
     /**
      * Maximum number of components in a carrier (based on the maximum
@@ -66,31 +65,34 @@ public final class Carrier {
      * Initialize {@link MethodHandle} constants.
      */
     static {
+        Lookup lookup = MethodHandles.lookup();
+        LOOKUP = lookup;
+
         try {
-            FLOAT_TO_INT = LOOKUP.findStatic(Float.class, "floatToRawIntBits",
+            FLOAT_TO_INT = lookup.findStatic(Float.class, "floatToRawIntBits",
                     MethodType.methodType(int.class, float.class));
-            INT_TO_FLOAT = LOOKUP.findStatic(Float.class, "intBitsToFloat",
+            INT_TO_FLOAT = lookup.findStatic(Float.class, "intBitsToFloat",
                     MethodType.methodType(float.class, int.class));
-            DOUBLE_TO_LONG = LOOKUP.findStatic(Double.class, "doubleToRawLongBits",
+            DOUBLE_TO_LONG = lookup.findStatic(Double.class, "doubleToRawLongBits",
                     MethodType.methodType(long.class, double.class));
-            LONG_TO_DOUBLE = LOOKUP.findStatic(Double.class, "longBitsToDouble",
+            LONG_TO_DOUBLE = lookup.findStatic(Double.class, "longBitsToDouble",
                     MethodType.methodType(double.class, long.class));
 
-            BOOLEAN_TO_INT = LOOKUP.findStatic(Carrier.class, "booleanToInt",
+            BOOLEAN_TO_INT = lookup.findStatic(Carrier.class, "booleanToInt",
                     MethodType.methodType(int.class, boolean.class));
-            INT_TO_BOOLEAN = LOOKUP.findStatic(Carrier.class, "intToBoolean",
+            INT_TO_BOOLEAN = lookup.findStatic(Carrier.class, "intToBoolean",
                     MethodType.methodType(boolean.class, int.class));
-            BYTE_TO_INT = LOOKUP.findStatic(Carrier.class, "byteToInt",
+            BYTE_TO_INT = lookup.findStatic(Carrier.class, "byteToInt",
                     MethodType.methodType(int.class, byte.class));
-            INT_TO_BYTE = LOOKUP.findStatic(Carrier.class, "intToByte",
+            INT_TO_BYTE = lookup.findStatic(Carrier.class, "intToByte",
                     MethodType.methodType(byte.class, int.class));
-            SHORT_TO_INT = LOOKUP.findStatic(Carrier.class, "shortToInt",
+            SHORT_TO_INT = lookup.findStatic(Carrier.class, "shortToInt",
                     MethodType.methodType(int.class, short.class));
-            INT_TO_SHORT = LOOKUP.findStatic(Carrier.class, "intToShort",
+            INT_TO_SHORT = lookup.findStatic(Carrier.class, "intToShort",
                     MethodType.methodType(short.class, int.class));
-            CHAR_TO_INT = LOOKUP.findStatic(Carrier.class, "charToInt",
+            CHAR_TO_INT = lookup.findStatic(Carrier.class, "charToInt",
                     MethodType.methodType(int.class, char.class));
-            INT_TO_CHAR = LOOKUP.findStatic(Carrier.class, "intToChar",
+            INT_TO_CHAR = lookup.findStatic(Carrier.class, "intToChar",
                     MethodType.methodType(char.class, int.class));
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
@@ -114,35 +116,35 @@ public final class Carrier {
     private static final MethodHandle CHAR_TO_INT;
     private static final MethodHandle INT_TO_CHAR;
 
-    static int booleanToInt(boolean b) {
+    private static int booleanToInt(boolean b) {
         return b ? 1 : 0;
     }
 
-    static boolean intToBoolean(int i) {
+    private static boolean intToBoolean(int i) {
         return i != 0;
     }
 
-    static int byteToInt(byte b) {
+    private static int byteToInt(byte b) {
         return b;
     }
 
-    static byte intToByte(int i) {
+    private static byte intToByte(int i) {
         return (byte)i;
     }
 
-    static int shortToInt(short s) {
+    private static int shortToInt(short s) {
         return s;
     }
 
-    static short intToShort(int i) {
+    private static short intToShort(int i) {
         return (short)i;
     }
 
-    static int charToInt(char c) {
+    private static int charToInt(char c) {
         return c;
     }
 
-    static char intToChar(int i) {
+    private static char intToChar(int i) {
         return (char)i;
     }
 
@@ -270,17 +272,17 @@ public final class Carrier {
      */
     static class CarrierObjectFactory {
         /**
-         * Install class
+         * Define the hidden class Lookup object
          *
          * @param bytes  class content
          *
-         * @return installed class
+         * @return the Lookup object of the hidden class
          */
-        static Class<?> defineClass(byte[] bytes) {
+        static Lookup defineHiddenClass(byte[] bytes) {
             try {
-                return LOOKUP.defineClass(bytes);
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException(ex);
+                return LOOKUP.defineHiddenClass(bytes, false, ClassOption.STRONG);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -325,7 +327,7 @@ public final class Carrier {
          * @return name of a carrier class
          */
         static String carrierClassName(CarrierShape carrierShape) {
-            String packageName = Carrier.class.getPackage().getName().replace('.', '/');
+            String packageName = Carrier.class.getPackageName().replace('.', '/');
             String className = "Carrier$" +
                     objectFieldName(carrierShape.objectCount) +
                     intFieldName(carrierShape.intCount) +
@@ -336,43 +338,40 @@ public final class Carrier {
         }
 
         /**
-         * Construct a new object carrier class based on shape.
+         * Build up the byte code for the carrier class.
          *
          * @param carrierShape  shape of carrier
          *
-         * @return a {@link CarrierClass} object containing constructor and
-         *         component getters.
+         * @return byte array of byte code for the carrier class
          */
-        static CarrierClass newCarrierClass(CarrierShape carrierShape) {
+        private static byte[] buildCarrierClass(CarrierShape carrierShape) {
             String carrierClassName = carrierClassName(carrierShape);
-
             StringBuilder initDescriptor = new StringBuilder("(");
 
             ClassWriter cw = new ClassWriter(0);
-            cw.visit(V17, ACC_PUBLIC | ACC_FINAL, carrierClassName,
+            cw.visit(V17, ACC_PRIVATE | ACC_FINAL, carrierClassName,
                     null, "java/lang/Object", null);
-            int FIELD_FLAGS = ACC_PUBLIC | ACC_FINAL;
+            int fieldFlags = ACC_PRIVATE | ACC_FINAL;
 
             for (int i = 0; i < carrierShape.objectCount; i++) {
-                cw.visitField(FIELD_FLAGS, objectFieldName(i), OBJECT_DESCRIPTOR,
+                cw.visitField(fieldFlags, objectFieldName(i), OBJECT_DESCRIPTOR,
                         null, null);
                 initDescriptor.append(OBJECT_DESCRIPTOR);
             }
 
             for (int i = 0; i < carrierShape.intCount; i++) {
-                cw.visitField(FIELD_FLAGS, intFieldName(i), INT_DESCRIPTOR,
+                cw.visitField(fieldFlags, intFieldName(i), INT_DESCRIPTOR,
                         null, null);
                 initDescriptor.append(INT_DESCRIPTOR);
             }
 
             for (int i = 0; i < carrierShape.longCount; i++) {
-                cw.visitField(FIELD_FLAGS, longFieldName(i), LONG_DESCRIPTOR,
+                cw.visitField(fieldFlags, longFieldName(i), LONG_DESCRIPTOR,
                         null, null);
                 initDescriptor.append(LONG_DESCRIPTOR);
             }
 
             initDescriptor.append(")V");
-            int localsCount = carrierShape.slotCount();
 
             MethodVisitor init = cw.visitMethod(ACC_PUBLIC,
                     "<init>", initDescriptor.toString(), null, null);
@@ -404,58 +403,146 @@ public final class Carrier {
             }
 
             init.visitInsn(RETURN);
-            init.visitMaxs(localsCount + 32, localsCount + 32);
+            init.visitMaxs(3, 1 /* this */ + carrierShape.slotCount());
             init.visitEnd();
 
             cw.visitEnd();
-            byte[] bytes = cw.toByteArray();
 
-            return new CarrierClass(defineClass(bytes));
+            return cw.toByteArray();
         }
+
+        /**
+         * Returns the constructor method type.
+         *
+         * @return the constructor method type.
+         */
+        private static MethodType constructorMethodType(CarrierShape carrierShape) {
+            int argCount =
+                    carrierShape.objectCount +
+                            carrierShape.intCount +
+                            carrierShape.longCount;
+            Class<?>[] array = new Class<?>[ argCount ];
+
+            int arg = 0;
+            for(int i = 0; i < carrierShape.objectCount; i++) {
+                array[arg++] = Object.class;
+            }
+
+            for(int i = 0; i < carrierShape.intCount; i++) {
+                array[arg++] = int.class;
+            }
+
+            for(int i = 0; i < carrierShape.longCount; i++) {
+                array[arg++] = long.class;
+            }
+
+            return MethodType.methodType(void.class, array);
+        }
+
+        /**
+         * Returns the raw constructor for the carrier class.
+         *
+         * @param carrierClassLookup     lookup for carrier class
+         * @param carrierClass           newly constructed carrier class
+         * @param constructorMethodType  constructor method type
+         *
+         * @return {@link MethodHandle} to carrier class constructor
+         *
+         * @throws ReflectiveOperationException if lookup failure
+         */
+        private static MethodHandle constructor(Lookup carrierClassLookup,
+                                                Class<?> carrierClass,
+                                                MethodType constructorMethodType)
+                throws ReflectiveOperationException {
+            return carrierClassLookup.findConstructor(carrierClass,
+                    constructorMethodType);
+        }
+
+        /**
+         * Returns an array of raw component getters for the carrier class.
+         *
+         * @param carrierShape           shape of carrier
+         * @param carrierClassLookup     lookup for carrier class
+         * @param carrierClass           newly constructed carrier class
+         * @param constructorMethodType  constructor method type
+         *
+         * @return {@link MethodHandle MethodHandles} to carrier component
+         *         getters
+         *
+         * @throws ReflectiveOperationException if lookup failure
+         */
+        private static MethodHandle[] components(CarrierShape carrierShape,
+                                                 Lookup carrierClassLookup,
+                                                 Class<?> carrierClass,
+                                                 MethodType constructorMethodType)
+                throws ReflectiveOperationException {
+            MethodHandle[] components;
+            components = new MethodHandle[constructorMethodType.parameterCount()];
+            int arg = 0;
+
+            for(int i = 0; i < carrierShape.objectCount; i++) {
+                components[arg++] = carrierClassLookup.findGetter(carrierClass,
+                        CarrierObjectFactory.objectFieldName(i), Object.class);
+            }
+
+            for(int i = 0; i < carrierShape.intCount; i++) {
+                components[arg++] = carrierClassLookup.findGetter(carrierClass,
+                        CarrierObjectFactory.intFieldName(i), int.class);
+            }
+
+            for(int i = 0; i < carrierShape.longCount; i++) {
+                components[arg++] = carrierClassLookup.findGetter(carrierClass,
+                        CarrierObjectFactory.longFieldName(i), long.class);
+            }
+
+            return components;
+        }
+
+        /**
+         * Construct a new object carrier class based on shape.
+         *
+         * @param carrierShape  shape of carrier
+         *
+         * @return a {@link CarrierClass} object containing constructor and
+         *         component getters.
+         */
+        static CarrierClass newCarrierClass(CarrierShape carrierShape) {
+            byte[] bytes = buildCarrierClass(carrierShape);
+
+            try {
+                Lookup carrierCLassLookup = defineHiddenClass(bytes);
+                Class<?> carrierClass = carrierCLassLookup.lookupClass();
+                MethodType constructorMethodType = constructorMethodType(carrierShape);
+                MethodHandle constructor = constructor(carrierCLassLookup,
+                        carrierClass, constructorMethodType);
+                MethodHandle[] components = components(carrierShape,
+                        carrierCLassLookup, carrierClass, constructorMethodType);
+
+                return new CarrierClass(constructor, components);
+            } catch (ReflectiveOperationException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
     }
 
     /**
-     * Provides constructor and component MethodHandles for a constructed
+     * Provides raw constructor and component MethodHandles for a constructed
      * carrier class.
      */
-    record CarrierClass(Class<?> carrierClass) {
-        /**
-         * Create a raw {@link MethodHandle} for a carrier object constructor.
-         * This constructor will only have Object, int and long type arguments.
-         *
-         * @return a raw {@link MethodHandle} for a carrier object constructor
-         */
-        MethodHandle constructor() {
-            try {
-                return LOOKUP.unreflectConstructor(carrierClass.getConstructors()[0]);
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
+    record CarrierClass(
+            /**
+             * A raw {@link MethodHandle} for a carrier object constructor.
+             * This constructor will only have Object, int and long type arguments.
+             */
+            MethodHandle constructor,
 
-        /**
-         * Create all the raw {@link MethodHandle MethodHandles} for a carrier
-         * component getters. These getters will only return Object, int and
-         * long types.
-         *
-         * @return raw {@link MethodHandle MethodHandles} for all the getters
-         *         for a carrier object
-         */
-        MethodHandle[] components() {
-            try {
-                Field[] fields = carrierClass.getDeclaredFields();
-                int length = fields.length;
-                MethodHandle[] methodHandles = new MethodHandle[length];
-
-                for (int i = 0; i < length; i++) {
-                    methodHandles[i] = LOOKUP.unreflectGetter(fields[i]);
-                }
-
-                return methodHandles;
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
+            /**
+             * All the raw {@link MethodHandle MethodHandles} for a carrier
+             * component getters. These getters will only return Object, int and
+             * long types.
+             */
+            MethodHandle[] components) {
 
         /**
          * Create a single raw {@link MethodHandle} for a carrier component
@@ -466,13 +553,7 @@ public final class Carrier {
          * @return raw {@link MethodHandle} for the component getter
          */
         MethodHandle component(int i) {
-            try {
-                Field[] fields = carrierClass.getDeclaredFields();
-
-                return LOOKUP.unreflectGetter(fields[i]);
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException(ex);
-            }
+            return components[i];
         }
     }
 
@@ -480,7 +561,7 @@ public final class Carrier {
      * Cache for all constructed carrier object classes, keyed on class
      * name (i.e., carrier shape.)
      */
-    private static final Map<String, CarrierClass> carrierCache =
+    private static final ConcurrentHashMap<String, CarrierClass> carrierCache =
             new ConcurrentHashMap<>();
 
     /**
@@ -749,15 +830,15 @@ public final class Carrier {
     public static MethodHandle[] components(MethodType methodType) {
         Objects.requireNonNull(methodType);
         Class<?>[] ptypes = methodType.parameterArray();
-        java.lang.runtime.Carrier.CarrierShape carrierShape = getCarrierShape(ptypes);
+        CarrierShape carrierShape = getCarrierShape(ptypes);
         int slotCount = carrierShape.slotCount();
         MethodHandle[] components;
 
         if (slotCount <= MAX_OBJECT_COMPONENTS) {
-            java.lang.runtime.Carrier.CarrierClass carrierClass = findCarrierClass(carrierShape);
+            Carrier.CarrierClass carrierClass = findCarrierClass(carrierShape);
             components = components(ptypes, carrierShape, carrierClass.components());
         } else {
-            components = java.lang.runtime.Carrier.CarrierArrayFactory.components(ptypes);
+            components = Carrier.CarrierArrayFactory.components(ptypes);
         }
 
         return components;
