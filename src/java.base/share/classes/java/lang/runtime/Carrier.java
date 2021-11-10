@@ -34,7 +34,10 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+
+import jdk.internal.misc.VM;
 import jdk.internal.org.objectweb.asm.ClassWriter;
+import jdk.internal.org.objectweb.asm.FieldVisitor;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
 import jdk.internal.org.objectweb.asm.Type;
 
@@ -46,6 +49,11 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  */
 public final class Carrier {
     /**
+     * Class file version.
+     */
+    static final int CLASSFILE_VERSION = VM.classFileVersion();
+
+    /**
      * Lookup used to define and reference the carrier object classes.
      */
     private static final Lookup LOOKUP;
@@ -54,12 +62,18 @@ public final class Carrier {
      * Maximum number of components in a carrier (based on the maximum
      * number of args to a constructor.)
      */
-    private static final int MAX_COMPONENTS = 254;
+    private static final int MAX_COMPONENTS = 255 - /* this */ 1;
 
     /**
      * Maximum number of components in a CarrierClass.
      */
     private static final int MAX_OBJECT_COMPONENTS = 32;
+
+    /**
+     * Stable annotation.
+     */
+    private static final String STABLE = "jdk/internal/vm/annotation/Stable";
+    private static final String STABLE_SIG = "L" + STABLE + ";";
 
     /*
      * Initialize {@link MethodHandle} constants.
@@ -167,61 +181,19 @@ public final class Carrier {
             Type.getDescriptor(long.class);
 
     /**
-     * Shape of carrier based on counts of each of the three fundamental data
-     * types.
-     */
-    private record CarrierShape(int objectCount, int intCount, int longCount) {
-        /**
-         * Total number of slots used in a {@link CarrierClass} instance.
-         *
-         * @return number of slots used
-         */
-        int slotCount() {
-            return objectCount + intCount + longCount * 2;
-        }
-
-        /**
-         * Returns index of first object component.
-         *
-         * @return index of first object component
-         */
-        int objectOffset() {
-            return 0;
-        }
-
-        /**
-         * Returns index of first int component.
-         *
-         * @return index of first int component
-         */
-        int intOffset() {
-            return objectCount;
-        }
-
-
-        /**
-         * Returns index of first long component.
-         *
-         * @return index of first long component
-         */
-        int longOffset() {
-            return objectCount + intCount;
-        }
-    }
-
-    /**
      * Factory for array based carrier. Array wrapped in object to provide
      * immutability.
      */
-    static class CarrierArrayFactory {
+    private static class CarrierArrayFactory {
         /**
          * Constructor
          *
-         * @param ptypes types of carrier constructor arguments
+         * @param carrierShape  carrier object shape
          *
          * @return {@link MethodHandle} to generic carrier constructor.
          */
-        static MethodHandle constructor(Class<?>[] ptypes) {
+        private static MethodHandle constructor(CarrierShape carrierShape) {
+            Class<?>[] ptypes = carrierShape.ptypes();
             MethodType methodType = MethodType.methodType(Object.class, ptypes);
             MethodHandle collector = MethodHandles.identity(Object[].class)
                     .withVarargs(true);
@@ -233,16 +205,17 @@ public final class Carrier {
          * Return an array of carrier component getters, aligning with types in
          * {@code ptypes}.
          *
-         * @param ptypes  types of carrier constructor arguments
+         * @param carrierShape  carrier object shape
          *
          * @return array of carrier getters
          */
-        static MethodHandle[] components(Class<?>[] ptypes) {
+        private static MethodHandle[] components(CarrierShape carrierShape) {
+            Class<?>[] ptypes = carrierShape.ptypes();
             int length = ptypes.length;
             MethodHandle[] getters = new MethodHandle[length];
 
             for (int i = 0; i < length; i++) {
-                getters[i] = component(ptypes, i);
+                getters[i] = component(carrierShape, i);
             }
 
             return getters;
@@ -251,12 +224,13 @@ public final class Carrier {
         /**
          * Return a carrier getter for component {@code i}.
          *
-         * @param ptypes  types of carrier constructor arguments
-         * @param i       index of parameter to get
+         * @param carrierShape  carrier object shape
+         * @param i             index of parameter to get
          *
          * @return carrier component {@code i} getter {@link MethodHandle}
          */
-        static MethodHandle component(Class<?>[] ptypes, int i) {
+        private static MethodHandle component(CarrierShape carrierShape, int i) {
+            Class<?>[] ptypes = carrierShape.ptypes();
             MethodType methodType =
                     MethodType.methodType(ptypes[i], Object.class);
             MethodHandle getter =
@@ -270,7 +244,7 @@ public final class Carrier {
     /**
      * Factory for object based carrier.
      */
-    static class CarrierObjectFactory {
+    private static class CarrierObjectFactory {
         /**
          * Define the hidden class Lookup object
          *
@@ -278,7 +252,7 @@ public final class Carrier {
          *
          * @return the Lookup object of the hidden class
          */
-        static Lookup defineHiddenClass(byte[] bytes) {
+        private static Lookup defineHiddenClass(byte[] bytes) {
             try {
                 return LOOKUP.defineHiddenClass(bytes, false, ClassOption.STRONG);
             } catch (IllegalAccessException e) {
@@ -326,12 +300,12 @@ public final class Carrier {
          *
          * @return name of a carrier class
          */
-        static String carrierClassName(CarrierShape carrierShape) {
+        private static String carrierClassName(CarrierShape carrierShape) {
             String packageName = Carrier.class.getPackageName().replace('.', '/');
-            String className = "Carrier$" +
-                    objectFieldName(carrierShape.objectCount) +
-                    intFieldName(carrierShape.intCount) +
-                    longFieldName(carrierShape.longCount);
+            String className = "Carrier" +
+                    objectFieldName(carrierShape.objectCount()) +
+                    intFieldName(carrierShape.intCount()) +
+                    longFieldName(carrierShape.longCount());
 
             return packageName.isEmpty() ? className :
                     packageName + "/" + className;
@@ -345,33 +319,44 @@ public final class Carrier {
          * @return byte array of byte code for the carrier class
          */
         private static byte[] buildCarrierClass(CarrierShape carrierShape) {
+            int maxStack = 3;
+            int maxLocals = 1 /* this */ + carrierShape.slotCount();
             String carrierClassName = carrierClassName(carrierShape);
             StringBuilder initDescriptor = new StringBuilder("(");
 
             ClassWriter cw = new ClassWriter(0);
-            cw.visit(V17, ACC_PRIVATE | ACC_FINAL, carrierClassName,
+            cw.visit(CLASSFILE_VERSION, ACC_PRIVATE | ACC_FINAL, carrierClassName,
                     null, "java/lang/Object", null);
+
             int fieldFlags = ACC_PRIVATE | ACC_FINAL;
 
-            for (int i = 0; i < carrierShape.objectCount; i++) {
-                cw.visitField(fieldFlags, objectFieldName(i), OBJECT_DESCRIPTOR,
-                        null, null);
+            for (int i = 0; i < carrierShape.objectCount(); i++) {
+                FieldVisitor fw = cw.visitField(fieldFlags, objectFieldName(i),
+                        OBJECT_DESCRIPTOR, null, null);
+                fw.visitAnnotation(STABLE_SIG, true);
+                fw.visitEnd();
                 initDescriptor.append(OBJECT_DESCRIPTOR);
             }
 
-            for (int i = 0; i < carrierShape.intCount; i++) {
-                cw.visitField(fieldFlags, intFieldName(i), INT_DESCRIPTOR,
-                        null, null);
+            for (int i = 0; i < carrierShape.intCount(); i++) {
+                FieldVisitor fw = cw.visitField(fieldFlags, intFieldName(i),
+                        INT_DESCRIPTOR, null, null);
+                fw.visitAnnotation(STABLE_SIG, true);
+                fw.visitEnd();
                 initDescriptor.append(INT_DESCRIPTOR);
             }
 
-            for (int i = 0; i < carrierShape.longCount; i++) {
-                cw.visitField(fieldFlags, longFieldName(i), LONG_DESCRIPTOR,
-                        null, null);
+            for (int i = 0; i < carrierShape.longCount(); i++) {
+                FieldVisitor fw = cw.visitField(fieldFlags, longFieldName(i),
+                        LONG_DESCRIPTOR, null, null);
+                fw.visitAnnotation(STABLE_SIG, true);
+                fw.visitEnd();
                 initDescriptor.append(LONG_DESCRIPTOR);
             }
 
             initDescriptor.append(")V");
+
+            int arg = 1;
 
             MethodVisitor init = cw.visitMethod(ACC_PUBLIC,
                     "<init>", initDescriptor.toString(), null, null);
@@ -379,22 +364,21 @@ public final class Carrier {
             init.visitMethodInsn(INVOKESPECIAL,
                     "java/lang/Object", "<init>", "()V", false);
 
-            int arg = 1;
-            for (int i = 0; i < carrierShape.objectCount; i++) {
+            for (int i = 0; i < carrierShape.objectCount(); i++) {
                 init.visitVarInsn(ALOAD, 0);
                 init.visitVarInsn(ALOAD, arg++);
                 init.visitFieldInsn(PUTFIELD, carrierClassName,
                         objectFieldName(i), OBJECT_DESCRIPTOR);
             }
 
-            for (int i = 0; i < carrierShape.intCount; i++) {
+            for (int i = 0; i < carrierShape.intCount(); i++) {
                 init.visitVarInsn(ALOAD, 0);
                 init.visitVarInsn(ILOAD, arg++);
                 init.visitFieldInsn(PUTFIELD, carrierClassName,
                         intFieldName(i), INT_DESCRIPTOR);
             }
 
-            for (int i = 0; i < carrierShape.longCount; i++) {
+            for (int i = 0; i < carrierShape.longCount(); i++) {
                 init.visitVarInsn(ALOAD, 0);
                 init.visitVarInsn(LLOAD, arg);
                 arg += 2;
@@ -403,7 +387,7 @@ public final class Carrier {
             }
 
             init.visitInsn(RETURN);
-            init.visitMaxs(3, 1 /* this */ + carrierShape.slotCount());
+            init.visitMaxs(maxStack, maxLocals);
             init.visitEnd();
 
             cw.visitEnd();
@@ -417,26 +401,26 @@ public final class Carrier {
          * @return the constructor method type.
          */
         private static MethodType constructorMethodType(CarrierShape carrierShape) {
-            int argCount =
-                    carrierShape.objectCount +
-                            carrierShape.intCount +
-                            carrierShape.longCount;
-            Class<?>[] array = new Class<?>[ argCount ];
-
+            int objectCount = carrierShape.objectCount();
+            int intCount = carrierShape.intCount();
+            int longCount = carrierShape.longCount();
+            int argCount = objectCount + intCount + longCount;
+            Class<?>[] ptypes = new Class<?>[argCount];
             int arg = 0;
-            for(int i = 0; i < carrierShape.objectCount; i++) {
-                array[arg++] = Object.class;
+
+            for(int i = 0; i < carrierShape.objectCount(); i++) {
+                ptypes[arg++] = Object.class;
             }
 
-            for(int i = 0; i < carrierShape.intCount; i++) {
-                array[arg++] = int.class;
+            for(int i = 0; i < carrierShape.intCount(); i++) {
+                ptypes[arg++] = int.class;
             }
 
-            for(int i = 0; i < carrierShape.longCount; i++) {
-                array[arg++] = long.class;
+            for(int i = 0; i < carrierShape.longCount(); i++) {
+                ptypes[arg++] = long.class;
             }
 
-            return MethodType.methodType(void.class, array);
+            return MethodType.methodType(void.class, ptypes);
         }
 
         /**
@@ -480,17 +464,17 @@ public final class Carrier {
             components = new MethodHandle[constructorMethodType.parameterCount()];
             int arg = 0;
 
-            for(int i = 0; i < carrierShape.objectCount; i++) {
+            for(int i = 0; i < carrierShape.objectCount(); i++) {
                 components[arg++] = carrierClassLookup.findGetter(carrierClass,
                         CarrierObjectFactory.objectFieldName(i), Object.class);
             }
 
-            for(int i = 0; i < carrierShape.intCount; i++) {
+            for(int i = 0; i < carrierShape.intCount(); i++) {
                 components[arg++] = carrierClassLookup.findGetter(carrierClass,
                         CarrierObjectFactory.intFieldName(i), int.class);
             }
 
-            for(int i = 0; i < carrierShape.longCount; i++) {
+            for(int i = 0; i < carrierShape.longCount(); i++) {
                 components[arg++] = carrierClassLookup.findGetter(carrierClass,
                         CarrierObjectFactory.longFieldName(i), long.class);
             }
@@ -506,7 +490,7 @@ public final class Carrier {
          * @return a {@link CarrierClass} object containing constructor and
          *         component getters.
          */
-        static CarrierClass newCarrierClass(CarrierShape carrierShape) {
+        private static CarrierClass newCarrierClass(CarrierShape carrierShape) {
             byte[] bytes = buildCarrierClass(carrierShape);
 
             try {
@@ -524,13 +508,174 @@ public final class Carrier {
             }
         }
 
+        /**
+         * Permute a raw constructor {@link MethodHandle} to match the order and
+         * types of the parameter types.
+         *
+         * @param carrierShape  carrier object shape
+         *
+         * @return {@link MethodHandle} constructor matching parameter types
+         */
+        private static MethodHandle constructor(CarrierShape carrierShape) {
+            Class<?>[] ptypes = carrierShape.ptypes();
+            int length = ptypes.length;
+            int objectIndex = carrierShape.objectOffset();
+            int intIndex = carrierShape.intOffset();
+            int longIndex = carrierShape.longOffset();
+            int[] reorder = new int[length];
+            Class<?>[] permutePTypes = new Class<?>[length];
+            int index = 0;
+            CarrierClass carrierClass = findCarrierClass(carrierShape);
+            MethodHandle constructor = carrierClass.constructor();
+
+            for (Class<?> ptype : ptypes) {
+                MethodHandle filter = null;
+                int from;
+
+                if (!ptype.isPrimitive()) {
+                    from = objectIndex++;
+                    ptype = Object.class;
+                } else if (ptype == long.class || ptype == double.class) {
+                    from = longIndex++;
+                    filter = ptype == double.class ? DOUBLE_TO_LONG : null;
+                } else {
+                    from = intIndex++;
+
+                    if (ptype == float.class) {
+                        filter = FLOAT_TO_INT;
+                    } else if (ptype == boolean.class) {
+                        filter = BOOLEAN_TO_INT;
+                    } else if (ptype == byte.class) {
+                        filter = BYTE_TO_INT;
+                    } else if (ptype == short.class) {
+                        filter = SHORT_TO_INT;
+                    } else if (ptype == char.class) {
+                        filter = CHAR_TO_INT;
+                    }
+                }
+
+                permutePTypes[index] = ptype;
+                reorder[from] = index++;
+                constructor = filter == null ? constructor :
+                        MethodHandles.filterArguments(constructor, from, filter);
+            }
+
+            MethodType permutedMethodType =
+                    MethodType.methodType(constructor.type().returnType(),
+                            permutePTypes);
+            constructor = MethodHandles.permuteArguments(constructor,
+                    permutedMethodType, reorder);
+            MethodType castMethodType = MethodType.methodType(Object.class, ptypes);
+            constructor = constructor.asType(castMethodType);
+
+            return constructor;
+        }
+
+        /**
+         * Permute raw component getters to match order and types of the parameter
+         * types.
+         *
+         * @param carrierShape  carrier object shape
+         *
+         * @return array of components matching parameter types
+         */
+        private static MethodHandle[] components(CarrierShape carrierShape) {
+            Class<?>[] ptypes = carrierShape.ptypes();
+            MethodHandle[] reorder = new MethodHandle[ptypes.length];
+            int objectIndex = 0;
+            int intIndex = carrierShape.objectCount();
+            int longIndex = carrierShape.objectCount() + carrierShape.intCount();
+            int index = 0;
+            CarrierClass carrierClass = findCarrierClass(carrierShape);
+            MethodHandle[] components = carrierClass.components();
+
+            for (Class<?> ptype : ptypes) {
+                MethodHandle component;
+                MethodHandle filter = null;
+
+                if (!ptype.isPrimitive()) {
+                    component = components[objectIndex++];
+                } else if (ptype == long.class || ptype == double.class) {
+                    component = components[longIndex++];
+                    filter = ptype == double.class ? LONG_TO_DOUBLE : null;
+                } else {
+                    component = components[intIndex++];
+
+                    if (ptype == float.class) {
+                        filter = INT_TO_FLOAT;
+                    } else if (ptype == boolean.class) {
+                        filter = INT_TO_BOOLEAN;
+                    } else if (ptype == byte.class) {
+                        filter = INT_TO_BYTE;
+                    } else if (ptype == short.class) {
+                        filter = INT_TO_SHORT;
+                    } else if (ptype == char.class) {
+                        filter = INT_TO_CHAR;
+                    }
+                }
+
+                component = filter == null ? component :
+                        MethodHandles.filterReturnValue(component, filter);
+                MethodType methodType = MethodType.methodType(ptype, Object.class);
+                reorder[index++] = component.asType(methodType);
+            }
+
+            return reorder;
+        }
+
+        /**
+         * Returns a carrier component getter {@link MethodHandle} for the
+         * component {@code i}.
+         *
+         * @param carrierShape  shape of the carrier object
+         * @param i             index to the component
+         *
+         * @return carrier component getter {@link MethodHandle}
+         *
+         * @throws IllegalArgumentException if number of component slots exceeds maximum
+         */
+        private static MethodHandle component(CarrierShape carrierShape, int i) {
+            Class<?>[] ptypes = carrierShape.ptypes();
+            CarrierCounts componentCounts = CarrierCounts.count(ptypes, i);
+            Class<?> ptype = ptypes[i];
+            int index;
+            MethodHandle filter = null;
+
+            if (!ptype.isPrimitive()) {
+                index = carrierShape.objectOffset() + componentCounts.objectCount();
+            } else if (ptype == long.class || ptype == double.class) {
+                index = carrierShape.longOffset() + componentCounts.longCount();
+                filter = ptype == double.class ? LONG_TO_DOUBLE : null;
+            } else {
+                index = carrierShape.intOffset() + componentCounts.intCount();
+
+                if (ptype == float.class) {
+                    filter = INT_TO_FLOAT;
+                } else if (ptype == boolean.class) {
+                    filter = INT_TO_BOOLEAN;
+                } else if (ptype == byte.class) {
+                    filter = INT_TO_BYTE;
+                } else if (ptype == short.class) {
+                    filter = INT_TO_SHORT;
+                } else if (ptype == char.class) {
+                    filter = INT_TO_CHAR;
+                }
+            }
+
+            CarrierClass carrierClass = findCarrierClass(carrierShape);
+            MethodHandle component = carrierClass.component(index);
+            component = filter == null ? component :
+                    MethodHandles.filterReturnValue(component, filter);
+
+            return component.asType(MethodType.methodType(ptype, Object.class));
+        }
     }
 
     /**
      * Provides raw constructor and component MethodHandles for a constructed
      * carrier class.
      */
-    record CarrierClass(
+    private record CarrierClass(
             /**
              * A raw {@link MethodHandle} for a carrier object constructor.
              * This constructor will only have Object, int and long type arguments.
@@ -585,205 +730,173 @@ public final class Carrier {
                 cn -> CarrierObjectFactory.newCarrierClass(carrierShape));
     }
 
-    /**
-     * Get the carrier shape based on parameter types.
-     *
-     * @param ptypes  parameter types
-     *
-     * @return carrier object shape
-     *
-     * @throws IllegalArgumentException if number of component slots exceeds maximum
-     */
-    private static CarrierShape getCarrierShape(Class<?>[] ptypes) {
-        int objectCount = 0;
-        int intCount = 0;
-        int longCount = 0;
-
-        for (Class<?> ptype : ptypes) {
-            if (!ptype.isPrimitive()) {
-                objectCount++;
-            } else if (ptype == long.class || ptype == double.class) {
-                longCount++;
-            } else {
-                intCount++;
-            }
+    private record CarrierCounts(int objectCount, int intCount, int longCount) {
+        /**
+         * Count the number of fields required in each of Object, int and long.
+         *
+         * @param ptypes  parameter types
+         *
+         * @return a {@link CarrierCounts} instance containing counts
+         */
+        static CarrierCounts count(Class<?>[] ptypes) {
+             return count(ptypes, ptypes.length);
         }
 
-        CarrierShape carrierShape = new CarrierShape(objectCount, intCount, longCount);
+        /**
+         * Count the number of fields required in each of Object, int and long
+         * limited to the first {@code n} parameters.
+         *
+         * @param ptypes  parameter types
+         * @param n       number of parameters to check
+         *
+         * @return a {@link CarrierCounts} instance containing counts
+         */
+        private static CarrierCounts count(Class<?>[] ptypes, int n) {
+            int objectCount = 0;
+            int intCount = 0;
+            int longCount = 0;
 
-        if (MAX_COMPONENTS < carrierShape.slotCount()) {
-            throw new IllegalArgumentException("Exceeds maximum number of component slots");
-        }
+            for (int i = 0; i < n; i++) {
+                Class<?> ptype = ptypes[i];
 
-        return carrierShape;
-    }
-
-    /**
-     * Permute a raw constructor {@link MethodHandle} to match the order and
-     * types of the parameter types.
-     *
-     * @param newPTypes     given parameter types
-     * @param carrierShape  carrier object shape
-     * @param constructor   {@link MethodHandle} to raw carrier object constructor
-     *
-     * @return {@link MethodHandle} constructor matching parameter types
-     */
-    private static MethodHandle constructor(Class<?>[] newPTypes,
-                                            CarrierShape carrierShape,
-                                            MethodHandle constructor) {
-        int objectIndex = carrierShape.objectOffset();
-        int intIndex = carrierShape.intOffset();
-        int longIndex = carrierShape.longOffset();
-        int[] reorder = new int[newPTypes.length];
-        int index = 0;
-        Class<?>[] permutePTypes = new Class<?>[newPTypes.length];
-
-        for (Class<?> ptype : newPTypes) {
-            MethodHandle filter = null;
-            int from;
-
-            if (!ptype.isPrimitive()) {
-                from = objectIndex++;
-                ptype = Object.class;
-            } else if (ptype == long.class || ptype == double.class) {
-                from = longIndex++;
-                filter = ptype == double.class ? DOUBLE_TO_LONG : null;
-            } else {
-                from = intIndex++;
-
-                if (ptype == float.class) {
-                    filter = FLOAT_TO_INT;
-                } else if (ptype == boolean.class) {
-                    filter = BOOLEAN_TO_INT;
-                } else if (ptype == byte.class) {
-                    filter = BYTE_TO_INT;
-                } else if (ptype == short.class) {
-                    filter = SHORT_TO_INT;
-                } else if (ptype == char.class) {
-                    filter = CHAR_TO_INT;
+                if (!ptype.isPrimitive()) {
+                    objectCount++;
+                } else if (ptype == long.class || ptype == double.class) {
+                    longCount++;
+                } else {
+                    intCount++;
                 }
             }
 
-            permutePTypes[index] = ptype;
-            reorder[from] = index++;
-            constructor = filter == null ? constructor :
-                    MethodHandles.filterArguments(constructor, from, filter);
+            return new CarrierCounts(objectCount, intCount, longCount);
         }
 
-        MethodType permutedMethodType =
-                MethodType.methodType(constructor.type().returnType(),
-                        permutePTypes);
-        MethodType castMethodType =
-                MethodType.methodType(Object.class, newPTypes);
-        constructor = MethodHandles.permuteArguments(constructor,
-                permutedMethodType, reorder);
-        constructor = constructor.asType(castMethodType);
+        /**
+         * Returns total number of slots.
+         *
+         * @return total number of slots
+         */
+        private int slotCount() {
+            return objectCount + intCount + longCount * 2;
+        }
 
-        return constructor;
     }
 
     /**
-     * Permute raw component getters to match order and types of the parameter
+     * Shape of carrier based on counts of each of the three fundamental data
      * types.
-     *
-     * @param ptypes        given parameter types
-     * @param carrierShape  carrier object shape
-     * @param components    raw {@link MethodHandle MethodHandles} to raw
-     *                      carrier component getters
-     *
-     * @return array of components matching parameter types
      */
-    private static MethodHandle[] components(Class<?>[] ptypes,
-                                             CarrierShape carrierShape,
-                                             MethodHandle[] components) {
-        MethodHandle[] reorder = new MethodHandle[ptypes.length];
-        int objectIndex = 0;
-        int intIndex = carrierShape.objectCount;
-        int longIndex = carrierShape.objectCount + carrierShape.intCount;
-        int index = 0;
+    private static class CarrierShape {
+        /**
+         * {@link MethodType} providing types for the carrier's components.
+         */
+        private final MethodType methodType;
 
-        for (Class<?> ptype : ptypes) {
-            MethodHandle component;
-            MethodHandle filter = null;
+        /**
+         * Counts of different parameter types.
+         */
+        private final CarrierCounts counts;
 
-            if (!ptype.isPrimitive()) {
-                component = components[objectIndex++];
-            } else if (ptype == long.class || ptype == double.class) {
-                component = components[longIndex++];
-                filter = ptype == double.class ? LONG_TO_DOUBLE : null;
-            } else {
-                component = components[intIndex++];
-
-                if (ptype == float.class) {
-                    filter = INT_TO_FLOAT;
-                } else if (ptype == boolean.class) {
-                    filter = INT_TO_BOOLEAN;
-                } else if (ptype == byte.class) {
-                    filter = INT_TO_BYTE;
-                } else if (ptype == short.class) {
-                    filter = INT_TO_SHORT;
-                } else if (ptype == char.class) {
-                    filter = INT_TO_CHAR;
-                }
-            }
-
-            component = filter == null ? component :
-                    MethodHandles.filterReturnValue(component, filter);
-            MethodType methodType = MethodType.methodType(ptype, Object.class);
-            reorder[index++] = component.asType(methodType);
+        /**
+         * Constructor.
+         *
+         * @param methodType  {@link MethodType} providing types for the
+         *                    carrier's components
+         */
+        public CarrierShape(MethodType methodType) {
+            this.methodType = methodType;
+            this.counts = CarrierCounts.count(methodType.parameterArray());
         }
 
-        return reorder;
-    }
-
-    /**
-     * Returns a carrier component getter {@link MethodHandle} for the
-     * component {@code i}.
-     *
-     * @param ptypes        given parameter types
-     * @param carrierShape  shape of the carrier object
-     * @param carrierClass  carrier object class
-     * @param i             index to the component
-     *
-     * @return carrier component getter {@link MethodHandle}
-     *
-     * @throws IllegalArgumentException if number of component slots exceeds maximum
-     */
-    private static MethodHandle component(Class<?>[] ptypes,
-                                          CarrierShape carrierShape,
-                                          CarrierClass carrierClass,
-                                          int i) {
-        CarrierShape componentShape = getCarrierShape(Arrays.copyOf(ptypes, i));
-        Class<?> ptype = ptypes[i];
-        int index;
-        MethodHandle filter = null;
-
-        if (!ptype.isPrimitive()) {
-            index = carrierShape.objectOffset() + componentShape.objectCount();
-        } else if (ptype == long.class || ptype == double.class) {
-            index = carrierShape.longOffset() + componentShape.longCount();
-            filter = ptype == double.class ? LONG_TO_DOUBLE : null;
-        } else {
-            index = carrierShape.intOffset() + componentShape.intCount();
-
-            if (ptype == float.class) {
-                filter = INT_TO_FLOAT;
-            } else if (ptype == boolean.class) {
-                filter = INT_TO_BOOLEAN;
-            } else if (ptype == byte.class) {
-                filter = INT_TO_BYTE;
-            } else if (ptype == short.class) {
-                filter = INT_TO_SHORT;
-            } else if (ptype == char.class) {
-                filter = INT_TO_CHAR;
-            }
+        /**
+         * Return supplied methodType.
+         *
+         * @return supplied methodType
+         */
+        private MethodType methodType() {
+            return methodType;
         }
 
-        MethodHandle component = carrierClass.component(index);
-        component = filter == null ? component :
-                MethodHandles.filterReturnValue(component, filter);
+        /**
+         * Return the number of object fields needed.
+         *
+         * @return number of object fields needed
+         */
+        private int objectCount() {
+            return counts.objectCount();
+        }
 
-        return component.asType(MethodType.methodType(ptype, Object.class));
+        /**
+         * Return the number of int fields needed.
+         *
+         * @return number of int fields needed
+         */
+        private int intCount() {
+            return counts.intCount();
+        }
+
+        /**
+         * Return the number of long fields needed.
+         *
+         * @return number of long fields needed
+         */
+        private int longCount() {
+            return counts.longCount();
+        }
+
+        /**
+         * Return parameter types.
+         *
+         * @return array of parameter types
+         */
+        private Class<?>[] ptypes() {
+            return methodType.parameterArray();
+        }
+
+        /**
+         * Return number of constructor parameters.
+         *
+         * @return number of constructor parameters
+         */
+        private int parameterCount() {
+            return methodType.parameterCount();
+        }
+
+        /**
+         * Total number of slots used in a {@link CarrierClass} instance.
+         *
+         * @return number of slots used
+         */
+        private int slotCount() {
+            return counts.slotCount();
+        }
+
+        /**
+         * Returns index of first object component.
+         *
+         * @return index of first object component
+         */
+        private int objectOffset() {
+            return 0;
+        }
+
+        /**
+         * Returns index of first int component.
+         *
+         * @return index of first int component
+         */
+        private int intOffset() {
+            return objectCount();
+        }
+
+        /**
+         * Returns index of first long component.
+         *
+         * @return index of first long component
+         */
+        private int longOffset() {
+            return objectCount() + intCount();
+        }
     }
 
     /**
@@ -791,26 +904,25 @@ public final class Carrier {
      * aligning with the parameter types of the supplied
      * {@link MethodType methodType}.
      *
-     * @param methodType {@link MethodType} providing types for the carrier's
-     *                   components.
+     * @param methodType  {@link MethodType} providing types for the carrier's
+     *                    components
      *
      * @return carrier constructor {@link MethodHandle}
      *
-     * @throws NullPointerException is methodType is null
+     * @throws NullPointerException is any argument is null
      * @throws IllegalArgumentException if number of component slots exceeds maximum
      */
     public static MethodHandle constructor(MethodType methodType) {
         Objects.requireNonNull(methodType);
+        CarrierShape carrierShape = new CarrierShape(methodType);
+        int slotCount = carrierShape.slotCount();
 
-        Class<?>[] ptypes = methodType.parameterArray();
-        CarrierShape carrierShape = getCarrierShape(ptypes);
-
-        if (carrierShape.slotCount() <= MAX_OBJECT_COMPONENTS) {
-            CarrierClass carrierClass = findCarrierClass(carrierShape);
-
-            return constructor(ptypes, carrierShape, carrierClass.constructor());
+        if (MAX_COMPONENTS < slotCount) {
+            throw new IllegalArgumentException("Exceeds maximum number of component slots");
+        } else  if (slotCount <= MAX_OBJECT_COMPONENTS) {
+            return CarrierObjectFactory.constructor(carrierShape);
         } else {
-            return CarrierArrayFactory.constructor(ptypes);
+            return CarrierArrayFactory.constructor(carrierShape);
         }
     }
 
@@ -818,61 +930,55 @@ public final class Carrier {
      * Return component getter {@link MethodHandle MethodHandles} for all the
      * carrier's components.
      *
-     * @param methodType {@link MethodType} providing types for the carrier's
-     *                   components.
+     * @param methodType  {@link MethodType} providing types for the carrier's
+     *                    components
      *
-     * @return  array of get component {@link MethodHandle MethodHandles}
+     * @return  array of get component {@link MethodHandle MethodHandles,}
      *
-     * @throws NullPointerException is methodType is null
+     * @throws NullPointerException is any argument is null
      * @throws IllegalArgumentException if number of component slots exceeds maximum
      *
      */
     public static MethodHandle[] components(MethodType methodType) {
         Objects.requireNonNull(methodType);
-        Class<?>[] ptypes = methodType.parameterArray();
-        CarrierShape carrierShape = getCarrierShape(ptypes);
+        CarrierShape carrierShape =  new CarrierShape(methodType);
         int slotCount = carrierShape.slotCount();
-        MethodHandle[] components;
 
-        if (slotCount <= MAX_OBJECT_COMPONENTS) {
-            Carrier.CarrierClass carrierClass = findCarrierClass(carrierShape);
-            components = components(ptypes, carrierShape, carrierClass.components());
+        if (MAX_COMPONENTS < slotCount) {
+            throw new IllegalArgumentException("Exceeds maximum number of component slots");
+        } else  if (slotCount <= MAX_OBJECT_COMPONENTS) {
+            return CarrierObjectFactory.components(carrierShape);
         } else {
-            components = Carrier.CarrierArrayFactory.components(ptypes);
+            return Carrier.CarrierArrayFactory.components(carrierShape);
         }
-
-        return components;
     }
 
     /**
      * Return a component getter {@link MethodHandle} for component {@code i}.
      *
-     * @param methodType {@link MethodType} providing types for the carrier's
-     *                   components.
-     * @param i          component index
+     * @param methodType  {@link MethodType} providing types for the carrier's
+     *                    components
+     * @param i           component index
      *
      * @return a component getter {@link MethodHandle} for component {@code i}
      *
-     * @throws NullPointerException is methodType is null
+     * @throws NullPointerException is any argument is null
      * @throws IllegalArgumentException if number of component slots exceeds maximum
      *                                  or if {@code i} is out of bounds
      */
     public static MethodHandle component(MethodType methodType, int i) {
         Objects.requireNonNull(methodType);
-        Class<?>[] ptypes = methodType.parameterArray();
+        CarrierShape carrierShape = new CarrierShape(methodType);
+        int slotCount = carrierShape.slotCount();
 
-        if (i < 0 || i >= ptypes.length) {
-            throw new IllegalArgumentException("i is out of bounds for ptypes");
-        }
-
-        CarrierShape carrierShape = getCarrierShape(ptypes);
-
-        if (carrierShape.slotCount() <= MAX_OBJECT_COMPONENTS) {
-            CarrierClass carrierClass = findCarrierClass(carrierShape);
-
-            return component(ptypes, carrierShape, carrierClass, i);
+        if (i < 0 || i >= carrierShape.parameterCount()) {
+            throw new IllegalArgumentException("i is out of bounds for parameter types");
+        } else if (MAX_COMPONENTS < slotCount) {
+            throw new IllegalArgumentException("Exceeds maximum number of component slots");
+        } else  if (slotCount <= MAX_OBJECT_COMPONENTS) {
+            return CarrierObjectFactory.component(carrierShape, i);
         } else {
-            return CarrierArrayFactory.component(ptypes, i);
+            return CarrierArrayFactory.component(carrierShape, i);
         }
     }
 }
