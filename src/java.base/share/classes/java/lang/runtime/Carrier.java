@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.lang.invoke.MethodType.methodType;
 
 import jdk.internal.misc.VM;
 import jdk.internal.org.objectweb.asm.ClassWriter;
@@ -84,30 +85,30 @@ public final class Carrier {
 
         try {
             FLOAT_TO_INT = lookup.findStatic(Float.class, "floatToRawIntBits",
-                    MethodType.methodType(int.class, float.class));
+                    methodType(int.class, float.class));
             INT_TO_FLOAT = lookup.findStatic(Float.class, "intBitsToFloat",
-                    MethodType.methodType(float.class, int.class));
+                    methodType(float.class, int.class));
             DOUBLE_TO_LONG = lookup.findStatic(Double.class, "doubleToRawLongBits",
-                    MethodType.methodType(long.class, double.class));
+                    methodType(long.class, double.class));
             LONG_TO_DOUBLE = lookup.findStatic(Double.class, "longBitsToDouble",
-                    MethodType.methodType(double.class, long.class));
+                    methodType(double.class, long.class));
 
             BOOLEAN_TO_INT = lookup.findStatic(Carrier.class, "booleanToInt",
-                    MethodType.methodType(int.class, boolean.class));
+                    methodType(int.class, boolean.class));
             INT_TO_BOOLEAN = lookup.findStatic(Carrier.class, "intToBoolean",
-                    MethodType.methodType(boolean.class, int.class));
+                    methodType(boolean.class, int.class));
             BYTE_TO_INT = lookup.findStatic(Carrier.class, "byteToInt",
-                    MethodType.methodType(int.class, byte.class));
+                    methodType(int.class, byte.class));
             INT_TO_BYTE = lookup.findStatic(Carrier.class, "intToByte",
-                    MethodType.methodType(byte.class, int.class));
+                    methodType(byte.class, int.class));
             SHORT_TO_INT = lookup.findStatic(Carrier.class, "shortToInt",
-                    MethodType.methodType(int.class, short.class));
+                    methodType(int.class, short.class));
             INT_TO_SHORT = lookup.findStatic(Carrier.class, "intToShort",
-                    MethodType.methodType(short.class, int.class));
+                    methodType(short.class, int.class));
             CHAR_TO_INT = lookup.findStatic(Carrier.class, "charToInt",
-                    MethodType.methodType(int.class, char.class));
+                    methodType(int.class, char.class));
             INT_TO_CHAR = lookup.findStatic(Carrier.class, "intToChar",
-                    MethodType.methodType(char.class, int.class));
+                    methodType(char.class, int.class));
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         }
@@ -194,7 +195,7 @@ public final class Carrier {
          */
         private static MethodHandle constructor(CarrierShape carrierShape) {
             Class<?>[] ptypes = carrierShape.ptypes();
-            MethodType methodType = MethodType.methodType(Object.class, ptypes);
+            MethodType methodType = methodType(Object.class, ptypes);
             MethodHandle collector = MethodHandles.identity(Object[].class)
                     .withVarargs(true);
 
@@ -231,8 +232,7 @@ public final class Carrier {
          */
         private static MethodHandle component(CarrierShape carrierShape, int i) {
             Class<?>[] ptypes = carrierShape.ptypes();
-            MethodType methodType =
-                    MethodType.methodType(ptypes[i], Object.class);
+            MethodType methodType = methodType(ptypes[i], Object.class);
             MethodHandle getter =
                     MethodHandles.arrayElementGetter(Object[].class);
 
@@ -420,7 +420,7 @@ public final class Carrier {
                 ptypes[arg++] = long.class;
             }
 
-            return MethodType.methodType(void.class, ptypes);
+            return methodType(void.class, ptypes);
         }
 
         /**
@@ -524,9 +524,9 @@ public final class Carrier {
             int longIndex = carrierShape.longOffset();
             int[] reorder = new int[length];
             Class<?>[] permutePTypes = new Class<?>[length];
+            MethodHandle[] filters = new MethodHandle[length];
+            boolean hasFilters = false;
             int index = 0;
-            CarrierClass carrierClass = findCarrierClass(carrierShape);
-            MethodHandle constructor = carrierClass.constructor();
 
             for (Class<?> ptype : ptypes) {
                 MethodHandle filter = null;
@@ -556,16 +556,25 @@ public final class Carrier {
 
                 permutePTypes[index] = ptype;
                 reorder[from] = index++;
-                constructor = filter == null ? constructor :
-                        MethodHandles.filterArguments(constructor, from, filter);
+
+                if (filter != null) {
+                    filters[from] = filter;
+                    hasFilters = true;
+                }
+            }
+
+            CarrierClass carrierClass = findCarrierClass(carrierShape);
+            MethodHandle constructor = carrierClass.constructor();
+
+            if (hasFilters) {
+                constructor = MethodHandles.filterArguments(constructor, 0, filters);
             }
 
             MethodType permutedMethodType =
-                    MethodType.methodType(constructor.type().returnType(),
-                            permutePTypes);
+                    methodType(constructor.type().returnType(), permutePTypes);
             constructor = MethodHandles.permuteArguments(constructor,
                     permutedMethodType, reorder);
-            MethodType castMethodType = MethodType.methodType(Object.class, ptypes);
+            MethodType castMethodType = methodType(Object.class, ptypes);
             constructor = constructor.asType(castMethodType);
 
             return constructor;
@@ -616,7 +625,7 @@ public final class Carrier {
 
                 component = filter == null ? component :
                         MethodHandles.filterReturnValue(component, filter);
-                MethodType methodType = MethodType.methodType(ptype, Object.class);
+                MethodType methodType = methodType(ptype, Object.class);
                 reorder[index++] = component.asType(methodType);
             }
 
@@ -667,7 +676,7 @@ public final class Carrier {
             component = filter == null ? component :
                     MethodHandles.filterReturnValue(component, filter);
 
-            return component.asType(MethodType.methodType(ptype, Object.class));
+            return component.asType(methodType(ptype, Object.class));
         }
     }
 
