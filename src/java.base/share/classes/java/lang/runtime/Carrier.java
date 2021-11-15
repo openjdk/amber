@@ -92,76 +92,18 @@ public final class Carrier {
                     methodType(long.class, double.class));
             LONG_TO_DOUBLE = lookup.findStatic(Double.class, "longBitsToDouble",
                     methodType(double.class, long.class));
-
-            BOOLEAN_TO_INT = lookup.findStatic(Carrier.class, "booleanToInt",
-                    methodType(int.class, boolean.class));
-            INT_TO_BOOLEAN = lookup.findStatic(Carrier.class, "intToBoolean",
-                    methodType(boolean.class, int.class));
-            BYTE_TO_INT = lookup.findStatic(Carrier.class, "byteToInt",
-                    methodType(int.class, byte.class));
-            INT_TO_BYTE = lookup.findStatic(Carrier.class, "intToByte",
-                    methodType(byte.class, int.class));
-            SHORT_TO_INT = lookup.findStatic(Carrier.class, "shortToInt",
-                    methodType(int.class, short.class));
-            INT_TO_SHORT = lookup.findStatic(Carrier.class, "intToShort",
-                    methodType(short.class, int.class));
-            CHAR_TO_INT = lookup.findStatic(Carrier.class, "charToInt",
-                    methodType(int.class, char.class));
-            INT_TO_CHAR = lookup.findStatic(Carrier.class, "intToChar",
-                    methodType(char.class, int.class));
         } catch (ReflectiveOperationException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     /*
-     * Primitive conversions.
+     * float/double conversions.
      */
-
     private static final MethodHandle FLOAT_TO_INT;
     private static final MethodHandle INT_TO_FLOAT;
     private static final MethodHandle DOUBLE_TO_LONG;
     private static final MethodHandle LONG_TO_DOUBLE;
-    private static final MethodHandle BOOLEAN_TO_INT;
-    private static final MethodHandle INT_TO_BOOLEAN;
-    private static final MethodHandle BYTE_TO_INT;
-    private static final MethodHandle INT_TO_BYTE;
-    private static final MethodHandle SHORT_TO_INT;
-    private static final MethodHandle INT_TO_SHORT;
-    private static final MethodHandle CHAR_TO_INT;
-    private static final MethodHandle INT_TO_CHAR;
-
-    private static int booleanToInt(boolean b) {
-        return b ? 1 : 0;
-    }
-
-    private static boolean intToBoolean(int i) {
-        return i != 0;
-    }
-
-    private static int byteToInt(byte b) {
-        return b;
-    }
-
-    private static byte intToByte(int i) {
-        return (byte)i;
-    }
-
-    private static int shortToInt(short s) {
-        return s;
-    }
-
-    private static short intToShort(int i) {
-        return (short)i;
-    }
-
-    private static int charToInt(char c) {
-        return c;
-    }
-
-    private static char intToChar(int i) {
-        return (char)i;
-    }
 
     /**
      * Object signature descriptor.
@@ -535,23 +477,19 @@ public final class Carrier {
                 if (!ptype.isPrimitive()) {
                     from = objectIndex++;
                     ptype = Object.class;
-                } else if (ptype == long.class || ptype == double.class) {
+                } else if(ptype == double.class) {
                     from = longIndex++;
-                    filter = ptype == double.class ? DOUBLE_TO_LONG : null;
+                    filter = DOUBLE_TO_LONG;
+                    ptype = long.class;
+                } else if(ptype == float.class) {
+                    from = intIndex++;
+                    filter = FLOAT_TO_INT;
+                    ptype = int.class;
+                } else if (ptype == long.class) {
+                    from = longIndex++;
                 } else {
                     from = intIndex++;
-
-                    if (ptype == float.class) {
-                        filter = FLOAT_TO_INT;
-                    } else if (ptype == boolean.class) {
-                        filter = BOOLEAN_TO_INT;
-                    } else if (ptype == byte.class) {
-                        filter = BYTE_TO_INT;
-                    } else if (ptype == short.class) {
-                        filter = SHORT_TO_INT;
-                    } else if (ptype == char.class) {
-                        filter = CHAR_TO_INT;
-                    }
+                    ptype = int.class;
                 }
 
                 permutePTypes[index] = ptype;
@@ -574,8 +512,8 @@ public final class Carrier {
                     methodType(constructor.type().returnType(), permutePTypes);
             constructor = MethodHandles.permuteArguments(constructor,
                     permutedMethodType, reorder);
-            MethodType castMethodType = methodType(Object.class, ptypes);
-            constructor = constructor.asType(castMethodType);
+            constructor = MethodHandles.explicitCastArguments(constructor,
+                    methodType(Object.class, ptypes));
 
             return constructor;
         }
@@ -591,42 +529,33 @@ public final class Carrier {
         private static MethodHandle[] components(CarrierShape carrierShape) {
             Class<?>[] ptypes = carrierShape.ptypes();
             MethodHandle[] reorder = new MethodHandle[ptypes.length];
-            int objectIndex = 0;
-            int intIndex = carrierShape.objectCount();
-            int longIndex = carrierShape.objectCount() + carrierShape.intCount();
+            int objectIndex = carrierShape.objectOffset();
+            int intIndex = carrierShape.intOffset();
+            int longIndex = carrierShape.longOffset();
             int index = 0;
             CarrierClass carrierClass = findCarrierClass(carrierShape);
             MethodHandle[] components = carrierClass.components();
 
             for (Class<?> ptype : ptypes) {
                 MethodHandle component;
-                MethodHandle filter = null;
 
                 if (!ptype.isPrimitive()) {
                     component = components[objectIndex++];
-                } else if (ptype == long.class || ptype == double.class) {
+                } else if (ptype == double.class) {
+                    component = MethodHandles.filterReturnValue(
+                            components[longIndex++], LONG_TO_DOUBLE);
+                } else if (ptype == float.class) {
+                    component = MethodHandles.filterReturnValue(
+                            components[intIndex++], INT_TO_FLOAT);
+                } else if (ptype == long.class) {
                     component = components[longIndex++];
-                    filter = ptype == double.class ? LONG_TO_DOUBLE : null;
                 } else {
                     component = components[intIndex++];
-
-                    if (ptype == float.class) {
-                        filter = INT_TO_FLOAT;
-                    } else if (ptype == boolean.class) {
-                        filter = INT_TO_BOOLEAN;
-                    } else if (ptype == byte.class) {
-                        filter = INT_TO_BYTE;
-                    } else if (ptype == short.class) {
-                        filter = INT_TO_SHORT;
-                    } else if (ptype == char.class) {
-                        filter = INT_TO_CHAR;
-                    }
                 }
 
-                component = filter == null ? component :
-                        MethodHandles.filterReturnValue(component, filter);
                 MethodType methodType = methodType(ptype, Object.class);
-                reorder[index++] = component.asType(methodType);
+                reorder[index++] =
+                        MethodHandles.explicitCastArguments(component, methodType);
             }
 
             return reorder;
@@ -652,31 +581,29 @@ public final class Carrier {
 
             if (!ptype.isPrimitive()) {
                 index = carrierShape.objectOffset() + componentCounts.objectCount();
-            } else if (ptype == long.class || ptype == double.class) {
+            } else if (ptype == double.class) {
                 index = carrierShape.longOffset() + componentCounts.longCount();
-                filter = ptype == double.class ? LONG_TO_DOUBLE : null;
+                filter = LONG_TO_DOUBLE;
+            } else if (ptype == float.class) {
+                index = carrierShape.intOffset() + componentCounts.intCount();
+                filter = INT_TO_FLOAT;
+            } else if (ptype == long.class) {
+                index = carrierShape.longOffset() + componentCounts.longCount();
             } else {
                 index = carrierShape.intOffset() + componentCounts.intCount();
-
-                if (ptype == float.class) {
-                    filter = INT_TO_FLOAT;
-                } else if (ptype == boolean.class) {
-                    filter = INT_TO_BOOLEAN;
-                } else if (ptype == byte.class) {
-                    filter = INT_TO_BYTE;
-                } else if (ptype == short.class) {
-                    filter = INT_TO_SHORT;
-                } else if (ptype == char.class) {
-                    filter = INT_TO_CHAR;
-                }
             }
 
             CarrierClass carrierClass = findCarrierClass(carrierShape);
             MethodHandle component = carrierClass.component(index);
-            component = filter == null ? component :
-                    MethodHandles.filterReturnValue(component, filter);
 
-            return component.asType(methodType(ptype, Object.class));
+            if (filter != null) {
+                component = MethodHandles.filterReturnValue(component, filter);
+            }
+
+            component = MethodHandles.explicitCastArguments(component,
+                    methodType(ptype, Object.class));
+
+            return component;
         }
     }
 
