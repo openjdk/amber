@@ -226,7 +226,6 @@ public class Symtab {
     public final Type valueBasedInternalType;
     public final Type templatedStringType;
     public final Type templatePolicyType;
-    public final Type reflectiveOperationExceptionType;
 
     // For serialization lint checking
     public final Type objectStreamFieldType;
@@ -603,6 +602,8 @@ public class Symtab {
         switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");
+        templatedStringType = enterClass("java.lang.TemplatedString");
+        templatePolicyType = enterClass("java.lang.TemplatePolicy");
         // For serialization lint checking
         objectStreamFieldType = enterClass("java.io.ObjectStreamField");
         objectInputStreamType = enterClass("java.io.ObjectInputStream");
@@ -610,10 +611,7 @@ public class Symtab {
         ioExceptionType = enterClass("java.io.IOException");
         objectStreamExceptionType = enterClass("java.io.ObjectStreamException");
         externalizableType = enterClass("java.io.Externalizable");
-        templatedStringType = enterClass("java.lang.TemplatedString");
-        templatePolicyType = enterClass("java.lang.TemplatePolicy");
-        reflectiveOperationExceptionType = enterClass("java.lang.ReflectiveOperationException");
-        synthesizeEmptyInterfaceIfMissing(autoCloseableType);
+
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);
         synthesizeEmptyInterfaceIfMissing(serializableType);

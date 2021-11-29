@@ -2726,7 +2726,7 @@ public final class Formatter implements Closeable, Flushable {
      * @return  This formatter
      */
     public Formatter format(TemplatedString templatedString) {
-        String format = templatedStringFormat(templatedString);
+        String format = templatedStringFormat(templatedString.template());
         Object[] values = templatedString.values().stream().toArray();
 
         return format(l, format, values);
@@ -2762,7 +2762,7 @@ public final class Formatter implements Closeable, Flushable {
      * @return  This formatter
      */
     public Formatter format(Locale l, TemplatedString templatedString) {
-        String format = templatedStringFormat(templatedString);
+        String format = templatedStringFormat(templatedString.template());
         Object[] values = templatedString.values().stream().toArray();
 
         return format(l, format, values);
@@ -4903,16 +4903,15 @@ public final class Formatter implements Closeable, Flushable {
      * the placeholder. If no specification is found before a placeholder, the method
      * inserts "%s".
      *
-     * @param templatedString  templated string object
+     * @param template  template string with placeholders
      *
      * @return  format string
      */
-    static String templatedStringFormat(TemplatedString templatedString) {
+    static String templatedStringFormat(String template) {
         StringBuilder sb = new StringBuilder();
-        String template = templatedString.template();
-        int length = template.length();
         Matcher matcher = fsPattern.matcher(template);
         char placeholderCharacter = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
+        int length = template.length();
 
         for (int i = 0; i < length; i++) {
             char ch = template.charAt(i);

@@ -222,19 +222,10 @@ public class Names {
 
     // templated string
     public final Name templatedStringBSM;
-    public final Name apply;
-    public final Name asList;
-    public final Name methodType;
-    public final Name findGetter;
-    public final Name findVirtual;
-    public final Name lookup;
-    public final Name split;
-    public final Name concat;
-    public final Name template;
-    public final Name templateUpper;
-    public final Name segments;
-    public final Name segmentsUpper;
-    public final Name vars;
+    public final Name createTemplatedString;
+    public final Name applyWithPolicy;
+    public final Name applyWithConstantPolicy;
+    public final Name applyWithArray;
 
     public final Name.Table table;
 
@@ -409,19 +400,10 @@ public class Names {
 
         // templated string
         templatedStringBSM = fromString("templatedStringBSM");
-        apply = fromString("apply");
-        asList = fromString("asList");
-        methodType = fromString("methodType");
-        findGetter = fromString("findGetter");
-        findVirtual = fromString("findVirtual");
-        lookup = fromString("lookup");
-        split = fromString("split");
-        concat = fromString("concat");
-        template = fromString("template");
-        templateUpper = fromString("TEMPLATE");
-        segments = fromString("segments");
-        segmentsUpper = fromString("SEGMENTS");
-        vars = fromString("vars");
+        createTemplatedString = fromString("createTemplatedString");
+        applyWithPolicy = fromString("applyWithPolicy");
+        applyWithConstantPolicy = fromString("applyWithConstantPolicy");
+        applyWithArray = fromString("applyWithArray");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

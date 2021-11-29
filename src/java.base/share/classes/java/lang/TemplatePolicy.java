@@ -32,28 +32,26 @@ import java.util.function.Function;
 
 /**
  * This interface describes the methods provided by a templated string policy. The primary
- * method {@link TemplatePolicy#apply} is used to validate and compose a result using inputs,
- * template string and values, from a {@link TemplatedString}. For example:
+ * method {@link TemplatePolicy#apply} is used to validate and compose a result using
+ * the template string and list of values, from a {@link TemplatedString}. For example:
  * {@snippet :
  * class SimplePolicy implements TemplatePolicy<String, IllegalArgumentException> {
  *       @Override
  *       public String apply(TemplatedString templatedString) throws IllegalArgumentException {
  *            StringBuilder sb = new StringBuilder();
- *            Iterator<Object> iter = templatedString.values().iterator();
+ *            Iterator<String> segmentsIter = templatedString.segments().iterator();
  *
- *            for (String segment : templatedString.segments()) {
- *                sb.append(segment);
+ *            for (Object value : templatedString.values()) {
+ *                sb.append(segmentsIter.next());
  *
- *                if (iter.hasNext()) {
- *                    Object value = iter.next();
- *
- *                    if (value instanceof Boolean) {
- *                        throw new IllegalArgumentException("I don't like Booleans");
- *                    }
- *
- *                    sb.append(value);
+ *                if (value instanceof Boolean) {
+ *                    throw new IllegalArgumentException("I don't like Booleans");
  *                }
+ *
+ *                sb.append(value);
  *            }
+ *
+ *            sb.append(segmentsIter.next());
  *
  *            return sb.toString();
  *       }
@@ -92,15 +90,14 @@ import java.util.function.Function;
  * TemplatePolicy<String, RuntimeException> policy =
  *         TemplatePolicy.ofComposed((segments, values) -> {
  *         StringBuilder sb = new StringBuilder();
- *         Iterator<Object> iter = values.iterator();
+ *         Iterator<String> segmentsIter = templatedString.segments().iterator();
  *
- *         for (String segment : segments) {
- *             sb.append(segment);
- *
- *             if (iter.hasNext()) {
- *                 sb.append(iter.next());
- *             }
+ *         for (Object value : templatedString.values()) {
+ *             sb.append(segmentsIter.next());
+ *             sb.append(value);
  *         }
+ *
+ *         sb.append(segmentsIter.next());
  *
  *         return sb.toString();
  *
@@ -128,12 +125,6 @@ import java.util.function.Function;
  *    };
  *    """;
  * }
- * <p>
- * The user also has the flexibility to specialize the composition of the templated string by
- * returning a {@link MethodHandle MethodHandle} from
- * {@link TemplatePolicy#applyMethodHandle applyMethodHandle}. These specializations are
- * typically implemented to improve performance; specializing value types or on avoiding
- * boxing and vararg arrays.
  *
  * @param <R>  Policy's apply result type.
  * @param <E>  Exception thrown type.
@@ -155,35 +146,17 @@ public interface TemplatePolicy<R, E extends Throwable> {
     R apply(TemplatedString templatedString) throws E;
 
     /**
-     * Construct a MethodHandle that constructs a result based on the
-     * {@link TemplatedString} object.  The method is primarily used by
-     * {@link TemplatePolicy TemplatePolicies} to produce optimized applications.
-     *
-     * @implSpec The default implemention invokes the policy's apply method.
-     *
-     * @param templatedString  a {@link TemplatedString} instance
-     *
-     * @return a {@link MethodHandle} for policy's apply implementation
-     *
-     * @throws NullPointerException if templatedString is null
-     */
-    default MethodHandle applyMethodHandle(TemplatedString templatedString) {
-        Objects.requireNonNull(templatedString);
-
-        return TemplateSupport.APPLY_MH;
-    }
-
-    /**
      * Produces a template policy based on a supplied bi-function (lambda). The
-     * function's inputs will be a the list of segments and a list of values from the
-     * {@link TemplatedString} object. The result type from the function will be the
-     * result type of the generated policy.
+     * function's inputs will be a the list of segments and a list of values
+     * from the {@link TemplatedString} object. The result type from the
+     * function will be the result type of the generated policy.
      *
      * @param policy  function for applying template policy
      *
      * @param <R>  Type of the function's result.
      *
-     * @return a {@link TemplatePolicy} that applies the function's template policy
+     * @return a {@link TemplatePolicy} that applies the function's template
+     *           policy
      */
     public static <R> TemplatePolicy<R, RuntimeException>
             ofComposed(BiFunction<List<String>, List<Object>, R> policy) {
@@ -192,22 +165,25 @@ public interface TemplatePolicy<R, E extends Throwable> {
             public final R apply(TemplatedString templatedString) {
                 Objects.requireNonNull(templatedString);
 
-                return policy.apply(templatedString.segments(), templatedString.values());
+                return policy.apply(templatedString.segments(),
+                                    templatedString.values());
             }
         };
     }
 
     /**
-     * Produces a template policy based on a supplied function (lambda). The function's
-     * input will be the basic concatenation, {TemplatedString#concat}, from the
-     * {@link TemplatedString} object. The result type from the function will be the
-     * result type of the generated policy.
+     * Produces a template policy based on a supplied function (lambda). The
+     * function's input will be the basic concatenation,
+     * {TemplatedString#concat}, from the {@link TemplatedString} object. The
+     * result type from the function will be the result type of the generated
+     * policy.
      *
      * @param policy  function for applying template policy
      *
      * @param <R>  Type of the function's result.
      *
-     * @return a {@link TemplatePolicy} that applies the function's template policy
+     * @return a {@link TemplatePolicy} that applies the function's template
+     *           policy
      */
     public static <R> TemplatePolicy<R, RuntimeException>
             ofTransformed(Function<String, R> policy) {
@@ -222,23 +198,10 @@ public interface TemplatePolicy<R, E extends Throwable> {
     }
 
     /**
-     * Singleton ConcatPolicy instance.
+     * Simple concatenation policy.
      */
-    public static final ConcatPolicy CONCAT = new ConcatPolicy();
-
-    /**
-     * This template policy produces a String result using basic concatenation. Since this
-     * policy does not maintain any state, the singleton instance in the static
-     * field CONCAT is sufficient for all use.
-     */
-    final class ConcatPolicy implements TemplatePolicy<String, RuntimeException> {
-
-        /**
-         * Constructor.
-         */
-        private ConcatPolicy() {
-        }
-
+    public static final Linkage<String, RuntimeException> CONCAT =
+            new Linkage<String, RuntimeException>() {
         @Override
         public String apply(TemplatedString templatedString) {
             Objects.requireNonNull(templatedString);
@@ -246,6 +209,84 @@ public interface TemplatePolicy<R, E extends Throwable> {
             return templatedString.concat();
         }
 
+        @Override
+        public MethodHandle applier(MethodHandles.Lookup lookup,
+                                   MethodType type, String template) {
+             Objects.requireNonNull(lookup);
+            Objects.requireNonNull(type);
+            Objects.requireNonNull(template);
+
+            try {
+                List<String> segments = TemplatedString.split(template);
+                MethodType concatType = type.dropParameterTypes(0, 1);
+                MethodHandle concatMH =
+                        StringConcatFactory.makeConcatWithTemplate(segments,
+                                concatType.parameterList());
+
+                return MethodHandles.dropArguments(concatMH, 0,
+                        type.parameterType(0));
+            } catch (StringConcatException ex) {
+                throw new AssertionError("StringConcatFactory failure", ex);
+            }
+        }
+
+    };
+
+    /**
+     * Policies using this interface have the flexibility to specialize the
+     * composition of the templated string by returning a customized from
+     * {@link CallSite CallSites} from {@link TemplatePolicy.Linkage#applier applier}.
+     * These specializations are typically implemented to improve performance;
+     * specializing value types or avoiding boxing and vararg arrays.
+     *
+     * @implNote {@link TemplatePolicy} implemented using this interface outside
+     * java.base will default to using the {@link TemplatePolicy#apply} method.
+     *
+     * @param <R>  Policy's apply result type.
+     * @param <E>  Exception thrown type.
+     */
+    interface Linkage<R, E extends Throwable> extends java.lang.TemplatePolicy<R, E> {
+        /**
+         * Return a boolean guard to assure that only specific policies should
+         * use the applier.
+         *
+         * @param lookup      method lookup
+         * @param type        methiod type
+         * @param template    template string with placeholders
+         *
+         * @return guarding {@link MethodHandle}
+         *
+         * @throws NullPointerException if any of the arguments are null
+         */
+        default MethodHandle guard(MethodHandles.Lookup lookup,
+                                   MethodType type, String template) {
+            Objects.requireNonNull(lookup);
+            Objects.requireNonNull(type);
+            Objects.requireNonNull(template);
+
+            return null;
+        }
+
+        /**
+         * Construct a {@link CallSite} that constructs a result based on the
+         * bootstrap method information.
+         *
+         * @param lookup      method lookup
+         * @param type        methiod type
+         * @param template    template string with placeholders
+         *
+         * @return {@link MethodHandle} for the policy applied to template
+         *
+         * @throws NullPointerException if any of the arguments are null
+         */
+        default MethodHandle applier(MethodHandles.Lookup lookup,
+                                     MethodType type, String template) {
+            Objects.requireNonNull(lookup);
+            Objects.requireNonNull(type);
+            Objects.requireNonNull(template);
+
+            return null;
+        }
     }
 
 }

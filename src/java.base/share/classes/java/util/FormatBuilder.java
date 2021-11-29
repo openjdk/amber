@@ -335,7 +335,7 @@ final class FormatBuilder {
                     break;
                 case Conversion.GENERAL:
                     if (type == double.class | type == float.class) {
-                        mh = findMethod(BUILDER, isSimple ? "printFloat" : "printFloat",
+                        mh = findMethod(BUILDER, isSimple ? "printFloatSimple" : "printFloat",
                                 BUILDER, FormatSpecifier.class, type);
                         mh = MethodHandles.insertArguments(mh, 1, fs);
                     }
@@ -431,8 +431,8 @@ final class FormatBuilder {
     }
 
     private MethodHandle buildConcat(boolean hasLocale, List<FormatString> fsa) {
-        StringBuilder recipe = new StringBuilder();
-        List<String> constants = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        List<String> segments = new ArrayList<>();
         int nParam = ptypes.length;
         int iParam = hasLocale ? 1 : 0;
 
@@ -441,25 +441,25 @@ final class FormatBuilder {
 
             switch (index) {
                 case -2:  // fixed string, "%n", or "%%"
-                    recipe.append('\2');
                     if (fs instanceof FormatSpecifier specifier) {
                         switch (specifier.c) {
                             case Conversion.LINE_SEPARATOR:
-                                constants.add(System.lineSeparator());
+                                sb.append(System.lineSeparator());
                                 break;
                             case Conversion.PERCENT_SIGN:
-                                constants.add("%");
+                                sb.append("%");
                                 break;
                             default:
                                 throw new MissingFormatArgumentException(fs.toString());
                         }
                     } else {
-                        constants.add(fs.toString());
+                        sb.append(fs.toString());
                     }
                     break;
                 case 0:  // ordinary index
-                    recipe.append('\1');
                     if (iParam < nParam) {
+                        segments.add(sb.toString());
+                        sb.setLength(0);
                         iParam++;
                     } else {
                         throw new MissingFormatArgumentException(fs.toString());
@@ -472,13 +472,11 @@ final class FormatBuilder {
             }
         }
 
+        segments.add(sb.toString());
+
         try {
             Class<?>[] types = hasLocale ? Arrays.copyOfRange(ptypes, 1, nParam) : ptypes;
-
-            CallSite callsite = StringConcatFactory.makeConcatWithConstants(LOOKUP,
-                    "format", MethodType.methodType(String.class, types),
-                    recipe.toString(), constants.toArray());
-            MethodHandle concat = callsite.getTarget();
+            MethodHandle concat = StringConcatFactory.makeConcatWithTemplate(segments, List.of(types));
 
             if (hasLocale) {
                 concat = MethodHandles.dropArguments(concat, 0, Locale.class);
@@ -541,7 +539,7 @@ final class FormatBuilder {
         boolean isSimple = isSimple(fsa);
 
         if (isSimple) {
-            return  buildConcat(hasLocale, fsa);
+            return buildConcat(hasLocale, fsa);
         } else {
             return buildFormat(hasLocale, fsa);
         }
