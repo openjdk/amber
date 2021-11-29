@@ -198,39 +198,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
     }
 
     /**
-     * Simple concatenation policy.
+     * Simple concatenation policy instance.
      */
-    public static final Linkage<String, RuntimeException> CONCAT =
-            new Linkage<String, RuntimeException>() {
-        @Override
-        public String apply(TemplatedString templatedString) {
-            Objects.requireNonNull(templatedString);
-
-            return templatedString.concat();
-        }
-
-        @Override
-        public MethodHandle applier(MethodHandles.Lookup lookup,
-                                   MethodType type, String template) {
-             Objects.requireNonNull(lookup);
-            Objects.requireNonNull(type);
-            Objects.requireNonNull(template);
-
-            try {
-                List<String> segments = TemplatedString.split(template);
-                MethodType concatType = type.dropParameterTypes(0, 1);
-                MethodHandle concatMH =
-                        StringConcatFactory.makeConcatWithTemplate(segments,
-                                concatType.parameterList());
-
-                return MethodHandles.dropArguments(concatMH, 0,
-                        type.parameterType(0));
-            } catch (StringConcatException ex) {
-                throw new AssertionError("StringConcatFactory failure", ex);
-            }
-        }
-
-    };
+    public static final TemplatePolicy<String, RuntimeException> CONCAT = new ConcatPolicy();
 
     /**
      * Policies using this interface have the flexibility to specialize the
@@ -245,7 +215,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @param <R>  Policy's apply result type.
      * @param <E>  Exception thrown type.
      */
-    interface Linkage<R, E extends Throwable> extends java.lang.TemplatePolicy<R, E> {
+    sealed interface Linkage<R, E extends Throwable> extends TemplatePolicy<R, E>
+        permits ConcatPolicy, FormatterPolicy
+    {
         /**
          * Return a boolean guard to assure that only specific policies should
          * use the applier.
