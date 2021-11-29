@@ -347,9 +347,6 @@ public class JavaTokenizer extends UnicodeReader {
                 braceCount--;
             } else if (ch == '{') {
                 braceCount++;
-            } else if (ch == '\"' || ch == '\'' || ch == '\\') {
-                lexError(position(), Errors.IllegalChar(String.valueOf(ch)));
-                return;
             }
 
             ch = putThenNext();
