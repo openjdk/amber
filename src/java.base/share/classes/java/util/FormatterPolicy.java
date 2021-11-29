@@ -27,6 +27,7 @@ package java.util;
 
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.TemplatePolicy.Linkage;
 
 /**
  * This {@link TemplatePolicy} constructs a String result using {@link Formatter}.
@@ -38,7 +39,7 @@ import java.lang.invoke.MethodHandles.Lookup;
  * {@link TemplatePolicy} will use the format specifiers in the template and types of the
  * values to produce a more performant formatter.
  */
-public final class FormatterPolicy implements TemplatePolicy<String, RuntimeException> {
+public final class FormatterPolicy implements Linkage<String, RuntimeException> {
 
     /**
      * Predefined FormatterPolicy instance that uses default locale.
@@ -103,50 +104,22 @@ public final class FormatterPolicy implements TemplatePolicy<String, RuntimeExce
     @Override
     public final String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
-        String format = Formatter.templatedStringFormat(templatedString);
+        String format = Formatter.templatedStringFormat(templatedString.template());
         Object[] values = templatedString.values().toArray(new Object[0]);
 
         return format.formatted(values);
     }
 
     @Override
-    public MethodHandle applyMethodHandle(TemplatedString templatedString) {
-        Objects.requireNonNull(templatedString);
-
-        if (!templatedString.getClass().isSynthetic()) {
-            return APPLY_MH;
-        }
-
-        List<MethodHandle> vars;
-
-        try {
-            vars = templatedString.vars();
-        } catch (ReflectiveOperationException | UnsupportedOperationException ex) {
-            return APPLY_MH;
-        }
-
-        String format = Formatter.templatedStringFormat(templatedString);
-        List<Class<?>> types = new ArrayList<>();
-        types.add(Locale.class);
-        int count = vars.size();
-        vars.stream().forEach(mh -> types.add(mh.type().returnType()));
-        MethodHandle mh = Formatter.formatFactory(format, types.toArray(new Class<?>[0]));
-        MethodHandle[] filters = new MethodHandle[count + 1];
-        filters[0] = LOCALE_MH;
-
-        int i = 1;
-        for (MethodHandle var : vars) {
-            MethodType varMethodType = var.type();
-            varMethodType = varMethodType.changeParameterType(0, TemplatedString.class);
-            filters[i++] = var.asType(varMethodType);
-        }
-
-        mh = MethodHandles.filterArguments(mh, 0, filters);
-        int[] permute = new int[count + 1];
-        Arrays.fill(permute, 1, permute.length, 1);
-        MethodType methodType = MethodType.methodType(String.class, FormatterPolicy.class, TemplatedString.class);
-        mh = MethodHandles.permuteArguments(mh, methodType, permute);
-        mh = mh.asType(MethodType.methodType(Object.class, TemplatePolicy.class, TemplatedString.class));
+    public MethodHandle applier(MethodHandles.Lookup lookup,
+                                MethodType type, String template) {
+        Objects.requireNonNull(lookup);
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(template);
+        String format = Formatter.templatedStringFormat(template);
+        MethodType formatterType = type.changeParameterType(0, Locale.class);
+        MethodHandle mh = Formatter.formatFactory(format, formatterType.parameterArray());
+        mh = MethodHandles.filterArguments(mh, 0, LOCALE_MH);
 
         return mh;
     }
