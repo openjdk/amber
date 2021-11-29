@@ -4129,6 +4129,90 @@ public class Lower extends TreeTranslator {
         super.visitTry(tree);
     }
 
+    public void visitTemplatedString(JCTemplatedString tree) {
+        int prevPos = make.pos;
+        try {
+            JCExpression policy = translate(tree.policy);
+            String string = (String)((JCLiteral)tree.string).value;
+            List<JCExpression> args = translate(tree.expressions);
+            List<Type> argTypes = args.stream()
+                    .map(arg -> arg.type == syms.botType ? syms.objectType : arg.type)
+                    .collect(List.collector());
+            boolean hasPolicy = policy != null;
+            boolean isConstantPolicy = false;
+            VarSymbol policySym = null;
+
+            int slots = argTypes.stream()
+                    .mapToInt(t -> types.isSameType(t, syms.longType) ||
+                                   types.isSameType(t, syms.doubleType) ? 2 : 1).sum();
+            boolean useArray = 240 < slots; // need room for other arguments
+
+            if (useArray) {
+                ArrayType objectArrayType = new ArrayType(syms.objectType, syms.arrayClass);
+                argTypes = List.of(objectArrayType);
+                args = boxArgs(argTypes, args, syms.objectType);
+            }
+
+            if (hasPolicy) {
+                args = args.prepend(policy);
+                argTypes = argTypes.prepend(policy.type);
+
+                Symbol symbol = TreeInfo.symbol(policy);
+
+                if (symbol instanceof VarSymbol varSymbol) {
+                    isConstantPolicy = !useArray && varSymbol.isStatic() && varSymbol.isFinal();
+                    policySym = varSymbol;
+                }
+            }
+
+            Name bootstrapName = names.templatedStringBSM;
+            Name methodName;
+
+            if (useArray) {
+                methodName = names.applyWithArray;
+            } else if (isConstantPolicy) {
+                methodName = names.applyWithConstantPolicy;
+            } else if (hasPolicy) {
+                methodName = names.applyWithPolicy;
+            } else {
+                methodName = names.createTemplatedString;
+            }
+
+            List<Type> staticArgsTypes =
+                    List.of(syms.methodHandleLookupType, syms.stringType,
+                            syms.methodTypeType, syms.stringType);
+            List<LoadableConstant> staticArgValues = List.of(LoadableConstant.String(string));
+
+            if (isConstantPolicy) {
+                staticArgsTypes = staticArgsTypes.append(syms.methodHandleType);
+                staticArgValues = staticArgValues.append(policySym.asMethodHandle(true));
+            }
+
+            Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), attrEnv,
+                    syms.templatedStringType, bootstrapName, staticArgsTypes, List.nil());
+
+            MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
+            DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
+                    methodName,
+                    syms.noSymbol,
+                    ((MethodSymbol)bsm).asHandle(),
+                    indyType,
+                    staticArgValues.toArray(new LoadableConstant[0])
+            );
+            JCFieldAccess qualifier = make.Select(make.Type(syms.templatedStringType), dynSym.name);
+            qualifier.sym = dynSym;
+            qualifier.type = tree.type;
+
+            result = make.Apply(List.nil(), qualifier, args);
+            result.type = tree.type;
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            throw ex;
+        } finally {
+            make.at(prevPos);
+        }
+    }
+
 /**************************************************************************
  * main method
  *************************************************************************/
