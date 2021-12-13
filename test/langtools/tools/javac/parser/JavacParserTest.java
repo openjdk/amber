@@ -1820,6 +1820,52 @@ public class JavacParserTest extends TestCase {
         }.scan(cut, null);
     }
 
+    @Test
+    void testTemplatedString1() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                           Test(int a) {
+                               String s = "prefix \\{a} suffix";
+                           }
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        VariableTree decl = (VariableTree) constr.getBody().getStatements().get(0);
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        int initStart = (int) sp.getStartPosition(cut, decl.getInitializer());
+        int initEnd   = (int) sp.getEndPosition(cut, decl.getInitializer());
+        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "\"prefix \\{a} suffix\"");
+    }
+
+    @Test
+    void testTemplatedString2() throws IOException {
+        String code = """
+                      package test;
+                      public class Test {
+                           Test(int a) {
+                               String s = TemplatePolicy.CONCAT."prefix \\{a} suffix";
+                           }
+                      }
+                      """;
+
+        JavacTaskImpl ct = (JavacTaskImpl) tool.getTask(null, fm, null,
+                null, null, Arrays.asList(new MyFileObject(code)));
+        CompilationUnitTree cut = ct.parse().iterator().next();
+        ClassTree clazz = (ClassTree) cut.getTypeDecls().get(0);
+        MethodTree constr = (MethodTree) clazz.getMembers().get(0);
+        VariableTree decl = (VariableTree) constr.getBody().getStatements().get(0);
+        SourcePositions sp = Trees.instance(ct).getSourcePositions();
+        int initStart = (int) sp.getStartPosition(cut, decl.getInitializer());
+        int initEnd   = (int) sp.getEndPosition(cut, decl.getInitializer());
+        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "TemplatePolicy.CONCAT.\"prefix \\{a} suffix\"");
+    }
+
     void run(String[] args) throws Exception {
         int passed = 0, failed = 0;
         final Pattern p = (args != null && args.length > 0)

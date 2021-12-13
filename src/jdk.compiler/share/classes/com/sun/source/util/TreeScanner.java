@@ -760,7 +760,9 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
     }
 
     /**
-     * {@inheritDoc} This implementation returns {@code null}.
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation scans the children in left to right order.
      *
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
@@ -768,7 +770,9 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      */
     @Override
     public R visitTemplatedString(TemplatedStringTree node, P p) {
-        return scan(node.getExpressions(), p);
+        R r = scan(node.getPolicy(), p);
+        r = scanAndReduce(node.getExpressions(), p, r);
+        return r;
     }
 
     /**

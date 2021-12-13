@@ -669,7 +669,6 @@ public class JavacParser implements Parser {
         if (stringToken.kind == STRINGLITERAL && value.indexOf('\uFFFC') != -1) {
             log.error(DiagnosticFlag.SYNTAX, pos, Errors.UnicodeReplacementCharacter);
         }
-        JCExpression string = F.at(pos).Literal(TypeTag.CLASS, value);
         nextToken();
         token = S.token();
         List<JCExpression> expressions = List.nil();
@@ -686,8 +685,8 @@ public class JavacParser implements Parser {
         while (token.pos < endPos && token.kind != DEFAULT) {
             nextToken();
         }
-        JCExpression t = F.at(pos).TemplatedString(policy, string, expressions);
-        storeEnd(t, endPos);
+        JCExpression t = F.at(pos).TemplatedString(policy, value, expressions);
+        S.setPrevToken(stringToken);
         setMode(oldmode);
         return t;
     }

@@ -4896,7 +4896,6 @@ public class Attr extends JCTree.Visitor {
         }
 
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
-        attribExpr(tree.string, localEnv, syms.stringType);
 
         for (JCExpression arg : tree.expressions) {
             chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv));

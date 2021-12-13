@@ -4101,7 +4101,7 @@ public class Lower extends TreeTranslator {
         int prevPos = make.pos;
         try {
             JCExpression policy = translate(tree.policy);
-            String string = (String)((JCLiteral)tree.string).value;
+            String string = tree.string;
             List<JCExpression> args = translate(tree.expressions);
             List<Type> argTypes = args.stream()
                     .map(arg -> arg.type == syms.botType ? syms.objectType : arg.type)

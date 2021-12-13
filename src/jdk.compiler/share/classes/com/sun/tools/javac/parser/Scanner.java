@@ -114,6 +114,10 @@ public class Scanner implements Lexer {
         return prevToken;
     }
 
+    public void setPrevToken(Token prevToken) {
+        this.prevToken = prevToken;
+    }
+
     public void nextToken() {
         prevToken = token;
         if (!savedTokens.isEmpty()) {

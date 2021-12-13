@@ -44,7 +44,7 @@ public interface TemplatedStringTree extends ExpressionTree {
      *
      * @return original string with placeholders
      */
-    ExpressionTree getString();
+    String getString();
 
     /**
      * Returns list of expressions.

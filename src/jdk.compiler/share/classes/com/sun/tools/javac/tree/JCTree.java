@@ -2411,11 +2411,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      */
     public static class JCTemplatedString extends JCExpression implements TemplatedStringTree {
         public JCExpression policy;
-        public JCExpression string;
+        public String string;
         public List<JCExpression> expressions;
 
         protected JCTemplatedString(JCExpression policy,
-                                    JCExpression string,
+                                    String string,
                                     List<JCExpression> expressions) {
             this.policy = policy;
             this.string = string;
@@ -2428,7 +2428,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
 
         @Override
-        public ExpressionTree getString() {
+        public String getString() {
             return string;
         }
 
@@ -3438,7 +3438,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCIdent Ident(Name idname);
         JCLiteral Literal(TypeTag tag, Object value);
         JCTemplatedString TemplatedString(JCExpression policy,
-                                          JCExpression string,
+                                          String string,
                                           List<JCExpression> expressions);
         JCPrimitiveTypeTree TypeIdent(TypeTag typetag);
         JCArrayTypeTree TypeArray(JCExpression elemtype);

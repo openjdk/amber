@@ -546,6 +546,14 @@ public class TreeInfo {
                 JCGuardPattern node = (JCGuardPattern) tree;
                 return getStartPos(node.patt);
             }
+            case TEMPLATED: {
+                JCTemplatedString node = (JCTemplatedString) tree;
+                if (node.policy == null) {
+                    return node.pos;
+                } else {
+                    return getStartPos(node.policy);
+                }
+            }
             case ERRONEOUS: {
                 JCErroneous node = (JCErroneous)tree;
                 if (node.errs != null && node.errs.nonEmpty()) {

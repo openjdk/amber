@@ -60,6 +60,11 @@ public interface Lexer {
     Token prevToken();
 
     /**
+     * Sets the previous token.
+     */
+    void setPrevToken(Token prevToken);
+
+    /**
      * Splits the current token in two and return the first (split) token.
      * For instance {@literal '<<<'} is split into two tokens
      * {@literal '<'} and {@literal '<<'} respectively,
