@@ -1423,23 +1423,6 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
-        try {
-            JCExpression policy = tree.policy;
-            print("[");
-            if (policy != null) {
-                printExpr(policy);
-            }
-            print("]");
-            print("\"" + Convert.quote(tree.string.toString()) + "\"");
-            print("(");
-            printExprs(tree.expressions);
-            print(")");
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     public void visitTypeIdent(JCPrimitiveTypeTree tree) {
         try {
             switch(tree.typetag) {

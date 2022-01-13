@@ -135,11 +135,6 @@ public interface PoolConstant {
         PoolConstant dynamicType();
 
         /**
-         * The dynamic constant's name.
-         */
-        Name name();
-
-        /**
          * The dynamic constant's static argument list.
          */
         LoadableConstant[] staticArgs();
@@ -155,7 +150,7 @@ public interface PoolConstant {
 
         @Override
         default Object poolKey(Types types) {
-            return new PoolKey(name(), bsmKey(types), dynamicType().poolKey(types));
+            return new Pair<>(bsmKey(types), dynamicType().poolKey(types));
         }
 
         /**
@@ -197,8 +192,6 @@ public interface PoolConstant {
                         && Objects.equals(staticArgKeys, key.staticArgKeys);
             }
         }
-
-        record PoolKey(Name name, BsmKey bsmKey, Object dynamicType) {}
     }
 
     /**
