@@ -4883,31 +4883,6 @@ public class Attr extends JCTree.Visitor {
         return (tag == CLASS) ? syms.stringType : syms.typeOfTag[tag.ordinal()];
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
-        JCExpression policy = tree.policy;
-        Type resultType = syms.templatedStringType;
-
-        if (policy != null) {
-            resultType = attribTree(policy, env, new ResultInfo(KindSelector.VAL, Type.noType));
-            resultType = chk.checkPolicyType(policy, resultType, env);
-        } else if (env.info.lint.isEnabled(LintCategory.TEMPLATED_STRING)) {
-            log.warning(LintCategory.TEMPLATED_STRING, tree.pos(),
-                    Warnings.NoTemplatePolicySpecified);
-        }
-
-        Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
-        attribExpr(tree.string, localEnv, syms.stringType);
-
-        for (JCExpression arg : tree.expressions) {
-            chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv));
-        }
-
-        tree.type = resultType;
-        result = resultType;
-
-        check(tree, resultType, KindSelector.VAL, resultInfo);
-    }
-
     public void visitTypeIdent(JCPrimitiveTypeTree tree) {
         result = check(tree, syms.typeOfTag[tree.typetag.ordinal()], KindSelector.TYP, resultInfo);
     }

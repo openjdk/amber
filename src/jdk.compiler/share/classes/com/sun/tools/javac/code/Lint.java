@@ -215,11 +215,6 @@ public class Lint
         FINALLY("finally"),
 
         /**
-         * Warn when using a templated string without a template policy.
-         */
-        TEMPLATED_STRING("templated-string"),
-
-        /**
           * Warn about compiler generation of a default constructor.
           */
         MISSING_EXPLICIT_CTOR("missing-explicit-ctor"),
