@@ -4080,34 +4080,6 @@ public class Check {
         }
     }
 
-    public Type checkPolicyType(JCExpression policy, Type resultType, Env<AttrContext> env) {
-        Type policyType = policy.type;
-        Type interfaceType = types.asSuper(policyType, syms.templatePolicyType.tsym);
-
-        if (interfaceType != null) {
-            List<Type> typeArguments = interfaceType.getTypeArguments();
-
-            if (typeArguments.size() == 2) {
-                resultType = typeArguments.head;
-
-                if (!resultType.isPrimitiveOrVoid()) {
-                    return resultType;
-                } else {
-                    log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                            Errors.InvalidTemplatePolicyParameterTypes(policyType.tsym));
-                }
-            } else {
-                log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                        Errors.RawTemplatePolicyType(policyType.tsym));
-            }
-        } else {
-            log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                    Errors.NotTemplatePolicyType(policyType.tsym));
-        }
-
-        return resultType;
-    }
-
     public void checkLeaksNotAccessible(Env<AttrContext> env, JCClassDecl check) {
         JCCompilationUnit toplevel = env.toplevel;
 

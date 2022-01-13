@@ -1389,30 +1389,6 @@ public class Flow {
             }
         }
 
-        @Override
-        public void visitTemplatedString(JCTemplatedString tree) {
-            JCExpression policy = tree.policy;
-
-            if (policy != null) {
-                scan(policy);
-                Type interfaceType = types.asSuper(policy.type, syms.templatePolicyType.tsym);
-
-                if (interfaceType != null) {
-                    List<Type> typeArguments = interfaceType.getTypeArguments();
-
-                    if (typeArguments.size() == 2) {
-                        Type throwType = typeArguments.tail.head;
-
-                        if (throwType != null) {
-                            markThrown(tree, throwType);
-                        }
-                    }
-                }
-            }
-
-            scan(tree.expressions);
-        }
-
         void checkCaughtType(DiagnosticPosition pos, Type exc, List<Type> thrownInTry, List<Type> caughtInTry) {
             if (chk.subset(exc, caughtInTry)) {
                 log.error(pos, Errors.ExceptAlreadyCaught(exc));
