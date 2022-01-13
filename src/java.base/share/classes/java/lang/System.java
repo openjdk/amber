@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2471,6 +2471,14 @@ public final class System {
 
             public long stringConcatMix(long lengthCoder, String constant) {
                 return StringConcatHelper.mix(lengthCoder, constant);
+            }
+
+            public long stringBuilderConcatMix(long lengthCoder, StringBuilder sb) {
+                return sb.mix(lengthCoder);
+            }
+
+            public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb) {
+                return sb.prepend(lengthCoder, buf);
             }
 
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {

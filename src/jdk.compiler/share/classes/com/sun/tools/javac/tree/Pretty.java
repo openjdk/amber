@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1428,6 +1428,23 @@ public class Pretty extends JCTree.Visitor {
                     print("\"" + Convert.quote(tree.value.toString()) + "\"");
                     break;
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitTemplatedString(JCTemplatedString tree) {
+        try {
+            JCExpression policy = tree.policy;
+            print("[");
+            if (policy != null) {
+                printExpr(policy);
+            }
+            print("]");
+            print("\"" + Convert.quote(tree.string.toString()) + "\"");
+            print("(");
+            printExprs(tree.expressions);
+            print(")");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,6 +74,8 @@ import static com.sun.tools.javac.code.TypeTag.DEFERRED;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
+import com.sun.tools.javac.code.Types;
+import com.sun.tools.javac.tree.JCTree.JCTemplatedString;
 import com.sun.tools.javac.tree.JCTree.JCYield;
 
 /**
@@ -102,6 +104,7 @@ public class ArgumentAttr extends JCTree.Visitor {
     private final JCDiagnostic.Factory diags;
     private final Attr attr;
     private final Symtab syms;
+    private final Types types;
     private final Log log;
 
     /** Attribution environment to be used. */
@@ -126,6 +129,7 @@ public class ArgumentAttr extends JCTree.Visitor {
         diags = JCDiagnostic.Factory.instance(context);
         attr = Attr.instance(context);
         syms = Symtab.instance(context);
+        types = Types.instance(context);
         log = Log.instance(context);
     }
 

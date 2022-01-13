@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -4894,6 +4894,30 @@ public class Attr extends JCTree.Visitor {
      */
     Type litType(TypeTag tag) {
         return (tag == CLASS) ? syms.stringType : syms.typeOfTag[tag.ordinal()];
+    }
+
+    public void visitTemplatedString(JCTemplatedString tree) {
+        JCExpression policy = tree.policy;
+        Type resultType = syms.templatedStringType;
+
+        if (policy != null) {
+            resultType = attribTree(policy, env, new ResultInfo(KindSelector.VAL, Type.noType));
+            resultType = chk.checkPolicyType(policy, resultType, env);
+        } else if (env.info.lint.isEnabled(LintCategory.TEMPLATED_STRING)) {
+            log.warning(LintCategory.TEMPLATED_STRING, tree.pos(),
+                    Warnings.NoTemplatePolicySpecified);
+        }
+
+        Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
+
+        for (JCExpression arg : tree.expressions) {
+            chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv));
+        }
+
+        tree.type = resultType;
+        result = resultType;
+
+        check(tree, resultType, KindSelector.VAL, resultInfo);
     }
 
     public void visitTypeIdent(JCPrimitiveTypeTree tree) {

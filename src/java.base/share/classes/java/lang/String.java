@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3917,9 +3917,14 @@ public final class String
      *     <td>{@code U+005C}</td>
      *   </tr>
      *   <tr>
+     *     <th scope="row">{@code \u005C&lbrace;}</th>
+     *     <td>left brace</td>
+     *     <td>{@code U+007B}</td>
+     *   </tr>
+     *   <tr>
      *     <th scope="row">{@code \u005C0 - \u005C377}</th>
      *     <td>octal escape</td>
-     *     <td>code point equivalents</td>
+     *     <td>code point equivalent</td>
      *   </tr>
      *   <tr>
      *     <th scope="row">{@code \u005C<line-terminator>}</th>
@@ -3978,19 +3983,74 @@ public final class String
                 case '\\':
                     // as is
                     break;
-                case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7':
-                    int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
-                    int code = ch - '0';
-                    while (from < limit) {
-                        ch = chars[from];
-                        if (ch < '0' || '7' < ch) {
-                            break;
+                case '{': {
+                        int braceCount = 0;
+                        while (from < length) {
+                            ch = chars[from++];
+                            if (ch == '}') {
+                                if (braceCount == 0) {
+                                    break;
+                                }
+                                braceCount--;
+                            } else if (ch == '{') {
+                                braceCount++;
+                            } else if (ch == '/') {
+                                if (from < length && chars[from] == '*') {
+                                    from++;
+                                    while (from < length) {
+                                        ch = chars[from++];
+                                        if (ch == '*' &&
+                                                from + 1 < length &&
+                                                chars[from] == '/') {
+                                            from++;
+                                            break;
+                                        }
+                                    }
+                                } else if (from < length && chars[from] == '/') {
+                                    from++;
+                                    while (from < length) {
+                                        ch = chars[from++];
+                                        if (ch == '\n' || ch == '\r') {
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else if (ch == '\'' || ch == '\"') {
+                                char delimiter = ch;
+                                while (from < length) {
+                                    ch = chars[from++];
+
+                                    if (ch == delimiter) {
+                                        break;
+                                    } else if (ch == '\\' && from < length) {
+                                        from++;
+                                    }
+                                }
+                            }
                         }
-                        from++;
-                        code = (code << 3) | (ch - '0');
+                        if (ch != '}') {
+                            java.lang.String msg = java.lang.String.format(
+                                    "Unclosed template expression escape sequence: \\%c \\\\u%04X",
+                                    ch, (int) ch);
+                            throw new IllegalArgumentException(msg);
+                        }
+                        ch = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
                     }
-                    ch = (char)code;
+                    break;
+                case '0': case '1': case '2': case '3':
+                case '4': case '5': case '6': case '7': {
+                        int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
+                        int code = ch - '0';
+                        while (from < limit) {
+                            ch = chars[from];
+                            if (ch < '0' || '7' < ch) {
+                                break;
+                            }
+                            from++;
+                            code = (code << 3) | (ch - '0');
+                        }
+                        ch = (char)code;
+                    }
                     break;
                 case '\n':
                     continue;
@@ -4174,6 +4234,69 @@ public final class String
      */
     public static String format(Locale l, String format, Object... args) {
         return new Formatter(l).format(format, args).toString();
+    }
+
+    /**
+     * Returns a formatted string using the specified {@link TemplatedString}.
+     *
+     * <p> The locale always used is the one returned by {@link
+     * java.util.Locale#getDefault(java.util.Locale.Category)
+     * Locale.getDefault(Locale.Category)} with
+     * {@link java.util.Locale.Category#FORMAT FORMAT} category specified.
+     *
+     * @param  templatedString
+     *         Containing format string and values.
+     *         The format string as described in <a href="#syntax">Format string
+     *         syntax</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification.
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     * @since  1.5
+     */
+    public static String format(TemplatedString templatedString) {
+        return new Formatter().format(templatedString).toString();
+    }
+
+    /**
+     * Returns a formatted string using the specified locale, and
+     * {@link TemplatedString}.
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @param  templatedString
+     *         Containing format string and values.
+     *         The format string as described in <a href="#syntax">Format string
+     *         syntax</a>.
+     *
+     * @throws  java.util.IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors, see the <a
+     *          href="../util/Formatter.html#detail">Details</a> section of the
+     *          formatter class specification
+     *
+     * @return  A formatted string
+     *
+     * @see  java.util.Formatter
+     * @since  1.5
+     */
+    public static String format(Locale l, TemplatedString templatedString) {
+        return new Formatter(l).format(templatedString).toString();
     }
 
     /**
