@@ -379,9 +379,6 @@ public class UnicodeReader {
     protected boolean isOneOf(char ch1, char ch2, char ch3) {
         return is(ch1) || is(ch2) || is(ch3);
     }
-    protected boolean isOneOf(char ch1, char ch2, char ch3, char ch4) {
-        return is(ch1) || is(ch2) || is(ch3) || is(ch4);
-    }
     protected boolean isOneOf(char ch1, char ch2, char ch3, char ch4, char ch5, char ch6) {
         return is(ch1) || is(ch2) || is(ch3) || is(ch4) || is(ch5) || is(ch6);
     }

@@ -2279,11 +2279,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         @Override
-        public Name name() {
-            return name;
-        }
-
-        @Override
         public boolean isDynamic() {
             return true;
         }
@@ -2319,11 +2314,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             super(0, name, type, owner);
             this.bsm = bsm;
             this.staticArgs = staticArgs;
-        }
-
-        @Override
-        public Name name() {
-            return name;
         }
 
         @Override

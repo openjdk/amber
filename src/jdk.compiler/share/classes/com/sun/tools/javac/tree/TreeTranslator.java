@@ -405,14 +405,6 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
-        tree.policy = translate(tree.policy);
-        tree.string = translate(tree.string);
-        tree.expressions = translate(tree.expressions);
-
-        result = tree;
-    }
-
     public void visitTypeIdent(JCPrimitiveTypeTree tree) {
         result = tree;
     }

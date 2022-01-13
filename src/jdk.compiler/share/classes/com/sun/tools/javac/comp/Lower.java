@@ -31,27 +31,36 @@ import java.util.stream.Collectors;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.WriteableScope;
-import com.sun.tools.javac.code.Symbol.*;
-import com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode;
-import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.jvm.*;
 import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.main.Option.PkgInfo;
-import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 import com.sun.tools.javac.tree.*;
-import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.util.*;
-import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
+import com.sun.tools.javac.util.List;
+
+import com.sun.tools.javac.code.Symbol.*;
+import com.sun.tools.javac.code.Symbol.OperatorSymbol.AccessCode;
+import com.sun.tools.javac.resources.CompilerProperties.Errors;
+import com.sun.tools.javac.tree.JCTree.*;
+import com.sun.tools.javac.code.Type.*;
+
+import com.sun.tools.javac.jvm.Target;
+import com.sun.tools.javac.tree.EndPosTable;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
-import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import static com.sun.tools.javac.code.TypeTag.*;
+import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.jvm.ByteCodes.*;
+import com.sun.tools.javac.tree.JCTree.JCBreak;
+import com.sun.tools.javac.tree.JCTree.JCCase;
+import com.sun.tools.javac.tree.JCTree.JCExpression;
+import com.sun.tools.javac.tree.JCTree.JCExpressionStatement;
 import static com.sun.tools.javac.tree.JCTree.JCOperatorExpression.OperandPos.LEFT;
+import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 /** This pass translates away some syntactic sugar: inner classes,
@@ -2590,7 +2599,7 @@ public class Lower extends TreeTranslator {
     /**
      * Creates an indy qualifier, helpful to be part of an indy invocation
      * @param site                the site
-     * @param tree                an expression tree
+     * @param tree                a class declaration tree
      * @param msym                the method symbol
      * @param staticArgTypes      the static argument types
      * @param staticArgValues     the static argument values
@@ -2602,7 +2611,7 @@ public class Lower extends TreeTranslator {
      */
     JCFieldAccess makeIndyQualifier(
             Type site,
-            JCTree tree,
+            JCClassDecl tree,
             MethodSymbol msym,
             List<Type> staticArgTypes,
             LoadableConstant[] staticArgValues,
@@ -2614,8 +2623,7 @@ public class Lower extends TreeTranslator {
 
         MethodType indyType = msym.type.asMethodType();
         indyType = new MethodType(
-                isStatic ? indyType.argtypes
-                         : indyType.argtypes.prepend(TreeInfo.symbol(tree).type),
+                isStatic ? List.nil() : indyType.argtypes.prepend(tree.sym.type),
                 indyType.restype,
                 indyType.thrown,
                 syms.methodClass
@@ -2855,7 +2863,6 @@ public class Lower extends TreeTranslator {
         } else {
             tree.clazz = access(c, tree.clazz, enclOp, false);
         }
-
         result = tree;
     }
 
@@ -3108,7 +3115,6 @@ public class Lower extends TreeTranslator {
         boolean havePrimitive = tree.type.isPrimitive();
         if (havePrimitive == type.isPrimitive())
             return tree;
-
         if (havePrimitive) {
             Type unboxedTarget = types.unboxedType(type);
             if (!unboxedTarget.hasTag(NONE)) {
@@ -4129,90 +4135,6 @@ public class Lower extends TreeTranslator {
         super.visitTry(tree);
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
-        int prevPos = make.pos;
-        try {
-            JCExpression policy = translate(tree.policy);
-            String string = (String)((JCLiteral)tree.string).value;
-            List<JCExpression> args = translate(tree.expressions);
-            List<Type> argTypes = args.stream()
-                    .map(arg -> arg.type == syms.botType ? syms.objectType : arg.type)
-                    .collect(List.collector());
-            boolean hasPolicy = policy != null;
-            boolean isConstantPolicy = false;
-            VarSymbol policySym = null;
-
-            int slots = argTypes.stream()
-                    .mapToInt(t -> types.isSameType(t, syms.longType) ||
-                                   types.isSameType(t, syms.doubleType) ? 2 : 1).sum();
-            boolean useArray = 240 < slots; // need room for other arguments
-
-            if (useArray) {
-                ArrayType objectArrayType = new ArrayType(syms.objectType, syms.arrayClass);
-                argTypes = List.of(objectArrayType);
-                args = boxArgs(argTypes, args, syms.objectType);
-            }
-
-            if (hasPolicy) {
-                args = args.prepend(policy);
-                argTypes = argTypes.prepend(policy.type);
-
-                Symbol symbol = TreeInfo.symbol(policy);
-
-                if (symbol instanceof VarSymbol varSymbol) {
-                    isConstantPolicy = !useArray && varSymbol.isStatic() && varSymbol.isFinal();
-                    policySym = varSymbol;
-                }
-            }
-
-            Name bootstrapName = names.templatedStringBSM;
-            Name methodName;
-
-            if (useArray) {
-                methodName = names.applyWithArray;
-            } else if (isConstantPolicy) {
-                methodName = names.applyWithConstantPolicy;
-            } else if (hasPolicy) {
-                methodName = names.applyWithPolicy;
-            } else {
-                methodName = names.createTemplatedString;
-            }
-
-            List<Type> staticArgsTypes =
-                    List.of(syms.methodHandleLookupType, syms.stringType,
-                            syms.methodTypeType, syms.stringType);
-            List<LoadableConstant> staticArgValues = List.of(LoadableConstant.String(string));
-
-            if (isConstantPolicy) {
-                staticArgsTypes = staticArgsTypes.append(syms.methodHandleType);
-                staticArgValues = staticArgValues.append(policySym.asMethodHandle(true));
-            }
-
-            Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), attrEnv,
-                    syms.templatedStringType, bootstrapName, staticArgsTypes, List.nil());
-
-            MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
-            DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
-                    methodName,
-                    syms.noSymbol,
-                    ((MethodSymbol)bsm).asHandle(),
-                    indyType,
-                    staticArgValues.toArray(new LoadableConstant[0])
-            );
-            JCFieldAccess qualifier = make.Select(make.Type(syms.templatedStringType), dynSym.name);
-            qualifier.sym = dynSym;
-            qualifier.type = tree.type;
-
-            result = make.Apply(List.nil(), qualifier, args);
-            result.type = tree.type;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-            throw ex;
-        } finally {
-            make.at(prevPos);
-        }
-    }
-
 /**************************************************************************
  * main method
  *************************************************************************/
@@ -4225,7 +4147,6 @@ public class Lower extends TreeTranslator {
      */
     public List<JCTree> translateTopLevelClass(Env<AttrContext> env, JCTree cdef, TreeMaker make) {
         ListBuffer<JCTree> translated = null;
-
         try {
             attrEnv = env;
             this.make = make;
@@ -4277,7 +4198,6 @@ public class Lower extends TreeTranslator {
             enumSwitchMap.clear();
             assertionsDisabledClassCache = null;
         }
-
         return translated.toList();
     }
 }

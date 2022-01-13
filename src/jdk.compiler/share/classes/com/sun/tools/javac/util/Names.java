@@ -220,13 +220,6 @@ public class Names {
     public final Name typeSwitch;
     public final Name enumSwitch;
 
-    // templated string
-    public final Name templatedStringBSM;
-    public final Name createTemplatedString;
-    public final Name applyWithPolicy;
-    public final Name applyWithConstantPolicy;
-    public final Name applyWithArray;
-
     public final Name.Table table;
 
     public Names(Context context) {
@@ -397,13 +390,6 @@ public class Names {
         // sealed types
         permits = fromString("permits");
         sealed = fromString("sealed");
-
-        // templated string
-        templatedStringBSM = fromString("templatedStringBSM");
-        createTemplatedString = fromString("createTemplatedString");
-        applyWithPolicy = fromString("applyWithPolicy");
-        applyWithConstantPolicy = fromString("applyWithConstantPolicy");
-        applyWithArray = fromString("applyWithArray");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

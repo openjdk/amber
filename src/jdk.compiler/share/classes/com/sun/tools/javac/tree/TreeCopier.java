@@ -283,15 +283,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitTemplatedString(TemplatedStringTree node, P p) {
-        JCTemplatedString t = (JCTemplatedString) node;
-        JCExpression policy = copy(t.policy, p);
-        JCExpression string = copy(t.string, p);
-        List<JCExpression> expressions = copy(t.expressions, p);
-        return M.at(t.pos).TemplatedString(policy, string, expressions);
-    }
-
-    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitMethod(MethodTree node, P p) {
         JCMethodDecl t  = (JCMethodDecl) node;
         JCModifiers mods = copy(t.mods, p);
