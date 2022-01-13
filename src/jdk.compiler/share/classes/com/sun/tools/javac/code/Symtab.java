@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -174,6 +174,7 @@ public class Symtab {
     public final Type serializedLambdaType;
     public final Type varHandleType;
     public final Type methodHandleType;
+    public final Type methodHandlesType;
     public final Type methodHandleLookupType;
     public final Type methodTypeType;
     public final Type nativeHeaderType;
@@ -223,6 +224,8 @@ public class Symtab {
     public final Type switchBootstrapsType;
     public final Type valueBasedType;
     public final Type valueBasedInternalType;
+    public final Type templatedStringType;
+    public final Type templatePolicyType;
 
     // For serialization lint checking
     public final Type objectStreamFieldType;
@@ -540,6 +543,7 @@ public class Symtab {
         serializedLambdaType = enterClass("java.lang.invoke.SerializedLambda");
         varHandleType = enterClass("java.lang.invoke.VarHandle");
         methodHandleType = enterClass("java.lang.invoke.MethodHandle");
+        methodHandlesType = enterClass("java.lang.invoke.MethodHandles");
         methodHandleLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
         errorType = enterClass("java.lang.Error");
@@ -598,6 +602,8 @@ public class Symtab {
         switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");
+        templatedStringType = enterClass("java.lang.TemplatedString");
+        templatePolicyType = enterClass("java.lang.TemplatePolicy");
         // For serialization lint checking
         objectStreamFieldType = enterClass("java.io.ObjectStreamField");
         objectInputStreamType = enterClass("java.io.ObjectInputStream");
@@ -605,7 +611,6 @@ public class Symtab {
         ioExceptionType = enterClass("java.io.IOException");
         objectStreamExceptionType = enterClass("java.io.ObjectStreamException");
         externalizableType = enterClass("java.io.Externalizable");
-
         synthesizeEmptyInterfaceIfMissing(autoCloseableType);
         synthesizeEmptyInterfaceIfMissing(cloneableType);
         synthesizeEmptyInterfaceIfMissing(serializableType);

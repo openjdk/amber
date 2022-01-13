@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -174,6 +174,11 @@ public interface Tree {
          * Used for instances of {@link InstanceOfTree}.
          */
         INSTANCE_OF(InstanceOfTree.class),
+
+        /**
+         * Used for instances of {@link TemplatedStringTree}.
+         */
+        TEMPLATE(TemplatedStringTree.class),
 
         /**
          * Used for instances of {@link LabeledStatementTree}.

@@ -2496,6 +2496,14 @@ public final class System {
                 return StringConcatHelper.mix(lengthCoder, constant);
             }
 
+            public long stringBuilderConcatMix(long lengthCoder, StringBuilder sb) {
+                return sb.mix(lengthCoder);
+            }
+
+            public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb) {
+                return sb.prepend(lengthCoder, buf);
+            }
+
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }

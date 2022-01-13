@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,7 +39,6 @@ import com.sun.tools.javac.util.JCDiagnostic.*;
 
 import java.nio.CharBuffer;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import static com.sun.tools.javac.parser.Tokens.*;
 import static com.sun.tools.javac.util.LayoutCharacters.EOI;
@@ -62,17 +61,17 @@ public class JavaTokenizer extends UnicodeReader {
     /**
      * Sentinel for non-value.
      */
-    private int NOT_FOUND = -1;
+    private final static int NOT_FOUND = -1;
 
     /**
      * The source language setting. Copied from scanner factory.
      */
-    private Source source;
+    private final Source source;
 
     /**
      * The preview language setting. Copied from scanner factory.
      */
-    private Preview preview;
+    private final Preview preview;
 
     /**
      * The log to be used for error reporting. Copied from scanner factory.
@@ -88,6 +87,16 @@ public class JavaTokenizer extends UnicodeReader {
      * The names factory. Copied from scanner factory.
      */
     private final Names names;
+
+    /**
+     * Origin scanner factory.
+     */
+    protected final ScannerFactory fac;
+
+    /**
+     * Buffer for building literals, used by nextToken().
+     */
+    protected final StringBuilder sb;
 
     /**
      * The token kind, set by nextToken().
@@ -120,21 +129,16 @@ public class JavaTokenizer extends UnicodeReader {
     protected boolean hasEscapeSequences;
 
     /**
-     * Buffer for building literals, used by nextToken().
+     * true if contains templated string escape sequences, set by nextToken().
      */
-    protected StringBuilder sb;
-
-    /**
-     * Origin scanner factory.
-     */
-    protected ScannerFactory fac;
+    protected boolean isTemplatedString;
 
     /**
      * The set of lint options currently in effect. It is initialized
      * from the context, and then is set/reset as needed by Attr as it
      * visits all the various parts of the trees during attribution.
      */
-    protected Lint lint;
+    protected final Lint lint;
 
     /**
      * Construct a Java token scanner from the input character buffer.
@@ -327,19 +331,50 @@ public class JavaTokenizer extends UnicodeReader {
     }
 
     /**
+     * Scan the content of a template expression.
+     */
+    private void scanTemplateExpression() {
+        char ch = putThenNext();
+        int braceCount = 0;
+
+        while (isAvailable()) {
+            if (ch == '}') {
+                if (braceCount == 0) {
+                    putThenNext();
+                    return;
+                }
+
+                braceCount--;
+            } else if (ch == '{') {
+                braceCount++;
+            }
+
+            ch = putThenNext();
+        }
+
+        lexError(position(), Errors.UnclosedTemplatedStringExpr);
+    }
+
+    /**
      * Processes the current character and places in the literal buffer. If the current
      * character is a backslash then the next character is validated as a proper
      * escape character. Conversion of escape sequences takes place at end of nextToken().
      *
-     * @param pos position of the first character in literal.
+     * @param pos          position of the first character in literal.
      */
     private void scanLitChar(int pos) {
         if (acceptThenPut('\\')) {
             hasEscapeSequences = true;
 
             switch (get()) {
-                case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7':
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
                     char leadch = get();
                     putThenNext();
 
@@ -361,6 +396,11 @@ public class JavaTokenizer extends UnicodeReader {
                 case '\"':
                 case '\\':
                     putThenNext();
+                    break;
+
+                case '{':
+                    isTemplatedString = true;
+                    scanTemplateExpression();
                     break;
 
                 case 's':
@@ -394,10 +434,9 @@ public class JavaTokenizer extends UnicodeReader {
      * @param pos  position of the first character in literal.
      */
     private void scanString(int pos) {
-        // Assume the best.
-        tk = Tokens.TokenKind.STRINGLITERAL;
         // Track the end of first line for error recovery.
         int firstEOLN = NOT_FOUND;
+
         // Check for text block delimiter.
         isTextBlock = accept("\"\"\"");
 
@@ -419,6 +458,8 @@ public class JavaTokenizer extends UnicodeReader {
             // While characters are available.
             while (isAvailable()) {
                 if (accept("\"\"\"")) {
+                    tk = isTemplatedString ? Tokens.TokenKind.TEMPLATEDSTRING
+                                           : Tokens.TokenKind.STRINGLITERAL;
                     return;
                 }
 
@@ -443,6 +484,8 @@ public class JavaTokenizer extends UnicodeReader {
             // While characters are available.
             while (isAvailable()) {
                 if (accept('\"')) {
+                    tk = isTemplatedString ? Tokens.TokenKind.TEMPLATEDSTRING
+                                           : Tokens.TokenKind.STRINGLITERAL;
                     return;
                 }
 
@@ -786,6 +829,7 @@ public class JavaTokenizer extends UnicodeReader {
         radix = 0;
         isTextBlock = false;
         hasEscapeSequences = false;
+        isTemplatedString = false;
 
         int pos;
         List<Comment> comments = null;
@@ -984,6 +1028,10 @@ public class JavaTokenizer extends UnicodeReader {
 
                         if (accept('\'')) {
                             tk = TokenKind.CHARLITERAL;
+
+                            if (isTemplatedString) {
+                                lexError(pos, Errors.IllegalEscChar);
+                            }
                         } else {
                             lexError(pos, Errors.UnclosedCharLit);
                         }
@@ -1026,8 +1074,8 @@ public class JavaTokenizer extends UnicodeReader {
                                 arg = String.format("\\u%04x\\u%04x", (int) hi, (int) lo);
                             } else {
                                 char ch = get();
-                                arg = (32 < ch && ch < 127) ? String.format("%s", ch) :
-                                                              String.format("\\u%04x", (int) ch);
+                                arg = (32 < ch && ch < 127) ? String.valueOf(ch) :
+                                                              "\\u%04x".formatted((int) ch);
                             }
 
                             lexError(pos, Errors.IllegalChar(arg));
@@ -1069,6 +1117,11 @@ public class JavaTokenizer extends UnicodeReader {
                     } catch (Exception ex) {
                         // Error already reported, just use unstripped string.
                     }
+                }
+
+                // Make sure no unicode replacement character before translateEscapes.
+                if (isTemplatedString && string.indexOf('\uFFFC') != -1) {
+                    lexError(pos, Errors.UnicodeReplacementCharacter);
                 }
 
                 // Translate escape sequences if present.
@@ -1195,6 +1248,146 @@ public class JavaTokenizer extends UnicodeReader {
      */
     public Position.LineMap getLineMap() {
         return Position.makeLineMap(getRawCharacters(), length(), false);
+    }
+
+    /**
+     * Return a list of tokens from a templated string.
+     *
+     * @param stringToken  Templated string.
+     *
+     * @return  List of tokens from templated string.
+     */
+    List<Token> templatedString(Token stringToken) {
+        TemplatedStringTokenizer tokenizer = new TemplatedStringTokenizer(stringToken);
+        return tokenizer.readTokens();
+    }
+
+    /**
+     * Tokenizer used to generate tokens from a templated string.
+     */
+    class TemplatedStringTokenizer {
+
+        /**
+         * Templated string being scanned.
+         */
+        private final Token templatedString;
+
+        /**
+         * Truncated length of scan.
+         */
+        private final int length;
+
+        /**
+         * Constructor
+         * @param templatedString templated string being scanned.
+         */
+        public TemplatedStringTokenizer(Token templatedString) {
+            this.templatedString = templatedString;
+            this.length = templatedString.endPos;
+        }
+
+        /**
+         * Return true if current position is within the templated string.
+         *
+         * @return true if current position is within the templated string.
+         */
+        protected boolean isAvailable() {
+            return position() < length;
+        }
+
+        private Token errorToken(int pos, JCDiagnostic.Error key) {
+            log.error(pos, key);
+            errPos = pos;
+            return new Token(TokenKind.ERROR, pos, pos, List.nil());
+        }
+
+        private Token braceToken(int pos) {
+            return new Token(TokenKind.RBRACE, pos, pos + 1, List.nil());
+        }
+
+        /**
+         * Read the tokens enclosed in braces.
+         *
+         * @param tokens  Target list of tokens.
+         *
+         * @return  appended list.
+         */
+        private List<Token> readExpression(List<Token> tokens) {
+             // Read {.
+            Token token = readToken();
+            tokens = tokens.append(token);
+
+            // Next.
+            token = readToken();
+            int pos = token.pos;
+            int braceCount = 0;
+
+            // Until right level } or error.
+            while (isAvailable()) {
+                switch (token.kind) {
+                case RBRACE:
+                    if (braceCount == 0) {
+                        return tokens.append(token);
+                    }
+                    braceCount--;
+                    break;
+                case LBRACE:
+                    braceCount++;
+                    break;
+                case ERROR:
+                    tokens = tokens.append(token);
+                    return tokens.append(braceToken(pos));
+                default:
+                    break;
+                }
+
+                tokens = tokens.append(token);
+                token = readToken();
+                pos = token.pos;
+            }
+
+            return tokens.append(errorToken(pos, Errors.UnclosedTemplatedStringExpr));
+        }
+
+        /**
+         * Return list of tokens from templated string.
+         *
+         * @return List of tokens from templated string.
+         */
+        List<Token> readTokens() {
+            // Position at start of string
+            reset(templatedString.pos);
+
+            // Skip start of string.
+            if (accept("\"\"\"")) {
+                skipWhitespace();
+                skipLineTerminator();
+            } else {
+                accept('\"');
+            }
+
+            // Prepare to accumulate.
+            List<Token> tokens = List.nil();
+
+            while (isAvailable()) {
+                if (is('\\')) {
+                    next();
+
+                    if (is('{')) {
+                        tokens = readExpression(tokens);
+                    } else {
+                        next();
+                    }
+                } else {
+                    next();
+                }
+            }
+
+            // Prepare for token after templated string.
+            reset(templatedString.endPos);
+
+            return tokens;
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -546,6 +546,14 @@ public class TreeInfo {
                 JCGuardPattern node = (JCGuardPattern) tree;
                 return getStartPos(node.patt);
             }
+            case TEMPLATED: {
+                JCTemplatedString node = (JCTemplatedString) tree;
+                if (node.policy == null) {
+                    return node.pos;
+                } else {
+                    return getStartPos(node.policy);
+                }
+            }
             case ERRONEOUS: {
                 JCErroneous node = (JCErroneous)tree;
                 if (node.errs != null && node.errs.nonEmpty()) {
@@ -945,6 +953,8 @@ public class TreeInfo {
             return symbol(((JCAnnotatedType) tree).underlyingType);
         case REFERENCE:
             return ((JCMemberReference) tree).sym;
+        case CLASSDEF:
+            return ((JCClassDecl) tree).sym;
         default:
             return null;
         }

@@ -398,6 +398,16 @@ public interface JavaLangAccess {
     long stringConcatMix(long lengthCoder, String constant);
 
     /**
+     * Update lengthCoder for StringBuilder.
+     */
+    long stringBuilderConcatMix(long lengthCoder, StringBuilder sb);
+
+    /**
+     * Prepend StringBuilder content.
+     */
+    long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb);
+
+    /**
      * Join strings
      */
     String join(String prefix, String suffix, String delimiter, String[] elements, int size);

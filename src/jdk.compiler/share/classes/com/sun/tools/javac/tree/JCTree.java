@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -263,6 +263,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** Literals, of type Literal.
          */
         LITERAL,
+
+        /** Templated string.
+         */
+        TEMPLATED,
 
         /** Basic type identifiers, of type TypeIdent.
          */
@@ -2405,6 +2409,58 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     }
 
     /**
+     * Templated strings.
+     */
+    public static class JCTemplatedString extends JCExpression implements TemplatedStringTree {
+        public JCExpression policy;
+        public String string;
+        public List<JCExpression> expressions;
+
+        protected JCTemplatedString(JCExpression policy,
+                                    String string,
+                                    List<JCExpression> expressions) {
+            this.policy = policy;
+            this.string = string;
+            this.expressions = expressions;
+        }
+
+        @Override
+        public ExpressionTree getPolicy() {
+            return policy;
+        }
+
+        @Override
+        public String getString() {
+            return string;
+        }
+
+        @Override
+        public List<? extends ExpressionTree> getExpressions() {
+            return expressions;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() {
+            return Kind.TEMPLATE;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public Tag getTag() {
+            return TEMPLATED;
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public void accept(Visitor v) {
+            v.visitTemplatedString(this);
+        }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
+            return v.visitTemplatedString(this, d);
+        }
+    }
+
+    /**
      * An array selection
      */
     public static class JCArrayAccess extends JCExpression implements ArrayAccessTree {
@@ -3383,6 +3439,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCFieldAccess Select(JCExpression selected, Name selector);
         JCIdent Ident(Name idname);
         JCLiteral Literal(TypeTag tag, Object value);
+        JCTemplatedString TemplatedString(JCExpression policy,
+                                          String string,
+                                          List<JCExpression> expressions);
         JCPrimitiveTypeTree TypeIdent(TypeTag typetag);
         JCArrayTypeTree TypeArray(JCExpression elemtype);
         JCTypeApply TypeApply(JCExpression clazz, List<JCExpression> arguments);
@@ -3452,6 +3511,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitReference(JCMemberReference that)   { visitTree(that); }
         public void visitIdent(JCIdent that)                 { visitTree(that); }
         public void visitLiteral(JCLiteral that)             { visitTree(that); }
+        public void visitTemplatedString(JCTemplatedString that) { visitTree(that); }
         public void visitTypeIdent(JCPrimitiveTypeTree that) { visitTree(that); }
         public void visitTypeArray(JCArrayTypeTree that)     { visitTree(that); }
         public void visitTypeApply(JCTypeApply that)         { visitTree(that); }
