@@ -27,6 +27,7 @@ package java.lang.invoke;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
@@ -901,7 +902,10 @@ public final class StringConcatFactory {
      *
      * @throws StringConcatException If any of the linkage invariants are violated.
      * @throws NullPointerException If any of the incoming arguments is null.
+     *
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static MethodHandle makeConcatWithTemplate(
             List<String> segments,
             List<Class<?>> ptypes)
@@ -931,7 +935,8 @@ public final class StringConcatFactory {
                         slots + ", can only accept " + MAX_TEMPLATE_CONCAT_ARG_SLOTS);
             }
 
-            boolean isSpecialized = ptype.isPrimitive() || StringConcatItem.class == ptype;
+            boolean isSpecialized = ptype.isPrimitive() ||
+                                    StringConcatItem.class == ptype;
             Class<?> ttype = isSpecialized ? ptype : Object.class;
             MethodHandle filter = stringifierFor(ttype);
 
@@ -1021,7 +1026,10 @@ public final class StringConcatFactory {
      *                                  MAX_TEMPLATE_CONCAT_ARG_SLOTS.
      * @throws StringConcatException If any of the linkage invariants are violated.
      * @throws NullPointerException If any of the incoming arguments is null.
+     *
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static List<MethodHandle> makeConcatWithTemplateCluster(
             List<String> segments,
             List<Class<?>> ptypes,
@@ -1094,7 +1102,10 @@ public final class StringConcatFactory {
      *                                  getters don't use the same argument type
      * @throws StringConcatException If any of the linkage invariants are violated
      * @throws NullPointerException If any of the incoming arguments is null
+     *
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static MethodHandle makeConcatWithTemplateGetters(
             List<String> segments,
             List<MethodHandle> getters,

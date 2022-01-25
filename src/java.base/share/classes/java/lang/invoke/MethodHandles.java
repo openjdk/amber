@@ -6101,6 +6101,7 @@ assertEquals("boojum", (String) catTrace.invokeExact("boo", "jum"));
      *          (2) the {@code N} argument types at positions {@code argPositions[1...N]} of the target signature are
      *              not identical with the argument types of {@code combiner}.
      */
+    /*non-public*/
     static MethodHandle filterArgumentsWithCombiner(MethodHandle target, int position, MethodHandle combiner, int ... argPositions) {
         return argumentsWithCombiner(true, target, position, combiner, argPositions);
     }
@@ -6123,6 +6124,7 @@ assertEquals("boojum", (String) catTrace.invokeExact("boo", "jum"));
      *              (skipping {@code position} where the {@code combiner}'s return will be folded in) are not identical
      *              with the argument types of {@code combiner}.
      */
+    /*non-public*/
     static MethodHandle foldArgumentsWithCombiner(MethodHandle target, int position, MethodHandle combiner, int ... argPositions) {
         return argumentsWithCombiner(false, target, position, combiner, argPositions);
     }

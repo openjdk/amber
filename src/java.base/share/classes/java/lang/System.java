@@ -73,10 +73,11 @@ import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
-import jdk.internal.misc.VM;
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.logger.LoggerFinderLoader;
 import jdk.internal.logger.LazyLoggers;
 import jdk.internal.logger.LocalizedLoggerWrapper;
+import jdk.internal.misc.VM;
 import jdk.internal.util.SystemProps;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -2473,11 +2474,15 @@ public final class System {
                 return StringConcatHelper.mix(lengthCoder, constant);
             }
 
-            public long stringBuilderConcatMix(long lengthCoder, StringBuilder sb) {
+            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            public long stringBuilderConcatMix(long lengthCoder,
+                                               StringBuilder sb) {
                 return sb.mix(lengthCoder);
             }
 
-            public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb) {
+            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf,
+                                                   StringBuilder sb) {
                 return sb.prepend(lengthCoder, buf);
             }
 

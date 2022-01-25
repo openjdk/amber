@@ -27,10 +27,15 @@ package java.util;
 
 import java.lang.invoke.MethodHandle;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * Digits provides a fast methodology for converting integers and longs to
  * ASCII strings.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 interface Digits {
     /**
      * Insert digits for long value in buffer from high index to low index.

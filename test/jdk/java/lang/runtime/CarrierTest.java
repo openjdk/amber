@@ -24,7 +24,8 @@
 /*
  * @test
  * @summary Test features provided by the Carrier class.
- * @run main CarrierTest
+ * @compile --enable-preview -source ${jdk.version} CarrierTest.java
+ * @run main/othervm --enable-preview CarrierTest
  */
 
 import java.lang.invoke.MethodHandle;

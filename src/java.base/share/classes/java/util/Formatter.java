@@ -61,6 +61,7 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FormattedFloatingDecimal;
 import sun.util.locale.provider.LocaleProviderAdapter;
@@ -2781,73 +2782,6 @@ public final class Formatter implements Closeable, Flushable {
         return this;
     }
 
-    /**
-     * Writes a formatted string to this object's destination using the
-     * specified format string and values gleaned from a {@link TemplatedString}.
-     * The locale used is the one defined during the construction of this formatter.
-     *
-     * @param  templatedString
-     *         Containing format string and values.
-     *         The format string as described in <a href="#syntax">Format string
-     *         syntax</a>.
-     *
-     * @throws  IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a href="#detail">Details</a>
-     *          section of the formatter class specification.
-     *
-     * @throws  FormatterClosedException
-     *          If this formatter has been closed by invoking its {@link
-     *          #close()} method
-     *
-     * @return  This formatter
-     */
-    public Formatter format(TemplatedString templatedString) {
-        String format = templatedStringFormat(templatedString.template());
-        Object[] values = templatedString.values().stream().toArray();
-
-        return format(l, format, values);
-    }
-
-    /**
-     * Writes a formatted string to this object's destination using the
-     * specified locale and {@link TemplatedString}.
-     *
-     * @param  l
-     *         The {@linkplain java.util.Locale locale} to apply during
-     *         formatting.  If {@code l} is {@code null} then no localization
-     *         is applied.  This does not change this object's locale that was
-     *         set during construction.
-     *
-     * @param  templatedString
-     *         Containing format string and values.
-     *         The format string as described in <a href="#syntax">Format string
-     *         syntax</a>.
-     *
-     * @throws  IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a href="#detail">Details</a>
-     *          section of the formatter class specification.
-     *
-     * @throws  FormatterClosedException
-     *          If this formatter has been closed by invoking its {@link
-     *          #close()} method
-     *
-     * @return  This formatter
-     */
-    public Formatter format(Locale l, TemplatedString templatedString) {
-        String format = templatedStringFormat(templatedString.template());
-        Object[] values = templatedString.values().stream().toArray();
-
-        return format(l, format, values);
-    }
-
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final String formatSpecifier
         = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
@@ -4991,8 +4925,8 @@ public final class Formatter implements Closeable, Flushable {
      * format. The resulting MethodHandle does not require boxing of primitive
      * values.
      *
-     * @implNote the use of index specifiers causes a {@link MissingFormatArgumentException}
-     * to be thrown.
+     * @implNote the use of index specifiers causes a
+     * {@link MissingFormatArgumentException} to be thrown.
      *
      * @param  format  a format string as described in <a href="#syntax">Format
      * string syntax</a>.
@@ -5006,7 +4940,10 @@ public final class Formatter implements Closeable, Flushable {
      * @throws NullPointerException  if any of the arguments is null
      * @throws MissingFormatArgumentException  if a format specification is invalid
      * @throws IllegalArgumentException  if the ptypes has greater than 200 elements
+     *
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static MethodHandle formatFactory(String format, Locale locale,
                                              Class<?>... ptypes) {
         Objects.requireNonNull(format, "missing format");

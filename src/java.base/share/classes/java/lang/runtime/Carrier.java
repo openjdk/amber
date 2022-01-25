@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.misc.VM;
 import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.FieldVisitor;
@@ -47,7 +48,10 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
 /**
  * This  class is used to create objects that have number and types of
  * components determined at runtime.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final class Carrier {
     /**
      * Class file version.
@@ -93,7 +97,7 @@ public final class Carrier {
             LONG_TO_DOUBLE = lookup.findStatic(Double.class, "longBitsToDouble",
                     methodType(double.class, long.class));
         } catch (ReflectiveOperationException ex) {
-            throw new RuntimeException(ex);
+            throw new AssertionError("carrier static init fail", ex);
         }
     }
 
@@ -197,8 +201,8 @@ public final class Carrier {
         private static Lookup defineHiddenClass(byte[] bytes) {
             try {
                 return LOOKUP.defineHiddenClass(bytes, false, ClassOption.STRONG);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+            } catch (IllegalAccessException ex) {
+                throw new AssertionError("carrier factory static init fail", ex);
             }
         }
 
@@ -446,7 +450,7 @@ public final class Carrier {
 
                 return new CarrierClass(constructor, components);
             } catch (ReflectiveOperationException ex) {
-                throw new RuntimeException(ex);
+                throw new AssertionError("carrier class static init fail", ex);
             }
         }
 
@@ -480,11 +484,9 @@ public final class Carrier {
                 } else if(ptype == double.class) {
                     from = longIndex++;
                     filter = DOUBLE_TO_LONG;
-                    ptype = long.class;
                 } else if(ptype == float.class) {
                     from = intIndex++;
                     filter = FLOAT_TO_INT;
-                    ptype = int.class;
                 } else if (ptype == long.class) {
                     from = longIndex++;
                 } else {
@@ -570,7 +572,8 @@ public final class Carrier {
          *
          * @return carrier component getter {@link MethodHandle}
          *
-         * @throws IllegalArgumentException if number of component slots exceeds maximum
+         * @throws IllegalArgumentException if number of component slots exceeds
+         *         maximum
          */
         private static MethodHandle component(CarrierShape carrierShape, int i) {
             Class<?>[] ptypes = carrierShape.ptypes();

@@ -399,6 +399,7 @@ public class JavaTokenizer extends UnicodeReader {
                     break;
 
                 case '{':
+                    checkSourceLevel(position(), Feature.TEMPLATED_STRINGS);
                     isTemplatedString = true;
                     scanTemplateExpression();
                     break;
