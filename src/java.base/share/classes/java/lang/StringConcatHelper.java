@@ -26,6 +26,7 @@
 package java.lang;
 
 import jdk.internal.misc.Unsafe;
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.ForceInline;
 
 import java.lang.invoke.MethodHandle;
@@ -146,7 +147,9 @@ final class StringConcatHelper {
      *                    the upper word.
      * @param value       value to mix in
      * @return            new length and coder
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static long mix(long lengthCoder, StringConcatItem value) {
         lengthCoder = value.mix(lengthCoder);
 
@@ -399,8 +402,11 @@ final class StringConcatHelper {
      * @param buf        buffer to append to
      * @param value      String value to encode
      * @return           updated index (coder value retained)
+     * @since 19
      */
-    private static long prepend(long indexCoder, byte[] buf, StringConcatItem value) {
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    private static long prepend(long indexCoder, byte[] buf,
+                                StringConcatItem value) {
         try {
             return value.prepend(indexCoder, buf);
         } catch (Throwable ex) {
@@ -418,7 +424,9 @@ final class StringConcatHelper {
      * @param value      boolean value to encode
      * @param prefix     a constant to prepend before value
      * @return           updated index (coder value retained)
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static long prepend(long indexCoder, byte[] buf,
                         StringConcatItem value, String prefix) {
         indexCoder = prepend(indexCoder, buf, value);
@@ -582,32 +590,38 @@ final class StringConcatHelper {
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static char getCharLatin1(byte[] buffer, int index) {
         return (char)buffer[index];
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static char getCharUTF16(byte[] buffer, int index) {
         return StringUTF16.getChar(buffer, index);
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static void putCharLatin1(byte[] buffer, int index, int ch) {
         buffer[index] = (byte)ch;
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static void putCharUTF16(byte[] buffer, int index, int ch) {
         StringUTF16.putChar(buffer, index, ch);
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static MethodHandle selectGetChar(long indexCoder) {
         return indexCoder < UTF16 ? LateInit.GETCHAR_LATIN1_MH :
                                     LateInit.GETCHAR_UTF16_MH;
     }
 
     @ForceInline
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     static MethodHandle selectPutChar(long indexCoder) {
         return indexCoder < UTF16 ? LateInit.PUTCHAR_LATIN1_MH :
                                     LateInit.PUTCHAR_UTF16_MH;

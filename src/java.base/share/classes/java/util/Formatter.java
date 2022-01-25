@@ -60,6 +60,7 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQueries;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FormattedFloatingDecimal;
 import sun.util.locale.provider.LocaleProviderAdapter;
@@ -4951,8 +4952,8 @@ public final class Formatter implements Closeable, Flushable {
      * format. The resulting MethodHandle does not require boxing of primitive
      * values.
      *
-     * @implNote the use of index specifiers causes a {@link MissingFormatArgumentException}
-     * to be thrown.
+     * @implNote the use of index specifiers causes a
+     * {@link MissingFormatArgumentException} to be thrown.
      *
      * @param  format  a format string as described in <a href="#syntax">Format
      * string syntax</a>.
@@ -4966,7 +4967,10 @@ public final class Formatter implements Closeable, Flushable {
      * @throws NullPointerException  if any of the arguments is null
      * @throws MissingFormatArgumentException  if a format specification is invalid
      * @throws IllegalArgumentException  if the ptypes has greater than 200 elements
+     *
+     * @since 19
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static MethodHandle formatFactory(String format, Locale locale,
                                              Class<?>... ptypes) {
         Objects.requireNonNull(format, "missing format");

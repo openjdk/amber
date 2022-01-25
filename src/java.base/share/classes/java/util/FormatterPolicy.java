@@ -29,22 +29,37 @@ import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.TemplatePolicy.Linkage;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
- * This {@link TemplatePolicy} constructs a String result using {@link Formatter}.
- * Unlike {@link Formatter}, FormatterPolicy locates values in the expressions that
- * come immediately after the format specifier. TemplatedString expressions
- * without a preceeding specifier, use "%s" by default.
+ * This {@link TemplatePolicy} constructs a String result using {@link
+ * Formatter}. Unlike {@link Formatter}, FormatterPolicy locates values in
+ * the expressions that come immediately after the format specifier.
+ * TemplatedString expressions without a preceeding specifier, use "%s" by
+ * default. Example:
+ * {@snippet :
+ * import static java.util.FormatterPolicy.FMTR;
+ * ...
+ * int x = 10;
+ * int y = 20;
+ * String result = FMTR."%5d\{x} + %5d\{y} = %5d\{x + y}"
+ * }
+ * result is: <code>&nbsp;&nbsp;&nbsp;10&nbsp;+&nbsp;&nbsp;&nbsp;20&nbsp;=&nbsp;&nbsp;&nbsp;&nbsp;30</code>
  * <p>
- * When used in conjuction with a compiler generated {@link TemplatedString} this
- * {@link TemplatePolicy} will use the format specifiers in the template and types of the
- * values to produce a more performant formatter.
+ * When used in conjunction with a compiler generated {@link
+ * TemplatedString} this {@link TemplatePolicy} will use the format
+ * specifiers in the template and types of the values to produce a more
+ * performant formatter.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final class FormatterPolicy implements Linkage<String, RuntimeException> {
 
     /**
      * Predefined FormatterPolicy instance that uses default locale.
      */
-    public static final FormatterPolicy FORMAT = new FormatterPolicy();
+    public static final FormatterPolicy FMTR = new FormatterPolicy();
 
     /**
      * Locale used by this FormatterPolicy.

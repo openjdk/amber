@@ -30,10 +30,13 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
- * This interface describes the methods provided by a templated string policy. The primary
- * method {@link TemplatePolicy#apply} is used to validate and compose a result using
- * the template string and list of values, from a {@link TemplatedString}. For example:
+ * This interface describes the methods provided by a templated string
+ * policy. The primary method {@link TemplatePolicy#apply} is used to
+ * validate and compose a result using the template string and list of
+ * values, from a {@link TemplatedString}. For example:
  * {@snippet :
  * class SimplePolicy implements TemplatePolicy<String, IllegalArgumentException> {
  *       @Override
@@ -69,23 +72,25 @@ import java.util.function.Function;
  *     ...
  * }
  * }
- * Implementations of this interface may provide, but are not limited to, validating inputs,
- * composing inputs into a result, and transforming a result to a non-string type before
- * delivering the final result.
+ * Implementations of this interface may provide, but are not limited to,
+ * validating inputs, composing inputs into a result, and transforming a
+ * result to a non-string type before delivering the final result.
  * <p>
- * The user has the option of validating inputs used in composition. For example an SQL
- * policy could prevent injection vulnerabilities by sanitizing inputs or throwing an
- * exception of type {@code E} if an SQL statement is a potential vulnerability.
+ * The user has the option of validating inputs used in composition. For
+ * example an SQL policy could prevent injection vulnerabilities by
+ * sanitizing inputs or throwing an exception of type {@code E} if an SQL
+ * statement is a potential vulnerability.
  * <p>
- * Composing allows the users to control how the result is assembled. Most often, a user will
- * construct a new string from the template string, with placeholders replaced by stringified
- * objects from the values list.
+ * Composing allows the users to control how the result is assembled. Most
+ * often, a user will construct a new string from the template string, with
+ * placeholders replaced by stringified objects from the values list.
  * <p>
- * A static factory method is provided to simplify constructing
- * {@link TemplatePolicy TemplatePolicys} using lambdas. A {@link BiFunction BiFunction}
- * lambda passed to {@link TemplatePolicy#ofComposed ofComposed} is supplied a list of
- * string segments and a list of expression values. The result type of the lambda
- * determines the result type {@code R} of the generated {@link TemplatePolicy}.
+ * A static factory method is provided to simplify constructing {@link
+ * TemplatePolicy template policies} using lambdas. A {@link BiFunction
+ * BiFunction} lambda passed to {@link TemplatePolicy#ofComposed
+ * ofComposed} is supplied a list of string segments and a list of
+ * expression values. The result type of the lambda determines the result
+ * type {@code R} of the generated {@link TemplatePolicy}.
  * {@snippet :
  * TemplatePolicy<String, RuntimeException> policy =
  *         TemplatePolicy.ofComposed((segments, values) -> {
@@ -103,16 +108,18 @@ import java.util.function.Function;
  *
  *     });
  * }
- * Transformation allows the user to the construct a result into something other than a
- * string. For example, a JSON policy may transform a {@link TemplatedString} into a JSON
- * object. The {@code R} parameter type allows the user to specify the final result type of
- * the policy's {@link TemplatePolicy#apply apply} method.
+ * Transformation allows the user to the construct a result into something
+ * other than a string. For example, a JSON policy may transform a {@link
+ * TemplatedString} into a JSON object. The {@code R} parameter type allows
+ * the user to specify the final result type of the policy's {@link
+ * TemplatePolicy#apply apply} method.
  * <p>
- * A static factory method is provided to simplify constructing simple transforming policies
- * using lambdas. The {@link Function Function} lambda passed to
- * {@link  TemplatePolicy#ofTransformed ofTransformed} is supplied the simple concatenation
- * from the {@link TemplatedString} using {@link TemplatedString#concat}. This allows the
- * user to transform that concatenation into some other form. The result type of the lambda
+ * A static factory method is provided to simplify constructing simple
+ * transforming policies using lambdas. The {@link Function Function}
+ * lambda passed to {@link  TemplatePolicy#ofTransformed ofTransformed} is
+ * supplied the simple concatenation from the {@link TemplatedString} using
+ * {@link TemplatedString#concat}. This allows the user to transform that
+ * concatenation into some other form. The result type of the lambda
  * determines the result type {@code R} of the generated {@link TemplatePolicy}.
  * {@snippet :
  * TemplatePolicy<JSONObject, RuntimeException> JSON = TemplatePolicy.ofTransformed(JSONObject::new);
@@ -131,11 +138,12 @@ import java.util.function.Function;
  *
  * @see java.util.FormatterPolicy
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public interface TemplatePolicy<R, E extends Throwable> {
 
     /**
-     * Constructs a result based on the template string and values in the supplied
-     * {@link TemplatedString templatedString} object.
+     * Constructs a result based on the template string and values in the
+     * supplied {@link TemplatedString templatedString} object.
      *
      * @param templatedString  a {@link TemplatedString} instance
      *
@@ -200,14 +208,16 @@ public interface TemplatePolicy<R, E extends Throwable> {
     /**
      * Simple concatenation policy instance.
      */
-    public static final TemplatePolicy<String, RuntimeException> CONCAT = new ConcatPolicy();
+    public static final TemplatePolicy<String, RuntimeException>
+            STR = new ConcatinationPolicy();
 
     /**
      * Policies using this interface have the flexibility to specialize the
      * composition of the templated string by returning a customized from
-     * {@link CallSite CallSites} from {@link TemplatePolicy.Linkage#applier applier}.
-     * These specializations are typically implemented to improve performance;
-     * specializing value types or avoiding boxing and vararg arrays.
+     * {@link CallSite CallSites} from {@link TemplatePolicy.Linkage#applier
+     * applier}. These specializations are typically implemented to improve
+     * performance; specializing value types or avoiding boxing and vararg
+     * arrays.
      *
      * @implNote {@link TemplatePolicy} implemented using this interface outside
      * java.base will default to using the {@link TemplatePolicy#apply} method.
@@ -216,7 +226,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @param <E>  Exception thrown type.
      */
     sealed interface Linkage<R, E extends Throwable> extends TemplatePolicy<R, E>
-        permits ConcatPolicy, FormatterPolicy
+        permits ConcatinationPolicy, FormatterPolicy
     {
         /**
          * Return a boolean guard to assure that only specific policies should

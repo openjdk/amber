@@ -1936,7 +1936,7 @@ public class JavacParserTest extends TestCase {
                       package test;
                       public class Test {
                            Test(int a) {
-                               String s = TemplatePolicy.CONCAT."prefix \\{a} suffix";
+                               String s = TemplatePolicy.STR."prefix \\{a} suffix";
                            }
                       }
                       """;
@@ -1950,7 +1950,7 @@ public class JavacParserTest extends TestCase {
         SourcePositions sp = Trees.instance(ct).getSourcePositions();
         int initStart = (int) sp.getStartPosition(cut, decl.getInitializer());
         int initEnd   = (int) sp.getEndPosition(cut, decl.getInitializer());
-        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "TemplatePolicy.CONCAT.\"prefix \\{a} suffix\"");
+        assertEquals("correct templated String span expected", code.substring(initStart, initEnd), "TemplatePolicy.STR.\"prefix \\{a} suffix\"");
     }
 
     void run(String[] args) throws Exception {

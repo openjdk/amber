@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Stream;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.module.ServicesCatalog;
 import jdk.internal.reflect.ConstantPool;
 import jdk.internal.vm.Continuation;
@@ -400,11 +401,13 @@ public interface JavaLangAccess {
     /**
      * Update lengthCoder for StringBuilder.
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     long stringBuilderConcatMix(long lengthCoder, StringBuilder sb);
 
     /**
      * Prepend StringBuilder content.
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb);
 
     /**

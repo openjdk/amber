@@ -40,7 +40,7 @@ import toolbox.ToolBox;
 
 public class Basic {
     private static ToolBox TOOLBOX = new ToolBox();
-    private final static String JDK_VERSION = Integer.toString(Runtime.version().feature());
+    private static final String JAVA_VERSION = System.getProperty("java.specification.version");
 
     public static void main(String... arg) {
         test1();
@@ -165,7 +165,7 @@ public class Basic {
     static void compPass(String code) {
         String source = """
             import java.util.*;
-            import static java.lang.TemplatePolicy.CONCAT;
+            import static java.lang.TemplatePolicy.STR;
             public class TEST {
                 public static void main(String... arg) {
             """ +
@@ -177,7 +177,7 @@ public class Basic {
         String output = new JavacTask(TOOLBOX)
                 .sources(source)
                 .classpath(".")
-                .options("-encoding", "utf8")
+                .options("-encoding", "utf8", "--enable-preview", "-source", JAVA_VERSION)
                 .run()
                 .writeAll()
                 .getOutput(Task.OutputKind.DIRECT);
@@ -193,7 +193,7 @@ public class Basic {
     static void compFail(String code) {
         String source = """
             import java.util.*;
-            import static java.lang.TemplatePolicy.CONCAT;
+            import static java.lang.TemplatePolicy.STR;
             public class TEST {
                 public static void main(String... arg) {
             """ +
@@ -205,7 +205,7 @@ public class Basic {
         String errors = new JavacTask(TOOLBOX)
                 .sources(source)
                 .classpath(".")
-                .options("-XDrawDiagnostics", "-encoding", "utf8")
+                .options("-XDrawDiagnostics", "-encoding", "utf8", "--enable-preview", "-source", JAVA_VERSION)
                 .run(Task.Expect.FAIL)
                 .writeAll()
                 .getOutput(Task.OutputKind.DIRECT);

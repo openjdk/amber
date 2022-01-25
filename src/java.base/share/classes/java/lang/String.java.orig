@@ -52,7 +52,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import jdk.internal.util.Preconditions;
-import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -231,7 +230,7 @@ public final class String
      *
      * A String instance is written into an ObjectOutputStream according to
      * <a href="{@docRoot}/../specs/serialization/protocol.html#stream-elements">
-     * <cite>Java Object Serialization Specification</cite>, Section 6.2, "Stream Elements"</a>
+     * Object Serialization Specification, Section 6.2, "Stream Elements"</a>
      */
     @java.io.Serial
     private static final ObjectStreamField[] serialPersistentFields =
@@ -526,58 +525,52 @@ public final class String
             this.value = "".value;
             this.coder = "".coder;
         } else if (charset == UTF_8.INSTANCE) {
-            if (COMPACT_STRINGS) {
-                int dp = StringCoding.countPositives(bytes, offset, length);
-                if (dp == length) {
-                    this.value = Arrays.copyOfRange(bytes, offset, offset + length);
-                    this.coder = LATIN1;
-                    return;
-                }
+            if (COMPACT_STRINGS && !StringCoding.hasNegatives(bytes, offset, length)) {
+                this.value = Arrays.copyOfRange(bytes, offset, offset + length);
+                this.coder = LATIN1;
+            } else {
                 int sl = offset + length;
-                byte[] dst = new byte[length];
-                if (dp > 0) {
-                    System.arraycopy(bytes, offset, dst, 0, dp);
-                    offset += dp;
-                }
-                while (offset < sl) {
-                    int b1 = bytes[offset++];
-                    if (b1 >= 0) {
-                        dst[dp++] = (byte)b1;
-                        continue;
-                    }
-                    if ((b1 & 0xfe) == 0xc2 && offset < sl) { // b1 either 0xc2 or 0xc3
-                        int b2 = bytes[offset];
-                        if (b2 < -64) { // continuation bytes are always negative values in the range -128 to -65
-                            dst[dp++] = (byte)decode2(b1, b2);
+                int dp = 0;
+                byte[] dst = null;
+                if (COMPACT_STRINGS) {
+                    dst = new byte[length];
+                    while (offset < sl) {
+                        int b1 = bytes[offset];
+                        if (b1 >= 0) {
+                            dst[dp++] = (byte)b1;
                             offset++;
                             continue;
                         }
+                        if ((b1 == (byte)0xc2 || b1 == (byte)0xc3) &&
+                                offset + 1 < sl) {
+                            int b2 = bytes[offset + 1];
+                            if (!isNotContinuation(b2)) {
+                                dst[dp++] = (byte)decode2(b1, b2);
+                                offset += 2;
+                                continue;
+                            }
+                        }
+                        // anything not a latin1, including the repl
+                        // we have to go with the utf16
+                        break;
                     }
-                    // anything not a latin1, including the REPL
-                    // we have to go with the utf16
-                    offset--;
-                    break;
-                }
-                if (offset == sl) {
-                    if (dp != dst.length) {
-                        dst = Arrays.copyOf(dst, dp);
+                    if (offset == sl) {
+                        if (dp != dst.length) {
+                            dst = Arrays.copyOf(dst, dp);
+                        }
+                        this.value = dst;
+                        this.coder = LATIN1;
+                        return;
                     }
-                    this.value = dst;
-                    this.coder = LATIN1;
-                    return;
                 }
-                byte[] buf = new byte[length << 1];
-                StringLatin1.inflate(dst, 0, buf, 0, dp);
-                dst = buf;
+                if (dp == 0 || dst == null) {
+                    dst = new byte[length << 1];
+                } else {
+                    byte[] buf = new byte[length << 1];
+                    StringLatin1.inflate(dst, 0, buf, 0, dp);
+                    dst = buf;
+                }
                 dp = decodeUTF8_UTF16(bytes, offset, sl, dst, dp, true);
-                if (dp != length) {
-                    dst = Arrays.copyOf(dst, dp << 1);
-                }
-                this.value = dst;
-                this.coder = UTF16;
-            } else { // !COMPACT_STRINGS
-                byte[] dst = new byte[length << 1];
-                int dp = decodeUTF8_UTF16(bytes, offset, offset + length, dst, 0, true);
                 if (dp != length) {
                     dst = Arrays.copyOf(dst, dp << 1);
                 }
@@ -659,6 +652,8 @@ public final class String
 
             // decode using CharsetDecoder
             int en = scale(length, cd.maxCharsPerByte());
+            cd.onMalformedInput(CodingErrorAction.REPLACE)
+                    .onUnmappableCharacter(CodingErrorAction.REPLACE);
             char[] ca = new char[en];
             if (charset.getClass().getClassLoader0() != null &&
                     System.getSecurityManager() != null) {
@@ -688,43 +683,42 @@ public final class String
         if (length == 0) {
             return "";
         }
-        int dp;
-        byte[] dst;
-        if (COMPACT_STRINGS) {
-            dp = StringCoding.countPositives(bytes, offset, length);
+        if (COMPACT_STRINGS && !StringCoding.hasNegatives(bytes, offset, length)) {
+            return new String(Arrays.copyOfRange(bytes, offset, offset + length), LATIN1);
+        } else {
             int sl = offset + length;
-            if (dp == length) {
-                return new String(Arrays.copyOfRange(bytes, offset, offset + length), LATIN1);
-            }
-            dst = new byte[length];
-            System.arraycopy(bytes, offset, dst, 0, dp);
-            offset += dp;
-            while (offset < sl) {
-                int b1 = bytes[offset++];
-                if (b1 >= 0) {
-                    dst[dp++] = (byte)b1;
-                    continue;
-                }
-                if ((b1 & 0xfe) == 0xc2 && offset < sl) { // b1 either 0xc2 or 0xc3
-                    int b2 = bytes[offset];
-                    if (b2 < -64) { // continuation bytes are always negative values in the range -128 to -65
-                        dst[dp++] = (byte)decode2(b1, b2);
+            int dp = 0;
+            byte[] dst = null;
+            if (COMPACT_STRINGS) {
+                dst = new byte[length];
+                while (offset < sl) {
+                    int b1 = bytes[offset];
+                    if (b1 >= 0) {
+                        dst[dp++] = (byte) b1;
                         offset++;
                         continue;
                     }
+                    if ((b1 == (byte) 0xc2 || b1 == (byte) 0xc3) &&
+                            offset + 1 < sl) {
+                        int b2 = bytes[offset + 1];
+                        if (!isNotContinuation(b2)) {
+                            dst[dp++] = (byte) decode2(b1, b2);
+                            offset += 2;
+                            continue;
+                        }
+                    }
+                    // anything not a latin1, including the REPL
+                    // we have to go with the utf16
+                    break;
                 }
-                // anything not a latin1, including the REPL
-                // we have to go with the utf16
-                offset--;
-                break;
-            }
-            if (offset == sl) {
-                if (dp != dst.length) {
-                    dst = Arrays.copyOf(dst, dp);
+                if (offset == sl) {
+                    if (dp != dst.length) {
+                        dst = Arrays.copyOf(dst, dp);
+                    }
+                    return new String(dst, LATIN1);
                 }
-                return new String(dst, LATIN1);
             }
-            if (dp == 0) {
+            if (dp == 0 || dst == null) {
                 dst = new byte[length << 1];
             } else {
                 byte[] buf = new byte[length << 1];
@@ -732,14 +726,11 @@ public final class String
                 dst = buf;
             }
             dp = decodeUTF8_UTF16(bytes, offset, sl, dst, dp, false);
-        } else { // !COMPACT_STRINGS
-            dst = new byte[length << 1];
-            dp = decodeUTF8_UTF16(bytes, offset, offset + length, dst, 0, false);
+            if (dp != length) {
+                dst = Arrays.copyOf(dst, dp << 1);
+            }
+            return new String(dst, UTF16);
         }
-        if (dp != length) {
-            dst = Arrays.copyOf(dst, dp << 1);
-        }
-        return new String(dst, UTF16);
     }
 
     static String newStringNoRepl(byte[] src, Charset cs) throws CharacterCodingException {
@@ -1030,15 +1021,17 @@ public final class String
      */
     /* package-private */
     static int decodeASCII(byte[] sa, int sp, char[] da, int dp, int len) {
-        int count = StringCoding.countPositives(sa, sp, len);
-        while (count < len) {
-            if (sa[sp + count] < 0) {
-                break;
+        if (!StringCoding.hasNegatives(sa, sp, len)) {
+            StringLatin1.inflate(sa, sp, da, dp, len);
+            return len;
+        } else {
+            int start = sp;
+            int end = sp + len;
+            while (sp < end && sa[sp] >= 0) {
+                da[dp++] = (char) sa[sp++];
             }
-            count++;
+            return sp - start;
         }
-        StringLatin1.inflate(sa, sp, da, dp, count);
-        return count;
     }
 
     private static boolean isNotContinuation(int b) {
@@ -1206,8 +1199,6 @@ public final class String
     private static int decodeWithDecoder(CharsetDecoder cd, char[] dst, byte[] src, int offset, int length) {
         ByteBuffer bb = ByteBuffer.wrap(src, offset, length);
         CharBuffer cb = CharBuffer.wrap(dst, 0, dst.length);
-        cd.onMalformedInput(CodingErrorAction.REPLACE)
-            .onUnmappableCharacter(CodingErrorAction.REPLACE);
         try {
             CoderResult cr = cd.decode(bb, cb, true);
             if (!cr.isUnderflow())
@@ -1293,17 +1284,14 @@ public final class String
         int sp = 0;
         int sl = val.length >> 1;
         byte[] dst = new byte[sl * 3];
-        while (sp < sl) {
+        char c;
+        while (sp < sl && (c = StringUTF16.getChar(val, sp)) < '\u0080') {
             // ascii fast loop;
-            char c = StringUTF16.getChar(val, sp);
-            if (c >= '\u0080') {
-                break;
-            }
             dst[dp++] = (byte)c;
             sp++;
         }
         while (sp < sl) {
-            char c = StringUTF16.getChar(val, sp++);
+            c = StringUTF16.getChar(val, sp++);
             if (c < 0x80) {
                 dst[dp++] = (byte)c;
             } else if (c < 0x800) {
@@ -3257,7 +3245,7 @@ public final class String
             icoder |= delimiter.coder();
         }
         // assert len > 0L; // max: (long) Integer.MAX_VALUE << 32
-        // following loop will add max: (long) Integer.MAX_VALUE * Integer.MAX_VALUE to len
+        // following loop wil add max: (long) Integer.MAX_VALUE * Integer.MAX_VALUE to len
         // so len can overflow at most once
         for (int i = 0; i < size; i++) {
             var el = elements[i];
@@ -3929,14 +3917,9 @@ public final class String
      *     <td>{@code U+005C}</td>
      *   </tr>
      *   <tr>
-     *     <th scope="row">{@code \u005C{...}}</th>
-     *     <td>templated string expression</td>
-     *     <td>{@code U+FFFC}</td>
-     *   </tr>
-     *   <tr>
      *     <th scope="row">{@code \u005C0 - \u005C377}</th>
      *     <td>octal escape</td>
-     *     <td>code point equivalent</td>
+     *     <td>code point equivalents</td>
      *   </tr>
      *   <tr>
      *     <th scope="row">{@code \u005C<line-terminator>}</th>
@@ -3995,74 +3978,19 @@ public final class String
                 case '\\':
                     // as is
                     break;
-                case '{': {
-                        int braceCount = 0;
-                        while (from < length) {
-                            ch = chars[from++];
-                            if (ch == '}') {
-                                if (braceCount == 0) {
-                                    break;
-                                }
-                                braceCount--;
-                            } else if (ch == '{') {
-                                braceCount++;
-                            } else if (ch == '/') {
-                                if (from < length && chars[from] == '*') {
-                                    from++;
-                                    while (from < length) {
-                                        ch = chars[from++];
-                                        if (ch == '*' &&
-                                                from + 1 < length &&
-                                                chars[from] == '/') {
-                                            from++;
-                                            break;
-                                        }
-                                    }
-                                } else if (from < length && chars[from] == '/') {
-                                    from++;
-                                    while (from < length) {
-                                        ch = chars[from++];
-                                        if (ch == '\n' || ch == '\r') {
-                                            break;
-                                        }
-                                    }
-                                }
-                            } else if (ch == '\'' || ch == '\"') {
-                                char delimiter = ch;
-                                while (from < length) {
-                                    ch = chars[from++];
-
-                                    if (ch == delimiter) {
-                                        break;
-                                    } else if (ch == '\\' && from < length) {
-                                        from++;
-                                    }
-                                }
-                            }
-                        }
-                        if (ch != '}') {
-                            java.lang.String msg = java.lang.String.format(
-                                    "Unclosed template expression escape sequence: \\%c \\\\u%04X",
-                                    ch, (int) ch);
-                            throw new IllegalArgumentException(msg);
-                        }
-                        ch = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
-                    }
-                    break;
                 case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7': {
-                        int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
-                        int code = ch - '0';
-                        while (from < limit) {
-                            ch = chars[from];
-                            if (ch < '0' || '7' < ch) {
-                                break;
-                            }
-                            from++;
-                            code = (code << 3) | (ch - '0');
+                case '4': case '5': case '6': case '7':
+                    int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
+                    int code = ch - '0';
+                    while (from < limit) {
+                        ch = chars[from];
+                        if (ch < '0' || '7' < ch) {
+                            break;
                         }
-                        ch = (char)code;
+                        from++;
+                        code = (code << 3) | (ch - '0');
                     }
+                    ch = (char)code;
                     break;
                 case '\n':
                     continue;
@@ -4582,8 +4510,7 @@ public final class String
             this.coder = LATIN1;
             this.value = Arrays.copyOfRange(val, 0, length);
         } else {
-            // only try to compress val if some characters were deleted.
-            if (COMPACT_STRINGS && asb.maybeLatin1) {
+            if (COMPACT_STRINGS) {
                 byte[] buf = StringUTF16.compress(val, 0, length);
                 if (buf != null) {
                     this.coder = LATIN1;

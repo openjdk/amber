@@ -36,6 +36,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 public class TreeScannerTest {
+    private static final String JAVA_VERSION = System.getProperty("java.specification.version");
+
     public static void main(String... args) throws Exception {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         String code = """
@@ -46,7 +48,8 @@ public class TreeScannerTest {
                           }
                       }
                       """;
-        JavacTask task = (JavacTask) compiler.getTask(null, null, null, null, null, List.of(new TestJFO(code)));
+        JavacTask task = (JavacTask) compiler.getTask(null, null, null,
+            List.of("--enable-preview", "-source", JAVA_VERSION), null, List.of(new TestJFO(code)));
         StringBuilder output = new StringBuilder();
         TreeScanner<Void,Void> checker = new TreeScanner<Void, Void>() {
             private boolean log;

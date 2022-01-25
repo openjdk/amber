@@ -25,9 +25,6 @@
 
 package java.util;
 
-import jdk.internal.access.JavaLangAccess;
-import jdk.internal.access.SharedSecrets;
-
 import java.io.IOException;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -37,19 +34,27 @@ import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormatSymbols;
 import java.util.Formatter.FormatSpecifier;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.javac.PreviewFeature;
+
 import static java.lang.invoke.MethodType.methodType;
 import static java.util.Digits.*;
 
 /**
  * A specialized objects used by FormatBuilder that knows how to insert
  * themselves into a concatenation performed by StringConcatFactory.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 class FormatItem {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
-    private static final MethodHandle STRING_PREPEND = JLA.stringConcatHelper("prepend",
-            MethodType.methodType(long.class, long.class, byte[].class,
-                    String.class, String.class));
+    private static final MethodHandle STRING_PREPEND =
+            JLA.stringConcatHelper("prepend",
+                    MethodType.methodType(long.class, long.class, byte[].class,
+                            String.class, String.class));
 
     private static final MethodHandle SELECT_GETCHAR_MH =
             JLA.stringConcatHelper("selectGetChar",
@@ -73,7 +78,8 @@ class FormatItem {
         try {
             Lookup lookup = MethodHandles.lookup();
             PUT_CHAR_DIGIT = lookup.findStatic(FormatItem.class, "putByte",
-                    MethodType.methodType(void.class, byte[].class, int.class, int.class));
+                    MethodType.methodType(void.class,
+                            byte[].class, int.class, int.class));
         } catch (ReflectiveOperationException ex) {
             throw new AssertionError("putByte lookup failed", ex);
         }

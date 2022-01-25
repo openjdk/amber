@@ -25,7 +25,9 @@
 
 package java.lang;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.Stable;
+
 import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
 import java.lang.runtime.Carrier;
@@ -35,7 +37,10 @@ import java.util.*;
 /**
  * This private class constructs a {@link CallSite} to handle templated
  * string processing.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 final class TemplateBootstrap {
     /**
      * {@link MethodHandle} to {@link TemplatedStringCarrier}
@@ -132,17 +137,13 @@ final class TemplateBootstrap {
             TEMPLATED_STRING_CARRIER_MH = lookup.findConstructor(
                     TemplatedStringCarrier.class, mt);
 
-            mt = MethodType.methodType(
-                    void.class,
-                    String.class,
-                    List.class,
-                    Object[].class
-            );
+            mt = MethodType.methodType(void.class, String.class, List.class,
+                    Object[].class);
             TEMPLATED_STRING_VALUES_MH = lookup.findConstructor(
                     TemplatedStringValues.class, mt);
 
             mt = MethodType.methodType(List.class, Object[].class);
-            LIST_OF_MH = lookup.findStatic(List.class, "of", mt);
+            LIST_OF_MH = lookup.findStatic(TemplateBootstrap.class, "listOf", mt);
 
             mt = MethodType.methodType(Object.class, TemplatedString.class);
             APPLY_MH = lookup.findVirtual(TemplatePolicy.class, "apply", mt);
@@ -206,6 +207,17 @@ final class TemplateBootstrap {
     }
 
     /**
+     * Returns an immutable list built from an array of objects.
+     *
+     * @param values  array of objects
+     *
+     * @returns immutable list of objects
+     */
+    private static List<Object> listOf(Object[] values) {
+        return Collections.unmodifiableList(Arrays.asList(values));
+    }
+
+    /**
      * Return a {@link MethodHandle} that constructs a list from the
      * values in a carrier.
      *
@@ -261,8 +273,8 @@ final class TemplateBootstrap {
         MethodHandle values = valuesMethodHandle(carrierType, components);
         MethodHandle concat = concatMethodHandle(carrierType, components);
         MethodHandle mh = MethodHandles.insertArguments(
-                TEMPLATED_STRING_CARRIER_MH, 0, template, TemplatedString.split(template),
-                values, concat);
+                TEMPLATED_STRING_CARRIER_MH, 0, template,
+                TemplatedString.split(template), values, concat);
         mh = MethodHandles.collectArguments(mh, 0, constructor);
         mh = mh.asType(mh.type().changeReturnType(TemplatedString.class));
 
@@ -278,9 +290,11 @@ final class TemplateBootstrap {
     private MethodHandle defaultMethodHandle() {
         MethodType carrierType = type.dropParameterTypes(0, 1);
         MethodHandle templatedString = carrierType.parameterCount() == 0 ?
-                MethodHandles.constant(TemplatedString.class, TemplatedString.of(template)) :
-                createTemplatedStringCarrier(carrierType);
-        MethodHandle mh = MethodHandles.collectArguments(APPLY_MH, 1, templatedString);
+            MethodHandles.constant(TemplatedString.class,
+                    TemplatedString.of(template)) :
+            createTemplatedStringCarrier(carrierType);
+        MethodHandle mh = MethodHandles.collectArguments(APPLY_MH, 1,
+                templatedString);
         mh = mh.asType(type);
 
         return mh;
@@ -392,7 +406,8 @@ final class TemplateBootstrap {
      */
     private CallSite createTemplatedString() {
         MethodHandle mh = type.parameterCount() == 0 ?
-               MethodHandles.constant(TemplatedString.class, TemplatedString.of(template)) :
+               MethodHandles.constant(TemplatedString.class,
+                    TemplatedString.of(template)) :
                createTemplatedStringCarrier(type);
 
         return new ConstantCallSite(mh);
@@ -402,9 +417,11 @@ final class TemplateBootstrap {
      * Selector for {@link Object} array. Needed when slot count exceeds 254.
      */
     private CallSite applyWithArray() {
-        MethodType mt = MethodType.methodType(TemplatedString.class, Object[].class);
+        MethodType mt = MethodType.methodType(TemplatedString.class,
+                Object[].class);
         MethodHandle mh = MethodHandles.insertArguments(
-                TEMPLATED_STRING_VALUES_MH, 0, template, TemplatedString.split(template)).asType(mt);
+                TEMPLATED_STRING_VALUES_MH, 0, template,
+                        TemplatedString.split(template)).asType(mt);
 
         if (type.parameterCount() == 2) {
             mh = MethodHandles.filterArguments(APPLY_MH, 1, mh);
@@ -487,9 +504,12 @@ final class TemplateBootstrap {
          * Constructor.
          *
          * @param template  template string with placeholders
-         * @param segments  List of string segments from splitting template at placeholders
-         * @param values    {@link MethodHandle} to create value list from carrier
-         * @param concat    {@link MethodHandle} to perform concatenation from carrier
+         * @param segments  List of string segments from splitting template at
+         *                  placeholders
+         * @param values    {@link MethodHandle} to create value list from
+         *                  carrier
+         * @param concat    {@link MethodHandle} to perform concatenation from
+         *                  carrier
          * @param carrier   {@link Carrier} object containing values from
          *                  {@link CallSite}
          */
@@ -563,12 +583,15 @@ final class TemplateBootstrap {
          * Constructor.
          *
          * @param template  template string with placeholders
-         * @param segments  List of string segments from splitting template at placeholders
+         * @param segments  List of string segments from splitting template at
+         *                  placeholders
          * @param values    {@link Object} array of expression values
          */
-        TemplatedStringValues(String template, List<String> segments, Object[] values) {
+        TemplatedStringValues(String template,
+                              List<String> segments,
+                              Object[] values) {
             this.template = template;
-            this.values = Collections.unmodifiableList(List.of(values));
+            this.values = Collections.unmodifiableList(Arrays.asList(values));
             this.segments = segments;
         }
 

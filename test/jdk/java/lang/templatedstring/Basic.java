@@ -25,11 +25,12 @@
  * @test
  * @bug 0000000
  * @summary Exercise runtime handing of templated strings.
- * @run main Basic
+ * @compile --enable-preview -source ${jdk.version} Basic.java
+ * @run main/othervm --enable-preview Basic
  */
 
 import java.util.*;
-import static java.lang.TemplatePolicy.CONCAT;
+import static java.lang.TemplatePolicy.STR;
 
 public class Basic {
     public static void main(String... arg) {
@@ -45,8 +46,12 @@ public class Basic {
         int x = 10;
         int y = 20;
 
-        ASSERT(CONCAT."\{x} \{y}", x + " " + y);
-        ASSERT(CONCAT."\{x + y}", "" + (x + y));
+        ASSERT(STR."\{x} \{y}", x + " " + y);
+        ASSERT(STR."\{x + y}", "" + (x + y));
+        ASSERT(STR.apply("\{x} \{y}"), x + " " + y);
+        ASSERT(STR.apply("\{x + y}"), "" + (x + y));
+        ASSERT(("\{x} \{y}").apply(STR), x + " " + y);
+        ASSERT(("\{x + y}").apply(STR), "" + (x + y));
     }
 
     /*
@@ -60,7 +65,7 @@ public class Basic {
         ASSERT(ts.template(), "\uFFFC + \uFFFC = \uFFFC");
         ASSERT(ts.values(), List.of(x, y, x + y));
         ASSERT(ts.segments(), List.of("", " + ", " = ", ""));
-        ASSERT(ts.concat(), CONCAT."\{x} + \{y} = \{x + y}");
+        ASSERT(ts.concat(), STR."\{x} + \{y} = \{x + y}");
     }
 
     /*

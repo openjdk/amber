@@ -29,10 +29,14 @@ import java.lang.invoke.*;
 import java.util.List;
 import java.util.Objects;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * Simple concatenation policy.
  */
-final class ConcatPolicy implements TemplatePolicy.Linkage<String, RuntimeException> {
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+final class ConcatinationPolicy
+        implements TemplatePolicy.Linkage<String, RuntimeException> {
     @Override
     public String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);

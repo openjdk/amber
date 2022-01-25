@@ -660,6 +660,7 @@ public class JavacParser implements Parser {
      *  LBRACE term RBRACE
      */
     JCExpression templatedString(JCExpression policy) {
+        checkSourceLevel(Feature.TEMPLATED_STRINGS);
         int oldmode = mode;
         selectExprMode();
         Token stringToken = token;

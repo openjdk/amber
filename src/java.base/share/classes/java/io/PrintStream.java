@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1433,103 +1433,6 @@ public class PrintStream extends FilterOutputStream
         if ((formatter == null) || (formatter.locale() != l))
             formatter = new Formatter(this, l);
         formatter.format(l, format, args);
-    }
-
-    /**
-     * Writes a formatted string to this output stream using the specified
-     * {@link TemplatedString}..
-     *
-     * <p> The locale always used is the one returned by {@link
-     * java.util.Locale#getDefault(Locale.Category)} with
-     * {@link java.util.Locale.Category#FORMAT FORMAT} category specified,
-     * regardless of any previous invocations of other formatting methods on
-     * this object.
-     *
-     * @param  templatedString
-     *         Containing format string and values.
-     *         The format string as described in <a href="#syntax">Format string
-     *         syntax</a>.
-     *
-     * @throws  java.util.IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a
-     *          href="../util/Formatter.html#detail">Details</a> section of the
-     *          formatter class specification.
-     *
-     * @throws  NullPointerException
-     *          If the {@code format} is {@code null}
-     *
-     * @return  This output stream
-     *
-     * @since  1.5
-     */
-    public PrintStream format(TemplatedString templatedString) {
-        try {
-            synchronized (this) {
-                ensureOpen();
-                if ((formatter == null)
-                        || (formatter.locale() !=
-                        Locale.getDefault(Locale.Category.FORMAT)))
-                    formatter = new Formatter((Appendable) this);
-                formatter.format(Locale.getDefault(Locale.Category.FORMAT),
-                        templatedString);
-            }
-        } catch (InterruptedIOException x) {
-            Thread.currentThread().interrupt();
-        } catch (IOException x) {
-            trouble = true;
-        }
-        return this;
-    }
-
-    /**
-     * Writes a formatted string to this output stream using the specified
-     * {@link TemplatedString}.
-     *
-     * @param  l
-     *         The {@linkplain java.util.Locale locale} to apply during
-     *         formatting.  If {@code l} is {@code null} then no localization
-     *         is applied.
-     *
-     * @param  templatedString
-     *         Containing format string and values.
-     *         The format string as described in <a href="#syntax">Format string
-     *         syntax</a>.
-     *
-     * @throws  java.util.IllegalFormatException
-     *          If a format string contains an illegal syntax, a format
-     *          specifier that is incompatible with the given arguments,
-     *          insufficient arguments given the format string, or other
-     *          illegal conditions.  For specification of all possible
-     *          formatting errors, see the <a
-     *          href="../util/Formatter.html#detail">Details</a> section of the
-     *          formatter class specification.
-     *
-     * @throws  NullPointerException
-     *          If the {@code format} is {@code null}
-     *
-     * @return  This output stream
-     *
-     * @since  1.5
-     */
-    public PrintStream format(Locale l, TemplatedString templatedString) {
-        try {
-            synchronized (this) {
-                ensureOpen();
-                if ((formatter == null)
-                        || (formatter.locale() != l))
-                    formatter = new Formatter(this, l);
-                formatter.format(l, templatedString);
-            }
-        } catch (InterruptedIOException x) {
-            Thread.currentThread().interrupt();
-        } catch (IOException x) {
-            trouble = true;
-        }
-        return this;
     }
 
     /**

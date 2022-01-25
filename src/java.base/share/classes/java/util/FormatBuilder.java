@@ -25,11 +25,6 @@
 
 package java.util;
 
-import jdk.internal.access.JavaLangAccess;
-import sun.invoke.util.Wrapper;
-import sun.util.locale.provider.LocaleProviderAdapter;
-import sun.util.locale.provider.ResourceBundleBasedAdapter;
-
 import java.io.IOException;
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -41,6 +36,13 @@ import java.text.spi.NumberFormatProvider;
 import java.util.FormatItem.*;
 import java.util.Formatter.*;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.javac.PreviewFeature;
+
+import sun.invoke.util.Wrapper;
+import sun.util.locale.provider.LocaleProviderAdapter;
+import sun.util.locale.provider.ResourceBundleBasedAdapter;
+
 import static java.util.Formatter.Conversion.*;
 import static java.util.Formatter.Flags.*;
 import static java.lang.invoke.MethodHandles.*;
@@ -49,7 +51,10 @@ import static java.lang.invoke.MethodType.*;
 /**
  * This package private class supports the construction of the {@link MethodHandle}
  * returned by {@Link Formatter#formatFactory}.
+ *
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 final class FormatBuilder {
     private static final Lookup LOOKUP = lookup();
 
@@ -325,21 +330,26 @@ final class FormatBuilder {
 
                     if (flags == 0 && isGenericDFS && width == -1) {
                         return mh;
-                    } else if (validFlags(flags, PLUS | LEADING_SPACE | ZERO_PAD | GROUP | PARENTHESES)) {
+                    } else if (validFlags(flags, PLUS | LEADING_SPACE |
+                                                 ZERO_PAD | GROUP |
+                                                 PARENTHESES)) {
                         handled = true;
                         int zeroPad = isFlag(flags, ZERO_PAD) ? width : -1;
                         char sign = isFlag(flags, PARENTHESES)   ? '(' :
                                     isFlag(flags, PLUS)          ? '+' :
                                     isFlag(flags, LEADING_SPACE) ? ' ' : '-';
-                        int groupSize = isFlag(flags, GROUP) ? groupSize(locale, dfs) : 0;
+                        int groupSize = isFlag(flags, GROUP) ?
+                                groupSize(locale, dfs) : 0;
                         mh = filterReturnValue(mh,
-                                insertArguments(FIDecimal_MH, 0, dfs, zeroPad, sign, groupSize));
+                                insertArguments(FIDecimal_MH, 0, dfs, zeroPad,
+                                        sign, groupSize));
                     }
                 }
             }
             case OCTAL_INTEGER -> {
-                if ((itype == int.class || itype == long.class) && precision == -1 &&
-                        validFlags(flags, ZERO_PAD | ALTERNATE)) {
+                if ((itype == int.class || itype == long.class) &&
+                         precision == -1 &&
+                         validFlags(flags, ZERO_PAD | ALTERNATE)) {
                     handled = true;
 
                     if (itype == int.class) {
@@ -353,7 +363,8 @@ final class FormatBuilder {
                 }
             }
             case HEXADECIMAL_INTEGER -> {
-                if ((itype == int.class || itype == long.class) && precision == -1 &&
+                if ((itype == int.class || itype == long.class) &&
+                        precision == -1 &&
                         validFlags(flags, ZERO_PAD | ALTERNATE)) {
                     handled = true;
 
