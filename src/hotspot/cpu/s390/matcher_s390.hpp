@@ -128,6 +128,11 @@
     return false;
   }
 
+  // Does the CPU supports vector constant rotate instructions?
+  static constexpr bool supports_vector_constant_rotates(int shift) {
+    return false;
+  }
+
   // Does the CPU supports vector unsigned comparison instructions?
   static constexpr bool supports_vector_comparison_unsigned(int vlen, BasicType bt) {
     return false;
@@ -143,5 +148,8 @@
   static constexpr bool convL2FSupported(void) {
       return true;
   }
+
+  // Implements a variant of EncodeISOArrayNode that encode ASCII only
+  static const bool supports_encode_ascii_array = false;
 
 #endif // CPU_S390_MATCHER_S390_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,6 @@ package sun.font;
 
 import sun.awt.FontConfiguration;
 import sun.awt.X11FontManager;
-import sun.font.FontUtilities;
-import sun.font.SunFontManager;
 import sun.util.logging.PlatformLogger;
 
 import java.io.File;
@@ -38,6 +36,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Scanner;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 public class MFontConfiguration extends FontConfiguration {
 
@@ -109,7 +109,9 @@ public class MFontConfiguration extends FontConfiguration {
                      * For Ubuntu the ID is "Ubuntu".
                      */
                     Properties props = new Properties();
-                    props.load(new FileInputStream(f));
+                    try (FileInputStream fis = new FileInputStream(f)) {
+                        props.load(fis);
+                    }
                     osName = props.getProperty("DISTRIB_ID");
                     osVersion =  props.getProperty("DISTRIB_RELEASE");
                 }
@@ -180,7 +182,7 @@ public class MFontConfiguration extends FontConfiguration {
     }
 
     protected Charset getDefaultFontCharset(String fontName) {
-        return Charset.forName("ISO8859_1");
+        return ISO_8859_1;
     }
 
     protected String getFaceNameFromComponentFontName(String componentFontName) {

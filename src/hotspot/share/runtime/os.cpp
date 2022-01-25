@@ -64,6 +64,7 @@
 #include "services/attachListener.hpp"
 #include "services/mallocTracker.hpp"
 #include "services/memTracker.hpp"
+#include "services/nmtPreInit.hpp"
 #include "services/nmtCommon.hpp"
 #include "services/threadService.hpp"
 #include "utilities/align.hpp"
@@ -646,6 +647,15 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
   NOT_PRODUCT(inc_stat_counter(&num_mallocs, 1));
   NOT_PRODUCT(inc_stat_counter(&alloc_bytes, size));
 
+#if INCLUDE_NMT
+  {
+    void* rc = NULL;
+    if (NMTPreInit::handle_malloc(&rc, size)) {
+      return rc;
+    }
+  }
+#endif
+
   // Since os::malloc can be called when the libjvm.{dll,so} is
   // first loaded and we don't have a thread yet we must accept NULL also here.
   assert(!os::ThreadCrashProtection::is_crash_protected(Thread::current_or_null()),
@@ -659,13 +669,14 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
 
   // NMT support
   NMT_TrackingLevel level = MemTracker::tracking_level();
-  size_t            nmt_header_size = MemTracker::malloc_header_size(level);
+  const size_t nmt_overhead =
+      MemTracker::malloc_header_size(level) + MemTracker::malloc_footer_size(level);
 
 #ifndef ASSERT
-  const size_t alloc_size = size + nmt_header_size;
+  const size_t alloc_size = size + nmt_overhead;
 #else
-  const size_t alloc_size = GuardedMemory::get_total_size(size + nmt_header_size);
-  if (size + nmt_header_size > alloc_size) { // Check for rollover.
+  const size_t alloc_size = GuardedMemory::get_total_size(size + nmt_overhead);
+  if (size + nmt_overhead > alloc_size) { // Check for rollover.
     return NULL;
   }
 #endif
@@ -683,7 +694,7 @@ void* os::malloc(size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
     return NULL;
   }
   // Wrap memory with guard
-  GuardedMemory guarded(ptr, size + nmt_header_size);
+  GuardedMemory guarded(ptr, size + nmt_overhead);
   ptr = guarded.get_user_ptr();
 
   if ((intptr_t)ptr == (intptr_t)MallocCatchPtr) {
@@ -705,6 +716,15 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS flags) {
 
 void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCallStack& stack) {
 
+#if INCLUDE_NMT
+  {
+    void* rc = NULL;
+    if (NMTPreInit::handle_realloc(&rc, memblock, size)) {
+      return rc;
+    }
+  }
+#endif
+
   // For the test flag -XX:MallocMaxTestWords
   if (has_reached_max_malloc_test_peak(size)) {
     return NULL;
@@ -722,8 +742,9 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCa
    // NMT support
   NMT_TrackingLevel level = MemTracker::tracking_level();
   void* membase = MemTracker::record_free(memblock, level);
-  size_t  nmt_header_size = MemTracker::malloc_header_size(level);
-  void* ptr = ::realloc(membase, size + nmt_header_size);
+  const size_t nmt_overhead =
+      MemTracker::malloc_header_size(level) + MemTracker::malloc_footer_size(level);
+  void* ptr = ::realloc(membase, size + nmt_overhead);
   return MemTracker::record_malloc(ptr, size, memflags, stack, level);
 #else
   if (memblock == NULL) {
@@ -742,7 +763,10 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCa
   if (ptr != NULL ) {
     GuardedMemory guarded(MemTracker::malloc_base(memblock));
     // Guard's user data contains NMT header
-    size_t memblock_size = guarded.get_user_size() - MemTracker::malloc_header_size(memblock);
+    NMT_TrackingLevel level = MemTracker::tracking_level();
+    const size_t nmt_overhead =
+        MemTracker::malloc_header_size(level) + MemTracker::malloc_footer_size(level);
+    size_t memblock_size = guarded.get_user_size() - nmt_overhead;
     memcpy(ptr, memblock, MIN2(size, memblock_size));
     if (paranoid) {
       verify_memory(MemTracker::malloc_base(ptr));
@@ -755,6 +779,13 @@ void* os::realloc(void *memblock, size_t size, MEMFLAGS memflags, const NativeCa
 
 // handles NULL pointers
 void  os::free(void *memblock) {
+
+#if INCLUDE_NMT
+  if (NMTPreInit::handle_free(memblock)) {
+    return;
+  }
+#endif
+
   NOT_PRODUCT(inc_stat_counter(&num_frees, 1));
 #ifdef ASSERT
   if (memblock == NULL) return;
@@ -881,7 +912,7 @@ bool os::print_function_and_library_name(outputStream* st,
       addr = addr2;
     }
   }
-#endif // HANDLE_FUNCTION_DESCRIPTORS
+#endif // HAVE_FUNCTION_DESCRIPTORS
 
   if (have_function_name) {
     // Print function name, optionally demangled
@@ -989,7 +1020,9 @@ void os::print_environment_variables(outputStream* st, const char** env_list) {
       if (envvar != NULL) {
         st->print("%s", env_list[i]);
         st->print("=");
-        st->print_cr("%s", envvar);
+        st->print("%s", envvar);
+        // Use separate cr() printing to avoid unnecessary buffer operations that might cause truncation.
+        st->cr();
       }
     }
   }
@@ -1141,13 +1174,6 @@ void os::print_location(outputStream* st, intptr_t x, bool verbose) {
       st->print_cr(INTPTR_FORMAT " is a weak global jni handle", p2i(addr));
       return;
     }
-#ifndef PRODUCT
-    // we don't keep the block list in product mode
-    if (JNIHandles::is_local_handle((jobject) addr)) {
-      st->print_cr(INTPTR_FORMAT " is a local jni handle", p2i(addr));
-      return;
-    }
-#endif
   }
 
   // Check if addr belongs to a Java thread.
@@ -1365,6 +1391,14 @@ bool os::set_boot_path(char fileSep, char pathSep) {
   FREE_C_HEAP_ARRAY(char, base_classes);
 
   return false;
+}
+
+bool os::file_exists(const char* filename) {
+  struct stat statbuf;
+  if (filename == NULL || strlen(filename) == 0) {
+    return false;
+  }
+  return os::stat(filename, &statbuf) == 0;
 }
 
 // Splits a path, based on its separator, the number of
@@ -1752,7 +1786,7 @@ void os::commit_memory_or_exit(char* addr, size_t size, size_t alignment_hint,
 
 bool os::uncommit_memory(char* addr, size_t bytes, bool executable) {
   bool res;
-  if (MemTracker::tracking_level() > NMT_minimal) {
+  if (MemTracker::enabled()) {
     Tracker tkr(Tracker::uncommit);
     res = pd_uncommit_memory(addr, bytes, executable);
     if (res) {
@@ -1766,7 +1800,7 @@ bool os::uncommit_memory(char* addr, size_t bytes, bool executable) {
 
 bool os::release_memory(char* addr, size_t bytes) {
   bool res;
-  if (MemTracker::tracking_level() > NMT_minimal) {
+  if (MemTracker::enabled()) {
     // Note: Tracker contains a ThreadCritical.
     Tracker tkr(Tracker::release);
     res = pd_release_memory(addr, bytes);
@@ -1835,7 +1869,7 @@ char* os::remap_memory(int fd, const char* file_name, size_t file_offset,
 
 bool os::unmap_memory(char *addr, size_t bytes) {
   bool result;
-  if (MemTracker::tracking_level() > NMT_minimal) {
+  if (MemTracker::enabled()) {
     Tracker tkr(Tracker::release);
     result = pd_unmap_memory(addr, bytes);
     if (result) {
@@ -1871,7 +1905,7 @@ char* os::reserve_memory_special(size_t size, size_t alignment, size_t page_size
 
 bool os::release_memory_special(char* addr, size_t bytes) {
   bool res;
-  if (MemTracker::tracking_level() > NMT_minimal) {
+  if (MemTracker::enabled()) {
     // Note: Tracker contains a ThreadCritical.
     Tracker tkr(Tracker::release);
     res = pd_release_memory_special(addr, bytes);

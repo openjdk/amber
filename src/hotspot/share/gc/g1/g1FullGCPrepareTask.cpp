@@ -47,12 +47,11 @@ void G1FullGCPrepareTask::G1CalculatePointersClosure::free_pinned_region(HeapReg
   } else {
     _g1h->free_region(hr, nullptr);
   }
+  _collector->set_free(hr->hrm_index());
   prepare_for_compaction(hr);
-  _collector->set_invalid(hr->hrm_index());
 }
 
 bool G1FullGCPrepareTask::G1CalculatePointersClosure::do_heap_region(HeapRegion* hr) {
-  bool force_not_compacted = false;
   if (should_compact(hr)) {
     assert(!hr->is_humongous(), "moving humongous objects not supported.");
     prepare_for_compaction(hr);
@@ -168,8 +167,7 @@ size_t G1FullGCPrepareTask::G1PrepareCompactLiveClosure::apply(oop object) {
 size_t G1FullGCPrepareTask::G1RePrepareClosure::apply(oop obj) {
   // We only re-prepare objects forwarded within the current region, so
   // skip objects that are already forwarded to another region.
-  oop forwarded_to = obj->forwardee();
-  if (forwarded_to != NULL && !_current->is_in(forwarded_to)) {
+  if (obj->is_forwarded() && !_current->is_in(obj->forwardee())) {
     return obj->size();
   }
 
@@ -182,9 +180,11 @@ size_t G1FullGCPrepareTask::G1RePrepareClosure::apply(oop obj) {
 
 void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction_work(G1FullGCCompactionPoint* cp,
                                                                                   HeapRegion* hr) {
-  G1PrepareCompactLiveClosure prepare_compact(cp);
   hr->set_compaction_top(hr->bottom());
-  hr->apply_to_marked_objects(_bitmap, &prepare_compact);
+  if (!_collector->is_free(hr->hrm_index())) {
+    G1PrepareCompactLiveClosure prepare_compact(cp);
+    hr->apply_to_marked_objects(_bitmap, &prepare_compact);
+  }
 }
 
 void G1FullGCPrepareTask::G1CalculatePointersClosure::prepare_for_compaction(HeapRegion* hr) {

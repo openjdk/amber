@@ -347,7 +347,7 @@ void ConstantPool::restore_unshareable_info(TRAPS) {
   if (vmClasses::Object_klass_loaded()) {
     ClassLoaderData* loader_data = pool_holder()->class_loader_data();
 #if INCLUDE_CDS_JAVA_HEAP
-    if (HeapShared::open_regions_mapped() &&
+    if (HeapShared::is_fully_available() &&
         _cache->archived_references() != NULL) {
       oop archived = _cache->archived_references();
       // Create handle for the archived resolved reference array object
@@ -1178,16 +1178,15 @@ void ConstantPool::copy_bootstrap_arguments_at_impl(const constantPoolHandle& th
                                                     objArrayHandle info, int pos,
                                                     bool must_resolve, Handle if_not_available,
                                                     TRAPS) {
-  int argc;
   int limit = pos + end_arg - start_arg;
   // checks: index in range [0..this_cp->length),
-  // tag at index, start..end in range [0..argc],
+  // tag at index, start..end in range [0..this_cp->bootstrap_argument_count],
   // info array non-null, pos..limit in [0..info.length]
   if ((0 >= index    || index >= this_cp->length())  ||
       !(this_cp->tag_at(index).is_invoke_dynamic()    ||
         this_cp->tag_at(index).is_dynamic_constant()) ||
       (0 > start_arg || start_arg > end_arg) ||
-      (end_arg > (argc = this_cp->bootstrap_argument_count_at(index))) ||
+      (end_arg > this_cp->bootstrap_argument_count_at(index)) ||
       (0 > pos       || pos > limit)         ||
       (info.is_null() || limit > info->length())) {
     // An index or something else went wrong; throw an error.
@@ -2391,11 +2390,11 @@ void ConstantPool::verify_on(outputStream* st) {
     if (tag.is_klass() || tag.is_unresolved_klass()) {
       guarantee(klass_name_at(i)->refcount() != 0, "should have nonzero reference count");
     } else if (tag.is_symbol()) {
-      CPSlot entry = slot_at(i);
-      guarantee(entry.get_symbol()->refcount() != 0, "should have nonzero reference count");
+      Symbol* entry = symbol_at(i);
+      guarantee(entry->refcount() != 0, "should have nonzero reference count");
     } else if (tag.is_string()) {
-      CPSlot entry = slot_at(i);
-      guarantee(entry.get_symbol()->refcount() != 0, "should have nonzero reference count");
+      Symbol* entry = unresolved_string_at(i);
+      guarantee(entry->refcount() != 0, "should have nonzero reference count");
     }
   }
   if (pool_holder() != NULL) {

@@ -205,9 +205,6 @@ private:
   GrowableArray<SpecialRefInfo>* _special_refs;
 
   // statistics
-  int _num_instance_klasses;
-  int _num_obj_array_klasses;
-  int _num_type_array_klasses;
   DumpAllocStats _alloc_stats;
   size_t _total_closed_heap_region_size;
   size_t _total_open_heap_region_size;
@@ -315,14 +312,14 @@ public:
   template <typename T>
   u4 buffer_to_offset_u4(T p) const {
     uintx offset = buffer_to_offset((address)p);
-    guarantee(offset <= MAX_SHARED_DELTA, "must be 32-bit offset");
+    guarantee(offset <= MAX_SHARED_DELTA, "must be 32-bit offset " INTPTR_FORMAT, offset);
     return (u4)offset;
   }
 
   template <typename T>
   u4 any_to_offset_u4(T p) const {
     uintx offset = any_to_offset((address)p);
-    guarantee(offset <= MAX_SHARED_DELTA, "must be 32-bit offset");
+    guarantee(offset <= MAX_SHARED_DELTA, "must be 32-bit offset " INTPTR_FORMAT, offset);
     return (u4)offset;
   }
 

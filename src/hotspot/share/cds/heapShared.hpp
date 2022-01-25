@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +42,7 @@
 
 #if INCLUDE_CDS_JAVA_HEAP
 class DumpedInternedStrings;
+class FileMapInfo;
 
 struct ArchivableStaticFieldInfo {
   const char* klass_name;
@@ -138,14 +139,83 @@ class ArchivedKlassSubGraphInfoRecord {
 };
 #endif // INCLUDE_CDS_JAVA_HEAP
 
+struct LoadedArchiveHeapRegion;
+
 class HeapShared: AllStatic {
   friend class VerifySharedOopClosure;
- private:
 
+public:
+  // At runtime, heap regions in the CDS archive can be used in two different ways,
+  // depending on the GC type:
+  // - Mapped: (G1 only) the regions are directly mapped into the Java heap
+  // - Loaded: At VM start-up, the objects in the heap regions are copied into the
+  //           Java heap. This is easier to implement than mapping but
+  //           slightly less efficient, as the embedded pointers need to be relocated.
+  static bool can_use() { return can_map() || can_load(); }
+
+  // Can this VM write heap regions into the CDS archive? Currently only G1+compressed{oops,cp}
+  static bool can_write() {
+    CDS_JAVA_HEAP_ONLY(
+      if (_disable_writing) {
+        return false;
+      }
+      return (UseG1GC && UseCompressedOops && UseCompressedClassPointers);
+    )
+    NOT_CDS_JAVA_HEAP(return false;)
+  }
+
+  static void disable_writing() {
+    CDS_JAVA_HEAP_ONLY(_disable_writing = true;)
+  }
+  // Can this VM map archived heap regions? Currently only G1+compressed{oops,cp}
+  static bool can_map() {
+    CDS_JAVA_HEAP_ONLY(return (UseG1GC && UseCompressedOops && UseCompressedClassPointers);)
+    NOT_CDS_JAVA_HEAP(return false;)
+  }
+  static bool is_mapped() {
+    return closed_regions_mapped() && open_regions_mapped();
+  }
+
+  // Can this VM load the objects from archived heap regions into the heap at start-up?
+  static bool can_load()  NOT_CDS_JAVA_HEAP_RETURN_(false);
+  static void finish_initialization() NOT_CDS_JAVA_HEAP_RETURN;
+  static bool is_loaded() {
+    CDS_JAVA_HEAP_ONLY(return _is_loaded;)
+    NOT_CDS_JAVA_HEAP(return false;)
+  }
+
+  static bool are_archived_strings_available() {
+    return is_loaded() || closed_regions_mapped();
+  }
+  static bool are_archived_mirrors_available() {
+    return is_fully_available();
+  }
+  static bool is_fully_available() {
+    return is_loaded() || is_mapped();
+  }
+
+private:
 #if INCLUDE_CDS_JAVA_HEAP
+  static bool _disable_writing;
   static bool _closed_regions_mapped;
   static bool _open_regions_mapped;
+  static bool _is_loaded;
   static DumpedInternedStrings *_dumped_interned_strings;
+
+  // Support for loaded archived heap. These are cached values from
+  // LoadedArchiveHeapRegion's.
+  static uintptr_t _dumptime_base_0;
+  static uintptr_t _dumptime_base_1;
+  static uintptr_t _dumptime_base_2;
+  static uintptr_t _dumptime_base_3;
+  static uintptr_t _dumptime_top;
+  static intx _runtime_offset_0;
+  static intx _runtime_offset_1;
+  static intx _runtime_offset_2;
+  static intx _runtime_offset_3;
+  static uintptr_t _loaded_heap_bottom;
+  static uintptr_t _loaded_heap_top;
+  static bool _loading_failed;
 
 public:
   static unsigned oop_hash(oop const& p);
@@ -153,7 +223,16 @@ public:
     return java_lang_String::hash_code(string);
   }
 
+  static bool load_heap_regions(FileMapInfo* mapinfo);
+  static void assert_in_loaded_heap(uintptr_t o) {
+    assert(is_in_loaded_heap(o), "must be");
+  }
+
 private:
+  static bool is_in_loaded_heap(uintptr_t o) {
+    return (_loaded_heap_bottom <= o && o < _loaded_heap_top);
+  }
+
   typedef ResourceHashtable<oop, oop,
       15889, // prime number
       ResourceObj::C_HEAP,
@@ -231,7 +310,6 @@ private:
   static SeenObjectsTable *_seen_objects_table;
 
   static GrowableArrayCHeap<oop, mtClassShared>* _pending_roots;
-  static narrowOop _roots_narrow;
   static OopHandle _roots;
 
   static void init_seen_objects_table() {
@@ -274,6 +352,16 @@ private:
                resolve_or_init_classes_for_subgraph_of(Klass* k, bool do_init, TRAPS);
   static void resolve_or_init(Klass* k, bool do_init, TRAPS);
   static void init_archived_fields_for(Klass* k, const ArchivedKlassSubGraphInfoRecord* record);
+
+  static int init_loaded_regions(FileMapInfo* mapinfo, LoadedArchiveHeapRegion* loaded_regions,
+                                 MemRegion& archive_space);
+  static void sort_loaded_regions(LoadedArchiveHeapRegion* loaded_regions, int num_loaded_regions,
+                                  uintptr_t buffer);
+  static bool load_regions(FileMapInfo* mapinfo, LoadedArchiveHeapRegion* loaded_regions,
+                           int num_loaded_regions, uintptr_t buffer);
+  static void init_loaded_heap_relocation(LoadedArchiveHeapRegion* reloc_info,
+                                          int num_loaded_regions);
+  static void fill_failed_loaded_region();
  public:
   static void reset_archived_object_states(TRAPS);
   static void create_archived_object_cache() {
@@ -329,17 +417,11 @@ private:
   static oop get_root(int index, bool clear=false);
 
   // Run-time only
-  static void set_roots(narrowOop roots);
   static void clear_root(int index);
 #endif // INCLUDE_CDS_JAVA_HEAP
 
  public:
   static void run_full_gc_in_vm_thread() NOT_CDS_JAVA_HEAP_RETURN;
-
-  static bool is_heap_object_archiving_allowed() {
-    CDS_JAVA_HEAP_ONLY(return (UseG1GC && UseCompressedOops && UseCompressedClassPointers);)
-    NOT_CDS_JAVA_HEAP(return false;)
-  }
 
   static bool is_heap_region(int idx) {
     CDS_JAVA_HEAP_ONLY(return (idx >= MetaspaceShared::first_closed_heap_region &&
@@ -363,11 +445,8 @@ private:
     CDS_JAVA_HEAP_ONLY(return _open_regions_mapped;)
     NOT_CDS_JAVA_HEAP_RETURN_(false);
   }
-  static bool is_mapped() {
-    return closed_regions_mapped() && open_regions_mapped();
-  }
 
-  static void fixup_mapped_regions() NOT_CDS_JAVA_HEAP_RETURN;
+  static void fixup_regions() NOT_CDS_JAVA_HEAP_RETURN;
 
   static bool is_archived_object_during_dumptime(oop p) NOT_CDS_JAVA_HEAP_RETURN_(false);
 
@@ -387,7 +466,7 @@ private:
 
   static void init_for_dumping(TRAPS) NOT_CDS_JAVA_HEAP_RETURN;
   static void write_subgraph_info_table() NOT_CDS_JAVA_HEAP_RETURN;
-  static void serialize_subgraph_info_table_header(SerializeClosure* soc) NOT_CDS_JAVA_HEAP_RETURN;
+  static void serialize(SerializeClosure* soc) NOT_CDS_JAVA_HEAP_RETURN;
 };
 
 #if INCLUDE_CDS_JAVA_HEAP

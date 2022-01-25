@@ -3095,9 +3095,9 @@ public class JavacParser implements Parser {
         }
         case DEFAULT: {
             nextToken();
+            JCCaseLabel defaultPattern = toP(F.at(pos).DefaultCaseLabel());
             CaseTree.CaseKind caseKind;
             JCTree body = null;
-            int patternPos = token.pos;
             if (token.kind == ARROW) {
                 checkSourceLevel(Feature.SWITCH_RULE);
                 accept(ARROW);
@@ -3113,7 +3113,6 @@ public class JavacParser implements Parser {
                 caseKind = JCCase.STATEMENT;
                 stats = blockStatements();
             }
-            JCCaseLabel defaultPattern = toP(F.at(patternPos).DefaultCaseLabel());
             c = F.at(pos).Case(caseKind, List.of(defaultPattern), stats, body);
             if (stats.isEmpty())
                 storeEnd(c, S.prevToken().endPos);
@@ -3184,6 +3183,7 @@ public class JavacParser implements Parser {
                     } else {
                         return PatternResult.EXPRESSION;
                     }
+                case LPAREN: return PatternResult.PATTERN;
                 default: return PatternResult.EXPRESSION;
             }
             lookahead++;
@@ -5052,7 +5052,7 @@ public class JavacParser implements Parser {
 
     }
 
-    protected static abstract class AbstractEndPosTable implements EndPosTable {
+    protected abstract static class AbstractEndPosTable implements EndPosTable {
         /**
          * The current parser.
          */
