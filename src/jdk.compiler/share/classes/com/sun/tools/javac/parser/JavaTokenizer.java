@@ -337,8 +337,31 @@ public class JavaTokenizer extends UnicodeReader {
         char ch = putThenNext();
         int braceCount = 0;
 
+        loop:
         while (isAvailable()) {
-            if (ch == '}') {
+            if (ch == '\"' || ch == '\'') {
+                char delimiter = ch;
+                ch = putThenNext();
+
+                while (isAvailable()) {
+                    if (ch == delimiter) {
+                        ch = putThenNext();
+                        break;
+                    }
+
+                    if (isEOLN()) {
+                        break loop;
+                    }
+
+                    if (ch == '\\') {
+                        putThenNext();
+                    }
+
+                    ch = putThenNext();
+                }
+
+                continue;
+            } else if (ch == '}') {
                 if (braceCount == 0) {
                     putThenNext();
                     return;
