@@ -3918,11 +3918,6 @@ public final class String
      *     <td>{@code U+005C}</td>
      *   </tr>
      *   <tr>
-     *     <th scope="row">{@code \u005C{...}}</th>
-     *     <td>templated string expression</td>
-     *     <td>{@code U+FFFC}</td>
-     *   </tr>
-     *   <tr>
      *     <th scope="row">{@code \u005C0 - \u005C377}</th>
      *     <td>octal escape</td>
      *     <td>code point equivalent</td>
@@ -3983,60 +3978,6 @@ public final class String
                 case '\"':
                 case '\\':
                     // as is
-                    break;
-                case '{': {
-                        int braceCount = 0;
-                        while (from < length) {
-                            ch = chars[from++];
-                            if (ch == '}') {
-                                if (braceCount == 0) {
-                                    break;
-                                }
-                                braceCount--;
-                            } else if (ch == '{') {
-                                braceCount++;
-                            } else if (ch == '/') {
-                                if (from < length && chars[from] == '*') {
-                                    from++;
-                                    while (from < length) {
-                                        ch = chars[from++];
-                                        if (ch == '*' &&
-                                                from + 1 < length &&
-                                                chars[from] == '/') {
-                                            from++;
-                                            break;
-                                        }
-                                    }
-                                } else if (from < length && chars[from] == '/') {
-                                    from++;
-                                    while (from < length) {
-                                        ch = chars[from++];
-                                        if (ch == '\n' || ch == '\r') {
-                                            break;
-                                        }
-                                    }
-                                }
-                            } else if (ch == '\'' || ch == '\"') {
-                                char delimiter = ch;
-                                while (from < length) {
-                                    ch = chars[from++];
-
-                                    if (ch == delimiter) {
-                                        break;
-                                    } else if (ch == '\\' && from < length) {
-                                        from++;
-                                    }
-                                }
-                            }
-                        }
-                        if (ch != '}') {
-                            java.lang.String msg = java.lang.String.format(
-                                    "Unclosed template expression escape sequence: \\%c \\\\u%04X",
-                                    ch, (int) ch);
-                            throw new IllegalArgumentException(msg);
-                        }
-                        ch = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
-                    }
                     break;
                 case '0': case '1': case '2': case '3':
                 case '4': case '5': case '6': case '7': {

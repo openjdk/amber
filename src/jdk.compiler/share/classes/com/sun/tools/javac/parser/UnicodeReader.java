@@ -117,6 +117,15 @@ public class UnicodeReader {
     }
 
     /**
+     * Returns the character buffer.
+     *
+     * @return character buffer.
+     */
+    protected char[] buffer() {
+        return buffer;
+    }
+
+    /**
      * Returns the length of the buffer. This is length of meaningful content in buffer and
      * not the length of the buffer array.
      *
