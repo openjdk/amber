@@ -82,11 +82,6 @@ public class Scanner implements Lexer {
         token = prevToken = DUMMY;
     }
 
-    protected void templatedString(Token stringToken) {
-        List<Token> tokens = tokenizer.templatedString(stringToken);
-        savedTokens.addAll(tokens);
-    }
-
     public Token token() {
         return token(0);
     }
@@ -104,9 +99,6 @@ public class Scanner implements Lexer {
             for (int i = savedTokens.size() ; i < lookahead ; i++) {
                 Token ahead = tokenizer.readToken();
                 savedTokens.add(ahead);
-                if (ahead.kind == TokenKind.TEMPLATEDSTRING) {
-                    templatedString(ahead);
-                }
             }
         }
 
@@ -124,9 +116,6 @@ public class Scanner implements Lexer {
             token = savedTokens.remove(0);
         } else {
             token = tokenizer.readToken();
-            if (token.kind == TokenKind.TEMPLATEDSTRING) {
-                templatedString(token);
-            }
         }
     }
 

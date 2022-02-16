@@ -47,6 +47,7 @@ public class Basic {
         test2();
         test3();
         test4();
+        test5();
     }
 
     /*
@@ -156,6 +157,25 @@ public class Basic {
         compFail("""
             int x = 10;
             TemplatedString result = "\\{ \\tx }";
+        """);
+    }
+
+    /*
+     * Error test.
+     */
+    static void test5() {
+        compFail("""
+            int x = 10;
+            TemplatedString result = "\\{x} \\uFFFC";
+        """);
+        compFail("""
+            int x = 10;
+            TemplatedString result = "\\{
+            x}";
+        """);
+        compFail("""
+            int x = 10;
+            TemplatedString result = "\\{"\\{x}"}";
         """);
     }
 
