@@ -4910,7 +4910,6 @@ public final class Formatter implements Closeable, Flushable {
     static String templatedStringFormat(String template) {
         StringBuilder sb = new StringBuilder();
         Matcher matcher = fsPattern.matcher(template);
-        char placeholderCharacter = TemplatedString.OBJECT_REPLACEMENT_CHARACTER;
         int length = template.length();
 
         for (int i = 0; i < length; i++) {
@@ -4927,7 +4926,7 @@ public final class Formatter implements Closeable, Flushable {
                     if (group.endsWith("n") || group.endsWith("%")) {
                         sb.append(group);
                         i = next - 1;
-                    } else if (placeholder == placeholderCharacter) {
+                    } else if (placeholder == TemplatedString.PLACEHOLDER) {
                         sb.append(group);
                         i = next;
                     } else {
@@ -4937,7 +4936,7 @@ public final class Formatter implements Closeable, Flushable {
                 } else {
                     sb.append(ch);
                 }
-            } else if (ch == placeholderCharacter) {
+            } else if (ch == TemplatedString.PLACEHOLDER) {
                 sb.append("%s");
             } else {
                 sb.append(ch);

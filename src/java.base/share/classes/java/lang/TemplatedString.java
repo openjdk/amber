@@ -66,13 +66,13 @@ public interface TemplatedString {
      * Placeholder character marking insertion points in a templated string.
      * The value used is the unicode OBJECT REPLACEMENT CHARACTER.
      */
-    public static final char OBJECT_REPLACEMENT_CHARACTER = '\uFFFC';
+    public static final char PLACEHOLDER = '\uFFFC';
 
     /**
-     * String equivalent of {@link OBJECT_REPLACEMENT_CHARACTER}.
+     * String equivalent of {@link PLACEHOLDER}.
      */
-    public static final String OBJECT_REPLACEMENT_CHARACTER_STRING =
-            Character.toString(OBJECT_REPLACEMENT_CHARACTER);
+    public static final String PLACEHOLDER_STRING =
+            Character.toString(PLACEHOLDER);
 
     /**
      * Returns the template string with placeholders. In the example:
@@ -179,7 +179,7 @@ public interface TemplatedString {
         StringBuilder sb = new StringBuilder();
         String template = templatedString.template()
                 .replace("\"", "\\\"")
-                .replace(OBJECT_REPLACEMENT_CHARACTER_STRING, "\\{}");
+                .replace(PLACEHOLDER_STRING, "\\{}");
 
         sb.append('"');
         sb.append(template);
@@ -219,7 +219,7 @@ public interface TemplatedString {
         for (int i = 0; i < string.length(); i++) {
             char ch = string.charAt(i);
 
-            if (ch == OBJECT_REPLACEMENT_CHARACTER) {
+            if (ch == PLACEHOLDER) {
                 segments.add(sb.toString());
                 sb.setLength(0);
             } else {
@@ -274,7 +274,7 @@ public interface TemplatedString {
     public static TemplatedString of(String string) {
         Objects.requireNonNull(string, "string is null");
 
-        if (string.indexOf(OBJECT_REPLACEMENT_CHARACTER) != -1) {
+        if (string.indexOf(PLACEHOLDER) != -1) {
             throw new IllegalArgumentException("string contains an OBJECT REPLACEMENT CHARACTER");
         }
 
@@ -462,7 +462,7 @@ public interface TemplatedString {
         public Builder segment(String string) {
             Objects.requireNonNull(string, "string is null");
 
-            if (string.indexOf(OBJECT_REPLACEMENT_CHARACTER) != -1) {
+            if (string.indexOf(PLACEHOLDER) != -1) {
                 throw new IllegalArgumentException("string contains an OBJECT REPLACEMENT CHARACTER");
             }
 
@@ -484,7 +484,7 @@ public interface TemplatedString {
         public Builder value(Object value) {
             Objects.requireNonNull(value, "value is null");
 
-            templateBuilder.append(OBJECT_REPLACEMENT_CHARACTER);
+            templateBuilder.append(PLACEHOLDER);
             values.add(value);
 
             return this;

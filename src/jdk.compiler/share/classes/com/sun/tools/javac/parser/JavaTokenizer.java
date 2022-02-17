@@ -66,7 +66,7 @@ public class JavaTokenizer extends UnicodeReader {
     /**
      * Placeholder for embedded expressions.
      */
-    private final static char OBJECT_REPLACEMENT_CHARACTER = '\uFFFC';
+    private final static char PLACEHOLDER = '\uFFFC';
 
     /**
      * Embedded expression nesting.
@@ -379,7 +379,7 @@ public class JavaTokenizer extends UnicodeReader {
     private void scanTemplateExpression() {
         isTemplatedString = true;
         // Replace the backslash with a placeholder.
-        sb.setCharAt(sb.length() - 1, OBJECT_REPLACEMENT_CHARACTER);
+        sb.setCharAt(sb.length() - 1, PLACEHOLDER);
 
         // Separate tokenizer for the enbedded expression.
         Nesting nesting = isTextBlock ? Nesting.TEXTBLOCK : Nesting.STRINGLITERAL;
@@ -498,7 +498,7 @@ public class JavaTokenizer extends UnicodeReader {
                     lexError(position(), Errors.IllegalEscChar);
                     break;
             }
-        } else if (acceptThenPut(OBJECT_REPLACEMENT_CHARACTER)) {
+        } else if (acceptThenPut(PLACEHOLDER)) {
             hasObjectReplacementCharacter = true;
         } else {
             putThenNext();
