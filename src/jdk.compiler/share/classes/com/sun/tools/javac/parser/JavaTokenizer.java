@@ -69,15 +69,6 @@ public class JavaTokenizer extends UnicodeReader {
     public final static char PLACEHOLDER = '\uFFFC';
 
     /**
-     * Embedded expression nesting.
-     */
-    enum Nesting {
-        NONE,
-        STRINGLITERAL,
-        TEXTBLOCK
-    };
-
-    /**
      * The source language setting. Copied from scanner factory.
      */
     private final Source source;
@@ -153,11 +144,6 @@ public class JavaTokenizer extends UnicodeReader {
     protected boolean isTemplatedString;
 
     /**
-     * Type of embedded expression nesting.
-     */
-    protected Nesting nesting;
-
-    /**
      * true if string literal has a unicode object replacement character.
      */
     protected boolean hasObjectReplacementCharacter;
@@ -176,18 +162,7 @@ public class JavaTokenizer extends UnicodeReader {
      * @param cb   the input character buffer.
      */
     protected JavaTokenizer(ScannerFactory fac, CharBuffer cb) {
-        this(fac, JavacFileManager.toArray(cb), cb.limit(), Nesting.NONE);
-    }
-
-    /**
-     * Construct a Java token scanner from the input character array.
-     *
-     * @param fac              factory which created this Scanner
-     * @param array            input character array
-     * @param length           length of the meaningful content in the array
-     */
-    protected JavaTokenizer(ScannerFactory fac, char[] array, int length) {
-        this(fac, array, length, Nesting.NONE);
+        this(fac, JavacFileManager.toArray(cb), cb.limit());
     }
 
     /**
@@ -196,9 +171,8 @@ public class JavaTokenizer extends UnicodeReader {
      * @param fac      factory which created this Scanner
      * @param array    input character array
      * @param length   length of the meaningful content in the array
-     * @param nesting  type of embedded expression nesting
      */
-    protected JavaTokenizer(ScannerFactory fac, char[] array, int length, Nesting nesting) {
+    protected JavaTokenizer(ScannerFactory fac, char[] array, int length) {
         super(fac, array, length);
         this.fac = fac;
         this.log = fac.log;
@@ -209,7 +183,6 @@ public class JavaTokenizer extends UnicodeReader {
         this.lint = fac.lint;
         this.sb = new StringBuilder(256);
         this.pendingTokens = List.nil();
-        this.nesting = nesting;
     }
 
     /**
@@ -382,8 +355,7 @@ public class JavaTokenizer extends UnicodeReader {
         sb.setCharAt(sb.length() - 1, PLACEHOLDER);
 
         // Separate tokenizer for the enbedded expression.
-        Nesting nesting = isTextBlock ? Nesting.TEXTBLOCK : Nesting.STRINGLITERAL;
-        JavaTokenizer tokenizer = new JavaTokenizer(fac, buffer(), length(), nesting);
+        JavaTokenizer tokenizer = new JavaTokenizer(fac, buffer(), length());
         tokenizer.reset(position());
 
         // Track brace depth.
@@ -411,6 +383,9 @@ public class JavaTokenizer extends UnicodeReader {
             } else if (token.kind == TokenKind.LBRACE) {
                 // Nesting deeper.
                 braceCount++;
+            } else if (token.kind == TokenKind.TEMPLATEDSTRING) {
+                tokens = tokens.appendList(tokenizer.pendingTokens);
+                tokenizer.pendingTokens = List.nil();
             }
         }
 
@@ -471,11 +446,7 @@ public class JavaTokenizer extends UnicodeReader {
 
                 case '{':
                     checkSourceLevel(position(), Feature.TEMPLATED_STRINGS);
-                    if (nesting != Nesting.NONE) {
-                        lexError(position(), Errors.NestedTemplatedStringsNotAllowed);
-                    } else {
-                        scanTemplateExpression();
-                    }
+                    scanTemplateExpression();
                     break;
 
                 case 's':
@@ -1317,9 +1288,6 @@ public class JavaTokenizer extends UnicodeReader {
      * @param endPos  position + 1 in input buffer of last character in sequence.
      */
     protected void processLineTerminator(int pos, int endPos) {
-        if (nesting == Nesting.STRINGLITERAL) {
-            lexError(pos, Errors.CannotUseNewlineInTemplatedStringLiteral);
-        }
         if (scannerDebug) {
             System.out.println("processTerminator(" + pos
                                 + "," + endPos + ")=|" +
