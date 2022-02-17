@@ -71,8 +71,7 @@ public interface TemplatedString {
     /**
      * String equivalent of {@link PLACEHOLDER}.
      */
-    public static final String PLACEHOLDER_STRING =
-            Character.toString(PLACEHOLDER);
+    public static final String PLACEHOLDER_STRING = Character.toString(PLACEHOLDER);
 
     /**
      * Returns the template string with placeholders. In the example:

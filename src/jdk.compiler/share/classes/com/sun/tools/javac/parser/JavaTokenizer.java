@@ -66,7 +66,7 @@ public class JavaTokenizer extends UnicodeReader {
     /**
      * Placeholder for embedded expressions.
      */
-    private final static char PLACEHOLDER = '\uFFFC';
+    public final static char PLACEHOLDER = '\uFFFC';
 
     /**
      * Embedded expression nesting.

@@ -667,7 +667,7 @@ public class JavacParser implements Parser {
         String value = token.stringVal();
         int pos = stringToken.pos;
         int endPos = stringToken.endPos;
-        if (stringToken.kind == STRINGLITERAL && value.indexOf('\uFFFC') != -1) {
+        if (stringToken.kind == STRINGLITERAL && value.indexOf(JavaTokenizer.PLACEHOLDER) != -1) {
             log.error(DiagnosticFlag.SYNTAX, pos, Errors.UnicodeObjectReplacementCharacter);
         }
         nextToken();
