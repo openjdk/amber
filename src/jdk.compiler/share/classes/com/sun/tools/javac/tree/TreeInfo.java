@@ -327,6 +327,7 @@ public class TreeInfo {
             case PLUS_ASG: case MINUS_ASG:
             case MUL_ASG: case DIV_ASG: case MOD_ASG:
             case APPLY: case NEWCLASS:
+            case TEMPLATED:
             case ERRONEOUS:
                 return true;
             default:
