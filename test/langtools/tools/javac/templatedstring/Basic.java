@@ -168,15 +168,6 @@ public class Basic {
             int x = 10;
             TemplatedString result = "\\{x} \\uFFFC";
         """);
-        compFail("""
-            int x = 10;
-            TemplatedString result = "\\{
-            x}";
-        """);
-        compFail("""
-            int x = 10;
-            TemplatedString result = "\\{"\\{x}"}";
-        """);
     }
 
     /*
