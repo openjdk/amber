@@ -52,7 +52,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import jdk.internal.util.Preconditions;
-import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -3931,7 +3930,7 @@ public final class String
      *   <tr>
      *     <th scope="row">{@code \u005C0 - \u005C377}</th>
      *     <td>octal escape</td>
-     *     <td>code point equivalent</td>
+     *     <td>code point equivalents</td>
      *   </tr>
      *   <tr>
      *     <th scope="row">{@code \u005C<line-terminator>}</th>
@@ -3991,19 +3990,18 @@ public final class String
                     // as is
                     break;
                 case '0': case '1': case '2': case '3':
-                case '4': case '5': case '6': case '7': {
-                        int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
-                        int code = ch - '0';
-                        while (from < limit) {
-                            ch = chars[from];
-                            if (ch < '0' || '7' < ch) {
-                                break;
-                            }
-                            from++;
-                            code = (code << 3) | (ch - '0');
+                case '4': case '5': case '6': case '7':
+                    int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
+                    int code = ch - '0';
+                    while (from < limit) {
+                        ch = chars[from];
+                        if (ch < '0' || '7' < ch) {
+                            break;
                         }
-                        ch = (char)code;
+                        from++;
+                        code = (code << 3) | (ch - '0');
                     }
+                    ch = (char)code;
                     break;
                 case '\n':
                     continue;
