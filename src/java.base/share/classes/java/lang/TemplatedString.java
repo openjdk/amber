@@ -303,7 +303,7 @@ public interface TemplatedString {
     }
 
     /**
-     * Constructs a new {@link TemplatedString.Builder}.
+     * Create a new {@link TemplatedString.Builder}.
      *
      * @return a new {@link TemplatedString.Builder}
      */
