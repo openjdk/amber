@@ -57,7 +57,7 @@ import static java.lang.String.checkOffset;
  * @author      Ulf Zibis
  * @since       1.5
  */
-abstract class AbstractStringBuilder implements Appendable, CharSequence {
+abstract class AbstractStringBuilder implements Appendable, CharSequence, StringConcatItem {
     /**
      * The value is used for character storage.
      */
@@ -1795,11 +1795,13 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
         count += end - off;
     }
 
-    long mix(long lengthCoder) {
+    @Override
+    public long mix(long lengthCoder) {
         return (lengthCoder + count) | ((long)coder << 32);
     }
 
-    long prepend(long lengthCoder, byte[] buffer) {
+    @Override
+    public long prepend(long lengthCoder, byte[] buffer) {
         lengthCoder -= count;
 
         if (lengthCoder < ((long)UTF16 << 32)) {
