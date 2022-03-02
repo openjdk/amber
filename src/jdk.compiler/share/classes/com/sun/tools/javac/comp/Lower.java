@@ -4189,7 +4189,7 @@ public class Lower extends TreeTranslator {
             }
 
             Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), attrEnv,
-                    syms.templatedStringType, bootstrapName, staticArgsTypes, List.nil());
+                    syms.templateBootstrapType, bootstrapName, staticArgsTypes, List.nil());
 
             MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
             DynamicMethodSymbol dynSym = new DynamicMethodSymbol(

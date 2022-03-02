@@ -303,62 +303,6 @@ public interface TemplatedString {
     }
 
     /**
-     * Templated string bootstrap method.
-     *
-     * @param lookup        method lookup
-     * @param name          method name
-     * @param type          method type
-     * @param template      template string with placeholders
-     *
-     * @return {@link CallSite} to handle templated string processing
-     *
-     * @throws NullPointerException if any of the arguments is null
-     */
-    public static CallSite templatedStringBSM(
-            MethodHandles.Lookup lookup,
-            String name,
-            MethodType type,
-            String template) {
-        Objects.requireNonNull(lookup, "lookup is null");
-        Objects.requireNonNull(name, "name is null");
-        Objects.requireNonNull(type, "type is null");
-        Objects.requireNonNull(template, "template is null");
-
-        return templatedStringBSM(lookup, name, type, template, null);
-    }
-
-    /**
-     * Templated string bootstrap method.
-     *
-     * @param lookup        method lookup
-     * @param name          method name
-     * @param type          method type
-     * @param template      template string with placeholders
-     * @param policyGetter  {@link MethodHandle} to get constant
-     *                      {@link TemplatePolicy}
-     *
-     * @return {@link CallSite} to handle templated string processing
-     *
-     * @throws NullPointerException if any of the arguments is null
-     */
-    public static CallSite templatedStringBSM(
-            MethodHandles.Lookup lookup,
-            String name,
-            MethodType type,
-            String template,
-            MethodHandle policyGetter) {
-        Objects.requireNonNull(lookup, "lookup is null");
-        Objects.requireNonNull(name, "name is null");
-        Objects.requireNonNull(type, "type is null");
-        Objects.requireNonNull(template, "template is null");
-
-        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type,
-                template, policyGetter);
-
-        return bootstrap.callsite();
-    }
-
-    /**
      * Constructs a new {@link TemplatedString.Builder}.
      *
      * @return a new {@link TemplatedString.Builder}
