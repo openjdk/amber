@@ -23,7 +23,7 @@
  * questions.
  */
 
-package java.lang;
+package java.lang.runtime;
 
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.Stable;
@@ -35,13 +35,13 @@ import java.lang.TemplatePolicy.Linkage;
 import java.util.*;
 
 /**
- * This private class constructs a {@link CallSite} to handle templated
+ * This class constructs a {@link CallSite} to handle templated
  * string processing.
  *
  * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-final class TemplateBootstrap {
+public final class TemplateBootstrap {
     /**
      * {@link MethodHandle} to {@link TemplatedStringCarrier}
      * constructor.
@@ -117,6 +117,62 @@ final class TemplateBootstrap {
         this.type = type;
         this.template = template;
         this.policyGetter = policyGetter;
+    }
+
+    /**
+     * Templated string bootstrap method.
+     *
+     * @param lookup        method lookup
+     * @param name          method name
+     * @param type          method type
+     * @param template      template string with placeholders
+     *
+     * @return {@link CallSite} to handle templated string processing
+     *
+     * @throws NullPointerException if any of the arguments is null
+     */
+    public static CallSite templatedStringBSM(
+            MethodHandles.Lookup lookup,
+            String name,
+            MethodType type,
+            String template) {
+        Objects.requireNonNull(lookup, "lookup is null");
+        Objects.requireNonNull(name, "name is null");
+        Objects.requireNonNull(type, "type is null");
+        Objects.requireNonNull(template, "template is null");
+
+        return templatedStringBSM(lookup, name, type, template, null);
+    }
+
+    /**
+     * Templated string bootstrap method.
+     *
+     * @param lookup        method lookup
+     * @param name          method name
+     * @param type          method type
+     * @param template      template string with placeholders
+     * @param policyGetter  {@link MethodHandle} to get constant
+     *                      {@link TemplatePolicy}
+     *
+     * @return {@link CallSite} to handle templated string processing
+     *
+     * @throws NullPointerException if any of the arguments is null
+     */
+    public static CallSite templatedStringBSM(
+            MethodHandles.Lookup lookup,
+            String name,
+            MethodType type,
+            String template,
+            MethodHandle policyGetter) {
+        Objects.requireNonNull(lookup, "lookup is null");
+        Objects.requireNonNull(name, "name is null");
+        Objects.requireNonNull(type, "type is null");
+        Objects.requireNonNull(template, "template is null");
+
+        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type,
+                template, policyGetter);
+
+        return bootstrap.callsite();
     }
 
     /**

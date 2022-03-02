@@ -225,6 +225,7 @@ public class Symtab {
     public final Type valueBasedType;
     public final Type valueBasedInternalType;
     public final Type templatedStringType;
+    public final Type templateBootstrapType;
     public final Type templatePolicyType;
 
     // For serialization lint checking
@@ -603,6 +604,7 @@ public class Symtab {
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");
         templatedStringType = enterClass("java.lang.TemplatedString");
+        templateBootstrapType = enterClass("java.lang.runtime.TemplateBootstrap");
         templatePolicyType = enterClass("java.lang.TemplatePolicy");
         // For serialization lint checking
         objectStreamFieldType = enterClass("java.io.ObjectStreamField");
