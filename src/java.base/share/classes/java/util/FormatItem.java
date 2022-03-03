@@ -37,9 +37,10 @@ import java.util.Formatter.FormatSpecifier;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
+import jdk.internal.util.Digits;
+import jdk.internal.util.Digits.*;
 
 import static java.lang.invoke.MethodType.methodType;
-import static java.util.Digits.*;
 
 /**
  * A specialized objects used by FormatBuilder that knows how to insert
