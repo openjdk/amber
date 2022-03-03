@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,11 +23,9 @@
  * questions.
  */
 
-package java.util;
+package jdk.internal.util;
 
 import java.lang.invoke.MethodHandle;
-
-import jdk.internal.javac.PreviewFeature;
 
 /**
  * Digits provides a fast methodology for converting integers and longs to
@@ -35,8 +33,7 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-interface Digits {
+public interface Digits {
     /**
      * Insert digits for long value in buffer from high index to low index.
      *
@@ -64,13 +61,13 @@ interface Digits {
     /**
      * Digits class for decimal digits.
      */
-    final class DecimalDigits implements Digits {
+    public final class DecimalDigits implements Digits {
         private static final short[] DIGITS;
 
         /**
          * Singleton instance of DecimalDigits.
          */
-        static final Digits INSTANCE = new DecimalDigits();
+        public static final Digits INSTANCE = new DecimalDigits();
 
         static {
             short[] digits = new short[10 * 10];
@@ -165,13 +162,13 @@ interface Digits {
     /**
      * Digits class for hexadecimal digits.
      */
-    final class HexDigits implements Digits {
+    public final class HexDigits implements Digits {
         private static final short[] DIGITS;
 
         /**
          * Singleton instance of HexDigits.
          */
-        static final Digits INSTANCE = new HexDigits();
+        public static final Digits INSTANCE = new HexDigits();
 
         static {
             short[] digits = new short[16 * 16];
@@ -224,13 +221,13 @@ interface Digits {
     /**
      * Digits class for octal digits.
      */
-    final class OctalDigits implements Digits {
+    public final class OctalDigits implements Digits {
         private static final short[] DIGITS;
 
         /**
          * Singleton instance of HexDigits.
          */
-        static final Digits INSTANCE = new OctalDigits();
+        public static final Digits INSTANCE = new OctalDigits();
 
         static {
             short[] digits = new short[8 * 8];
