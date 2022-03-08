@@ -2010,22 +2010,35 @@ import sun.util.locale.provider.ResourceBundleBasedAdapter;
  * @since 1.5
  */
 public final class Formatter implements Closeable, Flushable {
-
-    // Caching DecimalFormatSymbols
-    static DecimalFormatSymbols DFS = null;
-    static DecimalFormatSymbols getDecimalFormatSymbols(Locale locale) {
+    // Caching DecimalFormatSymbols. Non-volatile to avoid thread slamming.
+    private static DecimalFormatSymbols DFS = null;
+    private static DecimalFormatSymbols getDecimalFormatSymbols(Locale locale) {
+        // Capture local copy to avoid thread race.
         DecimalFormatSymbols dfs = DFS;
-        if (dfs != null && dfs.getLocale() == locale) {
+        if (dfs != null && dfs.getLocale().equals(locale)) {
             return dfs;
         }
+        // Fetch a new local instance of DecimalFormatSymbols. Note that DFS are mutable
+        // and this instance is reserved for Formatter.
         dfs = DecimalFormatSymbols.getInstance(locale);
+        // Non-volatile here is acceptable heuristic.
         DFS = dfs;
         return dfs;
     }
 
-    // Caching zero.
-    static char getZero(Locale locale) {
+    // Use zero from cached DecimalFormatSymbols.
+    private static char getZero(Locale locale) {
         return locale == null ? '0' : getDecimalFormatSymbols(locale).getZeroDigit();
+    }
+
+    // Use decimal separator from cached DecimalFormatSymbols.
+    private static char getDecimalSeparator(Locale locale) {
+        return locale == null ? '.' : getDecimalFormatSymbols(locale).getDecimalSeparator();
+    }
+
+    // Use grouping separator from cached DecimalFormatSymbols.
+    private static char getGroupingSeparator(Locale locale) {
+        return locale == null ? ',' : getDecimalFormatSymbols(locale).getGroupingSeparator();
     }
 
     private Appendable a;
@@ -4528,21 +4541,15 @@ public final class Formatter implements Closeable, Flushable {
             }
 
             if (dot < len) {
-                if (l == null || l.equals(Locale.US)) {
-                    decSep  = '.';
-                } else {
-                    DecimalFormatSymbols dfs = getDecimalFormatSymbols(l);
-                    decSep  = dfs.getDecimalSeparator();
-                }
+                decSep  = getDecimalSeparator(l);
             }
 
             if (Flags.contains(f, Flags.GROUP)) {
+                grpSep = getGroupingSeparator(l);
+
                 if (l == null || l.equals(Locale.US)) {
-                    grpSep = ',';
                     grpSize = 3;
                 } else {
-                    DecimalFormatSymbols dfs = getDecimalFormatSymbols(l);
-                    grpSep = dfs.getGroupingSeparator();
                     DecimalFormat df = null;
                     NumberFormat nf = NumberFormat.getNumberInstance(l);
                     if (nf instanceof DecimalFormat) {
@@ -4559,7 +4566,7 @@ public final class Formatter implements Closeable, Flushable {
                         }
                         String[] all = adapter.getLocaleResources(l)
                                 .getNumberPatterns();
-                        df = new DecimalFormat(all[0], dfs);
+                        df = new DecimalFormat(all[0], getDecimalFormatSymbols(l));
                     }
                     grpSize = df.getGroupingSize();
                     // Some locales do not use grouping (the number
