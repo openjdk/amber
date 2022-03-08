@@ -46,9 +46,6 @@ import java.text.spi.DecimalFormatSymbolsProvider;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Objects;
-
-import jdk.internal.javac.PreviewFeature;
-
 import sun.util.locale.provider.CalendarDataUtility;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleServiceProviderPool;
@@ -196,7 +193,6 @@ public class DecimalFormatSymbols implements Cloneable, Serializable {
      *
      * @since 19
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public Locale getLocale() {
         return locale;
     }
