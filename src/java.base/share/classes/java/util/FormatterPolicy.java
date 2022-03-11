@@ -87,9 +87,7 @@ public final class FormatterPolicy implements Linkage<String, RuntimeException> 
     }
 
     /**
-     * Returns the {@link FormatterPolicy} instance locale.
-     *
-     * @return the {@link FormatterPolicy} instance locale
+     * {@return the FormatterPolicy instance locale}
      */
     public Locale locale() {
         return locale;

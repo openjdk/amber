@@ -414,11 +414,9 @@ public final class TemplateBootstrap {
     }
 
     /**
-     * Return true if the supplied class is final.
+     * {@return true if the supplied class is final}
      *
      * @param cls  supplied class
-     *
-     * @return true if the supplied class is final
      */
     private static boolean isFinal(Class<?> cls) {
         return (cls.getModifiers() & Modifier.FINAL) != 0;
