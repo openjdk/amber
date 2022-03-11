@@ -137,9 +137,7 @@ public interface TemplatedString {
     }
 
     /**
-     * Returns the template string with the values inserted at placeholders.
-     *
-     * @return the template string with the values inserted at placeholders
+     * {@return the template string with the values inserted at placeholders}
      */
     default String concat() {
         return TemplatedString.concat(this);
@@ -232,11 +230,9 @@ public interface TemplatedString {
     }
 
     /**
-     * Returns the template with the values inserted at placeholders.
+     * {@return the template with the values inserted at placeholders}
      *
      * @param templatedString  the {@link TemplatedString} to concatenate
-     *
-     * @return the template with the values inserted at placeholders
      *
      * @throws NullPointerException if templatedString is null
      */
