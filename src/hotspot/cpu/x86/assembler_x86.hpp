@@ -377,7 +377,7 @@ class AddressLiteral {
  private:
 
   address target() { return _target; }
-  bool is_lval() { return _is_lval; }
+  bool is_lval() const { return _is_lval; }
 
   relocInfo::relocType reloc() const { return _rspec.type(); }
   const RelocationHolder& rspec() const { return _rspec; }
@@ -1467,6 +1467,7 @@ private:
   void movb(Register dst, Address src);
 
   void movddup(XMMRegister dst, XMMRegister src);
+  void vmovddup(XMMRegister dst, Address src, int vector_len);
 
   void kandbl(KRegister dst, KRegister src1, KRegister src2);
   void kandwl(KRegister dst, KRegister src1, KRegister src2);
@@ -1821,12 +1822,14 @@ private:
   void pmovzxbw(XMMRegister dst, XMMRegister src);
   void pmovzxbw(XMMRegister dst, Address src);
   void pmovzxbd(XMMRegister dst, XMMRegister src);
-  void vpmovzxbw( XMMRegister dst, Address src, int vector_len);
-  void pmovzxdq(XMMRegister dst, XMMRegister src);
+  void vpmovzxbw(XMMRegister dst, Address src, int vector_len);
   void vpmovzxbw(XMMRegister dst, XMMRegister src, int vector_len);
-  void vpmovzxdq(XMMRegister dst, XMMRegister src, int vector_len);
   void vpmovzxbd(XMMRegister dst, XMMRegister src, int vector_len);
   void vpmovzxbq(XMMRegister dst, XMMRegister src, int vector_len);
+  void vpmovzxwd(XMMRegister dst, XMMRegister src, int vector_len);
+  void vpmovzxwq(XMMRegister dst, XMMRegister src, int vector_len);
+  void pmovzxdq(XMMRegister dst, XMMRegister src);
+  void vpmovzxdq(XMMRegister dst, XMMRegister src, int vector_len);
   void evpmovzxbw(XMMRegister dst, KRegister mask, Address src, int vector_len);
 
   // Sign extend moves
@@ -1843,9 +1846,6 @@ private:
 
   void evpmovwb(Address dst, XMMRegister src, int vector_len);
   void evpmovwb(Address dst, KRegister mask, XMMRegister src, int vector_len);
-
-  void vpmovzxwd(XMMRegister dst, XMMRegister src, int vector_len);
-
   void evpmovdb(Address dst, XMMRegister src, int vector_len);
 
   // Multiply add
@@ -1933,9 +1933,16 @@ private:
   // Interleave Low Doublewords
   void punpckldq(XMMRegister dst, XMMRegister src);
   void punpckldq(XMMRegister dst, Address src);
+  void vpunpckldq(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+
+  // Interleave High Doublewords
+  void vpunpckhdq(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
   // Interleave Low Quadwords
   void punpcklqdq(XMMRegister dst, XMMRegister src);
+
+  // Vector sum of absolute difference.
+  void vpsadbw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
 #ifndef _LP64 // no 32bit push/pop on amd64
   void pushl(Address src);
