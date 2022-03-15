@@ -1370,7 +1370,6 @@ public class TreeInfo {
             }
             case PARENTHESIZEDPATTERN -> primaryPatternType(((JCParenthesizedPattern) pat).pattern);
             case DECONSTRUCTIONPATTERN -> new PatternPrimaryType(((JCDeconstructionPattern) pat).type, false);
-            case ARRAYPATTERN -> new PatternPrimaryType(((JCArrayPattern) pat).type, false);
             default -> throw new AssertionError();
         };
     }

@@ -773,8 +773,6 @@ public class JavacParser implements Parser {
             JCPattern p = parsePattern(token.pos, null, null, false);
             accept(RPAREN);
             pattern = toP(F.at(startPos).ParenthesizedPattern(p));
-        } else if (token.kind == LBRACE) {
-            pattern = parseArrayPatternRest(pos, null);
         } else {
             mods = mods != null ? mods : optFinal(0);
             JCExpression e;
@@ -797,8 +795,6 @@ public class JavacParser implements Parser {
                 } while (token.kind == COMMA);
                 accept(RPAREN);
                 pattern = toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
-            } else if (token.kind == LBRACE) {
-                pattern = parseArrayPatternRest(pos, e);
             } else {
                 JCVariableDecl var = toP(F.at(token.pos).VarDef(mods, ident(), e, null));
                 pattern = toP(F.at(pos).BindingPattern(var));
@@ -813,29 +809,6 @@ public class JavacParser implements Parser {
         return pattern;
     }
 
-
-    private JCPattern parseArrayPatternRest(int pos, JCExpression type) {
-        Assert.check(token.kind == LBRACE);
-        ListBuffer<JCPattern> nested = new ListBuffer<>();
-        boolean orMore = false;
-        do {
-            nextToken();
-            if (token.kind == ELLIPSIS) {
-                orMore = true;
-                nextToken();
-                if (token.kind == COMMA) {
-                    //error recovery
-                    accept(RBRACE);
-                    continue;
-                }
-                break;
-            }
-            JCPattern nestedPattern = parsePattern(token.pos, null, null, false);
-            nested.append(nestedPattern);
-        } while (token.kind == COMMA);
-        accept(RBRACE);
-        return toP(F.at(pos).ArrayPattern(type, nested.toList(), orMore));
-    }
 
     /**
      * parses (optional) type annotations followed by a type. If the
@@ -1037,9 +1010,6 @@ public class JavacParser implements Parser {
                         } while (token.kind == COMMA);
                         accept(RPAREN);
                         pattern = toP(F.at(type).DeconstructionPattern(type, nested.toList()));
-                    } else if (token.kind == LBRACE) {
-                        checkSourceLevel(Feature.DECONSTRUCTION_PATTERNS);
-                        pattern = parseArrayPatternRest(pos, type);
                     } else {
                         checkNoMods(typePos, mods.flags & ~Flags.DEPRECATED);
                         if (mods.annotations.nonEmpty()) {

@@ -76,7 +76,6 @@ import static com.sun.tools.javac.code.TypeTag.BOT;
 import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.JCTree.JCArrayPattern;
 import com.sun.tools.javac.tree.JCTree.JCBlock;
 import com.sun.tools.javac.tree.JCTree.JCBreak;
 import com.sun.tools.javac.tree.JCTree.JCCase;
@@ -322,60 +321,6 @@ public class TransPatterns extends TreeTranslator {
         }
         Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
         result = test != null ? test : makeLit(syms.booleanType, 1);
-    }
-
-    public void visitArrayPattern(JCArrayPattern tree) {
-        Type elementType = types.elemtype(tree.type);
-        List<? extends JCPattern> nestedPatterns 
-                = tree.nested;
-        JCExpression test = makeBinary(tree.orMore ? Tag.GE : Tag.EQ,
-                                make.Select(convert(make.Ident(currentValue), tree.type), syms.lengthVar),
-                                make.Literal(nestedPatterns.size()));
-
-        int i = 0;
-        while (nestedPatterns.nonEmpty()) {
-            //PATTn for record component COMPn of type Tn;
-            //PATTn is a type test pattern or a deconstruction pattern:
-            //=>
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
-            //or
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <PATTn extractor>)
-            //or
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <PATTn extractor>)
-            JCPattern nested = nestedPatterns.head;
-            VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
-                names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + i),
-                                 types.erasure(elementType),
-                                 currentMethodSym);
-            JCVariableDecl nestedTempVar =
-                    make.VarDef(nestedTemp,
-                                make.Indexed(convert(make.Ident(currentValue), tree.type), make.Literal(i)).setType(elementType));
-            JCExpression extracted;
-            VarSymbol prevCurrentValue = currentValue;
-            try {
-                currentValue = nestedTemp;
-                extracted = (JCExpression) this.<JCTree>translate(nested);
-            } finally {
-                currentValue = prevCurrentValue;
-            }
-            JCExpression extraTest = null;
-            if (!types.isAssignable(nestedTemp.type, nested.type)) {
-                extraTest = makeTypeTest(make.Ident(nestedTemp),
-                                         make.Type(nested.type));
-            } else if (nested.type.isReference()) {
-                extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
-            }
-            if (extraTest != null) {
-                extracted = makeBinary(Tag.AND, extraTest, extracted);
-            }
-            LetExpr getAndRun = make.LetExpr(nestedTempVar, extracted);
-            getAndRun.needsCond = true;
-            getAndRun.setType(syms.booleanType);
-            test = makeBinary(Tag.AND, test, getAndRun);
-            i++;
-            nestedPatterns = nestedPatterns.tail;
-        }
-        result = test;
     }
 
     @Override

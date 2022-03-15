@@ -771,9 +771,6 @@ public class Flow {
 
                         categorizedDeconstructionPatterns.put(type, categorizedDeconstructionPatterns.getOrDefault(type, List.nil()).prepend((JCDeconstructionPattern) label));
                     }
-                    case ARRAYPATTERN -> {
-                        //TODO: exhaustiveness for array patterns
-                    }
                     default -> {
                         if (label.isExpression()) {
                             JCExpression expr = (JCExpression) label;
@@ -817,10 +814,6 @@ public class Flow {
                     }
                     case DECONSTRUCTIONPATTERN -> {
                         currentPatternType = ((JCDeconstructionPattern) nestedPattern).record;
-                    }
-                    case ARRAYPATTERN -> {
-                        //TODO: exhaustiveness for array patterns
-                        continue;
                     }
                     default -> { continue; }
                 }

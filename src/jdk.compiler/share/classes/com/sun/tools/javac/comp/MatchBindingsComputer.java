@@ -144,7 +144,6 @@ public class MatchBindingsComputer extends TreeScanner {
             case NOT: case AND: case OR: case BINDINGPATTERN:
             case PARENTHESIZEDPATTERN: case GUARDPATTERN:
             case PARENS: case TYPETEST: case DECONSTRUCTIONPATTERN:
-            case ARRAYPATTERN:
             case CONDEXPR: //error recovery:
                 return matchBindings;
             default:

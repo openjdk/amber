@@ -255,17 +255,10 @@ public interface Tree {
         /**
          * Used for instances of {@link DeconstructionPatternTree}.
          *
-         * @since 18
+         * @since 19
          */
         @PreviewFeature(feature=PreviewFeature.Feature.DECONSTRUCTION_PATTERNS, reflective=true)
         DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
-
-        /**
-         * Used for instances of {@link ArrayPatternTree}.
-         *
-         * @since 18
-         */
-        ARRAY_PATTERN(ArrayPatternTree.class),
 
         /**
          * Used for instances of {@link PrimitiveTypeTree}.

@@ -245,7 +245,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         PARENTHESIZEDPATTERN,
 
         DECONSTRUCTIONPATTERN,
-        ARRAYPATTERN,
 
         /** Indexed array expressions, of type Indexed.
          */
@@ -2456,52 +2455,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
-    public static class JCArrayPattern extends JCPattern
-            implements ArrayPatternTree {
-        public JCExpression patternType;
-        public List<JCPattern> nested;
-        public final boolean orMore; //TODO: API, name!
-//        public ClassSymbol record;
-//        public List<Type> innerTypes;
-
-        protected JCArrayPattern(JCExpression patternType, List<JCPattern> nested, boolean orMore) {
-            this.patternType = patternType;
-            this.nested = nested;
-            this.orMore = orMore;
-        }
-
-        @Override @DefinedBy(Api.COMPILER_TREE)
-        public Tree getType() {
-            return patternType;
-        }
-
-        @Override @DefinedBy(Api.COMPILER_TREE)
-        public List<? extends JCPattern> getNestedPatterns() {
-            return nested;
-        }
-
-        @Override
-        public void accept(Visitor v) {
-            v.visitArrayPattern(this);
-        }
-
-        @DefinedBy(Api.COMPILER_TREE)
-        public Kind getKind() {
-            return Kind.ARRAY_PATTERN;
-        }
-
-        @Override
-        @DefinedBy(Api.COMPILER_TREE)
-        public <R, D> R accept(TreeVisitor<R, D> v, D d) {
-            return v.visitArrayPattern(this, d);
-        }
-
-        @Override
-        public Tag getTag() {
-            return ARRAYPATTERN;
-        }
-    }
-
     /**
      * An array selection
      */
@@ -3546,7 +3499,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitParenthesizedPattern(JCParenthesizedPattern that) { visitTree(that); }
         public void visitGuardPattern(JCGuardPattern that) { visitTree(that); }
         public void visitDeconstructionPattern(JCDeconstructionPattern that) { visitTree(that); }
-        public void visitArrayPattern(JCArrayPattern that) { visitTree(that); }
         public void visitIndexed(JCArrayAccess that)         { visitTree(that); }
         public void visitSelect(JCFieldAccess that)          { visitTree(that); }
         public void visitReference(JCMemberReference that)   { visitTree(that); }

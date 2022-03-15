@@ -527,14 +527,6 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitArrayPattern(ArrayPatternTree node, P p) {
-        JCArrayPattern t = (JCArrayPattern) node;
-        JCExpression deconstructor = copy(t.patternType, p);
-        List<JCPattern> nested = copy(t.nested, p);
-        return M.at(t.pos).ArrayPattern(deconstructor, nested, t.orMore);
-    }
-
-    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitUnary(UnaryTree node, P p) {
         JCUnary t = (JCUnary) node;
         JCExpression arg = copy(t.arg, p);

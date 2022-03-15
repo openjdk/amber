@@ -283,20 +283,10 @@ public interface TreeVisitor<R,P> {
      * @param node the node being visited
      * @param p a parameter value
      * @return a result value
-     * @since 18
+     * @since 19
      */
     @PreviewFeature(feature=PreviewFeature.Feature.DECONSTRUCTION_PATTERNS, reflective=true)
     R visitDeconstructionPattern(DeconstructionPatternTree node, P p);
-
-    /**
-     * Visits a {@code ArrayPatternTree} node.
-     * @param node the node being visited
-     * @param p a parameter value
-     * @return a result value
-     * @since 18
-     */
-    @PreviewFeature(feature=PreviewFeature.Feature.DECONSTRUCTION_PATTERNS, reflective=true)
-    R visitArrayPattern(ArrayPatternTree node, P p);
 
     /**
      * Visits a {@code MethodTree} node.
