@@ -46,7 +46,6 @@ import com.sun.tools.javac.tree.JCTree.JCBinary;
 import com.sun.tools.javac.tree.JCTree.JCConditional;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
 import com.sun.tools.javac.tree.JCTree.JCForLoop;
-import com.sun.tools.javac.tree.JCTree.JCGuardPattern;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCInstanceOf;
@@ -254,12 +253,6 @@ public class TransPatterns extends TreeTranslator {
     }
 
     @Override
-    public void visitGuardPattern(JCGuardPattern tree) {
-        JCExpression pattern = (JCExpression) this.<JCTree>translate(tree.patt);
-        JCExpression guard = translate(tree.expr);
-        result = makeBinary(Tag.AND, pattern, guard);
-    }
-
     public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
         //type test already done, finish handling of deconstruction patterns ("T(PATT1, PATT2, ...)")
         //=>
@@ -476,6 +469,9 @@ public class TransPatterns extends TreeTranslator {
                     try {
                         currentValue = temp;
                         JCExpression test = (JCExpression) this.<JCTree>translate(p);
+                        if (c.guard != null) {
+                            test = makeBinary(Tag.AND, test, translate(c.guard));
+                        }
                         c.stats = translate(c.stats);
                         JCContinue continueSwitch = make.at(clearedPatterns.head.pos()).Continue(null);
                         continueSwitch.target = tree;
@@ -547,13 +543,13 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
-    private Type principalType(JCPattern p) {
+    private Type principalType(JCTree p) {
         return types.boxedTypeOrType(types.erasure(TreeInfo.primaryPatternType(p).type()));
     }
 
     private LoadableConstant toLoadableConstant(JCCaseLabel l, Type selector) {
         if (l.isPattern()) {
-            Type principalType = principalType((JCPattern) l);
+            Type principalType = principalType(l);
             if (types.isSubtype(selector, principalType)) {
                 return (LoadableConstant) selector;
             } else {
