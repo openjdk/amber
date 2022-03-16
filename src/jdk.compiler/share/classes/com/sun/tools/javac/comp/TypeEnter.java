@@ -25,11 +25,9 @@
 
 package com.sun.tools.javac.comp;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import javax.tools.JavaFileObject;
 
@@ -41,6 +39,8 @@ import com.sun.tools.javac.code.Scope.StarImportScope;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.comp.Annotate.AnnotationTypeMetadata;
+import com.sun.tools.javac.parser.Parser;
+import com.sun.tools.javac.parser.ParserFactory;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.util.*;
 import com.sun.tools.javac.util.DefinedBy.Api;
@@ -113,6 +113,7 @@ public class TypeEnter implements Completer {
     private final Lint lint;
     private final TypeEnvs typeEnvs;
     private final Dependencies dependencies;
+    private final ParserFactory parserFactory;
     private final Preview preview;
 
     public static TypeEnter instance(Context context) {
@@ -140,6 +141,7 @@ public class TypeEnter implements Completer {
         lint = Lint.instance(context);
         typeEnvs = TypeEnvs.instance(context);
         dependencies = Dependencies.instance(context);
+        parserFactory = ParserFactory.instance(context);
         preview = Preview.instance(context);
         Source source = Source.instance(context);
         allowTypeAnnos = Feature.TYPE_ANNOTATIONS.allowedInSource(source);
@@ -330,6 +332,32 @@ public class TypeEnter implements Completer {
                 sym.owner.complete();
         }
 
+        private void importJavaLang(JCCompilationUnit tree, Env<AttrContext> env) {
+            // Import-on-demand java.lang.
+            PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
+            if (javaLang.members().isEmpty() && !javaLang.exists()) {
+                log.error(Errors.NoJavaLang);
+                throw new Abort();
+            }
+            importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env);
+        }
+
+        private void autoImports() {
+            if (preview.isPreview(Feature.TEMPLATED_STRINGS)) {
+                String autoImports = """
+                        import static java.lang.TemplatePolicy.STR;
+                        import static java.util.FormatterPolicy.FMTR;
+                        """;
+
+                Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
+                JCCompilationUnit importTree = parser.parseCompilationUnit();
+
+                for (JCImport imp : importTree.getImports()) {
+                    doImport(imp);
+                }
+            }
+        }
+
         private void resolveImports(JCCompilationUnit tree, Env<AttrContext> env) {
             if (tree.starImportScope.isFilled()) {
                 // we must have already processed this toplevel
@@ -352,13 +380,8 @@ public class TypeEnter implements Completer {
                         (origin, sym) -> sym.kind == TYP &&
                                          chk.importAccessible(sym, packge);
 
-                // Import-on-demand java.lang.
-                PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
-                if (javaLang.members().isEmpty() && !javaLang.exists()) {
-                    log.error(Errors.NoJavaLang);
-                    throw new Abort();
-                }
-                importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env);
+                importJavaLang(tree, env);
+                autoImports();
 
                 JCModuleDecl decl = tree.getModuleDecl();
 
