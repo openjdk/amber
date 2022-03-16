@@ -272,6 +272,7 @@ class CompletenessAnalyzer {
         DOUBLELITERAL(TokenKind.DOUBLELITERAL, XEXPR1|XTERM),  //
         CHARLITERAL(TokenKind.CHARLITERAL, XEXPR1|XTERM),  //
         STRINGLITERAL(TokenKind.STRINGLITERAL, XEXPR1|XTERM),  //
+        TEMPLATEDSTRING(TokenKind.TEMPLATEDSTRING, XEXPR1|XTERM),
         TRUE(TokenKind.TRUE, XEXPR1|XTERM),  //  true
         FALSE(TokenKind.FALSE, XEXPR1|XTERM),  //  false
         NULL(TokenKind.NULL, XEXPR1|XTERM),  //  null
