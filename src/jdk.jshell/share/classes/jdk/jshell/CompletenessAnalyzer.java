@@ -480,8 +480,16 @@ class CompletenessAnalyzer {
 
         private Token advance() {
             Token prev = current;
-            scanner.nextToken();
-            current = scanner.token();
+            if (current != null && current.kind == TokenKind.TEMPLATEDSTRING) {
+                int endPos = current.endPos;
+                do {
+                    scanner.nextToken();
+                    current = scanner.token();
+                } while (current != null && current.endPos <= endPos);
+            } else {
+                scanner.nextToken();
+                current = scanner.token();
+            }
             return prev;
         }
 
