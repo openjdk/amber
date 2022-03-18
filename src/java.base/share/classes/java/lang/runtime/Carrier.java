@@ -30,6 +30,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodHandles.Lookup.ClassOption;
 import java.lang.invoke.MethodType;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -52,13 +53,11 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  * types describe the types of the carrier component values.
  *
  * @implNote The strategy for storing components is deliberately left ambiguous
- * so that future improvements will not be hampered by backward compatability
+ * so that future improvements will not be hampered by backward compatibility
  * issues.
  *
  * @since 19
  */
-
-/*non-public*/
 public final class Carrier {
     /**
      * Class file version.
@@ -209,10 +208,10 @@ public final class Carrier {
      * @param carrierShape  carrier reshape
      * @param components    carrier components to reshape
      *
-     * @return components reshaped
+     * @return list of components reshaped
      */
-    private static MethodHandle[] reshapeComponents(CarrierShape carrierShape,
-                                                    MethodHandle[] components) {
+    private static List<MethodHandle> reshapeComponents(CarrierShape carrierShape,
+                                                        MethodHandle[] components) {
         int count = carrierShape.count();
         Class<?>[] ptypes = carrierShape.ptypes();
         MethodHandle[] reorder = new MethodHandle[count];
@@ -243,7 +242,7 @@ public final class Carrier {
                     MethodHandles.explicitCastArguments(component, methodType);
         }
 
-        return reorder;
+        return List.of(reorder);
     }
 
     /**
@@ -534,9 +533,9 @@ public final class Carrier {
          *
          * @param carrierShape  carrier object shape
          *
-         * @return array of carrier accessors
+         * @return list of carrier accessors
          */
-        private static MethodHandle[] components(CarrierShape carrierShape) {
+        private static List<MethodHandle> components(CarrierShape carrierShape) {
             MethodHandle[] components = createComponents(carrierShape);
 
             return reshapeComponents(carrierShape, components);
@@ -861,9 +860,9 @@ public final class Carrier {
          *
          * @param carrierShape  carrier object shape
          *
-         * @return array of components matching parameter types
+         * @return list of components matching parameter types
          */
-        private static MethodHandle[] components(CarrierShape carrierShape) {
+        private static List<MethodHandle> components(CarrierShape carrierShape) {
             CarrierClass carrierClass = findCarrierClass(carrierShape);
             MethodHandle[] components = carrierClass.components();
 
@@ -1021,13 +1020,6 @@ public final class Carrier {
         }
 
         /**
-         * {@return supplied methodType}
-         */
-        private MethodType methodType() {
-            return methodType;
-        }
-
-        /**
          * {@return number of long fields needed}
          */
         private int longCount() {
@@ -1125,13 +1117,12 @@ public final class Carrier {
      * @param methodType  {@link MethodType} providing types for the carrier's
      *                    components
      *
-     * @return  array of get component {@link MethodHandle MethodHandles,}
+     * @return immutable list of component accessors {@link MethodHandle MethodHandles}
      *
      * @throws NullPointerException is any argument is null
      * @throws IllegalArgumentException if number of component slots exceeds maximum
-     *
      */
-    public static MethodHandle[] components(MethodType methodType) {
+    public static List<MethodHandle> components(MethodType methodType) {
         Objects.requireNonNull(methodType);
         CarrierShape carrierShape =  new CarrierShape(methodType);
         int slotCount = carrierShape.slotCount();
