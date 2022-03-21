@@ -755,7 +755,9 @@ public class Flow {
                 } else if (pat.isPattern()) {
                     PatternPrimaryType patternType = TreeInfo.primaryPatternType(pat);
 
-                    constants.add(patternType.type().tsym);
+                    if (patternType.total()) {
+                        constants.add(patternType.type().tsym);
+                    }
                 }
             }
         }
@@ -766,11 +768,9 @@ public class Flow {
 
             for (JCCaseLabel label : labels) {
                 switch (label.getTag()) {
-                    case BINDINGPATTERN, GUARDPATTERN, PARENTHESIZEDPATTERN -> {
+                    case BINDINGPATTERN, PARENTHESIZEDPATTERN -> {
                         PatternPrimaryType primaryPatternType = TreeInfo.primaryPatternType((JCPattern) label);
-                        if (primaryPatternType.unconditional()) {
-                            constants.add(primaryPatternType.type().tsym);
-                        }
+                        constants.add(primaryPatternType.type().tsym);
                     }
                     case DECONSTRUCTIONPATTERN -> {
                         Symbol type = ((JCDeconstructionPattern) label).record;
@@ -810,13 +810,9 @@ public class Flow {
                 JCPattern nestedPattern = subTypeCandidate.nested.get(component);
                 Symbol currentPatternType;
                 switch (nestedPattern.getTag()) {
-                    case BINDINGPATTERN, GUARDPATTERN, PARENTHESIZEDPATTERN -> {
+                    case BINDINGPATTERN, PARENTHESIZEDPATTERN -> {
                         PatternPrimaryType primaryPatternType = TreeInfo.primaryPatternType(nestedPattern);
-                        if (primaryPatternType.unconditional()) {
-                            currentPatternType = primaryPatternType.type().tsym;
-                        } else {
-                            continue;
-                        }
+                        currentPatternType = primaryPatternType.type().tsym;
                     }
                     case DECONSTRUCTIONPATTERN -> {
                         currentPatternType = ((JCDeconstructionPattern) nestedPattern).record;

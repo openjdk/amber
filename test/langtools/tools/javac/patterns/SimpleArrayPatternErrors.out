@@ -1,8 +1,0 @@
-SimpleArrayPatternErrors.java:8:29: compiler.err.illegal.start.of.type
-SimpleArrayPatternErrors.java:10:50: compiler.err.expected: '}'
-SimpleArrayPatternErrors.java:13:52: compiler.err.expected: '}'
-SimpleArrayPatternErrors.java:9:18: compiler.err.array.pattern.not.array: java.lang.String
-SimpleArrayPatternErrors.java:12:31: compiler.err.array.pattern.not.array: java.lang.String
-- compiler.note.preview.filename: SimpleArrayPatternErrors.java, DEFAULT
-- compiler.note.preview.recompile
-5 errors

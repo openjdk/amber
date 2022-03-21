@@ -1797,7 +1797,8 @@ public class Attr extends JCTree.Visitor {
                         c.labels.stream().filter(label -> label.isPattern()).findAny();
 
                 if (patternCandidate.isPresent()) {
-                    boolean unconditional = TreeInfo.unconditionalCase(c);
+                    boolean unconditional = TreeInfo.unconditionalCase(c) &&
+                                            TreeInfo.primaryPatternType(patternCandidate.get()).total();
                     JCPattern pat = (JCPattern) patternCandidate.get();
                     var primary = TreeInfo.primaryPatternType(pat);
                     Type patternType = types.erasure(primary.type());
