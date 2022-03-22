@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1369,6 +1369,7 @@ public class TreeInfo {
                          .flatMap(c -> c.labels.stream())
                          .anyMatch(l -> TreeInfo.isNull(l));
     }
+
     public static boolean unconditionalCase(JCCase cse) {
         if (cse.guard != null && cse.guard.type.hasTag(BOOLEAN)) {
             var constValue = cse.guard.type.constValue();
