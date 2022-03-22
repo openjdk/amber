@@ -587,6 +587,7 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+        tree.fullComponentTypes = tree.record.getRecordComponents().map(rc -> types.memberType(tree.type, rc));
         tree.deconstructor = translate(tree.deconstructor, null);
         tree.nested = translate(tree.nested, null);
         result = tree;

@@ -151,14 +151,14 @@ public class Assert {
     /** Equivalent to
      *   assert false;
      */
-    public static void error() {
+    public static Error error() {
         throw new AssertionError();
     }
 
     /** Equivalent to
      *   assert false : msg;
      */
-    public static void error(String msg) {
+    public static Error error(String msg) {
         throw new AssertionError(msg);
     }
 

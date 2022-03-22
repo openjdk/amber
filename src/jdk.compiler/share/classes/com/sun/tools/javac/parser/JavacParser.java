@@ -3141,8 +3141,9 @@ public class JavacParser implements Parser {
                 case GT:
                     depth--;
                     if (depth == 0) {
-                         return peekToken(lookahead, LAX_IDENTIFIER) ? PatternResult.PATTERN
-                                                          : PatternResult.EXPRESSION;
+                         return peekToken(lookahead, LAX_IDENTIFIER) ||
+                                peekToken(lookahead, tk -> tk == LPAREN) ? PatternResult.PATTERN
+                                                                         : PatternResult.EXPRESSION;
                     } else if (depth < 0) return PatternResult.EXPRESSION;
                     break;
                 case MONKEYS_AT:

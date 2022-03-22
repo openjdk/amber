@@ -258,9 +258,10 @@ public class TransPatterns extends TreeTranslator {
         //=>
         //<PATT1-handling> && <PATT2-handling> && ...
         List<? extends RecordComponent> components = tree.record.getRecordComponents();
+        List<? extends Type> nestedFullComponentTypes = tree.fullComponentTypes;
         List<? extends JCPattern> nestedPatterns = tree.nested;
         JCExpression test = null;
-        while (components.nonEmpty() && nestedPatterns.nonEmpty()) {
+        while (components.nonEmpty() && nestedFullComponentTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
             //PATTn for record component COMPn of type Tn;
             //PATTn is a type test pattern or a deconstruction pattern:
             //=>
@@ -293,8 +294,12 @@ public class TransPatterns extends TreeTranslator {
             }
             JCExpression extraTest = null;
             if (!types.isAssignable(nestedTemp.type, nested.type)) {
-                extraTest = makeTypeTest(make.Ident(nestedTemp),
-                                         make.Type(nested.type));
+                if (types.isAssignable(nestedFullComponentTypes.head, nested.type)) {
+                    extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
+                } else {
+                    extraTest = makeTypeTest(make.Ident(nestedTemp),
+                                             make.Type(nested.type));
+                }
             } else if (nested.type.isReference()) {
                 extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
             }
@@ -310,9 +315,11 @@ public class TransPatterns extends TreeTranslator {
                 test = makeBinary(Tag.AND, test, getAndRun);
             }
             components = components.tail;
+            nestedFullComponentTypes = nestedFullComponentTypes.tail;
             nestedPatterns = nestedPatterns.tail;
         }
         Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
+        Assert.check(components.isEmpty() == nestedFullComponentTypes.isEmpty());
         result = test != null ? test : makeLit(syms.booleanType, 1);
     }
 
