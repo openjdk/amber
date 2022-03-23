@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,6 +114,7 @@ public:
   void mark_loop_vectorized() { _loop_flags |= VectorizedLoop; }
   void mark_has_atomic_post_loop() { _loop_flags |= HasAtomicPostLoop; }
   void mark_has_range_checks() { _loop_flags |=  HasRangeChecks; }
+  void clear_has_range_checks() { _loop_flags &= ~HasRangeChecks; }
   void mark_is_multiversioned() { _loop_flags |= IsMultiversioned; }
   void mark_strip_mined() { _loop_flags |= StripMined; }
   void clear_strip_mined() { _loop_flags &= ~StripMined; }
@@ -545,7 +546,8 @@ class LoopLimitNode : public Node {
 // Support for strip mining
 class OuterStripMinedLoopNode : public LoopNode {
 private:
-  CountedLoopNode* inner_loop() const;
+  static void fix_sunk_stores(CountedLoopEndNode* inner_cle, LoopNode* inner_cl, PhaseIterGVN* igvn, PhaseIdealLoop* iloop);
+
 public:
   OuterStripMinedLoopNode(Compile* C, Node *entry, Node *backedge)
     : LoopNode(entry, backedge) {
@@ -561,6 +563,15 @@ public:
   virtual IfFalseNode* outer_loop_exit() const;
   virtual SafePointNode* outer_safepoint() const;
   void adjust_strip_mined_loop(PhaseIterGVN* igvn);
+
+  void remove_outer_loop_and_safepoint(PhaseIterGVN* igvn) const;
+
+  void transform_to_counted_loop(PhaseIterGVN* igvn, PhaseIdealLoop* iloop);
+
+  static Node* register_new_node(Node* node, LoopNode* ctrl, PhaseIterGVN* igvn, PhaseIdealLoop* iloop);
+
+  Node* register_control(Node* node, Node* loop, Node* idom, PhaseIterGVN* igvn,
+                         PhaseIdealLoop* iloop);
 };
 
 class OuterStripMinedLoopEndNode : public IfNode {
@@ -773,6 +784,12 @@ public:
 
   // Estimate the number of nodes resulting from control and data flow merge.
   uint est_loop_flow_merge_sz() const;
+
+  // Check if the number of residual iterations is large with unroll_cnt.
+  // Return true if the residual iterations are more than 10% of the trip count.
+  bool is_residual_iters_large(int unroll_cnt, CountedLoopNode *cl) const {
+    return (unroll_cnt - 1) * (100.0 / LoopPercentProfileLimit) > cl->profile_trip_cnt();
+  }
 };
 
 // -----------------------------PhaseIdealLoop---------------------------------
@@ -1035,9 +1052,10 @@ private:
   Node **_idom;                  // Array of immediate dominators
   uint *_dom_depth;              // Used for fast LCA test
   GrowableArray<uint>* _dom_stk; // For recomputation of dom depth
+  LoopOptsMode _mode;
 
   // build the loop tree and perform any requested optimizations
-  void build_and_optimize(LoopOptsMode mode);
+  void build_and_optimize();
 
   // Dominators for the sea of nodes
   void Dominators();
@@ -1048,9 +1066,10 @@ private:
     _igvn(igvn),
     _verify_me(nullptr),
     _verify_only(false),
+    _mode(mode),
     _nodes_required(UINT_MAX) {
     assert(mode != LoopOptsVerify, "wrong constructor to verify IdealLoop");
-    build_and_optimize(mode);
+    build_and_optimize();
   }
 
 #ifndef PRODUCT
@@ -1061,8 +1080,9 @@ private:
     _igvn(igvn),
     _verify_me(verify_me),
     _verify_only(verify_me == nullptr),
+    _mode(LoopOptsVerify),
     _nodes_required(UINT_MAX) {
-    build_and_optimize(LoopOptsVerify);
+    build_and_optimize();
   }
 #endif
 
@@ -1255,15 +1275,15 @@ public:
   void mark_reductions( IdealLoopTree *loop );
 
   // Return true if exp is a constant times an induction var
-  bool is_scaled_iv(Node* exp, Node* iv, jlong* p_scale, BasicType bt, bool* converted);
+  bool is_scaled_iv(Node* exp, Node* iv, BasicType bt, jlong* p_scale, bool* p_short_scale, int depth = 0);
 
   bool is_iv(Node* exp, Node* iv, BasicType bt);
 
   // Return true if exp is a scaled induction var plus (or minus) constant
-  bool is_scaled_iv_plus_offset(Node* exp, Node* iv, jlong* p_scale, Node** p_offset, BasicType bt, bool* converted = NULL, int depth = 0);
+  bool is_scaled_iv_plus_offset(Node* exp, Node* iv, BasicType bt, jlong* p_scale, Node** p_offset, bool* p_short_scale = NULL, int depth = 0);
   bool is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale, Node** p_offset) {
     jlong long_scale;
-    if (is_scaled_iv_plus_offset(exp, iv, &long_scale, p_offset, T_INT)) {
+    if (is_scaled_iv_plus_offset(exp, iv, T_INT, &long_scale, p_offset)) {
       int int_scale = checked_cast<int>(long_scale);
       if (p_scale != NULL) {
         *p_scale = int_scale;
@@ -1272,6 +1292,12 @@ public:
     }
     return false;
   }
+  // Helper for finding more complex matches to is_scaled_iv_plus_offset.
+  bool is_scaled_iv_plus_extra_offset(Node* exp1, Node* offset2, Node* iv,
+                                      BasicType bt,
+                                      jlong* p_scale, Node** p_offset,
+                                      bool* p_short_scale, int depth);
+
 
   // Enum to determine the action to be performed in create_new_if_for_predicate() when processing phis of UCT regions.
   enum class UnswitchingAction {
@@ -1442,7 +1468,8 @@ public:
   // Rework addressing expressions to get the most loop-invariant stuff
   // moved out.  We'd like to do all associative operators, but it's especially
   // important (common) to do address expressions.
-  Node *remix_address_expressions( Node *n );
+  Node* remix_address_expressions(Node* n);
+  Node* remix_address_expressions_add_left_shift(Node* n, IdealLoopTree* n_loop, Node* n_ctrl, BasicType bt);
 
   // Convert add to muladd to generate MuladdS2I under certain criteria
   Node * convert_add_to_muladd(Node * n);
@@ -1464,15 +1491,15 @@ public:
   Node *has_local_phi_input( Node *n );
   // Mark an IfNode as being dominated by a prior test,
   // without actually altering the CFG (and hence IDOM info).
-  void dominated_by( Node *prevdom, Node *iff, bool flip = false, bool exclude_loop_predicate = false );
+  void dominated_by(IfProjNode* prevdom, IfNode* iff, bool flip = false, bool exclude_loop_predicate = false);
 
   // Split Node 'n' through merge point
-  Node *split_thru_region( Node *n, Node *region );
+  RegionNode* split_thru_region(Node* n, RegionNode* region);
   // Split Node 'n' through merge point if there is enough win.
   Node *split_thru_phi( Node *n, Node *region, int policy );
   // Found an If getting its condition-code input from a Phi in the
   // same block.  Split thru the Region.
-  void do_split_if( Node *iff );
+  void do_split_if(Node *iff, RegionNode** new_false_region = NULL, RegionNode** new_true_region = NULL);
 
   // Conversion of fill/copy patterns into intrinsic versions
   bool do_intrinsify_fill();
@@ -1645,8 +1672,9 @@ public:
 
   bool safe_for_if_replacement(const Node* dom) const;
 
-  void strip_mined_nest_back_to_counted_loop(IdealLoopTree* loop, const BaseCountedLoopNode* head, Node* back_control,
-                                             IfNode*&exit_test, SafePointNode*&safepoint);
+  void push_pinned_nodes_thru_region(IfNode* dom_if, Node* region);
+
+  bool try_merge_identical_ifs(Node* n);
 };
 
 

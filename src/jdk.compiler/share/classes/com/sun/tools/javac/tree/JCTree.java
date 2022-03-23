@@ -1289,6 +1289,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** Position of closing brace, optional. */
         public int endpos = Position.NOPOS;
         public boolean hasTotalPattern;
+        public boolean isExhaustive;
         public boolean patternSwitch;
         protected JCSwitch(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;
@@ -1375,6 +1376,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** Position of closing brace, optional. */
         public int endpos = Position.NOPOS;
         public boolean hasTotalPattern;
+        public boolean isExhaustive;
         public boolean patternSwitch;
         protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;

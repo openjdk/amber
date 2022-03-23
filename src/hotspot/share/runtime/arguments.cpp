@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,6 +40,7 @@
 #include "logging/logStream.hpp"
 #include "logging/logTag.hpp"
 #include "memory/allocation.inline.hpp"
+#include "metaprogramming/enableIf.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
@@ -56,6 +57,7 @@
 #include "services/management.hpp"
 #include "services/nmtCommon.hpp"
 #include "utilities/align.hpp"
+#include "utilities/debug.hpp"
 #include "utilities/defaultStream.hpp"
 #include "utilities/macros.hpp"
 #include "utilities/powerOfTwo.hpp"
@@ -63,6 +65,7 @@
 #if INCLUDE_JFR
 #include "jfr/jfr.hpp"
 #endif
+#include <limits>
 
 #define DEFAULT_JAVA_LAUNCHER  "generic"
 
@@ -412,7 +415,7 @@ void Arguments::init_system_properties() {
   // It can only be set by either:
   //    - -Xbootclasspath/a:
   //    - AddToBootstrapClassLoaderSearch during JVMTI OnLoad phase
-  _jdk_boot_class_path_append = new SystemProperty("jdk.boot.class.path.append", "", false, true);
+  _jdk_boot_class_path_append = new SystemProperty("jdk.boot.class.path.append", NULL, false, true);
 
   // Add to System Property list.
   PropertyList_add(&_system_properties, _sun_boot_library_path);
@@ -530,7 +533,6 @@ static SpecialFlag const special_jvm_flags[] = {
   { "InitialRAMFraction",           JDK_Version::jdk(10),  JDK_Version::undefined(), JDK_Version::undefined() },
   { "AllowRedefinitionToAddDeleteMethods", JDK_Version::jdk(13), JDK_Version::undefined(), JDK_Version::undefined() },
   { "FlightRecorder",               JDK_Version::jdk(13), JDK_Version::undefined(), JDK_Version::undefined() },
-  { "MinInliningThreshold",         JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::jdk(20) },
   { "DumpSharedSpaces",             JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::undefined() },
   { "DynamicDumpSharedSpaces",      JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::undefined() },
   { "RequireSharedSpaces",          JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::undefined() },
@@ -538,6 +540,9 @@ static SpecialFlag const special_jvm_flags[] = {
 #ifdef PRODUCT
   { "UseHeavyMonitors",             JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::jdk(20) },
 #endif
+  { "ExtendedDTraceProbes",         JDK_Version::jdk(19), JDK_Version::jdk(20), JDK_Version::jdk(21) },
+  { "UseContainerCpuShares",        JDK_Version::jdk(19), JDK_Version::jdk(20), JDK_Version::jdk(21) },
+  { "PreferContainerQuotaForCPUCount", JDK_Version::jdk(19), JDK_Version::jdk(20), JDK_Version::jdk(21) },
 
   // --- Deprecated alias flags (see also aliased_jvm_flags) - sorted by obsolete_in then expired_in:
   { "DefaultMaxRAMFraction",        JDK_Version::jdk(8),  JDK_Version::undefined(), JDK_Version::undefined() },
@@ -547,6 +552,8 @@ static SpecialFlag const special_jvm_flags[] = {
   // -------------- Obsolete Flags - sorted by expired_in --------------
 
   { "FilterSpuriousWakeups",        JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::jdk(20) },
+  { "MinInliningThreshold",         JDK_Version::jdk(18), JDK_Version::jdk(19), JDK_Version::jdk(20) },
+  { "PrefetchFieldsAhead",          JDK_Version::undefined(), JDK_Version::jdk(19), JDK_Version::jdk(20) },
 #ifdef ASSERT
   { "DummyObsoleteTestFlag",        JDK_Version::undefined(), JDK_Version::jdk(18), JDK_Version::undefined() },
 #endif
@@ -740,20 +747,84 @@ bool Arguments::verify_special_jvm_flags(bool check_globals) {
 }
 #endif
 
-// Parses a size specification string.
-bool Arguments::atojulong(const char *s, julong* result) {
-  julong n = 0;
+template <typename T, ENABLE_IF(std::is_signed<T>::value), ENABLE_IF(sizeof(T) == 4)> // signed 32-bit
+static bool parse_integer_impl(const char *s, char **endptr, int base, T* result) {
+  // Don't use strtol -- on 64-bit builds, "long" could be either 32- or 64-bits
+  // so the range tests could be tautological and might cause compiler warnings.
+  STATIC_ASSERT(sizeof(long long) >= 8); // C++ specification
+  errno = 0; // errno is thread safe
+  long long v = strtoll(s, endptr, base);
+  if (errno != 0 || v < min_jint || v > max_jint) {
+    return false;
+  }
+  *result = static_cast<T>(v);
+  return true;
+}
 
-  // First char must be a digit. Don't allow negative numbers or leading spaces.
-  if (!isdigit(*s)) {
+template <typename T, ENABLE_IF(!std::is_signed<T>::value), ENABLE_IF(sizeof(T) == 4)> // unsigned 32-bit
+static bool parse_integer_impl(const char *s, char **endptr, int base, T* result) {
+  if (s[0] == '-') {
+    return false;
+  }
+  // Don't use strtoul -- same reason as above.
+  STATIC_ASSERT(sizeof(unsigned long long) >= 8); // C++ specification
+  errno = 0; // errno is thread safe
+  unsigned long long v = strtoull(s, endptr, base);
+  if (errno != 0 || v > max_juint) {
+    return false;
+  }
+  *result = static_cast<T>(v);
+  return true;
+}
+
+template <typename T, ENABLE_IF(std::is_signed<T>::value), ENABLE_IF(sizeof(T) == 8)> // signed 64-bit
+static bool parse_integer_impl(const char *s, char **endptr, int base, T* result) {
+  errno = 0; // errno is thread safe
+  *result = strtoll(s, endptr, base);
+  return errno == 0;
+}
+
+template <typename T, ENABLE_IF(!std::is_signed<T>::value), ENABLE_IF(sizeof(T) == 8)> // unsigned 64-bit
+static bool parse_integer_impl(const char *s, char **endptr, int base, T* result) {
+  if (s[0] == '-') {
+    return false;
+  }
+  errno = 0; // errno is thread safe
+  *result = strtoull(s, endptr, base);
+  return errno == 0;
+}
+
+template<typename T>
+static bool multiply_by_1k(T& n) {
+  if (n >= std::numeric_limits<T>::min() / 1024 &&
+      n <= std::numeric_limits<T>::max() / 1024) {
+    n *= 1024;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// All of the integral types that can be used for command line options:
+//   int, uint, intx, uintx, uint64_t, size_t
+//
+// In all supported platforms, these types can be mapped to only 4 native types:
+//    {signed, unsigned} x {32-bit, 64-bit}
+//
+// We use SFINAE to pick the correct parse_integer_impl() function
+template<typename T>
+static bool parse_integer(const char *s, T* result) {
+  if (!isdigit(s[0]) && s[0] != '-') {
+    // strtoll/strtoull may allow leading spaces. Forbid it.
     return false;
   }
 
-  bool is_hex = (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'));
+  T n = 0;
+  bool is_hex = (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) ||
+                (s[0] == '-' && s[1] == '0' && (s[2] == 'x' || s[3] == 'X'));
   char* remainder;
-  errno = 0;
-  n = strtoull(s, &remainder, (is_hex ? 16 : 10));
-  if (errno != 0) {
+
+  if (!parse_integer_impl(s, &remainder, (is_hex ? 16 : 10), &n)) {
     return false;
   }
 
@@ -764,28 +835,29 @@ bool Arguments::atojulong(const char *s, julong* result) {
 
   switch (*remainder) {
     case 'T': case 't':
-      *result = n * G * K;
-      // Check for overflow.
-      if (*result/((julong)G * K) != n) return false;
-      return true;
+      if (!multiply_by_1k(n)) return false;
+      // fall-through
     case 'G': case 'g':
-      *result = n * G;
-      if (*result/G != n) return false;
-      return true;
+      if (!multiply_by_1k(n)) return false;
+      // fall-through
     case 'M': case 'm':
-      *result = n * M;
-      if (*result/M != n) return false;
-      return true;
+      if (!multiply_by_1k(n)) return false;
+      // fall-through
     case 'K': case 'k':
-      *result = n * K;
-      if (*result/K != n) return false;
-      return true;
+      if (!multiply_by_1k(n)) return false;
+      break;
     case '\0':
-      *result = n;
-      return true;
+      break;
     default:
       return false;
   }
+
+  *result = n;
+  return true;
+}
+
+bool Arguments::atojulong(const char *s, julong* result) {
+  return parse_integer(s, result);
 }
 
 Arguments::ArgsRange Arguments::check_memory_size(julong size, julong min_size, julong max_size) {
@@ -834,57 +906,57 @@ static bool set_fp_numeric_flag(JVMFlag* flag, char* value, JVMFlagOrigin origin
   return false;
 }
 
-static bool set_numeric_flag(JVMFlag* flag, char* value, JVMFlagOrigin origin) {
-  julong v;
-  int int_v;
-  intx intx_v;
-  bool is_neg = false;
-
+static JVMFlag::Error set_numeric_flag(JVMFlag* flag, char* value, JVMFlagOrigin origin) {
   if (flag == NULL) {
-    return false;
+    return JVMFlag::INVALID_FLAG;
   }
 
-  // Check the sign first since atojulong() parses only unsigned values.
-  if (*value == '-') {
-    if (!flag->is_intx() && !flag->is_int()) {
-      return false;
-    }
-    value++;
-    is_neg = true;
-  }
-  if (!Arguments::atojulong(value, &v)) {
-    return false;
-  }
   if (flag->is_int()) {
-    int_v = (int) v;
-    if (is_neg) {
-      int_v = -int_v;
+    int v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_int(flag, &v, origin);
     }
-    return JVMFlagAccess::set_int(flag, &int_v, origin) == JVMFlag::SUCCESS;
   } else if (flag->is_uint()) {
-    uint uint_v = (uint) v;
-    return JVMFlagAccess::set_uint(flag, &uint_v, origin) == JVMFlag::SUCCESS;
-  } else if (flag->is_intx()) {
-    intx_v = (intx) v;
-    if (is_neg) {
-      intx_v = -intx_v;
+    uint v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_uint(flag, &v, origin);
     }
-    return JVMFlagAccess::set_intx(flag, &intx_v, origin) == JVMFlag::SUCCESS;
+  } else if (flag->is_intx()) {
+    intx v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_intx(flag, &v, origin);
+    }
   } else if (flag->is_uintx()) {
-    uintx uintx_v = (uintx) v;
-    return JVMFlagAccess::set_uintx(flag, &uintx_v, origin) == JVMFlag::SUCCESS;
+    uintx v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_uintx(flag, &v, origin);
+    }
   } else if (flag->is_uint64_t()) {
-    uint64_t uint64_t_v = (uint64_t) v;
-    return JVMFlagAccess::set_uint64_t(flag, &uint64_t_v, origin) == JVMFlag::SUCCESS;
+    uint64_t v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_uint64_t(flag, &v, origin);
+    }
   } else if (flag->is_size_t()) {
-    size_t size_t_v = (size_t) v;
-    return JVMFlagAccess::set_size_t(flag, &size_t_v, origin) == JVMFlag::SUCCESS;
+    size_t v;
+    if (parse_integer(value, &v)) {
+      return JVMFlagAccess::set_size_t(flag, &v, origin);
+    }
   } else if (flag->is_double()) {
-    double double_v = (double) v;
-    return JVMFlagAccess::set_double(flag, &double_v, origin) == JVMFlag::SUCCESS;
-  } else {
-    return false;
+    // This function parses only input strings without a decimal
+    // point character (.)
+    // If a string looks like a FP number, it would be parsed by
+    // set_fp_numeric_flag(). See Arguments::parse_argument().
+    jlong v;
+    if (parse_integer(value, &v)) {
+      double double_v = (double) v;
+      if (value[0] == '-' && v == 0) { // special case: 0.0 is different than -0.0.
+        double_v = -0.0;
+      }
+      return JVMFlagAccess::set_double(flag, &double_v, origin);
+    }
   }
+
+  return JVMFlag::WRONG_FORMAT;
 }
 
 static bool set_string_flag(JVMFlag* flag, const char* value, JVMFlagOrigin origin) {
@@ -1046,7 +1118,7 @@ bool Arguments::parse_argument(const char* arg, JVMFlagOrigin origin) {
       return false;
     }
     JVMFlag* flag = JVMFlag::find_flag(real_name);
-    return set_numeric_flag(flag, value, origin);
+    return set_numeric_flag(flag, value, origin) == JVMFlag::SUCCESS;
   }
 
   return false;
@@ -1244,7 +1316,7 @@ bool Arguments::process_argument(const char* arg,
 }
 
 bool Arguments::process_settings_file(const char* file_name, bool should_exist, jboolean ignore_unrecognized) {
-  FILE* stream = fopen(file_name, "rb");
+  FILE* stream = os::fopen(file_name, "rb");
   if (stream == NULL) {
     if (should_exist) {
       jio_fprintf(defaultStream::error_stream(),
@@ -2015,16 +2087,23 @@ bool Arguments::check_vm_args_consistency() {
 
 #if !defined(X86) && !defined(AARCH64) && !defined(PPC64)
   if (UseHeavyMonitors) {
-    warning("UseHeavyMonitors is not fully implemented on this architecture");
+    jio_fprintf(defaultStream::error_stream(),
+                "UseHeavyMonitors is not fully implemented on this architecture");
+    return false;
   }
 #endif
 #if (defined(X86) || defined(PPC64)) && !defined(ZERO)
   if (UseHeavyMonitors && UseRTMForStackLocks) {
-    fatal("-XX:+UseHeavyMonitors and -XX:+UseRTMForStackLocks are mutually exclusive");
+    jio_fprintf(defaultStream::error_stream(),
+                "-XX:+UseHeavyMonitors and -XX:+UseRTMForStackLocks are mutually exclusive");
+
+    return false;
   }
 #endif
   if (VerifyHeavyMonitors && !UseHeavyMonitors) {
-    fatal("-XX:+VerifyHeavyMonitors requires -XX:+UseHeavyMonitors");
+    jio_fprintf(defaultStream::error_stream(),
+                "-XX:+VerifyHeavyMonitors requires -XX:+UseHeavyMonitors");
+    return false;
   }
 
   return status;
@@ -2056,24 +2135,16 @@ static const char* system_assertion_options[] = {
 bool Arguments::parse_uintx(const char* value,
                             uintx* uintx_arg,
                             uintx min_size) {
-
-  // Check the sign first since atojulong() parses only unsigned values.
-  bool value_is_positive = !(*value == '-');
-
-  if (value_is_positive) {
-    julong n;
-    bool good_return = atojulong(value, &n);
-    if (good_return) {
-      bool above_minimum = n >= min_size;
-      bool value_is_too_large = n > max_uintx;
-
-      if (above_minimum && !value_is_too_large) {
-        *uintx_arg = n;
-        return true;
-      }
-    }
+  uintx n;
+  if (!parse_integer(value, &n)) {
+    return false;
   }
-  return false;
+  if (n >= min_size) {
+    *uintx_arg = n;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool Arguments::create_module_property(const char* prop_name, const char* prop_value, PropertyInternal internal) {
@@ -2124,7 +2195,7 @@ Arguments::ArgsRange Arguments::parse_memory_size(const char* s,
                                                   julong* long_arg,
                                                   julong min_size,
                                                   julong max_size) {
-  if (!atojulong(s, long_arg)) return arg_unreadable;
+  if (!parse_integer(s, long_arg)) return arg_unreadable;
   return check_memory_size(*long_arg, min_size, max_size);
 }
 
@@ -2879,6 +2950,8 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
       }
     } else if (match_option(option, "-XX:+ExtendedDTraceProbes")) {
 #if defined(DTRACE_ENABLED)
+      warning("Option ExtendedDTraceProbes was deprecated in version 19 and will likely be removed in a future release.");
+      warning("Use the combination of -XX:+DTraceMethodProbes, -XX:+DTraceAllocProbes and -XX:+DTraceMonitorProbes instead.");
       if (FLAG_SET_CMDLINE(ExtendedDTraceProbes, true) != JVMFlag::SUCCESS) {
         return JNI_EINVAL;
       }
@@ -2894,6 +2967,18 @@ jint Arguments::parse_each_vm_init_arg(const JavaVMInitArgs* args, bool* patch_m
 #else // defined(DTRACE_ENABLED)
       jio_fprintf(defaultStream::error_stream(),
                   "ExtendedDTraceProbes flag is not applicable for this configuration\n");
+      return JNI_EINVAL;
+    } else if (match_option(option, "-XX:+DTraceMethodProbes")) {
+      jio_fprintf(defaultStream::error_stream(),
+                  "DTraceMethodProbes flag is not applicable for this configuration\n");
+      return JNI_EINVAL;
+    } else if (match_option(option, "-XX:+DTraceAllocProbes")) {
+      jio_fprintf(defaultStream::error_stream(),
+                  "DTraceAllocProbes flag is not applicable for this configuration\n");
+      return JNI_EINVAL;
+    } else if (match_option(option, "-XX:+DTraceMonitorProbes")) {
+      jio_fprintf(defaultStream::error_stream(),
+                  "DTraceMonitorProbes flag is not applicable for this configuration\n");
       return JNI_EINVAL;
 #endif // defined(DTRACE_ENABLED)
 #ifdef ASSERT
@@ -3140,6 +3225,17 @@ jint Arguments::finalize_vm_init_args(bool patch_mod_javabase) {
     DynamicDumpSharedSpaces = true;
   }
 
+  if (AutoCreateSharedArchive) {
+    if (SharedArchiveFile == NULL) {
+      log_warning(cds)("-XX:+AutoCreateSharedArchive requires -XX:SharedArchiveFile");
+      return JNI_ERR;
+    }
+    if (ArchiveClassesAtExit != NULL) {
+      log_warning(cds)("-XX:+AutoCreateSharedArchive does not work with ArchiveClassesAtExit");
+      return JNI_ERR;
+    }
+  }
+
   if (UseSharedSpaces && patch_mod_javabase) {
     no_shared_spaces("CDS is disabled when " JAVA_BASE_NAME " module is patched.");
   }
@@ -3312,13 +3408,13 @@ jint Arguments::parse_vm_options_file(const char* file_name, ScopedVMInitArgs* v
     jio_fprintf(defaultStream::error_stream(),
                 "Could not stat options file '%s'\n",
                 file_name);
-    os::close(fd);
+    ::close(fd);
     return JNI_ERR;
   }
 
   if (stbuf.st_size == 0) {
     // tell caller there is no option data and that is ok
-    os::close(fd);
+    ::close(fd);
     return JNI_OK;
   }
 
@@ -3329,15 +3425,15 @@ jint Arguments::parse_vm_options_file(const char* file_name, ScopedVMInitArgs* v
   if (NULL == buf) {
     jio_fprintf(defaultStream::error_stream(),
                 "Could not allocate read buffer for options file parse\n");
-    os::close(fd);
+    ::close(fd);
     return JNI_ENOMEM;
   }
 
   memset(buf, 0, bytes_alloc);
 
   // Fill buffer
-  ssize_t bytes_read = os::read(fd, (void *)buf, (unsigned)bytes_alloc);
-  os::close(fd);
+  ssize_t bytes_read = ::read(fd, (void *)buf, (unsigned)bytes_alloc);
+  ::close(fd);
   if (bytes_read < 0) {
     FREE_C_HEAP_ARRAY(char, buf);
     jio_fprintf(defaultStream::error_stream(),
@@ -3487,9 +3583,6 @@ void Arguments::extract_shared_archive_paths(const char* archive_path,
   char* cur_path = NEW_C_HEAP_ARRAY(char, len + 1, mtInternal);
   strncpy(cur_path, begin_ptr, len);
   cur_path[len] = '\0';
-  if (!FileMapInfo::check_archive((const char*)cur_path, true /*is_static*/)) {
-    return;
-  }
   *base_archive_path = cur_path;
 
   begin_ptr = ++end_ptr;
@@ -3501,9 +3594,6 @@ void Arguments::extract_shared_archive_paths(const char* archive_path,
   len = end_ptr - begin_ptr;
   cur_path = NEW_C_HEAP_ARRAY(char, len + 1, mtInternal);
   strncpy(cur_path, begin_ptr, len + 1);
-  if (!FileMapInfo::check_archive((const char*)cur_path, false /*is_static*/)) {
-    return;
-  }
   *top_archive_path = cur_path;
 }
 
@@ -3556,7 +3646,20 @@ void Arguments::init_shared_archive_paths() {
         bool success =
           FileMapInfo::get_base_archive_name_from_header(SharedArchiveFile, &base_archive_path);
         if (!success) {
-          no_shared_spaces("invalid archive");
+          // If +AutoCreateSharedArchive and the specified shared archive does not exist,
+          // regenerate the dynamic archive base on default archive.
+          if (AutoCreateSharedArchive && !os::file_exists(SharedArchiveFile)) {
+            DynamicDumpSharedSpaces = true;
+            ArchiveClassesAtExit = const_cast<char *>(SharedArchiveFile);
+            SharedArchivePath = get_default_shared_archive_path();
+            SharedArchiveFile = nullptr;
+          } else {
+            if (AutoCreateSharedArchive) {
+              warning("-XX:+AutoCreateSharedArchive is unsupported when base CDS archive is not loaded. Run with -Xlog:cds for more info.");
+              AutoCreateSharedArchive = false;
+            }
+            no_shared_spaces("invalid archive");
+          }
         } else if (base_archive_path == NULL) {
           // User has specified a single archive, which is a static archive.
           SharedArchivePath = const_cast<char *>(SharedArchiveFile);
@@ -3998,7 +4101,6 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
   no_shared_spaces("CDS Disabled");
 #endif // INCLUDE_CDS
 
-#if INCLUDE_NMT
   // Verify NMT arguments
   const NMT_TrackingLevel lvl = NMTUtil::parse_tracking_level(NativeMemoryTracking);
   if (lvl == NMT_unknown) {
@@ -4010,13 +4112,6 @@ jint Arguments::parse(const JavaVMInitArgs* initial_cmd_args) {
     warning("PrintNMTStatistics is disabled, because native memory tracking is not enabled");
     FLAG_SET_DEFAULT(PrintNMTStatistics, false);
   }
-#else
-  if (!FLAG_IS_DEFAULT(NativeMemoryTracking) || PrintNMTStatistics) {
-    warning("Native Memory Tracking is not supported in this VM");
-    FLAG_SET_DEFAULT(NativeMemoryTracking, "off");
-    FLAG_SET_DEFAULT(PrintNMTStatistics, false);
-  }
-#endif // INCLUDE_NMT
 
   if (TraceDependencies && VerifyDependencies) {
     if (!FLAG_IS_DEFAULT(TraceDependencies)) {
