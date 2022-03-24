@@ -388,6 +388,11 @@ public interface JavaLangAccess {
     long stringConcatInitialCoder();
 
     /**
+     * Get the coder for the supplied character.
+     */
+    long stringConcatCoder(char value);
+
+    /**
      * Update lengthCoder for constant
      */
     long stringConcatMix(long lengthCoder, String constant);

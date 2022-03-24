@@ -52,6 +52,10 @@ import static java.lang.invoke.MethodType.methodType;
 class FormatItem {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
+    private static final MethodHandle CHAR_MIX =
+            JLA.stringConcatHelper("mix",
+                    MethodType.methodType(long.class, long.class,char.class));
+
     private static final MethodHandle STRING_PREPEND =
             JLA.stringConcatHelper("prepend",
                     MethodType.methodType(long.class, long.class, byte[].class,
@@ -64,6 +68,26 @@ class FormatItem {
     private static final MethodHandle SELECT_PUTCHAR_MH =
             JLA.stringConcatHelper("selectPutChar",
                     MethodType.methodType(MethodHandle.class, long.class));
+
+    private static final long charMix(long lengthCoder, char value) {
+        try {
+            return (long)CHAR_MIX.invokeExact(lengthCoder, value);
+        } catch (RuntimeException ex) {
+            throw ex;
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private static final long stringMix(long lengthCoder, String value) {
+        return JLA.stringConcatMix(lengthCoder, value);
+    }
+
+    private static final long stringPrepend(long lengthCoder, byte[] buffer,
+                                            String value) throws Throwable {
+        return (long)STRING_PREPEND.invokeExact(lengthCoder, buffer, value,
+                (String)null);
+    }
 
     private static MethodHandle selectGetChar(long indexCoder) throws Throwable {
         return (MethodHandle)SELECT_GETCHAR_MH.invokeExact(indexCoder);
@@ -151,8 +175,9 @@ class FormatItem {
 
         @Override
         public long mix(long lengthCoder) {
-            return lengthCoder +
-                    Integer.max(length + signLength() + groupLength(), width);
+            return JLA.stringConcatCoder(zeroDigit) |
+                    (lengthCoder +
+                     Integer.max(length + signLength() + groupLength(), width));
         }
 
         @Override
@@ -338,7 +363,7 @@ class FormatItem {
 
         @Override
         public long mix(long lengthCoder) {
-            return lengthCoder + 1;
+            return charMix(lengthCoder, value);
         }
 
         @Override
@@ -362,13 +387,12 @@ class FormatItem {
 
         @Override
         public long mix(long lengthCoder) {
-            return JLA.stringConcatMix(lengthCoder, value);
+            return stringMix(lengthCoder, value);
         }
 
         @Override
         public long prepend(long lengthCoder, byte[] buffer) throws Throwable {
-            return (long)STRING_PREPEND.invokeExact(lengthCoder, buffer, value,
-                    (String)null);
+            return stringPrepend(lengthCoder, buffer, value);
         }
     }
 
@@ -408,23 +432,44 @@ class FormatItem {
         }
     }
 
+    protected abstract static class FormatItemModifier implements StringConcatItem {
+        private final long itemLengthCoder;
+        protected final StringConcatItem item;
+
+        FormatItemModifier(StringConcatItem item) {
+            this.itemLengthCoder = item.mix(0L);
+            this.item = item;
+        }
+
+        int length() {
+            return (int)itemLengthCoder;
+        }
+
+        long coder() {
+            return itemLengthCoder & ~Integer.MAX_VALUE;
+        }
+
+        @Override
+        abstract public long mix(long lengthCoder);
+
+        @Override
+        abstract public long prepend(long lengthCoder, byte[] buffer) throws Throwable;
+    }
+
     /**
      * Fill left format item.
      */
-    static final class FormatItemFillLeft implements StringConcatItem {
-        private final int length;
+    static final class FormatItemFillLeft extends FormatItemModifier {
         private final int width;
-        private final StringConcatItem item;
 
         FormatItemFillLeft(int width, StringConcatItem item) {
-            this.length = (int)item.mix(0L);
-            this.width = Integer.max(this.length, width);
-            this.item = item;
+            super(item);
+            this.width = Integer.max(length(), width);
         }
 
         @Override
         public long mix(long lengthCoder) {
-            return lengthCoder + width;
+            return (lengthCoder | coder()) + width;
         }
 
         @Override
@@ -432,7 +477,7 @@ class FormatItem {
             MethodHandle putCharMH = selectPutChar(lengthCoder);
             lengthCoder = item.prepend(lengthCoder, buffer);
 
-            for (int i = length; i < width; i++) {
+            for (int i = length(); i < width; i++) {
                 putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)' ');
             }
 
@@ -443,27 +488,24 @@ class FormatItem {
     /**
      * Fill right format item.
      */
-    static final class FormatItemFillRight implements StringConcatItem {
-        private final int length;
+    static final class FormatItemFillRight extends FormatItemModifier {
         private final int width;
-        private final StringConcatItem item;
 
         FormatItemFillRight(int width, StringConcatItem item) {
-            this.length = (int)item.mix(0L);
-            this.width = Integer.max(this.length, width);
-            this.item = item;
+            super(item);
+            this.width = Integer.max(length(), width);
         }
 
         @Override
         public long mix(long lengthCoder) {
-            return lengthCoder + width;
+            return (lengthCoder | coder()) + width;
         }
 
         @Override
         public long prepend(long lengthCoder, byte[] buffer) throws Throwable {
             MethodHandle putCharMH = selectPutChar(lengthCoder);
 
-            for (int i = length; i < width; i++) {
+            for (int i = length(); i < width; i++) {
                 putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)' ');
             }
 
@@ -477,18 +519,14 @@ class FormatItem {
     /**
      * To upper case format item.
      */
-    static final class FormatItemUpper implements StringConcatItem {
-        private final StringConcatItem item;
-        private final int length;
-
+    static final class FormatItemUpper extends FormatItemModifier {
         FormatItemUpper(StringConcatItem item) {
-            this.item = item;
-            this.length = (int)item.mix(0L);
+            super(item);
         }
 
         @Override
         public long mix(long lengthCoder) {
-            return lengthCoder + length;
+            return (lengthCoder | coder()) + length();
         }
 
         @Override
@@ -498,7 +536,7 @@ class FormatItem {
             lengthCoder = item.prepend(lengthCoder, buffer);
             int start = (int)lengthCoder;
 
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length(); i++) {
                 char ch = (char)getCharMH.invokeExact(buffer, start + i);
                 putCharMH.invokeExact(buffer, start + i, (int)Character.toUpperCase(ch));
             }
