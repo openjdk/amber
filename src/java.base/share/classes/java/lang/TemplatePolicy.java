@@ -33,10 +33,10 @@ import java.util.function.Function;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * This interface describes the methods provided by a templated string
- * policy. The primary method {@link TemplatePolicy#apply} is used to
- * validate and compose a result using the template string and list of
- * values, from a {@link TemplatedString}. For example:
+ * This interface describes the methods provided by a generalized string template policy. The
+ * primary method {@link TemplatePolicy#apply} is used to validate and compose a result using
+ * the template string and list of values, from a {@link TemplatedString}. For example:
+ *
  * {@snippet :
  * class SimplePolicy implements TemplatePolicy<String, IllegalArgumentException> {
  *       @Override
@@ -153,6 +153,96 @@ public interface TemplatePolicy<R, E extends Throwable> {
      */
     R apply(TemplatedString templatedString) throws E;
 
+
+    /**
+     * This interface describes the methods provided by string template policy specialized
+     * to not throw exceptions. The primary method {@link NoExceptionPolicy#apply} is used
+     * to validate and compose a result using the template string and list of values, from a
+     * {@link TemplatedString}. For example:
+     * {@snippet :
+     * class SimplePolicy implements NoExceptionPolicy<String> {
+     *       @Override
+     *       public String apply(TemplatedString templatedString) {
+     *            StringBuilder sb = new StringBuilder();
+     *            Iterator<String> segmentsIter = templatedString.segments().iterator();
+     *
+     *            for (Object value : templatedString.values()) {
+     *                sb.append(segmentsIter.next());
+     *                sb.append(value);
+     *            }
+     *
+     *            sb.append(segmentsIter.next());
+     *
+     *            return sb.toString();
+     *       }
+     *    }
+     * }
+     * Usage:
+     * {@snippet :
+     * SimplePolicy policy = new SimplePolicy();
+     * int x = 10;
+     * int y = 20;
+     * String result = policy."\{x} + \{y} = \{x + y}";
+     * }
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    interface NoExceptionPolicy<R> extends TemplatePolicy<R, RuntimeException> {
+        /**
+         * Constructs a  result based on the template string and values in the
+         * supplied {@link TemplatedString templatedString} object.
+         *
+         * @param templatedString  a {@link TemplatedString} instance
+         *
+         * @return constructed object of type R
+         */
+        R apply(TemplatedString templatedString);
+    }
+
+    /**
+     * This interface describes the methods provided by string template policy specialized for
+     * strings. The primary method {@link StringPolicy#apply} is used to validate and
+     * compose a result using the template string and list of values, from a
+     * {@link TemplatedString}. For example:
+     * {@snippet :
+     * class SimplePolicy implements StringPolicy {
+     *       @Override
+     *       public String apply(TemplatedString templatedString) {
+     *            StringBuilder sb = new StringBuilder();
+     *            Iterator<String> segmentsIter = templatedString.segments().iterator();
+     *
+     *            for (Object value : templatedString.values()) {
+     *                sb.append(segmentsIter.next());
+     *                sb.append(value);
+     *            }
+     *
+     *            sb.append(segmentsIter.next());
+     *
+     *            return sb.toString();
+     *       }
+     *    }
+     * }
+     * Usage:
+     * {@snippet :
+     * SimplePolicy policy = new SimplePolicy();
+     * int x = 10;
+     * int y = 20;
+     * String result = policy."\{x} + \{y} = \{x + y}";
+     * }
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    interface StringPolicy extends NoExceptionPolicy<String> {
+        /**
+         * Constructs a String result based on the template string and values in the
+         * supplied {@link TemplatedString templatedString} object.
+         *
+         * @param templatedString  a {@link TemplatedString} instance
+         *
+         * @return constructed String
+         */
+        String apply(TemplatedString templatedString);
+    }
+
+
     /**
      * Produces a template policy based on a supplied bi-function (lambda). The
      * function's inputs will be a the list of segments and a list of values
@@ -166,9 +256,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @return a {@link TemplatePolicy} that applies the function's template
      *           policy
      */
-    public static <R> TemplatePolicy<R, RuntimeException>
+    public static <R> NoExceptionPolicy<R>
             ofComposed(BiFunction<List<String>, List<Object>, R> policy) {
-        return new TemplatePolicy<>() {
+        return new NoExceptionPolicy<>() {
             @Override
             public final R apply(TemplatedString templatedString) {
                 Objects.requireNonNull(templatedString);
@@ -193,9 +283,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @return a {@link TemplatePolicy} that applies the function's template
      *           policy
      */
-    public static <R> TemplatePolicy<R, RuntimeException>
+    public static <R> NoExceptionPolicy<R>
             ofTransformed(Function<String, R> policy) {
-        return new TemplatePolicy<>() {
+        return new NoExceptionPolicy<>() {
             @Override
             public final R apply(TemplatedString templatedString) {
                 Objects.requireNonNull(templatedString);
