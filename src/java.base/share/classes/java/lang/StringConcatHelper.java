@@ -46,6 +46,15 @@ final class StringConcatHelper {
     }
 
     /**
+     * Return the coder for the character.
+     * @param value character
+     * @return      coder
+     */
+    static long coder(char value) {
+        return StringLatin1.canEncode(value) ? LATIN1 : UTF16;
+    }
+
+    /**
      * Check for overflow, throw exception on overflow.
      *
      * @param lengthCoder String length with coder packed into higher bits
@@ -89,8 +98,7 @@ final class StringConcatHelper {
      * @return            new length and coder
      */
     static long mix(long lengthCoder, char value) {
-        return checkOverflow(lengthCoder + 1) |
-                (StringLatin1.canEncode(value) ? LATIN1 : UTF16);
+        return checkOverflow(lengthCoder + 1) | coder(value);
     }
 
     /**

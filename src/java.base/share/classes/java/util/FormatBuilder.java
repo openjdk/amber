@@ -36,7 +36,6 @@ import java.text.spi.NumberFormatProvider;
 import java.util.FormatItem.*;
 import java.util.Formatter.*;
 
-import jdk.internal.access.JavaLangAccess;
 import jdk.internal.javac.PreviewFeature;
 
 import sun.invoke.util.Wrapper;
