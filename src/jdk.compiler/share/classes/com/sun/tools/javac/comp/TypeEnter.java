@@ -343,11 +343,12 @@ public class TypeEnter implements Completer {
         }
 
         private void autoImports() {
-            if (preview.isPreview(Feature.TEMPLATED_STRINGS)) {
+            if (preview.isEnabled() && preview.isPreview(Feature.TEMPLATED_STRINGS)) {
                 String autoImports = """
                         import static java.lang.TemplatePolicy.STR;
                         import static java.util.FormatterPolicy.FMTR;
                         import java.lang.TemplatePolicy.StringPolicy;
+                        import java.lang.TemplatePolicy.TransformPolicy;
                         """;
 
                 Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
