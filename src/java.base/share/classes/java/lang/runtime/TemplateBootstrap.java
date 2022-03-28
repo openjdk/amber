@@ -324,8 +324,9 @@ public final class TemplateBootstrap {
      *         input and a new {@link TemplatedStringCarrier} object as output.
      */
     private MethodHandle createTemplatedStringCarrier(MethodType carrierType) {
-        MethodHandle constructor = Carrier.constructor(carrierType);
-        MethodHandle[] components = Carrier.components(carrierType).toArray(new MethodHandle[0]);
+        Carrier carrier = Carrier.of(carrierType);
+        MethodHandle constructor = carrier.constructor();
+        MethodHandle[] components = carrier.components().toArray(new MethodHandle[0]);
         MethodHandle values = valuesMethodHandle(carrierType, components);
         MethodHandle concat = concatMethodHandle(carrierType, components);
         MethodHandle mh = MethodHandles.insertArguments(

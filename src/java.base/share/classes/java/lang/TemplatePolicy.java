@@ -156,11 +156,11 @@ public interface TemplatePolicy<R, E extends Throwable> {
 
     /**
      * This interface describes the methods provided by string template policy specialized
-     * to not throw exceptions. The primary method {@link NoExceptionPolicy#apply} is used
+     * to not throw exceptions. The primary method {@link TransformPolicy#apply} is used
      * to validate and compose a result using the template string and list of values, from a
      * {@link TemplatedString}. For example:
      * {@snippet :
-     * class SimplePolicy implements NoExceptionPolicy<String> {
+     * class SimplePolicy implements TransformPolicy<String> {
      *       @Override
      *       public String apply(TemplatedString templatedString) {
      *            StringBuilder sb = new StringBuilder();
@@ -186,7 +186,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * }
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-    interface NoExceptionPolicy<R> extends TemplatePolicy<R, RuntimeException> {
+    interface TransformPolicy<R> extends TemplatePolicy<R, RuntimeException> {
         /**
          * Constructs a  result based on the template string and values in the
          * supplied {@link TemplatedString templatedString} object.
@@ -230,7 +230,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * }
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-    interface StringPolicy extends NoExceptionPolicy<String> {
+    interface StringPolicy extends TransformPolicy<String> {
         /**
          * Constructs a String result based on the template string and values in the
          * supplied {@link TemplatedString templatedString} object.
@@ -256,9 +256,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @return a {@link TemplatePolicy} that applies the function's template
      *           policy
      */
-    public static <R> NoExceptionPolicy<R>
+    public static <R> TransformPolicy<R>
             ofComposed(BiFunction<List<String>, List<Object>, R> policy) {
-        return new NoExceptionPolicy<>() {
+        return new TransformPolicy<>() {
             @Override
             public final R apply(TemplatedString templatedString) {
                 Objects.requireNonNull(templatedString);
@@ -283,9 +283,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @return a {@link TemplatePolicy} that applies the function's template
      *           policy
      */
-    public static <R> NoExceptionPolicy<R>
+    public static <R> TransformPolicy<R>
             ofTransformed(Function<String, R> policy) {
-        return new NoExceptionPolicy<>() {
+        return new TransformPolicy<>() {
             @Override
             public final R apply(TemplatedString templatedString) {
                 Objects.requireNonNull(templatedString);
