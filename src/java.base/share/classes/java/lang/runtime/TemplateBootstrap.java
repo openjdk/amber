@@ -30,7 +30,8 @@ import jdk.internal.vm.annotation.Stable;
 
 import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
-import java.lang.runtime.Carrier;
+import java.lang.runtime.Carriers;
+import java.lang.runtime.Carriers.*;
 import java.lang.TemplatePolicy.Linkage;
 import java.util.*;
 
@@ -324,9 +325,9 @@ public final class TemplateBootstrap {
      *         input and a new {@link TemplatedStringCarrier} object as output.
      */
     private MethodHandle createTemplatedStringCarrier(MethodType carrierType) {
-        Carrier carrier = Carrier.of(carrierType);
-        MethodHandle constructor = carrier.constructor();
-        MethodHandle[] components = carrier.components().toArray(new MethodHandle[0]);
+        CarrierElements elements = CarrierFactory.of(carrierType);
+        MethodHandle constructor = elements.constructor();
+        MethodHandle[] components = elements.components().toArray(new MethodHandle[0]);
         MethodHandle values = valuesMethodHandle(carrierType, components);
         MethodHandle concat = concatMethodHandle(carrierType, components);
         MethodHandle mh = MethodHandles.insertArguments(
@@ -526,7 +527,7 @@ public final class TemplateBootstrap {
 
     /**
      * Implementation of {@link TemplatedString} used to wrap components
-     * from a templated string {@link CallSite} in a {@link Carrier} object.
+     * from a templated string {@link CallSite} in a carrier object.
      */
     private static class TemplatedStringCarrier implements TemplatedString {
         /**
@@ -565,8 +566,7 @@ public final class TemplateBootstrap {
          *                  carrier
          * @param concat    {@link MethodHandle} to perform concatenation from
          *                  carrier
-         * @param carrier   {@link Carrier} object containing values from
-         *                  {@link CallSite}
+         * @param carrier   carrier object containing values from {@link CallSite}
          */
         TemplatedStringCarrier(String template,
                                List<String> segments,
