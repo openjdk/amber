@@ -166,17 +166,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
-    interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {
-        /**
-         * Constructs a {@code R} result based on the {@link TemplatedString TemplatedString's}
-         * template and values.
-         *
-         * @param templatedString  a {@link TemplatedString} instance
-         *
-         * @return constructed object of type R
-         */
-        R apply(TemplatedString templatedString);
-    }
+    interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {}
 
     /**
      * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
@@ -187,17 +177,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
-    interface StringPolicy extends SimplePolicy<String> {
-        /**
-         * Constructs a String result based on the {@link TemplatedString TemplatedString's}
-         * template and values.
-         *
-         * @param templatedString  a {@link TemplatedString} instance
-         *
-         * @return constructed String
-         */
-        String apply(TemplatedString templatedString);
-    }
+    interface StringPolicy extends SimplePolicy<String> {}
 
     /**
      * Simple concatenation policy instance.
