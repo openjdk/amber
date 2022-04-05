@@ -33,6 +33,8 @@ import jdk.internal.javac.PreviewFeature;
 
 /**
  * Simple concatenation policy.
+ *
+ * @implNote The result of concatenation is not interned.
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 final class ConcatinationPolicy

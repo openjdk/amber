@@ -181,6 +181,8 @@ public interface TemplatePolicy<R, E extends Throwable> {
 
     /**
      * Simple concatenation policy instance.
+     *
+     * @implNote The result of concatenation is not interned.
      */
     public static final TemplatePolicy<String, RuntimeException>
             STR = new ConcatinationPolicy();
