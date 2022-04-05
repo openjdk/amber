@@ -35,7 +35,7 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * This interface describes the methods provided by a generalized string template policy. The
  * primary method {@link TemplatePolicy#apply} is used to validate and compose a result using
- * the template string and list of values, from a {@link TemplatedString}. For example:
+ * a {@link TemplatedString TemplatedString's} template and list of values. For example:
  *
  * {@snippet :
  * class MyPolicy implements TemplatePolicy<String, IllegalArgumentException> {
@@ -60,6 +60,7 @@ import jdk.internal.javac.PreviewFeature;
  *       }
  *    }
  * }
+ * }
  * Usage:
  * {@snippet :
  * MyPolicy policy = new MyPolicy();
@@ -72,65 +73,56 @@ import jdk.internal.javac.PreviewFeature;
  *     ...
  * }
  * }
- * Implementations of this interface may provide, but are not limited to,
- * validating inputs, composing inputs into a result, and transforming a
- * result to a non-string type before delivering the final result.
+ * Implementations of this interface may provide, but are not limited to, validating
+ * inputs, composing inputs into a result, and transforming a result to a non-string type
+ * before delivering the final result.
  * <p>
- * The user has the option of validating inputs used in composition. For
- * example an SQL policy could prevent injection vulnerabilities by
- * sanitizing inputs or throwing an exception of type {@code E} if an SQL
- * statement is a potential vulnerability.
+ * The user has the option of validating inputs used in composition. For example an SQL
+ * policy could prevent injection vulnerabilities by sanitizing inputs or throwing an
+ * exception of type {@code E} if an SQL statement is a potential vulnerability.
  * <p>
  * Composing allows the users to control how the result is assembled. Most
  * often, a user will construct a new string from the template string, with
  * placeholders replaced by stringified objects from the values list.
  * <p>
- * A static factory method is provided to simplify constructing {@link
- * TemplatePolicy template policies} using lambdas. A {@link BiFunction
- * BiFunction} lambda passed to {@link TemplatePolicy#ofComposed
- * ofComposed} is supplied a list of string segments and a list of
- * expression values. The result type of the lambda determines the result
- * type {@code R} of the generated {@link TemplatePolicy}.
+ * {@link TemplatePolicy} is a {@link FunctionalInterface}. This permits declaration of a
+ * policy using lambda expressions;
  * {@snippet :
- * TemplatePolicy<String, RuntimeException> policy =
- *         TemplatePolicy.ofComposed((segments, values) -> {
- *         StringBuilder sb = new StringBuilder();
- *         Iterator<String> segmentsIter = templatedString.segments().iterator();
- *
- *         for (Object value : templatedString.values()) {
+ * TemplatePolicy<String, RuntimeException> policy = ts -> {
+ *             StringBuilder sb = new StringBuilder();
+ *             Iterator<String> segmentsIter = ts.segments().iterator();
+ *             for (Object value : ts.values()) {
+ *                 sb.append(segmentsIter.next());
+ *                 sb.append(value);
+ *             }
  *             sb.append(segmentsIter.next());
- *             sb.append(value);
- *         }
- *
- *         sb.append(segmentsIter.next());
- *
- *         return sb.toString();
- *
- *     });
+ *            return sb.toString();
+ *         });
  * }
- * Transformation allows the user to the construct a result into something
- * other than a string. For example, a JSON policy may transform a {@link
- * TemplatedString} into a JSON object. The {@code R} parameter type allows
- * the user to specify the final result type of the policy's {@link
- * TemplatePolicy#apply apply} method.
- * <p>
- * A static factory method is provided to simplify constructing simple
- * transforming policies using lambdas. The {@link Function Function}
- * lambda passed to {@link  TemplatePolicy#ofTransformed ofTransformed} is
- * supplied the simple concatenation from the {@link TemplatedString} using
- * {@link TemplatedString#concat}. This allows the user to transform that
- * concatenation into some other form. The result type of the lambda
- * determines the result type {@code R} of the generated {@link TemplatePolicy}.
+ * The {@link FunctionalInterface} {@link TemplatePolicy.SimplePolicy} is supplied to avoid
+ * declaring checked exceptions;
  * {@snippet :
- * TemplatePolicy<JSONObject, RuntimeException> JSON = TemplatePolicy.ofTransformed(JSONObject::new);
- *
- * JSONObject data = JSON."""
- *    {
- *        "name": "\{name}",
- *        "phone": "\{phone}",
- *        "address": "\{address}"
- *    };
- *    """;
+ * SimplePolicy<String> policy = ts -> {
+ *             StringBuilder sb = new StringBuilder();
+ *             Iterator<String> segmentsIter = ts.segments().iterator();
+ *             for (Object value : ts.values()) {
+ *                 sb.append(segmentsIter.next());
+ *                 sb.append(value);
+ *             }
+ *             sb.append(segmentsIter.next());
+ *            return sb.toString();
+ *         });
+ * }
+ * A simplier example shows how to use the {@link TemplatedString#concat()} method
+ * to simply transform the string concatenation into something other than
+ * {@link String};
+ * {@snippet :
+ * SimplePolicy<JSONObject> policy = ts -> new JSONObject(ts.concat());
+ * }
+ * and the {@link FunctionalInterface} {@link TemplatePolicy.StringPolicy} is supplied if
+ * the policy returns {@link String}
+ * {@snippet :
+ * StringPolicy policy = TemplateString::concat;
  * }
  *
  * @param <R>  Policy's apply result type.
@@ -155,42 +147,29 @@ public interface TemplatePolicy<R, E extends Throwable> {
     R apply(TemplatedString templatedString) throws E;
 
     /**
-     * This interface describes the methods provided by string template policy specialized
-     * to not throw exceptions. The primary method {@link SimplePolicy#apply} is used
-     * to compose a result using the template string and list of values, from a
-     * {@link TemplatedString}. For example:
+     * This interface simplifies declaration of {@link TemplatePolicy TemplatePolicys}
+     * that do not throw check exceptions. For example:
      * {@snippet :
-     * class MyPolicy implements SimplePolicy<String> {
-     *       @Override
-     *       public String apply(TemplatedString templatedString) {
-     *            StringBuilder sb = new StringBuilder();
-     *            Iterator<String> segmentsIter = templatedString.segments().iterator();
-     *
-     *            for (Object value : templatedString.values()) {
-     *                sb.append(segmentsIter.next());
-     *                sb.append(value);
-     *            }
-     *
-     *            sb.append(segmentsIter.next());
-     *
+     * SimplePolicy<String> policy = ts -> {
+     *             StringBuilder sb = new StringBuilder();
+     *             Iterator<String> segmentsIter = ts.segments().iterator();
+     *             for (Object value : ts.values()) {
+     *                 sb.append(segmentsIter.next());
+     *                 sb.append(value);
+     *             }
+     *             sb.append(segmentsIter.next());
      *            return sb.toString();
-     *       }
-     *    }
+     *         });
      * }
-     * Usage:
-     * {@snippet :
-     * MyPolicy policy = new MyPolicy();
-     * int x = 10;
-     * int y = 20;
-     * String result = policy."\{x} + \{y} = \{x + y}";
-     * }
+     *
+     * @param <R>  Policy's apply result type.
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
     interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {
         /**
-         * Constructs a  result based on the template string and values in the
-         * supplied {@link TemplatedString templatedString} object.
+         * Constructs a {@code R} result based on the {@link TemplatedString TemplatedString's}
+         * template and values.
          *
          * @param templatedString  a {@link TemplatedString} instance
          *
@@ -200,125 +179,24 @@ public interface TemplatePolicy<R, E extends Throwable> {
     }
 
     /**
-     * This interface describes the methods provided by string template policy specialized for
-     * strings. The primary method {@link StringPolicy#apply} is used to validate and
-     * compose a result using the template string and list of values, from a
-     * {@link TemplatedString}. For example:
+     * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
+     * that do not throw check exceptions and have a result type of {@link String}. For example:
      * {@snippet :
-     * class MyPolicy implements StringPolicy {
-     *       @Override
-     *       public String apply(TemplatedString templatedString) {
-     *            StringBuilder sb = new StringBuilder();
-     *            Iterator<String> segmentsIter = templatedString.segments().iterator();
-     *
-     *            for (Object value : templatedString.values()) {
-     *                sb.append(segmentsIter.next());
-     *                sb.append(value);
-     *            }
-     *
-     *            sb.append(segmentsIter.next());
-     *
-     *            return sb.toString();
-     *       }
-     *    }
-     * }
-     * Usage:
-     * {@snippet :
-     * MyPolicy policy = new MyPolicy();
-     * int x = 10;
-     * int y = 20;
-     * String result = policy."\{x} + \{y} = \{x + y}";
+     * StringPolicy policy = (ts) -> ts.concat();
      * }
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
     interface StringPolicy extends SimplePolicy<String> {
         /**
-         * Constructs a String result based on the template string and values in the
-         * supplied {@link TemplatedString templatedString} object.
+         * Constructs a String result based on the {@link TemplatedString TemplatedString's}
+         * template and values.
          *
          * @param templatedString  a {@link TemplatedString} instance
          *
          * @return constructed String
          */
         String apply(TemplatedString templatedString);
-    }
-
-    /**
-     * Factory method that produces a template policy based on a supplied lambda
-     * function. The function's input will be a {@link TemplatedString} object.
-     * The result type of the function will be the result type of the generated
-     * policy.
-     *
-     * @param policy  function for applying template policy
-     *
-     * @param <R>  Type of the function's result.
-     *
-     * @return a {@link TemplatePolicy} that uses the lambda as the policy's
-     *         apply method.
-     */
-    public static <R> SimplePolicy<R>
-            of(Function<TemplatedString, R> policy) {
-        return new SimplePolicy<>() {
-            @Override
-            public final R apply(TemplatedString templatedString) {
-                Objects.requireNonNull(templatedString);
-
-                return policy.apply(templatedString);
-            }
-        };
-    }
-
-    /**
-     * Factory method that produces a template policy based on a supplied lambda
-     * function. The function's inputs will be a the list of segments and a list
-     * of values from the {@link TemplatedString} object. The result type from the
-     * function will be the result type of the generated policy.
-     *
-     * @param policy  function for applying template policy
-     *
-     * @param <R>  Type of the function's result.
-     *
-     * @return a {@link TemplatePolicy} that uses the lambda as the policy's
-     *         apply method.
-     */
-    public static <R> SimplePolicy<R>
-            ofComposed(BiFunction<List<String>, List<Object>, R> policy) {
-        return new SimplePolicy<>() {
-            @Override
-            public final R apply(TemplatedString templatedString) {
-                Objects.requireNonNull(templatedString);
-
-                return policy.apply(templatedString.segments(),
-                                    templatedString.values());
-            }
-        };
-    }
-
-    /**
-     * Factory method that produces a template policy based on a supplied lambda
-     * function. The function's input will be the basic concatenation,
-     * {TemplatedString#concat}, from the {@link TemplatedString} object. The
-     * result type from the function will be the result type of the generated
-     * policy.
-     *
-     * @param policy  function for applying template policy
-     *
-     * @param <R>  Type of the function's result.
-     *
-     * @return a {@link TemplatePolicy} that uses the lambda as the policy's
-     *         apply method.
-     */
-    public static <R> SimplePolicy<R>
-            ofTransformed(Function<String, R> policy) {
-        return new SimplePolicy<>() {
-            @Override
-            public final R apply(TemplatedString templatedString) {
-                Objects.requireNonNull(templatedString);
-
-                return policy.apply(templatedString.concat());
-            }
-       };
     }
 
     /**

@@ -236,7 +236,7 @@ public interface TemplatedString {
      *
      * @throws NullPointerException if templatedString is null
      */
-    public static String concat(TemplatedString templatedString) {
+    private static String concat(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString is null");
 
         Iterator<String> segmentsIter = templatedString.segments().iterator();
