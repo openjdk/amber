@@ -206,45 +206,43 @@ public interface TemplatePolicy<R, E extends Throwable> {
     {
         /**
          * Return a boolean guard to assure that only specific policies should
-         * use the applier.
+         * use the applier. If null is returned, not guard is used.
          *
          * @param lookup      method lookup
          * @param type        methiod type
-         * @param template    template string with placeholders
+         * @param stencil     stencil string with placeholders
          *
-         * @return guarding {@link MethodHandle}
+         * @return guarding {@link MethodHandle}, or null if no guard is
+         * required
          *
          * @throws NullPointerException if any of the arguments are null
+         *
+         * @implNote the default guard returns null indicating that no
+         * guard is provided.
          */
         default MethodHandle guard(MethodHandles.Lookup lookup,
-                                   MethodType type, String template) {
+                                   MethodType type, String stencil) {
             Objects.requireNonNull(lookup);
             Objects.requireNonNull(type);
-            Objects.requireNonNull(template);
+            Objects.requireNonNull(stencil);
 
             return null;
         }
 
         /**
-         * Construct a {@link CallSite} that constructs a result based on the
+         * Construct a {@link MethodHandle} that constructs a result based on the
          * bootstrap method information.
          *
          * @param lookup      method lookup
          * @param type        methiod type
-         * @param template    template string with placeholders
+         * @param stencil     stencil string with placeholders
          *
          * @return {@link MethodHandle} for the policy applied to template
          *
          * @throws NullPointerException if any of the arguments are null
          */
-        default MethodHandle applier(MethodHandles.Lookup lookup,
-                                     MethodType type, String template) {
-            Objects.requireNonNull(lookup);
-            Objects.requireNonNull(type);
-            Objects.requireNonNull(template);
-
-            return null;
-        }
+        MethodHandle applier(MethodHandles.Lookup lookup,
+                             MethodType type, String stencil);
     }
 
 }
