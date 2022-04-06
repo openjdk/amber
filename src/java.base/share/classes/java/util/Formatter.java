@@ -4877,23 +4877,23 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     /**
-     * Convert a {@link TemplatedString} template, containing format specifications,
-     * to a form that can be passed on to {@link Formatter}. The method scans a template,
+     * Convert a {@link TemplatedString} stencil, containing format specifications,
+     * to a form that can be passed on to {@link Formatter}. The method scans a stencil,
      * matching up formatter specifications with placeholders (expressions), then removing
      * the placeholder. If no specification is found before a placeholder, the method
      * inserts "%s".
      *
-     * @param template  template string with placeholders
+     * @param stencil  stencil string with placeholders
      *
      * @return  format string
      */
-    static String templatedStringFormat(String template) {
+    static String templatedStringFormat(String stencil) {
         StringBuilder sb = new StringBuilder();
-        Matcher matcher = fsPattern.matcher(template);
-        int length = template.length();
+        Matcher matcher = fsPattern.matcher(stencil);
+        int length = stencil.length();
 
         for (int i = 0; i < length; i++) {
-            char ch = template.charAt(i);
+            char ch = stencil.charAt(i);
 
             if (ch == '%') {
                 matcher.region(i, length);
@@ -4901,7 +4901,7 @@ public final class Formatter implements Closeable, Flushable {
                 if (matcher.lookingAt()) {
                     String group = matcher.group();
                     int next = i + group.length();
-                    char placeholder = next < length ? template.charAt(next) : '\0';
+                    char placeholder = next < length ? stencil.charAt(next) : '\0';
 
                     if (group.endsWith("n") || group.endsWith("%")) {
                         sb.append(group);

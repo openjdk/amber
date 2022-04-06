@@ -30,7 +30,6 @@ import jdk.internal.vm.annotation.Stable;
 
 import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
-import java.lang.runtime.Carriers;
 import java.lang.runtime.Carriers.*;
 import java.lang.TemplatePolicy.Linkage;
 import java.util.*;
@@ -76,24 +75,24 @@ public final class TemplateBootstrap {
     private static final MethodHandle DEFAULT_GUARD_MH;
 
     /**
-     * {@link MethodHandles.Lookup} passed to bootstrap method
+     * {@link MethodHandles.Lookup} passed to the bootstrap method
      */
     private final MethodHandles.Lookup lookup;
 
     /**
-     * Name passed to bootstrap method
+     * Name passed to the bootstrap method
      */
     private final String name;
 
     /**
-     * {@link MethodType} passed to bootstrap method
+     * {@link MethodType} passed to the bootstrap method
      */
     private final MethodType type;
 
     /**
-     * Template string passed  to bootstrap method
+     * Template stencil passed to the bootstrap method
      */
-    private final String template;
+    private final String stencil;
 
     /**
      * {@link MethodHandle} to {@link TemplatePolicy} constant getter.
@@ -106,17 +105,17 @@ public final class TemplateBootstrap {
      * @param lookup        method lookup
      * @param name          method name
      * @param type          method type
-     * @param template      template string with placeholders
+     * @param stencil       stencil string with placeholders
      * @param policyGetter  {@link MethodHandle} to get constant
      *                      {@link TemplatePolicy}
      */
     TemplateBootstrap(MethodHandles.Lookup lookup, String name,
-                      MethodType type, String template,
+                      MethodType type, String stencil,
                       MethodHandle policyGetter) {
         this.lookup = lookup;
         this.name = name;
         this.type = type;
-        this.template = template;
+        this.stencil = stencil;
         this.policyGetter = policyGetter;
     }
 
@@ -126,7 +125,7 @@ public final class TemplateBootstrap {
      * @param lookup        method lookup
      * @param name          method name
      * @param type          method type
-     * @param template      template string with placeholders
+     * @param stencil       stencil string with placeholders
      *
      * @return {@link CallSite} to handle templated string processing
      *
@@ -136,13 +135,13 @@ public final class TemplateBootstrap {
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,
-            String template) {
+            String stencil) {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
-        Objects.requireNonNull(template, "template is null");
+        Objects.requireNonNull(stencil, "stencil is null");
 
-        return templatedStringBSM(lookup, name, type, template, null);
+        return templatedStringBSM(lookup, name, type, stencil, null);
     }
 
     /**
@@ -151,7 +150,7 @@ public final class TemplateBootstrap {
      * @param lookup        method lookup
      * @param name          method name
      * @param type          method type
-     * @param template      template string with placeholders
+     * @param stencil       stencil string with placeholders
      * @param policyGetter  {@link MethodHandle} to get constant
      *                      {@link TemplatePolicy}
      *
@@ -163,15 +162,15 @@ public final class TemplateBootstrap {
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,
-            String template,
+            String stencil,
             MethodHandle policyGetter) {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
-        Objects.requireNonNull(template, "template is null");
+        Objects.requireNonNull(stencil, "stencil is null");
 
         TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type,
-                template, policyGetter);
+                stencil, policyGetter);
 
         return bootstrap.callsite();
     }
@@ -294,7 +293,7 @@ public final class TemplateBootstrap {
 
     /**
      * Return a {@link MethodHandle} that constructs a concatenation from
-     * the template string and the values in a carrier.
+     * the stencil and the values in a carrier.
      *
      * @param carrierType  {@link MethodType} to component types (policy dropped)
      * @param components   array of carrier component getters
@@ -305,9 +304,9 @@ public final class TemplateBootstrap {
     private MethodHandle concatMethodHandle(MethodType carrierType,
                                             MethodHandle[] components) {
         try {
-            List<String> segments = TemplatedString.split(template);
+            List<String> fragments = TemplatedString.split(stencil);
 
-            return StringConcatFactory.makeConcatWithTemplateGetters(segments,
+            return StringConcatFactory.makeConcatWithTemplateGetters(fragments,
                     List.of(components),
                     StringConcatFactory.MAX_TEMPLATE_CONCAT_ARG_SLOTS);
         } catch (StringConcatException ex) {
@@ -331,8 +330,8 @@ public final class TemplateBootstrap {
         MethodHandle values = valuesMethodHandle(carrierType, components);
         MethodHandle concat = concatMethodHandle(carrierType, components);
         MethodHandle mh = MethodHandles.insertArguments(
-                TEMPLATED_STRING_CARRIER_MH, 0, template,
-                TemplatedString.split(template), values, concat);
+                TEMPLATED_STRING_CARRIER_MH, 0, stencil,
+                TemplatedString.split(stencil), values, concat);
         mh = MethodHandles.collectArguments(mh, 0, constructor);
         mh = mh.asType(mh.type().changeReturnType(TemplatedString.class));
 
@@ -341,7 +340,7 @@ public final class TemplateBootstrap {
 
     /**
      * Generate a method which is effectively
-     * {@code policy.apply(new TemplatedString(template, values...)}.
+     * {@code policy.apply(new TemplatedString(stencil, values...)}.
      *
      * @return default Method
      */
@@ -349,7 +348,7 @@ public final class TemplateBootstrap {
         MethodType carrierType = type.dropParameterTypes(0, 1);
         MethodHandle templatedString = carrierType.parameterCount() == 0 ?
             MethodHandles.constant(TemplatedString.class,
-                    TemplatedString.of(template)) :
+                    TemplatedString.of(stencil)) :
             createTemplatedStringCarrier(carrierType);
         MethodHandle mh = MethodHandles.collectArguments(APPLY_MH, 1,
                 templatedString);
@@ -386,14 +385,13 @@ public final class TemplateBootstrap {
      */
     private  MethodHandle linkMethodHandle(Linkage<?, ?> policy,
                                            boolean withGuard) {
-        MethodHandle applier = policy.applier(lookup, type, template);
+        MethodHandle applier = policy.applier(lookup, type, stencil);
 
         if (applier != null) {
             applier = applier.asType(type);
 
             if (withGuard) {
-                MethodHandle guard = policy.guard(lookup, type,
-                        template);
+                MethodHandle guard = policy.guard(lookup, type, stencil);
 
                 if (guard == null) {
                     guard = DEFAULT_GUARD_MH;
@@ -463,7 +461,7 @@ public final class TemplateBootstrap {
     private CallSite createTemplatedString() {
         MethodHandle mh = type.parameterCount() == 0 ?
                MethodHandles.constant(TemplatedString.class,
-                    TemplatedString.of(template)) :
+                    TemplatedString.of(stencil)) :
                createTemplatedStringCarrier(type);
 
         return new ConstantCallSite(mh);
@@ -476,8 +474,8 @@ public final class TemplateBootstrap {
         MethodType mt = MethodType.methodType(TemplatedString.class,
                 Object[].class);
         MethodHandle mh = MethodHandles.insertArguments(
-                TEMPLATED_STRING_VALUES_MH, 0, template,
-                        TemplatedString.split(template)).asType(mt);
+                TEMPLATED_STRING_VALUES_MH, 0, stencil,
+                        TemplatedString.split(stencil)).asType(mt);
 
         if (type.parameterCount() == 2) {
             mh = MethodHandles.filterArguments(APPLY_MH, 1, mh);
@@ -531,9 +529,9 @@ public final class TemplateBootstrap {
      */
     private static class TemplatedStringCarrier implements TemplatedString {
         /**
-         * Template String with placeholders.
+         * Stencil string with placeholders.
          */
-        @Stable private final String template;
+        @Stable private final String stencil;
 
         /**
          * {@link MethodHandle} to method to produce a list of expression
@@ -542,9 +540,9 @@ public final class TemplateBootstrap {
         @Stable private final MethodHandle values;
 
         /**
-         * List of string segments from splitting template at placeholders.
+         * List of string fragments from splitting the stencil at placeholders.
          */
-        @Stable private final List<String> segments;
+        @Stable private final List<String> fragments;
 
         /**
          *  {@link MethodHandle} to method to produce concatenation.
@@ -559,8 +557,8 @@ public final class TemplateBootstrap {
         /**
          * Constructor.
          *
-         * @param template  template string with placeholders
-         * @param segments  List of string segments from splitting template at
+         * @param stencil   stencil string with placeholders
+         * @param fragments  List of string fragments from splitting the stencil at
          *                  placeholders
          * @param values    {@link MethodHandle} to create value list from
          *                  carrier
@@ -568,21 +566,21 @@ public final class TemplateBootstrap {
          *                  carrier
          * @param carrier   carrier object containing values from {@link CallSite}
          */
-        TemplatedStringCarrier(String template,
-                               List<String> segments,
+        TemplatedStringCarrier(String stencil,
+                               List<String> fragments,
                                MethodHandle values,
                                MethodHandle concat,
                                Object carrier) {
-            this.template = template;
+            this.stencil = stencil;
             this.values = values;
-            this.segments = segments;
+            this.fragments = fragments;
             this.concat = concat;
             this.carrier = carrier;
         }
 
         @Override
-        public String template() {
-            return template;
+        public String stencil() {
+            return stencil;
         }
 
         @Override
@@ -595,8 +593,8 @@ public final class TemplateBootstrap {
         }
 
         @Override
-        public List<String> segments() {
-            return segments;
+        public List<String> fragments() {
+            return fragments;
         }
 
         @Override
@@ -620,9 +618,9 @@ public final class TemplateBootstrap {
      */
     private static class TemplatedStringValues implements TemplatedString {
         /**
-         * Template String with placeholders.
+         * Stencil string with placeholders.
          */
-        @Stable private final String template;
+        @Stable private final String stencil;
 
         /**
          * List of expression values.
@@ -630,29 +628,29 @@ public final class TemplateBootstrap {
         @Stable private final List<Object> values;
 
         /**
-         * List of string segments from splitting template at placeholders.
+         * List of string fragments from splitting the stencil at placeholders.
          */
-        @Stable private final List<String> segments;
+        @Stable private final List<String> fragments;
 
         /**
          * Constructor.
          *
-         * @param template  template string with placeholders
-         * @param segments  List of string segments from splitting template at
+         * @param stencil   stencil string with placeholders
+         * @param fragments List of string fragments from splitting the stencil at
          *                  placeholders
          * @param values    {@link Object} array of expression values
          */
-        TemplatedStringValues(String template,
-                              List<String> segments,
+        TemplatedStringValues(String stencil,
+                              List<String> fragments,
                               Object[] values) {
-            this.template = template;
+            this.stencil = stencil;
             this.values = Collections.unmodifiableList(Arrays.asList(values));
-            this.segments = segments;
+            this.fragments = fragments;
         }
 
         @Override
-        public String template() {
-            return template;
+        public String stencil() {
+            return stencil;
         }
 
         @Override
@@ -661,8 +659,8 @@ public final class TemplateBootstrap {
         }
 
         @Override
-        public List<String> segments() {
-            return segments;
+        public List<String> fragments() {
+            return fragments;
         }
 
         @Override

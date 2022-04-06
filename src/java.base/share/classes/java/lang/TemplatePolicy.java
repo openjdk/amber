@@ -42,10 +42,10 @@ import jdk.internal.javac.PreviewFeature;
  *       @Override
  *       public String apply(TemplatedString templatedString) throws IllegalArgumentException {
  *            StringBuilder sb = new StringBuilder();
- *            Iterator<String> segmentsIter = templatedString.segments().iterator();
+ *            Iterator<String> fragmentsIter = templatedString.fragments().iterator();
  *
  *            for (Object value : templatedString.values()) {
- *                sb.append(segmentsIter.next());
+ *                sb.append(fragmentsIter.next());
  *
  *                if (value instanceof Boolean) {
  *                    throw new IllegalArgumentException("I don't like Booleans");
@@ -54,7 +54,7 @@ import jdk.internal.javac.PreviewFeature;
  *                sb.append(value);
  *            }
  *
- *            sb.append(segmentsIter.next());
+ *            sb.append(fragmentsIter.next());
  *
  *            return sb.toString();
  *       }
@@ -90,12 +90,12 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * TemplatePolicy<String, RuntimeException> policy = ts -> {
  *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> segmentsIter = ts.segments().iterator();
+ *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
- *                 sb.append(segmentsIter.next());
+ *                 sb.append(fragmentsIter.next());
  *                 sb.append(value);
  *             }
- *             sb.append(segmentsIter.next());
+ *             sb.append(fragmentsIter.next());
  *            return sb.toString();
  *         });
  * }
@@ -104,12 +104,12 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * SimplePolicy<String> policy = ts -> {
  *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> segmentsIter = ts.segments().iterator();
+ *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
- *                 sb.append(segmentsIter.next());
+ *                 sb.append(fragmentsIter.next());
  *                 sb.append(value);
  *             }
- *             sb.append(segmentsIter.next());
+ *             sb.append(fragmentsIter.next());
  *            return sb.toString();
  *         });
  * }
@@ -152,12 +152,12 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * {@snippet :
      * SimplePolicy<String> policy = ts -> {
      *             StringBuilder sb = new StringBuilder();
-     *             Iterator<String> segmentsIter = ts.segments().iterator();
+     *             Iterator<String> fragmentsIter = ts.fragments().iterator();
      *             for (Object value : ts.values()) {
-     *                 sb.append(segmentsIter.next());
+     *                 sb.append(fragmentsIter.next());
      *                 sb.append(value);
      *             }
-     *             sb.append(segmentsIter.next());
+     *             sb.append(fragmentsIter.next());
      *            return sb.toString();
      *         });
      * }
