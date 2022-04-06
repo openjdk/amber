@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.misc.VM;
 import jdk.internal.org.objectweb.asm.ClassWriter;
@@ -88,6 +89,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  *
  * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final class Carriers {
     /**
      * Class file version.
@@ -1046,8 +1048,8 @@ public final class Carriers {
         /**
          * Cache mapping {@link MethodType} to previously defined {@link CarrierElements}.
          */
-        private static ConcurrentHashMap<MethodType, CarrierElements>
-                methodTypeCache = new ConcurrentHashMap<>();
+        private static ConcurrentWeakMap<MethodType, CarrierElements>
+                methodTypeCache = new ConcurrentWeakMap<>();
 
         /**
          * Factory method to return a {@link CarrierElements} instance that matches the shape of
