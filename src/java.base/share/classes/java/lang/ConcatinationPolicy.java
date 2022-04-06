@@ -48,16 +48,16 @@ final class ConcatinationPolicy
 
     @Override
     public MethodHandle applier(MethodHandles.Lookup lookup,
-                                MethodType type, String template) {
+                                MethodType type, String stencil) {
         Objects.requireNonNull(lookup);
         Objects.requireNonNull(type);
-        Objects.requireNonNull(template);
+        Objects.requireNonNull(stencil);
 
         try {
-            List<String> segments = TemplatedString.split(template);
+            List<String> fragments = TemplatedString.split(stencil);
             MethodType concatType = type.dropParameterTypes(0, 1);
             MethodHandle concatMH =
-                    StringConcatFactory.makeConcatWithTemplate(segments,
+                    StringConcatFactory.makeConcatWithTemplate(fragments,
                             concatType.parameterList());
 
             return MethodHandles.dropArguments(concatMH, 0,

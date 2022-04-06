@@ -96,7 +96,7 @@ public final class FormatterPolicy implements Linkage<String, RuntimeException> 
     @Override
     public final String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
-        String format = Formatter.templatedStringFormat(templatedString.template());
+        String format = Formatter.templatedStringFormat(templatedString.stencil());
         Object[] values = templatedString.values().toArray(new Object[0]);
 
         return new Formatter(locale).format(format, values).toString();
@@ -104,11 +104,11 @@ public final class FormatterPolicy implements Linkage<String, RuntimeException> 
 
     @Override
     public MethodHandle applier(MethodHandles.Lookup lookup,
-                                MethodType type, String template) {
+                                MethodType type, String stencil) {
         Objects.requireNonNull(lookup);
         Objects.requireNonNull(type);
-        Objects.requireNonNull(template);
-        String format = Formatter.templatedStringFormat(template);
+        Objects.requireNonNull(stencil);
+        String format = Formatter.templatedStringFormat(stencil);
         MethodHandle mh = Formatter.formatFactory(format, locale,
                 type.dropParameterTypes(0,1).parameterArray());
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));

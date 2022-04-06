@@ -62,9 +62,9 @@ public class Basic {
         int y = 20;
 
         TemplatedString ts = "\{x} + \{y} = \{x + y}";
-        ASSERT(ts.template(), "\uFFFC + \uFFFC = \uFFFC");
+        ASSERT(ts.stencil(), "\uFFFC + \uFFFC = \uFFFC");
         ASSERT(ts.values(), List.of(x, y, x + y));
-        ASSERT(ts.segments(), List.of("", " + ", " = ", ""));
+        ASSERT(ts.fragments(), List.of("", " + ", " = ", ""));
         ASSERT(ts.concat(), STR."\{x} + \{y} = \{x + y}");
     }
 
