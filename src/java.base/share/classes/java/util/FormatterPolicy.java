@@ -38,13 +38,11 @@ import jdk.internal.javac.PreviewFeature;
  * TemplatedString expressions without a preceeding specifier, use "%s" by
  * default. Example:
  * {@snippet :
- * import static java.util.FormatterPolicy.FMTR;
- * ...
  * int x = 10;
  * int y = 20;
- * String result = FMTR."%5d\{x} + %5d\{y} = %5d\{x + y}"
+ * String result = FMTR."%05d\{x} + %05d\{y} = %05d\{x + y}";
  * }
- * result is: <code>&nbsp;&nbsp;&nbsp;10&nbsp;+&nbsp;&nbsp;&nbsp;20&nbsp;=&nbsp;&nbsp;&nbsp;&nbsp;30</code>
+ * result is: <code>00010 + 00020 = 00030</code>
  * <p>
  * When used in conjunction with a compiler generated {@link
  * TemplatedString} this {@link TemplatePolicy} will use the format
@@ -54,44 +52,12 @@ import jdk.internal.javac.PreviewFeature;
  * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-public final class FormatterPolicy implements Linkage<String, RuntimeException> {
-
+public final record FormatterPolicy(Locale locale)
+        implements Linkage<String, RuntimeException> {
     /**
-     * Predefined FormatterPolicy instance that uses default locale.
+     * Predefined FormatterPolicy instance that uses Locale.US.
      */
-    public static final FormatterPolicy FMTR = new FormatterPolicy();
-
-    /**
-     * Locale used by this FormatterPolicy.
-     */
-    private final Locale locale;
-
-    /**
-     * Constructor.
-     */
-    public FormatterPolicy() {
-        this.locale = Locale.US;
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param locale   formatting locale
-     *
-     * @throws NullPointerException if locale is null
-     */
-    public FormatterPolicy(Locale locale) {
-        Objects.requireNonNull(locale, "must be a non-null locale");
-
-        this.locale = locale;
-    }
-
-    /**
-     * {@return the FormatterPolicy instance locale}
-     */
-    public Locale locale() {
-        return locale;
-    }
+    public static final FormatterPolicy FMTR = new FormatterPolicy(Locale.US);
 
     @Override
     public final String apply(TemplatedString templatedString) {
