@@ -42,8 +42,6 @@ import jdk.internal.javac.PreviewFeature;
  * to produce a {@link String} by replacing placeholders with values then
  * they might use supplied {@link java.lang.TemplatePolicy#STR} policy.
  * {@snippet :
- * import static java.lang.TemplatePolicy.STR;
- * ...
  * int x = 10;
  * int y = 20;
  * String result = STR."\{x} + \{y} = \{x + y}";
@@ -61,8 +59,9 @@ import jdk.internal.javac.PreviewFeature;
 public interface TemplatedString {
 
     /**
-     * Placeholder character marking insertion points in a templated string.
-     * The value used is the unicode OBJECT REPLACEMENT CHARACTER.
+     * Placeholder character marking insertion points in the stencil.
+     * The value used is the unicode OBJECT REPLACEMENT CHARACTER
+     * <code>(&#92;uFFFC)</code>.
      */
     public static final char PLACEHOLDER = '\uFFFC';
 
@@ -190,7 +189,7 @@ public interface TemplatedString {
     }
 
     /**
-     * Splits a string at placeholders, returning an immutable list of strings.
+     * Splits a stencil at placeholders, returning an immutable list of strings.
      *
      * @implSpec Unlike {@link String#split String.split} this method returns an
      * immutable list and retains empty edge cases (empty string and string
@@ -198,20 +197,20 @@ public interface TemplatedString {
      * (expression values). That is, <code>fragments().size() == values().size()
      * + 1</code>.
      *
-     * @param string  a {@link String} with placeholders
+     * @param stencil  a {@link String} with placeholders
      *
      * @return list of string fragments
      *
      * @throws NullPointerException if string is null
      */
-    public static List<String> split(String string) {
-        Objects.requireNonNull(string, "string is null");
+    public static List<String> split(String stencil) {
+        Objects.requireNonNull(stencil, "stencil is null");
 
         List<String> fragments = new ArrayList<>(8);
         StringBuilder sb = new StringBuilder();
 
-        for (int i = 0; i < string.length(); i++) {
-            char ch = string.charAt(i);
+        for (int i = 0; i < stencil.length(); i++) {
+            char ch = stencil.charAt(i);
 
             if (ch == PLACEHOLDER) {
                 fragments.add(sb.toString());
@@ -271,7 +270,7 @@ public interface TemplatedString {
         }
 
         return new TemplatedString() {
-            List<String> FRAGMENTS = List.of(string);
+            private List<String> FRAGMENTS = List.of(string);
 
             @Override
             public String stencil() {
@@ -347,7 +346,7 @@ public interface TemplatedString {
         private final List<Object> values;
 
         /**
-         * protected private Constructor.
+         * package private Constructor.
          */
         Builder() {
             this.stencilBuilder = new StringBuilder();

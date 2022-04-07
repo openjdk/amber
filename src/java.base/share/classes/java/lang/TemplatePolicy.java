@@ -63,11 +63,11 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * Usage:
  * {@snippet :
- * MyPolicy policy = new MyPolicy();
+ * MyPolicy myPolicy = new MyPolicy();
  * try {
  *     int x = 10;
  *     int y = 20;
- *     String result = policy."\{x} + \{y} = \{x + y}";
+ *     String result = myPolicy."\{x} + \{y} = \{x + y}";
  *     ...
  * } catch (IllegalArgumentException ex) {
  *     ...
@@ -88,7 +88,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplatePolicy} is a {@link FunctionalInterface}. This permits declaration of a
  * policy using lambda expressions;
  * {@snippet :
- * TemplatePolicy<String, RuntimeException> policy = ts -> {
+ * TemplatePolicy<String, RuntimeException> concatPolicy = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
@@ -102,7 +102,7 @@ import jdk.internal.javac.PreviewFeature;
  * The {@link FunctionalInterface} {@link TemplatePolicy.SimplePolicy} is supplied to avoid
  * declaring checked exceptions;
  * {@snippet :
- * SimplePolicy<String> policy = ts -> {
+ * SimplePolicy<String> concatPolicy = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
@@ -113,16 +113,29 @@ import jdk.internal.javac.PreviewFeature;
  *            return sb.toString();
  *         });
  * }
- * A simplier example shows how to use the {@link TemplatedString#concat()} method
- * to simply transform the string concatenation into something other than
+ * The {@link FunctionalInterface} {@link java.lang.TemplatePolicy.StringPolicy} is supplied if
+ * the policy returns {@link String};
+ * {@snippet :
+ * StringPolicy concatPolicy = ts -> {
+ *             StringBuilder sb = new StringBuilder();
+ *             Iterator<String> fragmentsIter = ts.fragments().iterator();
+ *             for (Object value : ts.values()) {
+ *                 sb.append(fragmentsIter.next());
+ *                 sb.append(value);
+ *             }
+ *             sb.append(fragmentsIter.next());
+ *            return sb.toString();
+ *         });
+ * }
+ * The {@link TemplatedString#concat()} method is available for those policies that just need
+ * to work with the concatenation;
+ * {@snippet :
+ * StringPolicy concatPolicy = TemplateString::concat;
+ * }
+ * or simply transform the string concatenation into something other than
  * {@link String};
  * {@snippet :
- * SimplePolicy<JSONObject> policy = ts -> new JSONObject(ts.concat());
- * }
- * and the {@link FunctionalInterface} {@link TemplatePolicy.StringPolicy} is supplied if
- * the policy returns {@link String}
- * {@snippet :
- * StringPolicy policy = TemplateString::concat;
+ * SimplePolicy<JSONObject> jsonPolicy = ts -> new JSONObject(ts.concat());
  * }
  *
  * @param <R>  Policy's apply result type.
@@ -150,7 +163,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * This interface simplifies declaration of {@link TemplatePolicy TemplatePolicys}
      * that do not throw check exceptions. For example:
      * {@snippet :
-     * SimplePolicy<String> policy = ts -> {
+     * SimplePolicy<String> concatPolicy = ts -> {
      *             StringBuilder sb = new StringBuilder();
      *             Iterator<String> fragmentsIter = ts.fragments().iterator();
      *             for (Object value : ts.values()) {
@@ -172,7 +185,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
      * that do not throw check exceptions and have a result type of {@link String}. For example:
      * {@snippet :
-     * StringPolicy policy = (ts) -> ts.concat();
+     * StringPolicy policy = ts -> ts.concat();
      * }
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)

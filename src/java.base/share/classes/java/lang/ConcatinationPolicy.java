@@ -37,7 +37,7 @@ import jdk.internal.javac.PreviewFeature;
  * @implNote The result of concatenation is not interned.
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-final class ConcatinationPolicy
+record ConcatinationPolicy()
         implements TemplatePolicy.Linkage<String, RuntimeException> {
     @Override
     public String apply(TemplatedString templatedString) {
