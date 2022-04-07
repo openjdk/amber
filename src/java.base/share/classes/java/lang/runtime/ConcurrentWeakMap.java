@@ -55,8 +55,7 @@ class ConcurrentWeakMap<K, V> implements ConcurrentMap<K, V> {
         @Override
         @SuppressWarnings("unchecked")
         public boolean equals(Object obj) {
-            if (obj instanceof Key) {
-                Key<T> key = (Key<T>)obj;
+            if (obj instanceof Key<?> key) {
                 obj = key.get();
             }
             return Objects.equals(get(), obj);
@@ -82,8 +81,7 @@ class ConcurrentWeakMap<K, V> implements ConcurrentMap<K, V> {
             if (obj == this) {
                 return true;
             }
-            if (obj instanceof Key) {
-                Key<T> key = (Key<T>)obj;
+            if (obj instanceof Key<?> key) {
                 obj = key.get();
             }
             return Objects.equals(get(), obj);
