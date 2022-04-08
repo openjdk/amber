@@ -194,9 +194,7 @@ public class Pretty extends JCTree.Visitor {
                 tree.accept(this);
             }
         } catch (UncheckedIOException ex) {
-            IOException e = new IOException(ex.getMessage());
-            e.initCause(ex);
-            throw e;
+            throw new IOException(ex.getMessage(), ex);
         } finally {
             this.prec = prevPrec;
         }
@@ -858,10 +856,6 @@ public class Pretty extends JCTree.Visitor {
                 print("case ");
                 printExprs(tree.labels);
             }
-            if (tree.guard != null) {
-                print(" when ");
-                printExpr(tree.guard);
-            }
             if (tree.caseKind == JCCase.STATEMENT) {
                 print(":");
                 println();
@@ -914,6 +908,10 @@ public class Pretty extends JCTree.Visitor {
     public void visitBindingPattern(JCBindingPattern patt) {
         try {
             printExpr(patt.var);
+            if (patt.guard != null) {
+                print(" when ");
+                printExpr(patt.guard);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -925,6 +923,10 @@ public class Pretty extends JCTree.Visitor {
             print("(");
             printExpr(patt.pattern);
             print(")");
+            if (patt.guard != null) {
+                print(" when ");
+                printExpr(patt.guard);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

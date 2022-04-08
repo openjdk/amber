@@ -470,8 +470,8 @@ public class TransPatterns extends TreeTranslator {
                     try {
                         currentValue = temp;
                         JCExpression test = (JCExpression) this.<JCTree>translate(p);
-                        if (c.guard != null) {
-                            test = makeBinary(Tag.AND, test, translate(c.guard));
+                        if (((JCPattern) p).guard != null) {
+                            test = makeBinary(Tag.AND, test, translate(((JCPattern) p).guard));
                         }
                         c.stats = translate(c.stats);
                         JCContinue continueSwitch = make.at(clearedPatterns.head.pos()).Continue(null);
@@ -524,11 +524,13 @@ public class TransPatterns extends TreeTranslator {
             if (tree.hasTag(Tag.SWITCH)) {
                 ((JCSwitch) tree).selector = selector;
                 ((JCSwitch) tree).cases = cases;
+                ((JCSwitch) tree).wasEnumSelector = enumSelector;
                 statements.append((JCSwitch) tree);
                 result = make.Block(0, statements.toList());
             } else {
                 ((JCSwitchExpression) tree).selector = selector;
                 ((JCSwitchExpression) tree).cases = cases;
+                ((JCSwitchExpression) tree).wasEnumSelector = enumSelector;
                 LetExpr r = (LetExpr) make.LetExpr(statements.toList(), (JCSwitchExpression) tree)
                                           .setType(tree.type);
 

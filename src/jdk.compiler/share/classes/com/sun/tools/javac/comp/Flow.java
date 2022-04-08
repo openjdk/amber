@@ -667,14 +667,17 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
+            Set<Symbol> constants = new HashSet<>();
             boolean exhaustiveSwitch = TreeInfo.expectedExhaustive(tree);
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
+                    if (TreeInfo.unconditionalCaseLabel(pat)) {
+                        handleConstantCaseLabel(constants, pat);
+                    }
                 }
-                scanStat(c.guard);
                 scanStats(c.stats);
                 if (alive != Liveness.DEAD && c.caseKind == JCCase.RULE) {
                     scanSyntheticBreak(make, tree);
@@ -691,7 +694,6 @@ public class Flow {
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases);
             if (exhaustiveSwitch) {
-                Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().filter(TreeInfo::unconditionalCase).flatMap(c -> c.labels.stream()).collect(Collectors.toCollection(HashSet::new)));
                 tree.isExhaustive |= isExhaustive(tree.selector.pos(), tree.selector.type, constants);
                 if (!tree.isExhaustive) {
                     log.error(tree, Errors.NotExhaustiveStatement);
@@ -708,14 +710,17 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
+            Set<Symbol> constants = new HashSet<>();
             Liveness prevAlive = alive;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
+                    if (TreeInfo.unconditionalCaseLabel(pat)) {
+                        handleConstantCaseLabel(constants, pat);
+                    }
                 }
-                scanStat(c.guard);
                 scanStats(c.stats);
                 if (alive == Liveness.ALIVE) {
                     if (c.caseKind == JCCase.RULE) {
@@ -727,7 +732,6 @@ public class Flow {
                     }
                 }
             }
-            Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().filter(TreeInfo::unconditionalCase).flatMap(c -> c.labels.stream()).collect(Collectors.toCollection(HashSet::new)));
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
                                 isExhaustive(tree.selector.pos(), tree.selector.type, constants);
@@ -736,6 +740,20 @@ public class Flow {
             }
             alive = prevAlive;
             alive = alive.or(resolveYields(tree, prevPendingExits));
+        }
+
+        private void handleConstantCaseLabel(Set<Symbol> constants, JCCaseLabel pat) {
+            if (constants != null) {
+                if (pat.isExpression()) {
+                    JCExpression expr = (JCExpression) pat;
+                    if (expr.hasTag(IDENT) && ((JCIdent) expr).sym.isEnum())
+                        constants.add(((JCIdent) expr).sym);
+                } else if (pat.isPattern()) {
+                    PatternPrimaryType patternType = TreeInfo.primaryPatternType(pat);
+
+                    constants.add(patternType.type().tsym);
+                }
+            }
         }
 
         private Set<Symbol> coveredSymbols(DiagnosticPosition pos, Type targetType, Iterable<? extends JCCaseLabel> labels) {
@@ -1337,7 +1355,6 @@ public class Flow {
             for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
                 JCCase c = l.head;
                 scan(c.labels);
-                scan(c.guard);
                 scan(c.stats);
             }
             if (tree.hasTag(SWITCH_EXPRESSION)) {
@@ -2542,7 +2559,6 @@ public class Flow {
                     l = l.tail;
                     c = l.head;
                 }
-                scanPattern(c.guard);
                 scan(c.stats);
                 if (c.completesNormally && c.caseKind == JCCase.RULE) {
                     scanSyntheticBreak(make, tree);
@@ -2917,8 +2933,9 @@ public class Flow {
 
         @Override
         public void visitBindingPattern(JCBindingPattern tree) {
-            super.visitBindingPattern(tree);
+            scan(tree.var);
             initParam(tree.var);
+            scan(tree.guard);
         }
 
         void referenced(Symbol sym) {
@@ -3010,7 +3027,7 @@ public class Flow {
                             }
                             break;
                         }
-                    case CASE:
+                    case BINDINGPATTERN, PARENTHESIZEDPATTERN:
                     case LAMBDA:
                         if ((sym.flags() & (EFFECTIVELY_FINAL | FINAL)) == 0) {
                            reportEffectivelyFinalError(pos, sym);
@@ -3045,7 +3062,7 @@ public class Flow {
         void reportEffectivelyFinalError(DiagnosticPosition pos, Symbol sym) {
             Fragment subKey = switch (currentTree.getTag()) {
                 case LAMBDA -> Fragments.Lambda;
-                case CASE -> Fragments.Guard;
+                case BINDINGPATTERN, PARENTHESIZEDPATTERN -> Fragments.Guard;
                 case CLASSDEF -> Fragments.InnerCls;
                 default -> throw new AssertionError("Unexpected tree kind: " + currentTree.getTag());
             };
@@ -3085,8 +3102,8 @@ public class Flow {
         }
 
         @Override
-        public void visitCase(JCCase tree) {
-            scan(tree.labels);
+        public void visitBindingPattern(JCBindingPattern tree) {
+            scan(tree.var);
             JCTree prevTree = currentTree;
             try {
                 currentTree = tree;
@@ -3094,7 +3111,18 @@ public class Flow {
             } finally {
                 currentTree = prevTree;
             }
-            scan(tree.body);
+        }
+
+        @Override
+        public void visitParenthesizedPattern(JCParenthesizedPattern tree) {
+            scan(tree.pattern);
+            JCTree prevTree = currentTree;
+            try {
+                currentTree = tree;
+                scan(tree.guard);
+            } finally {
+                currentTree = prevTree;
+            }
         }
 
         @Override

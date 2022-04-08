@@ -1288,6 +1288,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public boolean hasTotalPattern;
         public boolean isExhaustive;
         public boolean patternSwitch;
+        public boolean wasEnumSelector;
         protected JCSwitch(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;
             this.cases = cases;
@@ -1321,17 +1322,15 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public static final CaseKind RULE = CaseKind.RULE;
         public final CaseKind caseKind;
         public List<JCCaseLabel> labels;
-        public JCExpression guard;
         public List<JCStatement> stats;
         public JCTree body;
         public boolean completesNormally;
-        protected JCCase(CaseKind caseKind, List<JCCaseLabel> labels, JCExpression guard,
+        protected JCCase(CaseKind caseKind, List<JCCaseLabel> labels,
                          List<JCStatement> stats, JCTree body) {
             Assert.checkNonNull(labels);
             Assert.check(labels.isEmpty() || labels.head != null);
             this.caseKind = caseKind;
             this.labels = labels;
-            this.guard = guard;
             this.stats = stats;
             this.body = body;
         }
@@ -1350,8 +1349,6 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public List<JCStatement> getStatements() {
             return caseKind == CaseKind.STATEMENT ? stats : null;
         }
-        @Override @DefinedBy(Api.COMPILER_TREE)
-        public JCExpression getGuard() { return guard; }
         @Override @DefinedBy(Api.COMPILER_TREE)
         public JCTree getBody() { return body; }
         @Override @DefinedBy(Api.COMPILER_TREE)
@@ -1379,6 +1376,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public boolean hasTotalPattern;
         public boolean isExhaustive;
         public boolean patternSwitch;
+        public boolean wasEnumSelector;
         protected JCSwitchExpression(JCExpression selector, List<JCCase> cases) {
             this.selector = selector;
             this.cases = cases;
@@ -2247,6 +2245,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
      */
     public abstract static class JCPattern extends JCCaseLabel
             implements PatternTree {
+
+        public JCExpression guard;
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getGuard() { return guard; }
 
         @Override
         public boolean isExpression() {
@@ -3352,7 +3355,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCLabeledStatement Labelled(Name label, JCStatement body);
         JCSwitch Switch(JCExpression selector, List<JCCase> cases);
         JCSwitchExpression SwitchExpression(JCExpression selector, List<JCCase> cases);
-        JCCase Case(CaseTree.CaseKind caseKind, List<JCCaseLabel> labels, JCExpression guard,
+        JCCase Case(CaseTree.CaseKind caseKind, List<JCCaseLabel> labels,
                     List<JCStatement> stats, JCTree body);
         JCSynchronized Synchronized(JCExpression lock, JCBlock body);
         JCTry Try(JCBlock body, List<JCCatch> catchers, JCBlock finalizer);

@@ -703,7 +703,7 @@ public class LambdaToMethod extends TreeTranslator {
             JCBreak br = make.Break(null);
             breaks.add(br);
             List<JCStatement> stmts = entry.getValue().append(br).toList();
-            cases.add(make.Case(JCCase.STATEMENT, List.of(make.Literal(entry.getKey())), null, stmts, null));
+            cases.add(make.Case(JCCase.STATEMENT, List.of(make.Literal(entry.getKey())), stmts, null));
         }
         JCSwitch sw = make.Switch(deserGetter("getImplMethodName", syms.stringType), cases.toList());
         for (JCBreak br : breaks) {
@@ -2054,7 +2054,7 @@ public class LambdaToMethod extends TreeTranslator {
                         };
                         break;
                     case CAPTURED_OUTER_THIS:
-                        Name name = names.fromString(new String(sym.flatName().toString().replace('.', '$') + names.dollarThis));
+                        Name name = names.fromString(sym.flatName().toString().replace('.', '$') + names.dollarThis);
                         ret = new VarSymbol(SYNTHETIC | FINAL | PARAMETER, name, types.erasure(sym.type), translatedSym) {
                             @Override
                             public Symbol baseSymbol() {
