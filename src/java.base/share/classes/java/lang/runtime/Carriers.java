@@ -1064,7 +1064,7 @@ public final class Carriers {
          * @throws IllegalArgumentException if number of component slots exceeds maximum
          */
         public static CarrierElements of(MethodType methodType) {
-            Objects.requireNonNull(methodType, "methodType must be not be null");
+            Objects.requireNonNull(methodType, "methodType mustnot be null");
             MethodType constructorMT = methodType.changeReturnType(Object.class);
             CarrierShape carrierShape = new CarrierShape(constructorMT);
             int slotCount = carrierShape.slotCount();
@@ -1094,7 +1094,7 @@ public final class Carriers {
          * @throws IllegalArgumentException if number of component slots exceeds maximum
          */
         public static CarrierElements of(Class < ? >...ptypes) {
-            Objects.requireNonNull(ptypes, "ptypes must be not be null");
+            Objects.requireNonNull(ptypes, "ptypes must not be null");
             return of(methodType(Object.class, ptypes));
         }
     }
