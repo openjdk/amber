@@ -667,16 +667,12 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
-            Set<Symbol> constants = new HashSet<>();
             boolean exhaustiveSwitch = TreeInfo.expectedExhaustive(tree);
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
-                    if (TreeInfo.unconditionalCaseLabel(pat)) {
-                        handleConstantCaseLabel(constants, pat);
-                    }
                 }
                 scanStats(c.stats);
                 if (alive != Liveness.DEAD && c.caseKind == JCCase.RULE) {
@@ -694,6 +690,7 @@ public class Flow {
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases);
             if (exhaustiveSwitch) {
+                Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unconditionalCaseLabel).collect(Collectors.toCollection(HashSet::new)));
                 tree.isExhaustive |= isExhaustive(tree.selector.pos(), tree.selector.type, constants);
                 if (!tree.isExhaustive) {
                     log.error(tree, Errors.NotExhaustiveStatement);
@@ -710,16 +707,12 @@ public class Flow {
             ListBuffer<PendingExit> prevPendingExits = pendingExits;
             pendingExits = new ListBuffer<>();
             scan(tree.selector);
-            Set<Symbol> constants = new HashSet<>();
             Liveness prevAlive = alive;
             for (List<JCCase> l = tree.cases; l.nonEmpty(); l = l.tail) {
                 alive = Liveness.ALIVE;
                 JCCase c = l.head;
                 for (JCCaseLabel pat : c.labels) {
                     scan(pat);
-                    if (TreeInfo.unconditionalCaseLabel(pat)) {
-                        handleConstantCaseLabel(constants, pat);
-                    }
                 }
                 scanStats(c.stats);
                 if (alive == Liveness.ALIVE) {
@@ -732,6 +725,7 @@ public class Flow {
                     }
                 }
             }
+            Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unconditionalCaseLabel).collect(Collectors.toCollection(HashSet::new)));
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
                                 isExhaustive(tree.selector.pos(), tree.selector.type, constants);
@@ -740,20 +734,6 @@ public class Flow {
             }
             alive = prevAlive;
             alive = alive.or(resolveYields(tree, prevPendingExits));
-        }
-
-        private void handleConstantCaseLabel(Set<Symbol> constants, JCCaseLabel pat) {
-            if (constants != null) {
-                if (pat.isExpression()) {
-                    JCExpression expr = (JCExpression) pat;
-                    if (expr.hasTag(IDENT) && ((JCIdent) expr).sym.isEnum())
-                        constants.add(((JCIdent) expr).sym);
-                } else if (pat.isPattern()) {
-                    PatternPrimaryType patternType = TreeInfo.primaryPatternType(pat);
-
-                    constants.add(patternType.type().tsym);
-                }
-            }
         }
 
         private Set<Symbol> coveredSymbols(DiagnosticPosition pos, Type targetType, Iterable<? extends JCCaseLabel> labels) {

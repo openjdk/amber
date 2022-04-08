@@ -1796,7 +1796,7 @@ public class Attr extends JCTree.Visitor {
                             }
                             matchBindings = matchBindingsComputer.caseGuard(c, afterPattern, matchBindings);
                         }
-                        boolean unconditional = TreeInfo.unconditionalCaseLabel(pat);
+                        boolean unconditional = TreeInfo.unconditionalCaseLabel(pat) && !pat.hasTag(DECONSTRUCTIONPATTERN);
                         boolean isTotal = unconditional &&
                                           !patternType.isErroneous() &&
                                           types.isSubtype(types.erasure(seltype), patternType);
