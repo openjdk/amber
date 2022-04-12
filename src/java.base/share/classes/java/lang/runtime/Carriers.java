@@ -410,7 +410,7 @@ public final class Carriers {
         }
 
         /**
-         * Constructor
+         * Constructor builder.
          *
          * @param carrierShape  carrier object shape
          *
