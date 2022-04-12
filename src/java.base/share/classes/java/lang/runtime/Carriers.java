@@ -82,7 +82,12 @@ import jdk.internal.misc.Unsafe;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final class Carriers {
-
+    /**
+     * Maximum number of components in a carrier (based on the maximum
+     * number of args to a constructor.)
+     */
+    public static final int MAX_COMPONENTS = 255 - /* this */ 1;
+    
     /**
      * Number of integer slots used by a long.
      */
