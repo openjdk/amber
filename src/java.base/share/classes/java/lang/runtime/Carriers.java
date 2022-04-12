@@ -28,23 +28,14 @@ package java.lang.runtime;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.invoke.MethodHandles.Lookup.ClassOption;
 import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.invoke.MethodType.methodType;
 
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.misc.Unsafe;
-import jdk.internal.misc.VM;
-import jdk.internal.org.objectweb.asm.ClassWriter;
-import jdk.internal.org.objectweb.asm.FieldVisitor;
-import jdk.internal.org.objectweb.asm.MethodVisitor;
-import jdk.internal.org.objectweb.asm.Type;
-
-import static jdk.internal.org.objectweb.asm.Opcodes.*;
 
 /**
  * A <em>carrier</em> is an opaque object that can be used to store component values
@@ -91,27 +82,6 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final class Carriers {
-    /**
-     * Class file version.
-     */
-    private static final int CLASSFILE_VERSION = VM.classFileVersion();
-
-    /**
-     * Maximum number of components in a carrier (based on the maximum
-     * number of args to a constructor.)
-     */
-    public static final int MAX_COMPONENTS = 255 - /* this */ 1;
-
-    /**
-     * Maximum number of components in a {@link CarrierClass}.
-     */
-    private static final int MAX_OBJECT_COMPONENTS = 32;
-
-    /**
-     * Stable annotation.
-     */
-    private static final String STABLE = "jdk/internal/vm/annotation/Stable";
-    private static final String STABLE_SIG = "L" + STABLE + ";";
 
     /**
      * Number of integer slots used by a long.
@@ -144,24 +114,6 @@ public final class Carriers {
     private static final MethodHandle INT_TO_FLOAT;
     private static final MethodHandle DOUBLE_TO_LONG;
     private static final MethodHandle LONG_TO_DOUBLE;
-
-    /**
-     * long signature descriptor.
-     */
-    private static final String LONG_DESCRIPTOR =
-            Type.getDescriptor(long.class);
-
-    /**
-     * int signature descriptor.
-     */
-    private static final String INT_DESCRIPTOR =
-            Type.getDescriptor(int.class);
-
-    /**
-     * Object signature descriptor.
-     */
-    private static final String OBJECT_DESCRIPTOR =
-            Type.getDescriptor(Object.class);
 
     /**
      * Given a constructor {@link MethodHandle} recast and reorder arguments to
@@ -347,19 +299,39 @@ public final class Carriers {
             }
 
             /**
-             * Check index and compute offset for unsafe access.
+             * Compute offset for unsafe access to long.
              *
              * @param i  index in primitive[]
              *
              * @return offset for unsafe access
              */
-            private long offset(int i) {
-                if (i < 0 || (primitives.length * LONG_SLOTS) <= i) {
-                    throw new RuntimeException("primitive index out of range: " + i);
-                }
+            private long offsetToLong(int i) {
+                return Unsafe.ARRAY_LONG_BASE_OFFSET +
+                        (long)i * Unsafe.ARRAY_LONG_INDEX_SCALE;
+            }
 
+            /**
+             * Compute offset for unsafe access to int.
+             *
+             * @param i  index in primitive[]
+             *
+             * @return offset for unsafe access
+             */
+            private long offsetToInt(int i) {
                 return Unsafe.ARRAY_LONG_BASE_OFFSET +
                         (long)i * Unsafe.ARRAY_INT_INDEX_SCALE;
+            }
+
+            /**
+             * Compute offset for unsafe access to object.
+             *
+             * @param i  index in objects[]
+             *
+             * @return offset for unsafe access
+             */
+            private long offsetToObject(int i) {
+                return Unsafe.ARRAY_OBJECT_BASE_OFFSET +
+                        (long)i * Unsafe.ARRAY_OBJECT_INDEX_SCALE;
             }
 
             /**
@@ -368,7 +340,7 @@ public final class Carriers {
              * @param i  array index
              */
             private long getLong(int i) {
-                return primitives[i];
+                return UNSAFE.getInt(primitives, offsetToLong(i));
             }
 
             /**
@@ -380,7 +352,7 @@ public final class Carriers {
              * @return this object
              */
             private CarrierArray putLong(int i, long value) {
-                primitives[i] = value;
+                UNSAFE.putLong(primitives, offsetToLong(i), value);
 
                 return this;
             }
@@ -391,7 +363,7 @@ public final class Carriers {
              * @param i  array index
              */
             private int getInteger(int i) {
-                return UNSAFE.getInt(primitives, offset(i));
+                return UNSAFE.getInt(primitives, offsetToInt(i));
             }
 
             /**
@@ -403,7 +375,7 @@ public final class Carriers {
              * @return this object
              */
             private CarrierArray putInteger(int i, int value) {
-                UNSAFE.putInt(primitives, offset(i), value);
+                UNSAFE.putInt(primitives, offsetToInt(i), value);
 
                 return this;
             }
@@ -414,7 +386,7 @@ public final class Carriers {
              * @param i  array index
              */
             private Object getObject(int i) {
-                return objects[i];
+                return UNSAFE.getReference(objects, offsetToObject(i));
             }
 
             /**
@@ -426,7 +398,7 @@ public final class Carriers {
              * @return this object
              */
             private CarrierArray putObject(int i, Object value) {
-                objects[i] = value;
+                UNSAFE.putReference(objects, offsetToObject(i), value);
 
                 return this;
             }
@@ -516,362 +488,17 @@ public final class Carriers {
             MethodHandle constructor = constructor(carrierShape);
             MethodHandle[] components = createComponents(carrierShape);
 
-            return new CarrierElements(Object[].class,
+            return new CarrierElements(CarrierArray.class,
                                        reshapeConstructor(carrierShape, constructor),
                                        reshapeComponents(carrierShape, components));
         }
     }
-
-    /**
-     * Factory for object based carrier. This strategy is used when the number of
-     * components is less than equal {@link Carriers#MAX_OBJECT_COMPONENTS}. The factory
-     * constructs an anonymous class that provides a shape that  matches the
-     * number of longs, ints and objects required by the {@link CarrierShape}. The
-     * factory caches and reuses anonymous classes when looking for a match.
-     * <p>
-     * The anonymous class that is constructed contains the number of long fields then
-     * int fields then object fields required by the {@link CarrierShape}. The order
-     * of fields is reordered by the component accessor {@link MethodHandles}. So a
-     * carrier requiring an int and then object will use the same anonymous class as
-     * a carrier requiring an object then int.
-     * <p>
-     * The carrier constructor recasts/translates values that are not long, int or
-     * object. The component accessors reverse the effect of the recasts/translates.
-     */
-    private static class CarrierObjectFactory {
-        /**
-         * Define the hidden class Lookup object
-         *
-         * @param bytes  class content
-         *
-         * @return the Lookup object of the hidden class
-         */
-        private static Lookup defineHiddenClass(byte[] bytes) {
-            try {
-                Lookup lookup = MethodHandles.lookup();
-                return lookup.defineHiddenClass(bytes, false, ClassOption.STRONG);
-            } catch (IllegalAccessException ex) {
-                throw new AssertionError("carrier factory static init fail", ex);
-            }
-        }
-
-        /**
-         * Generate the name of a long component.
-         *
-         * @param index field/component index
-         *
-         * @return name of long component
-         */
-        private static String longFieldName(int index) {
-            return "l" + index;
-        }
-
-        /**
-         * Generate the name of an int component.
-         *
-         * @param index field/component index
-         *
-         * @return name of int component
-         */
-        private static String intFieldName(int index) {
-            return "i" + index;
-        }
-
-        /**
-         * Generate the name of an object component.
-         *
-         * @param index field/component index
-         *
-         * @return name of object component
-         */
-        private static String objectFieldName(int index) {
-            return "o" + index;
-        }
-
-        /**
-         * Generate the full name of a carrier class based on shape.
-         *
-         * @param carrierShape  shape of carrier
-         *
-         * @return name of a carrier class
-         */
-        private static String carrierClassName(CarrierShape carrierShape) {
-            String packageName = Carriers.class.getPackageName().replace('.', '/');
-            String className = "Carrier" +
-                    longFieldName(carrierShape.longCount()) +
-                    intFieldName(carrierShape.intCount()) +
-                    objectFieldName(carrierShape.objectCount());
-
-            return packageName.isEmpty() ? className :
-                    packageName + "/" + className;
-        }
-
-        /**
-         * Build up the byte code for the carrier class.
-         *
-         * @param carrierShape  shape of carrier
-         *
-         * @return byte array of byte code for the carrier class
-         */
-        private static byte[] buildCarrierClass(CarrierShape carrierShape) {
-            int maxStack = 3;
-            int maxLocals = 1 /* this */ + carrierShape.slotCount();
-            String carrierClassName = carrierClassName(carrierShape);
-            StringBuilder initDescriptor = new StringBuilder("(");
-
-            ClassWriter cw = new ClassWriter(0);
-            cw.visit(CLASSFILE_VERSION, ACC_PRIVATE | ACC_FINAL, carrierClassName,
-                    null, "java/lang/Object", null);
-
-            int fieldFlags = ACC_PRIVATE | ACC_FINAL;
-
-            for (int i = 0; i < carrierShape.longCount(); i++) {
-                FieldVisitor fw = cw.visitField(fieldFlags, longFieldName(i),
-                        LONG_DESCRIPTOR, null, null);
-                fw.visitAnnotation(STABLE_SIG, true);
-                fw.visitEnd();
-                initDescriptor.append(LONG_DESCRIPTOR);
-            }
-
-            for (int i = 0; i < carrierShape.intCount(); i++) {
-                FieldVisitor fw = cw.visitField(fieldFlags, intFieldName(i),
-                        INT_DESCRIPTOR, null, null);
-                fw.visitAnnotation(STABLE_SIG, true);
-                fw.visitEnd();
-                initDescriptor.append(INT_DESCRIPTOR);
-            }
-
-            for (int i = 0; i < carrierShape.objectCount(); i++) {
-                FieldVisitor fw = cw.visitField(fieldFlags, objectFieldName(i),
-                        OBJECT_DESCRIPTOR, null, null);
-                fw.visitAnnotation(STABLE_SIG, true);
-                fw.visitEnd();
-                initDescriptor.append(OBJECT_DESCRIPTOR);
-            }
-
-            initDescriptor.append(")V");
-
-            int arg = 1;
-
-            MethodVisitor init = cw.visitMethod(ACC_PUBLIC,
-                    "<init>", initDescriptor.toString(), null, null);
-            init.visitVarInsn(ALOAD, 0);
-            init.visitMethodInsn(INVOKESPECIAL,
-                    "java/lang/Object", "<init>", "()V", false);
-
-            for (int i = 0; i < carrierShape.longCount(); i++) {
-                init.visitVarInsn(ALOAD, 0);
-                init.visitVarInsn(LLOAD, arg);
-                arg += LONG_SLOTS;
-                init.visitFieldInsn(PUTFIELD, carrierClassName,
-                        longFieldName(i), LONG_DESCRIPTOR);
-            }
-
-            for (int i = 0; i < carrierShape.intCount(); i++) {
-                init.visitVarInsn(ALOAD, 0);
-                init.visitVarInsn(ILOAD, arg++);
-                init.visitFieldInsn(PUTFIELD, carrierClassName,
-                        intFieldName(i), INT_DESCRIPTOR);
-            }
-
-            for (int i = 0; i < carrierShape.objectCount(); i++) {
-                init.visitVarInsn(ALOAD, 0);
-                init.visitVarInsn(ALOAD, arg++);
-                init.visitFieldInsn(PUTFIELD, carrierClassName,
-                        objectFieldName(i), OBJECT_DESCRIPTOR);
-            }
-
-            init.visitInsn(RETURN);
-            init.visitMaxs(maxStack, maxLocals);
-            init.visitEnd();
-
-            cw.visitEnd();
-
-            return cw.toByteArray();
-        }
-
-        /**
-         * Build up a {@link MethodType} based in a carrier shape.
-         *
-         * @param carrierShape  shape of carrier
-         *
-         * @return the constructor method type
-         */
-        private static MethodType constructorMethodType(CarrierShape carrierShape) {
-            int longCount = carrierShape.longCount();
-            int intCount = carrierShape.intCount();
-            int objectCount = carrierShape.objectCount();
-            int count = carrierShape.count();
-            Class<?>[] ptypes = new Class<?>[count];
-            int arg = 0;
-
-            for(int i = 0; i < longCount; i++) {
-                ptypes[arg++] = long.class;
-            }
-
-            for(int i = 0; i < intCount; i++) {
-                ptypes[arg++] = int.class;
-            }
-
-            for(int i = 0; i < objectCount; i++) {
-                ptypes[arg++] = Object.class;
-            }
-
-            return methodType(void.class, ptypes);
-        }
-
-        /**
-         * Returns the raw constructor for the carrier class.
-         *
-         * @param carrierClassLookup     lookup for carrier class
-         * @param carrierClass           newly constructed carrier class
-         * @param constructorMethodType  constructor method type
-         *
-         * @return {@link MethodHandle} to carrier class constructor
-         *
-         * @throws ReflectiveOperationException if lookup failure
-         */
-        private static MethodHandle constructor(Lookup carrierClassLookup,
-                                                Class<?> carrierClass,
-                                                MethodType constructorMethodType)
-                throws ReflectiveOperationException {
-            return carrierClassLookup.findConstructor(carrierClass,
-                    constructorMethodType);
-        }
-
-        /**
-         * Returns an array of raw component accessors for the carrier class.
-         *
-         * @param carrierShape           shape of carrier
-         * @param carrierClassLookup     lookup for carrier class
-         * @param carrierClass           newly constructed carrier class
-         *
-         * @return {@link MethodHandle MethodHandles} to carrier component
-         *         accessors
-         *
-         * @throws ReflectiveOperationException if lookup failure
-         */
-        private static MethodHandle[] createComponents(CarrierShape carrierShape,
-                                                       Lookup carrierClassLookup,
-                                                       Class<?> carrierClass)
-                throws ReflectiveOperationException {
-            int longCount = carrierShape.longCount();
-            int intCount = carrierShape.intCount();
-            int objectCount = carrierShape.objectCount();
-            int count = carrierShape.count();
-            MethodHandle[] components = new MethodHandle[count];
-            int arg = 0;
-
-            for(int i = 0; i < longCount; i++) {
-                components[arg++] = carrierClassLookup.findGetter(carrierClass,
-                        longFieldName(i), long.class);
-            }
-
-            for(int i = 0; i < intCount; i++) {
-                components[arg++] = carrierClassLookup.findGetter(carrierClass,
-                        intFieldName(i), int.class);
-            }
-
-            for(int i = 0; i < objectCount; i++) {
-                components[arg++] = carrierClassLookup.findGetter(carrierClass,
-                        objectFieldName(i), Object.class);
-            }
-
-            return components;
-        }
-
-        /**
-         * Construct a new object carrier class based on shape.
-         *
-         * @param carrierShape  shape of carrier
-         *
-         * @return a {@link CarrierClass} object containing constructor and
-         *         component accessors.
-         */
-        private static CarrierClass newCarrierClass(CarrierShape carrierShape) {
-            byte[] bytes = buildCarrierClass(carrierShape);
-
-            try {
-                Lookup carrierCLassLookup = defineHiddenClass(bytes);
-                Class<?> carrierClass = carrierCLassLookup.lookupClass();
-                MethodType constructorMethodType = constructorMethodType(carrierShape);
-                MethodHandle constructor = constructor(carrierCLassLookup,
-                        carrierClass, constructorMethodType);
-                MethodHandle[] components = createComponents(carrierShape,
-                        carrierCLassLookup, carrierClass);
-
-                return new CarrierClass(constructor, components);
-            } catch (ReflectiveOperationException ex) {
-                throw new AssertionError("carrier class static init fail", ex);
-            }
-        }
-
-        /**
-         * Permute a raw constructor and component accessor
-         * {@link MethodHandle MethodHandles} to match the order and types of
-         * the parameter types.
-         *
-         * @param carrierShape  carrier object shape
-         *
-         * @return {@link CarrierElements} instance
-         */
-        private static CarrierElements carrier(CarrierShape carrierShape) {
-            CarrierClass carrierClass = findCarrierClass(carrierShape);
-            MethodHandle constructor = carrierClass.constructor();
-            MethodHandle[] components = carrierClass.components();
-
-            return new CarrierElements(constructor.type().returnType(),
-                                       reshapeConstructor(carrierShape, constructor),
-                                       reshapeComponents(carrierShape, components));
-        }
-    }
-
-    /**
-     * Provides raw constructor and component MethodHandles for a constructed
-     * carrier class.
-     */
-    private record CarrierClass(
-            /*
-             * A raw {@link MethodHandle} for a carrier object constructor.
-             * This constructor will only have Object, int and long type arguments.
-             */
-            MethodHandle constructor,
-
-            /*
-             * All the raw {@link MethodHandle MethodHandles} for a carrier
-             * component accessors. These accessors will only return Object, int and
-             * long types.
-             */
-            MethodHandle[] components) {
-    }
-
-    /**
-     * Cache for all constructed carrier object classes, keyed on class
-     * name (i.e., carrier shape.)
-     */
-    private static final ConcurrentHashMap<String, CarrierClass> carrierCache =
-            new ConcurrentHashMap<>();
 
     /**
      * Constructor
      */
     private Carriers() {
         throw new AssertionError("private constructor");
-    }
-
-    /**
-     * Find or create carrier class for a carrier shape.
-     *
-     * @param carrierShape  shape of carrier
-     *
-     * @return {@link Class<>} of carrier class matching carrier shape
-     */
-    private static CarrierClass findCarrierClass(CarrierShape carrierShape) {
-        String carrierClassName =
-                CarrierObjectFactory.carrierClassName(carrierShape);
-
-        return carrierCache.computeIfAbsent(carrierClassName,
-                cn -> CarrierObjectFactory.newCarrierClass(carrierShape));
     }
 
     private record CarrierCounts(int longCount, int intCount, int objectCount) {
@@ -1019,13 +646,6 @@ public final class Carriers {
         private int objectOffset() {
             return longCount() + intCount();
         }
-
-        /**
-         * {@return true if primitive components present}
-         */
-        private boolean hasPrimitives() {
-            return longCount() != 0 ||  intCount() != 0;
-        }
     }
 
     /**
@@ -1073,13 +693,8 @@ public final class Carriers {
                 throw new IllegalArgumentException("Exceeds maximum number of component slots");
             }
 
-            return methodTypeCache.computeIfAbsent(constructorMT, (mt) -> {
-                if (slotCount <= MAX_OBJECT_COMPONENTS && carrierShape.hasPrimitives()) {
-                    return CarrierObjectFactory.carrier(carrierShape);
-                } else {
-                    return CarrierArrayFactory.carrier(carrierShape);
-                }
-            });
+            return methodTypeCache.computeIfAbsent(constructorMT,
+                    (mt) -> CarrierArrayFactory.carrier(carrierShape));
         }
 
         /**
