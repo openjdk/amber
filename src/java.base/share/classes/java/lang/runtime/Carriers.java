@@ -809,7 +809,7 @@ public final class Carriers {
     /**
      * {@return the underlying carrier class of the carrier representing {@code methodType} }
      *
-     * @param methodType  {@link MethodType} whose parameter types supply the the shape of the
+     * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      *
      * @implNote Used internally by Condy APIs.
@@ -822,7 +822,7 @@ public final class Carriers {
      * {@return the constructor {@link MethodHandle} for the carrier representing {@code
      * methodType}. The carrier constructor will always have a return type of {@link Object} }
      *
-     * @param methodType  {@link MethodType} whose parameter types supply the the shape of the
+     * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      *
      * @implNote Used internally by Condy APIs.
@@ -836,7 +836,7 @@ public final class Carriers {
      * all the components of the carrier representing {@code methodType}. The receiver type of
      * the accessors will always be {@link Object} }
      *
-     * @param methodType  {@link MethodType} whose parameter types supply the the shape of the
+     * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      *
      * @implNote Used internally by Condy APIs.
@@ -850,7 +850,7 @@ public final class Carriers {
      * carrier representing {@code methodType}. The receiver type of the accessor will always
      * be {@link Object} }
      *
-     * @param methodType  {@link MethodType} whose parameter types supply the the shape of the
+     * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      * @param i           component index
      *
