@@ -87,7 +87,7 @@ public final class Carriers {
      * number of args to a constructor.)
      */
     public static final int MAX_COMPONENTS = 255 - /* this */ 1;
-    
+
     /**
      * Number of integer slots used by a long.
      */
@@ -310,7 +310,7 @@ public final class Carriers {
              *
              * @return offset for unsafe access
              */
-            private long offsetToLong(int i) {
+            private static long offsetToLong(int i) {
                 return Unsafe.ARRAY_LONG_BASE_OFFSET +
                         (long)i * Unsafe.ARRAY_LONG_INDEX_SCALE;
             }
@@ -322,7 +322,7 @@ public final class Carriers {
              *
              * @return offset for unsafe access
              */
-            private long offsetToInt(int i) {
+            private static long offsetToInt(int i) {
                 return Unsafe.ARRAY_LONG_BASE_OFFSET +
                         (long)i * Unsafe.ARRAY_INT_INDEX_SCALE;
             }
@@ -334,7 +334,7 @@ public final class Carriers {
              *
              * @return offset for unsafe access
              */
-            private long offsetToObject(int i) {
+            private static long offsetToObject(int i) {
                 return Unsafe.ARRAY_OBJECT_BASE_OFFSET +
                         (long)i * Unsafe.ARRAY_OBJECT_INDEX_SCALE;
             }
