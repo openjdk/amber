@@ -26,20 +26,14 @@
 package com.sun.source.tree;
 
 import java.util.List;
+import jdk.internal.javac.PreviewFeature;
 
 /**
- * {@preview Associated with pattern matching for instanceof, a preview feature of
- *           the Java language.
+ * A deconstruction pattern tree.
  *
- *           This interface is associated with <i>pattern matching for instanceof</i>, a preview
- *           feature of the Java language. Preview features
- *           may be removed in a future release, or upgraded to permanent
- *           features of the Java language.}
- *
- * A deconstruction pattern tree
- *
- * @since 15
+ * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.DECONSTRUCTION_PATTERNS, reflective=true)
 public interface DeconstructionPatternTree extends PatternTree {
 
     /**
