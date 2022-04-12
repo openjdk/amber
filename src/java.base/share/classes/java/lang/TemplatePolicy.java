@@ -198,7 +198,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @implNote The result of concatenation is not interned.
      */
     public static final TemplatePolicy<String, RuntimeException>
-            STR = new ConcatinationPolicy();
+            STR = new ConcatenationPolicy();
 
     /**
      * Policies using this interface have the flexibility to specialize the
@@ -215,7 +215,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @param <E>  Exception thrown type.
      */
     sealed interface Linkage<R, E extends Throwable> extends TemplatePolicy<R, E>
-        permits ConcatinationPolicy, FormatterPolicy
+        permits ConcatenationPolicy, FormatterPolicy
     {
         /**
          * Return a boolean guard to assure that only specific policies should
