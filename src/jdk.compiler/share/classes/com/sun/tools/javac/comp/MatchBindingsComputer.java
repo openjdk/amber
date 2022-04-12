@@ -29,6 +29,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.BindingSymbol;
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCCase;
 import com.sun.tools.javac.tree.JCTree.Tag;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.Context;
@@ -37,7 +38,6 @@ import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Log;
 
 import static com.sun.tools.javac.code.Flags.CLASH;
-import com.sun.tools.javac.tree.JCTree.JCCase;
 
 
 public class MatchBindingsComputer extends TreeScanner {
