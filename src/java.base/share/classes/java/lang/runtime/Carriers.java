@@ -348,7 +348,7 @@ public final class Carriers {
              * @param i  array index
              */
             private long getLong(int i) {
-                return UNSAFE.getInt(primitives, offsetToLong(i));
+                return UNSAFE.getLong(primitives, offsetToLong(i));
             }
 
             /**
