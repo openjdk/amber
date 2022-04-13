@@ -36,6 +36,7 @@ import static java.lang.invoke.MethodType.methodType;
 
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.misc.Unsafe;
+import jdk.internal.vm.annotation.Stable;
 
 /**
  * A <em>carrier</em> is an opaque object that can be used to store component values
@@ -284,11 +285,13 @@ public final class Carriers {
             /**
              * Carrier for primitive values.
              */
+            @Stable
             private final long[] primitives;
 
             /**
              * Carrier for objects;
              */
+            @Stable
             private final Object[] objects;
 
             /**
