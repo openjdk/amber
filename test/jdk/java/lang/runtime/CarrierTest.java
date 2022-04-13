@@ -24,8 +24,8 @@
 /*
  * @test
  * @summary Test features provided by the Carrier class.
- * @compile CarrierTest.java
- * @run main CarrierTest
+ * @compile --enable-preview -source ${jdk.version} CarrierTest.java
+ * @run main/othervm --enable-preview CarrierTest
  */
 
 import java.lang.invoke.MethodHandle;
@@ -37,7 +37,6 @@ import java.util.Arrays;
 public class CarrierTest {
     public static void main(String[] args) throws Throwable {
         primitivesTest();
-        primitivesTestInArrayCarrier();
         limitsTest();
         cacheTest();
         staticTest();
@@ -87,57 +86,6 @@ public class CarrierTest {
         MethodHandle component = carrier.component(8);
         assertTrue("abcde".equals((String)component.invokeExact(object)),
                 "primitive String test failure");
-    }
-
-    static void primitivesTestInArrayCarrier() throws Throwable {
-        MethodType methodType =
-                MethodType.methodType(Object.class, byte.class, short.class,
-                        char.class, int.class, long.class,
-                        float.class, double.class,
-                        boolean.class, String.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class,
-                        Object.class, Object.class,Object.class,Object.class
-                );
-        CarrierElements carrier = Carriers.CarrierFactory.of(methodType);
-        Class<?> carrierClass = carrier.carrierClass();
-        assertTrue(carrierClass.isArray(), "carrier should be array");
-        MethodHandle constructor = carrier.constructor();
-        Object object = (Object)constructor.invokeExact((byte)0xFF, (short)0xFFFF,
-                'C', 0xFFFFFFFF, 0xFFFFFFFFFFFFFFFFL,
-                1.0f / 3.0f, 1.0 / 3.0,
-                true, "abcde",
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null,
-                (Object)null, (Object)null, (Object)null, (Object)null
-        );
-        MethodHandle[] components = carrier.components().toArray(new MethodHandle[0]);
-        assertTrue((byte)components[0].invokeExact(object) == (byte)0xFF,
-                "primitive in array byte test failure");
-        assertTrue((short)components[1].invokeExact(object) == (short)0xFFFF,
-                "primitive in array short test failure");
-        assertTrue((char)components[2].invokeExact(object) == 'C',
-                "primitive in array char test failure");
-        assertTrue((int)components[3].invokeExact(object) == 0xFFFFFFFF,
-                "primitive in array int test failure");
-        assertTrue((long)components[4].invokeExact(object) == 0xFFFFFFFFFFFFFFFFL,
-                "primitive in array long test failure");
-        assertTrue((float)components[5].invokeExact(object) == 1.0f / 3.0f,
-                "primitive in array float test failure");
-        assertTrue((double)components[6].invokeExact(object) == 1.0 / 3.0,
-                "primitive in array double test failure");
-        assertTrue((boolean)components[7].invokeExact(object),
-                "primitive in array boolean test failure");
-        assertTrue("abcde".equals((String)components[8].invokeExact(object)),
-                "primitive in array String test failure");
     }
 
     static void limitsTest() {
