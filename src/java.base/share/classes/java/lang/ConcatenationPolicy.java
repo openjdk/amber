@@ -26,6 +26,7 @@
 package java.lang;
 
 import java.lang.invoke.*;
+import java.lang.TemplatePolicy.*;
 import java.util.List;
 import java.util.Objects;
 
@@ -37,8 +38,7 @@ import jdk.internal.javac.PreviewFeature;
  * @implNote The result of concatenation is not interned.
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-record ConcatenationPolicy()
-        implements TemplatePolicy.Linkage<String, RuntimeException> {
+record ConcatenationPolicy() implements StringPolicy, PolicyLinkage {
     @Override
     public String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);

@@ -2513,6 +2513,11 @@ public final class System {
                 return sb.prepend(lengthCoder, buf);
             }
 
+            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            public TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments) {
+                return TemplatedString.of(stencil, values, fragments);
+            }
+
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }

@@ -416,6 +416,12 @@ public interface JavaLangAccess {
     long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb);
 
     /**
+     * Create a new TemplatedString.
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments);
+
+    /**
      * Join strings
      */
     String join(String prefix, String suffix, String delimiter, String[] elements, int size);
