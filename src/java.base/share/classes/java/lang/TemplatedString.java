@@ -31,16 +31,16 @@ import java.util.stream.Collectors;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * A {@link TemplatedString} object represents the information captured
- * from a templated string expression. This information is comprised of a
- * stencil and the values from the evaluation of embedded expressions.
- * The stencil is a {@link String} with placeholders where expressions
- * existed in the original templated string expression.
+ * A {@link TemplatedString} object is the run time representation of a
+ * string template expression. This representation is comprised of a stencil
+ * and the values from embedded expression evaluation. The stencil is a string
+ * with placeholders where expressions were located in the original
+ * string template expression.
  * <p>
  * {@link TemplatedString} are primarily used in conjuction with {@link
- * TemplatePolicy} to produce useful results. For example, if a user needs
- * to produce a {@link String} by replacing placeholders with values then
- * they might use supplied {@link java.lang.TemplatePolicy#STR} policy.
+ * TemplatePolicy} to produce meaningful results. For example, if a user needs
+ * to simply produce a string by replacing placeholders in the stencil with
+ * values then they might use the standard {@link TemplatePolicy#STR} policy.
  * {@snippet :
  * int x = 10;
  * int y = 20;
@@ -49,8 +49,7 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * Outputs: <code>10 + 20 = 30</code>
  * @implSpec An instance of {@link TemplatedString} is immutatble. The
- * number of placeholders in the stencil must equal the number of values
- * captured.
+ * placeholder count in the stencil must equal the values list size.
  *
  * @see java.lang.TemplatePolicy
  * @see java.util.FormatterPolicy
@@ -59,8 +58,8 @@ import jdk.internal.javac.PreviewFeature;
 public interface TemplatedString {
 
     /**
-     * Placeholder character marking insertion points in the stencil.
-     * The value used is the unicode OBJECT REPLACEMENT CHARACTER
+     * Placeholder character substituting embedded expressions in the stencil. The
+     * value used is the unicode OBJECT REPLACEMENT CHARACTER
      * <code>(&#92;uFFFC)</code>.
      */
     public static final char PLACEHOLDER = '\uFFFC';
@@ -83,7 +82,7 @@ public interface TemplatedString {
     String stencil();
 
     /**
-     * Returns an immutable list of expression values. In the example:
+     * Returns an immutable list of embedded expression values. In the example:
      * {@snippet :
      * TemplatedString templatedString = "\{a} + \{b} = \{a + b}";
      * List<Object> values = templatedString.values(); // @highlight substring="values()"
@@ -95,8 +94,8 @@ public interface TemplatedString {
     List<Object> values();
 
     /**
-     * Returns an immutable list of string fragments created by splitting the
-     * stencil at placeholders using {@link TemplatedString#split(String)}. In the example:
+     * Returns an immutable list of string fragments created by splitting the stencil
+     * string at placeholders using {@link TemplatedString#split(String)}. In the example:
      * {@snippet :
      * TemplatedString templatedString = "The student \{student} is in \{teacher}'s class room.";
      * List<String> fragments = templatedString.fragments(); // @highlight substring="fragments()"
@@ -233,12 +232,17 @@ public interface TemplatedString {
      * @throws NullPointerException if templatedString is null
      */
     private static String concat(TemplatedString templatedString) {
-        Objects.requireNonNull(templatedString, "templatedString is null");
-
-        Iterator<String> fragmentsIter = templatedString.fragments().iterator();
+        Objects.requireNonNull(templatedString, "templatedString should not be null");
+        String stencil = templatedString.stencil();
         List<Object> values = templatedString.values();
-        StringBuilder sb = new StringBuilder(templatedString.stencil().length() +
-                                             16 * values.size());
+        List<String> fragments = templatedString.fragments();
+
+        if (values.size() == 0) {
+            return stencil;
+        }
+
+        Iterator<String> fragmentsIter = fragments.iterator();
+        StringBuilder sb = new StringBuilder(stencil.length() + 16 * values.size());
 
         for (Object value : values) {
             sb.append(fragmentsIter.next());
@@ -251,47 +255,81 @@ public interface TemplatedString {
     }
 
     /**
+     * Generic TemplatedString.
+     *
+     * @param stencil    stencil string with placeholders
+     * @param values     immutable list of expression values
+     * @param fragments  immutable list of string fragments created by splitting
+     *                   the stencil at placeholders
+     */
+    record SimpleTemplatedString(String stencil,
+                                 List<Object> values,
+                                 List<String> fragments
+    ) implements TemplatedString {}
+
+    /**
+     * Returns a TemplatedString composed from a stencil string, values and
+     * fragments.
+     *
+     * @param stencil  stencil string with placeholders for values
+     * @param values   immutable list of expression values
+     * @param fragments  immutable list of string fragments created by splitting
+     *                   the stencil at placeholders
+     *
+     * @return TemplatedString composed from string
+     */
+    static TemplatedString of(String stencil, List<Object> values, List<String> fragments) {
+        return new SimpleTemplatedString(stencil, values, fragments);
+    }
+
+    /**
      * Returns a TemplatedString composed from a String.
      *
-     * @implSpec The string can not contain expressions or OBJECT REPLACEMENT CHARACTER.
+     * @implSpec The stencil string can not contain expressions or placeholders.
      *
-     * @param string  a {@link String} to be composed into a {@link TemplatedString}.
+     * @param stencil  stencil string with no placeholders
+     *
+     * @return TemplatedString composed from stencil
+     *
+     * @throws IllegalArgumentException if stencil contains PLACEHOLDER
+     * @throws NullPointerException if string is null
+     */
+    public static TemplatedString of(String stencil) {
+        Objects.requireNonNull(stencil, "stencil must not be null");
+
+        if (stencil.indexOf(PLACEHOLDER) != -1) {
+            throw new IllegalArgumentException("stencil contains a PLACEHOLDER");
+        }
+
+        return new SimpleTemplatedString(stencil, List.of(), List.of(stencil));
+    }
+
+    /**
+     * Returns a TemplatedString composed from a stencil string and values.
+     *
+     * @implSpec The string must the number of placeholders matching the length
+     * of the values list.
+     *
+     * @param stencil  stencil string with placeholders for values
+     * @param values   immutable list of expression values
      *
      * @return TemplatedString composed from string
      *
-     * @throws IllegalArgumentException if string contains OBJECT REPLACEMENT CHARACTER.
-     * @throws NullPointerException if string is null
+     * @throws IllegalArgumentException if the number of placeholders in the
+     *         stencil doesn't matching the length of the values list
+     * @throws NullPointerException if stencil or values is null
      */
-    public static TemplatedString of(String string) {
-        Objects.requireNonNull(string, "string is null");
+    public static TemplatedString of(String stencil, List<Object> values) {
+        Objects.requireNonNull(stencil, "stencil must not be null");
+        Objects.requireNonNull(values, "values must not be null");
+        List<String> fragments = split(stencil);
 
-        if (string.indexOf(PLACEHOLDER) != -1) {
-            throw new IllegalArgumentException("string contains an OBJECT REPLACEMENT CHARACTER");
+        if (values.size() + 1 != fragments.size()) {
+            throw new IllegalArgumentException(
+                    "stencil placeholder count doesn't matching the values list size");
         }
 
-        return new TemplatedString() {
-            private List<String> FRAGMENTS = List.of(string);
-
-            @Override
-            public String stencil() {
-                return string;
-            }
-
-            @Override
-            public List<Object> values() {
-                return List.of();
-            }
-
-            @Override
-            public List<String> fragments() {
-                return FRAGMENTS;
-            }
-
-            @Override
-            public String concat() {
-                return string;
-            }
-        };
+        return new SimpleTemplatedString(stencil, values, fragments);
     }
 
     /**
@@ -435,22 +473,7 @@ public interface TemplatedString {
             final List<Object> values = Collections.unmodifiableList(this.values());
             final List<String> fragments = TemplatedString.split(stencil);
 
-            return new TemplatedString() {
-                @Override
-                public String stencil() {
-                    return stencil;
-                }
-
-                @Override
-                public List<Object> values() {
-                    return values;
-                }
-
-                @Override
-                public List<String> fragments() {
-                    return fragments;
-                }
-            };
+            return new SimpleTemplatedString(stencil, values, fragments);
         }
     }
 }

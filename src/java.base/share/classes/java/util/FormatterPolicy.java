@@ -27,7 +27,7 @@ package java.util;
 
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.TemplatePolicy.Linkage;
+import java.lang.TemplatePolicy.*;
 
 import jdk.internal.javac.PreviewFeature;
 
@@ -53,7 +53,7 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public final record FormatterPolicy(Locale locale)
-        implements Linkage<String, RuntimeException> {
+        implements StringPolicy, PolicyLinkage {
     /**
      * Predefined FormatterPolicy instance that uses Locale.US.
      */

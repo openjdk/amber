@@ -197,29 +197,20 @@ public interface TemplatePolicy<R, E extends Throwable> {
      *
      * @implNote The result of concatenation is not interned.
      */
-    public static final TemplatePolicy<String, RuntimeException>
-            STR = new ConcatenationPolicy();
+    public static final StringPolicy STR = new ConcatenationPolicy();
 
     /**
-     * Policies using this interface have the flexibility to specialize the
-     * composition of the templated string by returning a customized from
-     * {@link CallSite CallSites} from {@link TemplatePolicy.Linkage#applier
-     * applier}. These specializations are typically implemented to improve
-     * performance; specializing value types or avoiding boxing and vararg
-     * arrays.
-     *
-     * @implNote {@link TemplatePolicy} implemented using this interface outside
-     * java.base will default to using the {@link TemplatePolicy#apply} method.
-     *
-     * @param <R>  Policy's apply result type.
-     * @param <E>  Exception thrown type.
+     * Policies using this addiational interface have the flexibility to
+     * specialize the composition of the templated string by returning a
+     * customized from {@link CallSite CallSites} from
+     * {@link TemplatePolicy.PolicyLinkage#applier applier}. These
+     * specializations are typically implemented to improve performance;
+     * specializing value types or avoiding boxing and vararg arrays.
      */
-    sealed interface Linkage<R, E extends Throwable> extends TemplatePolicy<R, E>
-        permits ConcatenationPolicy, FormatterPolicy
-    {
+    sealed interface PolicyLinkage permits ConcatenationPolicy, FormatterPolicy {
         /**
          * Return a boolean guard to assure that only specific policies should
-         * use the applier. If null is returned, not guard is used.
+         * use the applier. If null is returned, no guard is used.
          *
          * @param lookup      method lookup
          * @param type        methiod type
