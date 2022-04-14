@@ -1140,8 +1140,6 @@ public class Annotate {
             //with repeatable annotations).
         }
 
-        //TODO: deconstruction (and array) pattern?
-
         @Override
         public void visitClassDef(JCClassDecl tree) {
             // We can only hit a classdef if it is declared within

@@ -641,20 +641,11 @@ public class Check {
         return checkCastable(pos, found, req, basicHandler);
     }
     Type checkCastable(DiagnosticPosition pos, Type found, Type req, CheckContext checkContext) {
-        if (checkCastable(pos, found, req, checkContext, castWarner(pos, found, req))) {
+        if (types.isCastable(found, req, castWarner(pos, found, req))) {
             return req;
         } else {
-            return types.createErrorType(found);
-        }
-    }
-
-    boolean checkCastable(DiagnosticPosition pos, Type found, Type req,
-                          CheckContext checkContext, Warner warner) {
-        if (types.isCastable(found, req, warner)) {
-            return true;
-        } else {
             checkContext.report(pos, diags.fragment(Fragments.InconvertibleTypes(found, req)));
-            return false;
+            return types.createErrorType(found);
         }
     }
 
