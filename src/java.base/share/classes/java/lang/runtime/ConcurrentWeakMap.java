@@ -41,7 +41,7 @@ import jdk.internal.javac.PreviewFeature;
  * @param <V> the type of mapped values
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-class ConcurrentWeakMap<K, V> implements ConcurrentMap<K, V> {
+final class ConcurrentWeakMap<K, V> implements ConcurrentMap<K, V> {
     interface Key<T> {
         T get();
     }

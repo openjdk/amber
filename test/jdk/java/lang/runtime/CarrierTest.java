@@ -21,11 +21,13 @@
  * questions.
  */
 
+package java.lang.runtime;
+
 /*
  * @test
  * @summary Test features provided by the Carrier class.
- * @compile --enable-preview -source ${jdk.version} CarrierTest.java
- * @run main/othervm --enable-preview CarrierTest
+ * @compile --patch-module java.base=${test.src} --enable-preview -source ${jdk.version} CarrierTest.java
+ * @run main/othervm --patch-module java.base=${test.class.path} --enable-preview java.lang.runtime.CarrierTest
  */
 
 import java.lang.invoke.MethodHandle;
