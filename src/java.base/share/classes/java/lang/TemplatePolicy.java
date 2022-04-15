@@ -179,7 +179,36 @@ public interface TemplatePolicy<R, E extends Throwable> {
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
-    interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {}
+    interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {
+       /**
+         * Chain template policies to produce a new policy that applies the supplied
+         * policies from right to left. The {@code head} policy is a {@link SimplePolicy}
+         * The {@code tail} policies must return type {@link TemplatedString}.
+         *
+         * @param head  last {@link SimplePolicy} to be applied, return type {@code R}
+         * @param tail  first policies to apply, return type {@code TemplatedString}
+         *
+         * @return a new {@link SimplePolicy} that applies the supplied policies
+         *         from right to left
+         *
+         * @param <R> return type of the head policy and resulting policy
+         */
+        @SuppressWarnings("varargs")
+        @SafeVarargs
+        public static <R> SimplePolicy<R>
+            chain(SimplePolicy<R> head,
+                  TemplatePolicy<TemplatedString, RuntimeException>... tail) {
+
+            if (tail.length == 0) {
+                return head;
+            }
+
+            TemplatePolicy<TemplatedString, RuntimeException> last =
+                    TemplatePolicy.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
+
+            return ts -> head.apply(last.apply(ts));
+        }
+    }
 
     /**
      * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
@@ -190,7 +219,34 @@ public interface TemplatePolicy<R, E extends Throwable> {
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
-    interface StringPolicy extends SimplePolicy<String> {}
+    interface StringPolicy extends SimplePolicy<String> {
+        /**
+         * Chain template policies to produce a new policy that applies the supplied
+         * policies from right to left. The {@code head} policy is a {@link StringPolicy}
+         * The {@code tail} policies must return type {@link TemplatedString}.
+         *
+         * @param head  last {@link StringPolicy} to be applied, return type {@link String}
+         * @param tail  first policies to apply, return type {@code TemplatedString}
+         *
+         * @return a new {@link StringPolicy} that applies the supplied policies
+         *         from right to left
+         */
+        @SuppressWarnings("varargs")
+        @SafeVarargs
+        public static StringPolicy
+            chain(StringPolicy head,
+                 TemplatePolicy<TemplatedString, RuntimeException>... tail) {
+
+            if (tail.length == 0) {
+                return head;
+            }
+
+            TemplatePolicy<TemplatedString, RuntimeException> last =
+                    TemplatePolicy.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
+
+            return ts -> head.apply(last.apply(ts));
+        }
+    }
 
     /**
      * Chain template policies to produce a new policy that applies the supplied
@@ -215,83 +271,18 @@ public interface TemplatePolicy<R, E extends Throwable> {
             return head;
         }
 
-        TemplatePolicy<TemplatedString, RuntimeException> last = chainPolicies(tail);
-
-        return ts -> head.apply(last.apply(ts));
-    }
-
-    /**
-     * Chain template policies to produce a new policy that applies the supplied
-     * policies from right to left. The {@code head} policy is a {@link SimplePolicy}
-     * The {@code tail} policies must return type {@link TemplatedString}.
-     *
-     * @param head  last {@link SimplePolicy} to be applied, return type {@code R}
-     * @param tail  first policies to apply, return type {@code TemplatedString}
-     *
-     * @return a new {@link SimplePolicy} that applies the supplied policies
-     *         from right to left
-     *
-     * @param <R> return type of the head policy and resulting policy
-     */
-    @SafeVarargs
-    public static <R> SimplePolicy<R>
-        chain(SimplePolicy<R> head,
-              TemplatePolicy<TemplatedString, RuntimeException>... tail) {
-
-        if (tail.length == 0) {
-            return head;
-        }
-
-        TemplatePolicy<TemplatedString, RuntimeException> last = chainPolicies(tail);
-
-        return ts -> head.apply(last.apply(ts));
-    }
-
-    /**
-     * Chain template policies to produce a new policy that applies the supplied
-     * policies from right to left. The {@code head} policy is a {@link StringPolicy}
-     * The {@code tail} policies must return type {@link TemplatedString}.
-     *
-     * @param head  last {@link StringPolicy} to be applied, return type {@link String}
-     * @param tail  first policies to apply, return type {@code TemplatedString}
-     *
-     * @return a new {@link StringPolicy} that applies the supplied policies
-     *         from right to left
-     */
-    @SafeVarargs
-    public static StringPolicy
-        chain(StringPolicy head,
-             TemplatePolicy<TemplatedString, RuntimeException>... tail) {
-
-        if (tail.length == 0) {
-            return head;
-        }
-
-        TemplatePolicy<TemplatedString, RuntimeException> last = chainPolicies(tail);
-
-        return ts -> head.apply(last.apply(ts));
-    }
-
-    /**
-     * Chain {@link TemplatePolicy<TemplatedString, RuntimeException>} policies.
-     *
-     * @param policies  policies to apply, return type {@code TemplatedString}
-     *
-     * @return a new {@link TemplatePolicy<TemplatedString, RuntimeException>}
-     *         that applies the supplied policies from right to left
-     */
-    @SafeVarargs
-    public static TemplatePolicy<TemplatedString, RuntimeException>
-        chainPolicies(TemplatePolicy<TemplatedString, RuntimeException>... policies) {
-        int index = policies.length;
-        TemplatePolicy<TemplatedString, RuntimeException> current = policies[--index];
+        int index = tail.length;
+        TemplatePolicy<TemplatedString, RuntimeException> current = tail[--index];
 
         while (index != 0) {
-            TemplatePolicy<TemplatedString, RuntimeException> second = policies[--index];
+            TemplatePolicy<TemplatedString, RuntimeException> second = tail[--index];
             TemplatePolicy<TemplatedString, RuntimeException> first = current;
             current = ts -> second.apply(first.apply(ts));
         }
-        return current;
+
+        TemplatePolicy<TemplatedString, RuntimeException> last = current;
+
+        return ts -> head.apply(last.apply(ts));
     }
 
     /**
