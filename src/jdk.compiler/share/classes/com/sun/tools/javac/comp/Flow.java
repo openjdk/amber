@@ -690,7 +690,7 @@ public class Flow {
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases);
             if (exhaustiveSwitch) {
-                Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unconditionalCaseLabel).collect(Collectors.toCollection(HashSet::new)));
+                Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unrefinedCaseLabel).collect(Collectors.toCollection(HashSet::new)));
                 tree.isExhaustive |= isExhaustive(tree.selector.pos(), tree.selector.type, constants);
                 if (!tree.isExhaustive) {
                     log.error(tree, Errors.NotExhaustiveStatement);
@@ -725,7 +725,7 @@ public class Flow {
                     }
                 }
             }
-            Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unconditionalCaseLabel).collect(Collectors.toCollection(HashSet::new)));
+            Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unrefinedCaseLabel).collect(Collectors.toCollection(HashSet::new)));
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
                                 isExhaustive(tree.selector.pos(), tree.selector.type, constants);

@@ -239,8 +239,8 @@ public enum Source {
         CASE_NULL(JDK17, Fragments.FeatureCaseNull, DiagKind.NORMAL),
         PATTERN_SWITCH(JDK17, Fragments.FeaturePatternSwitch, DiagKind.PLURAL),
         REDUNDANT_STRICTFP(JDK17),
+        UNCONDITIONAL_PATTERN_IN_INSTANCEOF(JDK17, Fragments.FeatureTotalPatternsInInstanceof, DiagKind.PLURAL),
         DECONSTRUCTION_PATTERNS(JDK18, Fragments.FeatureDeconstructionPatterns, DiagKind.PLURAL),
-        TOTAL_PATTERN_IN_INSTACEOF(JDK17, Fragments.FeatureTotalPatternsInInstanceof, DiagKind.PLURAL),
         ;
 
         enum DiagKind {
