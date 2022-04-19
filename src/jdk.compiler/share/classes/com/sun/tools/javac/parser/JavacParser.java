@@ -794,7 +794,14 @@ public class JavacParser implements Parser {
                     nested.append(nestedPattern);
                 } while (token.kind == COMMA);
                 accept(RPAREN);
-                pattern = toP(F.at(pos).DeconstructionPattern(e, nested.toList()));
+                JCVariableDecl var;
+                if (token.kind == IDENTIFIER) {
+                    var = to(F.at(pos).VarDef(F.Modifiers(0), token.name(), e, null));
+                    nextToken(); //TODO: tests!
+                } else {
+                    var = null;
+                }
+                pattern = toP(F.at(pos).DeconstructionPattern(e, nested.toList(), var));
             } else {
                 JCVariableDecl var = toP(F.at(token.pos).VarDef(mods, ident(), e, null));
                 pattern = toP(F.at(pos).BindingPattern(var));
@@ -1003,7 +1010,14 @@ public class JavacParser implements Parser {
                             nested.append(nestedPattern);
                         } while (token.kind == COMMA);
                         accept(RPAREN);
-                        pattern = toP(F.at(type).DeconstructionPattern(type, nested.toList()));
+                        JCVariableDecl var;
+                        if (token.kind == IDENTIFIER) {
+                            var = to(F.at(pos).VarDef(F.Modifiers(0), token.name(), type, null));
+                            nextToken();
+                        } else {
+                            var = null;
+                        }
+                        pattern = toP(F.at(type).DeconstructionPattern(type, nested.toList(), var));
                     } else {
                         checkNoMods(typePos, mods.flags & ~Flags.DEPRECATED);
                         if (mods.annotations.nonEmpty()) {

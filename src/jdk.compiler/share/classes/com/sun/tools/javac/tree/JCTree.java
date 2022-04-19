@@ -2374,12 +2374,15 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             implements DeconstructionPatternTree {
         public JCExpression deconstructor;
         public List<JCPattern> nested;
+        public JCVariableDecl var;
         public ClassSymbol record;
         public List<Type> fullComponentTypes;
 
-        protected JCDeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
+        protected JCDeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested,
+                                          JCVariableDecl var) {
             this.deconstructor = deconstructor;
             this.nested = nested;
+            this.var = var;
         }
 
         @DefinedBy(Api.COMPILER_TREE)
@@ -2417,6 +2420,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return DECONSTRUCTIONPATTERN;
         }
+
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public VariableTree getVariable() {
+            return var;
+        }
+
     }
 
     /**

@@ -2918,6 +2918,14 @@ public class Flow {
             scan(tree.guard);
         }
 
+        @Override
+        public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+            super.visitDeconstructionPattern(tree);
+            if (tree.var != null) {
+                initParam(tree.var);
+            }
+        }
+
         void referenced(Symbol sym) {
             unrefdResources.remove(sym);
         }
@@ -3096,6 +3104,19 @@ public class Flow {
         @Override
         public void visitParenthesizedPattern(JCParenthesizedPattern tree) {
             scan(tree.pattern);
+            JCTree prevTree = currentTree;
+            try {
+                currentTree = tree;
+                scan(tree.guard);
+            } finally {
+                currentTree = prevTree;
+            }
+        }
+
+        @Override
+        public void visitDeconstructionPattern(JCDeconstructionPattern tree) {
+            scan(tree.deconstructor);
+            scan(tree.nested);
             JCTree prevTree = currentTree;
             try {
                 currentTree = tree;

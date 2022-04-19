@@ -4223,6 +4223,21 @@ public class Attr extends JCTree.Visitor {
                       Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
                                                              nestedTypes));
         }
+        if (tree.var != null) {
+            BindingSymbol v = new BindingSymbol(tree.var.mods.flags, tree.var.name, tree.type, env.info.scope.owner);
+            v.pos = tree.pos;
+            tree.var.sym = v;
+            if (chk.checkUnique(tree.var.pos(), v, env.info.scope)) {
+                chk.checkTransparentVar(tree.var.pos(), v, env.info.scope);
+            }
+            if (tree.var.vartype != null) {
+                annotate.annotateLater(tree.var.mods.annotations, env, v, tree.pos());
+                annotate.queueScanTreeAndTypeAnnotate(tree.var.vartype, env, v, tree.var.pos());
+                annotate.flush();
+            }
+            outBindings.add(v);
+        }
+        chk.validate(tree.deconstructor, env, true);
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
     }

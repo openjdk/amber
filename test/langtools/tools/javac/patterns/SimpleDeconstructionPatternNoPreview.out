@@ -1,2 +1,2 @@
-SimpleDeconstructionPattern.java:149:27: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.deconstruction.patterns)
+SimpleDeconstructionPattern.java:124:27: compiler.err.preview.feature.disabled.plural: (compiler.misc.feature.deconstruction.patterns)
 1 error

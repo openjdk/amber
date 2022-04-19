@@ -521,7 +521,8 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCDeconstructionPattern t = (JCDeconstructionPattern) node;
         JCExpression deconstructor = copy(t.deconstructor, p);
         List<JCPattern> nested = copy(t.nested, p);
-        return M.at(t.pos).DeconstructionPattern(deconstructor, nested);
+        JCVariableDecl var = copy(t.var, p);
+        return M.at(t.pos).DeconstructionPattern(deconstructor, nested, var);
     }
 
     @DefinedBy(Api.COMPILER_TREE)

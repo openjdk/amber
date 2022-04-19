@@ -318,6 +318,21 @@ public class TransPatterns extends TreeTranslator {
             nestedFullComponentTypes = nestedFullComponentTypes.tail;
             nestedPatterns = nestedPatterns.tail;
         }
+
+        if (tree.var != null) {
+            BindingSymbol binding = (BindingSymbol) tree.var.sym;
+            Type castTargetType = principalType(tree);
+            VarSymbol bindingVar = bindingContext.bindingDeclared(binding);
+
+            JCAssign fakeInit = (JCAssign)make.at(TreeInfo.getStartPos(tree)).Assign(
+                    make.Ident(bindingVar), convert(make.Ident(currentValue), castTargetType)).setType(bindingVar.erasure(types));
+            LetExpr nestedLE = make.LetExpr(List.of(make.Exec(fakeInit)),
+                                            make.Literal(true));
+            nestedLE.needsCond = true;
+            nestedLE.setType(syms.booleanType);
+            test = test != null ? makeBinary(Tag.AND, test, nestedLE) : nestedLE;
+        }
+
         Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
         Assert.check(components.isEmpty() == nestedFullComponentTypes.isEmpty());
         result = test != null ? test : makeLit(syms.booleanType, 1);

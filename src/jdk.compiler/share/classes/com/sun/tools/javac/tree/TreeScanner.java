@@ -322,6 +322,10 @@ public class TreeScanner extends Visitor {
     public void visitDeconstructionPattern(JCDeconstructionPattern that) {
         scan(that.deconstructor);
         scan(that.nested);
+        if (that.var != null) {
+            scan(that.var);
+        }
+        scan(that.guard);
     }
 
     public void visitIndexed(JCArrayAccess tree) {

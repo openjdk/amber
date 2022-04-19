@@ -500,8 +500,9 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCDeconstructionPattern DeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested) {
-        JCDeconstructionPattern tree = new JCDeconstructionPattern(deconstructor, nested);
+    public JCDeconstructionPattern DeconstructionPattern(JCExpression deconstructor, List<JCPattern> nested,
+                                                         JCVariableDecl var) {
+        JCDeconstructionPattern tree = new JCDeconstructionPattern(deconstructor, nested, var);
         tree.pos = pos;
         return tree;
     }
