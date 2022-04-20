@@ -293,7 +293,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
     public static final StringPolicy STR = new ConcatenationPolicy();
 
     /**
-     * Policies using this addiational interface have the flexibility to
+     * Policies using this additional interface have the flexibility to
      * specialize the composition of the templated string by returning a
      * customized from {@link CallSite CallSites} from
      * {@link TemplatePolicy.PolicyLinkage#applier applier}. These
