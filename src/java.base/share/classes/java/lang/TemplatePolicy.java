@@ -25,6 +25,7 @@
 
 package java.lang;
 
+import java.lang.TemplatePolicy.StringPolicy;
 import java.lang.invoke.*;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -180,7 +181,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     @FunctionalInterface
     interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {
-       /**
+        /**
          * Chain template policies to produce a new policy that applies the supplied
          * policies from right to left. The {@code head} policy is a {@link SimplePolicy}
          * The {@code tail} policies must return type {@link TemplatedString}.
@@ -192,12 +193,16 @@ public interface TemplatePolicy<R, E extends Throwable> {
          *         from right to left
          *
          * @param <R> return type of the head policy and resulting policy
+         *
+         * @throws NullPointerException if any of the arguments is null.
          */
         @SuppressWarnings("varargs")
         @SafeVarargs
         public static <R> SimplePolicy<R>
             chain(SimplePolicy<R> head,
                   TemplatePolicy<TemplatedString, RuntimeException>... tail) {
+            Objects.requireNonNull(head, "head must not be null");
+            Objects.requireNonNull(tail, "tail must not be null");
 
             if (tail.length == 0) {
                 return head;
@@ -230,12 +235,16 @@ public interface TemplatePolicy<R, E extends Throwable> {
          *
          * @return a new {@link StringPolicy} that applies the supplied policies
          *         from right to left
+         *
+         * @throws NullPointerException if any of the arguments is null.
          */
         @SuppressWarnings("varargs")
         @SafeVarargs
         public static StringPolicy
             chain(StringPolicy head,
                  TemplatePolicy<TemplatedString, RuntimeException>... tail) {
+            Objects.requireNonNull(head, "head must not be null");
+            Objects.requireNonNull(tail, "tail must not be null");
 
             if (tail.length == 0) {
                 return head;
@@ -261,11 +270,15 @@ public interface TemplatePolicy<R, E extends Throwable> {
      *
      * @param <R> return type of the head policy and resulting policy
      * @param <E> exception thrown type by head policy and resulting policy
+     *
+     * @throws NullPointerException if any of the arguments is null.
      */
     @SafeVarargs
     public static <R, E extends Throwable> TemplatePolicy<R, E>
             chain(TemplatePolicy<R, E> head,
               TemplatePolicy<TemplatedString, RuntimeException>... tail) {
+        Objects.requireNonNull(head, "head must not be null");
+        Objects.requireNonNull(tail, "tail must not be null");
 
         if (tail.length == 0) {
             return head;
@@ -290,7 +303,14 @@ public interface TemplatePolicy<R, E extends Throwable> {
      *
      * @implNote The result of concatenation is not interned.
      */
-    public static final StringPolicy STR = new ConcatenationPolicy();
+    public static final StringPolicy STR = new StringPolicy() {
+        @Override
+        public String apply(TemplatedString templatedString) {
+            Objects.requireNonNull(templatedString);
+
+            return templatedString.concat();
+        }
+    };
 
     /**
      * Policies using this additional interface have the flexibility to
@@ -300,46 +320,19 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * specializations are typically implemented to improve performance;
      * specializing value types or avoiding boxing and vararg arrays.
      */
-    sealed interface PolicyLinkage permits ConcatenationPolicy, FormatterPolicy {
-        /**
-         * Return a boolean guard to assure that only specific policies should
-         * use the applier. If null is returned, no guard is used.
-         *
-         * @param lookup      method lookup
-         * @param type        methiod type
-         * @param stencil     stencil string with placeholders
-         *
-         * @return guarding {@link MethodHandle}, or null if no guard is
-         * required
-         *
-         * @throws NullPointerException if any of the arguments are null
-         *
-         * @implNote the default guard returns null indicating that no
-         * guard is provided.
-         */
-        default MethodHandle guard(MethodHandles.Lookup lookup,
-                                   MethodType type, String stencil) {
-            Objects.requireNonNull(lookup);
-            Objects.requireNonNull(type);
-            Objects.requireNonNull(stencil);
-
-            return null;
-        }
-
+    sealed interface PolicyLinkage permits FormatterPolicy {
         /**
          * Construct a {@link MethodHandle} that constructs a result based on the
          * bootstrap method information.
          *
-         * @param lookup      method lookup
-         * @param type        methiod type
          * @param stencil     stencil string with placeholders
+         * @param type        methiod type
          *
          * @return {@link MethodHandle} for the policy applied to template
          *
          * @throws NullPointerException if any of the arguments are null
          */
-        MethodHandle applier(MethodHandles.Lookup lookup,
-                             MethodType type, String stencil);
+        MethodHandle applier(String stencil, MethodType type);
     }
 
 }

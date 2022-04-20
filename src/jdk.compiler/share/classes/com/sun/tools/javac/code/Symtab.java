@@ -224,9 +224,6 @@ public class Symtab {
     public final Type switchBootstrapsType;
     public final Type valueBasedType;
     public final Type valueBasedInternalType;
-    public final Type templatedStringType;
-    public final Type templateBootstrapType;
-    public final Type templatePolicyType;
 
     // For serialization lint checking
     public final Type objectStreamFieldType;
@@ -235,6 +232,12 @@ public class Symtab {
     public final Type ioExceptionType;
     public final Type objectStreamExceptionType;
     public final Type externalizableType;
+
+    // For string templates
+    public final Type templatedStringType;
+    public final Type templateBootstrapType;
+    public final Type templatePolicyType;
+    public final Type policyLinkage;
 
     /** The symbol representing the length field of an array.
      */
@@ -603,9 +606,6 @@ public class Symtab {
         switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");
-        templatedStringType = enterClass("java.lang.TemplatedString");
-        templateBootstrapType = enterClass("java.lang.runtime.TemplateBootstrap");
-        templatePolicyType = enterClass("java.lang.TemplatePolicy");
         // For serialization lint checking
         objectStreamFieldType = enterClass("java.io.ObjectStreamField");
         objectInputStreamType = enterClass("java.io.ObjectInputStream");
@@ -622,6 +622,13 @@ public class Symtab {
         synthesizeBoxTypeIfMissing(doubleType);
         synthesizeBoxTypeIfMissing(floatType);
         synthesizeBoxTypeIfMissing(voidType);
+
+        // For string templates
+        templatedStringType = enterClass("java.lang.TemplatedString");
+        templateBootstrapType = enterClass("java.lang.runtime.TemplateBootstrap");
+        templatePolicyType = enterClass("java.lang.TemplatePolicy");
+        policyLinkage = enterClass("java.lang.TemplatePolicy$PolicyLinkage");
+
 
         // Enter a synthetic class that is used to mark internal
         // proprietary classes in ct.sym.  This class does not have a
