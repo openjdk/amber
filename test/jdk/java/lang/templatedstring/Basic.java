@@ -37,6 +37,7 @@ public class Basic {
         test1();
         test2();
         test3();
+        test4();
     }
 
     /*
@@ -326,6 +327,36 @@ public class Basic {
                9999999999 999999
                """);
 
+    }
+
+    /*
+     * Policy tests.
+     */
+    public static final SimplePolicy<TemplatedString> STRINGIFY = ts -> {
+        String stencil = ts.stencil().toUpperCase();
+        List<Object> values = ts.values()
+                .stream()
+                .map(v -> (Object)String.valueOf(v))
+                .toList();
+
+        return TemplatedString.of(stencil, values);
+    };
+
+    public static final SimplePolicy<TemplatedString> UPPER = ts -> {
+        String stencil = ts.stencil().toUpperCase();
+        List<Object> values = ts.values()
+                .stream()
+                .map(v -> v instanceof String s ? s.toUpperCase() : v)
+                .toList();
+
+        return TemplatedString.of(stencil, values);
+    };
+
+    static void test4() {
+        String name = "Joan";
+        int age = 25;
+        StringPolicy policy = StringPolicy.chain(STR, UPPER, STRINGIFY);
+        ASSERT(policy."\{name} is \{age} years old", "JOAN IS 25 YEARS OLD");
     }
 
     static void ASSERT(String a, String b) {

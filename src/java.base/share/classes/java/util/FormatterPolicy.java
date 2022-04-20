@@ -69,11 +69,9 @@ public final record FormatterPolicy(Locale locale)
     }
 
     @Override
-    public MethodHandle applier(MethodHandles.Lookup lookup,
-                                MethodType type, String stencil) {
-        Objects.requireNonNull(lookup);
-        Objects.requireNonNull(type);
+    public MethodHandle applier(String stencil, MethodType type) {
         Objects.requireNonNull(stencil);
+        Objects.requireNonNull(type);
         String format = Formatter.templatedStringFormat(stencil);
         MethodHandle mh = Formatter.formatFactory(format, locale,
                 type.dropParameterTypes(0,1).parameterArray());
