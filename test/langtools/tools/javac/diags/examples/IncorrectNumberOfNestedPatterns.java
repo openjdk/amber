@@ -23,7 +23,6 @@
 
 // key: compiler.err.incorrect.number.of.nested.patterns
 // key: compiler.misc.feature.deconstruction.patterns
-// key: compiler.misc.feature.records
 // key: compiler.warn.preview.feature.use.plural
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 

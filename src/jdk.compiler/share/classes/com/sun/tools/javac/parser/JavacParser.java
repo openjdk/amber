@@ -3135,13 +3135,21 @@ public class JavacParser implements Parser {
     @SuppressWarnings("fallthrough")
     PatternResult analyzePattern(int lookahead) {
         int depth = 0;
+        int parentDepth = 0;
+        PatternResult pendingResult = PatternResult.EXPRESSION;
         while (true) {
             TokenKind token = S.token(lookahead).kind;
             switch (token) {
                 case BYTE: case SHORT: case INT: case LONG: case FLOAT:
                 case DOUBLE: case BOOLEAN: case CHAR: case VOID:
                 case ASSERT, ENUM, IDENTIFIER, UNDERSCORE:
-                    if (depth == 0 && peekToken(lookahead, LAX_IDENTIFIER)) return PatternResult.PATTERN;
+                    if (depth == 0 && peekToken(lookahead, LAX_IDENTIFIER)) {
+                        if (parentDepth == 0) {
+                            return PatternResult.PATTERN;
+                        } else {
+                            pendingResult = PatternResult.PATTERN;
+                        }
+                    }
                     break;
                 case DOT, QUES, EXTENDS, SUPER, COMMA: break;
                 case LT: depth++; break;
@@ -3167,8 +3175,11 @@ public class JavacParser implements Parser {
                     } else {
                         return PatternResult.EXPRESSION;
                     }
-                case LPAREN: return PatternResult.PATTERN;
-                default: return PatternResult.EXPRESSION;
+                case LPAREN: parentDepth++; break;
+                case RPAREN: parentDepth--; break;
+                case ARROW: return parentDepth > 0 ? PatternResult.EXPRESSION
+                                                   : pendingResult;
+                default: return pendingResult;
             }
             lookahead++;
         }

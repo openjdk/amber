@@ -28,10 +28,12 @@
  * @modules java.compiler
  *          jdk.jdeps/com.sun.tools.javap
  * @build toolbox.JavapTask
- * @run main Patterns
+ * @compile --enable-preview -source ${jdk.version} Patterns.java
+ * @run main/othervm --enable-preview Patterns
  */
 
 import java.lang.annotation.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -163,19 +165,17 @@ public class Patterns {
     }
 
     public void runDeconstruction() throws Exception {
-        String out = new JavapTask(tb)
+        List<String> outLines = new JavapTask(tb)
                 .options("-private",
                          "-verbose")
                 .classpath(System.getProperty("test.classes"))
                 .classes("Patterns$DeconstructionPattern")
                 .run()
-                .getOutputLines(Task.OutputKind.DIRECT)
-                .stream()
-                .collect(Collectors.joining("\n"));
+                .getOutputLines(Task.OutputKind.DIRECT);
 
+        String out = clearCodeAttribute(outLines);
         String constantPool = out.substring(0, out.indexOf('{'));
 
-        out = out.replaceAll("(?ms) *Code:.*?\n( *RuntimeInvisibleTypeAnnotations:)", "$1");
         out = out.substring(out.indexOf('{'));
         out = out.substring(0, out.lastIndexOf('}') + 1);
 
@@ -245,6 +245,10 @@ public class Patterns {
                                       value=[@Patterns$DeconstructionPattern$A,@Patterns$DeconstructionPattern$A]
                                     )
 
+                            static java.lang.String $proxy$s(Patterns$DeconstructionPattern$R);
+                              descriptor: (LPatterns$DeconstructionPattern$R;)Ljava/lang/String;
+                              flags: (0x1008) ACC_STATIC, ACC_SYNTHETIC
+
                             static {};
                               descriptor: ()V
                               flags: (0x0008) ACC_STATIC
@@ -268,6 +272,24 @@ public class Patterns {
         }
     }
 
+    private String clearCodeAttribute(List<String> out) {
+        StringBuilder result = new StringBuilder();
+        boolean codeSeen = false;
+
+        for (String line : out) {
+            if (line.contains("    Code:")) {
+                codeSeen = true;
+            } else if (codeSeen && line.startsWith("      ") &&
+                       !line.contains("RuntimeInvisibleTypeAnnotations")) {
+                //ignore
+            } else {
+                result.append(line).append("\n");
+                codeSeen = false;
+            }
+        }
+
+        return result.toString();
+    }
     private String snipCPNumber(String constantPool, String expectedConstant) {
         Matcher m = Pattern.compile("#([0-9]+).*" + Pattern.quote(expectedConstant))
                            .matcher(constantPool);
