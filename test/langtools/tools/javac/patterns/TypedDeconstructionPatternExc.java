@@ -45,9 +45,20 @@ public class TypedDeconstructionPatternExc {
         try {
             tested.apply((Pair<String, Integer>) (Object) new Pair<Integer, Integer>(1, 1));
             fail("Expected an exception, but none happened!");
-        } catch (ClassCastException ex) { //TODO: exception type
+        } catch (ClassCastException ex) {
             System.err.println("expected exception:");
             ex.printStackTrace();
+        }
+        try {
+            tested.apply(new Pair<String, Integer>("fail", 1));
+            fail("Expected an exception, but none happened!");
+        } catch (MatchException ex) {
+            if (ex.getCause() instanceof TestPatternFailed ex2) {
+                System.err.println("expected exception:");
+                ex2.printStackTrace();
+            } else {
+                fail("Not the correct exception.");
+            }
         }
     }
 
@@ -69,7 +80,17 @@ public class TypedDeconstructionPatternExc {
         }
     }
 
-    record Pair<L, R>(L l, R r) {}
+    record Pair<L, R>(L l, R r) {
+        public L l() {
+            if ("fail".equals(l)) {
+                throw new TestPatternFailed();
+            }
+            return l;
+        }
+        public R r() {
+            return r;
+        }
+    }
 
     void assertEquals(int expected, int actual) {
         if (expected != actual) {
@@ -81,4 +102,7 @@ public class TypedDeconstructionPatternExc {
     void fail(String message) {
         throw new AssertionError(message);
     }
+
+    public static class TestPatternFailed extends AssertionError {}
+
 }

@@ -64,6 +64,7 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.LinkedHashMap;
@@ -162,8 +163,11 @@ public class TransPatterns extends TreeTranslator {
     boolean debugTransPatterns;
 
     private ClassSymbol currentClass = null;
+    private JCClassDecl currentClassTree = null;
+    private ListBuffer<JCTree> pendingMethods = null;
     private MethodSymbol currentMethodSym = null;
     private VarSymbol currentValue = null;
+    private Map<RecordComponent, MethodSymbol> component2Proxy = null;
 
     protected TransPatterns(Context context) {
         context.put(transPatternsKey, this);
@@ -276,14 +280,11 @@ public class TransPatterns extends TreeTranslator {
                 names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + component.name),
                                  component.erasure(types),
                                  currentMethodSym);
-            Symbol accessor = tree.record
-                                   .members()
-                                   .findFirst(component.name, s -> s.kind == Kind.MTH &&
-                                                                   ((MethodSymbol) s).params.isEmpty());
+            Symbol accessor = getAccessor(component);
             JCVariableDecl nestedTempVar =
                     make.VarDef(nestedTemp,
-                                make.App(make.Select(convert(make.Ident(currentValue), tree.type),
-                                                     accessor)));
+                                make.App(make.QualIdent(accessor),
+                                         List.of(convert(make.Ident(currentValue), tree.type))));
             JCExpression extracted;
             VarSymbol prevCurrentValue = currentValue;
             try {
@@ -336,6 +337,31 @@ public class TransPatterns extends TreeTranslator {
         Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
         Assert.check(components.isEmpty() == nestedFullComponentTypes.isEmpty());
         result = test != null ? test : makeLit(syms.booleanType, 1);
+    }
+
+    private MethodSymbol getAccessor(RecordComponent component) {
+        return component2Proxy.computeIfAbsent(component, c -> {
+            MethodSymbol realAccessor = (MethodSymbol) component.owner
+                                                 .members()
+                                                 .findFirst(component.name, s -> s.kind == Kind.MTH &&
+                                                                                 ((MethodSymbol) s).params.isEmpty());
+            MethodType type = new MethodType(List.of(component.owner.erasure(types)), types.erasure(component.type), List.nil(), syms.methodClass);
+            MethodSymbol proxy = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$proxy$" + component.name), type, currentClass);
+            JCStatement accessorStatement = make.Return(make.App(make.Select(make.Ident(proxy.params().head), realAccessor)));
+            VarSymbol ctch = new VarSymbol(Flags.SYNTHETIC,
+                    names.fromString("catch" + currentClassTree.pos + target.syntheticNameChar()),
+                    syms.throwableType,
+                    currentMethodSym);
+            JCStatement tryCatchAll = make.Try(make.Block(0, List.of(accessorStatement)), List.of(make.Catch(make.VarDef(ctch, null), make.Block(0, List.of(make.Throw(makeNewClass(syms.matchExceptionType, List.of(make.Ident(ctch)))))))), null);
+            JCMethodDecl md = make.MethodDef(proxy,
+                                             proxy.externalType(types),
+                                             make.Block(0, List.of(tryCatchAll)));
+
+            pendingMethods.append(md);
+            currentClass.members().enter(proxy);
+
+            return proxy;
+        });
     }
 
     @Override
@@ -561,6 +587,15 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
+    JCTree.JCNewClass makeNewClass(Type ctype, List<JCExpression> args) {
+        JCTree.JCNewClass tree = make.NewClass(null,
+            null, make.QualIdent(ctype.tsym), args, null);
+        tree.constructor = rs.resolveConstructor(
+            currentClassTree.pos(), this.env, ctype, TreeInfo.types(args), List.nil());
+        tree.type = ctype;
+        return tree;
+    }
+
     private Type principalType(JCTree p) {
         return types.boxedTypeOrType(types.erasure(TreeInfo.primaryPatternType(p).type()));
     }
@@ -740,14 +775,24 @@ public class TransPatterns extends TreeTranslator {
     @Override
     public void visitClassDef(JCClassDecl tree) {
         ClassSymbol prevCurrentClass = currentClass;
+        JCClassDecl prevCurrentClassTree = currentClassTree;
+        ListBuffer<JCTree> prevPendingMethods = pendingMethods;
         MethodSymbol prevMethodSym = currentMethodSym;
+        Map<RecordComponent, MethodSymbol> prevAccessor2Proxy = component2Proxy;
         try {
             currentClass = tree.sym;
+            currentClassTree = tree;
+            pendingMethods = new ListBuffer<>();
             currentMethodSym = null;
+            component2Proxy = new HashMap<>();
             super.visitClassDef(tree);
+            tree.defs = tree.defs.prependList(pendingMethods.toList());
         } finally {
             currentClass = prevCurrentClass;
+            currentClassTree = prevCurrentClassTree;
+            pendingMethods = prevPendingMethods;
             currentMethodSym = prevMethodSym;
+            component2Proxy = prevAccessor2Proxy;
         }
     }
 
