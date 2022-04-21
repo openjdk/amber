@@ -488,10 +488,12 @@ public final class TransLiterals extends TreeTranslator {
             List<Type> argTypes = expressionTypes.prepend(policy.type);
             Name bootstrapName = names.templatedStringBSM;
             Name methodName = names.apply;
+            VarSymbol policySym = (VarSymbol)TreeInfo.symbol(policy);
             List<Type> staticArgsTypes =
                     List.of(syms.methodHandleLookupType, syms.stringType,
-                            syms.methodTypeType, syms.stringType);
-            List<LoadableConstant> staticArgValues = List.of(LoadableConstant.String(string));
+                            syms.methodTypeType, syms.stringType, syms.methodHandleType);
+            List<LoadableConstant> staticArgValues = List.of(LoadableConstant.String(string),
+                    policySym.asMethodHandle(true));
             Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), env,
                     syms.templateBootstrapType, bootstrapName, staticArgsTypes, List.nil());
             MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
@@ -549,9 +551,12 @@ public final class TransLiterals extends TreeTranslator {
 
         boolean isLinkagePolicy() {
             return policy != null &&
-                    !useValuesList &&
-                    types.isSubtype(policy.type, syms.policyLinkage) &&
-                    policy.type.isFinal();
+                   !useValuesList &&
+                   types.isSubtype(policy.type, syms.policyLinkage) &&
+                   policy.type.isFinal() &&
+                   TreeInfo.symbol(policy) instanceof VarSymbol varSymbol &&
+                   varSymbol.isStatic() &&
+                   varSymbol.isFinal();
         }
 
         JCExpression visit() {
