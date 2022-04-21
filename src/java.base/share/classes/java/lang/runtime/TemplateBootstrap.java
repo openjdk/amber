@@ -82,6 +82,11 @@ public final class TemplateBootstrap {
     private final String stencil;
 
     /**
+     * {@link MethodHandle} to get static final policy
+     */
+    private final MethodHandle policyGetter;
+
+    /**
      * Initialize {@link MethodHandle MethodHandles}
      */
     static {
@@ -111,22 +116,25 @@ public final class TemplateBootstrap {
      * @param name         method name
      * @param type         method type
      * @param stencil      stencil string with placeholders
+     * @param policyGetter {@link MethodHandle} to get static final policy
      */
     private TemplateBootstrap(MethodHandles.Lookup lookup, String name,
-                              MethodType type, String stencil) {
+                              MethodType type, String stencil, MethodHandle policyGetter) {
         this.lookup = lookup;
         this.name = name;
         this.type = type;
         this.stencil = stencil;
+        this.policyGetter = policyGetter;
     }
 
      /**
      * Templated string bootstrap method.
      *
-     * @param lookup  method lookup
-     * @param name    method name
-     * @param type    method type
-     * @param stencil stencil string with placeholders
+     * @param lookup       method lookup
+     * @param name         method name
+     * @param type         method type
+     * @param stencil      stencil string with placeholders
+     * @param policyGetter {@link MethodHandle} to get static final policy
      *
      * @return {@link CallSite} to handle templated string processing
      *
@@ -136,13 +144,15 @@ public final class TemplateBootstrap {
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,
-            String stencil) {
+            String stencil,
+            MethodHandle policyGetter) {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
         Objects.requireNonNull(stencil, "stencil is null");
+        Objects.requireNonNull(stencil, "policyGetter is null");
 
-        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, stencil);
+        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, stencil, policyGetter);
 
         return bootstrap.applyWithPolicy();
     }
