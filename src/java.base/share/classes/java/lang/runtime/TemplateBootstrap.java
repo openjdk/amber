@@ -52,16 +52,6 @@ public final class TemplateBootstrap {
     private static final MethodHandle DEFAULT_APPLY_MH;
 
     /**
-     * {@link MethodHandle} to {@link TemplateBootstrap#firstInvoke}
-     */
-    private static final MethodHandle FIRST_INVOKE_MH;
-
-    /**
-     * {@link MethodHandle} to {@link TemplateBootstrap#guard}
-     */
-    private static final MethodHandle GUARD_MH;
-
-    /**
      * {@link MethodHandles.Lookup} passed to the bootstrap method
      */
     private final MethodHandles.Lookup lookup;
@@ -96,14 +86,6 @@ public final class TemplateBootstrap {
             MethodType mt = MethodType.methodType(Object.class,
                     String.class, List.class, TemplatePolicy.class, Object[].class);
             DEFAULT_APPLY_MH = lookup.findStatic(TemplateBootstrap.class, "defaultApply", mt);
-
-            mt = MethodType.methodType(Object.class, TemplateBootstrap.class,
-                    MutableCallSite.class, Object[].class);
-            FIRST_INVOKE_MH = lookup.findStatic(TemplateBootstrap.class, "firstInvoke", mt);
-
-            mt = MethodType.methodType(boolean.class,
-                    TemplatePolicy.class, TemplatePolicy.class);
-            GUARD_MH = lookup.findStatic(TemplateBootstrap.class, "guard", mt);
         } catch (ReflectiveOperationException ex) {
             throw new AssertionError("templated string bootstrap fail", ex);
         }
@@ -163,22 +145,24 @@ public final class TemplateBootstrap {
      * @return {@link CallSite} for handling apply policy templated strings.
      */
     private CallSite applyWithPolicy() {
-        MutableCallSite callSite = new MutableCallSite(type);
-        MethodHandle mh = MethodHandles.insertArguments(FIRST_INVOKE_MH, 0, this, callSite);
-        mh = mh.withVarargs(true);
-        mh = mh.asType(type);
-        callSite.setTarget(mh);
+        try {
+            MethodType getterType = MethodType.methodType(TemplatePolicy.class);
+            TemplatePolicy<?, ? extends Throwable> policy =
+                    (TemplatePolicy<?, ? extends Throwable>)policyGetter.asType(getterType).invokeExact();
+            MethodHandle mh = null;
 
-        return callSite;
-    }
+            if (policy instanceof PolicyLinkage policyLinkage) {
+                mh = ((PolicyLinkage)policy).applier(stencil, type);
+            }
 
-    /**
-     * {@return true if the supplied class is final}
-     *
-     * @param cls supplied class
-     */
-    private static boolean isFinal(Class<?> cls) {
-        return (cls.getModifiers() & Modifier.FINAL) != 0;
+            if (mh == null) {
+                mh = defaultApplyMethodHandle();
+            }
+
+            return new ConstantCallSite(mh);
+        } catch (Throwable ex) {
+            throw new RuntimeException("Can not bootstrap policy");
+        }
     }
 
     /**
@@ -212,69 +196,6 @@ public final class TemplateBootstrap {
         mh = mh.asType(type);
 
         return mh;
-    }
-
-    /**
-     * Guard against change of policy.
-     *
-     * @param oldPolicy  original {@link TemplatePolicy}
-     * @param newPolicy  current {@link TemplatePolicy}
-     *
-     * @return true if policies are equal
-     */
-    private static boolean guard(TemplatePolicy<?, ? extends Throwable> oldPolicy,
-                                 TemplatePolicy<?, ? extends Throwable> newPolicy) {
-        return oldPolicy == newPolicy;
-    }
-
-    /**
-     * Place a change guard around the applier.
-     *
-     * @param policy  original policy
-     * @param applier applier {@link MethodHandle}
-     *
-     * @return guarded applier {@link MethodHandle}
-     */
-    private MethodHandle guardApplier(TemplatePolicy<?, ? extends Throwable> policy,
-                                      MethodHandle applier) {
-        MethodType type = applier.type();
-        MethodHandle guard = GUARD_MH;
-        Class<?>[] params = type.dropParameterTypes(0, 1).parameterArray();
-        guard = MethodHandles.dropArguments(guard, 2, params);
-        guard = MethodHandles.insertArguments(guard, 0, policy);
-        guard = guard.asType(type.changeReturnType(boolean.class));
-
-        return MethodHandles.guardWithTest(guard, applier, defaultApplyMethodHandle());
-    }
-
-    /**
-     * Method invoked at {@link MutableCallSite} the first time invoked then replacing the callsite
-     * target with a specialized solution.
-     *
-     * @param bootstrap {@link TemplateBootstrap} creating callsite
-     * @param callsite  {@link MutableCallSite} to update
-     * @param args      arguments to invoke
-     * @return result of invocation
-     */
-    @SuppressWarnings("unchecked")
-    private static Object firstInvoke(TemplateBootstrap bootstrap,
-                                      MutableCallSite callsite,
-                                      Object... args) throws Throwable {
-        String stencil = bootstrap.stencil;
-        MethodType type = bootstrap.type;
-        TemplatePolicy<Object, Throwable> policy = TemplatePolicy.class.cast(args[0]);
-        MethodHandle applier = null;
-
-        if (policy instanceof PolicyLinkage policyLinkage && isFinal(policy.getClass())) {
-            applier = policyLinkage.applier(stencil, type);
-        }
-
-        MethodHandle mh = applier != null ? bootstrap.guardApplier(policy, applier.asType(type)) :
-                                            bootstrap.defaultApplyMethodHandle();
-        callsite.setTarget(mh);
-        MutableCallSite.syncAll(new MutableCallSite[]{callsite});
-
-        return mh.invokeWithArguments(args);
     }
 
 }
