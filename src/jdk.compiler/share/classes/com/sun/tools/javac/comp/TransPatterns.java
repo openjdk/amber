@@ -301,8 +301,13 @@ public class TransPatterns extends TreeTranslator {
                     extraTest = makeTypeTest(make.Ident(nestedTemp),
                                              make.Type(nested.type));
                 }
-            } else if (nested.type.isReference()) {
-                extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
+            }
+            else if (nested.type.isNullOrReference() || nested.type.isPrimitive()) {
+                if(nested instanceof JCDeconstructionPattern) {
+                    extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
+                }
+                else
+                    extraTest = makeLit(syms.booleanType, 1);
             }
             if (extraTest != null) {
                 extracted = makeBinary(Tag.AND, extraTest, extracted);
