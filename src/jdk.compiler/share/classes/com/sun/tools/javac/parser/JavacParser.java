@@ -254,7 +254,7 @@ public class JavacParser implements Parser {
     }
 
     protected void selectTypeMode() {
-        mode = (mode & (NOLAMBDA|NOINVOCATION)) | TYPE;
+        mode = (mode & (NOLAMBDA | NOINVOCATION)) | TYPE;
     }
 
     /** The current mode.
@@ -797,7 +797,7 @@ public class JavacParser implements Parser {
                 JCVariableDecl var;
                 if (token.kind == IDENTIFIER) {
                     var = to(F.at(pos).VarDef(F.Modifiers(0), token.name(), e, null));
-                    nextToken(); //TODO: tests!
+                    nextToken();
                 } else {
                     var = null;
                 }

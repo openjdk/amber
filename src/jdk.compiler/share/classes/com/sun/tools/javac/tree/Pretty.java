@@ -943,6 +943,10 @@ public class Pretty extends JCTree.Visitor {
                 print(" ");
                 print(tree.var.name);
             }
+            if (tree.guard != null) {
+                print(" when ");
+                printExpr(tree.guard);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

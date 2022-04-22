@@ -31,4 +31,3 @@ class FeatureUnconditionalTypesInstanceof {
     String s;
     boolean b = (s instanceof String str);
 }
-

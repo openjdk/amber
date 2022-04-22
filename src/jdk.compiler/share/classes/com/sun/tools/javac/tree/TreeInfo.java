@@ -1346,9 +1346,9 @@ public class TreeInfo {
 
     public static PatternPrimaryType primaryPatternType(JCTree pat) {
         return switch (pat.getTag()) {
-            case BINDINGPATTERN -> new PatternPrimaryType(pat.type, true);
+            case BINDINGPATTERN -> new PatternPrimaryType(pat.type);
             case PARENTHESIZEDPATTERN -> primaryPatternType(((JCParenthesizedPattern) pat).pattern);
-            case DECONSTRUCTIONPATTERN -> new PatternPrimaryType(((JCDeconstructionPattern) pat).type, false);
+            case DECONSTRUCTIONPATTERN -> new PatternPrimaryType(((JCDeconstructionPattern) pat).type);
             default -> throw new AssertionError();
         };
     }
@@ -1361,7 +1361,7 @@ public class TreeInfo {
         };
     }
 
-    public record PatternPrimaryType(Type type, boolean total) {}
+    public record PatternPrimaryType(Type type) {}
 
     public static boolean expectedExhaustive(JCSwitch tree) {
         return tree.patternSwitch ||

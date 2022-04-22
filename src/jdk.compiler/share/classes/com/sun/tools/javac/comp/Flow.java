@@ -690,7 +690,7 @@ public class Flow {
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases);
             if (exhaustiveSwitch) {
-                Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unrefinedCaseLabel).collect(Collectors.toCollection(HashSet::new)));
+                Set<Symbol> constants = coveredSymbolsForCases(tree.pos(), tree.selector, tree.cases);
                 tree.isExhaustive |= isExhaustive(tree.selector.pos(), tree.selector.type, constants);
                 if (!tree.isExhaustive) {
                     log.error(tree, Errors.NotExhaustiveStatement);
@@ -725,7 +725,7 @@ public class Flow {
                     }
                 }
             }
-            Set<Symbol> constants = coveredSymbols(tree.pos(), tree.selector.type, tree.cases.stream().flatMap(c -> c.labels.stream()).filter(TreeInfo::unrefinedCaseLabel).collect(Collectors.toCollection(HashSet::new)));
+            Set<Symbol> constants = coveredSymbolsForCases(tree.pos(), tree.selector, tree.cases);
             tree.isExhaustive = tree.hasTotalPattern ||
                                 TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
                                 isExhaustive(tree.selector.pos(), tree.selector.type, constants);
@@ -734,6 +734,15 @@ public class Flow {
             }
             alive = prevAlive;
             alive = alive.or(resolveYields(tree, prevPendingExits));
+        }
+
+        private Set<Symbol> coveredSymbolsForCases(DiagnosticPosition pos,
+                                                   JCExpression selector, List<JCCase> cases) {
+            HashSet<JCCaseLabel> labels = cases.stream()
+                                               .flatMap(c -> c.labels.stream())
+                                               .filter(TreeInfo::unrefinedCaseLabel)
+                                               .collect(Collectors.toCollection(HashSet::new));
+            return coveredSymbols(pos, selector.type, labels);
         }
 
         private Set<Symbol> coveredSymbols(DiagnosticPosition pos, Type targetType, Iterable<? extends JCCaseLabel> labels) {
@@ -772,13 +781,15 @@ public class Flow {
         }
 
         private boolean coversDeconstructionStartingFromComponent(DiagnosticPosition pos, Type targetType, List<JCDeconstructionPattern> patterns, int component) {
-            if (patterns.head.record.getRecordComponents().size() == component) {
+            List<? extends RecordComponent> components = patterns.head.record.getRecordComponents();
+
+            if (components.size() == component) {
                 return true;
             }
 
-            Type parameterizedComponentType = types.memberType(targetType, patterns.head.record.getRecordComponents().get(component)); //XXX
+            Type parameterizedComponentType = types.memberType(targetType, components.get(component));
             List<JCPattern> nestedComponentPatterns = patterns.map(d -> d.nested.get(component));
-            Set<Symbol> nestedCovered = coveredSymbols(pos, parameterizedComponentType, nestedComponentPatterns); //XXX: positions!
+            Set<Symbol> nestedCovered = coveredSymbols(pos, parameterizedComponentType, nestedComponentPatterns);
             Map<Symbol, List<JCDeconstructionPattern>> componentType2Patterns = new HashMap<>();
             Set<Symbol> covered = new HashSet<>();
 
@@ -794,7 +805,7 @@ public class Flow {
                         currentPatternType = ((JCDeconstructionPattern) nestedPattern).record;
                     }
                     default -> {
-                        throw Assert.error(); //TODO: message
+                        throw Assert.error("Unexpected tree kind: " + nestedPattern.getTag());
                     }
                 }
                 for (Symbol currentType : nestedCovered) {
