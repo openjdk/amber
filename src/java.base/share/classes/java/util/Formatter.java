@@ -4946,38 +4946,4 @@ public final class Formatter implements Closeable, Flushable {
         return sb.toString();
     }
 
-    /**
-     * Construct a {@link MethodHandle} that uses and precompiled version of the
-     * format. The resulting MethodHandle does not require boxing of primitive
-     * values.
-     *
-     * @implNote the use of index specifiers causes a
-     * {@link MissingFormatArgumentException} to be thrown.
-     *
-     * @param  format  a format string as described in <a href="#syntax">Format
-     * string syntax</a>.
-     * @param  locale  specialization locale (use Locale.ROOT for generic)
-     * @param  ptypes  parameter types of the resulting {@link MethodHandle}.
-     * If the first argument is of type {@link Locale} then locale must be
-     * provided when invoking.
-     *
-     * @return {@link MethodHandle}that applies the format to the supplied arguments.
-     *
-     * @throws NullPointerException  if any of the arguments is null
-     * @throws MissingFormatArgumentException  if a format specification is invalid
-     * @throws IllegalArgumentException  if the ptypes has greater than 200 elements
-     *
-     * @since 19
-     */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-    public static MethodHandle formatFactory(String format, Locale locale,
-                                             Class<?>... ptypes) {
-        Objects.requireNonNull(format, "missing format");
-        Objects.requireNonNull(locale, "missing format");
-        Objects.requireNonNull(ptypes, "missing parameter types");
-        FormatBuilder fmh = new FormatBuilder(format, locale, ptypes);
-
-        return fmh.build();
-    }
-
 }
