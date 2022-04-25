@@ -73,8 +73,9 @@ public final record FormatterPolicy(Locale locale)
         Objects.requireNonNull(stencil);
         Objects.requireNonNull(type);
         String format = Formatter.templatedStringFormat(stencil);
-        MethodHandle mh = Formatter.formatFactory(format, locale,
-                type.dropParameterTypes(0,1).parameterArray());
+        Class<?>[] ptypes = type.dropParameterTypes(0,1).parameterArray();
+        FormatBuilder fmh = new FormatBuilder(format, locale, ptypes);
+        MethodHandle mh = fmh.build();
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));
 
         return mh;
