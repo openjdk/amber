@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1429,7 +1429,7 @@ void PhaseIdealLoop::split_if_with_blocks_post(Node *n) {
   }
 }
 
-// Tranform:
+// Transform:
 //
 // if (some_condition) {
 //   // body 1
@@ -3827,6 +3827,8 @@ void PhaseIdealLoop::reorg_offsets(IdealLoopTree *loop) {
       Node *neg_stride = _igvn.intcon(-cle->stride_con());
       set_ctrl(neg_stride, C->root());
       Node *post = new AddINode(opaq, neg_stride);
+      register_new_node(post, c);
+      post = new CastIINode(post, phi->bottom_type()); // preserve the iv phi's type
       register_new_node(post, c);
       _igvn.rehash_node_delayed(use);
       for (uint j = 1; j < use->req(); j++) {
