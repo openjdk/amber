@@ -2515,7 +2515,7 @@ public final class System {
 
             @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
             public TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments) {
-                return TemplatedString.of(stencil, values, fragments);
+                return new SimpleTemplatedString(stencil, values, fragments);
             }
 
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {

@@ -25,6 +25,8 @@
 
 package jdk.internal.util;
 
+import jdk.internal.javac.PreviewFeature;
+
 import java.lang.invoke.MethodHandle;
 
 /**
@@ -33,6 +35,7 @@ import java.lang.invoke.MethodHandle;
  *
  * @since 19
  */
+@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
 public interface Digits {
     /**
      * Insert digits for long value in buffer from high index to low index.

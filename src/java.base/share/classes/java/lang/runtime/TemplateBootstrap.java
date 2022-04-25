@@ -132,7 +132,7 @@ public final class TemplateBootstrap {
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
         Objects.requireNonNull(stencil, "stencil is null");
-        Objects.requireNonNull(stencil, "policyGetter is null");
+        Objects.requireNonNull(policyGetter, "policyGetter is null");
 
         TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, stencil, policyGetter);
 
