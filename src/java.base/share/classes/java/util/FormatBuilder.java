@@ -466,7 +466,7 @@ final class FormatBuilder {
      *
      * @return new {@link MethodHandle} to format arguments
      */
-    public MethodHandle build() {
+    MethodHandle build() {
         Formatter.parse(format);
         List<String> segments = new ArrayList<>();
         MethodHandle[] filters = new MethodHandle[ptypes.length];

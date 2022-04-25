@@ -1812,10 +1812,12 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         count += end - off;
     }
 
+    // Used by StringConcatHelper via JLA.
     long mix(long lengthCoder) {
         return (lengthCoder + count) | ((long)coder << 32);
     }
 
+    // Used by StringConcatHelper via JLA.
     long prepend(long lengthCoder, byte[] buffer) {
         lengthCoder -= count;
 
