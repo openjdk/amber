@@ -30,20 +30,34 @@
  */
 
 import java.util.*;
-import static java.lang.TemplatePolicy.STR;
 
 public class Basic {
     public static void main(String... arg) {
-        test1();
-        test2();
-        test3();
-        test4();
+        concatenationTests();
+        componentTests();
+        limitsTests();
+        policyTests();
+        templatedStringCoverage();
+        builderCoverage();
+        templatePolicyCoverage();
+    }
+
+    static void ASSERT(String a, String b) {
+        if (!Objects.equals(a, b)) {
+            throw new RuntimeException("Test failed");
+        }
+    }
+
+    static void ASSERT(Object a, Object b) {
+        if (!Objects.deepEquals(a, b)) {
+            throw new RuntimeException("Test failed");
+        }
     }
 
     /*
      * Concatenation tests.
      */
-    static void test1() {
+    static void concatenationTests() {
         int x = 10;
         int y = 20;
 
@@ -58,7 +72,7 @@ public class Basic {
     /*
      * Component tests.
      */
-    static void test2() {
+    static void componentTests() {
         int x = 10;
         int y = 20;
 
@@ -66,13 +80,13 @@ public class Basic {
         ASSERT(ts.stencil(), "\uFFFC + \uFFFC = \uFFFC");
         ASSERT(ts.values(), List.of(x, y, x + y));
         ASSERT(ts.fragments(), List.of("", " + ", " = ", ""));
-        ASSERT(ts.concat(), STR."\{x} + \{y} = \{x + y}");
+        ASSERT(ts.concat(), x + " + " + y + " = " + (x + y));
     }
 
     /*
      * Limits tests.
      */
-    static void test3() {
+    static void limitsTests() {
         int x = 9;
 
         TemplatedString ts250 = """
@@ -352,39 +366,135 @@ public class Basic {
         return TemplatedString.of(stencil, values);
     };
 
-    static void test4() {
+    static void policyTests() {
         String name = "Joan";
         int age = 25;
         StringPolicy policy = StringPolicy.chain(STR, UPPER, STRINGIFY);
         ASSERT(policy."\{name} is \{age} years old", "JOAN IS 25 YEARS OLD");
     }
 
-    static void ASSERT(String a, String b) {
-        if (!Objects.equals(a, b)) {
-            throw new RuntimeException("Test failed");
+    /*
+     *  TemplatedString coverage
+     */
+    static void templatedStringCoverage() {
+        TemplatedString tsNoValues = TemplatedString.of("No Values");
+
+        ASSERT(tsNoValues.stencil(), "No Values");
+        ASSERT(tsNoValues.values(), List.of());
+        ASSERT(tsNoValues.fragments(), List.of("No Values"));
+        ASSERT(tsNoValues.concat(), STR."No Values");
+
+        int x = 10, y = 20;
+        TemplatedString src = "\{x} + \{y} = \{x + y}";
+        TemplatedString tsValues = TemplatedString.of(src.stencil(), src.values());
+        ASSERT(tsValues.stencil(), "\uFFFC + \uFFFC = \uFFFC");
+        ASSERT(tsValues.values(), List.of(x, y, x + y));
+        ASSERT(tsValues.fragments(), List.of("", " + ", " = ", ""));
+        ASSERT(tsValues.concat(), x + " + " + y + " = " + (x + y));
+
+        ASSERT(TemplatedString.split(src.stencil()), List.of("", " + ", " = ", ""));
+        ASSERT(TemplatedString.split("No Values"), List.of("No Values"));
+        ASSERT(TemplatedString.split(""), List.of(""));
+    }
+
+    /*
+     * Builder coverage.
+     */
+    static void builderCoverage() {
+        int x = 10;
+        int y = 20;
+        TemplatedString ts = TemplatedString.builder()
+                .fragment("The result of adding ")
+                .value(x)
+                .template(" and \{y} equals \{x + y}")
+                .build();
+        ASSERT(STR.apply(ts), "The result of adding 10 and 20 equals 30");
+
+        ts = TemplatedString.builder()
+                .fragment("x = ")
+                .value(x)
+                .clear()
+                .fragment("y = ")
+                .value(y)
+                .build();
+
+        ASSERT(STR.apply(ts), "y = 20");
+    }
+
+    /*
+     * TemplatePolicy coverage.
+     */
+
+    static class Policy0 implements TemplatePolicy<String, IllegalArgumentException> {
+        @Override
+        public String apply(TemplatedString templatedString) throws IllegalArgumentException {
+            StringBuilder sb = new StringBuilder();
+            Iterator<String> fragmentsIter = templatedString.fragments().iterator();
+
+            for (Object value : templatedString.values()) {
+                sb.append(fragmentsIter.next());
+
+                if (value instanceof Boolean) {
+                    throw new IllegalArgumentException("I don't like Booleans");
+                }
+
+                sb.append(value);
+            }
+
+            sb.append(fragmentsIter.next());
+
+            return sb.toString();
         }
     }
 
-    static void ASSERT(Object a, Object b) {
-        if (!Objects.deepEquals(a, b)) {
-            throw new RuntimeException("Test failed");
+    static Policy0 policy0 = new Policy0();
+
+    static TemplatePolicy<String, RuntimeException> policy1 = ts -> {
+        StringBuilder sb = new StringBuilder();
+        Iterator<String> fragmentsIter = ts.fragments().iterator();
+        for (Object value : ts.values()) {
+            sb.append(fragmentsIter.next());
+            sb.append(value);
+        }
+        sb.append(fragmentsIter.next());
+        return sb.toString();
+    };
+
+    static SimplePolicy<String> policy2 = ts -> {
+        StringBuilder sb = new StringBuilder();
+        Iterator<String> fragmentsIter = ts.fragments().iterator();
+        for (Object value : ts.values()) {
+            sb.append(fragmentsIter.next());
+            sb.append(value);
+        }
+        sb.append(fragmentsIter.next());
+        return sb.toString();
+    };
+
+    static StringPolicy policy3 = ts -> {
+        StringBuilder sb = new StringBuilder();
+        Iterator<String> fragmentsIter = ts.fragments().iterator();
+        for (Object value : ts.values()) {
+            sb.append(fragmentsIter.next());
+            sb.append(value);
+        }
+        sb.append(fragmentsIter.next());
+        return sb.toString();
+    };
+
+    static StringPolicy policy4 = TemplatedString::concat;
+
+    static void templatePolicyCoverage() {
+        try {
+            int x = 10;
+            int y = 20;
+            ASSERT(policy0."\{x} + \{y} = \{x + y}", "10 + 20 = 30");
+            ASSERT(policy1."\{x} + \{y} = \{x + y}", "10 + 20 = 30");
+            ASSERT(policy2."\{x} + \{y} = \{x + y}", "10 + 20 = 30");
+            ASSERT(policy3."\{x} + \{y} = \{x + y}", "10 + 20 = 30");
+            ASSERT(policy4."\{x} + \{y} = \{x + y}", "10 + 20 = 30");
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("policy fail");
         }
     }
-
-    static void REJECT(String a, String b) {
-        if (Objects.equals(a, b)) {
-            throw new RuntimeException("Test failed");
-        }
-    }
-
-    static void REJECT(Object a, Object b) {
-        if (Objects.deepEquals(a, b)) {
-            throw new RuntimeException("Test failed");
-        }
-    }
-
-
-      /*
-
-         */
 }
