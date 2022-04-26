@@ -95,7 +95,7 @@ import jdk.internal.javac.PreviewFeature;
  *             }
  *             sb.append(fragmentsIter.next());
  *            return sb.toString();
- *         });
+ *         };
  * }
  * The {@link FunctionalInterface} {@link TemplatePolicy.SimplePolicy} is supplied to avoid
  * declaring checked exceptions;
@@ -109,7 +109,7 @@ import jdk.internal.javac.PreviewFeature;
  *             }
  *             sb.append(fragmentsIter.next());
  *            return sb.toString();
- *         });
+ *         };
  * }
  * The {@link FunctionalInterface} {@link java.lang.TemplatePolicy.StringPolicy} is supplied if
  * the policy returns {@link String};
@@ -123,7 +123,7 @@ import jdk.internal.javac.PreviewFeature;
  *             }
  *             sb.append(fragmentsIter.next());
  *            return sb.toString();
- *         });
+ *         };
  * }
  * The {@link TemplatedString#concat()} method is available for those policies that just need
  * to work with the concatenation;

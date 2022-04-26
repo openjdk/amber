@@ -492,6 +492,18 @@ public interface TemplatedString {
         }
 
         /**
+         * Resets the builder to the initial state; empty stencil, empty values.
+         *
+         * @return this Builder
+         */
+        public Builder clear() {
+            stencilBuilder.setLength(0);
+            values.clear();
+
+            return this;
+        }
+
+        /**
          * Returns a {@link TemplatedString} based on the current state of the
          * {@link Builder Builder's} stencil and values.
          *
@@ -505,13 +517,5 @@ public interface TemplatedString {
             return new SimpleTemplatedString(stencil, values, fragments);
         }
 
-
-        /**
-         * Resets the builder to the initial state; empty stencil, empty values.
-         */
-        public void clear() {
-            stencilBuilder.setLength(0);
-            values.clear();
-        }
     }
 }

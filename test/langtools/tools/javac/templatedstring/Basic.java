@@ -43,17 +43,18 @@ public class Basic {
     private static final String JAVA_VERSION = System.getProperty("java.specification.version");
 
     public static void main(String... arg) {
-        test1();
-        test2();
-        test3();
-        test4();
-        test5();
+        primitivesTest();
+        missingPartsTest();
+        expressionsTest();
+        invalidExpressionsTest();
+        placeholderTest();
+        policyTest();
     }
 
     /*
-     * Basic types test.
+     * Primitive types test.
      */
-    static void test1() {
+    static void primitivesTest() {
         for (String type : new String[] {
             "byte",
             "short",
@@ -69,7 +70,7 @@ public class Basic {
     /*
      * Missing parts test.
      */
-    static void test2() {
+    static void missingPartsTest() {
         compFail("""
             int x = 10;
             TemplatedString result = "\\{x";
@@ -95,7 +96,7 @@ public class Basic {
     /*
      * Expressions test.
      */
-    static void test3() {
+    static void expressionsTest() {
         compPass("""
             int x = 10;
             int[] y = new int[] { 10, 20, 30 };
@@ -138,7 +139,7 @@ public class Basic {
     /*
      * Invalid expressions test.
      */
-    static void test4() {
+    static void invalidExpressionsTest() {
         compFail("""
             int x = 10;
             TemplatedString result = "\\{ (x == x }";
@@ -161,13 +162,33 @@ public class Basic {
     }
 
     /*
-     * Error test.
+     * Placeholder test.
      */
-    static void test5() {
+    static void placeholderTest() {
         compFail("""
             int x = 10;
             TemplatedString result = "\\{x} \\uFFFC";
         """);
+    }
+
+    /*
+     * Policy test.
+     */
+    static void policyTest() {
+        compPass("""
+         int x = 10, y = 20;
+         String string = STR."\\{x} + \\{y} = \\{x + y}";
+         """);
+        compFail("""
+         int x = 10, y = 20;
+         String policy = "abc";
+         String string = policy."\\{x} + \\{y} = \\{x + y}";
+         """);
+        compFail("""
+         int x = 10, y = 20;
+         long policy = 100;
+         String string = policy."\\{x} + \\{y} = \\{x + y}";
+         """);
     }
 
     /*
