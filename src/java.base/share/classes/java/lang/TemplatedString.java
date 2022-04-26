@@ -33,28 +33,27 @@ import jdk.internal.javac.PreviewFeature;
 
 /**
  * The Java compiler produces implementations of {@link TemplatedString} to
- * represent string templates or a text block templates. Libraries may produce
+ * represent string templates and text block templates. Libraries may produce
  * {@link TemplatedString} instances as long as they conform to the requirements
  * of this interface. Like {@link String}, instances of {@link TemplatedString}
- * implementations are considered immutable and supplied methods must return
- * constant results.
+ * implementations are considered immutable.
  * <p>
  * Implementations of this interface must minimally implement the methods
  * {@link TemplatedString#stencil()} and {@link TemplatedString#values()}.
  * <p>
  * The {@link TemplatedString#stencil()} method must return a string
- * consistent with the string template content, with placeholders replacing
- *  mbedded expressions. The placeholder used is the Unicode
- * <code>OBJECT-REPLACEMENT-CHARACTER (&#92;ufffc)</code>. For example,
- * {@snippet :
+ * consistent with the string template content, with placeholders standing in for
+ * embedded expressions. The {@linkplain PLACEHOLDER placeholder} character used
+ * is the Unicode <code>OBJECT-REPLACEMENT-CHARACTER (&#92;ufffc)</code>.
+ * For example; {@snippet :
  * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
  * String stencil = templatedString.stencil();
  * }
- * {@code stencil} will be equivalent to <code>"&#92;uFFFC + &#92;uFFFC = &#92;uFFFC"</code>.
+ * {@code stencil} will be equivalent to <code>"&#92;ufffc + &#92;ufffc = &#92;ufffc"</code>.
  * <p>
- * The {@link TemplatedString#values()} method returns an immutable
- * {@code List<Object>} of embedded expression results calculated prior to the
- * instantiation of the {@link TemplatedString}. The values are accumulated left
+ * The {@link TemplatedString#values()} method returns an immutable {@code
+ * List<Object>} of values accumulated by evaluating embedded expressions prior
+ * to instantiating the {@link TemplatedString}. The values are accumulated left
  * to right. The first element of the list is the result of the leftmost
  * embedded expression. The last element of the list is the result of the
  * rightmost embedded expression.
@@ -69,8 +68,8 @@ import jdk.internal.javac.PreviewFeature;
  * <p>
  * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
  * with {@link TemplatePolicy} to produce meaningful results. For example, if a
- * user needs a string produced by replacing placeholders in the stencil with
- * values, i.e., string concatenation, then they can use the standard
+ * user wants string concatenation, replacing placeholders in the stencil with
+ * values, then they can use a string template expression with the standard
  * {@link TemplatePolicy#STR} policy.
  * {@snippet :
  * int x = 10;
@@ -84,13 +83,28 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * String result = "\{x} + \{y} = \{x + y}".apply(STR);
  * }
- * The remaining instance and static methods are provided as conveniences for
- * developers writing {@link TemplatePolicy}.
+ * In addition to string template expressions, the factory methods
+ * {@link TemplatedString#of(String)} and {@link TemplatedString#of(String, List)}
+ * can be used to construct {@link TemplatedString TemplatedStrings}. The
+ * {@link Builder} class can be used to construct {@link TemplatedString TemplatedStrings}
+ * from parts; strings, values and other {@link TemplatedString TemplatedStrings}.
+ * <p>
+ * The remaining methods are primarily used by {@linkplain TemplatePolicy policies}
+ * to construct results.
+ * <p>
+ * The {@link TemplatedString#split(String)} and {@link TemplatedString#fragments()}
+ * methods can be used to work with the portions the stencil around the
+ * placeholders, especially in junction with {@link StringBuilder}.
+ * <p>
+ * The {@link TemplatedString#concat()} method provides a easy way to get a
+ * simple string concatenation by combining the stencil and values.
  *
  * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
  * placeholder count in the stencil must equal the values list size.
  *
  * @see java.lang.TemplatePolicy
+ * @see java.lang.TemplatePolicy.SimplePolicy
+ * @see java.lang.TemplatePolicy.StringPolicy
  * @see java.util.FormatterPolicy
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
@@ -101,7 +115,7 @@ public interface TemplatedString {
      * stencil. The value used is the unicode
      * <code>OBJECT-REPLACEMENT-CHARACTER (&#92;ufffc)</code>.
      */
-    public static final char PLACEHOLDER = '\uFFFC';
+    public static final char PLACEHOLDER = '\ufffc';
 
     /**
      * String equivalent of {@link PLACEHOLDER}.
@@ -114,7 +128,7 @@ public interface TemplatedString {
      * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
      * String stencil = templatedString.stencil(); // @highlight substring="stencil()"
      * }
-     * {@code stencil} will be equivalent to <code>"&#92;uFFFC + &#92;uFFFC = &#92;uFFFC"</code>.
+     * {@code stencil} will be equivalent to <code>"&#92;ufffc + &#92;ufffc = &#92;ufffc"</code>.
      *
      * @return the stencil string with placeholder
      */
@@ -159,9 +173,11 @@ public interface TemplatedString {
      * }
      * @implSpec The list returned is immutable.
      *
-     * @implNote The {@link TemplatedString} implementation generated by the compiler for a string
-     * template guarantees efficiency by only computing the fragments list once. Other
-     * implementations should make an effort to do the same.
+     * @implNote The {@link TemplatedString} implementation generated by the
+     * compiler for a string template guarantees efficiency by only computing the
+     * fragments list once. Other implementations should make an effort to do the
+     * same. The default implementation applies the {@link TemplatedString#split}
+     * method to the stencil, each time the method is invoked.
      *
      * @return list of string fragments
      */
@@ -171,7 +187,7 @@ public interface TemplatedString {
 
     /**
      * {@return the stencil with the values injected at placeholders, i.e., the equivalent
-     * of concatenation}
+     * of string concatenation}
      */
     default String concat() {
         return TemplatedString.concat(this);
@@ -195,6 +211,9 @@ public interface TemplatedString {
      *
      * @throws E exception thrown by the template policy when validation fails
      * @throws NullPointerException if templatedString is null
+     *
+     * @implNote The default implementation simply invokes the policy's apply
+     * method {@code policy.apply(this)}.
      */
     default <R, E extends Throwable> R apply(TemplatePolicy<R, E> policy) throws E {
         Objects.requireNonNull(policy, "policy should not be null");
@@ -349,9 +368,9 @@ public interface TemplatedString {
     }
 
     /**
-     * Create a new {@link TemplatedString.Builder}.
+     * Factory for creating a new {@link TemplatedString.Builder} instance.
      *
-     * @return a new {@link TemplatedString.Builder}
+     * @return a new {@link TemplatedString.Builder} instance.
      */
     public static Builder builder() {
         return new Builder();
@@ -386,6 +405,7 @@ public interface TemplatedString {
      * applied to a policy will use the current state of stencil and values to
      * produce a result.
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public static class Builder implements TemplatedString {
         /**
          * {@link StringBuilder} used to construct the final stencil.
@@ -463,12 +483,8 @@ public interface TemplatedString {
          * @param value value to be added
          *
          * @return this Builder
-         *
-         * @throws NullPointerException if value is null
          */
         public Builder value(Object value) {
-            Objects.requireNonNull(value, "value must not be null");
-
             stencilBuilder.append(PLACEHOLDER);
             values.add(value);
 
@@ -487,6 +503,15 @@ public interface TemplatedString {
             final List<String> fragments = TemplatedString.split(stencil);
 
             return new SimpleTemplatedString(stencil, values, fragments);
+        }
+
+
+        /**
+         * Resets the builder to the initial state; empty stencil, empty values.
+         */
+        public void clear() {
+            stencilBuilder.setLength(0);
+            values.clear();
         }
     }
 }

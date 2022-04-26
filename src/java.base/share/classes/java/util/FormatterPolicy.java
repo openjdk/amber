@@ -43,7 +43,7 @@ import jdk.internal.javac.PreviewFeature;
  * String result = FMTR."%05d\{x} + %05d\{y} = %05d\{x + y}";
  * }
  * result is: <code>00010 + 00020 = 00030</code>
- * <p>
+ *
  * @implNote When used in conjunction with a compiler generated {@link
  * TemplatedString} this {@link TemplatePolicy} will use the format
  * specifiers in the template and types of the values to produce a more
@@ -60,6 +60,16 @@ public final record FormatterPolicy(Locale locale)
      */
     public static final FormatterPolicy FMTR = new FormatterPolicy(Locale.US);
 
+    /**
+     * {@inheritDoc}
+     * @throws  IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors.
+     * @see java.util.Formatter
+     */
     @Override
     public final String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
@@ -69,6 +79,16 @@ public final record FormatterPolicy(Locale locale)
         return new Formatter(locale).format(format, values).toString();
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws  IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors.
+     * @see java.util.Formatter
+     */
     @Override
     public MethodHandle applier(String stencil, MethodType type) {
         Objects.requireNonNull(stencil);

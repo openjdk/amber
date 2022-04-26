@@ -36,34 +36,31 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * This interface describes the methods provided by a generalized string template policy. The
  * primary method {@link TemplatePolicy#apply} is used to validate and compose a result using
- * a {@link TemplatedString TemplatedString's} template and list of values. For example:
+ * a {@link TemplatedString TemplatedString's} stencil (or fragments) and values list. For example:
  *
  * {@snippet :
  * class MyPolicy implements TemplatePolicy<String, IllegalArgumentException> {
- *       @Override
- *       public String apply(TemplatedString templatedString) throws IllegalArgumentException {
- *            StringBuilder sb = new StringBuilder();
- *            Iterator<String> fragmentsIter = templatedString.fragments().iterator();
+ *     @Override
+ *     public String apply(TemplatedString templatedString) throws IllegalArgumentException {
+ *          StringBuilder sb = new StringBuilder();
+ *          Iterator<String> fragmentsIter = templatedString.fragments().iterator();
  *
- *            for (Object value : templatedString.values()) {
- *                sb.append(fragmentsIter.next());
+ *          for (Object value : templatedString.values()) {
+ *              sb.append(fragmentsIter.next());
  *
- *                if (value instanceof Boolean) {
- *                    throw new IllegalArgumentException("I don't like Booleans");
- *                }
+ *              if (value instanceof Boolean) {
+ *                  throw new IllegalArgumentException("I don't like Booleans");
+ *              }
  *
- *                sb.append(value);
- *            }
+ *              sb.append(value);
+ *          }
  *
- *            sb.append(fragmentsIter.next());
+ *          sb.append(fragmentsIter.next());
  *
- *            return sb.toString();
- *       }
- *    }
+ *          return sb.toString();
+ *     }
  * }
- * }
- * Usage:
- * {@snippet :
+ *
  * MyPolicy myPolicy = new MyPolicy();
  * try {
  *     int x = 10;
@@ -320,6 +317,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * specializations are typically implemented to improve performance;
      * specializing value types or avoiding boxing and vararg arrays.
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     sealed interface PolicyLinkage permits FormatterPolicy {
         /**
          * Construct a {@link MethodHandle} that constructs a result based on the
