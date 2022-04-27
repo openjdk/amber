@@ -404,18 +404,18 @@ public class Basic {
         int x = 10;
         int y = 20;
         TemplatedString ts = TemplatedString.builder()
-                .fragment("The result of adding ")
-                .value(x)
-                .template(" and \{y} equals \{x + y}")
+                .add("The result of adding ")
+                .add(x)
+                .add(" and \{y} equals \{x + y}")
                 .build();
         ASSERT(STR.apply(ts), "The result of adding 10 and 20 equals 30");
 
         ts = TemplatedString.builder()
-                .fragment("x = ")
-                .value(x)
+                .add("x = ")
+                .add(x)
                 .clear()
-                .fragment("y = ")
-                .value(y)
+                .add("y = ")
+                .add(y)
                 .build();
 
         ASSERT(STR.apply(ts), "y = 20");
