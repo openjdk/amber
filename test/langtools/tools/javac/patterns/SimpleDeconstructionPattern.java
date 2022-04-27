@@ -76,19 +76,16 @@ public class SimpleDeconstructionPattern {
         if (testA(new P6(null))) {
             throw new IllegalStateException();
         }
-        if (testA(new P6(new P3(null)))) {
+        if (!testA(new P6(new P3(null)))) {
             throw new IllegalStateException();
         }
         if (testB(new P6(null))) {
             throw new IllegalStateException();
         }
-        if (testB(new P6(new P3(null)))) {
+        if (!testB(new P6(new P3(null)))) {
             throw new IllegalStateException();
         }
         if (testC(new P6(null))) {
-            throw new IllegalStateException();
-        }
-        if (testC(new P6(new P3(null)))) {
             throw new IllegalStateException();
         }
         if (!testC(new P6(new P3("")))) {
@@ -97,10 +94,13 @@ public class SimpleDeconstructionPattern {
         if (!testD(new P4("test"))) {
             throw new IllegalStateException();
         }
-        if (!testE(new P7(0, (short) 0))) {
+        if (!testE(new P6(new P3(null)))) {
             throw new IllegalStateException();
         }
-        if (testE(new P7(0, (short) 1))) {
+        if (!testF(new P7(0, (short) 0))) {
+            throw new IllegalStateException();
+        }
+        if (testF(new P7(0, (short) 1))) {
             throw new IllegalStateException();
         }
         if (!testGen1(new GenRecord1<>(1L, ""))) {
@@ -185,6 +185,10 @@ public class SimpleDeconstructionPattern {
     }
 
     private static boolean testE(Object o) throws Throwable {
+        return o instanceof P6(P3(String s)) && s == null;
+    }
+
+    private static boolean testF(Object o) throws Throwable {
         return o instanceof P7(int i, short s) && i == s;
     }
 
