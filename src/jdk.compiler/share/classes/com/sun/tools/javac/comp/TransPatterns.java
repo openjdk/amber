@@ -301,7 +301,7 @@ public class TransPatterns extends TreeTranslator {
                     extraTest = makeTypeTest(make.Ident(nestedTemp),
                                              make.Type(nested.type));
                 }
-            } else if (nested.type.isNullOrReference() && nested.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
+            } else if (nested.type.isReference() && nested.hasTag(Tag.DECONSTRUCTIONPATTERN)) {
                 extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
             }
             if (extraTest != null) {
