@@ -809,7 +809,8 @@ public class Flow {
                     }
                 }
                 for (Symbol currentType : nestedCovered) {
-                    if (types.isSubtype(currentType.erasure(types), currentPatternType.erasure(types))) {
+                    if ((currentType.type.isPrimitive() && currentType.type.equals(currentPatternType.type)) ||
+                            types.isSubtype(currentType.erasure(types), currentPatternType.erasure(types))) {
                         componentType2Patterns.put(currentType, componentType2Patterns.getOrDefault(currentType, List.nil()).prepend(subTypeCandidate));
                     }
                 }
@@ -892,7 +893,9 @@ public class Flow {
                     yield covered.contains(seltype.tsym);
                 }
                 case TYPEVAR -> isExhaustive(pos, ((TypeVar) seltype).getUpperBound(), covered);
-                default -> false;
+                default -> {
+                    yield covered.contains(seltype.tsym);
+                }
             };
         }
 
