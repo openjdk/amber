@@ -26,6 +26,8 @@ public class DeconstructionPatternErrors {
         if (p instanceof GenRecord<String>(var v)); //incorrect generic type
         if (p instanceof P4(GenRecord<String>(var v))); //incorrect generic type
         if (p instanceof GenRecord<String>(Integer v)); //inconsistency in types
+        if (p instanceof P2(var v, var v) v); //duplicated variables
+        if (p instanceof P6(P2(var v1, var v2) v1, P2(var v1, var v2) v2) v1); //duplicated variables
     }
 
     public record P(int i) {
@@ -35,6 +37,7 @@ public class DeconstructionPatternErrors {
     public record P3(List<String> l) {}
     public record P4(Object o) {}
     public record P5(String s) {}
+    public record P6(Object o1, Object o2) {}
     public record GenRecord<T>(T s) {}
 
 }

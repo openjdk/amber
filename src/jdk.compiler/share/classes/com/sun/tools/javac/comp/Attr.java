@@ -4191,7 +4191,9 @@ public class Attr extends JCTree.Visitor {
         List<Type> expectedRecordTypes;
         if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
             ClassSymbol record = (ClassSymbol) site.tsym;
-            expectedRecordTypes = record.getRecordComponents().stream().map(rc -> types.memberType(site, rc)).collect(List.collector());
+            expectedRecordTypes = record.getRecordComponents()
+                                        .stream()
+                                        .map(rc -> types.memberType(site, rc)).collect(List.collector());
             tree.record = record;
         } else {
             log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
@@ -4202,40 +4204,47 @@ public class Attr extends JCTree.Visitor {
         ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
         List<Type> recordTypes = expectedRecordTypes;
         List<JCPattern> nestedPatterns = tree.nested;
-        while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
-            boolean nestedIsVarPattern = false;
-            nestedIsVarPattern |= nestedPatterns.head.hasTag(BINDINGPATTERN) &&
-                                  ((JCBindingPattern) nestedPatterns.head).var.vartype == null;
-            attribExpr(nestedPatterns.head, env, nestedIsVarPattern ? recordTypes.head : Type.noType);
-            checkCastablePattern(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
-            outBindings.addAll(matchBindings.bindingsWhenTrue);
-            nestedPatterns = nestedPatterns.tail;
-            recordTypes = recordTypes.tail;
-        }
-        if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
-            while (nestedPatterns.nonEmpty()) {
-                attribExpr(nestedPatterns.head, env, Type.noType);
+        Env<AttrContext> localEnv = env.dup(tree, env.info.dup(env.info.scope.dup()));
+        try {
+            while (recordTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
+                boolean nestedIsVarPattern = false;
+                nestedIsVarPattern |= nestedPatterns.head.hasTag(BINDINGPATTERN) &&
+                                      ((JCBindingPattern) nestedPatterns.head).var.vartype == null;
+                attribExpr(nestedPatterns.head, localEnv, nestedIsVarPattern ? recordTypes.head : Type.noType);
+                checkCastablePattern(nestedPatterns.head.pos(), recordTypes.head, nestedPatterns.head.type);
+                outBindings.addAll(matchBindings.bindingsWhenTrue);
+                matchBindings.bindingsWhenTrue.forEach(localEnv.info.scope::enter);
                 nestedPatterns = nestedPatterns.tail;
+                recordTypes = recordTypes.tail;
             }
-            List<Type> nestedTypes =
-                    tree.nested.stream().map(p -> p.type).collect(List.collector());
-            log.error(tree.pos(),
-                      Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
-                                                             nestedTypes));
-        }
-        if (tree.var != null) {
-            BindingSymbol v = new BindingSymbol(tree.var.mods.flags, tree.var.name, tree.type, env.info.scope.owner);
-            v.pos = tree.pos;
-            tree.var.sym = v;
-            if (chk.checkUnique(tree.var.pos(), v, env.info.scope)) {
-                chk.checkTransparentVar(tree.var.pos(), v, env.info.scope);
+            if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
+                while (nestedPatterns.nonEmpty()) {
+                    attribExpr(nestedPatterns.head, localEnv, Type.noType);
+                    nestedPatterns = nestedPatterns.tail;
+                }
+                List<Type> nestedTypes =
+                        tree.nested.stream().map(p -> p.type).collect(List.collector());
+                log.error(tree.pos(),
+                          Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
+                                                                 nestedTypes));
             }
-            if (tree.var.vartype != null) {
-                annotate.annotateLater(tree.var.mods.annotations, env, v, tree.pos());
-                annotate.queueScanTreeAndTypeAnnotate(tree.var.vartype, env, v, tree.var.pos());
-                annotate.flush();
+            if (tree.var != null) {
+                BindingSymbol v = new BindingSymbol(tree.var.mods.flags, tree.var.name, tree.type,
+                                                    localEnv.info.scope.owner);
+                v.pos = tree.pos;
+                tree.var.sym = v;
+                if (chk.checkUnique(tree.var.pos(), v, localEnv.info.scope)) {
+                    chk.checkTransparentVar(tree.var.pos(), v, localEnv.info.scope);
+                }
+                if (tree.var.vartype != null) {
+                    annotate.annotateLater(tree.var.mods.annotations, localEnv, v, tree.pos());
+                    annotate.queueScanTreeAndTypeAnnotate(tree.var.vartype, localEnv, v, tree.var.pos());
+                    annotate.flush();
+                }
+                outBindings.add(v);
             }
-            outBindings.add(v);
+        } finally {
+            localEnv.info.scope.leave();
         }
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;

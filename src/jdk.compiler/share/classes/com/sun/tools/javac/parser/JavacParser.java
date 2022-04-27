@@ -796,7 +796,7 @@ public class JavacParser implements Parser {
                 accept(RPAREN);
                 JCVariableDecl var;
                 if (token.kind == IDENTIFIER) {
-                    var = to(F.at(pos).VarDef(F.Modifiers(0), token.name(), e, null));
+                    var = to(F.at(token.pos).VarDef(F.Modifiers(0), token.name(), e, null));
                     nextToken();
                 } else {
                     var = null;
@@ -1012,7 +1012,7 @@ public class JavacParser implements Parser {
                         accept(RPAREN);
                         JCVariableDecl var;
                         if (token.kind == IDENTIFIER) {
-                            var = to(F.at(pos).VarDef(F.Modifiers(0), token.name(), type, null));
+                            var = to(F.at(token.pos).VarDef(F.Modifiers(0), token.name(), type, null));
                             nextToken();
                         } else {
                             var = null;
