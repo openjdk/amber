@@ -381,7 +381,10 @@ public interface TemplatedString {
      * fragments, values and other {@link TemplatedString TemplatedStrings}.
      * <p>
      * To use, construct a new {@link Builder} using {@link TemplatedString#builder},
-     * then chain invokes of {@link Builder#add} to the stencil and values list.
+     * then chain invokes of {@link Builder#fragment} or {@link Builder#value} to build up the
+     * stencil and values.
+     * {@link Builder#template(TemplatedString)} can be used to add the
+     * stencil and values from another {@link TemplatedString}.
      * {@link Builder#build()} can be invoked at the end of the chain to produce a new
      * TemplatedString using the current state of the builder.
      * <p>
@@ -389,9 +392,9 @@ public interface TemplatedString {
      *      int x = 10;
      *      int y = 20;
      *      TemplatedString ts = TemplatedString.builder()
-     *          .add("The result of adding ")
-     *          .add(x)
-     *          .add(" and \{y} equals \{x + y}")
+     *          .fragment("The result of adding ")
+     *          .value(x)
+     *          .template(" and \{y} equals \{x + y}")
      *          .build();
      *      String result = STR.apply(ts);
      *  }
@@ -442,7 +445,7 @@ public interface TemplatedString {
          *
          * @throws NullPointerException if templatedString is null
          */
-        public Builder add(TemplatedString templatedString) {
+        public Builder template(TemplatedString templatedString) {
             Objects.requireNonNull(templatedString, "templatedString must not be null");
 
             stencilBuilder.append(templatedString.stencil());
@@ -461,7 +464,7 @@ public interface TemplatedString {
          * @throws IllegalArgumentException if fragment contains a {@link PLACEHOLDER}
          * @throws NullPointerException if string is null
          */
-        public Builder add(String fragment) {
+        public Builder fragment(String fragment) {
             Objects.requireNonNull(fragment, "string must not be null");
 
             if (fragment.indexOf(PLACEHOLDER) != -1) {
@@ -481,7 +484,7 @@ public interface TemplatedString {
          *
          * @return this Builder
          */
-        public Builder add(Object value) {
+        public Builder value(Object value) {
             stencilBuilder.append(PLACEHOLDER);
             values.add(value);
 
