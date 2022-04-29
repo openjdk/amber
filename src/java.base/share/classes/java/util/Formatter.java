@@ -4927,11 +4927,14 @@ public final class Formatter implements Closeable, Flushable {
                         sb.append(group);
                         i = next - 1;
                     } else if (placeholder == TemplatedString.PLACEHOLDER) {
+                        if (group.contains("$") || group.contains("<")) {
+                            throw new MissingFormatArgumentException(group);
+                        }
+
                         sb.append(group);
                         i = next;
                     } else {
-                        sb.append("null");
-                        i = next - 1;
+                        throw new MissingFormatArgumentException(group);
                     }
                 } else {
                     sb.append(ch);
