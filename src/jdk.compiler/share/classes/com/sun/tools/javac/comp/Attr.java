@@ -4155,7 +4155,10 @@ public class Attr extends JCTree.Visitor {
             chk.basicHandler.report(pos,
                     diags.fragment(Fragments.InconvertibleTypes(exprType, pattType)));
             return false;
-        } else if (exprType.isPrimitive() ^ pattType.isPrimitive()) {
+        } else if ((exprType.isPrimitive() || pattType.isPrimitive()) &&
+                   (!exprType.isPrimitive() ||
+                    !pattType.isPrimitive() ||
+                    !types.isSameType(exprType, pattType))) {
             chk.basicHandler.report(pos,
                     diags.fragment(Fragments.NotApplicableTypes(exprType, pattType)));
             return false;
