@@ -86,6 +86,8 @@ import com.sun.tools.javac.tree.JCTree.JCDeconstructionPattern;
 import com.sun.tools.javac.tree.JCTree.JCDoWhileLoop;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCLambda;
+import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
+import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCParenthesizedPattern;
 import com.sun.tools.javac.tree.JCTree.JCPattern;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
@@ -352,7 +354,16 @@ public class TransPatterns extends TreeTranslator {
                     names.fromString("catch" + currentClassTree.pos + target.syntheticNameChar()),
                     syms.throwableType,
                     currentMethodSym);
-            JCStatement tryCatchAll = make.Try(make.Block(0, List.of(accessorStatement)), List.of(make.Catch(make.VarDef(ctch, null), make.Block(0, List.of(make.Throw(makeNewClass(syms.matchExceptionType, List.of(make.Ident(ctch)))))))), null);
+            JCNewClass newException = makeNewClass(syms.matchExceptionType,
+                                                   List.of(makeApply(make.Ident(ctch),
+                                                                     names.toString,
+                                                                     List.nil()),
+                                                           make.Ident(ctch)));
+            JCTree.JCCatch catchClause = make.Catch(make.VarDef(ctch, null),
+                                                    make.Block(0, List.of(make.Throw(newException))));
+            JCStatement tryCatchAll = make.Try(make.Block(0, List.of(accessorStatement)),
+                                               List.of(catchClause),
+                                               null);
             JCMethodDecl md = make.MethodDef(proxy,
                                              proxy.externalType(types),
                                              make.Block(0, List.of(tryCatchAll)));
@@ -587,8 +598,18 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
-    JCTree.JCNewClass makeNewClass(Type ctype, List<JCExpression> args) {
-        JCTree.JCNewClass tree = make.NewClass(null,
+    JCMethodInvocation makeApply(JCExpression selector, Name name, List<JCExpression> args) {
+        MethodSymbol method = rs.resolveInternalMethod(
+                currentClassTree.pos(), env,
+                selector.type, name,
+                TreeInfo.types(args), List.nil());
+        JCMethodInvocation tree = make.App( make.Select(selector, method), args)
+                                      .setType(types.erasure(method.getReturnType()));
+        return tree;
+    }
+
+    JCNewClass makeNewClass(Type ctype, List<JCExpression> args) {
+        JCNewClass tree = make.NewClass(null,
             null, make.QualIdent(ctype.tsym), args, null);
         tree.constructor = rs.resolveConstructor(
             currentClassTree.pos(), this.env, ctype, TreeInfo.types(args), List.nil());

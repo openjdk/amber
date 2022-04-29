@@ -27,6 +27,7 @@
  * @run main/othervm --enable-preview TypedDeconstructionPatternExc
  */
 
+import java.util.Objects;
 import java.util.function.Function;
 
 public class TypedDeconstructionPatternExc {
@@ -53,6 +54,8 @@ public class TypedDeconstructionPatternExc {
             tested.apply(new Pair<String, Integer>("fail", 1));
             fail("Expected an exception, but none happened!");
         } catch (MatchException ex) {
+            assertEquals(TestPatternFailed.class.getName() + ": " + EXCEPTION_MESSAGE,
+                         ex.getMessage());
             if (ex.getCause() instanceof TestPatternFailed ex2) {
                 System.err.println("expected exception:");
                 ex2.printStackTrace();
@@ -80,10 +83,12 @@ public class TypedDeconstructionPatternExc {
         }
     }
 
+    static final String EXCEPTION_MESSAGE = "exception-message";
+
     record Pair<L, R>(L l, R r) {
         public L l() {
             if ("fail".equals(l)) {
-                throw new TestPatternFailed();
+                throw new TestPatternFailed(EXCEPTION_MESSAGE);
             }
             return l;
         }
@@ -92,8 +97,8 @@ public class TypedDeconstructionPatternExc {
         }
     }
 
-    void assertEquals(int expected, int actual) {
-        if (expected != actual) {
+    void assertEquals(Object expected, Object actual) {
+        if (!Objects.equals(expected, actual)) {
             throw new AssertionError("Expected: " + expected + "," +
                                      "got: " + actual);
         }
@@ -103,6 +108,12 @@ public class TypedDeconstructionPatternExc {
         throw new AssertionError(message);
     }
 
-    public static class TestPatternFailed extends AssertionError {}
+    public static class TestPatternFailed extends AssertionError {
+
+        public TestPatternFailed(String message) {
+            super(message);
+        }
+
+    }
 
 }
