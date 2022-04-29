@@ -121,13 +121,14 @@ public final class TemplateBootstrap {
      * @return {@link CallSite} to handle templated string processing
      *
      * @throws NullPointerException if any of the arguments is null
+     * @throws Throwable if applier fails
      */
     public static CallSite templatedStringBSM(
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,
             String stencil,
-            MethodHandle policyGetter) {
+            MethodHandle policyGetter) throws Throwable {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
@@ -143,26 +144,24 @@ public final class TemplateBootstrap {
      * Create callsite to invoke specialized policy apply method.
      *
      * @return {@link CallSite} for handling apply policy templated strings.
+     *
+     * @throws Throwable if applier fails
      */
-    private CallSite applyWithPolicy() {
-        try {
-            MethodType getterType = MethodType.methodType(TemplatePolicy.class);
-            TemplatePolicy<?, ? extends Throwable> policy =
-                    (TemplatePolicy<?, ? extends Throwable>)policyGetter.asType(getterType).invokeExact();
-            MethodHandle mh = null;
+    private CallSite applyWithPolicy() throws Throwable {
+        MethodType getterType = MethodType.methodType(TemplatePolicy.class);
+        TemplatePolicy<?, ? extends Throwable> policy =
+                (TemplatePolicy<?, ? extends Throwable>)policyGetter.asType(getterType).invokeExact();
+        MethodHandle mh = null;
 
-            if (policy instanceof PolicyLinkage policyLinkage) {
-                mh = ((PolicyLinkage)policy).applier(stencil, type);
-            }
-
-            if (mh == null) {
-                mh = defaultApplyMethodHandle();
-            }
-
-            return new ConstantCallSite(mh);
-        } catch (Throwable ex) {
-            throw new RuntimeException("Can not bootstrap policy");
+        if (policy instanceof PolicyLinkage policyLinkage) {
+            mh = ((PolicyLinkage)policy).applier(stencil, type);
         }
+
+        if (mh == null) {
+            mh = defaultApplyMethodHandle();
+        }
+
+        return new ConstantCallSite(mh);
     }
 
     /**
