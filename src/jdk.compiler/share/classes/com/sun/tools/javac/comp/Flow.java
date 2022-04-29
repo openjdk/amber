@@ -809,9 +809,12 @@ public class Flow {
                     }
                 }
                 for (Symbol currentType : nestedCovered) {
-                    if ((currentType.type.isPrimitive() && currentType.type.equals(currentPatternType.type)) ||
-                            types.isSubtype(currentType.erasure(types), currentPatternType.erasure(types))) {
-                        componentType2Patterns.put(currentType, componentType2Patterns.getOrDefault(currentType, List.nil()).prepend(subTypeCandidate));
+                    if (types.isSubtype(types.erasure(currentType.type),
+                                        types.erasure(currentPatternType.type))) {
+                        componentType2Patterns.put(currentType,
+                                                   componentType2Patterns.getOrDefault(currentType,
+                                                                                       List.nil())
+                                              .prepend(subTypeCandidate));
                     }
                 }
             }
