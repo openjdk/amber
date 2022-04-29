@@ -344,17 +344,23 @@ public class TypeEnter implements Completer {
 
         private void autoImports() {
             if (preview.isEnabled() && preview.isPreview(Feature.TEMPLATED_STRINGS)) {
-                String autoImports = """
-                        import static java.lang.TemplatePolicy.STR;
-                        import static java.util.FormatterPolicy.FMTR;
-                        import java.lang.TemplatePolicy.*;
-                        """;
+                Lint prevLint = chk.setLint(lint.suppress(LintCategory.DEPRECATION, LintCategory.REMOVAL, LintCategory.PREVIEW));
 
-                Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
-                JCCompilationUnit importTree = parser.parseCompilationUnit();
+                try {
+                    String autoImports = """
+                            import static java.lang.TemplatePolicy.STR;
+                            import static java.util.FormatterPolicy.FMTR;
+                            import java.lang.TemplatePolicy.*;
+                            """;
 
-                for (JCImport imp : importTree.getImports()) {
-                    doImport(imp);
+                    Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
+                    JCCompilationUnit importTree = parser.parseCompilationUnit();
+
+                    for (JCImport imp : importTree.getImports()) {
+                        doImport(imp);
+                    }
+                } finally {
+                    chk.setLint(prevLint);
                 }
             }
         }
