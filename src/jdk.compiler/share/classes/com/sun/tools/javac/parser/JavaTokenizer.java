@@ -445,7 +445,6 @@ public class JavaTokenizer extends UnicodeReader {
                     break;
 
                 case '{':
-                    checkSourceLevel(position(), Feature.TEMPLATED_STRINGS);
                     scanTemplateExpression();
                     break;
 
@@ -508,6 +507,7 @@ public class JavaTokenizer extends UnicodeReader {
                 if (accept("\"\"\"")) {
                     tk = isTemplatedString ? Tokens.TokenKind.TEMPLATEDSTRING
                                            : Tokens.TokenKind.STRINGLITERAL;
+
                     return;
                 }
 
