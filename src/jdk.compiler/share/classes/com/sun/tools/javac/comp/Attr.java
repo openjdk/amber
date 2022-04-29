@@ -4905,9 +4905,6 @@ public class Attr extends JCTree.Visitor {
         if (policy != null) {
             resultType = attribTree(policy, env, new ResultInfo(KindSelector.VAL, Type.noType));
             resultType = chk.checkPolicyType(policy, resultType, env);
-        } else if (env.info.lint.isEnabled(LintCategory.TEMPLATED_STRING)) {
-            log.warning(LintCategory.TEMPLATED_STRING, tree.pos(),
-                    Warnings.NoTemplatePolicySpecified);
         }
 
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
