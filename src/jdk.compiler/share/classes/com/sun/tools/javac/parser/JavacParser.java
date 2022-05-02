@@ -788,11 +788,15 @@ public class JavacParser implements Parser {
             }
             if (token.kind == LPAREN) {
                 ListBuffer<JCPattern> nested = new ListBuffer<>();
-                do {
+                if (!peekToken(RPAREN)) {
+                    do {
+                        nextToken();
+                        JCPattern nestedPattern = parsePattern(token.pos, null, null);
+                        nested.append(nestedPattern);
+                    } while (token.kind == COMMA);
+                } else {
                     nextToken();
-                    JCPattern nestedPattern = parsePattern(token.pos, null, null);
-                    nested.append(nestedPattern);
-                } while (token.kind == COMMA);
+                }
                 accept(RPAREN);
                 JCVariableDecl var;
                 if (token.kind == IDENTIFIER) {
@@ -3175,7 +3179,11 @@ public class JavacParser implements Parser {
                     } else {
                         return PatternResult.EXPRESSION;
                     }
-                case LPAREN: parentDepth++; break;
+                case LPAREN:
+                    if (S.token(lookahead + 1).kind == RPAREN) {
+                        return PatternResult.PATTERN;
+                    }
+                    parentDepth++; break;
                 case RPAREN: parentDepth--; break;
                 case ARROW: return parentDepth > 0 ? PatternResult.EXPRESSION
                                                    : pendingResult;
