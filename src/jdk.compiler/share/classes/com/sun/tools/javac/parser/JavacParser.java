@@ -239,7 +239,6 @@ public class JavacParser implements Parser {
      *     mode = NOPARAMS    : no parameters allowed for type
      *     mode = TYPEARG     : type argument
      *     mode |= NOLAMBDA   : lambdas are not allowed
-     *     mode |= NOINVOCATION : method invocations are not allowed
      */
     protected static final int EXPR = 0x1;
     protected static final int TYPE = 0x2;
@@ -247,14 +246,13 @@ public class JavacParser implements Parser {
     protected static final int TYPEARG = 0x8;
     protected static final int DIAMOND = 0x10;
     protected static final int NOLAMBDA = 0x20;
-    protected static final int NOINVOCATION = 0x40;
 
     protected void selectExprMode() {
-        mode = (mode & (NOLAMBDA | NOINVOCATION)) | EXPR;
+        mode = (mode & NOLAMBDA) | EXPR;
     }
 
     protected void selectTypeMode() {
-        mode = (mode & (NOLAMBDA | NOINVOCATION)) | TYPE;
+        mode = (mode & NOLAMBDA) | TYPE;
     }
 
     /** The current mode.
@@ -1368,7 +1366,7 @@ public class JavacParser implements Parser {
                         }
                         break loop;
                     case LPAREN:
-                        if ((mode & EXPR) != 0 && (mode & NOINVOCATION) == 0) {
+                        if ((mode & EXPR) != 0) {
                             selectExprMode();
                             t = arguments(typeArgs, t);
                             if (!annos.isEmpty()) t = illegal(annos.head.pos);
@@ -3181,7 +3179,9 @@ public class JavacParser implements Parser {
                     }
                 case LPAREN:
                     if (S.token(lookahead + 1).kind == RPAREN) {
-                        return PatternResult.PATTERN;
+                        return parentDepth != 0 && S.token(lookahead + 2).kind == ARROW
+                                ? PatternResult.EXPRESSION
+                                : PatternResult.PATTERN;
                     }
                     parentDepth++; break;
                 case RPAREN: parentDepth--; break;
