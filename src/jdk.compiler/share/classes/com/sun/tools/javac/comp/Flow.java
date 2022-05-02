@@ -745,7 +745,8 @@ public class Flow {
             return coveredSymbols(pos, selector.type, labels);
         }
 
-        private Set<Symbol> coveredSymbols(DiagnosticPosition pos, Type targetType, Iterable<? extends JCCaseLabel> labels) {
+        private Set<Symbol> coveredSymbols(DiagnosticPosition pos, Type targetType,
+                                           Iterable<? extends JCCaseLabel> labels) {
             Set<Symbol> constants = new HashSet<>();
             Map<Symbol, List<JCDeconstructionPattern>> categorizedDeconstructionPatterns = new HashMap<>();
 
@@ -756,10 +757,16 @@ public class Flow {
                         constants.add(primaryPatternType.type().tsym);
                     }
                     case DECONSTRUCTIONPATTERN -> {
-                        Symbol type = ((JCDeconstructionPattern) label).record;
+                        JCDeconstructionPattern dpat = (JCDeconstructionPattern) label;
+                        Symbol type = dpat.record;
+                        List<JCDeconstructionPattern> augmentedPatterns =
+                                categorizedDeconstructionPatterns.getOrDefault(type, List.nil())
+                                                                 .prepend(dpat);
 
-                        categorizedDeconstructionPatterns.put(type, categorizedDeconstructionPatterns.getOrDefault(type, List.nil()).prepend((JCDeconstructionPattern) label));
+                        categorizedDeconstructionPatterns.put(type, augmentedPatterns);
                     }
+
+
                     case DEFAULTCASELABEL -> {}
                     default -> {
                         if (label.isExpression()) {
@@ -780,7 +787,10 @@ public class Flow {
             return constants;
         }
 
-        private boolean coversDeconstructionStartingFromComponent(DiagnosticPosition pos, Type targetType, List<JCDeconstructionPattern> patterns, int component) {
+        private boolean coversDeconstructionStartingFromComponent(DiagnosticPosition pos,
+                                                                  Type targetType,
+                                                                  List<JCDeconstructionPattern> patterns,
+                                                                  int component) {
             List<? extends RecordComponent> components = patterns.head.record.getRecordComponents();
 
             if (components.size() == component) {
@@ -789,7 +799,8 @@ public class Flow {
 
             Type parameterizedComponentType = types.memberType(targetType, components.get(component));
             List<JCPattern> nestedComponentPatterns = patterns.map(d -> d.nested.get(component));
-            Set<Symbol> nestedCovered = coveredSymbols(pos, parameterizedComponentType, nestedComponentPatterns);
+            Set<Symbol> nestedCovered = coveredSymbols(pos, parameterizedComponentType,
+                                                       nestedComponentPatterns);
             Map<Symbol, List<JCDeconstructionPattern>> componentType2Patterns = new HashMap<>();
             Set<Symbol> covered = new HashSet<>();
 
@@ -798,7 +809,8 @@ public class Flow {
                 Symbol currentPatternType;
                 switch (nestedPattern.getTag()) {
                     case BINDINGPATTERN, PARENTHESIZEDPATTERN -> {
-                        PatternPrimaryType primaryPatternType = TreeInfo.primaryPatternType(nestedPattern);
+                        PatternPrimaryType primaryPatternType =
+                                TreeInfo.primaryPatternType(nestedPattern);
                         currentPatternType = primaryPatternType.type().tsym;
                     }
                     case DECONSTRUCTIONPATTERN -> {

@@ -327,8 +327,11 @@ public class TransPatterns extends TreeTranslator {
             Type castTargetType = principalType(tree);
             VarSymbol bindingVar = bindingContext.bindingDeclared(binding);
 
-            JCAssign fakeInit = (JCAssign)make.at(TreeInfo.getStartPos(tree)).Assign(
-                    make.Ident(bindingVar), convert(make.Ident(currentValue), castTargetType)).setType(bindingVar.erasure(types));
+            JCAssign fakeInit =
+                    (JCAssign) make.at(TreeInfo.getStartPos(tree))
+                                   .Assign(make.Ident(bindingVar),
+                                           convert(make.Ident(currentValue), castTargetType))
+                                   .setType(bindingVar.erasure(types));
             LetExpr nestedLE = make.LetExpr(List.of(make.Exec(fakeInit)),
                                             make.Literal(true));
             nestedLE.needsCond = true;
@@ -347,9 +350,16 @@ public class TransPatterns extends TreeTranslator {
                                                  .members()
                                                  .findFirst(component.name, s -> s.kind == Kind.MTH &&
                                                                                  ((MethodSymbol) s).params.isEmpty());
-            MethodType type = new MethodType(List.of(component.owner.erasure(types)), types.erasure(component.type), List.nil(), syms.methodClass);
-            MethodSymbol proxy = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC, names.fromString("$proxy$" + component.name), type, currentClass);
-            JCStatement accessorStatement = make.Return(make.App(make.Select(make.Ident(proxy.params().head), realAccessor)));
+            MethodType type = new MethodType(List.of(component.owner.erasure(types)),
+                                             types.erasure(component.type),
+                                             List.nil(),
+                                             syms.methodClass);
+            MethodSymbol proxy = new MethodSymbol(Flags.STATIC | Flags.SYNTHETIC,
+                                                  names.fromString("$proxy$" + component.name),
+                                                  type,
+                                                  currentClass);
+            JCStatement accessorStatement =
+                    make.Return(make.App(make.Select(make.Ident(proxy.params().head), realAccessor)));
             VarSymbol ctch = new VarSymbol(Flags.SYNTHETIC,
                     names.fromString("catch" + currentClassTree.pos + target.syntheticNameChar()),
                     syms.throwableType,
