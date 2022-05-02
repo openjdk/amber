@@ -788,7 +788,7 @@ public class JavacParser implements Parser {
             }
             if (token.kind == LPAREN) {
                 ListBuffer<JCPattern> nested = new ListBuffer<>();
-                if (S.token(1).kind != RPAREN) {
+                if (!peekToken(RPAREN)) {
                     do {
                         nextToken();
                         JCPattern nestedPattern = parsePattern(token.pos, null, null);
