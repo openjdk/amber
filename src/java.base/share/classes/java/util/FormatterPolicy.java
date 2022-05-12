@@ -48,17 +48,31 @@ import jdk.internal.javac.PreviewFeature;
  * TemplatedString} this {@link TemplatePolicy} will use the format
  * specifiers in the template and types of the values to produce a more
  * performant formatter.
+ *
  * @implSpec Since, values are in situ, argument indexing is unsupported.
  *
  * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-public final record FormatterPolicy(Locale locale)
-        implements StringPolicy, PolicyLinkage {
+public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     /**
      * Predefined FormatterPolicy instance that uses Locale.US.
      */
     public static final FormatterPolicy FMTR = new FormatterPolicy(Locale.US);
+
+    /**
+     * {@link Locale} used to format
+     */
+    private final Locale locale;
+
+    /**
+     * Constructor.
+     *
+     * @param locale  {@link Locale} used to format
+     */
+    public FormatterPolicy(Locale locale) {
+        this.locale = locale;
+    }
 
     /**
      * {@inheritDoc}
