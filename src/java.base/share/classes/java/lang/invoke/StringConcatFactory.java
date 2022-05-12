@@ -1055,25 +1055,25 @@ public final class StringConcatFactory {
         }
 
         List<MethodHandle> mhs = new ArrayList<>();
-        List<String> segmentsSection = new ArrayList<>();
+        List<String> fragmentsSection = new ArrayList<>();
         List<Class<?>> ptypeSection = new ArrayList<>();
         int slots = 0;
 
         int pos = 0;
         for (Class<?> ptype : ptypes) {
             boolean lastPType = pos == ptypes.size() - 1;
-            segmentsSection.add(fragments.get(pos));
+            fragmentsSection.add(fragments.get(pos));
             ptypeSection.add(ptype);
 
             slots += ptype == long.class || ptype == double.class ? 2 : 1;
 
             if (maxSlots <= slots || lastPType) {
-                segmentsSection.add(lastPType ? fragments.get(pos + 1) : "");
-                MethodHandle mh = makeConcatWithTemplate(segmentsSection,
+                fragmentsSection.add(lastPType ? fragments.get(pos + 1) : "");
+                MethodHandle mh = makeConcatWithTemplate(fragmentsSection,
                         ptypeSection);
                 mhs.add(mh);
-                segmentsSection.clear();
-                segmentsSection.add("");
+                fragmentsSection.clear();
+                fragmentsSection.add("");
                 ptypeSection.clear();
                 ptypeSection.add(String.class);
                 slots = 1;
