@@ -93,11 +93,12 @@ import jdk.internal.javac.PreviewFeature;
  * to construct results.
  * <p>
  * The {@link TemplatedString#split(String)} and {@link TemplatedString#fragments()}
- * methods can be used to work with the portions the stencil around the
- * placeholders, especially in junction with {@link StringBuilder}.
+ * methods can be used to work with the characters from the stencil surrounding the
+ * placeholders, specifically when using {@link StringBuilder}.
  * <p>
- * The {@link TemplatedString#concat()} method provides a easy way to get a
- * simple string concatenation by combining the stencil and values.
+ * The {@link TemplatedString#concat()} method provides a simple way to perform
+ * string concatenation of the {@link TemplatedString}, i.e., injecting values
+ * into the stencil.
  *
  * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
  * placeholder count in the stencil must equal the values list size.
@@ -377,14 +378,14 @@ public interface TemplatedString {
     }
 
     /**
-     * This class can be used to construct a new TemplatedString from string
-     * fragments, values and other {@link TemplatedString TemplatedStrings}.
+     * Instances of this class can be used to construct a new TemplatedString from
+     * string fragments, values and other {@link TemplatedString TemplatedStrings}.
      * <p>
      * To use, construct a new {@link Builder} using {@link TemplatedString#builder},
      * then chain invokes of {@link Builder#fragment} or {@link Builder#value} to build up the
      * stencil and values.
-     * {@link Builder#template(TemplatedString)} can be used to add the
-     * stencil and values from another {@link TemplatedString}.
+     * {@link Builder#template(TemplatedString)} can be used to add the stencil and
+     * values from another {@link TemplatedString}.
      * {@link Builder#build()} can be invoked at the end of the chain to produce a new
      * TemplatedString using the current state of the builder.
      * <p>

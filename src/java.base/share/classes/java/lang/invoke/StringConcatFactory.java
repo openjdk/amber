@@ -862,9 +862,10 @@ public final class StringConcatFactory {
     public static final int MAX_TEMPLATE_CONCAT_ARG_SLOTS = 253;
 
     /**
-     * A specialized object that knows how to insert itself into a concatenation
-     * performed by StringConcatFactory.
+     * Implementations of this class provide information necessary to
+     * assist {@link StringConcatFactory} perform optimal addition.
      */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     public interface StringConcatItem {
         /**
          * Calculate the length of the insertion.
