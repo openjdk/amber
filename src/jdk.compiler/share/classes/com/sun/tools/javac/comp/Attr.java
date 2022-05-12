@@ -4915,13 +4915,7 @@ public class Attr extends JCTree.Visitor {
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
 
         for (JCExpression arg : tree.expressions) {
-            if (arg.getTag() == LAMBDA) {
-                ClassType supplierType = new ClassType(syms.supplierType.getEnclosingType(),
-                        List.of(syms.objectType), syms.supplierType.tsym);
-                chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv, supplierType));
-            } else {
-                chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv));
-            }
+            chk.checkNonVoid(arg.pos(), attribExpr(arg, localEnv));
         }
 
         tree.type = resultType;
