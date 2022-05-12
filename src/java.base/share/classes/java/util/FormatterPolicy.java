@@ -34,7 +34,7 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * This {@link TemplatePolicy} constructs a String result using {@link
  * Formatter}. Unlike {@link Formatter}, FormatterPolicy locates values in
- * the embedded expressions that come immediately after the format specifier.
+ * embedded expressions that follow immediately after the format specifier.
  * TemplatedString expressions without a preceeding specifier, use "%s" by
  * default. Example:
  * {@snippet :
@@ -46,8 +46,8 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @implNote When used in conjunction with a compiler generated {@link
  * TemplatedString} this {@link TemplatePolicy} will use the format
- * specifiers in the template and types of the values to produce a more
- * performant formatter.
+ * specifiers in the stencil and types of the values in the value list
+ * to produce a more performant formatter.
  *
  * @implSpec Since, values are in situ, argument indexing is unsupported.
  *

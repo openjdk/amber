@@ -72,16 +72,20 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * }
  * Implementations of this interface may provide, but are not limited to, validating
- * inputs, composing inputs into a result, and transforming a result to a non-string type
- * before delivering the final result.
+ * inputs, composing inputs into a result, and transforming an intermediate string
+ * result to a non-string value before delivering the final result.
  * <p>
  * The user has the option of validating inputs used in composition. For example an SQL
  * policy could prevent injection vulnerabilities by sanitizing inputs or throwing an
  * exception of type {@code E} if an SQL statement is a potential vulnerability.
  * <p>
- * Composing allows the users to control how the result is assembled. Most
- * often, a user will construct a new string from the template string, with
- * placeholders replaced by stringified objects from the values list.
+ * Composing allows user control over how the result is assembled. Most often, a
+ * user will construct a new string from the template string, with placeholders
+ * replaced by stringified objects from the values list.
+ * <p>
+ * Transforming allows the policy to return something other than a string. For
+ * instance, a JSON policy could return a JSON object, by parsing the string created
+ * by composition, instead of the composed string.
  * <p>
  * {@link TemplatePolicy} is a {@link FunctionalInterface}. This permits declaration of a
  * policy using lambda expressions;
@@ -135,6 +139,9 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * SimplePolicy<JSONObject> jsonPolicy = ts -> new JSONObject(ts.concat());
  * }
+ * @implNote The Java compiler automatically imports {@link STR},
+ * {@link java.util.FormatterPolicy#FMTR}, {@link SimplePolicy} and
+ * {@link StringPolicy}.
  *
  * @param <R>  Policy's apply result type.
  * @param <E>  Exception thrown type.
@@ -159,7 +166,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
 
     /**
      * This interface simplifies declaration of {@link TemplatePolicy TemplatePolicys}
-     * that do not throw check exceptions. For example:
+     * that do not throw checked exceptions. For example:
      * {@snippet :
      * SimplePolicy<String> concatPolicy = ts -> {
      *             StringBuilder sb = new StringBuilder();
@@ -214,7 +221,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
 
     /**
      * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
-     * that do not throw check exceptions and have a result type of {@link String}. For example:
+     * that do not throw checked exceptions and have a result type of {@link String}. For example:
      * {@snippet :
      * StringPolicy policy = ts -> ts.concat();
      * }
@@ -310,12 +317,13 @@ public interface TemplatePolicy<R, E extends Throwable> {
     };
 
     /**
-     * Policies using this additional interface have the flexibility to
-     * specialize the composition of the templated string by returning a
-     * customized from {@link CallSite CallSites} from
-     * {@link TemplatePolicy.PolicyLinkage#applier applier}. These
-     * specializations are typically implemented to improve performance;
+     * Policies using this additional interface have the flexibility to specialize
+     * the composition of the templated string by returning a customized
+     * {@link CallSite CallSites} from {@link TemplatePolicy.PolicyLinkage#applier applier}.
+     * These specializations are typically implemented to improve performance;
      * specializing value types or avoiding boxing and vararg arrays.
+     *
+     * @implNote This interface is sealed to only allow standard policies.
      */
     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
     sealed interface PolicyLinkage permits FormatterPolicy {
