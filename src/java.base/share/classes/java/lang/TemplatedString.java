@@ -365,6 +365,8 @@ public interface TemplatedString {
                     "stencil placeholder count doesn't matching the values list size");
         }
 
+        values = Collections.unmodifiableList(new ArrayList<>(values));
+
         return new SimpleTemplatedString(stencil, values, fragments);
     }
 
@@ -511,11 +513,7 @@ public interface TemplatedString {
          * @return a new TemplatedString
          */
         public TemplatedString build() {
-            final String stencil = this.stencil();
-            final List<Object> values = Collections.unmodifiableList(this.values());
-            final List<String> fragments = TemplatedString.split(stencil);
-
-            return new SimpleTemplatedString(stencil, values, fragments);
+             return TemplatedString.of(stencilBuilder.toString(), values);
         }
 
     }
