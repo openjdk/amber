@@ -513,7 +513,7 @@ public interface TemplatedString {
          * @return a new TemplatedString
          */
         public TemplatedString build() {
-             return TemplatedString.of(stencilBuilder.toString(), values);
+            return TemplatedString.of(stencilBuilder.toString(), values);
         }
 
     }
