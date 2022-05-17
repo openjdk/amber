@@ -403,11 +403,11 @@ public interface JavaLangAccess {
      */
     long stringConcatMix(long lengthCoder, String constant);
 
-     /**
-      * Update lengthCoder for StringBuilder.
-      */
-     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-     long stringBuilderConcatMix(long lengthCoder, StringBuilder sb);
+    /**
+     * Update lengthCoder for StringBuilder.
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    long stringBuilderConcatMix(long lengthCoder, StringBuilder sb);
 
      /**
       * Prepend StringBuilder content.
