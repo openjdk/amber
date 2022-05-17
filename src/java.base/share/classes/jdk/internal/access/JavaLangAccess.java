@@ -394,14 +394,15 @@ public interface JavaLangAccess {
     long stringConcatInitialCoder();
 
     /**
-     * Get the coder for the supplied character.
-     */
-    long stringConcatCoder(char value);
-
-    /**
      * Update lengthCoder for constant
      */
     long stringConcatMix(long lengthCoder, String constant);
+
+    /**
+     * Get the coder for the supplied character.
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    long stringConcatCoder(char value);
 
     /**
      * Update lengthCoder for StringBuilder.
