@@ -2493,12 +2493,13 @@ public final class System {
                 return StringConcatHelper.initialCoder();
             }
 
-            public long stringConcatCoder(char value) {
-                return StringConcatHelper.coder(value);
-            }
-
             public long stringConcatMix(long lengthCoder, String constant) {
                 return StringConcatHelper.mix(lengthCoder, constant);
+            }
+
+            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            public long stringConcatCoder(char value) {
+                return StringConcatHelper.coder(value);
             }
 
             @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
