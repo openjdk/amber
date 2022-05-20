@@ -25,7 +25,6 @@
 
 package java.lang;
 
-import java.lang.TemplatedString.Builder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -86,8 +85,9 @@ import jdk.internal.javac.PreviewFeature;
  * In addition to string template expressions, the factory methods
  * {@link TemplatedString#of(String)} and {@link TemplatedString#of(String, List)}
  * can be used to construct {@link TemplatedString TemplatedStrings}. The
- * {@link Builder} class can be used to construct {@link TemplatedString TemplatedStrings}
- * from parts; strings, values and other {@link TemplatedString TemplatedStrings}.
+ * {@link TemplateBuilder} class can be used to construct
+ * {@link java.lang.TemplatedString TemplatedStrings} from parts; strings,
+ * values and other {@link TemplatedString TemplatedStrings}.
  * <p>
  * The remaining methods are primarily used by {@linkplain TemplatePolicy policies}
  * to construct results.
@@ -371,25 +371,27 @@ public interface TemplatedString {
     }
 
     /**
-     * Factory for creating a new {@link TemplatedString.Builder} instance.
+     * Factory for creating a new {@link TemplateBuilder} instance.
      *
-     * @return a new {@link TemplatedString.Builder} instance.
+     * @return a new {@link TemplateBuilder} instance.
      */
-    public static Builder builder() {
-        return new Builder();
+    public static TemplateBuilder builder() {
+        return new TemplateBuilder();
     }
 
     /**
      * Instances of this class can be used to construct a new TemplatedString from
      * string fragments, values and other {@link TemplatedString TemplatedStrings}.
      * <p>
-     * To use, construct a new {@link Builder} using {@link TemplatedString#builder},
-     * then chain invokes of {@link Builder#fragment} or {@link Builder#value} to build up the
-     * stencil and values.
-     * {@link Builder#template(TemplatedString)} can be used to add the stencil and
-     * values from another {@link TemplatedString}.
-     * {@link Builder#build()} can be invoked at the end of the chain to produce a new
-     * TemplatedString using the current state of the builder.
+     * To use, construct a new {@link TemplateBuilder} using
+     * {@link TemplatedString#builder}, then chain invokes of
+     * {@link TemplateBuilder#fragment} or {@link TemplateBuilder#value} to
+     * build up the stencil and values.
+     * {@link TemplateBuilder#template(TemplatedString)} can be used to add the
+     * stencil and values from another {@link TemplatedString}.
+     * {@link TemplateBuilder#build()} can be invoked at the end of the chain to
+     * produce a new {@link TemplatedString} using the current state of the
+     * builder.
      * <p>
      * Example: {@snippet :
      *      int x = 10;
@@ -404,12 +406,12 @@ public interface TemplatedString {
      *
      *  Result: "The result of adding 10 and 20 equals 30"
      * <p>
-     * The {@link Builder} itself implements {@link TemplatedString}. When
+     * The {@link TemplateBuilder} itself implements {@link TemplatedString}. When
      * applied to a policy will use the current state of stencil and values to
      * produce a result.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-    public static class Builder implements TemplatedString {
+    // @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    public static class TemplateBuilder implements TemplatedString {
         /**
          * {@link StringBuilder} used to construct the final stencil.
          */
@@ -421,9 +423,9 @@ public interface TemplatedString {
         private final List<Object> values;
 
         /**
-         * package private Constructor.
+         * Private Constructor.
          */
-        Builder() {
+        private TemplateBuilder() {
             this.stencilBuilder = new StringBuilder();
             this.values = new ArrayList<>();
         }
@@ -448,7 +450,7 @@ public interface TemplatedString {
          *
          * @throws NullPointerException if templatedString is null
          */
-        public Builder template(TemplatedString templatedString) {
+        public TemplateBuilder template(TemplatedString templatedString) {
             Objects.requireNonNull(templatedString, "templatedString must not be null");
 
             stencilBuilder.append(templatedString.stencil());
@@ -458,7 +460,7 @@ public interface TemplatedString {
         }
 
         /**
-         * Add a string fragment to the {@link Builder Builder's} stencil.
+         * Add a string fragment to the {@link TemplateBuilder Builder's} stencil.
          *
          * @param fragment  string fragment to be added
          *
@@ -467,7 +469,7 @@ public interface TemplatedString {
          * @throws IllegalArgumentException if fragment contains a {@link PLACEHOLDER}
          * @throws NullPointerException if string is null
          */
-        public Builder fragment(String fragment) {
+        public TemplateBuilder fragment(String fragment) {
             Objects.requireNonNull(fragment, "string must not be null");
 
             if (fragment.indexOf(PLACEHOLDER) != -1) {
@@ -480,14 +482,14 @@ public interface TemplatedString {
         }
 
         /**
-         * Add a value to the {@link Builder}. This method will also insert a placeholder
-         * in the {@link Builder Builder's} stencil.
+         * Add a value to the {@link TemplateBuilder}. This method will also insert a placeholder
+         * in the {@link TemplateBuilder Builder's} stencil.
          *
          * @param value value to be added
          *
          * @return this Builder
          */
-        public Builder value(Object value) {
+        public TemplateBuilder value(Object value) {
             stencilBuilder.append(PLACEHOLDER);
             values.add(value);
 
@@ -499,7 +501,7 @@ public interface TemplatedString {
          *
          * @return this Builder
          */
-        public Builder clear() {
+        public TemplateBuilder clear() {
             stencilBuilder.setLength(0);
             values.clear();
 
@@ -508,7 +510,7 @@ public interface TemplatedString {
 
         /**
          * Returns a {@link TemplatedString} based on the current state of the
-         * {@link Builder Builder's} stencil and values.
+         * {@link TemplateBuilder Builder's} stencil and values.
          *
          * @return a new TemplatedString
          */

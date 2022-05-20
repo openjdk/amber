@@ -30,6 +30,8 @@
  */
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
 
 public class Basic {
     public static void main(String... arg) {
@@ -38,8 +40,9 @@ public class Basic {
         limitsTests();
         policyTests();
         templatedStringCoverage();
-        builderCoverage();
+        templateBuilderCoverage();
         templatePolicyCoverage();
+        policyBuilderCoverage();
     }
 
     static void ASSERT(String a, String b) {
@@ -398,9 +401,9 @@ public class Basic {
     }
 
     /*
-     * Builder coverage.
+     * TemplateBuilder coverage.
      */
-    static void builderCoverage() {
+    static void templateBuilderCoverage() {
         int x = 10;
         int y = 20;
         TemplatedString ts = TemplatedString.builder()
@@ -496,5 +499,74 @@ public class Basic {
         } catch (IllegalArgumentException ex) {
             throw new RuntimeException("policy fail");
         }
+    }
+
+    static String justify(String string, int width) {
+        boolean leftJustify = width < 0;
+        int length = string.length();
+        width = Math.abs(width);
+        int diff = width - length;
+
+        if (diff < 0) {
+            string = "*".repeat(width);
+        } else if (0 < diff) {
+            if (leftJustify) {
+                string += " ".repeat(diff);
+            } else {
+                string = " ".repeat(diff) + string;
+            }
+        }
+
+        return string;
+    }
+
+    /*
+     * PolicyBuilder coverage.
+     */
+    static void policyBuilderCoverage() {
+        int x = 10;
+        int y = 12345;
+        int z = -123;
+
+        StringPolicy policy0 = TemplatePolicy.builder()
+                .preliminary(ts -> TemplatedString.of(ts.stencil().toUpperCase(), ts.values()))
+                .build();
+        ASSERT(policy0."Some lowercase", "SOME LOWERCASE");
+
+        StringPolicy policy1 = TemplatePolicy.builder()
+                .fragment(f -> f.toUpperCase())
+                .build();
+        ASSERT(policy1."Some lowercase", "SOME LOWERCASE");
+
+        StringPolicy policy2 = TemplatePolicy.builder()
+                .fragment(f -> f.toUpperCase())
+                .fragment(f -> f.toLowerCase())
+                .build();
+        ASSERT(policy2."Some lowercase", "some lowercase");
+
+        StringPolicy policy3 = TemplatePolicy.builder()
+                .value(v -> v instanceof Integer i ? Math.abs(i) : v)
+                .build();
+        ASSERT(policy3."\{z}", "123");
+
+        StringPolicy policy4 = TemplatePolicy.builder()
+                .format("%", (specifier, value) ->
+                        justify(String.valueOf(value), Integer.parseInt(specifier)))
+                .build();
+        ASSERT(policy4."%4\{x} + %4\{y} = %-5\{x + y}", "  10 + **** = 12355");
+
+        Supplier<String> supplier = () -> "x";
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<String> future = executor.submit(() -> "y");
+        FutureTask<String> futureTask = new FutureTask<String>(() -> "z");
+
+        StringPolicy policy5 = TemplatePolicy.builder()
+                .resolve()
+                .build();
+        ASSERT(policy5."\{supplier} \{future} \{futureTask}", "x y z");
+
+        SimplePolicy<Integer> policy6 = TemplatePolicy.builder()
+                .build(s -> Integer.parseInt(s));
+        ASSERT(policy6."123".toString(), "123");
     }
 }
