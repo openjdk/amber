@@ -496,6 +496,7 @@ public final class StringConcatFactory {
         Class<?>[] ptypes = mt.erase().parameterArray();
         MethodHandle[] filters = null;
         for (int i = 0; i < ptypes.length; i++) {
+            ptypes[i] = promoteIntType(ptypes[i]);
             MethodHandle filter = stringifierFor(ptypes[i]);
             if (filter != null) {
                 if (filters == null) {
@@ -826,6 +827,15 @@ public final class StringConcatFactory {
     }
 
     /**
+     * Promote integral types to int.
+     */
+    private static Class<?> promoteIntType(Class<?> t) {
+        // use int for subword integral types; still need special mixers
+        // and prependers for char, boolean
+        return t == byte.class || t == short.class ? int.class : t;
+    }
+
+    /**
      * Returns a stringifier for references and floats/doubles only.
      * Always returns null for other primitives.
      *
@@ -938,7 +948,7 @@ public final class StringConcatFactory {
 
             boolean isSpecialized = ptype.isPrimitive() ||
                                     StringConcatItem.class == ptype;
-            Class<?> ttype = isSpecialized ? ptype : Object.class;
+            Class<?> ttype = isSpecialized ? promoteIntType(ptype) : Object.class;
             MethodHandle filter = stringifierFor(ttype);
 
             if (filter != null) {
