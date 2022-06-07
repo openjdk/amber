@@ -769,7 +769,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
-    public R visitTemplatedString(TemplatedStringTree node, P p) {
+    public R visitStringTemplate(StringTemplateTree node, P p) {
         R r = scan(node.getPolicy(), p);
         r = scanAndReduce(node.getExpressions(), p, r);
         return r;

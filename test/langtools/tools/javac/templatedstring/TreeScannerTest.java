@@ -55,7 +55,7 @@ public class TreeScannerTest {
             private boolean log;
 
             @Override
-            public Void visitTemplatedString(TemplatedStringTree node, Void p) {
+            public Void visitStringTemplate(StringTemplateTree node, Void p) {
                 boolean prevLog = log;
                 try {
                     log = true;

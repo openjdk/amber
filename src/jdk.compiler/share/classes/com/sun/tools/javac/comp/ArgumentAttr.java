@@ -75,7 +75,6 @@ import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.METHOD;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 import com.sun.tools.javac.code.Types;
-import com.sun.tools.javac.tree.JCTree.JCTemplatedString;
 import com.sun.tools.javac.tree.JCTree.JCYield;
 
 /**

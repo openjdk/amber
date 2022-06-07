@@ -343,7 +343,7 @@ public class TypeEnter implements Completer {
         }
 
         private void autoImports() {
-            if (preview.isEnabled() && preview.isPreview(Feature.TEMPLATED_STRINGS)) {
+            if (preview.isEnabled() && preview.isPreview(Feature.STRING_TEMPLATES)) {
                 Lint prevLint = chk.setLint(lint.suppress(LintCategory.DEPRECATION, LintCategory.REMOVAL, LintCategory.PREVIEW));
 
                 try {

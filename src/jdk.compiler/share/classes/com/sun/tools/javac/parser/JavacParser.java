@@ -49,6 +49,8 @@ import com.sun.tools.javac.util.JCDiagnostic.Error;
 import com.sun.tools.javac.util.JCDiagnostic.Fragment;
 import com.sun.tools.javac.util.List;
 
+import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER_ENCODED;
+import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER_STRING;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.*;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ASSERT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CASE;
@@ -652,23 +654,24 @@ public class JavacParser implements Parser {
     }
 
     /**
-     * TemplatedString =
-     *    TEMPLATEDSTRING [TemplatedStringExpression]
+     * StringTemplate =
+     *    STRINGTEMPLATE [EmbeddedExpression]
      *  | STRINGLITERAL
      *
-     * TemplatedStringExpression =
+     * EmbeddedExpression =
      *  LBRACE term RBRACE
      */
-    JCExpression templatedString(JCExpression policy) {
-        checkSourceLevel(Feature.TEMPLATED_STRINGS);
+    JCExpression stringTemplate(JCExpression policy) {
+        checkSourceLevel(Feature.STRING_TEMPLATES);
         int oldmode = mode;
         selectExprMode();
         Token stringToken = token;
-        String value = token.stringVal();
+        String string = token.stringVal();
         int pos = stringToken.pos;
         int endPos = stringToken.endPos;
-        if (stringToken.kind == STRINGLITERAL && value.indexOf(JavaTokenizer.PLACEHOLDER) != -1) {
-            log.error(DiagnosticFlag.SYNTAX, pos, Errors.UnicodeObjectReplacementCharacter);
+        if (stringToken.kind == STRINGLITERAL) {
+            string = string.replace("\\", "\\\\");
+            string = string.replace(PLACEHOLDER_STRING, PLACEHOLDER_ENCODED);
         }
         nextToken();
         token = S.token();
@@ -686,7 +689,7 @@ public class JavacParser implements Parser {
         while (token.pos < endPos && token.kind != DEFAULT) {
             nextToken();
         }
-        JCExpression t = F.at(pos).TemplatedString(policy, value, expressions);
+        JCExpression t = F.at(pos).StringTemplate(policy, string, expressions);
         S.setPrevToken(stringToken);
         setMode(oldmode);
         return t;
@@ -1294,10 +1297,10 @@ public class JavacParser implements Parser {
                 t = literal(names.empty);
             } else return illegal();
             break;
-         case TEMPLATEDSTRING:
+         case STRINGTEMPLATE:
              if (typeArgs == null && isMode(EXPR)) {
                  selectExprMode();
-                 t = templatedString(null);
+                 t = stringTemplate(null);
              } else {
                  return illegal();
              }
@@ -1432,10 +1435,10 @@ public class JavacParser implements Parser {
                                 t = innerCreator(pos1, typeArgs, t);
                                 typeArgs = null;
                                 break loop;
-                            case TEMPLATEDSTRING:
+                            case STRINGTEMPLATE:
                             case STRINGLITERAL:
                                 if (typeArgs != null) return illegal();
-                                t = templatedString(t);
+                                t = stringTemplate(t);
                                 typeArgs = null;
                                 break loop;
                             }
@@ -1658,12 +1661,12 @@ public class JavacParser implements Parser {
                     if (token.kind == LT) typeArgs = typeArguments(false);
                     t = innerCreator(pos2, typeArgs, t);
                     typeArgs = null;
-                } else if (token.kind == TokenKind.TEMPLATEDSTRING ||
+                } else if (token.kind == TokenKind.STRINGTEMPLATE ||
                            token.kind == TokenKind.STRINGLITERAL) {
                     if (typeArgs != null) {
                         return illegal();
                     }
-                    t = templatedString(t);
+                    t = stringTemplate(t);
                     typeArgs = null;
                     // Uncomment to not allow follow on DOT
                     // return t;

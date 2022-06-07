@@ -48,7 +48,7 @@ import static java.lang.invoke.MethodType.methodType;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 class FormatItem {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 

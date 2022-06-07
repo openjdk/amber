@@ -1392,7 +1392,7 @@ public class Flow {
         }
 
         @Override
-        public void visitTemplatedString(JCTemplatedString tree) {
+        public void visitStringTemplate(JCStringTemplate tree) {
             JCExpression policy = tree.policy;
 
             if (policy != null) {

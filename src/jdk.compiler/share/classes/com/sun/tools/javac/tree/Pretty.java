@@ -1423,7 +1423,7 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
+    public void visitStringTemplate(JCStringTemplate tree) {
         try {
             JCExpression policy = tree.policy;
             print("[");

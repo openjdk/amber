@@ -239,7 +239,7 @@ public enum Source {
         CASE_NULL(JDK17, Fragments.FeatureCaseNull, DiagKind.NORMAL),
         PATTERN_SWITCH(JDK17, Fragments.FeaturePatternSwitch, DiagKind.PLURAL),
         REDUNDANT_STRICTFP(JDK17),
-        TEMPLATED_STRINGS(JDK19, Fragments.FeatureTemplatedStrings, DiagKind.PLURAL),
+        STRING_TEMPLATES(JDK19, Fragments.FeatureStringTemplates, DiagKind.PLURAL),
         ;
 
         enum DiagKind {

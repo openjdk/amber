@@ -537,10 +537,10 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCTemplatedString TemplatedString(JCExpression policy,
-                                             String string,
-                                             List<JCExpression> expressions) {
-        JCTemplatedString tree = new JCTemplatedString(policy, string, expressions);
+    public JCStringTemplate StringTemplate(JCExpression policy,
+                                           String string,
+                                           List<JCExpression> expressions) {
+        JCStringTemplate tree = new JCStringTemplate(policy, string, expressions);
         tree.pos = pos;
         return tree;
     }

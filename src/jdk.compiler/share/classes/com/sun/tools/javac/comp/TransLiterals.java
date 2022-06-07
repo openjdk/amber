@@ -57,6 +57,7 @@ import java.util.Iterator;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
+import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 /** This pass translates constructed literals (templated strings, ...) to conventional Java.
@@ -216,8 +217,8 @@ public final class TransLiterals extends TreeTranslator {
         }
     }
 
-    class TransTemplatedString {
-        JCTemplatedString tree;
+    class TransStringTemplate {
+        JCStringTemplate tree;
         JCExpression policy;
         String string;
         List<String> strings;
@@ -229,10 +230,10 @@ public final class TransLiterals extends TreeTranslator {
         List<JCVariableDecl> fields;
         MethodInfo concatMethod;
 
-        TransTemplatedString(JCTemplatedString tree) {
+        TransStringTemplate(JCStringTemplate tree) {
             this.tree = tree;
             this.policy = tree.policy;
-            this.string = tree.string;
+            this.string = tree.string.replace(PLACEHOLDER, OLD_PLACEHOLDER).translateEscapes();
             this.strings = split(this.string);
             this.expressions = translate(tree.expressions);
             this.expressionTypes = expressions.stream()
@@ -248,13 +249,13 @@ public final class TransLiterals extends TreeTranslator {
             this.concatMethod = null;
         }
 
-        private final static char PLACEHOLDER = '\uFFFC';
+        private final static char OLD_PLACEHOLDER = '\uFFFC';
 
         List<String> split(String string) {
             List<String> strings = List.nil();
             StringBuilder sb = new StringBuilder();
             for (char ch : string.toCharArray()) {
-                if (ch == PLACEHOLDER) {
+                if (ch == OLD_PLACEHOLDER) {
                     strings = strings.append(sb.toString());
                     sb.setLength(0);
                 } else {
@@ -578,15 +579,15 @@ public final class TransLiterals extends TreeTranslator {
         }
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
+    public void visitStringTemplate(JCStringTemplate tree) {
         int prevPos = make.pos;
         try {
             tree.policy = translate(tree.policy);
             tree.expressions = translate(tree.expressions);
 
-            TransTemplatedString transTemplatedString = new TransTemplatedString(tree);
+            TransStringTemplate transStringTemplate = new TransStringTemplate(tree);
 
-            result = transTemplatedString.visit();
+            result = transStringTemplate.visit();
         } catch (Throwable ex) {
             ex.printStackTrace();
             throw ex;

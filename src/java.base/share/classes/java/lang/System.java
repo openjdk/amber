@@ -2497,24 +2497,24 @@ public final class System {
                 return StringConcatHelper.mix(lengthCoder, constant);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
             public long stringConcatCoder(char value) {
                 return StringConcatHelper.coder(value);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
             public long stringBuilderConcatMix(long lengthCoder,
                                                StringBuilder sb) {
                 return sb.mix(lengthCoder);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
             public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf,
                                                    StringBuilder sb) {
                 return sb.prepend(lengthCoder, buf);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
             public TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments) {
                 return new SimpleTemplatedString(stencil, values, fragments);
             }

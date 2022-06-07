@@ -401,25 +401,25 @@ public interface JavaLangAccess {
     /**
      * Get the coder for the supplied character.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     long stringConcatCoder(char value);
 
     /**
      * Update lengthCoder for StringBuilder.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     long stringBuilderConcatMix(long lengthCoder, StringBuilder sb);
 
      /**
       * Prepend StringBuilder content.
       */
-     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+     @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
      long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb);
 
      /**
       * Create a new TemplatedString.
       */
-     @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+     @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
      TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments);
 
     /**

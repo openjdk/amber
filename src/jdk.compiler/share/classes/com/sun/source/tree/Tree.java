@@ -178,7 +178,7 @@ public interface Tree {
         /**
          * Used for instances of {@link TemplatedStringTree}.
          */
-        TEMPLATE(TemplatedStringTree.class),
+        TEMPLATE(StringTemplateTree.class),
 
         /**
          * Used for instances of {@link LabeledStatementTree}.

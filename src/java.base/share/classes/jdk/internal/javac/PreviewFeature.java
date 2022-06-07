@@ -63,7 +63,7 @@ public @interface PreviewFeature {
         SWITCH_PATTERN_MATCHING,
         VIRTUAL_THREADS,
         FOREIGN,
-        TEMPLATED_STRINGS,
+        STRING_TEMPLATES,
         /**
          * A key for testing.
          */

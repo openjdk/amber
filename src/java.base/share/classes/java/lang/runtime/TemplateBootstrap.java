@@ -41,7 +41,7 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public final class TemplateBootstrap {
 
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();

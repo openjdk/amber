@@ -53,7 +53,7 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     /**
      * Predefined FormatterPolicy instance that uses Locale.US.

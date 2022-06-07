@@ -35,7 +35,7 @@ import java.lang.invoke.MethodHandle;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public interface Digits {
     /**
      * Insert digits for long value in buffer from high index to low index.

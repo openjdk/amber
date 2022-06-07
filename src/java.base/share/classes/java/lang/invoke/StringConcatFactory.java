@@ -875,7 +875,7 @@ public final class StringConcatFactory {
      * Implementations of this class provide information necessary to
      * assist {@link StringConcatFactory} perform optimal addition.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     public interface StringConcatItem {
         /**
          * Calculate the length of the insertion.
@@ -916,7 +916,7 @@ public final class StringConcatFactory {
      *
      * @since 19
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     public static MethodHandle makeConcatWithTemplate(
             List<String> fragments,
             List<Class<?>> ptypes)
@@ -1040,7 +1040,7 @@ public final class StringConcatFactory {
      *
      * @since 19
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     public static List<MethodHandle> makeConcatWithTemplateCluster(
             List<String> fragments,
             List<Class<?>> ptypes,
@@ -1116,7 +1116,7 @@ public final class StringConcatFactory {
      *
      * @since 19
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     public static MethodHandle makeConcatWithTemplateGetters(
             List<String> fragments,
             List<MethodHandle> getters,

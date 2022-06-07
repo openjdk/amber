@@ -548,7 +548,7 @@ public class TreeInfo {
                 return getStartPos(node.patt);
             }
             case TEMPLATED: {
-                JCTemplatedString node = (JCTemplatedString) tree;
+                JCStringTemplate node = (JCStringTemplate) tree;
                 if (node.policy == null) {
                     return node.pos;
                 } else {

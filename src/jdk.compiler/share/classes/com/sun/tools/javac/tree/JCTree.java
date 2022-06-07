@@ -2411,14 +2411,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * Templated strings.
      */
-    public static class JCTemplatedString extends JCExpression implements TemplatedStringTree {
+    public static class JCStringTemplate extends JCExpression implements StringTemplateTree {
         public JCExpression policy;
         public String string;
         public List<JCExpression> expressions;
 
-        protected JCTemplatedString(JCExpression policy,
-                                    String string,
-                                    List<JCExpression> expressions) {
+        protected JCStringTemplate(JCExpression policy,
+                                   String string,
+                                   List<JCExpression> expressions) {
             this.policy = policy;
             this.string = string;
             this.expressions = expressions;
@@ -2451,12 +2451,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public void accept(Visitor v) {
-            v.visitTemplatedString(this);
+            v.visitStringTemplate(this);
         }
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public <R, D> R accept(TreeVisitor<R, D> v, D d) {
-            return v.visitTemplatedString(this, d);
+            return v.visitStringTemplate(this, d);
         }
     }
 
@@ -3439,9 +3439,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCFieldAccess Select(JCExpression selected, Name selector);
         JCIdent Ident(Name idname);
         JCLiteral Literal(TypeTag tag, Object value);
-        JCTemplatedString TemplatedString(JCExpression policy,
-                                          String string,
-                                          List<JCExpression> expressions);
+        JCStringTemplate StringTemplate(JCExpression policy,
+                                        String string,
+                                        List<JCExpression> expressions);
         JCPrimitiveTypeTree TypeIdent(TypeTag typetag);
         JCArrayTypeTree TypeArray(JCExpression elemtype);
         JCTypeApply TypeApply(JCExpression clazz, List<JCExpression> arguments);
@@ -3511,7 +3511,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitReference(JCMemberReference that)   { visitTree(that); }
         public void visitIdent(JCIdent that)                 { visitTree(that); }
         public void visitLiteral(JCLiteral that)             { visitTree(that); }
-        public void visitTemplatedString(JCTemplatedString that) { visitTree(that); }
+        public void visitStringTemplate(JCStringTemplate that) { visitTree(that); }
         public void visitTypeIdent(JCPrimitiveTypeTree that) { visitTree(that); }
         public void visitTypeArray(JCArrayTypeTree that)     { visitTree(that); }
         public void visitTypeApply(JCTypeApply that)         { visitTree(that); }

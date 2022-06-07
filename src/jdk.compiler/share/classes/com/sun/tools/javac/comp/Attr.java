@@ -4903,7 +4903,7 @@ public class Attr extends JCTree.Visitor {
         return (tag == CLASS) ? syms.stringType : syms.typeOfTag[tag.ordinal()];
     }
 
-    public void visitTemplatedString(JCTemplatedString tree) {
+    public void visitStringTemplate(JCStringTemplate tree) {
         JCExpression policy = tree.policy;
         Type resultType = syms.templatedStringType;
 

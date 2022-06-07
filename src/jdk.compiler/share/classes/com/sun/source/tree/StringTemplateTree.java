@@ -28,10 +28,10 @@ package com.sun.source.tree;
 import java.util.List;
 
 /**
- * A tree node for a templated string expression.
+ * A tree node for a string template expression.
  *
  */
-public interface TemplatedStringTree extends ExpressionTree {
+public interface StringTemplateTree extends ExpressionTree {
     /**
      * Returns templated string policy (may be qualified) or null.
      *

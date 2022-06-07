@@ -151,7 +151,7 @@ public class Tokens {
         DOUBLELITERAL(Tag.NUMERIC),
         CHARLITERAL(Tag.NUMERIC),
         STRINGLITERAL(Tag.STRING),
-        TEMPLATEDSTRING(Tag.STRING),
+        STRINGTEMPLATE(Tag.STRING),
         TRUE("true", Tag.NAMED),
         FALSE("false", Tag.NAMED),
         NULL("null", Tag.NAMED),
@@ -433,6 +433,22 @@ public class Tokens {
             return stringVal;
         }
     }
+
+    /**
+     * Placeholder for embedded expressions in string templates.
+     */
+    public final static char PLACEHOLDER = '\0';
+
+    /**
+     * Placeholder for embedded expressions as a string.
+     */
+    public final static String PLACEHOLDER_STRING = Character.toString(PLACEHOLDER);
+
+    /**
+     * Placeholder as an octal string, for encoding as an octal escape, must be three digits to
+     * avoid colliding with other digits.
+     */
+    public final static String PLACEHOLDER_ENCODED = String.format("\\%03o", (int)PLACEHOLDER);
 
     static final class NumericToken extends StringToken {
         /** The 'radix' value of this token */

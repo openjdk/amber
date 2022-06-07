@@ -151,7 +151,7 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @see java.util.FormatterPolicy
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface
 public interface TemplatePolicy<R, E extends Throwable> {
 
@@ -185,7 +185,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      *
      * @param <R>  Policy's apply result type.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     @FunctionalInterface
     interface SimplePolicy<R> extends TemplatePolicy<R, RuntimeException> {
         /**
@@ -229,7 +229,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * StringPolicy policy = ts -> ts.concat();
      * }
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     @FunctionalInterface
     interface StringPolicy extends SimplePolicy<String> {
         /**
@@ -328,7 +328,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      *
      * @implNote This interface is sealed to only allow standard policies.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     sealed interface PolicyLinkage permits FormatterPolicy {
         /**
          * Construct a {@link MethodHandle} that constructs a result based on the
@@ -407,7 +407,7 @@ public interface TemplatePolicy<R, E extends Throwable> {
      * @implNote Due to the nature of lambdas, validating functions can only throw
      * unchecked exceptions, ex. {@link RuntimeException}.
      */
-    @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
     public static class PolicyBuilder {
         /**
          * True if the policy is a simple concatenation policy. The default

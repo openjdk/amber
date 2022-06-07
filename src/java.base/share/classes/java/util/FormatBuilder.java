@@ -53,7 +53,7 @@ import static java.lang.invoke.MethodType.*;
  *
  * @since 19
  */
-@PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 final class FormatBuilder {
     private static final Lookup LOOKUP = lookup();
 
