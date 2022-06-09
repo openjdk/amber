@@ -49,8 +49,6 @@ import com.sun.tools.javac.util.JCDiagnostic.Error;
 import com.sun.tools.javac.util.JCDiagnostic.Fragment;
 import com.sun.tools.javac.util.List;
 
-import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER_ENCODED;
-import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER_STRING;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.*;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ASSERT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CASE;
@@ -667,12 +665,34 @@ public class JavacParser implements Parser {
         selectExprMode();
         Token stringToken = token;
         String string = token.stringVal();
+
+        List<String> fragments = List.nil();
+        if (stringToken.kind == STRINGLITERAL) {
+            fragments = fragments.append(translateEscapes(string));
+        } else {
+            StringBuilder sb = new StringBuilder();
+            int length = string.length();
+            for (int i = 0; i < length; i++) {
+                char ch = string.charAt(i);
+                if (ch != '\\') {
+                    sb.append(ch);
+                } else if (i + 2 < length && string.charAt(i + 1) == '{'
+                                          && string.charAt(i + 2) == '}') {
+                    fragments = fragments.append(translateEscapes(sb.toString()));
+                    sb.setLength(0);
+                    i += 2;
+                } else if (i + 1 < length){
+                    sb.append('\\');
+                    sb.append(string.charAt(i + 1));
+                    i++;
+                } else {
+                    // Error already reported.
+                }
+            }
+            fragments = fragments.append(translateEscapes(sb.toString()));
+        }
         int pos = stringToken.pos;
         int endPos = stringToken.endPos;
-        if (stringToken.kind == STRINGLITERAL) {
-            string = string.replace("\\", "\\\\");
-            string = string.replace(PLACEHOLDER_STRING, PLACEHOLDER_ENCODED);
-        }
         nextToken();
         token = S.token();
         List<JCExpression> expressions = List.nil();
@@ -689,7 +709,7 @@ public class JavacParser implements Parser {
         while (token.pos < endPos && token.kind != DEFAULT) {
             nextToken();
         }
-        JCExpression t = F.at(pos).StringTemplate(policy, string, expressions);
+        JCExpression t = F.at(pos).StringTemplate(policy, fragments, expressions);
         S.setPrevToken(stringToken);
         setMode(oldmode);
         return t;
@@ -773,12 +793,12 @@ public class JavacParser implements Parser {
         case CHARLITERAL:
             t = F.at(pos).Literal(
                 TypeTag.CHAR,
-                token.stringVal().charAt(0) + 0);
+                    translateEscapes(token.stringVal()).charAt(0) + 0);
             break;
         case STRINGLITERAL:
             t = F.at(pos).Literal(
                 TypeTag.CLASS,
-                token.stringVal());
+                translateEscapes(token.stringVal()));
             break;
         case TRUE: case FALSE:
             t = F.at(pos).Literal(
@@ -811,6 +831,15 @@ public class JavacParser implements Parser {
         String strval(Name prefix) {
             String s = token.stringVal();
             return prefix.isEmpty() ? s : prefix + s;
+        }
+
+        String translateEscapes(String string) {
+            try {
+                return string.translateEscapes();
+            } catch (Exception ex) {
+                // Errors already reported, just use untranslated string.
+                return string;
+            }
         }
 
     /** terms can be either expressions or types.
@@ -1829,6 +1858,7 @@ public class JavacParser implements Parser {
                         case LPAREN: case THIS: case SUPER:
                         case INTLITERAL: case LONGLITERAL: case FLOATLITERAL:
                         case DOUBLELITERAL: case CHARLITERAL: case STRINGLITERAL:
+                        case STRINGTEMPLATE:
                         case TRUE: case FALSE: case NULL:
                         case NEW: case IDENTIFIER: case ASSERT: case ENUM: case UNDERSCORE:
                         case SWITCH:
@@ -2749,6 +2779,7 @@ public class JavacParser implements Parser {
                 boolean isYieldStatement;
                 switch (next.kind) {
                     case PLUS: case SUB: case STRINGLITERAL: case CHARLITERAL:
+                    case STRINGTEMPLATE:
                     case INTLITERAL: case LONGLITERAL: case FLOATLITERAL: case DOUBLELITERAL:
                     case NULL: case IDENTIFIER: case TRUE: case FALSE:
                     case NEW: case SWITCH: case THIS: case SUPER:

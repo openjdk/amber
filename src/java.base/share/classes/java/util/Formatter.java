@@ -4877,53 +4877,61 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     /**
-     * Convert a {@link TemplatedString} stencil, containing format specifications,
-     * to a form that can be passed on to {@link Formatter}. The method scans a stencil,
-     * matching up formatter specifications with placeholders (expressions), then removing
-     * the placeholder. If no specification is found before a placeholder, the method
-     * inserts "%s".
+     * Find a format specification at the end of a fragment.
      *
-     * @param stencil  stencil string with placeholders
+     * @param fragment  fragment to check
+     * @param needed    if the specification is needed
+     *
+     * @return true if the specification is found and needed
+     *
+     * @throws MissingFormatArgumentException if not at end or found and not needed
+     */
+    private static boolean findFormat(String fragment, boolean needed) {
+        Matcher matcher = fsPattern.matcher(fragment);
+        String group;
+
+        while (matcher.find()) {
+            group = matcher.group();
+
+            if (!group.equals("%%") && !group.equals("%n")) {
+                if (matcher.end() == fragment.length() && needed) {
+                    return true;
+                }
+
+                throw new MissingFormatArgumentException(group);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Convert a {@link TemplatedString} fragments, containing format specifications,
+     * to a form that can be passed on to {@link Formatter}. The method scans each fragment,
+     * matching up formatter specifications with the following expression. If no
+     * specification is found, the method inserts "%s".
+     *
+     * @param fragments  string template fragments
      *
      * @return  format string
      */
-    static String templatedStringFormat(String stencil) {
+    static String templatedStringFormat(List<String> fragments) {
         StringBuilder sb = new StringBuilder();
-        Matcher matcher = fsPattern.matcher(stencil);
-        int length = stencil.length();
+        int lastIndex = fragments.size() - 1;
+        List<String> formats = fragments.subList(0, lastIndex);
+        String last = fragments.get(lastIndex);
 
-        for (int i = 0; i < length; i++) {
-            char ch = stencil.charAt(i);
-
-            if (ch == '%') {
-                matcher.region(i, length);
-
-                if (matcher.lookingAt()) {
-                    String group = matcher.group();
-                    int next = i + group.length();
-                    char placeholder = next < length ? stencil.charAt(next) : '\0';
-
-                    if (group.endsWith("n") || group.endsWith("%")) {
-                        sb.append(group);
-                        i = next - 1;
-                    } else if (placeholder == TemplatedString.PLACEHOLDER) {
-                        if (group.contains("$") || group.contains("<")) {
-                            throw new MissingFormatArgumentException(group);
-                        }
-
-                        sb.append(group);
-                        i = next;
-                    } else {
-                        throw new MissingFormatArgumentException(group);
-                    }
-                } else {
-                    sb.append(ch);
-                }
-            } else if (ch == TemplatedString.PLACEHOLDER) {
-                sb.append("%s");
+        for (String format : formats) {
+            if (findFormat(format, true)) {
+                sb.append(format);
             } else {
-                sb.append(ch);
+                sb.append(format);
+                sb.append("%s");
             }
+        }
+
+        if (!findFormat(last, false)) {
+            sb.append(last);
         }
 
         return sb.toString();

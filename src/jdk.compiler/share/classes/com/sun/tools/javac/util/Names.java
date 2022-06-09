@@ -222,18 +222,13 @@ public class Names {
 
     // templated string
     public final Name apply;
-    public final Name asList;
     public final Name concat;
     public final Name fragments;
     public final Name fragmentsUpper;
+    public final Name valuesUpper;
     public final Name of;
-    public final Name split;
-    public final Name stencil;
-    public final Name stencilUpper;
     public final Name str;
     public final Name templatedStringBSM;
-    public final Name unmodifiableList;
-    public final Name valuesUpper;
 
     public final Name.Table table;
 
@@ -408,18 +403,13 @@ public class Names {
 
         // templated string
         apply = fromString("apply");
-        asList = fromString("asList");
         concat = fromString("concat");
         fragments = fromString("fragments");
         fragmentsUpper = fromString("FRAGMENTS");
+        valuesUpper = fromString("VALUES");
         of = fromString("of");
-        split = fromString("split");
-        stencil = fromString("stencil");
-        stencilUpper = fromString("STENCIL");
         str = fromString("STR");
         templatedStringBSM = fromString("templatedStringBSM");
-        unmodifiableList = fromString("unmodifiableList");
-        valuesUpper = fromString("VALUES");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

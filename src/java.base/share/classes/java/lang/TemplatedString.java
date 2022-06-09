@@ -38,17 +38,18 @@ import jdk.internal.javac.PreviewFeature;
  * implementations are considered immutable.
  * <p>
  * Implementations of this interface must minimally implement the methods
- * {@link TemplatedString#stencil()} and {@link TemplatedString#values()}.
+ * {@link TemplatedString#fragments()} and {@link TemplatedString#values()}.
  * <p>
- * The {@link TemplatedString#stencil()} method must return a string
- * consistent with the string template content, with placeholders standing in for
- * embedded expressions. The {@linkplain PLACEHOLDER placeholder} character used
- * is the Unicode <code>OBJECT-REPLACEMENT-CHARACTER (&#92;ufffc)</code>.
+ * The {@link TemplatedString#fragments()} method must return an immutable
+ * {@code List<String>} consistent with the string template body. The list
+ * contains the string of characters preceeding each of the embedded expressions
+ * plus the string of characters following the last embedded expression. The order
+ * of the strings is left to right as they appear in the string template.
  * For example; {@snippet :
- * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
- * String stencil = templatedString.stencil();
+ * TemplatedString ts = "The \{name} and \{address} of the resident.";
+ * List<String> fragments = ts.fragments();
  * }
- * {@code stencil} will be equivalent to <code>"&#92;ufffc + &#92;ufffc = &#92;ufffc"</code>.
+ * {@code fragments} will be equivalent to <code>List.of("The ", " and ", " of the resident.")</code>.
  * <p>
  * The {@link TemplatedString#values()} method returns an immutable {@code
  * List<Object>} of values accumulated by evaluating embedded expressions prior
@@ -60,16 +61,15 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * int x = 10;
  * int y = 20;
- * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
- * List<Object> values = templatedString.values();
+ * TemplatedString ts = "\{x} + \{y} = \{x + y}";
+ * List<Object> values = ts.values();
  * }
  * {@code values} will be the equivalent of <code>List.of(x, y, x + y)</code>.
  * <p>
  * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
  * with {@link TemplatePolicy} to produce meaningful results. For example, if a
- * user wants string concatenation, replacing placeholders in the stencil with
- * values, then they can use a string template expression with the standard
- * {@link TemplatePolicy#STR} policy.
+ * user wants basic string concatenation, then they can use a string template
+ * expression with the standard {@link TemplatePolicy#STR} policy.
  * {@snippet :
  * int x = 10;
  * int y = 20;
@@ -83,25 +83,32 @@ import jdk.internal.javac.PreviewFeature;
  * String result = "\{x} + \{y} = \{x + y}".apply(STR);
  * }
  * In addition to string template expressions, the factory methods
- * {@link TemplatedString#of(String)} and {@link TemplatedString#of(String, List)}
+ * {@link TemplatedString#of(String)} and {@link TemplatedString#of(List, List)}
  * can be used to construct {@link TemplatedString TemplatedStrings}. The
  * {@link TemplateBuilder} class can be used to construct
- * {@link java.lang.TemplatedString TemplatedStrings} from parts; strings,
+ * {@link java.lang.TemplatedString TemplatedStrings} from parts; string fragments,
  * values and other {@link TemplatedString TemplatedStrings}.
  * <p>
- * The remaining methods are primarily used by {@linkplain TemplatePolicy policies}
- * to construct results.
- * <p>
- * The {@link TemplatedString#split(String)} and {@link TemplatedString#fragments()}
- * methods can be used to work with the characters from the stencil surrounding the
- * placeholders, specifically when using {@link StringBuilder}.
- * <p>
  * The {@link TemplatedString#concat()} method provides a simple way to perform
- * string concatenation of the {@link TemplatedString}, i.e., injecting values
- * into the stencil.
+ * basic string concatenation of the {@link TemplatedString}.
+ * <p>
+ * {@link TemplatePolicy Template policies} typically use the following pattern to perform
+ * concatenation:
+ * {@snippet :
+ * StringBuilder sb = new StringBuilder();
+ * Iterator<String> fragmentsIter = ts.fragments().iterator(); // @highlight substring="fragments()"
+ *
+ * for (Object value : ts.values()) {
+ *     sb.append(fragmentsIter.next());
+ *     sb.append(value);
+ * }
+ *
+ * sb.append(fragmentsIter.next());
+ * String result = sb.toString();
+ * }
  *
  * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
- * placeholder count in the stencil must equal the values list size.
+ * fragment list size must be one more than the values list size.
  *
  * @see java.lang.TemplatePolicy
  * @see java.lang.TemplatePolicy.SimplePolicy
@@ -110,30 +117,22 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public interface TemplatedString {
-
     /**
-     * Placeholder character usied to replace embedded expressions in the
-     * stencil. The value used is the unicode
-     * <code>OBJECT-REPLACEMENT-CHARACTER (&#92;ufffc)</code>.
-     */
-    public static final char PLACEHOLDER = '\ufffc';
-
-    /**
-     * String equivalent of {@link PLACEHOLDER}.
-     */
-    public static final String PLACEHOLDER_STRING = Character.toString(PLACEHOLDER);
-
-    /**
-     * Returns the stencil string with placeholders. In the example:
-     * {@snippet :
-     * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
-     * String stencil = templatedString.stencil(); // @highlight substring="stencil()"
+     * Returns an immutable list of string fragments consisting of the string
+     * of characters preceeding each of the embedded expressions plus the
+     * string of characters following the last embedded expression. In the
+     * example: {@snippet :
+     * TemplatedString ts = "The student \{student} is in \{teacher}'s class room.";
+     * List<String> fragments = ts.fragments(); // @highlight substring="fragments()"
      * }
-     * {@code stencil} will be equivalent to <code>"&#92;ufffc + &#92;ufffc = &#92;ufffc"</code>.
+     * <code>fragments</code> will be equivalent to
+     * <code>List.of("The student ", " is in ", "'s class room.")</code>
      *
-     * @return the stencil string with placeholder
+     * @return list of string fragments
+     *
+     * @implSpec The list returned is immutable.
      */
-    String stencil();
+    List<String> fragments();
 
     /**
      * Returns an immutable list of embedded expression results. In the example:
@@ -144,51 +143,14 @@ public interface TemplatedString {
      * <code>values</code> will be equivalent to <code>List.of(x, y, x + y)</code>
      *
      * @return list of expression values
+     *
+     * @implSpec The list returned is immutable.
      */
     List<Object> values();
 
-    /**
-     * Returns an immutable list of string fragments created by splitting the
-     * stencil at placeholders using {@link TemplatedString#split(String)}. In
-     * the example: {@snippet :
-     * TemplatedString templatedString = "The student \{student} is in \{teacher}'s class room.";
-     * List<String> fragments = templatedString.fragments(); // @highlight substring="fragments()"
-     * }
-     * <code>fragments</code> will be equivalent to
-     * <code>List.of("The student ", " is in ", "'s class room.")</code>
-     * <p>
-     * {@link fragments} is a convenience method for {@link TemplatePolicy
-     * template policies} that construct results using {@link StringBuilder}.
-     * Typically using the following pattern:
-     * {@snippet :
-     * StringBuilder sb = new StringBuilder();
-     * Iterator<String> fragmentsIter = templatedString.fragments().iterator(); // @highlight substring="fragments()"
-     *
-     * for (Object value : templatedString.values()) {
-     *     sb.append(fragmentsIter.next());
-     *     sb.append(value);
-     * }
-     *
-     * sb.append(fragmentsIter.next());
-     * String result = sb.toString();
-     * }
-     * @implSpec The list returned is immutable.
-     *
-     * @implNote The {@link TemplatedString} implementation generated by the
-     * compiler for a string template guarantees efficiency by only computing the
-     * fragments list once. Other implementations should make an effort to do the
-     * same. The default implementation applies the {@link TemplatedString#split}
-     * method to the stencil, each time the method is invoked.
-     *
-     * @return list of string fragments
-     */
-    default List<String> fragments() {
-        return TemplatedString.split(stencil());
-    }
 
     /**
-     * {@return the stencil with the values injected at placeholders, i.e., the equivalent
-     * of string concatenation}
+     * {@return the basic concatenation of fragments and values}
      */
     default String concat() {
         return TemplatedString.concat(this);
@@ -235,59 +197,20 @@ public interface TemplatedString {
     public static String toString(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString should not be null");
 
-        String stencil = templatedString.stencil()
-                .replace("\"", "\\\"")
-                .replace(PLACEHOLDER_STRING, "\\{}");
-
-        String prefix = "\"" + stencil + "\"(";
-        String delimiter = ", ";
-        String suffix = ")";
+        String string = "\"" +
+                        templatedString.fragments()
+                            .stream()
+                            .collect(Collectors.joining("\\{}")) +
+                        "\"(";
 
         return templatedString.values()
                 .stream()
                 .map(v -> String.valueOf(v))
-                .collect(Collectors.joining(delimiter, prefix, suffix));
+                .collect(Collectors.joining(", ", string, ")"));
     }
 
     /**
-     * Splits a stencil at placeholders, returning an immutable list of strings.
-     *
-     * @implSpec Unlike {@link String#split String.split} this method returns an
-     * immutable list and retains empty edge cases (empty string and string
-     * ending in placeholder) so that fragments prefix and suffix all placeholders
-     * (expression values). That is, <code>fragments().size() == values().size()
-     * + 1</code>.
-     *
-     * @param stencil  a {@link String} with placeholders
-     *
-     * @return list of string fragments
-     *
-     * @throws NullPointerException if string is null
-     */
-    public static List<String> split(String stencil) {
-        Objects.requireNonNull(stencil, "stencil must not be null");
-
-        List<String> fragments = new ArrayList<>(8);
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < stencil.length(); i++) {
-            char ch = stencil.charAt(i);
-
-            if (ch == PLACEHOLDER) {
-                fragments.add(sb.toString());
-                sb.setLength(0);
-            } else {
-                sb.append(ch);
-            }
-        }
-
-        fragments.add(sb.toString());
-
-        return Collections.unmodifiableList(fragments);
-    }
-
-    /**
-     * {@return the stencil with the values inserted at placeholders}
+     * {@return the basic concatenation of fragments and values}
      *
      * @param templatedString  the {@link TemplatedString} to process
      *
@@ -296,17 +219,15 @@ public interface TemplatedString {
     private static String concat(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString must not be null");
 
-        String stencil = templatedString.stencil();
+        List<String> fragments = templatedString.fragments();
         List<Object> values = templatedString.values();
 
-        if (values.size() == 0) {
-            return stencil;
+        if (fragments.size() == 1) {
+            return fragments.get(0);
         }
 
-        List<String> fragments = templatedString.fragments();
-
         Iterator<String> fragmentsIter = fragments.iterator();
-        StringBuilder sb = new StringBuilder(stencil.length() + 16 * values.size());
+        StringBuilder sb = new StringBuilder();
 
         for (Object value : values) {
             sb.append(fragmentsIter.next());
@@ -321,53 +242,48 @@ public interface TemplatedString {
     /**
      * Returns a TemplatedString composed from a string.
      *
-     * @implSpec The stencil string can not contain expressions or placeholders.
-     *
-     * @param stencil  stencil string with no placeholders
-     *
-     * @return TemplatedString composed from stencil
-     *
-     * @throws IllegalArgumentException if stencil contains a {@link PLACEHOLDER}
-     * @throws NullPointerException if string is null
-     */
-    public static TemplatedString of(String stencil) {
-        Objects.requireNonNull(stencil, "stencil must not be null");
-
-        if (stencil.indexOf(PLACEHOLDER) != -1) {
-            throw new IllegalArgumentException("stencil contains a placeholder");
-        }
-
-        return new SimpleTemplatedString(stencil, List.of(), List.of(stencil));
-    }
-
-    /**
-     * Returns a TemplatedString composed from a stencil string and values.
-     *
-     * @implSpec The number of placeholders in the stencil must match the length
-     * of the values list.
-     *
-     * @param stencil  stencil string with placeholders
-     * @param values   immutable list of expression values
+     * @param string  single string fragment
      *
      * @return TemplatedString composed from string
      *
-     * @throws IllegalArgumentException if the number of placeholders in the
-     *         stencil doesn't matching the length of the values list
-     * @throws NullPointerException if stencil or values is null
+     * @throws NullPointerException if string is null
      */
-    public static TemplatedString of(String stencil, List<Object> values) {
-        Objects.requireNonNull(stencil, "stencil must not be null");
+    public static TemplatedString of(String string) {
+        Objects.requireNonNull(string, "string must not be null");
+
+        return new SimpleTemplatedString(List.of(string), List.of());
+    }
+
+    /**
+     * Returns a TemplatedString composed from fragments and values.
+     *
+     * @implSpec The {@code fragments} list size must be one more that the
+     * {@code values} list size.
+     *
+     * @param fragments list of string fragments
+     * @param values    list of expression values
+     *
+     * @return TemplatedString composed from string
+     *
+     * @throws IllegalArgumentException if fragments list size is not one more
+     *         than values list size
+     * @throws NullPointerException if fragments or values is null
+     *
+     * @implNote Contents of both lists are copied to construct immutable lists.
+     */
+    public static TemplatedString of(List<String> fragments, List<Object> values) {
+        Objects.requireNonNull(fragments, "fragments must not be null");
         Objects.requireNonNull(values, "values must not be null");
-        List<String> fragments = split(stencil);
 
         if (values.size() + 1 != fragments.size()) {
             throw new IllegalArgumentException(
-                    "stencil placeholder count doesn't matching the values list size");
+                    "fragments list size is not one more than values list size");
         }
 
+        fragments = Collections.unmodifiableList(new ArrayList<>(fragments));
         values = Collections.unmodifiableList(new ArrayList<>(values));
 
-        return new SimpleTemplatedString(stencil, values, fragments);
+        return new SimpleTemplatedString(fragments, values);
     }
 
     /**
@@ -386,9 +302,9 @@ public interface TemplatedString {
      * To use, construct a new {@link TemplateBuilder} using
      * {@link TemplatedString#builder}, then chain invokes of
      * {@link TemplateBuilder#fragment} or {@link TemplateBuilder#value} to
-     * build up the stencil and values.
+     * build up the {@link java.lang.TemplatedString}.
      * {@link TemplateBuilder#template(TemplatedString)} can be used to add the
-     * stencil and values from another {@link TemplatedString}.
+     * fragments and values from another {@link TemplatedString}.
      * {@link TemplateBuilder#build()} can be invoked at the end of the chain to
      * produce a new {@link TemplatedString} using the current state of the
      * builder.
@@ -405,17 +321,13 @@ public interface TemplatedString {
      *  }
      *
      *  Result: "The result of adding 10 and 20 equals 30"
-     * <p>
-     * The {@link TemplateBuilder} itself implements {@link TemplatedString}. When
-     * applied to a policy will use the current state of stencil and values to
-     * produce a result.
      */
-    // @PreviewFeature(feature=PreviewFeature.Feature.TEMPLATED_STRINGS)
-    public static class TemplateBuilder implements TemplatedString {
+    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
+    public static class TemplateBuilder {
         /**
-         * {@link StringBuilder} used to construct the final stencil.
+         * {@link ArrayList} used to gather fragments.
          */
-        private final StringBuilder stencilBuilder;
+        private final List<String> fragments;
 
         /**
          * {@link ArrayList} used to gather values.
@@ -426,22 +338,14 @@ public interface TemplatedString {
          * Private Constructor.
          */
         private TemplateBuilder() {
-            this.stencilBuilder = new StringBuilder();
+            this.fragments = new ArrayList<>();
             this.values = new ArrayList<>();
-        }
 
-        @Override
-        public String stencil() {
-            return stencilBuilder.toString();
-        }
-
-        @Override
-        public List<Object> values() {
-            return Collections.unmodifiableList(values);
+            fragments.add("");
         }
 
         /**
-         * Add the supplied {@link TemplatedString TemplatedString's} stencil and
+         * Add the supplied {@link TemplatedString TemplatedString's} fragments and
          * values to the builder.
          *
          * @param templatedString existing TemplatedString
@@ -452,70 +356,70 @@ public interface TemplatedString {
          */
         public TemplateBuilder template(TemplatedString templatedString) {
             Objects.requireNonNull(templatedString, "templatedString must not be null");
-
-            stencilBuilder.append(templatedString.stencil());
-            values.addAll(templatedString.values());
+            List<String> otherFragments = templatedString.fragments();
+            List<Object> otherValues = templatedString.values();
+            fragment(otherFragments.get(0));
+            fragments.addAll(otherFragments.subList(1, otherFragments.size()));
+            values.addAll(otherValues);
 
             return this;
         }
 
         /**
-         * Add a string fragment to the {@link TemplateBuilder Builder's} stencil.
+         * Add a string fragment to the {@link TemplateBuilder Builder's} fragments.
          *
          * @param fragment  string fragment to be added
          *
          * @return this Builder
          *
-         * @throws IllegalArgumentException if fragment contains a {@link PLACEHOLDER}
          * @throws NullPointerException if string is null
          */
         public TemplateBuilder fragment(String fragment) {
             Objects.requireNonNull(fragment, "string must not be null");
 
-            if (fragment.indexOf(PLACEHOLDER) != -1) {
-                throw new IllegalArgumentException("string fragment contains a placeholder");
-            }
-
-            stencilBuilder.append(fragment);
+            int i = fragments.size() - 1;
+            fragments.set(i, fragments.get(i) + fragment);
 
             return this;
         }
 
         /**
-         * Add a value to the {@link TemplateBuilder}. This method will also insert a placeholder
-         * in the {@link TemplateBuilder Builder's} stencil.
+         * Add a value to the {@link TemplateBuilder}. This method will also advance the
+         * builder's last fragment.
          *
          * @param value value to be added
          *
          * @return this Builder
          */
         public TemplateBuilder value(Object value) {
-            stencilBuilder.append(PLACEHOLDER);
             values.add(value);
+            fragments.add("");
 
             return this;
         }
 
         /**
-         * Resets the builder to the initial state; empty stencil, empty values.
+         * Resets the builder to the initial state; one empty fragment and empty values.
          *
          * @return this Builder
          */
         public TemplateBuilder clear() {
-            stencilBuilder.setLength(0);
+            fragments.clear();
             values.clear();
+            fragments.add("");
 
             return this;
         }
 
         /**
          * Returns a {@link TemplatedString} based on the current state of the
-         * {@link TemplateBuilder Builder's} stencil and values.
+         * {@link TemplateBuilder Builder's} fragments and values.
          *
          * @return a new TemplatedString
          */
         public TemplatedString build() {
-            return TemplatedString.of(stencilBuilder.toString(), values);
+            return new SimpleTemplatedString(Collections.unmodifiableList(fragments),
+                                             Collections.unmodifiableList(values));
         }
 
     }

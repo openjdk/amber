@@ -420,7 +420,7 @@ public interface JavaLangAccess {
       * Create a new TemplatedString.
       */
      @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-     TemplatedString newTemplatedString(String stencil, List<Object> values, List<String> fragments);
+     TemplatedString newTemplatedString(List<String> fragments, List<Object> values);
 
     /**
      * Join strings

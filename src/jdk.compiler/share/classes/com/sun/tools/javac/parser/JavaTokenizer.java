@@ -99,7 +99,7 @@ public class JavaTokenizer extends UnicodeReader {
     protected final StringBuilder sb;
 
     /**
-     * Tokens pending to be read, ex. StringTemplate embedded expression tokens.
+     * Tokens pending to be read from string template embedded expressions.
      */
     protected List<Token> pendingTokens;
 
@@ -127,11 +127,6 @@ public class JavaTokenizer extends UnicodeReader {
      * true if is a text block, set by nextToken().
      */
     protected boolean isTextBlock;
-
-    /**
-     * true if contains escape sequences, set by nextToken().
-     */
-    protected boolean hasEscapeSequences;
 
     /**
      * true if contains templated string escape sequences, set by nextToken().
@@ -340,19 +335,9 @@ public class JavaTokenizer extends UnicodeReader {
      * Scan the content of a string template expression.
      */
     private void scanEmbeddedExpression() {
-        // Remove backslash
-        sb.setLength(sb.length() - 1);
-
-        // If transitioning to string template, encode existing placeholders.
-        if (!isStringTemplate) {
-            String string = sb.toString();
-            sb.setLength(0);
-            string = string.replace(PLACEHOLDER_STRING, PLACEHOLDER_ENCODED);
-            sb.append(string);
-            isStringTemplate = true;
-        }
-        // Add a placeholder.
-        sb.append(PLACEHOLDER);
+        isStringTemplate = true;
+        // Keep backslash and add rest of placeholder.
+        sb.append("{}");
 
         // Separate tokenizer for the embedded expression.
         JavaTokenizer tokenizer = new JavaTokenizer(fac, buffer(), length());
@@ -410,8 +395,6 @@ public class JavaTokenizer extends UnicodeReader {
      */
     private void scanLitChar(int pos) {
         if (acceptThenPut('\\')) {
-            hasEscapeSequences = true;
-
             switch (get()) {
                 case '0':
                 case '1':
@@ -468,8 +451,6 @@ public class JavaTokenizer extends UnicodeReader {
                     lexError(position(), Errors.IllegalEscChar);
                     break;
             }
-        } else if (isStringTemplate && get() == PLACEHOLDER) {
-            sb.append(PLACEHOLDER_ENCODED);
         } else {
             putThenNext();
         }
@@ -506,7 +487,7 @@ public class JavaTokenizer extends UnicodeReader {
             while (isAvailable()) {
                 if (accept("\"\"\"")) {
                     tk = isStringTemplate ? Tokens.TokenKind.STRINGTEMPLATE
-                                           : Tokens.TokenKind.STRINGLITERAL;
+                                          : Tokens.TokenKind.STRINGLITERAL;
 
                     return;
                 }
@@ -533,7 +514,7 @@ public class JavaTokenizer extends UnicodeReader {
             while (isAvailable()) {
                 if (accept('\"')) {
                     tk = isStringTemplate ? Tokens.TokenKind.STRINGTEMPLATE
-                                           : Tokens.TokenKind.STRINGLITERAL;
+                                          : Tokens.TokenKind.STRINGLITERAL;
                     return;
                 }
 
@@ -882,7 +863,6 @@ public class JavaTokenizer extends UnicodeReader {
         name = null;
         radix = 0;
         isTextBlock = false;
-        hasEscapeSequences = false;
         isStringTemplate = false;
 
         int pos;
@@ -1170,15 +1150,6 @@ public class JavaTokenizer extends UnicodeReader {
                         string = string.stripIndent();
                     } catch (Exception ex) {
                         // Error already reported, just use unstripped string.
-                    }
-                }
-
-                // Translate escape sequences if present.
-                if (hasEscapeSequences && !isStringTemplate) {
-                    try {
-                        string = string.translateEscapes();
-                    } catch (Exception ex) {
-                        // Error already reported, just use untranslated string.
                     }
                 }
 

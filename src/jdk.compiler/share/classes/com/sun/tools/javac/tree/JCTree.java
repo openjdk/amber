@@ -264,9 +264,9 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         LITERAL,
 
-        /** Templated string.
+        /** String template expression.
          */
-        TEMPLATED,
+        STRING_TEMPLATE,
 
         /** Basic type identifiers, of type TypeIdent.
          */
@@ -2409,18 +2409,18 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     }
 
     /**
-     * Templated strings.
+     * String template expression.
      */
     public static class JCStringTemplate extends JCExpression implements StringTemplateTree {
         public JCExpression policy;
-        public String string;
+        public List<String> fragments;
         public List<JCExpression> expressions;
 
         protected JCStringTemplate(JCExpression policy,
-                                   String string,
+                                   List<String> fragments,
                                    List<JCExpression> expressions) {
             this.policy = policy;
-            this.string = string;
+            this.fragments = fragments;
             this.expressions = expressions;
         }
 
@@ -2430,8 +2430,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
 
         @Override
-        public String getString() {
-            return string;
+        public List<String> getFragments() {
+            return fragments;
         }
 
         @Override
@@ -2446,7 +2446,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
         @Override @DefinedBy(Api.COMPILER_TREE)
         public Tag getTag() {
-            return TEMPLATED;
+            return STRING_TEMPLATE;
         }
 
         @Override @DefinedBy(Api.COMPILER_TREE)
@@ -3440,7 +3440,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCIdent Ident(Name idname);
         JCLiteral Literal(TypeTag tag, Object value);
         JCStringTemplate StringTemplate(JCExpression policy,
-                                        String string,
+                                        List<String> fragments,
                                         List<JCExpression> expressions);
         JCPrimitiveTypeTree TypeIdent(TypeTag typetag);
         JCArrayTypeTree TypeArray(JCExpression elemtype);

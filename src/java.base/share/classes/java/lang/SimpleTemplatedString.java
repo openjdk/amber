@@ -30,12 +30,9 @@ import java.util.List;
 /**
  * Generic TemplatedString.
  *
- * @param stencil    stencil string with placeholders
+ * @param fragments  immutable list of string fragments from string template
  * @param values     immutable list of expression values
- * @param fragments  immutable list of string fragments created by splitting
- *                   the stencil at placeholders
  */
-record SimpleTemplatedString(String stencil,
-                             List<Object> values,
-                             List<String> fragments
+record SimpleTemplatedString(List<String> fragments,
+                             List<Object> values
 ) implements TemplatedString {}

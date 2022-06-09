@@ -46,7 +46,7 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @implNote When used in conjunction with a compiler generated {@link
  * TemplatedString} this {@link TemplatePolicy} will use the format
- * specifiers in the stencil and types of the values in the value list
+ * specifiers in the fragments and types of the values in the value list
  * to produce a more performant formatter.
  *
  * @implSpec Since, values are in situ, argument indexing is unsupported.
@@ -87,7 +87,7 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     @Override
     public final String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
-        String format = Formatter.templatedStringFormat(templatedString.stencil());
+        String format = Formatter.templatedStringFormat(templatedString.fragments());
         Object[] values = templatedString.values().toArray(new Object[0]);
 
         return new Formatter(locale).format(format, values).toString();
@@ -104,10 +104,10 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
      * @see java.util.Formatter
      */
     @Override
-    public MethodHandle applier(String stencil, MethodType type) {
-        Objects.requireNonNull(stencil);
+    public MethodHandle applier(List<String> fragments, MethodType type) {
+        Objects.requireNonNull(fragments);
         Objects.requireNonNull(type);
-        String format = Formatter.templatedStringFormat(stencil);
+        String format = Formatter.templatedStringFormat(fragments);
         Class<?>[] ptypes = type.dropParameterTypes(0,1).parameterArray();
         FormatBuilder fmh = new FormatBuilder(format, locale, ptypes);
         MethodHandle mh = fmh.build();

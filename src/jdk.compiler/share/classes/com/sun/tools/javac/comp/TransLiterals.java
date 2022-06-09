@@ -54,13 +54,13 @@ import com.sun.tools.javac.util.Names;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
-import static com.sun.tools.javac.parser.Tokens.PLACEHOLDER;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
-/** This pass translates constructed literals (templated strings, ...) to conventional Java.
+/** This pass translates constructed literals (string templates, ...) to conventional Java.
  *
  *  <p><b>This is NOT part of any supported API.
  *  If you write code that depends on this, you do so at your own risk.
@@ -120,6 +120,14 @@ public final class TransLiterals extends TreeTranslator {
 
     JCExpression makeString(String string) {
         return makeLit(syms.stringType, string);
+    }
+
+    List<JCExpression> makeStringList(List<String> strings) {
+        List<JCExpression> exprs = List.nil();
+        for (String string : strings) {
+            exprs = exprs.append(makeString(string));
+        }
+        return exprs;
     }
 
     Type makeListType(Type elemType) {
@@ -220,12 +228,12 @@ public final class TransLiterals extends TreeTranslator {
     class TransStringTemplate {
         JCStringTemplate tree;
         JCExpression policy;
-        String string;
-        List<String> strings;
+        List<String> fragments;
         List<JCExpression> expressions;
         List<Type> expressionTypes;
         boolean useValuesList;
         JCClassDecl templatedStringClass;
+        JCVariableDecl fragmentsVar;
         JCVariableDecl valuesVar;
         List<JCVariableDecl> fields;
         MethodInfo concatMethod;
@@ -233,8 +241,7 @@ public final class TransLiterals extends TreeTranslator {
         TransStringTemplate(JCStringTemplate tree) {
             this.tree = tree;
             this.policy = tree.policy;
-            this.string = tree.string.replace(PLACEHOLDER, OLD_PLACEHOLDER).translateEscapes();
-            this.strings = split(this.string);
+            this.fragments = tree.fragments;
             this.expressions = translate(tree.expressions);
             this.expressionTypes = expressions.stream()
                     .map(arg -> arg.type == syms.botType ? syms.objectType : arg.type)
@@ -244,34 +251,18 @@ public final class TransLiterals extends TreeTranslator {
                             types.isSameType(t, syms.doubleType) ? 2 : 1).sum();
             this.useValuesList = 250 < slots;
             this.templatedStringClass = null;
+            this.fragmentsVar = null;
             this.valuesVar = null;
             this.fields = List.nil();
             this.concatMethod = null;
         }
 
-        private final static char OLD_PLACEHOLDER = '\uFFFC';
-
-        List<String> split(String string) {
-            List<String> strings = List.nil();
-            StringBuilder sb = new StringBuilder();
-            for (char ch : string.toCharArray()) {
-                if (ch == OLD_PLACEHOLDER) {
-                    strings = strings.append(sb.toString());
-                    sb.setLength(0);
-                } else {
-                    sb.append(ch);
-                }
-            }
-            strings = strings.append(sb.toString());
-            return strings;
-        }
-
-        JCExpression concatExpression(List<String> strings, List<JCExpression> expressions) {
+        JCExpression concatExpression(List<String> fragments, List<JCExpression> expressions) {
             JCExpression expr = null;
             Iterator<JCExpression> iterator = expressions.iterator();
-            for (String segment : strings) {
-                expr = expr == null ? makeString(segment)
-                        : makeBinary(PLUS, expr, makeString(segment));
+            for (String fragment : fragments) {
+                expr = expr == null ? makeString(fragment)
+                        : makeBinary(PLUS, expr, makeString(fragment));
                 if (iterator.hasNext()) {
                     JCExpression expression = iterator.next();
                     Type expressionType = expression.type;
@@ -302,15 +293,14 @@ public final class TransLiterals extends TreeTranslator {
             return createApply(owner, name, args, method);
         }
 
-        JCMethodInvocation createApplyListOf(List<JCExpression> list, boolean isVarArg) {
-            Type listType = makeListType(syms.objectType);
-            JCMethodInvocation asListApplied = createApply(syms.arraysType, names.asList, list)
+        JCMethodInvocation createApplyListOf(List<JCExpression> list, Type argType) {
+            Type listType = makeListType(argType == null ? syms.objectType : argType);
+            JCMethodInvocation listOfApplied = createApply(syms.listType, names.of, list)
                     .setType(listType);
-            asListApplied.varargsElement = isVarArg ? syms.objectType : null;
-            JCMethodInvocation unmodifiableListApplied =
-                    createApply(syms.collectionsType, names.unmodifiableList, List.of(asListApplied))
-                            .setType(listType);
-            return unmodifiableListApplied;
+            JCFieldAccess meth = (JCFieldAccess)listOfApplied.meth;
+            boolean isVarArg = (meth.sym.flags() & VARARGS) != 0;
+            listOfApplied.varargsElement = isVarArg ? argType : null;
+            return listOfApplied;
         }
 
         JCMethodInvocation createApplyExprMethod(JCMethodDecl exprMethod) {
@@ -329,11 +319,24 @@ public final class TransLiterals extends TreeTranslator {
         void createFields() {
             int i = 0;
             for (JCExpression expression : expressions) {
+
+
                 Type type = expression.type == syms.botType ? syms.objectType : expression.type;
                 JCVariableDecl fieldVar = makeField(templatedStringClass, PRIVATE, make.paramName(i++),
                         type, null);
                 fields = fields.append(fieldVar);
             }
+        }
+
+        void createFragmentsListAndMethod() {
+            List<JCExpression> fragmentArgs = makeStringList(fragments);
+            Type stringListType = makeListType(syms.stringType);
+            fragmentsVar = makeField(templatedStringClass, PRIVATE | STATIC,
+                    names.fragmentsUpper, stringListType,
+                    createApplyListOf(fragmentArgs, syms.stringType));
+            TransLiterals.MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.fragments,
+                    stringListType, List.nil(), templatedStringClass);
+            method.addStatement(make.Return(make.QualIdent(fragmentsVar.sym)));
         }
 
         void createValuesListAndMethod() {
@@ -354,7 +357,8 @@ public final class TransLiterals extends TreeTranslator {
         }
 
         void createInitMethod() {
-            long flags = useValuesList ? PUBLIC | VARARGS : PUBLIC;
+            long flags = useValuesList ? PUBLIC | VARARGS
+                                       : PUBLIC;
             List<Type> types = useValuesList ?
                     List.of(new ArrayType(syms.objectType, syms.arrayClass)) : expressionTypes;
             MethodInfo method = createMethod(flags, names.init,
@@ -370,7 +374,7 @@ public final class TransLiterals extends TreeTranslator {
             if (useValuesList) {
                 JCFieldAccess select = makeThisFieldSelect(templatedStringClass.type, valuesVar);
                 JCIdent ident = makeParamIdent(params, params.head.name);
-                JCAssign assign = make.Assign(select, createApplyListOf(List.of(ident), false));
+                JCAssign assign = make.Assign(select, createApplyListOf(List.of(ident), null));
                 assign.type = ident.type;
                 method.addStatement(make.Exec(assign));
             } else {
@@ -384,33 +388,17 @@ public final class TransLiterals extends TreeTranslator {
             }
         }
 
-        void createStencilMethod(JCVariableDecl stencilVar) {
-            MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.stencil,
-                    syms.stringType, List.nil(), templatedStringClass);
-            JCExpression string = make.QualIdent(stencilVar.sym);
-            string.type = syms.stringType;
-            method.addStatement(make.Return(string));
-        }
-
-        void createFragmentsMethod(JCVariableDecl segmentsVar) {
-            Type stringListType = makeListType(syms.stringType);
-            MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.fragments,
-                    stringListType, List.nil(), templatedStringClass);
-            JCFieldAccess fragments = makeFieldAccess(templatedStringClass, names.fragmentsUpper);
-            method.addStatement(make.Return(fragments));
-        }
-
         void createValuesMethod() {
             Type objectListType = makeListType(syms.objectType);
             MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.values,
                     objectListType, List.nil(), templatedStringClass);
-            method.addStatement(make.Return(createApplyListOf(createAccessors(), true)));
+            method.addStatement(make.Return(createApplyListOf(createAccessors(), syms.objectType)));
         }
 
         void createConcatMethod() {
             concatMethod = createMethod(SYNTHETIC | PUBLIC, names.concat,
                     syms.stringType, List.nil(), templatedStringClass);
-            concatMethod.addStatement(make.Return(concatExpression(strings, createAccessors())));
+            concatMethod.addStatement(make.Return(concatExpression(fragments, createAccessors())));
         }
 
         void createToStringMethod() {
@@ -454,19 +442,7 @@ public final class TransLiterals extends TreeTranslator {
                 Type templatedStringType = syms.templatedStringType;
                 templatedStringClass = newTemplatedStringClass();
                 currentClass = templatedStringClass.sym;
-                JCVariableDecl stencilVar =
-                        makeField(templatedStringClass, PRIVATE | STATIC, names.stencilUpper,
-                                syms.stringType, makeString(string));
-                Symbol stencilSym = findMember(templatedStringClass.sym, names.stencilUpper);
-                JCExpression stencilIdent = make.QualIdent(stencilSym);
-                stencilIdent.type = syms.stringType;
-                Type stringList = makeListType(syms.stringType);
-                JCMethodInvocation splitApplied = createApply(templatedStringType, names.split, List.of(stencilIdent));
-                splitApplied.type = stringList;
-                JCVariableDecl fragmentsVar = makeField(templatedStringClass, PRIVATE | STATIC,
-                        names.fragmentsUpper, stringList, splitApplied);
-                createStencilMethod(stencilVar);
-                createFragmentsMethod(fragmentsVar);
+                createFragmentsListAndMethod();
                 createToStringMethod();
 
                 if (useValuesList) {
@@ -490,11 +466,14 @@ public final class TransLiterals extends TreeTranslator {
             Name bootstrapName = names.templatedStringBSM;
             Name methodName = names.apply;
             VarSymbol policySym = (VarSymbol)TreeInfo.symbol(policy);
+            List<LoadableConstant> staticArgValues = List.of(policySym.asMethodHandle(true));
             List<Type> staticArgsTypes =
                     List.of(syms.methodHandleLookupType, syms.stringType,
-                            syms.methodTypeType, syms.stringType, syms.methodHandleType);
-            List<LoadableConstant> staticArgValues = List.of(LoadableConstant.String(string),
-                    policySym.asMethodHandle(true));
+                            syms.methodTypeType, syms.methodHandleType);
+            for (String fragment : fragments) {
+                staticArgValues = staticArgValues.append(LoadableConstant.String(fragment));
+                staticArgsTypes = staticArgsTypes.append(syms.stringType);
+            }
             Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), env,
                     syms.templateBootstrapType, bootstrapName, staticArgsTypes, List.nil());
             MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
@@ -562,13 +541,12 @@ public final class TransLiterals extends TreeTranslator {
 
         JCExpression visit() {
             JCExpression result;
-
             make.at(tree.pos);
 
             if (policy == null) {
                 result = newTemplatedString();
             } else if (isSTRPolicy()) {
-                result = concatExpression(strings, expressions);
+                result = concatExpression(fragments, expressions);
             } else if (isLinkagePolicy()) {
                 result = createBSMPolicyApplyMethodCall();
             } else {

@@ -47,12 +47,16 @@ public class Basic {
 
     static void ASSERT(String a, String b) {
         if (!Objects.equals(a, b)) {
+            System.out.println(a);
+            System.out.println(b);
             throw new RuntimeException("Test failed");
         }
     }
 
     static void ASSERT(Object a, Object b) {
         if (!Objects.deepEquals(a, b)) {
+            System.out.println(a);
+            System.out.println(b);
             throw new RuntimeException("Test failed");
         }
     }
@@ -80,7 +84,6 @@ public class Basic {
         int y = 20;
 
         TemplatedString ts = "\{x} + \{y} = \{x + y}";
-        ASSERT(ts.stencil(), "\uFFFC + \uFFFC = \uFFFC");
         ASSERT(ts.values(), List.of(x, y, x + y));
         ASSERT(ts.fragments(), List.of("", " + ", " = ", ""));
         ASSERT(ts.concat(), x + " + " + y + " = " + (x + y));
@@ -350,30 +353,28 @@ public class Basic {
      * Policy tests.
      */
     public static final SimplePolicy<TemplatedString> STRINGIFY = ts -> {
-        String stencil = ts.stencil().toUpperCase();
         List<Object> values = ts.values()
                 .stream()
                 .map(v -> (Object)String.valueOf(v))
                 .toList();
 
-        return TemplatedString.of(stencil, values);
+        return TemplatedString.of(ts.fragments(), values);
     };
 
     public static final SimplePolicy<TemplatedString> UPPER = ts -> {
-        String stencil = ts.stencil().toUpperCase();
-        List<Object> values = ts.values()
+        List<String> fragments = ts.fragments()
                 .stream()
-                .map(v -> v instanceof String s ? s.toUpperCase() : v)
+                .map(String::toUpperCase)
                 .toList();
 
-        return TemplatedString.of(stencil, values);
+        return TemplatedString.of(fragments, ts.values());
     };
 
     static void policyTests() {
         String name = "Joan";
         int age = 25;
         StringPolicy policy = StringPolicy.chain(STR, UPPER, STRINGIFY);
-        ASSERT(policy."\{name} is \{age} years old", "JOAN IS 25 YEARS OLD");
+        ASSERT(policy."\{name} is \{age} years old", "Joan IS 25 YEARS OLD");
     }
 
     /*
@@ -382,22 +383,16 @@ public class Basic {
     static void templatedStringCoverage() {
         TemplatedString tsNoValues = TemplatedString.of("No Values");
 
-        ASSERT(tsNoValues.stencil(), "No Values");
         ASSERT(tsNoValues.values(), List.of());
         ASSERT(tsNoValues.fragments(), List.of("No Values"));
         ASSERT(tsNoValues.concat(), STR."No Values");
 
         int x = 10, y = 20;
         TemplatedString src = "\{x} + \{y} = \{x + y}";
-        TemplatedString tsValues = TemplatedString.of(src.stencil(), src.values());
-        ASSERT(tsValues.stencil(), "\uFFFC + \uFFFC = \uFFFC");
-        ASSERT(tsValues.values(), List.of(x, y, x + y));
+        TemplatedString tsValues = TemplatedString.of(src.fragments(), src.values());
         ASSERT(tsValues.fragments(), List.of("", " + ", " = ", ""));
+        ASSERT(tsValues.values(), List.of(x, y, x + y));
         ASSERT(tsValues.concat(), x + " + " + y + " = " + (x + y));
-
-        ASSERT(TemplatedString.split(src.stencil()), List.of("", " + ", " = ", ""));
-        ASSERT(TemplatedString.split("No Values"), List.of("No Values"));
-        ASSERT(TemplatedString.split(""), List.of(""));
     }
 
     /*
@@ -529,7 +524,13 @@ public class Basic {
         int z = -123;
 
         StringPolicy policy0 = TemplatePolicy.builder()
-                .preliminary(ts -> TemplatedString.of(ts.stencil().toUpperCase(), ts.values()))
+                .preliminary(ts -> {
+                    List<String> fragments = ts.fragments()
+                            .stream()
+                            .map(String::toUpperCase)
+                            .toList();
+                    return TemplatedString.of(fragments, ts.values());
+                    })
                 .build();
         ASSERT(policy0."Some lowercase", "SOME LOWERCASE");
 
@@ -564,6 +565,7 @@ public class Basic {
                 .resolve()
                 .build();
         ASSERT(policy5."\{supplier} \{future} \{futureTask}", "x y z");
+        executor.shutdown();
 
         SimplePolicy<Integer> policy6 = TemplatePolicy.builder()
                 .build(s -> Integer.parseInt(s));

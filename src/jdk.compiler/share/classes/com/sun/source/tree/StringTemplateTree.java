@@ -40,11 +40,11 @@ public interface StringTemplateTree extends ExpressionTree {
     ExpressionTree getPolicy();
 
     /**
-     * Returns original string with placeholders.
+     * Returns string fragments.
      *
-     * @return original string with placeholders
+     * @return string fragments
      */
-    String getString();
+    List<String> getFragments();
 
     /**
      * Returns list of expressions.

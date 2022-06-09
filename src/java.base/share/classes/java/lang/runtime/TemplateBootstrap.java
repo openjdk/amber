@@ -47,44 +47,44 @@ public final class TemplateBootstrap {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     /**
-     * {@link MethodHandle} to {@link TemplateBootstrap#defaultApply}
+     * {@link MethodHandle} to {@link TemplateBootstrap#defaultApply}.
      */
     private static final MethodHandle DEFAULT_APPLY_MH;
 
     /**
-     * {@link MethodHandles.Lookup} passed to the bootstrap method
+     * {@link MethodHandles.Lookup} passed to the bootstrap method.
      */
     private final MethodHandles.Lookup lookup;
 
     /**
-     * Name passed to the bootstrap method ("apply")
+     * Name passed to the bootstrap method ("apply").
      */
     private final String name;
 
     /**
-     * {@link MethodType} passed to the bootstrap method
+     * {@link MethodType} passed to the bootstrap method.
      */
     private final MethodType type;
 
     /**
-     * Template stencil passed to the bootstrap method
+     * Fragments from string template.
      */
-    private final String stencil;
+    private final List<String> fragments;
 
     /**
-     * {@link MethodHandle} to get static final policy
+     * Static final policy.
      */
-    private final MethodHandle policyGetter;
+    private final TemplatePolicy<?, ? extends Throwable> policy;
 
     /**
-     * Initialize {@link MethodHandle MethodHandles}
+     * Initialize {@link MethodHandle MethodHandles}.
      */
     static {
         try {
             MethodHandles.Lookup lookup = MethodHandles.lookup();
 
             MethodType mt = MethodType.methodType(Object.class,
-                    String.class, List.class, TemplatePolicy.class, Object[].class);
+                    List.class, TemplatePolicy.class, Object[].class);
             DEFAULT_APPLY_MH = lookup.findStatic(TemplateBootstrap.class, "defaultApply", mt);
         } catch (ReflectiveOperationException ex) {
             throw new AssertionError("templated string bootstrap fail", ex);
@@ -94,48 +94,53 @@ public final class TemplateBootstrap {
     /**
      * Constructor.
      *
-     * @param lookup       method lookup
-     * @param name         method name
-     * @param type         method type
-     * @param stencil      stencil string with placeholders
-     * @param policyGetter {@link MethodHandle} to get static final policy
+     * @param lookup     method lookup
+     * @param name       method name
+     * @param type       method type
+     * @param fragments  fragments from string template
+     * @param policy     static final policy
      */
-    private TemplateBootstrap(MethodHandles.Lookup lookup, String name,
-                              MethodType type, String stencil, MethodHandle policyGetter) {
+    private TemplateBootstrap(MethodHandles.Lookup lookup, String name, MethodType type,
+                              List<String> fragments,
+                              TemplatePolicy<?, ? extends Throwable> policy) {
         this.lookup = lookup;
         this.name = name;
         this.type = type;
-        this.stencil = stencil;
-        this.policyGetter = policyGetter;
+        this.fragments = fragments;
+        this.policy = policy;
+
     }
 
      /**
-     * Templated string bootstrap method.
-     *
-     * @param lookup       method lookup
-     * @param name         method name
-     * @param type         method type
-     * @param stencil      stencil string with placeholders
-     * @param policyGetter {@link MethodHandle} to get static final policy
-     *
-     * @return {@link CallSite} to handle templated string processing
-     *
-     * @throws NullPointerException if any of the arguments is null
-     * @throws Throwable if applier fails
-     */
+      * Templated string bootstrap method.
+      *
+      * @param lookup           method lookup
+      * @param name             method name
+      * @param type             method type
+      * @param policyGetter     {@link MethodHandle} to get static final policy
+      * @param fragments        fragments from string template
+      *
+      * @return {@link CallSite} to handle templated string processing
+      *
+      * @throws NullPointerException if any of the arguments is null
+      * @throws Throwable if applier fails
+      */
     public static CallSite templatedStringBSM(
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,
-            String stencil,
-            MethodHandle policyGetter) throws Throwable {
+            MethodHandle policyGetter,
+            String... fragments) throws Throwable {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
-        Objects.requireNonNull(stencil, "stencil is null");
         Objects.requireNonNull(policyGetter, "policyGetter is null");
+        Objects.requireNonNull(fragments, "fragments is null");
 
-        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, stencil, policyGetter);
+        MethodType policyGetterType = MethodType.methodType(TemplatePolicy.class);
+        TemplatePolicy<?, ? extends Throwable> policy =
+                (TemplatePolicy<?, ? extends Throwable>)policyGetter.asType(policyGetterType).invokeExact();
+        TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, List.of(fragments), policy);
 
         return bootstrap.applyWithPolicy();
     }
@@ -148,18 +153,8 @@ public final class TemplateBootstrap {
      * @throws Throwable if applier fails
      */
     private CallSite applyWithPolicy() throws Throwable {
-        MethodType getterType = MethodType.methodType(TemplatePolicy.class);
-        TemplatePolicy<?, ? extends Throwable> policy =
-                (TemplatePolicy<?, ? extends Throwable>)policyGetter.asType(getterType).invokeExact();
-        MethodHandle mh = null;
-
-        if (policy instanceof PolicyLinkage policyLinkage) {
-            mh = ((PolicyLinkage)policy).applier(stencil, type);
-        }
-
-        if (mh == null) {
-            mh = defaultApplyMethodHandle();
-        }
+        MethodHandle mh = policy instanceof PolicyLinkage policyLinkage ?
+                policyLinkage.applier(fragments, type) : defaultApplyMethodHandle() ;
 
         return new ConstantCallSite(mh);
     }
@@ -167,30 +162,26 @@ public final class TemplateBootstrap {
     /**
      * Creates a simple {@link TemplatedString} and then invokes the policy's apply method.
      *
-     * @param stencil    stencil string with placeholders
-     * @param fragments  immutable list of string fragments created by splitting
-     *                   the stencil at placeholders
+     * @param fragments  fragments from string template
      * @param policy     {@link TemplatePolicy} to apply
      * @param values     array of expression values
      *
      * @return
      */
-    private static Object defaultApply(String stencil,
-                                       List<String> fragments,
+    private static Object defaultApply(List<String> fragments,
                                        TemplatePolicy<Object, Throwable> policy,
                                        Object[] values) throws Throwable {
-        return policy.apply(JLA.newTemplatedString(stencil, List.of(values), fragments));
+        return policy.apply(JLA.newTemplatedString(fragments, List.of(values)));
     }
 
     /**
      * Generate a {@link MethodHandle} which is effectively invokes
-     * {@code policy.apply(new TemplatedString(stencil, values...)}.
+     * {@code policy.apply(new TemplatedString(fragments, values...)}.
      *
      * @return default apply {@link MethodHandle}
      */
     private MethodHandle defaultApplyMethodHandle() {
-        MethodHandle mh = MethodHandles.insertArguments(DEFAULT_APPLY_MH, 0, stencil,
-                                                        TemplatedString.split(stencil));
+        MethodHandle mh = MethodHandles.insertArguments(DEFAULT_APPLY_MH, 0, fragments, policy);
         mh = mh.withVarargs(true);
         mh = mh.asType(type);
 

@@ -39,16 +39,16 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * This interface describes the methods provided by a generalized string template policy. The
  * primary method {@link TemplatePolicy#apply} is used to validate and compose a result using
- * a {@link TemplatedString TemplatedString's} stencil (or fragments) and values list. For example:
+ * a {@link TemplatedString TemplatedString's} fragments and values lists. For example:
  *
  * {@snippet :
  * class MyPolicy implements TemplatePolicy<String, IllegalArgumentException> {
  *     @Override
- *     public String apply(TemplatedString templatedString) throws IllegalArgumentException {
+ *     public String apply(TemplatedString ts) throws IllegalArgumentException {
  *          StringBuilder sb = new StringBuilder();
- *          Iterator<String> fragmentsIter = templatedString.fragments().iterator();
+ *          Iterator<String> fragmentsIter = ts.fragments().iterator();
  *
- *          for (Object value : templatedString.values()) {
+ *          for (Object value : ts.values()) {
  *              sb.append(fragmentsIter.next());
  *
  *              if (value instanceof Boolean) {
@@ -334,14 +334,14 @@ public interface TemplatePolicy<R, E extends Throwable> {
          * Construct a {@link MethodHandle} that constructs a result based on the
          * bootstrap method information.
          *
-         * @param stencil     stencil string with placeholders
-         * @param type        methiod type
+         * @param fragments  string template fragments
+         * @param type       method type
          *
          * @return {@link MethodHandle} for the policy applied to template
          *
          * @throws NullPointerException if any of the arguments are null
          */
-        MethodHandle applier(String stencil, MethodType type);
+        MethodHandle applier(List<String> fragments, MethodType type);
     }
 
     /**
@@ -473,7 +473,11 @@ public interface TemplatePolicy<R, E extends Throwable> {
          * initial function is the identity function.
          * Example: {@snippet :
          *     StringPolicy policy = TemplatePolicy.builder()
-         *          .preliminary(ts -> TemplatedString.of(ts.stencil().toUpperCase(), ts.values()))
+         *          .preliminary(ts -> {
+         *               List<String> fragments = ts.fragments().map(s -> s.toUpperCase()).toList();
+         *               List<Object> values = ts.values();
+         *               return TemplatedString.of(fragments, values);
+         *          })
          *          .build();
          * }
          *
@@ -629,11 +633,9 @@ public interface TemplatePolicy<R, E extends Throwable> {
             return isSimple ? ts -> ts.concat()
                             : ts -> {
                 ts = preliminary.apply(ts);
-                String stencil = ts.stencil();
                 List<String> fragments = ts.fragments();
                 List<Object> values = ts.values();
-                int estimate = stencil.length() + 16 * values.size();
-                StringBuilder sb = new StringBuilder(estimate);
+                StringBuilder sb = new StringBuilder();
                 Iterator<String> fragmentIterator = fragments.iterator();
                 Iterator<Object> valuesIterator = values.iterator();
 
