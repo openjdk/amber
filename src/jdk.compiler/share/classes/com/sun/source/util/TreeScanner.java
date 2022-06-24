@@ -767,6 +767,22 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @param node  {@inheritDoc}
      * @param p  {@inheritDoc}
      * @return the result of scanning
+     */
+    @Override
+    public R visitStringTemplate(StringTemplateTree node, P p) {
+        R r = scan(node.getPolicy(), p);
+        r = scanAndReduce(node.getExpressions(), p, r);
+        return r;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
      * @since 14
      */
     @Override
